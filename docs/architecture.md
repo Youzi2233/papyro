@@ -4,6 +4,7 @@
 
 如果你只是想启动项目，先看 [README.md](../README.md)。  
 如果你想看重构推进计划，继续看 [docs/refactoring-plan.md](refactoring-plan.md)。
+如果你想看模块 owner 和拆分优先级，继续看 [docs/module-ownership.md](module-ownership.md)。
 
 ## 总览
 
@@ -255,7 +256,7 @@ User action
 - 继续收紧 `core` 边界
 - 继续减少 UI layout 中的流程编排
 - 让 `crates/app` 的 public API 更适合未来跨端复用
-- 增加架构边界验证
+- 按 [module-ownership.md](module-ownership.md) 拆分高风险大文件
 
 ## 目标架构
 
