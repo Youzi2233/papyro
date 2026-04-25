@@ -1,5 +1,6 @@
 use super::bridge::{perf_enabled, send_editor_destroy, EditorBridgeMap, RetiredEditorHosts};
 use super::host::EditorHost;
+use super::outline::OutlinePane;
 use super::preview::PreviewPane;
 use super::tabbar::EditorTabButton;
 use super::toolbar::EditorToolbar;
@@ -127,28 +128,34 @@ pub fn EditorPane() -> Element {
                     }
                 }
                 section { class: "mn-document",
-                    div {
-                        class: if view_mode == ViewMode::Preview { "mn-editor-edit hidden" } else { "mn-editor-edit" },
-                        div { class: "mn-editor-hosts",
-                            for (tab_id, is_active) in host_items {
-                                div {
-                                    key: "{tab_id}",
-                                    "data-tab-id": "{tab_id}",
-                                    class: if is_active { "mn-editor-host-slot" } else { "mn-editor-host-slot hidden" },
-                                    EditorHost {
-                                        tab_id: tab_id.clone(),
-                                        is_visible: is_active && view_mode.is_editable(),
-                                        view_mode: view_mode.clone(),
+                    div { class: "mn-document-main",
+                        div {
+                            class: if view_mode == ViewMode::Preview { "mn-editor-edit hidden" } else { "mn-editor-edit" },
+                            div { class: "mn-editor-hosts",
+                                for (tab_id, is_active) in host_items {
+                                    div {
+                                        key: "{tab_id}",
+                                        "data-tab-id": "{tab_id}",
+                                        class: if is_active { "mn-editor-host-slot" } else { "mn-editor-host-slot hidden" },
+                                        EditorHost {
+                                            tab_id: tab_id.clone(),
+                                            is_visible: is_active && view_mode.is_editable(),
+                                            view_mode: view_mode.clone(),
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
-                    if view_mode == ViewMode::Preview {
-                        PreviewPane {
+                        if view_mode == ViewMode::Preview {
+                            PreviewPane {
+                                active_tab_id: active_tab_id.clone(),
+                                tab_contents,
+                                editor_services,
+                            }
+                        }
+                        OutlinePane {
                             active_tab_id: active_tab_id.clone(),
                             tab_contents,
-                            editor_services,
                         }
                     }
                 }

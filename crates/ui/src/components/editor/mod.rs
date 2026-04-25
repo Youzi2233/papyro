@@ -1,6 +1,7 @@
 mod bridge;
 mod fallback;
 mod host;
+mod outline;
 mod pane;
 mod preview;
 mod tabbar;

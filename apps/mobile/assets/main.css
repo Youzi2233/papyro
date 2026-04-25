@@ -338,6 +338,24 @@ small {
     padding: 30px clamp(22px, 5vw, 70px);
 }
 
+.mn-document-main {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.mn-document-main > .mn-editor-edit,
+.mn-document-main > .mn-preview-shell {
+    flex: 1;
+    min-width: 0;
+}
+
+.mn-outline {
+    display: none;
+}
+
 .mn-preview-shell,
 .mn-preview {
     display: flex;
