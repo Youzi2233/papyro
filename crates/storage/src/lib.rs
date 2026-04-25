@@ -250,6 +250,10 @@ impl SqliteStorage {
         let recent_files = db::recent::list_recent(&self.pool, 10)?;
         Ok((file_tree, recent_files))
     }
+
+    pub fn list_recent_workspaces(&self, limit: usize) -> Result<Vec<Workspace>> {
+        db::workspaces::list_recent_workspaces(&self.pool, limit)
+    }
 }
 
 impl NoteStorage for SqliteStorage {
@@ -299,6 +303,10 @@ impl NoteStorage for SqliteStorage {
         workspace: &Workspace,
     ) -> Result<(Vec<FileNode>, Vec<RecentFile>)> {
         SqliteStorage::reload_workspace_tree(self, workspace)
+    }
+
+    fn list_recent_workspaces(&self, limit: usize) -> Result<Vec<Workspace>> {
+        SqliteStorage::list_recent_workspaces(self, limit)
     }
 
     fn list_recent(&self, limit: usize) -> Result<Vec<RecentFile>> {
@@ -400,6 +408,10 @@ pub fn initialize_workspace(root: &Path) -> Result<WorkspaceSnapshot> {
 /// the recent list. Cost is effectively a directory stat, not O(N) file IO.
 pub fn reload_workspace_tree(workspace: &Workspace) -> Result<(Vec<FileNode>, Vec<RecentFile>)> {
     SqliteStorage::shared()?.reload_workspace_tree(workspace)
+}
+
+pub fn list_recent_workspaces(limit: usize) -> Result<Vec<Workspace>> {
+    SqliteStorage::shared()?.list_recent_workspaces(limit)
 }
 
 fn ensure_workspace(pool: &DbPool, root: &Path) -> Result<Workspace> {
@@ -730,6 +742,29 @@ mod tests {
 
         assert!(recent.is_empty());
         assert!(storage.list_recent(10)?.is_empty());
+
+        Ok(())
+    }
+
+    #[test]
+    fn list_recent_workspaces_orders_by_last_opened_and_respects_limit() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let workspace_a = temp.path().join("workspace-a");
+        let workspace_b = temp.path().join("workspace-b");
+        std::fs::create_dir_all(&workspace_a)?;
+        std::fs::create_dir_all(&workspace_b)?;
+
+        let storage = test_storage(&temp)?;
+        let snapshot_a = storage.initialize_workspace(&workspace_a)?;
+        let snapshot_b = storage.initialize_workspace(&workspace_b)?;
+        db::workspaces::update_last_opened(&storage.pool, &snapshot_a.workspace.id, 100)?;
+        db::workspaces::update_last_opened(&storage.pool, &snapshot_b.workspace.id, 200)?;
+
+        let recent = storage.list_recent_workspaces(1)?;
+
+        assert_eq!(recent.len(), 1);
+        assert_eq!(recent[0].id, snapshot_b.workspace.id);
+        assert_eq!(recent[0].path, workspace_b);
 
         Ok(())
     }

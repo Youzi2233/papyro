@@ -102,6 +102,10 @@ impl NoteStorage for MockStorage {
             .ok_or_else(|| anyhow!("Missing reload result"))
     }
 
+    fn list_recent_workspaces(&self, _limit: usize) -> Result<Vec<Workspace>> {
+        Ok(Vec::new())
+    }
+
     fn list_recent(&self, _limit: usize) -> Result<Vec<RecentFile>> {
         Ok(self.recent_files.clone())
     }
