@@ -116,6 +116,11 @@ const editorTheme = EditorView.theme({
     fontSize: ".92em",
     padding: "0 4px",
   },
+  ".cm-hybrid-link": {
+    color: "var(--mn-accent)",
+    textDecoration: "underline",
+    textUnderlineOffset: "3px",
+  },
 });
 
 const markdownHighlightStyle = HighlightStyle.define([
@@ -167,6 +172,8 @@ function inlineClassForType(type) {
       return "cm-hybrid-emphasis";
     case "inline_code":
       return "cm-hybrid-inline-code";
+    case "link":
+      return "cm-hybrid-link";
     default:
       return "";
   }

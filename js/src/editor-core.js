@@ -100,6 +100,19 @@ function collectInlineCodeSpans(line, spans, occupied) {
   }
 }
 
+function collectLinkSpans(line, spans, occupied) {
+  const regexp = /(!?)\[([^\]\n]+)\]\(([^)\n]+)\)/g;
+  for (const match of line.matchAll(regexp)) {
+    if (match[1]) continue;
+
+    const from = match.index;
+    const openTo = from + 1;
+    const closeFrom = openTo + match[2].length;
+    const to = from + match[0].length;
+    addInlineSpan(spans, occupied, "link", from, to, openTo, closeFrom);
+  }
+}
+
 function collectDelimitedInlineSpans(line, spans, occupied, type, marker) {
   let from = 0;
   while (from < line.length) {
@@ -122,6 +135,7 @@ export function parseMarkdownInlineSpans(line) {
   const spans = [];
   const occupied = [];
 
+  collectLinkSpans(line, spans, occupied);
   collectInlineCodeSpans(line, spans, occupied);
   collectDelimitedInlineSpans(line, spans, occupied, "strong", "**");
   collectDelimitedInlineSpans(line, spans, occupied, "strong", "__");

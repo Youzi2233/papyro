@@ -95,6 +95,13 @@ test("parse_markdown_inline_spans recognizes strong emphasis and code", () => {
   ]);
 });
 
+test("parse_markdown_inline_spans recognizes links but skips images", () => {
+  assert.deepEqual(parseMarkdownInlineSpans("See [docs](https://example.test)"), [
+    { type: "link", from: 4, to: 32, openTo: 5, closeFrom: 9 },
+  ]);
+  assert.deepEqual(parseMarkdownInlineSpans("![alt](assets/image.png)"), []);
+});
+
 test("parse_markdown_inline_spans prefers code inside nested delimiters", () => {
   assert.deepEqual(parseMarkdownInlineSpans("**bold `code`**"), [
     { type: "inline_code", from: 7, to: 13, openTo: 8, closeFrom: 12 },
