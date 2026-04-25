@@ -75,6 +75,62 @@ export function parseMarkdownHeadingLine(line) {
   };
 }
 
+function rangeOverlaps(existing, from, to) {
+  return existing.some((range) => from < range.to && to > range.from);
+}
+
+function addInlineSpan(spans, occupied, type, from, to, openTo, closeFrom) {
+  if (openTo >= closeFrom || rangeOverlaps(occupied, from, to)) return;
+  spans.push({ type, from, to, openTo, closeFrom });
+  occupied.push({ from, to });
+}
+
+function collectInlineCodeSpans(line, spans, occupied) {
+  const regexp = /`([^`\n]+)`/g;
+  for (const match of line.matchAll(regexp)) {
+    addInlineSpan(
+      spans,
+      occupied,
+      "inline_code",
+      match.index,
+      match.index + match[0].length,
+      match.index + 1,
+      match.index + match[0].length - 1,
+    );
+  }
+}
+
+function collectDelimitedInlineSpans(line, spans, occupied, type, marker) {
+  let from = 0;
+  while (from < line.length) {
+    const open = line.indexOf(marker, from);
+    if (open < 0) break;
+    const contentFrom = open + marker.length;
+    const close = line.indexOf(marker, contentFrom);
+    if (close < 0) break;
+
+    const content = line.slice(contentFrom, close);
+    const to = close + marker.length;
+    if (content.trim()) {
+      addInlineSpan(spans, occupied, type, open, to, contentFrom, close);
+    }
+    from = to;
+  }
+}
+
+export function parseMarkdownInlineSpans(line) {
+  const spans = [];
+  const occupied = [];
+
+  collectInlineCodeSpans(line, spans, occupied);
+  collectDelimitedInlineSpans(line, spans, occupied, "strong", "**");
+  collectDelimitedInlineSpans(line, spans, occupied, "strong", "__");
+  collectDelimitedInlineSpans(line, spans, occupied, "emphasis", "*");
+  collectDelimitedInlineSpans(line, spans, occupied, "emphasis", "_");
+
+  return spans.sort((a, b) => a.from - b.from || b.to - a.to);
+}
+
 export function normalizeViewMode(mode) {
   if (typeof mode !== "string") return "hybrid";
   const normalized = mode.trim().toLowerCase();

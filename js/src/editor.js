@@ -18,6 +18,7 @@ import {
   attachViewToTab as attachViewToTabCore,
   handleRustMessage as handleRustMessageCore,
   parseMarkdownHeadingLine,
+  parseMarkdownInlineSpans,
   recycleEditor as recycleEditorCore,
   setViewMode as setViewModeCore,
 } from "./editor-core.js";
@@ -99,6 +100,22 @@ const editorTheme = EditorView.theme({
     letterSpacing: "0",
     textTransform: "uppercase",
   },
+  ".cm-hybrid-strong": {
+    color: "var(--mn-ink)",
+    fontWeight: "700",
+  },
+  ".cm-hybrid-emphasis": {
+    color: "var(--mn-ink)",
+    fontStyle: "italic",
+  },
+  ".cm-hybrid-inline-code": {
+    borderRadius: "4px",
+    backgroundColor: "var(--mn-code-bg, rgba(178,75,47,.08))",
+    color: "var(--mn-accent-strong)",
+    fontFamily: 'var(--mn-editor-font, "Cascadia Code", monospace)',
+    fontSize: ".92em",
+    padding: "0 4px",
+  },
 });
 
 const markdownHighlightStyle = HighlightStyle.define([
@@ -142,7 +159,33 @@ function selectionTouchesLine(state, line) {
   });
 }
 
-function buildHybridHeadingDecorations(view) {
+function inlineClassForType(type) {
+  switch (type) {
+    case "strong":
+      return "cm-hybrid-strong";
+    case "emphasis":
+      return "cm-hybrid-emphasis";
+    case "inline_code":
+      return "cm-hybrid-inline-code";
+    default:
+      return "";
+  }
+}
+
+function addInlineDecorations(decorations, line) {
+  for (const span of parseMarkdownInlineSpans(line.text)) {
+    const contentFrom = line.from + span.openTo;
+    const contentTo = line.from + span.closeFrom;
+    const className = inlineClassForType(span.type);
+    if (!className) continue;
+
+    decorations.push(Decoration.replace({}).range(line.from + span.from, contentFrom));
+    decorations.push(Decoration.mark({ class: className }).range(contentFrom, contentTo));
+    decorations.push(Decoration.replace({}).range(contentTo, line.from + span.to));
+  }
+}
+
+function buildHybridMarkdownDecorations(view) {
   if (view.state.field(viewModeField, false) !== "hybrid") {
     return Decoration.none;
   }
@@ -160,7 +203,10 @@ function buildHybridHeadingDecorations(view) {
       if (selectionTouchesLine(view.state, line)) continue;
 
       const heading = parseMarkdownHeadingLine(line.text);
-      if (!heading) continue;
+      if (!heading) {
+        addInlineDecorations(decorations, line);
+        continue;
+      }
 
       const markerTo = line.from + heading.markerLength;
       decorations.push(
@@ -189,7 +235,7 @@ function viewModeChanged(update) {
 const hybridHeadingPlugin = ViewPlugin.fromClass(
   class {
     constructor(view) {
-      this.decorations = buildHybridHeadingDecorations(view);
+      this.decorations = buildHybridMarkdownDecorations(view);
     }
 
     update(update) {
@@ -199,7 +245,7 @@ const hybridHeadingPlugin = ViewPlugin.fromClass(
         update.viewportChanged ||
         viewModeChanged(update)
       ) {
-        this.decorations = buildHybridHeadingDecorations(update.view);
+        this.decorations = buildHybridMarkdownDecorations(update.view);
       }
     }
   },

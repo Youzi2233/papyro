@@ -6,6 +6,7 @@ import {
   handleRustMessage,
   normalizeViewMode,
   parseMarkdownHeadingLine,
+  parseMarkdownInlineSpans,
   recycleEditor,
 } from "../src/editor-core.js";
 
@@ -84,6 +85,24 @@ test("parse_markdown_heading_line recognizes atx headings", () => {
   });
   assert.equal(parseMarkdownHeadingLine("#NoSpace"), null);
   assert.equal(parseMarkdownHeadingLine("####### Too deep"), null);
+});
+
+test("parse_markdown_inline_spans recognizes strong emphasis and code", () => {
+  assert.deepEqual(parseMarkdownInlineSpans("A **bold** and *soft* `code`"), [
+    { type: "strong", from: 2, to: 10, openTo: 4, closeFrom: 8 },
+    { type: "emphasis", from: 15, to: 21, openTo: 16, closeFrom: 20 },
+    { type: "inline_code", from: 22, to: 28, openTo: 23, closeFrom: 27 },
+  ]);
+});
+
+test("parse_markdown_inline_spans prefers code inside nested delimiters", () => {
+  assert.deepEqual(parseMarkdownInlineSpans("**bold `code`**"), [
+    { type: "inline_code", from: 7, to: 13, openTo: 8, closeFrom: 12 },
+  ]);
+});
+
+test("parse_markdown_inline_spans skips empty spans", () => {
+  assert.deepEqual(parseMarkdownInlineSpans("**** __  __"), []);
 });
 
 test("set_content updates content without echoing content_changed", () => {
