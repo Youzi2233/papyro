@@ -31,6 +31,7 @@ import {
   continueMarkdownListOnEnter,
   handleRustMessage as handleRustMessageCore,
   indentMarkdownListInView,
+  normalizeEditorPreferences,
   parseMarkdownBlockquoteLine,
   parseMarkdownFootnoteDefinitionLine,
   parseMarkdownHeadingLine,
@@ -39,7 +40,9 @@ import {
   parseMarkdownInlineSpans,
   parseMarkdownListLine,
   parseMarkdownTaskLine,
+  pasteMarkdownLinkInView,
   recycleEditor as recycleEditorCore,
+  setEditorPreferences as setEditorPreferencesCore,
   setViewMode as setViewModeCore,
 } from "./editor-core.js";
 
@@ -1023,6 +1026,20 @@ function buildExtensions() {
     syntaxHighlighting(markdownHighlightStyle, { fallback: true }),
     search({ top: true }),
     highlightSelectionMatches({ highlightWordAroundCursor: true }),
+    EditorView.domEventHandlers({
+      paste(event, view) {
+        const tabId = view.dom.dataset.tabId;
+        if (!tabId) return false;
+        const entry = editorRegistry.get(tabId);
+        if (!entry) return false;
+
+        const text = event.clipboardData?.getData("text/plain") ?? "";
+        if (!pasteMarkdownLinkInView(view, text, entry.preferences)) return false;
+
+        event.preventDefault();
+        return true;
+      },
+    }),
     keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap]),
     routedSaveKeymap,
     hybridHeadingPlugin,
@@ -1131,6 +1148,10 @@ function setEditorViewMode(entry, mode) {
   return normalized;
 }
 
+function setRuntimePreferences(entry, preferences) {
+  return setEditorPreferencesCore(entry, preferences);
+}
+
 function attachViewToTab(view, tabId, container, initialContent, viewMode) {
   attachViewToTabCore({
     editorRegistry,
@@ -1140,6 +1161,7 @@ function attachViewToTab(view, tabId, container, initialContent, viewMode) {
     initialContent,
     viewMode,
     refreshEditorLayout,
+    setEditorPreferences: setRuntimePreferences,
     setViewMode: setEditorViewMode,
   });
 }
@@ -1178,7 +1200,13 @@ function ensureEditor({ tabId, containerId, initialContent, viewMode }) {
     });
     view = new EditorView({ state, parent: container });
     view.dom.dataset.tabId = tabId;
-    const entry = { view, dioxus: null, suppressChange: false, viewMode: "hybrid" };
+    const entry = {
+      view,
+      dioxus: null,
+      suppressChange: false,
+      viewMode: "hybrid",
+      preferences: normalizeEditorPreferences(),
+    };
     editorRegistry.set(tabId, entry);
     handleRustMessageCore(editorRegistry, tabId, {
       type: "set_view_mode",
@@ -1224,6 +1252,7 @@ window.papyroEditor = {
     return handleRustMessageCore(editorRegistry, tabId, message, {
       applyFormat: applyFormatToView,
       refreshEditorLayout,
+      setEditorPreferences: setRuntimePreferences,
       setViewMode: setEditorViewMode,
     });
   },

@@ -9,8 +9,10 @@ import {
   collectMarkdownTableBlocks,
   handleRustMessage,
   indentMarkdownListInView,
+  markdownLinkPasteChange,
   markdownListIndentChange,
   markdownListEnterChange,
+  normalizeEditorPreferences,
   normalizeViewMode,
   parseMarkdownBlockquoteLine,
   parseMarkdownCodeFenceLine,
@@ -21,6 +23,7 @@ import {
   parseMarkdownInlineSpans,
   parseMarkdownListLine,
   parseMarkdownTaskLine,
+  pasteMarkdownLinkInView,
   recycleEditor,
 } from "../src/editor-core.js";
 
@@ -366,6 +369,55 @@ test("apply_format inserts fallback text for empty selection", () => {
   assert.deepEqual(view.state.selection.main, { from: 1, to: 10 });
 });
 
+test("markdown_link_paste_change wraps selected text with a plain URL", () => {
+  assert.deepEqual(
+    markdownLinkPasteChange("Read docs today", 5, 9, "https://example.test/docs"),
+    {
+      changes: {
+        from: 5,
+        to: 9,
+        insert: "[docs](https://example.test/docs)",
+      },
+      selection: { anchor: 38 },
+      doc: "Read [docs](https://example.test/docs) today",
+    },
+  );
+  assert.deepEqual(
+    markdownLinkPasteChange("Read [docs] today", 5, 11, "https://example.test"),
+    {
+      changes: {
+        from: 5,
+        to: 11,
+        insert: "[[docs\\]](https://example.test)",
+      },
+      selection: { anchor: 36 },
+      doc: "Read [[docs\\]](https://example.test) today",
+    },
+  );
+});
+
+test("markdown_link_paste_change respects preferences and URL shape", () => {
+  assert.deepEqual(normalizeEditorPreferences({ autoLinkPaste: false }), {
+    autoLinkPaste: false,
+  });
+  assert.equal(
+    markdownLinkPasteChange("docs", 0, 4, "https://example.test", {
+      autoLinkPaste: false,
+    }),
+    null,
+  );
+  assert.equal(markdownLinkPasteChange("docs", 0, 4, "not a url"), null);
+  assert.equal(markdownLinkPasteChange("docs", 0, 0, "https://example.test"), null);
+});
+
+test("paste_markdown_link_in_view dispatches selected URL paste", () => {
+  const view = fakeView("Read docs", { from: 5, to: 9 });
+
+  assert.equal(pasteMarkdownLinkInView(view, "https://example.test", {}), true);
+  assert.equal(view.state.doc.toString(), "Read [docs](https://example.test)");
+  assert.deepEqual(view.state.selection.main, { from: 33, to: 33 });
+});
+
 test("markdown_list_enter_change continues unordered and ordered lists", () => {
   assert.deepEqual(markdownListEnterChange("- item", 6), {
     changes: { from: 6, to: 6, insert: "\n- " },
@@ -477,4 +529,21 @@ test("set_view_mode stores mode on entry and editor dom", () => {
   assert.equal(result, "mode_updated");
   assert.equal(registry.get("tab-a").viewMode, "preview");
   assert.equal(view.dom.dataset.viewMode, "preview");
+});
+
+test("set_preferences stores editor preferences on entry", () => {
+  const registry = new Map();
+  const view = fakeView("body");
+
+  attach(registry, view, "tab-a", "body");
+
+  const result = handleRustMessage(registry, "tab-a", {
+    type: "set_preferences",
+    auto_link_paste: false,
+  });
+
+  assert.equal(result, "preferences_updated");
+  assert.deepEqual(registry.get("tab-a").preferences, {
+    autoLinkPaste: false,
+  });
 });

@@ -15,6 +15,7 @@ pub enum EditorEvent {
 pub enum EditorCommand {
     SetContent { content: String },
     SetViewMode { mode: ViewMode },
+    SetPreferences { auto_link_paste: bool },
     ApplyFormat { kind: EditorFormat },
     Focus,
     RefreshLayout,
@@ -76,6 +77,19 @@ mod tests {
         .unwrap();
 
         assert_eq!(value, json!({ "type": "set_view_mode", "mode": "Hybrid" }));
+    }
+
+    #[test]
+    fn serializes_set_preferences_command() {
+        let value = serde_json::to_value(EditorCommand::SetPreferences {
+            auto_link_paste: false,
+        })
+        .unwrap();
+
+        assert_eq!(
+            value,
+            json!({ "type": "set_preferences", "auto_link_paste": false })
+        );
     }
 
     #[test]

@@ -9,11 +9,13 @@ use papyro_core::models::ViewMode;
 pub(super) fn EditorHost(tab_id: String, is_visible: bool, view_mode: ViewMode) -> Element {
     let app = use_app_context();
     let tab_contents = app.tab_contents;
+    let ui_state = app.ui_state;
     let commands = app.commands;
     let bridges = use_context::<EditorBridgeMap>();
     let container_id = format!("mn-editor-{tab_id}");
     let runtime_state = use_signal(|| EditorRuntimeState::Loading);
     let startup_view_mode = view_mode.clone();
+    let auto_link_paste = ui_state.read().settings.auto_link_paste;
 
     use_effect(use_reactive(
         (&tab_id, &container_id),
@@ -156,6 +158,8 @@ pub(super) fn EditorHost(tab_id: String, is_visible: bool, view_mode: ViewMode) 
                                 let _ = eval.send(EditorCommand::SetViewMode {
                                     mode: initial_view_mode.clone(),
                                 });
+                                let _ =
+                                    eval.send(EditorCommand::SetPreferences { auto_link_paste });
                             }
                         }
                         EditorEvent::RuntimeError { tab_id, message } => {
@@ -194,6 +198,15 @@ pub(super) fn EditorHost(tab_id: String, is_visible: bool, view_mode: ViewMode) 
         move |(tab_id, mode)| {
             if let Some(eval) = bridges.read().get(&tab_id) {
                 let _ = eval.send(EditorCommand::SetViewMode { mode });
+            }
+        },
+    ));
+
+    use_effect(use_reactive(
+        (&tab_id, &auto_link_paste),
+        move |(tab_id, auto_link_paste)| {
+            if let Some(eval) = bridges.read().get(&tab_id) {
+                let _ = eval.send(EditorCommand::SetPreferences { auto_link_paste });
             }
         },
     ));

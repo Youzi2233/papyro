@@ -31,6 +31,51 @@ export function formatSelectionChange(doc, from, to, kind) {
   };
 }
 
+export function normalizeEditorPreferences(preferences = {}) {
+  const autoLinkPaste =
+    preferences.auto_link_paste ?? preferences.autoLinkPaste ?? true;
+
+  return {
+    autoLinkPaste: autoLinkPaste !== false,
+  };
+}
+
+export function setEditorPreferences(entry, preferences) {
+  entry.preferences = {
+    ...normalizeEditorPreferences(entry.preferences),
+    ...normalizeEditorPreferences(preferences),
+  };
+  return entry.preferences;
+}
+
+export function isPlainUrl(text) {
+  return /^https?:\/\/[^\s<>()]+$/i.test(text.trim());
+}
+
+function markdownLinkText(text) {
+  return text.replace(/\\/g, "\\\\").replace(/\]/g, "\\]");
+}
+
+export function markdownLinkPasteChange(doc, from, to, pastedText, preferences = {}) {
+  const normalized = normalizeEditorPreferences(preferences);
+  if (!normalized.autoLinkPaste || from === to || !isPlainUrl(pastedText)) {
+    return null;
+  }
+
+  const selected = doc.slice(from, to);
+  if (!selected.trim() || /[\r\n]/.test(selected)) return null;
+
+  const url = pastedText.trim();
+  const text = markdownLinkText(selected);
+  const insert = `[${text}](${url})`;
+
+  return {
+    changes: { from, to, insert },
+    selection: { anchor: from + insert.length },
+    doc: `${doc.slice(0, from)}${insert}${doc.slice(to)}`,
+  };
+}
+
 export function applyFormatToView(view, kind) {
   const { state } = view;
   const range = state.selection.main;
@@ -47,6 +92,26 @@ export function applyFormatToView(view, kind) {
     selection: result.selection,
   });
   view.focus();
+  return true;
+}
+
+export function pasteMarkdownLinkInView(view, pastedText, preferences) {
+  const range = view.state.selection.main;
+  if (range.empty) return false;
+
+  const result = markdownLinkPasteChange(
+    view.state.doc.toString(),
+    range.from,
+    range.to,
+    pastedText,
+    preferences,
+  );
+  if (!result) return false;
+
+  view.dispatch({
+    changes: result.changes,
+    selection: result.selection,
+  });
   return true;
 }
 
@@ -639,12 +704,20 @@ export function attachViewToTab({
   initialContent,
   viewMode = "hybrid",
   refreshEditorLayout,
+  setEditorPreferences: setPreferences = setEditorPreferences,
   setViewMode: setMode = setViewMode,
 }) {
   view.dom.dataset.tabId = tabId;
 
-  const entry = { view, dioxus: null, suppressChange: true, viewMode: "hybrid" };
+  const entry = {
+    view,
+    dioxus: null,
+    suppressChange: true,
+    viewMode: "hybrid",
+    preferences: normalizeEditorPreferences(),
+  };
   editorRegistry.set(tabId, entry);
+  setPreferences(entry, entry.preferences);
   setMode(entry, viewMode);
 
   replaceViewContent(view, initialContent ?? "");
@@ -674,6 +747,7 @@ export function handleRustMessage(editorRegistry, tabId, message, options = {}) 
   const applyFormat = options.applyFormat ?? applyFormatToView;
   const refreshEditorLayout = options.refreshEditorLayout ?? (() => {});
   const setMode = options.setViewMode ?? setViewMode;
+  const setPreferences = options.setEditorPreferences ?? setEditorPreferences;
 
   switch (message.type) {
     case "set_content": {
@@ -695,6 +769,10 @@ export function handleRustMessage(editorRegistry, tabId, message, options = {}) 
       setMode(entry, message.mode);
       refreshEditorLayout(entry.view);
       return "mode_updated";
+    case "set_preferences":
+      if (!entry) return "missing";
+      setPreferences(entry, message);
+      return "preferences_updated";
     case "focus":
       if (!entry) return "missing";
       entry.view.focus();

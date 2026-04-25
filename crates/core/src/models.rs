@@ -81,6 +81,8 @@ pub struct AppSettings {
     pub font_family: String,
     pub font_size: u8,
     pub line_height: f32,
+    #[serde(default = "default_auto_link_paste")]
+    pub auto_link_paste: bool,
     pub auto_save_delay_ms: u64,
     pub show_word_count: bool,
     pub sidebar_width: u32,
@@ -97,6 +99,7 @@ impl Default for AppSettings {
             font_family: "Inter, system-ui, sans-serif".to_string(),
             font_size: 16,
             line_height: 1.6,
+            auto_link_paste: true,
             auto_save_delay_ms: 500,
             show_word_count: true,
             sidebar_width: 260,
@@ -104,6 +107,10 @@ impl Default for AppSettings {
             view_mode: ViewMode::Hybrid,
         }
     }
+}
+
+fn default_auto_link_paste() -> bool {
+    true
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]

@@ -12,6 +12,7 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
     let mut font_family = use_signal(|| settings.font_family.clone());
     let mut font_size = use_signal(|| settings.font_size);
     let mut line_height = use_signal(|| settings.line_height);
+    let mut auto_link_paste = use_signal(|| settings.auto_link_paste);
     let mut auto_save_ms = use_signal(|| settings.auto_save_delay_ms);
     let mut theme = use_signal(|| settings.theme.clone());
 
@@ -22,6 +23,7 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
             font_family: font_family.read().clone(),
             font_size: *font_size.read(),
             line_height: *line_height.read(),
+            auto_link_paste: *auto_link_paste.read(),
             auto_save_delay_ms: *auto_save_ms.read(),
             show_word_count: true,
             sidebar_width: current.sidebar_width,
@@ -106,6 +108,18 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
                                         line_height.set(v);
                                     }
                                 },
+                            }
+                        }
+                        SettingRow { label: "Paste URL as link",
+                            label { class: "mn-setting-switch",
+                                input {
+                                    r#type: "checkbox",
+                                    checked: *auto_link_paste.read(),
+                                    onchange: move |e| auto_link_paste.set(e.checked()),
+                                }
+                                span { class: "mn-setting-switch-track",
+                                    span { class: "mn-setting-switch-thumb" }
+                                }
                             }
                         }
                     }
