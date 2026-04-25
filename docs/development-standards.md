@@ -58,11 +58,12 @@
 ## 提交规范
 
 - 一个提交只对应一个最小任务。
-- 提交信息采用轻量 Conventional Commits，必须一行，最多 20 字，格式为 `type: 摘要`。
-- 20 字限制包含 type、scope、冒号、空格和摘要。
+- 提交标题采用轻量 Conventional Commits，最多 20 字，格式为 `type: 摘要`。
+- 20 字限制只约束标题，包含 type、scope、冒号、空格和摘要。
 - `scope` 可选，只有能显著提升检索价值时才使用：`type(scope): 摘要`。
-- 摘要使用简洁中文动宾短语，优先表达结果，不写泛泛而谈的过程。
-- 不写提交正文。需要额外背景时放在 PR 描述或文档里。
+- 摘要不必过度压缩。优先在 20 字内清楚表达结果，而不是追求最短。
+- 提交正文可详细说明背景、主要改动、影响范围、风险和验证结果。
+- 简单文档、注释或机械变更可以不写正文；涉及架构、协议、存储、数据安全或多模块协作时建议写正文。
 - 不把无关格式化、依赖升级、生成文件和功能改动混在同一提交。
 - 提交前确认源码、测试、文档和生成文件处于一致状态。
 
@@ -89,6 +90,18 @@ fix: 稳保存状态
 feat: 加性能预算
 refactor: 迁自动保存
 test: 补保存用例
+```
+
+正文示例：
+
+```text
+feat: 接模式协议
+
+- Add set_view_mode to the Rust/JS editor protocol so the runtime can receive Source, Hybrid, and Preview mode changes without relying on UI-only state.
+
+- Store the normalized mode on the JS editor registry and DOM dataset. Reused editor hosts now keep mode state consistent when tabs are recycled or reattached.
+
+- Cover protocol serialization and JS mode normalization with tests, then rebuild generated editor bundles so host assets stay synchronized.
 ```
 
 不推荐示例：
@@ -118,7 +131,7 @@ PR 合入前必须满足：
 - 没有无关文件变更。
 - 没有违反模块依赖方向。
 - 文档、测试和生成物与代码行为一致。
-- commit message 符合 `type: 摘要`，且一行最多 20 字。
+- commit 标题符合 `type: 摘要`，且最多 20 字。
 
 ## 标准检查命令
 
