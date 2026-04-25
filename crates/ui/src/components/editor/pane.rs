@@ -16,7 +16,8 @@ pub fn EditorPane() -> Element {
     let editor_tabs = app.editor_tabs;
     let tab_contents = app.tab_contents;
     let editor_services = app.editor_services;
-    let mut ui_state = app.ui_state;
+    let ui_state = app.ui_state;
+    let commands = app.commands;
 
     let active_tab = editor_tabs.read().active_tab().cloned();
     let active_tab_id = editor_tabs.read().active_tab_id.clone();
@@ -118,7 +119,11 @@ pub fn EditorPane() -> Element {
                     }
                     ViewToggle {
                         view_mode: view_mode.clone(),
-                        on_change: move |mode| ui_state.write().view_mode = mode,
+                        on_change: move |mode| {
+                            let mut settings = ui_state.read().settings.clone();
+                            settings.view_mode = mode;
+                            commands.save_settings.call(settings);
+                        },
                     }
                 }
                 section { class: "mn-document",

@@ -16,8 +16,20 @@ impl Default for UiState {
 }
 
 impl UiState {
+    pub fn from_settings(settings: AppSettings) -> Self {
+        Self {
+            view_mode: settings.view_mode.clone(),
+            settings,
+        }
+    }
+
     pub fn theme(&self) -> &Theme {
         &self.settings.theme
+    }
+
+    pub fn apply_settings(&mut self, settings: AppSettings) {
+        self.view_mode = settings.view_mode.clone();
+        self.settings = settings;
     }
 
     pub fn sidebar_collapsed(&self) -> bool {

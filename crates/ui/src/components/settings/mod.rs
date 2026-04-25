@@ -26,6 +26,7 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
             show_word_count: true,
             sidebar_width: current.sidebar_width,
             sidebar_collapsed: current.sidebar_collapsed,
+            view_mode: current.view_mode,
         };
         commands.save_settings.call(new_settings);
         on_close.call(());

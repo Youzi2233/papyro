@@ -313,7 +313,7 @@ fn apply_settings(
     settings: papyro_core::models::AppSettings,
 ) {
     let mut state = ui_state.write();
-    state.settings = settings.clone();
+    state.apply_settings(settings.clone());
     drop(state);
     if let Err(error) = storage.save_settings(&settings) {
         tracing::warn!("Failed to save settings: {error}");
@@ -323,7 +323,7 @@ fn apply_settings(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use papyro_core::models::Theme;
+    use papyro_core::models::{Theme, ViewMode};
 
     #[test]
     fn app_action_helpers_wrap_payloads() {
@@ -349,11 +349,13 @@ mod tests {
         assert_eq!(
             AppAction::save_settings(papyro_core::models::AppSettings {
                 theme: Theme::Dark,
+                view_mode: ViewMode::Source,
                 ..Default::default()
             }),
             AppAction::SaveSettings(crate::actions::SaveSettings {
                 settings: papyro_core::models::AppSettings {
                     theme: Theme::Dark,
+                    view_mode: ViewMode::Source,
                     ..Default::default()
                 }
             })

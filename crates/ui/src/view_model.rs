@@ -196,9 +196,10 @@ mod tests {
                 theme: Theme::Dark,
                 sidebar_width: 320,
                 sidebar_collapsed: true,
+                view_mode: ViewMode::Source,
                 ..Default::default()
             },
-            ..Default::default()
+            view_mode: ViewMode::Source,
         };
 
         let view_model =
@@ -212,7 +213,7 @@ mod tests {
         assert!(view_model.editor.active_is_dirty);
         assert_eq!(view_model.editor.active_save_status, SaveStatus::Dirty);
         assert_eq!(view_model.editor.active_stats.char_count, 5);
-        assert_eq!(view_model.editor.view_mode, ViewMode::Hybrid);
+        assert_eq!(view_model.editor.view_mode, ViewMode::Source);
         assert_eq!(view_model.settings.theme, Theme::Dark);
         assert!(view_model.settings.sidebar_collapsed);
         assert_eq!(view_model.settings.sidebar_width, 320);

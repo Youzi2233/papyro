@@ -23,10 +23,7 @@ pub(crate) fn use_runtime_state(bootstrap: WorkspaceBootstrap) -> RuntimeState {
         file_state: use_signal(|| initial_file_state),
         editor_tabs: use_signal(EditorTabs::default),
         tab_contents: use_signal(TabContentsMap::default),
-        ui_state: use_signal(|| UiState {
-            settings: initial_settings,
-            ..Default::default()
-        }),
+        ui_state: use_signal(|| UiState::from_settings(initial_settings)),
         status_message: use_signal(|| Some(initial_status_message)),
         workspace_watch_path: use_signal(|| initial_workspace_root),
         pending_close_tab: use_signal(|| None::<String>),

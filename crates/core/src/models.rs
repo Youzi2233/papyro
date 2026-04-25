@@ -86,6 +86,8 @@ pub struct AppSettings {
     pub sidebar_width: u32,
     #[serde(default)]
     pub sidebar_collapsed: bool,
+    #[serde(default)]
+    pub view_mode: ViewMode,
 }
 
 impl Default for AppSettings {
@@ -99,6 +101,7 @@ impl Default for AppSettings {
             show_word_count: true,
             sidebar_width: 260,
             sidebar_collapsed: false,
+            view_mode: ViewMode::Hybrid,
         }
     }
 }
@@ -111,7 +114,7 @@ pub enum Theme {
     Dark,
 }
 
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub enum ViewMode {
     #[default]
     Hybrid,
