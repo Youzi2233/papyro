@@ -22,6 +22,7 @@ import {
   markdownShortcutSpaceChange,
   normalizeEditorPreferences,
   normalizeViewMode,
+  openReplacePanelInView,
   parseMarkdownBlockquoteLine,
   parseMarkdownCodeFenceLine,
   parseMarkdownFootnoteDefinitionLine,
@@ -470,6 +471,33 @@ test("request_save_for_view ignores unrouted editor views", () => {
   const view = fakeView("body");
 
   assert.equal(requestSaveForView(new Map(), view), false);
+});
+
+test("open_replace_panel focuses the replace field", () => {
+  let opened = false;
+  let focused = false;
+  let selected = false;
+  const replaceField = {
+    focus() {
+      focused = true;
+    },
+    select() {
+      selected = true;
+    },
+  };
+  const view = fakeView("body");
+  view.dom.querySelector = (selector) => {
+    assert.equal(selector, '.cm-search input[name="replace"]');
+    return replaceField;
+  };
+
+  assert.equal(openReplacePanelInView(view, () => {
+    opened = true;
+    return true;
+  }), true);
+  assert.equal(opened, true);
+  assert.equal(focused, true);
+  assert.equal(selected, true);
 });
 
 test("markdown_list_enter_change continues unordered and ordered lists", () => {

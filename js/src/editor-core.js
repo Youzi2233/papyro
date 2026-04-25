@@ -143,6 +143,24 @@ export function requestSaveForView(editorRegistry, view) {
   return true;
 }
 
+export function openReplacePanelInView(view, openSearchPanel) {
+  const opened = openSearchPanel(view);
+  const focusReplaceField = () => {
+    const replaceField = view.dom.querySelector?.('.cm-search input[name="replace"]');
+    if (!replaceField) return false;
+
+    replaceField.focus();
+    replaceField.select?.();
+    return true;
+  };
+
+  focusReplaceField();
+  if (typeof queueMicrotask === "function") {
+    queueMicrotask(focusReplaceField);
+  }
+  return opened;
+}
+
 export function markdownListEnterChange(doc, cursor) {
   const lineStart = doc.lastIndexOf("\n", cursor - 1) + 1;
   let lineEnd = doc.indexOf("\n", cursor);
