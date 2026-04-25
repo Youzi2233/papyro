@@ -3,6 +3,7 @@ use crate::context::use_app_context;
 use dioxus::prelude::*;
 use papyro_core::models::{Theme, ViewMode};
 use papyro_core::UiState;
+use std::path::PathBuf;
 
 const COMMAND_PALETTE_LIMIT: usize = 24;
 
@@ -17,6 +18,7 @@ pub(crate) struct CommandPaletteAction {
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum CommandPaletteActionKind {
     OpenWorkspace,
+    OpenWorkspacePath(PathBuf),
     RefreshWorkspace,
     SaveActiveNote,
     ExportHtml,
@@ -37,6 +39,7 @@ pub fn CommandPaletteModal(on_close: EventHandler<()>, on_settings: EventHandler
 
     let actions = command_palette_actions(
         view_model.workspace.name.is_some(),
+        &view_model.workspace.recent_workspaces,
         view_model.editor.has_active_tab,
         view_model.settings.theme,
         view_model.editor.view_mode,
@@ -159,6 +162,9 @@ fn execute_command_action(
 ) {
     match kind {
         CommandPaletteActionKind::OpenWorkspace => commands.open_workspace.call(()),
+        CommandPaletteActionKind::OpenWorkspacePath(path) => {
+            commands.open_workspace_path.call(path)
+        }
         CommandPaletteActionKind::RefreshWorkspace => commands.refresh_workspace.call(()),
         CommandPaletteActionKind::SaveActiveNote => commands.save_active_note.call(()),
         CommandPaletteActionKind::ExportHtml => commands.export_html.call(()),
@@ -188,6 +194,7 @@ fn execute_command_action(
 
 pub(crate) fn command_palette_actions(
     has_workspace: bool,
+    recent_workspaces: &[crate::view_model::WorkspaceListItem],
     has_active_tab: bool,
     theme: Theme,
     view_mode: ViewMode,
@@ -228,6 +235,18 @@ pub(crate) fn command_palette_actions(
             CommandPaletteActionKind::OpenSettings,
         ),
     ];
+
+    for workspace in recent_workspaces
+        .iter()
+        .filter(|workspace| !workspace.is_current)
+    {
+        actions.push(action(
+            &format!("Open {}", workspace.name),
+            &workspace.path.display().to_string(),
+            "WS",
+            CommandPaletteActionKind::OpenWorkspacePath(workspace.path.clone()),
+        ));
+    }
 
     if has_workspace {
         actions.push(action(
@@ -316,7 +335,7 @@ mod tests {
 
     #[test]
     fn command_palette_actions_reflect_workspace_and_tab_state() {
-        let actions = command_palette_actions(true, true, Theme::Dark, ViewMode::Hybrid);
+        let actions = command_palette_actions(true, &[], true, Theme::Dark, ViewMode::Hybrid);
         let titles = actions
             .iter()
             .map(|action| action.title.as_str())
@@ -332,7 +351,7 @@ mod tests {
 
     #[test]
     fn command_palette_actions_hide_file_commands_without_active_tab() {
-        let actions = command_palette_actions(false, false, Theme::System, ViewMode::Preview);
+        let actions = command_palette_actions(false, &[], false, Theme::System, ViewMode::Preview);
         let titles = actions
             .iter()
             .map(|action| action.title.as_str())
@@ -346,7 +365,7 @@ mod tests {
 
     #[test]
     fn command_palette_filter_matches_title_detail_and_group() {
-        let actions = command_palette_actions(true, true, Theme::Light, ViewMode::Source);
+        let actions = command_palette_actions(true, &[], true, Theme::Light, ViewMode::Source);
 
         assert_eq!(
             filter_command_palette_actions(&actions, "file save")
@@ -362,5 +381,37 @@ mod tests {
                 .collect::<Vec<_>>(),
             vec!["Use preview mode"]
         );
+    }
+
+    #[test]
+    fn command_palette_actions_include_recent_workspaces() {
+        let actions = command_palette_actions(
+            true,
+            &[
+                crate::view_model::WorkspaceListItem {
+                    name: "Current".to_string(),
+                    path: PathBuf::from("current"),
+                    is_current: true,
+                },
+                crate::view_model::WorkspaceListItem {
+                    name: "Archive".to_string(),
+                    path: PathBuf::from("archive"),
+                    is_current: false,
+                },
+            ],
+            false,
+            Theme::Light,
+            ViewMode::Hybrid,
+        );
+
+        assert!(actions.iter().any(|action| {
+            action.title == "Open Archive"
+                && action.group == "WS"
+                && matches!(
+                    &action.kind,
+                    CommandPaletteActionKind::OpenWorkspacePath(path) if path == &PathBuf::from("archive")
+                )
+        }));
+        assert!(!actions.iter().any(|action| action.title == "Open Current"));
     }
 }

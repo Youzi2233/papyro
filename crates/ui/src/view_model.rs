@@ -15,11 +15,19 @@ pub struct AppViewModel {
 pub struct WorkspaceViewModel {
     pub name: Option<String>,
     pub path: Option<PathBuf>,
+    pub recent_workspaces: Vec<WorkspaceListItem>,
     pub selected_name: Option<String>,
     pub has_selection: bool,
     pub selected_is_directory: bool,
     pub note_count: usize,
     pub recent_count: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WorkspaceListItem {
+    pub name: String,
+    pub path: PathBuf,
+    pub is_current: bool,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -60,6 +68,10 @@ impl AppViewModel {
 impl WorkspaceViewModel {
     fn from_file_state(file_state: &FileState) -> Self {
         let selected_node = file_state.selected_node();
+        let current_path = file_state
+            .current_workspace
+            .as_ref()
+            .map(|workspace| workspace.path.clone());
 
         Self {
             name: file_state
@@ -70,6 +82,17 @@ impl WorkspaceViewModel {
                 .current_workspace
                 .as_ref()
                 .map(|workspace| workspace.path.clone()),
+            recent_workspaces: file_state
+                .workspaces
+                .iter()
+                .map(|workspace| WorkspaceListItem {
+                    name: workspace.name.clone(),
+                    path: workspace.path.clone(),
+                    is_current: current_path
+                        .as_ref()
+                        .is_some_and(|path| path == &workspace.path),
+                })
+                .collect(),
             selected_name: selected_node.as_ref().map(|node| node.name.clone()),
             has_selection: selected_node.is_some(),
             selected_is_directory: selected_node
@@ -142,15 +165,26 @@ mod tests {
 
     #[test]
     fn view_model_derives_workspace_editor_and_settings() {
+        let current_workspace = Workspace {
+            id: "w".to_string(),
+            name: "Workspace".to_string(),
+            path: PathBuf::from("workspace"),
+            created_at: 0,
+            last_opened: None,
+            sort_order: 0,
+        };
+        let archive_workspace = Workspace {
+            id: "archive".to_string(),
+            name: "Archive".to_string(),
+            path: PathBuf::from("archive"),
+            created_at: 0,
+            last_opened: Some(1),
+            sort_order: 0,
+        };
+
         let mut file_state = FileState {
-            current_workspace: Some(Workspace {
-                id: "w".to_string(),
-                name: "Workspace".to_string(),
-                path: PathBuf::from("workspace"),
-                created_at: 0,
-                last_opened: None,
-                sort_order: 0,
-            }),
+            workspaces: vec![current_workspace.clone(), archive_workspace.clone()],
+            current_workspace: Some(current_workspace),
             file_tree: vec![FileNode {
                 name: "notes".to_string(),
                 path: PathBuf::from("notes"),
@@ -206,6 +240,21 @@ mod tests {
             AppViewModel::from_state(&file_state, &editor_tabs, &tab_contents, &ui_state);
 
         assert_eq!(view_model.workspace.name.as_deref(), Some("Workspace"));
+        assert_eq!(
+            view_model.workspace.recent_workspaces,
+            vec![
+                WorkspaceListItem {
+                    name: "Workspace".to_string(),
+                    path: PathBuf::from("workspace"),
+                    is_current: true,
+                },
+                WorkspaceListItem {
+                    name: "Archive".to_string(),
+                    path: PathBuf::from("archive"),
+                    is_current: false,
+                },
+            ]
+        );
         assert_eq!(view_model.workspace.note_count, 2);
         assert_eq!(view_model.workspace.recent_count, 1);
         assert!(view_model.workspace.selected_is_directory);
