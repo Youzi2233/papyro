@@ -367,9 +367,21 @@ test("markdown_list_enter_change continues unordered and ordered lists", () => {
   });
 });
 
-test("markdown_list_enter_change ignores non-list and empty list items", () => {
+test("markdown_list_enter_change exits empty list items", () => {
+  assert.deepEqual(markdownListEnterChange("- ", 2), {
+    changes: { from: 0, to: 2, insert: "" },
+    selection: { anchor: 0 },
+    doc: "",
+  });
+  assert.deepEqual(markdownListEnterChange("text\n  3. ", 10), {
+    changes: { from: 5, to: 10, insert: "" },
+    selection: { anchor: 5 },
+    doc: "text\n",
+  });
+});
+
+test("markdown_list_enter_change ignores non-list lines", () => {
   assert.equal(markdownListEnterChange("plain", 5), null);
-  assert.equal(markdownListEnterChange("- ", 2), null);
 });
 
 test("tab recycle detaches old tab and prevents stale content routing", () => {

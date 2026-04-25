@@ -57,11 +57,18 @@ export function markdownListEnterChange(doc, cursor) {
 
   const line = doc.slice(lineStart, lineEnd);
   const beforeCursor = doc.slice(lineStart, cursor);
-  const marker = /^(\s*)((?:[-*+])|(?:\d{1,9}[.)]))([ \t]+)/.exec(line);
-  if (!marker || beforeCursor.trimEnd() !== beforeCursor) return null;
+  const marker = /^(\s*)((?:[-*+])|(?:\d{1,9}[.)]))([ \t]+|$)/.exec(line);
+  if (!marker) return null;
 
   const contentBeforeCursor = beforeCursor.slice(marker[0].length);
-  if (!contentBeforeCursor.trim()) return null;
+  if (contentBeforeCursor.trimEnd() !== contentBeforeCursor) return null;
+  if (!contentBeforeCursor.trim()) {
+    return {
+      changes: { from: lineStart, to: cursor, insert: "" },
+      selection: { anchor: lineStart },
+      doc: `${doc.slice(0, lineStart)}${doc.slice(cursor)}`,
+    };
+  }
 
   let nextMarker = marker[2];
   const ordered = /^(\d{1,9})([.)])$/.exec(marker[2]);
