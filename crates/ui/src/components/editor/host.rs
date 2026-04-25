@@ -3,15 +3,17 @@ use super::fallback::{EditorRuntimeState, FallbackEditor};
 use crate::commands::ContentChange;
 use crate::context::use_app_context;
 use dioxus::prelude::*;
+use papyro_core::models::ViewMode;
 
 #[component]
-pub(super) fn EditorHost(tab_id: String, is_visible: bool) -> Element {
+pub(super) fn EditorHost(tab_id: String, is_visible: bool, view_mode: ViewMode) -> Element {
     let app = use_app_context();
     let tab_contents = app.tab_contents;
     let commands = app.commands;
     let bridges = use_context::<EditorBridgeMap>();
     let container_id = format!("mn-editor-{tab_id}");
     let runtime_state = use_signal(|| EditorRuntimeState::Loading);
+    let startup_view_mode = view_mode.clone();
 
     use_effect(use_reactive(
         (&tab_id, &container_id),
@@ -24,6 +26,7 @@ pub(super) fn EditorHost(tab_id: String, is_visible: bool) -> Element {
             let tab_contents = tab_contents;
             let commands = commands.clone();
             let mut runtime_state = runtime_state;
+            let initial_view_mode = startup_view_mode.clone();
             let tab_id = tab_id.clone();
             let container_id = container_id.clone();
 
@@ -45,6 +48,7 @@ pub(super) fn EditorHost(tab_id: String, is_visible: bool) -> Element {
                 const tabId = {tab_id_json};
                 const containerId = {container_id_json};
                 const initialContent = {initial_content_json};
+                const initialViewMode = {initial_view_mode_json};
 
                 async function ensurePapyroEditorRuntime() {{
                     if (window.papyroEditor) return;
@@ -92,7 +96,7 @@ pub(super) fn EditorHost(tab_id: String, is_visible: bool) -> Element {
                 try {{
                     await ensurePapyroEditorRuntime();
 
-                    window.papyroEditor.ensureEditor({{ tabId, containerId, initialContent }});
+                    window.papyroEditor.ensureEditor({{ tabId, containerId, initialContent, viewMode: initialViewMode }});
                     window.papyroEditor.attachChannel(tabId, dioxus);
                     dioxus.send({{ type: "runtime_ready", tab_id: tabId }});
 
@@ -116,6 +120,8 @@ pub(super) fn EditorHost(tab_id: String, is_visible: bool) -> Element {
                         serde_json::to_string(&container_id).unwrap_or_else(|_| "\"\"".to_string()),
                     initial_content_json = serde_json::to_string(&initial_content)
                         .unwrap_or_else(|_| "\"\"".to_string()),
+                    initial_view_mode_json = serde_json::to_string(&initial_view_mode)
+                        .unwrap_or_else(|_| "\"Hybrid\"".to_string()),
                 );
 
                 let eval = document::eval(&script);
@@ -147,6 +153,9 @@ pub(super) fn EditorHost(tab_id: String, is_visible: bool) -> Element {
                                 .to_string();
                             if let Some(eval) = bridges.read().get(&tab_id) {
                                 let _ = eval.send(EditorCommand::SetContent { content });
+                                let _ = eval.send(EditorCommand::SetViewMode {
+                                    mode: initial_view_mode.clone(),
+                                });
                             }
                         }
                         EditorEvent::RuntimeError { tab_id, message } => {
@@ -176,6 +185,15 @@ pub(super) fn EditorHost(tab_id: String, is_visible: bool) -> Element {
 
             if let Some(eval) = bridges.read().get(&tab_id) {
                 let _ = eval.send(EditorCommand::RefreshLayout);
+            }
+        },
+    ));
+
+    use_effect(use_reactive(
+        (&tab_id, &view_mode),
+        move |(tab_id, mode)| {
+            if let Some(eval) = bridges.read().get(&tab_id) {
+                let _ = eval.send(EditorCommand::SetViewMode { mode });
             }
         },
     ));

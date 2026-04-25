@@ -4,6 +4,7 @@ import {
   applyFormatToView,
   attachViewToTab,
   handleRustMessage,
+  normalizeViewMode,
   recycleEditor,
 } from "../src/editor-core.js";
 
@@ -61,6 +62,13 @@ function attach(registry, view, tabId, initialContent = "") {
     refreshEditorLayout: () => {},
   });
 }
+
+test("normalize_view_mode accepts known modes and falls back to hybrid", () => {
+  assert.equal(normalizeViewMode("Source"), "source");
+  assert.equal(normalizeViewMode("HYBRID"), "hybrid");
+  assert.equal(normalizeViewMode("preview"), "preview");
+  assert.equal(normalizeViewMode("unknown"), "hybrid");
+});
 
 test("set_content updates content without echoing content_changed", () => {
   const registry = new Map();
@@ -124,4 +132,31 @@ test("tab recycle detaches old tab and prevents stale content routing", () => {
     "missing",
   );
   assert.equal(view.state.doc.toString(), "B");
+});
+
+test("set_view_mode stores mode on entry and editor dom", () => {
+  const registry = new Map();
+  const view = fakeView("body");
+
+  attachViewToTab({
+    editorRegistry: registry,
+    view,
+    tabId: "tab-a",
+    container: fakeContainer(),
+    initialContent: "body",
+    viewMode: "Source",
+    refreshEditorLayout: () => {},
+  });
+
+  assert.equal(registry.get("tab-a").viewMode, "source");
+  assert.equal(view.dom.dataset.viewMode, "source");
+
+  const result = handleRustMessage(registry, "tab-a", {
+    type: "set_view_mode",
+    mode: "Preview",
+  });
+
+  assert.equal(result, "mode_updated");
+  assert.equal(registry.get("tab-a").viewMode, "preview");
+  assert.equal(view.dom.dataset.viewMode, "preview");
 });

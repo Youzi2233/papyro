@@ -227,18 +227,19 @@ function refreshEditorLayout(view) {
   }
 }
 
-function attachViewToTab(view, tabId, container, initialContent) {
+function attachViewToTab(view, tabId, container, initialContent, viewMode) {
   attachViewToTabCore({
     editorRegistry,
     view,
     tabId,
     container,
     initialContent,
+    viewMode,
     refreshEditorLayout,
   });
 }
 
-function ensureEditor({ tabId, containerId, initialContent }) {
+function ensureEditor({ tabId, containerId, initialContent, viewMode }) {
   const container = document.getElementById(containerId);
   if (!container) throw new Error(`Editor container not found: ${containerId}`);
 
@@ -249,7 +250,10 @@ function ensureEditor({ tabId, containerId, initialContent }) {
       container.replaceChildren(existing.view.dom);
     }
     existing.view.dom.dataset.tabId = tabId;
-    refreshEditorLayout(existing.view);
+    handleRustMessageCore(editorRegistry, tabId, {
+      type: "set_view_mode",
+      mode: viewMode ?? existing.viewMode ?? "hybrid",
+    }, { refreshEditorLayout });
     return existing.view;
   }
 
@@ -257,7 +261,7 @@ function ensureEditor({ tabId, containerId, initialContent }) {
   if (spareViews.length > 0) {
     view = spareViews.pop();
     resetViewState(view, initialContent ?? "");
-    attachViewToTab(view, tabId, container, initialContent);
+    attachViewToTab(view, tabId, container, initialContent, viewMode);
     // Warm the next spare so a subsequent open is also instant.
     scheduleWarmSpare();
   } else {
@@ -269,7 +273,12 @@ function ensureEditor({ tabId, containerId, initialContent }) {
     });
     view = new EditorView({ state, parent: container });
     view.dom.dataset.tabId = tabId;
-    editorRegistry.set(tabId, { view, dioxus: null, suppressChange: false });
+    const entry = { view, dioxus: null, suppressChange: false, viewMode: "hybrid" };
+    editorRegistry.set(tabId, entry);
+    handleRustMessageCore(editorRegistry, tabId, {
+      type: "set_view_mode",
+      mode: viewMode ?? "hybrid",
+    }, { refreshEditorLayout });
     scheduleWarmSpare();
   }
 

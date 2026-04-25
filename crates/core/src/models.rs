@@ -114,7 +114,7 @@ pub enum Theme {
     Dark,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub enum ViewMode {
     #[default]
     Hybrid,

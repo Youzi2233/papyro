@@ -1,3 +1,4 @@
+use papyro_core::models::ViewMode;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -13,6 +14,7 @@ pub enum EditorEvent {
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum EditorCommand {
     SetContent { content: String },
+    SetViewMode { mode: ViewMode },
     ApplyFormat { kind: EditorFormat },
     Focus,
     RefreshLayout,
@@ -64,6 +66,16 @@ mod tests {
             value,
             json!({ "type": "apply_format", "kind": "code_block" })
         );
+    }
+
+    #[test]
+    fn serializes_set_view_mode_command() {
+        let value = serde_json::to_value(EditorCommand::SetViewMode {
+            mode: ViewMode::Hybrid,
+        })
+        .unwrap();
+
+        assert_eq!(value, json!({ "type": "set_view_mode", "mode": "Hybrid" }));
     }
 
     #[test]

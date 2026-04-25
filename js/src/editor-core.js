@@ -64,18 +64,37 @@ export function replaceViewContent(view, content) {
   return true;
 }
 
+export function normalizeViewMode(mode) {
+  if (typeof mode !== "string") return "hybrid";
+  const normalized = mode.trim().toLowerCase();
+  return ["source", "hybrid", "preview"].includes(normalized)
+    ? normalized
+    : "hybrid";
+}
+
+export function setViewMode(entry, mode) {
+  const normalized = normalizeViewMode(mode);
+  entry.viewMode = normalized;
+  if (entry.view?.dom?.dataset) {
+    entry.view.dom.dataset.viewMode = normalized;
+  }
+  return normalized;
+}
+
 export function attachViewToTab({
   editorRegistry,
   view,
   tabId,
   container,
   initialContent,
+  viewMode = "hybrid",
   refreshEditorLayout,
 }) {
   view.dom.dataset.tabId = tabId;
 
-  const entry = { view, dioxus: null, suppressChange: true };
+  const entry = { view, dioxus: null, suppressChange: true, viewMode: "hybrid" };
   editorRegistry.set(tabId, entry);
+  setViewMode(entry, viewMode);
 
   replaceViewContent(view, initialContent ?? "");
   entry.suppressChange = false;
@@ -93,6 +112,7 @@ export function recycleEditor(editorRegistry, tabId) {
   editorRegistry.delete(tabId);
   entry.dioxus = null;
   delete entry.view.dom.dataset.tabId;
+  delete entry.view.dom.dataset.viewMode;
   return true;
 }
 
@@ -102,6 +122,7 @@ export function handleRustMessage(editorRegistry, tabId, message, options = {}) 
 
   const applyFormat = options.applyFormat ?? applyFormatToView;
   const refreshEditorLayout = options.refreshEditorLayout ?? (() => {});
+  const setMode = options.setViewMode ?? setViewMode;
 
   switch (message.type) {
     case "set_content": {
@@ -118,6 +139,11 @@ export function handleRustMessage(editorRegistry, tabId, message, options = {}) 
       if (!entry) return "missing";
       applyFormat(entry.view, message.kind);
       return "formatted";
+    case "set_view_mode":
+      if (!entry) return "missing";
+      setMode(entry, message.mode);
+      refreshEditorLayout(entry.view);
+      return "mode_updated";
     case "focus":
       if (!entry) return "missing";
       entry.view.focus();

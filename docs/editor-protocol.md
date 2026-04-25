@@ -11,6 +11,7 @@ Rust sends commands to `window.papyroEditor.handleRustMessage(tabId, message)`.
 | Command | JSON `type` | Payload | Behavior |
 | --- | --- | --- | --- |
 | `SetContent` | `set_content` | `content: string` | Replace the editor document without echoing `content_changed`. |
+| `SetViewMode` | `set_view_mode` | `mode: ViewMode` | Switch the browser editor between source, hybrid, and preview-aware runtime behavior. |
 | `ApplyFormat` | `apply_format` | `kind: EditorFormat` | Apply Markdown formatting to the current selection. |
 | `Focus` | `focus` | none | Focus the active editor. |
 | `RefreshLayout` | `refresh_layout` | none | Request CodeMirror layout measurement. |
@@ -36,6 +37,14 @@ Example:
 
 ```json
 { "type": "apply_format", "kind": "code_block" }
+```
+
+`ViewMode` values are serialized as:
+
+```json
+"Source"
+"Hybrid"
+"Preview"
 ```
 
 ## Events
