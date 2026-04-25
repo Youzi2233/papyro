@@ -427,6 +427,12 @@ button { border: 0; cursor: pointer; background: transparent; }
     box-shadow: inset 3px 0 0 var(--mn-accent), var(--mn-shadow-xs);
 }
 
+.mn-tree-row.editing {
+    background: var(--mn-surface-raised);
+    cursor: text;
+    gap: 7px;
+}
+
 .mn-tree-caret {
     width: 12px;
     flex-shrink: 0;
@@ -458,6 +464,20 @@ button { border: 0; cursor: pointer; background: transparent; }
     text-overflow: ellipsis;
     white-space: nowrap;
     font-size: 13.5px;
+}
+
+.mn-tree-rename-input {
+    flex: 1;
+    min-width: 0;
+    height: 24px;
+    border: 1px solid var(--mn-accent);
+    border-radius: 7px;
+    outline: 0;
+    background: var(--mn-surface);
+    color: var(--mn-ink);
+    padding: 2px 7px;
+    font-size: 13px;
+    box-shadow: 0 0 0 3px var(--mn-accent-dim);
 }
 
 .mn-tree-context-dismiss {

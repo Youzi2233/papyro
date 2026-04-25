@@ -15,9 +15,7 @@ pub fn Sidebar() -> Element {
     let settings_model = app.view_model.read().settings.clone();
 
     let mut create_name = use_signal(String::new);
-    let mut rename_name = use_signal(String::new);
     let mut show_create = use_signal(|| false);
-    let mut show_rename = use_signal(|| false);
 
     let workspace = file_state.read().current_workspace.clone();
     let sidebar_width = settings_model.sidebar_width;
@@ -55,7 +53,6 @@ pub fn Sidebar() -> Element {
                         title: "New note in current folder",
                         onclick: move |_| {
                             show_create.set(!show_create());
-                            show_rename.set(false);
                         },
                         if show_create() { "✕ Cancel" } else { "+ New" }
                     }
@@ -135,49 +132,6 @@ pub fn Sidebar() -> Element {
                                 onclick: move |_| commands.delete_selected.call(()),
                                 if selected_delete_pending { "Confirm" } else { "✕" }
                             }
-                        }
-                    }
-
-                    // ── Inline rename ──
-                    if show_rename() {
-                        div { class: "mn-rename-row",
-                            input {
-                                class: "mn-input",
-                                placeholder: "New name",
-                                value: "{rename_name}",
-                                autofocus: true,
-                                oninput: move |e| rename_name.set(e.value()),
-                                onkeydown: move |e| {
-                                    if e.key() == Key::Enter {
-                                        let name = rename_name().trim().to_string();
-                                        if !name.is_empty() {
-                                            commands.rename_selected.call(name);
-                                        }
-                                        show_rename.set(false);
-                                    }
-                                },
-                            }
-                            button {
-                                class: "mn-button",
-                                onclick: move |_| {
-                                    let name = rename_name().trim().to_string();
-                                    if !name.is_empty() {
-                                        commands.rename_selected.call(name);
-                                    }
-                                    show_rename.set(false);
-                                },
-                                "OK"
-                            }
-                        }
-                    } else {
-                        button {
-                            class: "mn-button",
-                            style: "width:100%; justify-content:center",
-                            onclick: move |_| {
-                                show_rename.set(true);
-                                rename_name.set(String::new());
-                            },
-                            "Rename…"
                         }
                     }
 
