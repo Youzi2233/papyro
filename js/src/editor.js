@@ -30,6 +30,7 @@ import {
   collectMarkdownTableBlocks,
   continueMarkdownListOnEnter,
   handleRustMessage as handleRustMessageCore,
+  indentMarkdownListInView,
   parseMarkdownBlockquoteLine,
   parseMarkdownFootnoteDefinitionLine,
   parseMarkdownHeadingLine,
@@ -1008,6 +1009,8 @@ function buildExtensions() {
     { key: "Mod-k", run(view) { applyFormatToView(view, "link"); return true; } },
     { key: "Mod-h", run: openSearchPanel },
     { key: "Enter", run: continueMarkdownListOnEnter },
+    { key: "Tab", run: (view) => indentMarkdownListInView(view, "indent") },
+    { key: "Shift-Tab", run: (view) => indentMarkdownListInView(view, "outdent") },
   ]);
 
   return [

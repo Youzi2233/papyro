@@ -8,6 +8,8 @@ import {
   collectMarkdownMathBlocks,
   collectMarkdownTableBlocks,
   handleRustMessage,
+  indentMarkdownListInView,
+  markdownListIndentChange,
   markdownListEnterChange,
   normalizeViewMode,
   parseMarkdownBlockquoteLine,
@@ -47,11 +49,21 @@ function fakeView(initialDoc = "", selection = { from: 0, to: 0 }, onDispatch = 
     },
     dispatch(spec) {
       if (spec.changes) {
-        const { from, to, insert } = spec.changes;
-        doc = `${doc.slice(0, from)}${insert}${doc.slice(to)}`;
+        const changes = Array.isArray(spec.changes) ? spec.changes : [spec.changes];
+        let nextDoc = "";
+        let cursor = 0;
+        for (const { from, to, insert } of changes) {
+          nextDoc += doc.slice(cursor, from);
+          nextDoc += insert;
+          cursor = to;
+        }
+        doc = nextDoc + doc.slice(cursor);
       }
       if (spec.selection) {
-        main = { from: spec.selection.anchor, to: spec.selection.head };
+        main = {
+          from: spec.selection.anchor,
+          to: spec.selection.head ?? spec.selection.anchor,
+        };
       }
       onDispatch(view, spec);
     },
@@ -382,6 +394,41 @@ test("markdown_list_enter_change exits empty list items", () => {
 
 test("markdown_list_enter_change ignores non-list lines", () => {
   assert.equal(markdownListEnterChange("plain", 5), null);
+});
+
+test("markdown_list_indent_change indents selected list lines", () => {
+  assert.deepEqual(markdownListIndentChange("- one\ntext\n1. two", 0, 17, "indent"), {
+    changes: [
+      { from: 0, to: 0, insert: "  " },
+      { from: 11, to: 11, insert: "  " },
+    ],
+    selection: { anchor: 2, head: 21 },
+    doc: "  - one\ntext\n  1. two",
+  });
+});
+
+test("markdown_list_indent_change outdents selected list lines", () => {
+  assert.deepEqual(markdownListIndentChange("  - one\n\t- two\n- three", 0, 22, "outdent"), {
+    changes: [
+      { from: 0, to: 2, insert: "" },
+      { from: 8, to: 9, insert: "" },
+    ],
+    selection: { anchor: 0, head: 19 },
+    doc: "- one\n- two\n- three",
+  });
+});
+
+test("markdown_list_indent_change ignores non-list and flush outdent lines", () => {
+  assert.equal(markdownListIndentChange("plain", 0, 5, "indent"), null);
+  assert.equal(markdownListIndentChange("- item", 0, 6, "outdent"), null);
+});
+
+test("indent_markdown_list_in_view dispatches list indentation", () => {
+  const view = fakeView("- item", { from: 0, to: 0 });
+
+  assert.equal(indentMarkdownListInView(view, "indent"), true);
+  assert.equal(view.state.doc.toString(), "  - item");
+  assert.deepEqual(view.state.selection.main, { from: 2, to: 2 });
 });
 
 test("tab recycle detaches old tab and prevents stale content routing", () => {

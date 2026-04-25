@@ -98,6 +98,122 @@ export function continueMarkdownListOnEnter(view) {
   return true;
 }
 
+function parseIndentableMarkdownListLine(line) {
+  const task = /^(\s*)[-*+][ \t]+\[[ xX]\][ \t]+/.exec(line);
+  if (task) {
+    return { indentLength: task[1].length };
+  }
+
+  return parseMarkdownListLine(line);
+}
+
+function collectLineBounds(doc, from, to) {
+  const end = to > from && doc[to - 1] === "\n" ? to - 1 : to;
+  const lines = [];
+  let lineStart = doc.lastIndexOf("\n", Math.max(0, from - 1)) + 1;
+
+  while (lineStart <= end && lineStart <= doc.length) {
+    let lineEnd = doc.indexOf("\n", lineStart);
+    if (lineEnd < 0) lineEnd = doc.length;
+    lines.push({
+      from: lineStart,
+      to: lineEnd,
+      text: doc.slice(lineStart, lineEnd),
+    });
+    if (lineEnd === doc.length) break;
+    lineStart = lineEnd + 1;
+  }
+
+  return lines;
+}
+
+function applyTextChanges(doc, changes) {
+  let next = "";
+  let cursor = 0;
+
+  for (const change of changes) {
+    next += doc.slice(cursor, change.from);
+    next += change.insert;
+    cursor = change.to;
+  }
+
+  return next + doc.slice(cursor);
+}
+
+function mapPosition(position, changes) {
+  let mapped = position;
+
+  for (const change of changes) {
+    const removed = change.to - change.from;
+    const inserted = change.insert.length;
+
+    if (position < change.from) break;
+    if (position <= change.to) {
+      mapped = change.from + inserted;
+    } else {
+      mapped += inserted - removed;
+    }
+  }
+
+  return mapped;
+}
+
+export function markdownListIndentChange(doc, from, to, direction) {
+  const changes = [];
+
+  for (const line of collectLineBounds(doc, from, to)) {
+    const list = parseIndentableMarkdownListLine(line.text);
+    if (!list) continue;
+
+    if (direction === "indent") {
+      changes.push({ from: line.from, to: line.from, insert: "  " });
+      continue;
+    }
+
+    if (direction !== "outdent" || list.indentLength === 0) continue;
+
+    const indent = line.text.slice(0, list.indentLength);
+    const removeLength = indent.startsWith("\t")
+      ? 1
+      : Math.min(2, indent.match(/^ */)[0].length);
+    if (removeLength === 0) continue;
+
+    changes.push({
+      from: line.from,
+      to: line.from + removeLength,
+      insert: "",
+    });
+  }
+
+  if (changes.length === 0) return null;
+
+  return {
+    changes,
+    selection: {
+      anchor: mapPosition(from, changes),
+      head: mapPosition(to, changes),
+    },
+    doc: applyTextChanges(doc, changes),
+  };
+}
+
+export function indentMarkdownListInView(view, direction) {
+  const range = view.state.selection.main;
+  const result = markdownListIndentChange(
+    view.state.doc.toString(),
+    range.from,
+    range.to,
+    direction,
+  );
+  if (!result) return false;
+
+  view.dispatch({
+    changes: result.changes,
+    selection: result.selection,
+  });
+  return true;
+}
+
 export function viewContent(view) {
   return view.state.doc.toString();
 }
