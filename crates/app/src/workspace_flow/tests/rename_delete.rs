@@ -1,0 +1,157 @@
+use super::super::support::*;
+use super::super::*;
+use papyro_core::models::DocumentStats;
+use papyro_core::{EditorTabs, TabContentsMap};
+use std::path::PathBuf;
+
+#[test]
+fn rename_selected_note_updates_tree_selection_and_tab_path() {
+    let old_path = PathBuf::from("workspace/notes/a.md");
+    let new_path = PathBuf::from("workspace/notes/renamed.md");
+    let storage = MockStorage {
+        rename_result: Some(new_path.clone()),
+        reload_result: Some((
+            vec![directory_node(
+                "workspace/notes",
+                vec![note_node("workspace/notes/renamed.md", "note-a")],
+            )],
+            vec![recent_file("note-a", "notes/renamed.md")],
+        )),
+        ..MockStorage::default()
+    };
+    let mut file_state = file_state_with_tree(vec![directory_node(
+        "workspace/notes",
+        vec![note_node("workspace/notes/a.md", "note-a")],
+    )]);
+    file_state.select_path(old_path.clone());
+    let mut editor_tabs = EditorTabs::default();
+    editor_tabs.open_tab(tab("tab-a", "note-a", "workspace/notes/a.md"));
+    let mut tab_contents = TabContentsMap::default();
+    tab_contents.insert_tab(
+        "tab-a".to_string(),
+        "body".to_string(),
+        DocumentStats::default(),
+    );
+
+    let renamed = rename_selected_path(
+        &storage,
+        &mut file_state,
+        &mut editor_tabs,
+        &mut tab_contents,
+        "renamed.md",
+    )
+    .unwrap();
+
+    assert_eq!(renamed, new_path.clone());
+    assert_eq!(file_state.selected_path, Some(new_path.clone()));
+    assert_eq!(
+        file_state.recent_files,
+        vec![recent_file("note-a", "notes/renamed.md")]
+    );
+    assert_eq!(
+        editor_tabs
+            .tab_by_id("tab-a")
+            .map(|tab| (tab.path.clone(), tab.title.clone())),
+        Some((new_path, "renamed".to_string()))
+    );
+}
+
+#[test]
+fn rename_selected_path_fails_without_selection() {
+    let storage = MockStorage::default();
+    let mut file_state = file_state_with_tree(Vec::new());
+    let mut editor_tabs = EditorTabs::default();
+    let mut tab_contents = TabContentsMap::default();
+
+    let error = rename_selected_path(
+        &storage,
+        &mut file_state,
+        &mut editor_tabs,
+        &mut tab_contents,
+        "renamed.md",
+    )
+    .unwrap_err();
+
+    assert!(error.to_string().contains("No selected note or folder"));
+}
+
+#[test]
+fn delete_selected_directory_closes_nested_tabs_and_selects_parent() {
+    let target = PathBuf::from("workspace/notes");
+    let outside_tab = tab("tab-b", "note-b", "workspace/archive/b.md");
+    let storage = MockStorage {
+        reload_result: Some((
+            vec![directory_node(
+                "workspace/archive",
+                vec![note_node("workspace/archive/b.md", "note-b")],
+            )],
+            vec![recent_file("note-b", "archive/b.md")],
+        )),
+        ..MockStorage::default()
+    };
+    let mut file_state = file_state_with_tree(vec![
+        directory_node(
+            "workspace/notes",
+            vec![note_node("workspace/notes/a.md", "note-a")],
+        ),
+        directory_node(
+            "workspace/archive",
+            vec![note_node("workspace/archive/b.md", "note-b")],
+        ),
+    ]);
+    file_state.select_path(target.clone());
+    let mut editor_tabs = EditorTabs::default();
+    editor_tabs.open_tab(tab("tab-a", "note-a", "workspace/notes/a.md"));
+    editor_tabs.open_tab(outside_tab.clone());
+    let mut tab_contents = TabContentsMap::default();
+    tab_contents.insert_tab(
+        "tab-a".to_string(),
+        "body".to_string(),
+        DocumentStats::default(),
+    );
+    tab_contents.insert_tab(
+        outside_tab.id.clone(),
+        "archive".to_string(),
+        DocumentStats::default(),
+    );
+
+    let deleted = delete_selected_path(
+        &storage,
+        &mut file_state,
+        &mut editor_tabs,
+        &mut tab_contents,
+    )
+    .unwrap();
+
+    assert_eq!(deleted, target.clone());
+    assert_eq!(
+        storage.deleted_paths.lock().unwrap().clone(),
+        vec![target.clone()]
+    );
+    assert!(editor_tabs.tab_by_id("tab-a").is_none());
+    assert!(tab_contents.content_for_tab("tab-a").is_none());
+    assert!(editor_tabs.tab_by_id("tab-b").is_some());
+    assert_eq!(file_state.selected_path, Some(PathBuf::from("workspace")));
+    assert_eq!(
+        file_state.recent_files,
+        vec![recent_file("note-b", "archive/b.md")]
+    );
+}
+
+#[test]
+fn delete_selected_path_fails_without_selection() {
+    let storage = MockStorage::default();
+    let mut file_state = file_state_with_tree(Vec::new());
+    let mut editor_tabs = EditorTabs::default();
+    let mut tab_contents = TabContentsMap::default();
+
+    let error = delete_selected_path(
+        &storage,
+        &mut file_state,
+        &mut editor_tabs,
+        &mut tab_contents,
+    )
+    .unwrap_err();
+
+    assert!(error.to_string().contains("No selected note or folder"));
+}

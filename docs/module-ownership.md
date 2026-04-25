@@ -33,3 +33,7 @@
 - scope：模块负责什么，不负责什么。
 - validation：至少一种固定检查方式。
 - dependency rule：是否符合 `scripts/check-workspace-deps.js` 中的依赖方向。
+
+## 当前删除策略
+
+Phase 1 仍沿用现有直接删除实现，删除操作必须由 UI 入口触发确认或显式动作。Phase 4/7 引入回收站或安全删除前，应用层不得静默批量删除，也不得绕过 `delete_selected_path` 这一用例入口。
