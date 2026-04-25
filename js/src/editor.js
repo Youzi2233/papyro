@@ -13,6 +13,12 @@ import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { markdown } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
 import { syntaxHighlighting, HighlightStyle } from "@codemirror/language";
+import {
+  highlightSelectionMatches,
+  openSearchPanel,
+  search,
+  searchKeymap,
+} from "@codemirror/search";
 import { tags as t } from "@lezer/highlight";
 import katex from "katex";
 import {
@@ -93,6 +99,47 @@ const editorTheme = EditorView.theme({
   ".cm-panels": {
     backgroundColor: "var(--mn-surface, #fbf6ea)",
     color: "var(--mn-ink, #25211a)",
+  },
+  ".cm-search": {
+    display: "flex",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: "6px",
+    padding: "8px 10px",
+    borderBottom: "1px solid var(--mn-border)",
+    fontFamily: "var(--mn-font-sans, system-ui, sans-serif)",
+    fontSize: "12px",
+  },
+  ".cm-search input": {
+    minWidth: "120px",
+    border: "1px solid var(--mn-border)",
+    borderRadius: "6px",
+    backgroundColor: "var(--mn-surface-raised)",
+    color: "var(--mn-ink)",
+    padding: "4px 7px",
+  },
+  ".cm-search button, .cm-search label": {
+    borderRadius: "6px",
+    color: "var(--mn-ink-2)",
+  },
+  ".cm-search button": {
+    border: "1px solid var(--mn-border)",
+    backgroundColor: "var(--mn-surface-raised)",
+    padding: "4px 8px",
+  },
+  ".cm-search button:hover": {
+    color: "var(--mn-ink)",
+    borderColor: "var(--mn-border-strong)",
+  },
+  ".cm-searchMatch": {
+    backgroundColor: "var(--mn-accent-dim)",
+  },
+  ".cm-searchMatch-selected": {
+    backgroundColor: "var(--mn-selection, rgba(178,75,47,.15))",
+    outline: "1px solid var(--mn-accent)",
+  },
+  ".cm-selectionMatch": {
+    backgroundColor: "var(--mn-accent-wash)",
   },
   ".cm-line.cm-hybrid-heading-line": {
     letterSpacing: "0",
@@ -958,6 +1005,7 @@ function buildExtensions() {
     { key: "Mod-b", run(view) { applyFormatToView(view, "bold"); return true; } },
     { key: "Mod-i", run(view) { applyFormatToView(view, "italic"); return true; } },
     { key: "Mod-k", run(view) { applyFormatToView(view, "link"); return true; } },
+    { key: "Mod-h", run: openSearchPanel },
   ]);
 
   return [
@@ -968,7 +1016,9 @@ function buildExtensions() {
     history(),
     markdown({ codeLanguages: languages }),
     syntaxHighlighting(markdownHighlightStyle, { fallback: true }),
-    keymap.of([...defaultKeymap, ...historyKeymap]),
+    search({ top: true }),
+    highlightSelectionMatches({ highlightWordAroundCursor: true }),
+    keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap]),
     routedSaveKeymap,
     hybridHeadingPlugin,
     EditorView.lineWrapping,
