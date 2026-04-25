@@ -7,6 +7,7 @@ edition.workspace = true
 [dependencies]
 dioxus = { workspace = true }
 papyro-core = { path = "../core" }
+papyro-editor = { path = "../editor" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tokio = { workspace = true }

@@ -78,6 +78,7 @@ crates/storage  -> crates/core
 crates/platform -> crates/core
 crates/editor   -> crates/core
 crates/ui       -> crates/core
+crates/ui       -> crates/editor (protocol and Markdown UI helpers only)
 ```
 
 ## 每层职责
@@ -216,6 +217,7 @@ Dioxus UI 层。
 - `crates/platform -> crates/core`
 - `crates/editor -> crates/core`
 - `crates/ui -> crates/core`
+- `crates/ui -> crates/editor` for editor protocol and Markdown UI helpers only
 
 禁止：
 
@@ -223,6 +225,7 @@ Dioxus UI 层。
 - `apps/desktop` 承载共享业务流程
 - `crates/core` 依赖 Dioxus runtime 装配
 - `crates/ui` 直接依赖 concrete storage
+- `crates/ui` 依赖 editor runtime 业务真相
 - `crates/storage` 直接修改 Dioxus signal
 
 ## 当前数据流

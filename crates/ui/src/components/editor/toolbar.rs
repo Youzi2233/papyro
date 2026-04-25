@@ -1,17 +1,17 @@
-use super::bridge::{EditorBridgeMap, EditorCommand};
+use super::bridge::{EditorBridgeMap, EditorCommand, EditorFormat};
 use dioxus::prelude::*;
 
 #[component]
 pub(super) fn EditorToolbar(active_tab_id: String) -> Element {
     rsx! {
         div { class: "mn-toolbar",
-            ToolbarButton { label: "B", title: "Bold (Ctrl+B)", kind: "bold", tab_id: active_tab_id.clone() }
-            ToolbarButton { label: "I", title: "Italic (Ctrl+I)", kind: "italic", tab_id: active_tab_id.clone() }
-            ToolbarButton { label: "Link", title: "Insert link (Ctrl+K)", kind: "link", tab_id: active_tab_id.clone() }
-            ToolbarButton { label: "Code", title: "Insert code block", kind: "code_block", tab_id: active_tab_id.clone() }
-            ToolbarButton { label: "H1", title: "Heading 1", kind: "heading1", tab_id: active_tab_id.clone() }
-            ToolbarButton { label: "H2", title: "Heading 2", kind: "heading2", tab_id: active_tab_id.clone() }
-            ToolbarButton { label: "\"", title: "Blockquote", kind: "quote", tab_id: active_tab_id.clone() }
+            ToolbarButton { label: "B", title: "Bold (Ctrl+B)", kind: EditorFormat::Bold, tab_id: active_tab_id.clone() }
+            ToolbarButton { label: "I", title: "Italic (Ctrl+I)", kind: EditorFormat::Italic, tab_id: active_tab_id.clone() }
+            ToolbarButton { label: "Link", title: "Insert link (Ctrl+K)", kind: EditorFormat::Link, tab_id: active_tab_id.clone() }
+            ToolbarButton { label: "Code", title: "Insert code block", kind: EditorFormat::CodeBlock, tab_id: active_tab_id.clone() }
+            ToolbarButton { label: "H1", title: "Heading 1", kind: EditorFormat::Heading1, tab_id: active_tab_id.clone() }
+            ToolbarButton { label: "H2", title: "Heading 2", kind: EditorFormat::Heading2, tab_id: active_tab_id.clone() }
+            ToolbarButton { label: "\"", title: "Blockquote", kind: EditorFormat::Quote, tab_id: active_tab_id.clone() }
         }
     }
 }
@@ -20,7 +20,7 @@ pub(super) fn EditorToolbar(active_tab_id: String) -> Element {
 fn ToolbarButton(
     label: &'static str,
     title: &'static str,
-    kind: &'static str,
+    kind: EditorFormat,
     tab_id: String,
 ) -> Element {
     let bridges = use_context::<EditorBridgeMap>();

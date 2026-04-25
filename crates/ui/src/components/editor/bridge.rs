@@ -1,33 +1,15 @@
 use dioxus::document::Eval;
 use dioxus::prelude::*;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::collections::HashMap;
 
-#[derive(Debug, Clone, Deserialize)]
-#[serde(tag = "type", rename_all = "snake_case")]
-pub(super) enum EditorEvent {
-    RuntimeReady { tab_id: String },
-    RuntimeError { tab_id: String, message: String },
-    ContentChanged { tab_id: String, content: String },
-    SaveRequested { tab_id: String },
-}
+pub(super) use papyro_editor::protocol::{EditorCommand, EditorEvent, EditorFormat};
 
 #[derive(Debug, Clone, Deserialize)]
 pub(super) struct ClosePerfEvent {
     pub tab_id: String,
     pub phase: String,
     pub elapsed_ms: f64,
-}
-
-#[derive(Debug, Clone, Serialize)]
-#[serde(tag = "type", rename_all = "snake_case")]
-#[allow(dead_code)]
-pub(super) enum EditorCommand {
-    SetContent { content: String },
-    ApplyFormat { kind: &'static str },
-    Focus,
-    RefreshLayout,
-    Destroy,
 }
 
 pub(super) type EditorBridgeMap = Signal<HashMap<String, Eval>>;

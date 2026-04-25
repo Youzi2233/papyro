@@ -27,7 +27,7 @@ const allowedWorkspaceDeps = {
   "papyro-editor": new Set(["papyro-core"]),
   "papyro-platform": new Set(["papyro-core"]),
   "papyro-storage": new Set(["papyro-core"]),
-  "papyro-ui": new Set(["papyro-core"]),
+  "papyro-ui": new Set(["papyro-core", "papyro-editor"]),
 };
 
 const dioxusAllowed = new Set([
