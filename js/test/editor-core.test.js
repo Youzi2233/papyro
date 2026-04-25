@@ -6,6 +6,7 @@ import {
   handleRustMessage,
   normalizeViewMode,
   parseMarkdownHeadingLine,
+  parseMarkdownImageSpans,
   parseMarkdownInlineSpans,
   recycleEditor,
 } from "../src/editor-core.js";
@@ -100,6 +101,22 @@ test("parse_markdown_inline_spans recognizes links but skips images", () => {
     { type: "link", from: 4, to: 32, openTo: 5, closeFrom: 9 },
   ]);
   assert.deepEqual(parseMarkdownInlineSpans("![alt](assets/image.png)"), []);
+});
+
+test("parse_markdown_image_spans recognizes image syntax", () => {
+  assert.deepEqual(parseMarkdownImageSpans('![Alt text](assets/a.png "Title")'), [
+    {
+      from: 0,
+      to: 33,
+      alt: "Alt text",
+      src: "assets/a.png",
+      title: "Title",
+    },
+  ]);
+});
+
+test("parse_markdown_inline_spans ignores emphasis inside image alt", () => {
+  assert.deepEqual(parseMarkdownInlineSpans("![*alt*](assets/a.png)"), []);
 });
 
 test("parse_markdown_inline_spans prefers code inside nested delimiters", () => {

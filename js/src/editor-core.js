@@ -100,6 +100,27 @@ function collectInlineCodeSpans(line, spans, occupied) {
   }
 }
 
+const imageRegexp = /!\[([^\]\n]*)\]\(([^)\s\n]+)(?:\s+"([^"]*)")?\)/g;
+
+function collectImageRanges(line, occupied) {
+  for (const match of line.matchAll(imageRegexp)) {
+    occupied.push({
+      from: match.index,
+      to: match.index + match[0].length,
+    });
+  }
+}
+
+export function parseMarkdownImageSpans(line) {
+  return Array.from(line.matchAll(imageRegexp), (match) => ({
+    from: match.index,
+    to: match.index + match[0].length,
+    alt: match[1],
+    src: match[2],
+    title: match[3] ?? "",
+  }));
+}
+
 function collectLinkSpans(line, spans, occupied) {
   const regexp = /(!?)\[([^\]\n]+)\]\(([^)\n]+)\)/g;
   for (const match of line.matchAll(regexp)) {
@@ -135,6 +156,7 @@ export function parseMarkdownInlineSpans(line) {
   const spans = [];
   const occupied = [];
 
+  collectImageRanges(line, occupied);
   collectLinkSpans(line, spans, occupied);
   collectInlineCodeSpans(line, spans, occupied);
   collectDelimitedInlineSpans(line, spans, occupied, "strong", "**");

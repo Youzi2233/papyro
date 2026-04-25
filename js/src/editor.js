@@ -3,6 +3,7 @@ import {
   EditorView,
   Decoration,
   ViewPlugin,
+  WidgetType,
   keymap,
   lineNumbers,
   drawSelection,
@@ -18,6 +19,7 @@ import {
   attachViewToTab as attachViewToTabCore,
   handleRustMessage as handleRustMessageCore,
   parseMarkdownHeadingLine,
+  parseMarkdownImageSpans,
   parseMarkdownInlineSpans,
   recycleEditor as recycleEditorCore,
   setViewMode as setViewModeCore,
@@ -121,6 +123,21 @@ const editorTheme = EditorView.theme({
     textDecoration: "underline",
     textUnderlineOffset: "3px",
   },
+  ".cm-hybrid-image-preview": {
+    display: "inline-flex",
+    alignItems: "center",
+    maxWidth: "min(480px, 100%)",
+    verticalAlign: "middle",
+  },
+  ".cm-hybrid-image-preview img": {
+    display: "block",
+    maxWidth: "100%",
+    maxHeight: "260px",
+    borderRadius: "6px",
+    border: "1px solid var(--mn-border)",
+    backgroundColor: "var(--mn-surface)",
+    boxShadow: "var(--mn-shadow-xs)",
+  },
 });
 
 const markdownHighlightStyle = HighlightStyle.define([
@@ -192,6 +209,52 @@ function addInlineDecorations(decorations, line) {
   }
 }
 
+class ImagePreviewWidget extends WidgetType {
+  constructor(src, alt, title) {
+    super();
+    this.src = src;
+    this.alt = alt;
+    this.title = title;
+  }
+
+  eq(other) {
+    return (
+      other.src === this.src &&
+      other.alt === this.alt &&
+      other.title === this.title
+    );
+  }
+
+  toDOM() {
+    const wrapper = document.createElement("span");
+    wrapper.className = "cm-hybrid-image-preview";
+
+    const image = document.createElement("img");
+    image.src = this.src;
+    image.alt = this.alt;
+    if (this.title) image.title = this.title;
+    image.loading = "lazy";
+    image.decoding = "async";
+    wrapper.appendChild(image);
+
+    return wrapper;
+  }
+
+  ignoreEvent() {
+    return false;
+  }
+}
+
+function addImageDecorations(decorations, line) {
+  for (const image of parseMarkdownImageSpans(line.text)) {
+    decorations.push(
+      Decoration.replace({
+        widget: new ImagePreviewWidget(image.src, image.alt, image.title),
+      }).range(line.from + image.from, line.from + image.to),
+    );
+  }
+}
+
 function buildHybridMarkdownDecorations(view) {
   if (view.state.field(viewModeField, false) !== "hybrid") {
     return Decoration.none;
@@ -211,6 +274,7 @@ function buildHybridMarkdownDecorations(view) {
 
       const heading = parseMarkdownHeadingLine(line.text);
       if (!heading) {
+        addImageDecorations(decorations, line);
         addInlineDecorations(decorations, line);
         continue;
       }
