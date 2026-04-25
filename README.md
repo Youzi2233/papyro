@@ -1,5 +1,7 @@
 # Papyro
 
+> 开发前请阅读 [docs/development-standards.md](docs/development-standards.md)，提交和 PR 必须遵守其中规范。
+
 Papyro 是一个基于 Rust 和 Dioxus 0.7 的跨端 Markdown 笔记软件，目标体验对齐 Typora。
 
 项目同时维护 desktop 和 mobile 两个宿主入口，通过共享应用层承接运行时逻辑。
