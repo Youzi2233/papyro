@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Result};
 use papyro_core::models::{
     AppSettings, EditorTab, FileNode, FileNodeKind, RecentFile, SaveStatus, Workspace,
-    WorkspaceSettingsOverrides,
+    WorkspaceSettingsOverrides, WorkspaceTreeState,
 };
 use papyro_core::storage::{
     NoteStorage, OpenedNote, SavedNote, WorkspaceBootstrap, WorkspaceSnapshot,
@@ -23,6 +23,7 @@ pub(super) struct MockStorage {
     pub bootstrap_result: Option<WorkspaceBootstrap>,
     pub deleted_paths: Mutex<Vec<PathBuf>>,
     pub saved_payloads: Mutex<Vec<(String, String)>>,
+    pub saved_tree_states: Mutex<Vec<(String, WorkspaceTreeState)>>,
     pub created_note_requests: Mutex<Vec<(PathBuf, String)>>,
     pub created_folder_requests: Mutex<Vec<(PathBuf, String)>>,
 }
@@ -128,6 +129,22 @@ impl NoteStorage for MockStorage {
         _workspace: &Workspace,
         _overrides: &WorkspaceSettingsOverrides,
     ) -> Result<()> {
+        Ok(())
+    }
+
+    fn load_workspace_tree_state(&self, _workspace: &Workspace) -> WorkspaceTreeState {
+        WorkspaceTreeState::default()
+    }
+
+    fn save_workspace_tree_state(
+        &self,
+        workspace: &Workspace,
+        state: &WorkspaceTreeState,
+    ) -> Result<()> {
+        self.saved_tree_states
+            .lock()
+            .unwrap()
+            .push((workspace.id.clone(), state.clone()));
         Ok(())
     }
 }

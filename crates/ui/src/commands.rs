@@ -35,6 +35,7 @@ pub struct AppCommands {
     pub close_tab: EventHandler<String>,
     pub rename_selected: EventHandler<String>,
     pub delete_selected: EventHandler<()>,
+    pub toggle_expanded_path: EventHandler<PathBuf>,
     pub reveal_in_explorer: EventHandler<FileTarget>,
     pub export_html: EventHandler<()>,
     pub save_settings: EventHandler<AppSettings>,

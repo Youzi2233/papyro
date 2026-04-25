@@ -4,10 +4,11 @@ use crate::handlers::{file_ops, notes, workspace};
 use crate::runtime::AppShell;
 use crate::state::RuntimeState;
 use dioxus::prelude::*;
-use papyro_core::models::{AppSettings, WorkspaceSettingsOverrides};
+use papyro_core::models::{AppSettings, WorkspaceSettingsOverrides, WorkspaceTreeState};
 use papyro_core::{FileState, NoteStorage, UiState};
 use papyro_platform::PlatformApi;
 use papyro_ui::commands::{AppCommands, ContentChange};
+use std::path::PathBuf;
 use std::sync::Arc;
 
 #[derive(Clone)]
@@ -163,6 +164,14 @@ impl AppDispatcher {
                     self.state.pending_delete_path,
                 );
             }
+            AppAction::ToggleExpandedPath(action) => {
+                toggle_expanded_path(
+                    self.storage.clone(),
+                    self.state.file_state,
+                    self.state.status_message,
+                    action.path,
+                );
+            }
             AppAction::RevealInExplorer(action) => {
                 file_ops::reveal_in_explorer(
                     self.platform.clone(),
@@ -207,6 +216,7 @@ impl AppDispatcher {
         let close_tab = self.clone();
         let rename_selected = self.clone();
         let delete_selected = self.clone();
+        let toggle_expanded_path = self.clone();
         let reveal_in_explorer = self.clone();
         let export_html = self.clone();
         let save_settings = self.clone();
@@ -251,6 +261,9 @@ impl AppDispatcher {
             }),
             delete_selected: EventHandler::new(move |_| {
                 delete_selected.dispatch(AppAction::DeleteSelected);
+            }),
+            toggle_expanded_path: EventHandler::new(move |path| {
+                toggle_expanded_path.dispatch(AppAction::toggle_expanded_path(path));
             }),
             reveal_in_explorer: EventHandler::new(move |target| {
                 reveal_in_explorer.dispatch(AppAction::reveal_in_explorer(target));
@@ -390,6 +403,38 @@ fn apply_workspace_settings(
     status_message.set(Some(format!("Saved settings for {}", workspace.name)));
 }
 
+fn toggle_expanded_path(
+    storage: Arc<dyn NoteStorage>,
+    mut file_state: Signal<FileState>,
+    mut status_message: Signal<Option<String>>,
+    path: PathBuf,
+) {
+    let workspace = {
+        let mut state = file_state.write();
+        let workspace = state.current_workspace.clone();
+        state.select_path(path.clone());
+        state.toggle_expanded(path);
+        workspace
+    };
+
+    let Some(workspace) = workspace else {
+        status_message.set(Some(
+            "Open a workspace before expanding folders".to_string(),
+        ));
+        return;
+    };
+
+    let tree_state = {
+        let state = file_state.read();
+        WorkspaceTreeState::from_expanded_paths(&state.expanded_paths)
+    };
+
+    if let Err(error) = storage.save_workspace_tree_state(&workspace, &tree_state) {
+        status_message.set(Some(format!("Save file tree state failed: {error}")));
+        tracing::warn!("Failed to save file tree state: {error}");
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -459,6 +504,12 @@ mod tests {
                     theme: Some(Theme::Dark),
                     ..WorkspaceSettingsOverrides::default()
                 }
+            })
+        );
+        assert_eq!(
+            AppAction::toggle_expanded_path(std::path::PathBuf::from("workspace/notes")),
+            AppAction::ToggleExpandedPath(crate::actions::ToggleExpandedPath {
+                path: std::path::PathBuf::from("workspace/notes")
             })
         );
     }

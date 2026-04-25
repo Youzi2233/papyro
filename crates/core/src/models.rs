@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 use std::path::PathBuf;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -118,6 +119,12 @@ pub struct WorkspaceSettingsOverrides {
     pub view_mode: Option<ViewMode>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
+pub struct WorkspaceTreeState {
+    #[serde(default)]
+    pub expanded_paths: Vec<PathBuf>,
+}
+
 impl Default for AppSettings {
     fn default() -> Self {
         Self {
@@ -186,6 +193,18 @@ impl WorkspaceSettingsOverrides {
                 .then_some(scoped.sidebar_collapsed),
             view_mode: (scoped.view_mode != global.view_mode).then(|| scoped.view_mode.clone()),
         }
+    }
+}
+
+impl WorkspaceTreeState {
+    pub fn from_expanded_paths(paths: &HashSet<PathBuf>) -> Self {
+        let mut expanded_paths = paths.iter().cloned().collect::<Vec<_>>();
+        expanded_paths.sort();
+        Self { expanded_paths }
+    }
+
+    pub fn expanded_path_set(&self) -> HashSet<PathBuf> {
+        self.expanded_paths.iter().cloned().collect()
     }
 }
 
@@ -294,5 +313,26 @@ mod tests {
         assert_eq!(overrides.line_height, None);
         assert_eq!(overrides.view_mode, None);
         assert_eq!(global.with_workspace_overrides(&overrides), scoped);
+    }
+
+    #[test]
+    fn workspace_tree_state_round_trips_expanded_paths_in_stable_order() {
+        let paths = HashSet::from([
+            PathBuf::from("workspace/z"),
+            PathBuf::from("workspace/a"),
+            PathBuf::from("workspace/nested/b"),
+        ]);
+
+        let state = WorkspaceTreeState::from_expanded_paths(&paths);
+
+        assert_eq!(
+            state.expanded_paths,
+            vec![
+                PathBuf::from("workspace/a"),
+                PathBuf::from("workspace/nested/b"),
+                PathBuf::from("workspace/z"),
+            ]
+        );
+        assert_eq!(state.expanded_path_set(), paths);
     }
 }

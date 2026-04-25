@@ -1,5 +1,6 @@
 use crate::models::{
     AppSettings, EditorTab, FileNode, RecentFile, Workspace, WorkspaceSettingsOverrides,
+    WorkspaceTreeState,
 };
 use crate::FileState;
 use anyhow::Result;
@@ -61,5 +62,11 @@ pub trait NoteStorage: Send + Sync {
         &self,
         workspace: &Workspace,
         overrides: &WorkspaceSettingsOverrides,
+    ) -> Result<()>;
+    fn load_workspace_tree_state(&self, workspace: &Workspace) -> WorkspaceTreeState;
+    fn save_workspace_tree_state(
+        &self,
+        workspace: &Workspace,
+        state: &WorkspaceTreeState,
     ) -> Result<()>;
 }

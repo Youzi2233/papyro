@@ -41,9 +41,7 @@ pub fn FileTree() -> Element {
                     }
                     FileTreeKeyboardAction::ToggleDirectory(path) => {
                         event.prevent_default();
-                        let mut state = file_state.write();
-                        state.select_path(path.clone());
-                        state.toggle_expanded(path);
+                        commands.toggle_expanded_path.call(path);
                     }
                     FileTreeKeyboardAction::OpenNote(node) => {
                         event.prevent_default();
@@ -91,9 +89,7 @@ fn FileTreeNode(node: FileNode, depth: u32) -> Element {
                     "aria-selected": "{is_selected}",
                     "aria-expanded": "{is_expanded}",
                     onclick: move |_| {
-                        let mut state = file_state.write();
-                        state.select_path(dir_path.clone());
-                        state.toggle_expanded(dir_path.clone());
+                        commands.toggle_expanded_path.call(dir_path.clone());
                     },
                     span { class: "mn-tree-caret", if is_expanded { "v" } else { ">" } }
                     span { class: "mn-tree-icon", "dir" }

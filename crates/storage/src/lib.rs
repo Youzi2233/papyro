@@ -9,7 +9,7 @@ use anyhow::Result;
 use chrono::Utc;
 use papyro_core::models::{
     AppSettings, EditorTab, FileNode, FileNodeKind, NoteMeta, RecentFile, Workspace,
-    WorkspaceSettingsOverrides,
+    WorkspaceSettingsOverrides, WorkspaceTreeState,
 };
 use papyro_core::{FileState, NoteStorage};
 use std::path::{Path, PathBuf};
@@ -17,6 +17,7 @@ use std::sync::OnceLock;
 
 const APP_SETTINGS_KEY: &str = "app_settings";
 const WORKSPACE_SETTINGS_PREFIX: &str = "workspace_settings:";
+const WORKSPACE_TREE_STATE_PREFIX: &str = "workspace_tree_state:";
 
 #[derive(Debug, Clone)]
 pub struct SqliteStorage {
@@ -123,6 +124,24 @@ impl SqliteStorage {
         Ok(())
     }
 
+    pub fn load_workspace_tree_state(&self, workspace: &Workspace) -> WorkspaceTreeState {
+        db::settings::get(&self.pool, &workspace_tree_state_key(&workspace.id))
+            .ok()
+            .flatten()
+            .and_then(|json| serde_json::from_str(&json).ok())
+            .unwrap_or_default()
+    }
+
+    pub fn save_workspace_tree_state(
+        &self,
+        workspace: &Workspace,
+        state: &WorkspaceTreeState,
+    ) -> Result<()> {
+        let json = serde_json::to_string(state)?;
+        db::settings::set(&self.pool, &workspace_tree_state_key(&workspace.id), &json)?;
+        Ok(())
+    }
+
     pub fn bootstrap_from_env_or_current_dir(&self) -> WorkspaceBootstrap {
         let settings = self.load_settings();
         let workspace_root = std::env::var_os("PAPYRO_WORKSPACE")
@@ -157,6 +176,9 @@ impl SqliteStorage {
                     snapshot.recent_files.clone(),
                 );
                 file_state.workspaces = self.recent_workspaces_with_current(&snapshot.workspace);
+                file_state.expanded_paths = self
+                    .load_workspace_tree_state(&snapshot.workspace)
+                    .expanded_path_set();
                 let global_settings = self.load_settings();
                 let workspace_settings = self.load_workspace_settings(&snapshot.workspace);
                 let settings = global_settings.with_workspace_overrides(&workspace_settings);
@@ -376,6 +398,18 @@ impl NoteStorage for SqliteStorage {
     ) -> Result<()> {
         SqliteStorage::save_workspace_settings(self, workspace, overrides)
     }
+
+    fn load_workspace_tree_state(&self, workspace: &Workspace) -> WorkspaceTreeState {
+        SqliteStorage::load_workspace_tree_state(self, workspace)
+    }
+
+    fn save_workspace_tree_state(
+        &self,
+        workspace: &Workspace,
+        state: &WorkspaceTreeState,
+    ) -> Result<()> {
+        SqliteStorage::save_workspace_tree_state(self, workspace, state)
+    }
 }
 
 pub fn load_app_settings() -> AppSettings {
@@ -397,6 +431,14 @@ pub fn save_workspace_settings(
     overrides: &WorkspaceSettingsOverrides,
 ) -> Result<()> {
     SqliteStorage::shared()?.save_workspace_settings(workspace, overrides)
+}
+
+pub fn load_workspace_tree_state(workspace: &Workspace) -> Result<WorkspaceTreeState> {
+    Ok(SqliteStorage::shared()?.load_workspace_tree_state(workspace))
+}
+
+pub fn save_workspace_tree_state(workspace: &Workspace, state: &WorkspaceTreeState) -> Result<()> {
+    SqliteStorage::shared()?.save_workspace_tree_state(workspace, state)
 }
 
 pub fn bootstrap_from_env_or_current_dir() -> WorkspaceBootstrap {
@@ -507,6 +549,10 @@ fn ensure_workspace(pool: &DbPool, root: &Path) -> Result<Workspace> {
 
 fn workspace_settings_key(workspace_id: &str) -> String {
     format!("{WORKSPACE_SETTINGS_PREFIX}{workspace_id}")
+}
+
+fn workspace_tree_state_key(workspace_id: &str) -> String {
+    format!("{WORKSPACE_TREE_STATE_PREFIX}{workspace_id}")
 }
 
 fn sync_workspace_notes(
@@ -914,6 +960,31 @@ mod tests {
             papyro_core::models::ViewMode::Source
         );
         assert_eq!(bootstrap.settings.auto_save_delay_ms, 500);
+
+        Ok(())
+    }
+
+    #[test]
+    fn bootstrap_from_workspace_restores_tree_state() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let workspace_root = create_workspace(&temp)?;
+        let notes_dir = workspace_root.join("notes");
+        std::fs::create_dir_all(&notes_dir)?;
+        std::fs::write(notes_dir.join("a.md"), "# A")?;
+
+        let storage = test_storage(&temp)?;
+        let workspace = storage.initialize_workspace(&workspace_root)?.workspace;
+        storage.save_workspace_tree_state(
+            &workspace,
+            &WorkspaceTreeState {
+                expanded_paths: vec![notes_dir.clone()],
+            },
+        )?;
+
+        let bootstrap = storage.bootstrap_from_workspace(&workspace_root);
+
+        assert!(bootstrap.file_state.expanded_paths.contains(&notes_dir));
+        assert_eq!(bootstrap.file_state.expanded_paths.len(), 1);
 
         Ok(())
     }
