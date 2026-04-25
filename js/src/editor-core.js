@@ -3,6 +3,7 @@ export const formatSpecs = {
   italic: ["*", "*", "italic text"],
   link: ["[", "](https://)", "link text"],
   image: ["![", "](assets/image.png)", "alt text"],
+  inline_code: ["`", "`", "code"],
   code_block: ["```\n", "\n```", "code"],
   heading1: ["# ", "", "Heading 1"],
   heading2: ["## ", "", "Heading 2"],

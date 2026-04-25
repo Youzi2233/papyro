@@ -1039,6 +1039,10 @@ const hybridHeadingPlugin = ViewPlugin.fromClass(
 /* Extensions read the current tab id from `view.dom.dataset.tabId` instead of
  * closure-capturing it. That lets a single view be recycled across tabs
  * without rebuilding all its extensions — the hot path for pool reuse. */
+function runFormatShortcut(kind) {
+  return (view) => applyFormatToView(view, kind);
+}
+
 function buildExtensions() {
   const routedSaveKeymap = keymap.of([
     {
@@ -1053,9 +1057,12 @@ function buildExtensions() {
         return true;
       },
     },
-    { key: "Mod-b", run(view) { applyFormatToView(view, "bold"); return true; } },
-    { key: "Mod-i", run(view) { applyFormatToView(view, "italic"); return true; } },
-    { key: "Mod-k", run(view) { applyFormatToView(view, "link"); return true; } },
+    { key: "Mod-b", run: runFormatShortcut("bold") },
+    { key: "Mod-i", run: runFormatShortcut("italic") },
+    { key: "Mod-k", run: runFormatShortcut("link") },
+    { key: "Mod-Shift-i", run: runFormatShortcut("image") },
+    { key: "Mod-e", run: runFormatShortcut("inline_code") },
+    { key: "Mod-Alt-c", run: runFormatShortcut("code_block") },
     { key: "Mod-h", run: openSearchPanel },
     { key: "Enter", run: continueMarkdownListOnEnter },
     { key: "Space", run: completeMarkdownShortcutOnSpace },

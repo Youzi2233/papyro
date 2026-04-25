@@ -8,6 +8,7 @@ import {
   collectMarkdownMathBlocks,
   collectMarkdownTableBlocks,
   completeMarkdownShortcutOnSpace,
+  formatSelectionChange,
   handleRustMessage,
   handleMarkdownEnter,
   indentMarkdownListInView,
@@ -375,6 +376,24 @@ test("apply_format inserts fallback text for empty selection", () => {
 
   assert.equal(view.state.doc.toString(), "[link text](https://)");
   assert.deepEqual(view.state.selection.main, { from: 1, to: 10 });
+});
+
+test("format_selection_change supports image and code shortcuts", () => {
+  assert.deepEqual(formatSelectionChange("name", 0, 4, "image"), {
+    changes: { from: 0, to: 4, insert: "![name](assets/image.png)" },
+    selection: { anchor: 2, head: 6 },
+    doc: "![name](assets/image.png)",
+  });
+  assert.deepEqual(formatSelectionChange("value", 0, 5, "inline_code"), {
+    changes: { from: 0, to: 5, insert: "`value`" },
+    selection: { anchor: 1, head: 6 },
+    doc: "`value`",
+  });
+  assert.deepEqual(formatSelectionChange("", 0, 0, "code_block"), {
+    changes: { from: 0, to: 0, insert: "```\ncode\n```" },
+    selection: { anchor: 4, head: 8 },
+    doc: "```\ncode\n```",
+  });
 });
 
 test("markdown_link_paste_change wraps selected text with a plain URL", () => {
