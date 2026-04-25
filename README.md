@@ -1,13 +1,10 @@
 # Papyro
 
-Papyro 是一个基于 Rust 和 Dioxus 0.7 的跨端 Markdown 笔记项目，目前同时维护 desktop 和 mobile 两个宿主入口，并通过共享的应用层承接大部分运行时逻辑。
+Papyro 是一个基于 Rust 和 Dioxus 0.7 的跨端 Markdown 笔记软件，目标体验对齐 Typora。
 
-这份 README 的目标不是讲完所有设计细节，而是先解决两个最实际的问题：
+项目同时维护 desktop 和 mobile 两个宿主入口，通过共享应用层承接运行时逻辑。
 
-- 这个项目现在应该怎么启动
-- 现在的 workspace 结构到底怎么理解
-
-更完整的架构重构计划可以看 [docs/refactoring-plan.md](docs/refactoring-plan.md)。
+> **新人请先阅读 [docs/roadmap.md](docs/roadmap.md)**，了解版本规划和开发优先级，再按阶段开发。
 
 ## 快速开始
 
@@ -273,13 +270,13 @@ cargo check -p papyro-ui
 如果你刚加入项目，建议按这个顺序看代码：
 
 1. [README.md](README.md)
-2. [docs/refactoring-plan.md](docs/refactoring-plan.md)
-3. [crates/app/src/runtime.rs](crates/app/src/runtime.rs)
-4. [crates/app/src/workspace_flow.rs](crates/app/src/workspace_flow.rs)
-5. [crates/core/src/lib.rs](crates/core/src/lib.rs)
-6. [crates/ui/src/lib.rs](crates/ui/src/lib.rs)
+2. [docs/roadmap.md](docs/roadmap.md)
+3. [docs/architecture.md](docs/architecture.md)
+4. [crates/app/src/runtime.rs](crates/app/src/runtime.rs)
+5. [crates/app/src/workspace_flow.rs](crates/app/src/workspace_flow.rs)
+6. [crates/core/src/lib.rs](crates/core/src/lib.rs)
 
-这样更容易先建立“运行时怎么拼起来”的整体图，再去深入各层。
+这样先建立版本规划和架构全貌，再深入各层实现。
 
 ## 当前架构状态说明
 
@@ -327,7 +324,7 @@ cargo test --workspace
 优先看：
 
 - [crates/core/src/lib.rs](crates/core/src/lib.rs)
-- [docs/refactoring-plan.md](docs/refactoring-plan.md)
+- [docs/architecture.md](docs/architecture.md)
 
 ## 说明
 
