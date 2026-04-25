@@ -13,7 +13,8 @@
     "@codemirror/language": "^6.11.3",
     "@codemirror/language-data": "^6.5.1",
     "@codemirror/state": "^6.5.2",
-    "@codemirror/view": "^6.38.6"
+    "@codemirror/view": "^6.38.6",
+    "katex": "^0.16.45"
   },
   "devDependencies": {
     "esbuild": "^0.24.2"
