@@ -1,3 +1,5 @@
+> **历史文档** — 当前目录结构以 [architecture.md](architecture.md) 为准。
+
 # 项目目录结构
 
 本文描述当前真实目录结构。
