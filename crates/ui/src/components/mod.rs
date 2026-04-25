@@ -1,3 +1,4 @@
+pub mod command_palette;
 pub mod editor;
 pub mod header;
 pub mod quick_open;

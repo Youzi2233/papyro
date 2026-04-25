@@ -1,6 +1,6 @@
 use crate::components::{
-    editor::EditorPane, header::AppHeader, quick_open::QuickOpenModal, settings::SettingsModal,
-    sidebar::Sidebar, status_bar::StatusBar,
+    command_palette::CommandPaletteModal, editor::EditorPane, header::AppHeader,
+    quick_open::QuickOpenModal, settings::SettingsModal, sidebar::Sidebar, status_bar::StatusBar,
 };
 use crate::context::use_app_context;
 use dioxus::prelude::*;
@@ -13,6 +13,7 @@ pub fn DesktopLayout(status_message: Option<String>) -> Element {
     let commands = app.commands;
     let mut show_settings = use_signal(|| false);
     let mut show_quick_open = use_signal(|| false);
+    let mut show_command_palette = use_signal(|| false);
     let settings = app.view_model.read().settings.clone();
 
     let theme = settings.theme;
@@ -35,6 +36,12 @@ pub fn DesktopLayout(status_message: Option<String>) -> Element {
             const handler = (e) => {
                 const mod = e.ctrlKey || e.metaKey;
                 const key = String(e.key || '').toLowerCase();
+                if (mod && key === 'p' && e.shiftKey && !e.altKey) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dioxus.send("command_palette");
+                    return;
+                }
                 if (mod && key === 'p' && !e.shiftKey && !e.altKey) {
                     e.preventDefault();
                     e.stopPropagation();
@@ -57,6 +64,7 @@ pub fn DesktopLayout(status_message: Option<String>) -> Element {
             while let Ok(message) = eval.recv::<String>().await {
                 match message.as_str() {
                     "quick_open" => show_quick_open.set(true),
+                    "command_palette" => show_command_palette.set(true),
                     "toggle_sidebar" => {
                         ui_state.write().toggle_sidebar();
                         let settings = ui_state.read().settings.clone();
@@ -86,6 +94,12 @@ pub fn DesktopLayout(status_message: Option<String>) -> Element {
             }
             if *show_quick_open.read() {
                 QuickOpenModal { on_close: move |_| show_quick_open.set(false) }
+            }
+            if *show_command_palette.read() {
+                CommandPaletteModal {
+                    on_close: move |_| show_command_palette.set(false),
+                    on_settings: move |_| show_settings.set(true),
+                }
             }
         }
     }
