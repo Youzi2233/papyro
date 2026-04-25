@@ -39,6 +39,10 @@ pub struct FileNode {
     pub name: String,
     pub path: PathBuf,
     pub relative_path: PathBuf,
+    #[serde(default)]
+    pub created_at: i64,
+    #[serde(default)]
+    pub updated_at: i64,
     pub kind: FileNodeKind,
 }
 

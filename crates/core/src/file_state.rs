@@ -95,6 +95,8 @@ mod tests {
             name: "note.md".to_string(),
             path: PathBuf::from("workspace/folder/note.md"),
             relative_path: PathBuf::from("folder/note.md"),
+            created_at: 0,
+            updated_at: 0,
             kind: FileNodeKind::Note {
                 note_id: Some("note-id".to_string()),
             },
@@ -103,6 +105,8 @@ mod tests {
             name: "folder".to_string(),
             path: PathBuf::from("workspace/folder"),
             relative_path: PathBuf::from("folder"),
+            created_at: 0,
+            updated_at: 0,
             kind: FileNodeKind::Directory {
                 children: vec![nested_note.clone()],
             },

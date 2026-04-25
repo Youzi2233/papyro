@@ -192,6 +192,8 @@ mod tests {
             name: name.to_string(),
             path: PathBuf::from(format!("workspace/{relative_path}")),
             relative_path: PathBuf::from(relative_path),
+            created_at: 0,
+            updated_at: 0,
             kind: FileNodeKind::Note { note_id: None },
         }
     }
@@ -201,6 +203,8 @@ mod tests {
             name: name.to_string(),
             path: PathBuf::from(format!("workspace/{name}")),
             relative_path: PathBuf::from(name),
+            created_at: 0,
+            updated_at: 0,
             kind: FileNodeKind::Directory { children },
         }
     }

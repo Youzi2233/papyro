@@ -169,6 +169,8 @@ pub(super) fn note_node(path: &str, note_id: &str) -> FileNode {
             .to_string(),
         path: PathBuf::from(path),
         relative_path: PathBuf::from(path.trim_start_matches("workspace/")),
+        created_at: 0,
+        updated_at: 0,
         kind: FileNodeKind::Note {
             note_id: Some(note_id.to_string()),
         },
@@ -184,6 +186,8 @@ pub(super) fn directory_node(path: &str, children: Vec<FileNode>) -> FileNode {
             .to_string(),
         path: PathBuf::from(path),
         relative_path: PathBuf::from(path.trim_start_matches("workspace/")),
+        created_at: 0,
+        updated_at: 0,
         kind: FileNodeKind::Directory { children },
     }
 }

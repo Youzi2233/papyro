@@ -183,6 +183,8 @@ mod tests {
             name: path.to_string(),
             path: PathBuf::from(path),
             relative_path: PathBuf::from(path),
+            created_at: 0,
+            updated_at: 0,
             kind: FileNodeKind::Note { note_id: None },
         }
     }
@@ -213,6 +215,8 @@ mod tests {
                 name: "notes".to_string(),
                 path: PathBuf::from("notes"),
                 relative_path: PathBuf::from("notes"),
+                created_at: 0,
+                updated_at: 0,
                 kind: FileNodeKind::Directory {
                     children: vec![note("a.md"), note("b.md")],
                 },

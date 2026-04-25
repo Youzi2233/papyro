@@ -635,6 +635,8 @@ mod tests {
                 .to_string(),
             path: PathBuf::from(path),
             relative_path: PathBuf::from(path),
+            created_at: 0,
+            updated_at: 0,
             kind: FileNodeKind::Note { note_id: None },
         }
     }
@@ -648,6 +650,8 @@ mod tests {
                 .to_string(),
             path: PathBuf::from(path),
             relative_path: PathBuf::from(path),
+            created_at: 0,
+            updated_at: 0,
             kind: FileNodeKind::Directory { children },
         }
     }

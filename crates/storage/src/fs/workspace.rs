@@ -32,6 +32,7 @@ fn scan_dir(root: &Path, dir: &Path) -> Result<Vec<FileNode>> {
         }
 
         let relative_path = path.strip_prefix(root).unwrap_or(&path).to_path_buf();
+        let (created_at, updated_at) = file_node_timestamps(&path);
 
         if path.is_dir() {
             let mut children = scan_dir(root, &path)?;
@@ -46,6 +47,8 @@ fn scan_dir(root: &Path, dir: &Path) -> Result<Vec<FileNode>> {
                 name,
                 path,
                 relative_path,
+                created_at,
+                updated_at,
                 kind: FileNodeKind::Directory { children },
             });
         } else if path.extension().and_then(|e| e.to_str()) == Some("md") {
@@ -53,11 +56,38 @@ fn scan_dir(root: &Path, dir: &Path) -> Result<Vec<FileNode>> {
                 name,
                 path,
                 relative_path,
+                created_at,
+                updated_at,
                 kind: FileNodeKind::Note { note_id: None },
             });
         }
     }
     Ok(nodes)
+}
+
+fn file_node_timestamps(path: &Path) -> (i64, i64) {
+    let Ok(metadata) = std::fs::metadata(path) else {
+        return (0, 0);
+    };
+
+    let created_at = metadata
+        .created()
+        .ok()
+        .and_then(system_time_to_millis)
+        .unwrap_or(0);
+    let updated_at = metadata
+        .modified()
+        .ok()
+        .and_then(system_time_to_millis)
+        .unwrap_or(created_at);
+
+    (created_at, updated_at)
+}
+
+fn system_time_to_millis(time: std::time::SystemTime) -> Option<i64> {
+    time.duration_since(std::time::UNIX_EPOCH)
+        .ok()
+        .map(|duration| duration.as_millis() as i64)
 }
 
 /// 获取工作空间的数据库存储路径
