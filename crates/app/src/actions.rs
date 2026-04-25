@@ -1,4 +1,4 @@
-use papyro_core::models::{AppSettings, FileNode};
+use papyro_core::models::{AppSettings, FileNode, WorkspaceSettingsOverrides};
 use papyro_ui::commands::{ContentChange, FileTarget, RecentFileTarget};
 use std::path::PathBuf;
 
@@ -20,6 +20,7 @@ pub enum AppAction {
     RevealInExplorer(RevealInExplorer),
     ExportHtml,
     SaveSettings(SaveSettings),
+    SaveWorkspaceSettings(SaveWorkspaceSettings),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -72,6 +73,11 @@ pub struct SaveSettings {
     pub settings: AppSettings,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct SaveWorkspaceSettings {
+    pub overrides: WorkspaceSettingsOverrides,
+}
+
 impl AppAction {
     pub fn create_note(name: String) -> Self {
         Self::CreateNote(CreateNote { name })
@@ -115,5 +121,9 @@ impl AppAction {
 
     pub fn save_settings(settings: AppSettings) -> Self {
         Self::SaveSettings(SaveSettings { settings })
+    }
+
+    pub fn save_workspace_settings(overrides: WorkspaceSettingsOverrides) -> Self {
+        Self::SaveWorkspaceSettings(SaveWorkspaceSettings { overrides })
     }
 }

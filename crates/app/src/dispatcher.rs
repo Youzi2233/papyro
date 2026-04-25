@@ -4,7 +4,8 @@ use crate::handlers::{file_ops, notes, workspace};
 use crate::runtime::AppShell;
 use crate::state::RuntimeState;
 use dioxus::prelude::*;
-use papyro_core::{NoteStorage, UiState};
+use papyro_core::models::{AppSettings, WorkspaceSettingsOverrides};
+use papyro_core::{FileState, NoteStorage, UiState};
 use papyro_platform::PlatformApi;
 use papyro_ui::commands::{AppCommands, ContentChange};
 use std::sync::Arc;
@@ -171,7 +172,21 @@ impl AppDispatcher {
                 export_html(self.shell, self.state);
             }
             AppAction::SaveSettings(action) => {
-                apply_settings(self.storage.clone(), self.state.ui_state, action.settings);
+                apply_settings(
+                    self.storage.clone(),
+                    self.state.ui_state,
+                    self.state.status_message,
+                    action.settings,
+                );
+            }
+            AppAction::SaveWorkspaceSettings(action) => {
+                apply_workspace_settings(
+                    self.storage.clone(),
+                    self.state.file_state,
+                    self.state.ui_state,
+                    self.state.status_message,
+                    action.overrides,
+                );
             }
         }
     }
@@ -193,6 +208,7 @@ impl AppDispatcher {
         let reveal_in_explorer = self.clone();
         let export_html = self.clone();
         let save_settings = self.clone();
+        let save_workspace_settings = self.clone();
 
         AppCommands {
             open_workspace: EventHandler::new(move |_| {
@@ -242,6 +258,9 @@ impl AppDispatcher {
             }),
             save_settings: EventHandler::new(move |settings| {
                 save_settings.dispatch(AppAction::save_settings(settings));
+            }),
+            save_workspace_settings: EventHandler::new(move |overrides| {
+                save_workspace_settings.dispatch(AppAction::save_workspace_settings(overrides));
             }),
         }
     }
@@ -331,20 +350,48 @@ fn export_html(shell: AppShell, mut state: RuntimeState) {
 fn apply_settings(
     storage: Arc<dyn NoteStorage>,
     mut ui_state: Signal<UiState>,
-    settings: papyro_core::models::AppSettings,
+    mut status_message: Signal<Option<String>>,
+    settings: AppSettings,
 ) {
-    let mut state = ui_state.write();
-    state.apply_settings(settings.clone());
-    drop(state);
     if let Err(error) = storage.save_settings(&settings) {
+        status_message.set(Some(format!("Save settings failed: {error}")));
         tracing::warn!("Failed to save settings: {error}");
+        return;
     }
+
+    ui_state.write().apply_global_settings(settings);
+    status_message.set(Some("Saved global settings".to_string()));
+}
+
+fn apply_workspace_settings(
+    storage: Arc<dyn NoteStorage>,
+    file_state: Signal<FileState>,
+    mut ui_state: Signal<UiState>,
+    mut status_message: Signal<Option<String>>,
+    overrides: WorkspaceSettingsOverrides,
+) {
+    let workspace = file_state.read().current_workspace.clone();
+    let Some(workspace) = workspace else {
+        status_message.set(Some(
+            "Open a workspace before saving workspace settings".to_string(),
+        ));
+        return;
+    };
+
+    if let Err(error) = storage.save_workspace_settings(&workspace, &overrides) {
+        status_message.set(Some(format!("Save workspace settings failed: {error}")));
+        tracing::warn!("Failed to save workspace settings: {error}");
+        return;
+    }
+
+    ui_state.write().apply_workspace_overrides(overrides);
+    status_message.set(Some(format!("Saved settings for {}", workspace.name)));
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use papyro_core::models::{Theme, ViewMode};
+    use papyro_core::models::{Theme, ViewMode, WorkspaceSettingsOverrides};
     use papyro_ui::commands::RecentFileTarget;
 
     #[test]
@@ -397,6 +444,18 @@ mod tests {
                     theme: Theme::Dark,
                     view_mode: ViewMode::Source,
                     ..Default::default()
+                }
+            })
+        );
+        assert_eq!(
+            AppAction::save_workspace_settings(WorkspaceSettingsOverrides {
+                theme: Some(Theme::Dark),
+                ..WorkspaceSettingsOverrides::default()
+            }),
+            AppAction::SaveWorkspaceSettings(crate::actions::SaveWorkspaceSettings {
+                overrides: WorkspaceSettingsOverrides {
+                    theme: Some(Theme::Dark),
+                    ..WorkspaceSettingsOverrides::default()
                 }
             })
         );

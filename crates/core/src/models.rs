@@ -165,6 +165,30 @@ impl AppSettings {
     }
 }
 
+impl WorkspaceSettingsOverrides {
+    pub fn from_settings_delta(global: &AppSettings, scoped: &AppSettings) -> Self {
+        Self {
+            theme: (scoped.theme != global.theme).then(|| scoped.theme.clone()),
+            font_family: (scoped.font_family != global.font_family)
+                .then(|| scoped.font_family.clone()),
+            font_size: (scoped.font_size != global.font_size).then_some(scoped.font_size),
+            line_height: ((scoped.line_height - global.line_height).abs() > f32::EPSILON)
+                .then_some(scoped.line_height),
+            auto_link_paste: (scoped.auto_link_paste != global.auto_link_paste)
+                .then_some(scoped.auto_link_paste),
+            auto_save_delay_ms: (scoped.auto_save_delay_ms != global.auto_save_delay_ms)
+                .then_some(scoped.auto_save_delay_ms),
+            show_word_count: (scoped.show_word_count != global.show_word_count)
+                .then_some(scoped.show_word_count),
+            sidebar_width: (scoped.sidebar_width != global.sidebar_width)
+                .then_some(scoped.sidebar_width),
+            sidebar_collapsed: (scoped.sidebar_collapsed != global.sidebar_collapsed)
+                .then_some(scoped.sidebar_collapsed),
+            view_mode: (scoped.view_mode != global.view_mode).then(|| scoped.view_mode.clone()),
+        }
+    }
+}
+
 fn default_auto_link_paste() -> bool {
     true
 }
@@ -241,5 +265,34 @@ mod tests {
             global.with_workspace_overrides(&WorkspaceSettingsOverrides::default()),
             global
         );
+    }
+
+    #[test]
+    fn workspace_overrides_can_be_derived_from_settings_delta() {
+        let global = AppSettings {
+            theme: Theme::Light,
+            font_size: 16,
+            line_height: 1.6,
+            auto_save_delay_ms: 500,
+            view_mode: ViewMode::Hybrid,
+            ..AppSettings::default()
+        };
+        let scoped = AppSettings {
+            theme: Theme::Dark,
+            font_size: 18,
+            line_height: 1.6,
+            auto_save_delay_ms: 1000,
+            view_mode: ViewMode::Hybrid,
+            ..global.clone()
+        };
+
+        let overrides = WorkspaceSettingsOverrides::from_settings_delta(&global, &scoped);
+
+        assert_eq!(overrides.theme, Some(Theme::Dark));
+        assert_eq!(overrides.font_size, Some(18));
+        assert_eq!(overrides.auto_save_delay_ms, Some(1000));
+        assert_eq!(overrides.line_height, None);
+        assert_eq!(overrides.view_mode, None);
+        assert_eq!(global.with_workspace_overrides(&overrides), scoped);
     }
 }

@@ -1,14 +1,32 @@
 use crate::context::use_app_context;
 use dioxus::prelude::*;
-use papyro_core::models::{AppSettings, Theme};
+use papyro_core::models::{AppSettings, Theme, WorkspaceSettingsOverrides};
+use papyro_core::UiState;
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum SettingsScope {
+    Global,
+    Workspace,
+}
 
 #[component]
 pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
     let app = use_app_context();
     let ui_state = app.ui_state;
     let commands = app.commands;
-    let settings = app.view_model.read().settings.settings.clone();
+    let view_model = app.view_model.read().clone();
+    let has_workspace = view_model.workspace.name.is_some();
+    let ui_snapshot = ui_state.read().clone();
+    let initial_scope = if has_workspace
+        && ui_snapshot.workspace_overrides != WorkspaceSettingsOverrides::default()
+    {
+        SettingsScope::Workspace
+    } else {
+        SettingsScope::Global
+    };
+    let settings = settings_for_scope(&ui_snapshot, initial_scope);
 
+    let mut save_scope = use_signal(|| initial_scope);
     let mut font_family = use_signal(|| settings.font_family.clone());
     let mut font_size = use_signal(|| settings.font_size);
     let mut line_height = use_signal(|| settings.line_height);
@@ -17,21 +35,33 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
     let mut theme = use_signal(|| settings.theme.clone());
 
     let save = move |_| {
-        let current = ui_state.read().settings.clone();
-        let new_settings = AppSettings {
-            theme: theme.read().clone(),
-            font_family: font_family.read().clone(),
-            font_size: *font_size.read(),
-            line_height: *line_height.read(),
-            auto_link_paste: *auto_link_paste.read(),
-            auto_save_delay_ms: *auto_save_ms.read(),
-            show_word_count: true,
-            sidebar_width: current.sidebar_width,
-            sidebar_collapsed: current.sidebar_collapsed,
-            view_mode: current.view_mode,
-        };
-        commands.save_settings.call(new_settings);
+        let state = ui_state.read();
+        let base = settings_for_scope(&state, save_scope());
+        let new_settings = form_settings(
+            &base,
+            theme.read().clone(),
+            font_family.read().clone(),
+            *font_size.read(),
+            *line_height.read(),
+            *auto_link_paste.read(),
+            *auto_save_ms.read(),
+        );
+
+        if save_scope() == SettingsScope::Workspace {
+            let overrides = WorkspaceSettingsOverrides::from_settings_delta(
+                &state.global_settings,
+                &new_settings,
+            );
+            commands.save_workspace_settings.call(overrides);
+        } else {
+            commands.save_settings.call(new_settings);
+        }
         on_close.call(());
+    };
+    let save_label = if save_scope() == SettingsScope::Workspace {
+        "Save Workspace"
+    } else {
+        "Save Global"
     };
 
     rsx! {
@@ -46,6 +76,58 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
                     }
                 }
                 div { class: "mn-modal-body",
+                    SettingSection { label: "Scope",
+                        SettingRow { label: "Save target",
+                            div { class: "mn-setting-radio-group",
+                                label { class: "mn-setting-radio",
+                                    input {
+                                        r#type: "radio",
+                                        name: "settings_scope",
+                                        checked: save_scope() == SettingsScope::Global,
+                                        onchange: move |_| {
+                                            let state = ui_state.read();
+                                            let next_settings = settings_for_scope(&state, SettingsScope::Global);
+                                            set_form_values(
+                                                &next_settings,
+                                                font_family,
+                                                font_size,
+                                                line_height,
+                                                auto_link_paste,
+                                                auto_save_ms,
+                                                theme,
+                                            );
+                                            save_scope.set(SettingsScope::Global);
+                                        },
+                                    }
+                                    "Global"
+                                }
+                                if has_workspace {
+                                    label { class: "mn-setting-radio",
+                                        input {
+                                            r#type: "radio",
+                                            name: "settings_scope",
+                                            checked: save_scope() == SettingsScope::Workspace,
+                                            onchange: move |_| {
+                                                let state = ui_state.read();
+                                                let next_settings = settings_for_scope(&state, SettingsScope::Workspace);
+                                                set_form_values(
+                                                    &next_settings,
+                                                    font_family,
+                                                    font_size,
+                                                    line_height,
+                                                    auto_link_paste,
+                                                    auto_save_ms,
+                                                    theme,
+                                                );
+                                                save_scope.set(SettingsScope::Workspace);
+                                            },
+                                        }
+                                        "Workspace"
+                                    }
+                                }
+                            }
+                        }
+                    }
                     SettingSection { label: "Appearance",
                         SettingRow { label: "Theme",
                             div { class: "mn-setting-radio-group",
@@ -147,7 +229,7 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
                         onclick: move |_| on_close.call(()),
                         "Cancel"
                     }
-                    button { class: "mn-button primary", onclick: save, "Save" }
+                    button { class: "mn-button primary", onclick: save, "{save_label}" }
                 }
             }
         }
@@ -172,4 +254,51 @@ fn SettingRow(label: String, children: Element) -> Element {
             div { class: "mn-setting-control", {children} }
         }
     }
+}
+
+fn settings_for_scope(ui_state: &UiState, scope: SettingsScope) -> AppSettings {
+    match scope {
+        SettingsScope::Global => ui_state.global_settings.clone(),
+        SettingsScope::Workspace => ui_state.settings.clone(),
+    }
+}
+
+fn form_settings(
+    base: &AppSettings,
+    theme: Theme,
+    font_family: String,
+    font_size: u8,
+    line_height: f32,
+    auto_link_paste: bool,
+    auto_save_delay_ms: u64,
+) -> AppSettings {
+    AppSettings {
+        theme,
+        font_family,
+        font_size,
+        line_height,
+        auto_link_paste,
+        auto_save_delay_ms,
+        show_word_count: base.show_word_count,
+        sidebar_width: base.sidebar_width,
+        sidebar_collapsed: base.sidebar_collapsed,
+        view_mode: base.view_mode.clone(),
+    }
+}
+
+fn set_form_values(
+    settings: &AppSettings,
+    mut font_family: Signal<String>,
+    mut font_size: Signal<u8>,
+    mut line_height: Signal<f32>,
+    mut auto_link_paste: Signal<bool>,
+    mut auto_save_ms: Signal<u64>,
+    mut theme: Signal<Theme>,
+) {
+    font_family.set(settings.font_family.clone());
+    font_size.set(settings.font_size);
+    line_height.set(settings.line_height);
+    auto_link_paste.set(settings.auto_link_paste);
+    auto_save_ms.set(settings.auto_save_delay_ms);
+    theme.set(settings.theme.clone());
 }

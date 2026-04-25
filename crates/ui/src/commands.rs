@@ -1,5 +1,5 @@
 ﻿use dioxus::prelude::*;
-use papyro_core::models::{AppSettings, FileNode};
+use papyro_core::models::{AppSettings, FileNode, WorkspaceSettingsOverrides};
 use std::path::PathBuf;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -38,4 +38,5 @@ pub struct AppCommands {
     pub reveal_in_explorer: EventHandler<FileTarget>,
     pub export_html: EventHandler<()>,
     pub save_settings: EventHandler<AppSettings>,
+    pub save_workspace_settings: EventHandler<WorkspaceSettingsOverrides>,
 }
