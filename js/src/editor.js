@@ -111,6 +111,10 @@ const editorTheme = EditorView.theme({
     color: "var(--mn-ink)",
     fontStyle: "italic",
   },
+  ".cm-hybrid-strikethrough": {
+    color: "var(--mn-ink-3)",
+    textDecoration: "line-through",
+  },
   ".cm-hybrid-inline-code": {
     borderRadius: "4px",
     backgroundColor: "var(--mn-code-bg, rgba(178,75,47,.08))",
@@ -202,6 +206,8 @@ function inlineClassForType(type) {
       return "cm-hybrid-strong";
     case "emphasis":
       return "cm-hybrid-emphasis";
+    case "strikethrough":
+      return "cm-hybrid-strikethrough";
     case "inline_code":
       return "cm-hybrid-inline-code";
     case "link":

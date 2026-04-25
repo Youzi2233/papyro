@@ -171,6 +171,7 @@ export function parseMarkdownInlineSpans(line) {
   collectInlineCodeSpans(line, spans, occupied);
   collectDelimitedInlineSpans(line, spans, occupied, "strong", "**");
   collectDelimitedInlineSpans(line, spans, occupied, "strong", "__");
+  collectDelimitedInlineSpans(line, spans, occupied, "strikethrough", "~~");
   collectDelimitedInlineSpans(line, spans, occupied, "emphasis", "*");
   collectDelimitedInlineSpans(line, spans, occupied, "emphasis", "_");
 

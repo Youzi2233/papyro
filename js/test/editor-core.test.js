@@ -90,10 +90,11 @@ test("parse_markdown_heading_line recognizes atx headings", () => {
 });
 
 test("parse_markdown_inline_spans recognizes strong emphasis and code", () => {
-  assert.deepEqual(parseMarkdownInlineSpans("A **bold** and *soft* `code`"), [
+  assert.deepEqual(parseMarkdownInlineSpans("A **bold** and *soft* ~~old~~ `code`"), [
     { type: "strong", from: 2, to: 10, openTo: 4, closeFrom: 8 },
     { type: "emphasis", from: 15, to: 21, openTo: 16, closeFrom: 20 },
-    { type: "inline_code", from: 22, to: 28, openTo: 23, closeFrom: 27 },
+    { type: "strikethrough", from: 22, to: 29, openTo: 24, closeFrom: 27 },
+    { type: "inline_code", from: 30, to: 36, openTo: 31, closeFrom: 35 },
   ]);
 });
 
