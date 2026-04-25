@@ -2,7 +2,7 @@ use papyro_core::models::{
     AppSettings, DocumentStats, FileNode, FileNodeKind, SaveStatus, Theme, ViewMode,
 };
 use papyro_core::{EditorTabs, FileState, TabContentsMap, UiState};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct AppViewModel {
@@ -20,6 +20,7 @@ pub struct WorkspaceViewModel {
     pub selected_name: Option<String>,
     pub has_selection: bool,
     pub selected_is_directory: bool,
+    pub selected_delete_pending: bool,
     pub note_count: usize,
     pub recent_count: usize,
 }
@@ -65,9 +66,10 @@ impl AppViewModel {
         editor_tabs: &EditorTabs,
         tab_contents: &TabContentsMap,
         ui_state: &UiState,
+        pending_delete_path: Option<&Path>,
     ) -> Self {
         Self {
-            workspace: WorkspaceViewModel::from_file_state(file_state),
+            workspace: WorkspaceViewModel::from_file_state(file_state, pending_delete_path),
             editor: EditorViewModel::from_editor_state(editor_tabs, tab_contents, ui_state),
             settings: SettingsViewModel::from_ui_state(ui_state),
         }
@@ -75,8 +77,9 @@ impl AppViewModel {
 }
 
 impl WorkspaceViewModel {
-    fn from_file_state(file_state: &FileState) -> Self {
+    fn from_file_state(file_state: &FileState, pending_delete_path: Option<&Path>) -> Self {
         let selected_node = file_state.selected_node();
+        let selected_path = selected_node.as_ref().map(|node| node.path.as_path());
         let current_path = file_state
             .current_workspace
             .as_ref()
@@ -117,6 +120,8 @@ impl WorkspaceViewModel {
             selected_is_directory: selected_node
                 .as_ref()
                 .is_some_and(|node| matches!(node.kind, FileNodeKind::Directory { .. })),
+            selected_delete_pending: selected_path
+                .is_some_and(|path| Some(path) == pending_delete_path),
             note_count: count_notes(&file_state.file_tree),
             recent_count: file_state.recent_files.len(),
         }
@@ -260,8 +265,13 @@ mod tests {
             workspace_overrides: Default::default(),
         };
 
-        let view_model =
-            AppViewModel::from_state(&file_state, &editor_tabs, &tab_contents, &ui_state);
+        let view_model = AppViewModel::from_state(
+            &file_state,
+            &editor_tabs,
+            &tab_contents,
+            &ui_state,
+            Some(Path::new("notes")),
+        );
 
         assert_eq!(view_model.workspace.name.as_deref(), Some("Workspace"));
         assert_eq!(
@@ -291,6 +301,7 @@ mod tests {
         assert_eq!(view_model.workspace.note_count, 2);
         assert_eq!(view_model.workspace.recent_count, 1);
         assert!(view_model.workspace.selected_is_directory);
+        assert!(view_model.workspace.selected_delete_pending);
         assert_eq!(view_model.editor.active_title.as_deref(), Some("A"));
         assert!(view_model.editor.active_is_dirty);
         assert_eq!(view_model.editor.active_save_status, SaveStatus::Dirty);

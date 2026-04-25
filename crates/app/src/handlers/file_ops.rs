@@ -6,6 +6,7 @@ use papyro_ui::commands::FileTarget;
 use std::path::PathBuf;
 use std::sync::Arc;
 
+use crate::runtime::AppShell;
 use crate::workspace_flow::{
     create_folder_in_storage, create_note_in_storage, delete_selected_path, normalized_name,
     rename_selected_path,
@@ -156,25 +157,41 @@ pub fn rename_selected(
 }
 
 pub fn delete_selected(
+    shell: AppShell,
     storage: Arc<dyn NoteStorage>,
     mut file_state: Signal<FileState>,
     mut editor_tabs: Signal<EditorTabs>,
     mut tab_contents: Signal<TabContentsMap>,
     mut status_message: Signal<Option<String>>,
+    mut pending_delete_path: Signal<Option<PathBuf>>,
 ) {
     let workspace = file_state.read().current_workspace.clone();
     let selected_node = file_state.read().selected_node();
 
     let Some(workspace) = workspace else {
+        pending_delete_path.set(None);
         status_message.set(Some("Open a workspace before deleting files".to_string()));
         return;
     };
     let Some(selected_node) = selected_node else {
+        pending_delete_path.set(None);
         status_message.set(Some("Select a note or folder to delete".to_string()));
         return;
     };
 
     let node_name = selected_node.name.clone();
+    let selected_path = selected_node.path.clone();
+
+    if pending_delete_decision(pending_delete_path.read().as_deref(), &selected_path)
+        == DeleteConfirmationDecision::Prompt
+    {
+        pending_delete_path.set(Some(selected_path));
+        status_message.set(Some(shell.delete_confirmation(&node_name)));
+        return;
+    }
+
+    pending_delete_path.set(None);
+
     let mut next_file_state = file_state.read().clone();
     next_file_state.current_workspace = Some(workspace);
     let mut next_editor_tabs = editor_tabs.read().clone();
@@ -216,6 +233,23 @@ pub fn delete_selected(
     });
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum DeleteConfirmationDecision {
+    Prompt,
+    Delete,
+}
+
+fn pending_delete_decision(
+    pending_path: Option<&std::path::Path>,
+    selected_path: &std::path::Path,
+) -> DeleteConfirmationDecision {
+    if pending_path == Some(selected_path) {
+        DeleteConfirmationDecision::Delete
+    } else {
+        DeleteConfirmationDecision::Prompt
+    }
+}
+
 pub fn reveal_in_explorer(
     platform: Arc<dyn PlatformApi>,
     mut status_message: Signal<Option<String>>,
@@ -224,5 +258,33 @@ pub fn reveal_in_explorer(
     match platform.open_in_explorer(&target.path) {
         Ok(()) => status_message.set(Some(format!("Opened {}", target.name))),
         Err(error) => status_message.set(Some(format!("Reveal failed: {error}"))),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::Path;
+
+    #[test]
+    fn delete_confirmation_requires_same_selected_path_twice() {
+        assert_eq!(
+            pending_delete_decision(None, Path::new("workspace/a.md")),
+            DeleteConfirmationDecision::Prompt
+        );
+        assert_eq!(
+            pending_delete_decision(
+                Some(Path::new("workspace/other.md")),
+                Path::new("workspace/a.md"),
+            ),
+            DeleteConfirmationDecision::Prompt
+        );
+        assert_eq!(
+            pending_delete_decision(
+                Some(Path::new("workspace/a.md")),
+                Path::new("workspace/a.md"),
+            ),
+            DeleteConfirmationDecision::Delete
+        );
     }
 }

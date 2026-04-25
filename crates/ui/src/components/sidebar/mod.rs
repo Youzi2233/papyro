@@ -1,4 +1,4 @@
-﻿pub mod file_tree;
+pub mod file_tree;
 
 use crate::commands::FileTarget;
 use crate::context::use_app_context;
@@ -29,6 +29,7 @@ pub fn Sidebar() -> Element {
         path: node.path.clone(),
         name: node.name.clone(),
     });
+    let selected_delete_pending = workspace_model.selected_delete_pending;
 
     rsx! {
         aside {
@@ -130,9 +131,9 @@ pub fn Sidebar() -> Element {
                             }
                             button {
                                 class: "mn-button danger",
-                                title: "Delete selected",
+                                title: if selected_delete_pending { "Confirm delete" } else { "Delete selected" },
                                 onclick: move |_| commands.delete_selected.call(()),
-                                "✕"
+                                if selected_delete_pending { "Confirm" } else { "✕" }
                             }
                         }
                     }

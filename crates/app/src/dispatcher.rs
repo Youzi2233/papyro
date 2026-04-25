@@ -154,11 +154,13 @@ impl AppDispatcher {
             }
             AppAction::DeleteSelected => {
                 file_ops::delete_selected(
+                    self.shell,
                     self.storage.clone(),
                     self.state.file_state,
                     self.state.editor_tabs,
                     self.state.tab_contents,
                     self.state.status_message,
+                    self.state.pending_delete_path,
                 );
             }
             AppAction::RevealInExplorer(action) => {

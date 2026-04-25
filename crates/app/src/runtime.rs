@@ -21,6 +21,13 @@ impl AppShell {
         }
     }
 
+    pub(crate) fn delete_confirmation(self, title: &str) -> String {
+        match self {
+            Self::Desktop => format!("{title} will be deleted. Click Delete again to confirm."),
+            Self::Mobile => format!("{title} will be deleted. Tap Delete again to confirm."),
+        }
+    }
+
     pub(crate) fn export_unavailable_message(self) -> Option<&'static str> {
         match self {
             Self::Desktop => None,
@@ -46,6 +53,7 @@ pub fn use_app_runtime(
             &state.editor_tabs.read(),
             &state.tab_contents.read(),
             &state.ui_state.read(),
+            state.pending_delete_path.read().as_deref(),
         )
     });
 
