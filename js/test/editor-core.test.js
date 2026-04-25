@@ -8,6 +8,7 @@ import {
   collectMarkdownMathBlocks,
   collectMarkdownTableBlocks,
   handleRustMessage,
+  markdownListEnterChange,
   normalizeViewMode,
   parseMarkdownBlockquoteLine,
   parseMarkdownCodeFenceLine,
@@ -351,6 +352,24 @@ test("apply_format inserts fallback text for empty selection", () => {
 
   assert.equal(view.state.doc.toString(), "[link text](https://)");
   assert.deepEqual(view.state.selection.main, { from: 1, to: 10 });
+});
+
+test("markdown_list_enter_change continues unordered and ordered lists", () => {
+  assert.deepEqual(markdownListEnterChange("- item", 6), {
+    changes: { from: 6, to: 6, insert: "\n- " },
+    selection: { anchor: 9 },
+    doc: "- item\n- ",
+  });
+  assert.deepEqual(markdownListEnterChange("  9. item", 9), {
+    changes: { from: 9, to: 9, insert: "\n  10. " },
+    selection: { anchor: 16 },
+    doc: "  9. item\n  10. ",
+  });
+});
+
+test("markdown_list_enter_change ignores non-list and empty list items", () => {
+  assert.equal(markdownListEnterChange("plain", 5), null);
+  assert.equal(markdownListEnterChange("- ", 2), null);
 });
 
 test("tab recycle detaches old tab and prevents stale content routing", () => {

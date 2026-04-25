@@ -50,6 +50,47 @@ export function applyFormatToView(view, kind) {
   return true;
 }
 
+export function markdownListEnterChange(doc, cursor) {
+  const lineStart = doc.lastIndexOf("\n", cursor - 1) + 1;
+  let lineEnd = doc.indexOf("\n", cursor);
+  if (lineEnd < 0) lineEnd = doc.length;
+
+  const line = doc.slice(lineStart, lineEnd);
+  const beforeCursor = doc.slice(lineStart, cursor);
+  const marker = /^(\s*)((?:[-*+])|(?:\d{1,9}[.)]))([ \t]+)/.exec(line);
+  if (!marker || beforeCursor.trimEnd() !== beforeCursor) return null;
+
+  const contentBeforeCursor = beforeCursor.slice(marker[0].length);
+  if (!contentBeforeCursor.trim()) return null;
+
+  let nextMarker = marker[2];
+  const ordered = /^(\d{1,9})([.)])$/.exec(marker[2]);
+  if (ordered) {
+    nextMarker = `${Number(ordered[1]) + 1}${ordered[2]}`;
+  }
+
+  const insert = `\n${marker[1]}${nextMarker}${marker[3]}`;
+  return {
+    changes: { from: cursor, to: cursor, insert },
+    selection: { anchor: cursor + insert.length },
+    doc: `${doc.slice(0, cursor)}${insert}${doc.slice(cursor)}`,
+  };
+}
+
+export function continueMarkdownListOnEnter(view) {
+  const range = view.state.selection.main;
+  if (!range.empty) return false;
+
+  const result = markdownListEnterChange(view.state.doc.toString(), range.from);
+  if (!result) return false;
+
+  view.dispatch({
+    changes: result.changes,
+    selection: result.selection,
+  });
+  return true;
+}
+
 export function viewContent(view) {
   return view.state.doc.toString();
 }

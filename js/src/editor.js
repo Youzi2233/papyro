@@ -28,6 +28,7 @@ import {
   collectMarkdownFrontMatterBlock,
   collectMarkdownMathBlocks,
   collectMarkdownTableBlocks,
+  continueMarkdownListOnEnter,
   handleRustMessage as handleRustMessageCore,
   parseMarkdownBlockquoteLine,
   parseMarkdownFootnoteDefinitionLine,
@@ -1006,6 +1007,7 @@ function buildExtensions() {
     { key: "Mod-i", run(view) { applyFormatToView(view, "italic"); return true; } },
     { key: "Mod-k", run(view) { applyFormatToView(view, "link"); return true; } },
     { key: "Mod-h", run: openSearchPanel },
+    { key: "Enter", run: continueMarkdownListOnEnter },
   ]);
 
   return [
