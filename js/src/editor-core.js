@@ -1,0 +1,136 @@
+export const formatSpecs = {
+  bold: ["**", "**", "bold text"],
+  italic: ["*", "*", "italic text"],
+  link: ["[", "](https://)", "link text"],
+  image: ["![", "](assets/image.png)", "alt text"],
+  code_block: ["```\n", "\n```", "code"],
+  heading1: ["# ", "", "Heading 1"],
+  heading2: ["## ", "", "Heading 2"],
+  heading3: ["### ", "", "Heading 3"],
+  quote: ["> ", "", "quote"],
+  ul: ["- ", "", "list item"],
+  ol: ["1. ", "", "list item"],
+};
+
+export function formatSelectionChange(doc, from, to, kind) {
+  const spec = formatSpecs[kind];
+  if (!spec) return null;
+
+  const [before, after, fallback] = spec;
+  const selected = doc.slice(from, to);
+  const content = selected || fallback;
+  const insert = `${before}${content}${after}`;
+
+  return {
+    changes: { from, to, insert },
+    selection: {
+      anchor: from + before.length,
+      head: from + before.length + content.length,
+    },
+    doc: `${doc.slice(0, from)}${insert}${doc.slice(to)}`,
+  };
+}
+
+export function applyFormatToView(view, kind) {
+  const { state } = view;
+  const range = state.selection.main;
+  const result = formatSelectionChange(
+    state.doc.toString(),
+    range.from,
+    range.to,
+    kind,
+  );
+  if (!result) return false;
+
+  view.dispatch({
+    changes: result.changes,
+    selection: result.selection,
+  });
+  view.focus();
+  return true;
+}
+
+export function viewContent(view) {
+  return view.state.doc.toString();
+}
+
+export function replaceViewContent(view, content) {
+  const current = viewContent(view);
+  if (current === content) return false;
+
+  view.dispatch({
+    changes: { from: 0, to: current.length, insert: content },
+  });
+  return true;
+}
+
+export function attachViewToTab({
+  editorRegistry,
+  view,
+  tabId,
+  container,
+  initialContent,
+  refreshEditorLayout,
+}) {
+  view.dom.dataset.tabId = tabId;
+
+  const entry = { view, dioxus: null, suppressChange: true };
+  editorRegistry.set(tabId, entry);
+
+  replaceViewContent(view, initialContent ?? "");
+  entry.suppressChange = false;
+
+  if (view.dom.parentElement !== container) {
+    container.replaceChildren(view.dom);
+  }
+  refreshEditorLayout(view);
+}
+
+export function recycleEditor(editorRegistry, tabId) {
+  const entry = editorRegistry.get(tabId);
+  if (!entry) return false;
+
+  editorRegistry.delete(tabId);
+  entry.dioxus = null;
+  delete entry.view.dom.dataset.tabId;
+  return true;
+}
+
+export function handleRustMessage(editorRegistry, tabId, message, options = {}) {
+  const entry = editorRegistry.get(tabId);
+  if (!entry && message.type !== "destroy") return "missing";
+
+  const applyFormat = options.applyFormat ?? applyFormatToView;
+  const refreshEditorLayout = options.refreshEditorLayout ?? (() => {});
+
+  switch (message.type) {
+    case "set_content": {
+      if (!entry) return "missing";
+      const next = message.content ?? "";
+      if (viewContent(entry.view) !== next) {
+        entry.suppressChange = true;
+        replaceViewContent(entry.view, next);
+        entry.suppressChange = false;
+      }
+      return "updated";
+    }
+    case "apply_format":
+      if (!entry) return "missing";
+      applyFormat(entry.view, message.kind);
+      return "formatted";
+    case "focus":
+      if (!entry) return "missing";
+      entry.view.focus();
+      refreshEditorLayout(entry.view);
+      return "focused";
+    case "refresh_layout":
+      if (!entry) return "missing";
+      refreshEditorLayout(entry.view);
+      return "refreshed";
+    case "destroy":
+      recycleEditor(editorRegistry, tabId);
+      return "destroyed";
+    default:
+      return "ignored";
+  }
+}

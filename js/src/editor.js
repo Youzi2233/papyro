@@ -11,38 +11,12 @@ import { markdown } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
 import { syntaxHighlighting, HighlightStyle } from "@codemirror/language";
 import { tags as t } from "@lezer/highlight";
-
-function withSelection(view, before, after, fallback = "") {
-  const { state } = view;
-  const range = state.selection.main;
-  const selected = state.sliceDoc(range.from, range.to);
-  const content = selected || fallback;
-  const insert = `${before}${content}${after}`;
-  view.dispatch({
-    changes: { from: range.from, to: range.to, insert },
-    selection: {
-      anchor: range.from + before.length,
-      head: range.from + before.length + content.length,
-    },
-  });
-  view.focus();
-}
-
-function applyFormat(view, kind) {
-  switch (kind) {
-    case "bold":      withSelection(view, "**", "**", "bold text"); break;
-    case "italic":    withSelection(view, "*", "*", "italic text"); break;
-    case "link":      withSelection(view, "[", "](https://)", "link text"); break;
-    case "image":     withSelection(view, "![", "](assets/image.png)", "alt text"); break;
-    case "code_block":withSelection(view, "```\n", "\n```", "code"); break;
-    case "heading1":  withSelection(view, "# ", "", "Heading 1"); break;
-    case "heading2":  withSelection(view, "## ", "", "Heading 2"); break;
-    case "heading3":  withSelection(view, "### ", "", "Heading 3"); break;
-    case "quote":     withSelection(view, "> ", "", "quote"); break;
-    case "ul":        withSelection(view, "- ", "", "list item"); break;
-    case "ol":        withSelection(view, "1. ", "", "list item"); break;
-  }
-}
+import {
+  applyFormatToView,
+  attachViewToTab as attachViewToTabCore,
+  handleRustMessage as handleRustMessageCore,
+  recycleEditor as recycleEditorCore,
+} from "./editor-core.js";
 
 // tabId → { view, dioxus, suppressChange }
 const editorRegistry = new Map();
@@ -142,9 +116,9 @@ function buildExtensions() {
         return true;
       },
     },
-    { key: "Mod-b", run(view) { applyFormat(view, "bold"); return true; } },
-    { key: "Mod-i", run(view) { applyFormat(view, "italic"); return true; } },
-    { key: "Mod-k", run(view) { applyFormat(view, "link"); return true; } },
+    { key: "Mod-b", run(view) { applyFormatToView(view, "bold"); return true; } },
+    { key: "Mod-i", run(view) { applyFormatToView(view, "italic"); return true; } },
+    { key: "Mod-k", run(view) { applyFormatToView(view, "link"); return true; } },
   ]);
 
   return [
@@ -254,25 +228,14 @@ function refreshEditorLayout(view) {
 }
 
 function attachViewToTab(view, tabId, container, initialContent) {
-  view.dom.dataset.tabId = tabId;
-
-  // Register BEFORE dispatching so the updateListener finds the entry and
-  // respects suppressChange instead of echoing the swap back to Rust as
-  // user-typed content.
-  const entry = { view, dioxus: null, suppressChange: true };
-  editorRegistry.set(tabId, entry);
-
-  const current = view.state.doc.toString();
-  const next = initialContent ?? "";
-  if (current !== next) {
-    view.dispatch({ changes: { from: 0, to: current.length, insert: next } });
-  }
-  entry.suppressChange = false;
-
-  if (view.dom.parentElement !== container) {
-    container.replaceChildren(view.dom);
-  }
-  refreshEditorLayout(view);
+  attachViewToTabCore({
+    editorRegistry,
+    view,
+    tabId,
+    container,
+    initialContent,
+    refreshEditorLayout,
+  });
 }
 
 function ensureEditor({ tabId, containerId, initialContent }) {
@@ -337,53 +300,17 @@ function releaseEditor(tabId) {
 }
 
 function recycleEditor(tabId) {
-  const entry = editorRegistry.get(tabId);
-  if (!entry) return;
-  editorRegistry.delete(tabId);
-  entry.dioxus = null;
-  delete entry.view.dom.dataset.tabId;
+  recycleEditorCore(editorRegistry, tabId);
 }
 
 window.papyroEditor = {
   ensureEditor,
 
   handleRustMessage(tabId, message) {
-    const entry = editorRegistry.get(tabId);
-    if (!entry && message.type !== "destroy") return "missing";
-
-    switch (message.type) {
-      case "set_content": {
-        if (!entry) return "missing";
-        const next = message.content ?? "";
-        const current = entry.view.state.doc.toString();
-        if (current !== next) {
-          entry.suppressChange = true;
-          entry.view.dispatch({
-            changes: { from: 0, to: current.length, insert: next },
-          });
-          entry.suppressChange = false;
-        }
-        return "updated";
-      }
-      case "apply_format":
-        if (!entry) return "missing";
-        applyFormat(entry.view, message.kind);
-        return "formatted";
-      case "focus":
-        if (!entry) return "missing";
-        entry.view.focus();
-        refreshEditorLayout(entry.view);
-        return "focused";
-      case "refresh_layout":
-        if (!entry) return "missing";
-        refreshEditorLayout(entry.view);
-        return "refreshed";
-      case "destroy":
-        recycleEditor(tabId);
-        return "destroyed";
-      default:
-        return "ignored";
-    }
+    return handleRustMessageCore(editorRegistry, tabId, message, {
+      applyFormat: applyFormatToView,
+      refreshEditorLayout,
+    });
   },
 
   attachChannel(tabId, dioxus) {

@@ -22,6 +22,9 @@ node scripts/report-file-lines.js
 echo "=== npm run build ==="
 npm --prefix js run build
 
+echo "=== npm test ==="
+npm --prefix js test
+
 echo "=== editor.js bundle sync ==="
 diff assets/editor.js apps/desktop/assets/editor.js
 diff assets/editor.js apps/mobile/assets/editor.js

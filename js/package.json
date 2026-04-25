@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "node build.js",
+    "test": "node --test",
     "watch": "node build.js --watch"
   },
   "dependencies": {
