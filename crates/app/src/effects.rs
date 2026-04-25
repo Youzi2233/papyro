@@ -6,7 +6,7 @@ use crate::workspace_flow::{
 use dioxus::prelude::*;
 use papyro_core::NoteStorage;
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 pub(crate) fn record_content_change(
     storage: Arc<dyn NoteStorage>,
@@ -14,6 +14,8 @@ pub(crate) fn record_content_change(
     tab_id: String,
     content: String,
 ) {
+    let perf_started_at = perf_enabled().then(Instant::now);
+    let byte_len = content.len();
     let revision = papyro_core::change_tab_content(
         &mut state.editor_tabs.write(),
         &mut state.tab_contents.write(),
@@ -22,8 +24,28 @@ pub(crate) fn record_content_change(
     );
 
     let Some(revision) = revision else {
+        if let Some(started_at) = perf_started_at {
+            tracing::info!(
+                tab_id = %tab_id,
+                bytes = byte_len,
+                changed = false,
+                elapsed_ms = started_at.elapsed().as_millis(),
+                "perf editor input change"
+            );
+        }
         return;
     };
+
+    if let Some(started_at) = perf_started_at {
+        tracing::info!(
+            tab_id = %tab_id,
+            revision,
+            bytes = byte_len,
+            changed = true,
+            elapsed_ms = started_at.elapsed().as_millis(),
+            "perf editor input change"
+        );
+    }
 
     let delay = Duration::from_millis(state.ui_state.read().settings.auto_save_delay_ms);
 
@@ -216,4 +238,8 @@ pub(crate) fn use_workspace_watcher(state: RuntimeState, storage: Arc<dyn NoteSt
             }
         }
     });
+}
+
+fn perf_enabled() -> bool {
+    std::env::var_os("PAPYRO_PERF").is_some()
 }

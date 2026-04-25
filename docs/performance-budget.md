@@ -27,6 +27,9 @@ The 5MB preview budget is for the degradation path, not full HTML rendering.
 ## Trace Names
 
 - `perf editor pane render prep`
+- `perf editor open note`
+- `perf editor switch tab`
+- `perf editor input change`
 - `perf editor preview render`
 - `perf tab close trigger`
 - `perf runtime close_tab handler`

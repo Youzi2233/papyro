@@ -4,6 +4,7 @@ use papyro_core::{EditorTabs, FileState, NoteStorage, TabContentsMap};
 use papyro_editor::parser::summarize_markdown;
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::time::Instant;
 
 use crate::workspace_flow::{
     apply_save_failure, apply_save_success, begin_save_tab, open_note_from_storage,
@@ -36,6 +37,8 @@ pub fn open_note_path(
     mut status_message: Signal<Option<String>>,
     path: PathBuf,
 ) {
+    let perf_started_at = perf_enabled().then(Instant::now);
+    let perf_path = path.clone();
     let workspace = file_state.read().current_workspace.clone();
     let Some(workspace) = workspace else {
         status_message.set(Some("Open a workspace before opening notes".to_string()));
@@ -69,6 +72,19 @@ pub fn open_note_path(
 
         match result {
             Ok(Ok((next_file_state, next_editor_tabs, next_tab_contents))) => {
+                if let Some(started_at) = perf_started_at {
+                    let active_tab_id = next_editor_tabs.active_tab_id.as_deref();
+                    let bytes = next_tab_contents
+                        .active_content(active_tab_id)
+                        .map(str::len)
+                        .unwrap_or_default();
+                    tracing::info!(
+                        path = %perf_path.display(),
+                        bytes,
+                        elapsed_ms = started_at.elapsed().as_millis(),
+                        "perf editor open note"
+                    );
+                }
                 file_state.set(next_file_state);
                 editor_tabs.set(next_editor_tabs);
                 tab_contents.set(next_tab_contents);
@@ -81,6 +97,10 @@ pub fn open_note_path(
             }
         }
     });
+}
+
+fn perf_enabled() -> bool {
+    std::env::var_os("PAPYRO_PERF").is_some()
 }
 
 pub fn save_active_note(
