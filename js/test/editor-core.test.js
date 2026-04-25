@@ -11,6 +11,7 @@ import {
   normalizeViewMode,
   parseMarkdownBlockquoteLine,
   parseMarkdownCodeFenceLine,
+  parseMarkdownFootnoteDefinitionLine,
   parseMarkdownHeadingLine,
   parseMarkdownHorizontalRuleLine,
   parseMarkdownImageSpans,
@@ -114,6 +115,13 @@ test("parse_markdown_inline_spans recognizes links but skips images", () => {
   assert.deepEqual(parseMarkdownInlineSpans("![alt](assets/image.png)"), []);
 });
 
+test("parse_markdown_inline_spans recognizes footnote references", () => {
+  assert.deepEqual(parseMarkdownInlineSpans("A[^one] and `[^code]`"), [
+    { type: "footnote_ref", from: 1, to: 7, label: "one" },
+    { type: "inline_code", from: 12, to: 21, openTo: 13, closeFrom: 20 },
+  ]);
+});
+
 test("parse_markdown_image_spans recognizes image syntax", () => {
   assert.deepEqual(parseMarkdownImageSpans('![Alt text](assets/a.png "Title")'), [
     {
@@ -169,6 +177,18 @@ test("parse_markdown_blockquote_line recognizes quote markers", () => {
   assert.deepEqual(parseMarkdownBlockquoteLine("   >quote"), { markerLength: 4 });
   assert.equal(parseMarkdownBlockquoteLine("    > code"), null);
   assert.equal(parseMarkdownBlockquoteLine("plain > quote"), null);
+});
+
+test("parse_markdown_footnote_definition_line recognizes definitions", () => {
+  assert.deepEqual(parseMarkdownFootnoteDefinitionLine("[^one]: Note"), {
+    markerLength: 8,
+    label: "one",
+  });
+  assert.deepEqual(parseMarkdownFootnoteDefinitionLine("  [^2]: Note"), {
+    markerLength: 8,
+    label: "2",
+  });
+  assert.equal(parseMarkdownFootnoteDefinitionLine("[one]: Note"), null);
 });
 
 test("parse_markdown_code_fence_line recognizes fenced code markers", () => {

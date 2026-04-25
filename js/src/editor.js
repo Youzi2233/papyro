@@ -24,6 +24,7 @@ import {
   collectMarkdownTableBlocks,
   handleRustMessage as handleRustMessageCore,
   parseMarkdownBlockquoteLine,
+  parseMarkdownFootnoteDefinitionLine,
   parseMarkdownHeadingLine,
   parseMarkdownHorizontalRuleLine,
   parseMarkdownImageSpans,
@@ -240,6 +241,23 @@ const editorTheme = EditorView.theme({
     textAlign: "left",
     whiteSpace: "pre-wrap",
   },
+  ".cm-line.cm-hybrid-footnote-line": {
+    color: "var(--mn-ink-2)",
+    paddingLeft: "1.4em",
+    textIndent: "-1.4em",
+  },
+  ".cm-hybrid-footnote-label": {
+    color: "var(--mn-accent)",
+    fontVariantNumeric: "tabular-nums",
+    fontWeight: "700",
+    marginRight: "0.4em",
+  },
+  ".cm-hybrid-footnote-ref": {
+    color: "var(--mn-accent)",
+    fontSize: ".72em",
+    fontWeight: "700",
+    verticalAlign: "super",
+  },
   ".cm-hybrid-link": {
     color: "var(--mn-accent)",
     textDecoration: "underline",
@@ -402,6 +420,28 @@ class InlineMathWidget extends WidgetType {
   }
 }
 
+class FootnoteReferenceWidget extends WidgetType {
+  constructor(label) {
+    super();
+    this.label = label;
+  }
+
+  eq(other) {
+    return other instanceof FootnoteReferenceWidget && other.label === this.label;
+  }
+
+  toDOM() {
+    const sup = document.createElement("sup");
+    sup.className = "cm-hybrid-footnote-ref";
+    sup.textContent = this.label;
+    return sup;
+  }
+
+  ignoreEvent() {
+    return false;
+  }
+}
+
 function renderKatexMath(target, source, displayMode) {
   try {
     target.innerHTML = katex.renderToString(source, {
@@ -421,6 +461,15 @@ function addInlineDecorations(decorations, line) {
   for (const span of parseMarkdownInlineSpans(line.text)) {
     const contentFrom = line.from + span.openTo;
     const contentTo = line.from + span.closeFrom;
+    if (span.type === "footnote_ref") {
+      decorations.push(
+        Decoration.replace({
+          widget: new FootnoteReferenceWidget(span.label),
+        }).range(line.from + span.from, line.from + span.to),
+      );
+      continue;
+    }
+
     if (span.type === "inline_math") {
       decorations.push(
         Decoration.replace({
@@ -591,6 +640,41 @@ function addBlockquoteDecorations(decorations, line) {
   );
   decorations.push(
     Decoration.replace({}).range(line.from, line.from + blockquote.markerLength),
+  );
+  return true;
+}
+
+class FootnoteDefinitionLabelWidget extends WidgetType {
+  constructor(label) {
+    super();
+    this.label = label;
+  }
+
+  eq(other) {
+    return other instanceof FootnoteDefinitionLabelWidget && other.label === this.label;
+  }
+
+  toDOM() {
+    const label = document.createElement("span");
+    label.className = "cm-hybrid-footnote-label";
+    label.textContent = `${this.label}.`;
+    return label;
+  }
+}
+
+function addFootnoteDefinitionDecorations(decorations, line) {
+  const footnote = parseMarkdownFootnoteDefinitionLine(line.text);
+  if (!footnote) return false;
+
+  decorations.push(
+    Decoration.line({
+      class: "cm-hybrid-footnote-line",
+    }).range(line.from),
+  );
+  decorations.push(
+    Decoration.replace({
+      widget: new FootnoteDefinitionLabelWidget(footnote.label),
+    }).range(line.from, line.from + footnote.markerLength),
   );
   return true;
 }
@@ -775,6 +859,7 @@ function buildHybridMarkdownDecorations(
       const heading = parseMarkdownHeadingLine(line.text);
       if (!heading) {
         if (addHorizontalRuleDecorations(decorations, line)) continue;
+        if (addFootnoteDefinitionDecorations(decorations, line)) continue;
         addBlockquoteDecorations(decorations, line);
         addTaskDecorations(decorations, line);
         addListDecorations(decorations, line);

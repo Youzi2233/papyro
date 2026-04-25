@@ -144,6 +144,23 @@ function collectInlineMathSpans(line, spans, occupied) {
   }
 }
 
+function collectFootnoteReferenceSpans(line, spans, occupied) {
+  const regexp = /\[\^([^\]\s]+)\]/g;
+  for (const match of line.matchAll(regexp)) {
+    const from = match.index;
+    const to = from + match[0].length;
+    if (rangeOverlaps(occupied, from, to)) continue;
+
+    spans.push({
+      type: "footnote_ref",
+      from,
+      to,
+      label: match[1],
+    });
+    occupied.push({ from, to });
+  }
+}
+
 const imageRegexp = /!\[([^\]\n]*)\]\(([^)\s\n]+)(?:\s+"([^"]*)")?\)/g;
 
 function collectImageRanges(line, occupied) {
@@ -208,6 +225,16 @@ export function parseMarkdownBlockquoteLine(line) {
 
   return {
     markerLength: match[1].length,
+  };
+}
+
+export function parseMarkdownFootnoteDefinitionLine(line) {
+  const match = /^(\s*\[\^([^\]\s]+)\]:[ \t]*)/.exec(line);
+  if (!match) return null;
+
+  return {
+    markerLength: match[1].length,
+    label: match[2],
   };
 }
 
@@ -413,6 +440,7 @@ export function parseMarkdownInlineSpans(line) {
   collectLinkSpans(line, spans, occupied);
   collectInlineCodeSpans(line, spans, occupied);
   collectInlineMathSpans(line, spans, occupied);
+  collectFootnoteReferenceSpans(line, spans, occupied);
   collectDelimitedInlineSpans(line, spans, occupied, "strong", "**");
   collectDelimitedInlineSpans(line, spans, occupied, "strong", "__");
   collectDelimitedInlineSpans(line, spans, occupied, "strikethrough", "~~");
