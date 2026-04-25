@@ -62,24 +62,36 @@ function blobToBase64(blob) {
   });
 }
 
-function clipboardImageItem(event) {
-  const items = Array.from(event.clipboardData?.items ?? []);
-  return items.find((item) => item.kind === "file" && item.type.startsWith("image/"));
+function imageFileFromTransfer(transfer) {
+  const items = Array.from(transfer?.items ?? []);
+  for (const item of items) {
+    if (item.kind !== "file" || !item.type.startsWith("image/")) continue;
+    const file = item.getAsFile();
+    if (file) return { file, mimeType: item.type };
+  }
+
+  const files = Array.from(transfer?.files ?? []);
+  const file = files.find((file) => file.type.startsWith("image/"));
+  return file ? { file, mimeType: file.type } : null;
 }
 
-async function sendPastedImage(tabId, item) {
-  const file = item.getAsFile();
-  if (!file) return;
-
+async function sendEditorImage(tabId, image) {
+  const { file, mimeType } = image;
   const entry = editorRegistry.get(tabId);
   const data = await blobToBase64(file);
   editorRegistry.get(tabId)?.dioxus?.send({
     type: "paste_image_requested",
     tab_id: tabId,
-    mime_type: file.type || item.type || "image/png",
+    mime_type: file.type || mimeType || "image/png",
     data,
   });
   entry?.view?.focus();
+}
+
+function placeCursorAtDrop(view, event) {
+  const position = view.posAtCoords({ x: event.clientX, y: event.clientY });
+  if (position == null) return;
+  view.dispatch({ selection: { anchor: position } });
 }
 
 const setViewModeEffect = StateEffect.define();
@@ -1066,10 +1078,10 @@ function buildExtensions() {
         const entry = editorRegistry.get(tabId);
         if (!entry) return false;
 
-        const imageItem = clipboardImageItem(event);
-        if (imageItem && entry.dioxus) {
+        const image = imageFileFromTransfer(event.clipboardData);
+        if (image && entry.dioxus) {
           event.preventDefault();
-          sendPastedImage(tabId, imageItem).catch((error) => {
+          sendEditorImage(tabId, image).catch((error) => {
             console.warn("Failed to send pasted image", error);
           });
           return true;
@@ -1079,6 +1091,22 @@ function buildExtensions() {
         if (!pasteMarkdownLinkInView(view, text, entry.preferences)) return false;
 
         event.preventDefault();
+        return true;
+      },
+      drop(event, view) {
+        const tabId = view.dom.dataset.tabId;
+        if (!tabId) return false;
+        const entry = editorRegistry.get(tabId);
+        if (!entry?.dioxus) return false;
+
+        const image = imageFileFromTransfer(event.dataTransfer);
+        if (!image) return false;
+
+        event.preventDefault();
+        placeCursorAtDrop(view, event);
+        sendEditorImage(tabId, image).catch((error) => {
+          console.warn("Failed to send dropped image", error);
+        });
         return true;
       },
     }),
