@@ -8,12 +8,8 @@ pub(super) enum EditorRuntimeState {
 }
 
 #[component]
-pub(super) fn FallbackEditor(
-    tab_id: String,
-    state: EditorRuntimeState,
-    auto_save_delay_ms: u64,
-) -> Element {
-    let _ = (tab_id, auto_save_delay_ms);
+pub(super) fn FallbackEditor(tab_id: String, state: EditorRuntimeState) -> Element {
+    let _ = tab_id;
     let status = match state {
         EditorRuntimeState::Loading => "Starting editor runtime...".to_string(),
         EditorRuntimeState::Ready => String::new(),

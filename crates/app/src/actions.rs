@@ -1,5 +1,5 @@
 use papyro_core::models::{AppSettings, FileNode};
-use papyro_ui::commands::FileTarget;
+use papyro_ui::commands::{ContentChange, FileTarget};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum AppAction {
@@ -8,6 +8,7 @@ pub enum AppAction {
     CreateNote(CreateNote),
     CreateFolder(CreateFolder),
     OpenNote(OpenNote),
+    ContentChanged(ContentChange),
     SaveActiveNote,
     SaveTab(SaveTab),
     CloseTab(CloseTab),
@@ -69,6 +70,10 @@ impl AppAction {
 
     pub fn open_note(node: FileNode) -> Self {
         Self::OpenNote(OpenNote { node })
+    }
+
+    pub fn content_changed(tab_id: String, content: String) -> Self {
+        Self::ContentChanged(ContentChange { tab_id, content })
     }
 
     pub fn save_tab(tab_id: String) -> Self {

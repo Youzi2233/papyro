@@ -1,8 +1,59 @@
-use crate::handlers::workspace;
+use crate::handlers::{notes, workspace};
 use crate::state::RuntimeState;
 use dioxus::prelude::*;
 use papyro_core::NoteStorage;
 use std::sync::Arc;
+use std::time::Duration;
+
+pub(crate) fn record_content_change(
+    storage: Arc<dyn NoteStorage>,
+    mut state: RuntimeState,
+    tab_id: String,
+    content: String,
+) {
+    let revision = papyro_core::change_tab_content(
+        &mut state.editor_tabs.write(),
+        &mut state.tab_contents.write(),
+        &tab_id,
+        content,
+    );
+
+    let Some(revision) = revision else {
+        return;
+    };
+
+    let delay = Duration::from_millis(state.ui_state.read().settings.auto_save_delay_ms);
+
+    spawn(async move {
+        tokio::time::sleep(delay).await;
+        if !papyro_core::should_auto_save(
+            &state.editor_tabs.read(),
+            &state.tab_contents.read(),
+            &tab_id,
+            revision,
+        ) {
+            return;
+        }
+
+        let content = state
+            .tab_contents
+            .read()
+            .content_for_tab(&tab_id)
+            .unwrap_or_default()
+            .to_string();
+        let stats = papyro_editor::parser::summarize_markdown(&content);
+        state.tab_contents.write().refresh_stats(&tab_id, stats);
+
+        notes::save_tab_by_id(
+            storage,
+            state.file_state,
+            state.editor_tabs,
+            state.tab_contents,
+            state.status_message,
+            &tab_id,
+        );
+    });
+}
 
 pub(crate) fn use_workspace_watcher(state: RuntimeState, storage: Arc<dyn NoteStorage>) {
     let mut file_state = state.file_state;

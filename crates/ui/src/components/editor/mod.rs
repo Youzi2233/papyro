@@ -1,4 +1,3 @@
-mod autosave;
 mod bridge;
 mod fallback;
 mod host;

@@ -1,16 +1,14 @@
-use super::autosave::record_content_change;
 use super::bridge::{send_editor_destroy, EditorBridgeMap, EditorCommand, EditorEvent};
 use super::fallback::{EditorRuntimeState, FallbackEditor};
+use crate::commands::ContentChange;
 use crate::context::use_app_context;
 use dioxus::prelude::*;
 
 #[component]
-pub(super) fn EditorHost(tab_id: String, auto_save_delay_ms: u64, is_visible: bool) -> Element {
+pub(super) fn EditorHost(tab_id: String, is_visible: bool) -> Element {
     let app = use_app_context();
-    let editor_tabs = app.editor_tabs;
     let tab_contents = app.tab_contents;
     let commands = app.commands;
-    let editor_services = app.editor_services;
     let bridges = use_context::<EditorBridgeMap>();
     let container_id = format!("mn-editor-{tab_id}");
     let runtime_state = use_signal(|| EditorRuntimeState::Loading);
@@ -23,7 +21,6 @@ pub(super) fn EditorHost(tab_id: String, auto_save_delay_ms: u64, is_visible: bo
             }
 
             let mut bridges = bridges;
-            let editor_tabs = editor_tabs;
             let tab_contents = tab_contents;
             let commands = commands.clone();
             let mut runtime_state = runtime_state;
@@ -157,15 +154,9 @@ pub(super) fn EditorHost(tab_id: String, auto_save_delay_ms: u64, is_visible: bo
                             runtime_state.set(EditorRuntimeState::Error(message));
                         }
                         EditorEvent::ContentChanged { tab_id, content } => {
-                            record_content_change(
-                                editor_tabs,
-                                tab_contents,
-                                commands.clone(),
-                                editor_services,
-                                tab_id,
-                                content,
-                                auto_save_delay_ms,
-                            );
+                            commands
+                                .content_changed
+                                .call(ContentChange { tab_id, content });
                         }
                         EditorEvent::SaveRequested { tab_id } => {
                             commands.save_tab.call(tab_id);
@@ -212,7 +203,6 @@ pub(super) fn EditorHost(tab_id: String, auto_save_delay_ms: u64, is_visible: bo
                 FallbackEditor {
                     tab_id: tab_id.clone(),
                     state,
-                    auto_save_delay_ms,
                 }
             }
         }

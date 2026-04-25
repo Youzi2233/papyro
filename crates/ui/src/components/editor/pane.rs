@@ -23,7 +23,6 @@ pub fn EditorPane() -> Element {
     let tabs = editor_tabs.read().tabs.clone();
     let view_mode = ui_state.read().view_mode.clone();
     let settings = ui_state.read().settings.clone();
-    let auto_save_delay_ms = settings.auto_save_delay_ms;
 
     let editor_style = format!(
         "--mn-editor-font: {}; --mn-editor-font-size: {}px; --mn-editor-line-height: {};",
@@ -133,7 +132,6 @@ pub fn EditorPane() -> Element {
                                     class: if is_active { "mn-editor-host-slot" } else { "mn-editor-host-slot hidden" },
                                     EditorHost {
                                         tab_id: tab_id.clone(),
-                                        auto_save_delay_ms,
                                         is_visible: is_active && view_mode == ViewMode::Edit,
                                     }
                                 }
@@ -162,7 +160,6 @@ pub fn EditorPane() -> Element {
                                 class: "mn-editor-host-slot hidden",
                                 EditorHost {
                                     tab_id: tab_id.clone(),
-                                    auto_save_delay_ms,
                                     is_visible: false,
                                 }
                             }

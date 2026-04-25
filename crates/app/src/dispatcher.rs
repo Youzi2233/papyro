@@ -1,11 +1,12 @@
 use crate::actions::AppAction;
+use crate::effects;
 use crate::handlers::{file_ops, notes, workspace};
 use crate::runtime::AppShell;
 use crate::state::RuntimeState;
 use dioxus::prelude::*;
 use papyro_core::{NoteStorage, UiState};
 use papyro_platform::PlatformApi;
-use papyro_ui::commands::AppCommands;
+use papyro_ui::commands::{AppCommands, ContentChange};
 use std::sync::Arc;
 
 #[derive(Clone)]
@@ -91,6 +92,14 @@ impl AppDispatcher {
                     action.node,
                 );
             }
+            AppAction::ContentChanged(action) => {
+                effects::record_content_change(
+                    self.storage.clone(),
+                    self.state,
+                    action.tab_id,
+                    action.content,
+                );
+            }
             AppAction::SaveActiveNote => {
                 notes::save_active_note(
                     self.storage.clone(),
@@ -156,6 +165,7 @@ impl AppDispatcher {
         let create_note = self.clone();
         let create_folder = self.clone();
         let open_note = self.clone();
+        let content_changed = self.clone();
         let save_active_note = self.clone();
         let save_tab = self.clone();
         let close_tab = self.clone();
@@ -180,6 +190,9 @@ impl AppDispatcher {
             }),
             open_note: EventHandler::new(move |node| {
                 open_note.dispatch(AppAction::open_note(node));
+            }),
+            content_changed: EventHandler::new(move |change: ContentChange| {
+                content_changed.dispatch(AppAction::content_changed(change.tab_id, change.content));
             }),
             save_active_note: EventHandler::new(move |_| {
                 save_active_note.dispatch(AppAction::SaveActiveNote);
@@ -307,6 +320,13 @@ mod tests {
             AppAction::save_tab("tab-a".to_string()),
             AppAction::SaveTab(crate::actions::SaveTab {
                 tab_id: "tab-a".to_string()
+            })
+        );
+        assert_eq!(
+            AppAction::content_changed("tab-a".to_string(), "body".to_string()),
+            AppAction::ContentChanged(papyro_ui::commands::ContentChange {
+                tab_id: "tab-a".to_string(),
+                content: "body".to_string()
             })
         );
         assert_eq!(
