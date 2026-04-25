@@ -14,6 +14,12 @@ pub struct FileTarget {
     pub name: String,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RecentFileTarget {
+    pub workspace_path: PathBuf,
+    pub relative_path: PathBuf,
+}
+
 #[derive(Clone, PartialEq)]
 pub struct AppCommands {
     pub open_workspace: EventHandler<()>,
@@ -22,6 +28,7 @@ pub struct AppCommands {
     pub create_note: EventHandler<String>,
     pub create_folder: EventHandler<String>,
     pub open_note: EventHandler<FileNode>,
+    pub open_recent_file: EventHandler<RecentFileTarget>,
     pub content_changed: EventHandler<ContentChange>,
     pub save_active_note: EventHandler<()>,
     pub save_tab: EventHandler<String>,

@@ -116,6 +116,26 @@ impl AppDispatcher {
                     action.node,
                 );
             }
+            AppAction::OpenRecentFile(action) => {
+                let storage = self.storage.clone();
+                let state = self.state;
+                spawn(async move {
+                    if !effects::flush_dirty_tabs(storage.clone(), state).await {
+                        return;
+                    }
+
+                    notes::open_recent_file(
+                        storage,
+                        state.file_state,
+                        state.editor_tabs,
+                        state.tab_contents,
+                        state.status_message,
+                        state.workspace_watch_path,
+                        action.target,
+                    )
+                    .await;
+                });
+            }
             AppAction::ContentChanged(action) => {
                 effects::record_content_change(
                     self.storage.clone(),
@@ -190,6 +210,7 @@ impl AppDispatcher {
         let create_note = self.clone();
         let create_folder = self.clone();
         let open_note = self.clone();
+        let open_recent_file = self.clone();
         let content_changed = self.clone();
         let save_active_note = self.clone();
         let save_tab = self.clone();
@@ -218,6 +239,9 @@ impl AppDispatcher {
             }),
             open_note: EventHandler::new(move |node| {
                 open_note.dispatch(AppAction::open_note(node));
+            }),
+            open_recent_file: EventHandler::new(move |target| {
+                open_recent_file.dispatch(AppAction::open_recent_file(target));
             }),
             content_changed: EventHandler::new(move |change: ContentChange| {
                 content_changed.dispatch(AppAction::content_changed(change.tab_id, change.content));
@@ -348,6 +372,7 @@ fn apply_settings(
 mod tests {
     use super::*;
     use papyro_core::models::{Theme, ViewMode};
+    use papyro_ui::commands::RecentFileTarget;
 
     #[test]
     fn app_action_helpers_wrap_payloads() {
@@ -367,6 +392,18 @@ mod tests {
             AppAction::open_workspace_path(std::path::PathBuf::from("workspace")),
             AppAction::OpenWorkspacePath(crate::actions::OpenWorkspacePath {
                 path: std::path::PathBuf::from("workspace")
+            })
+        );
+        assert_eq!(
+            AppAction::open_recent_file(RecentFileTarget {
+                workspace_path: std::path::PathBuf::from("workspace"),
+                relative_path: std::path::PathBuf::from("notes/a.md"),
+            }),
+            AppAction::OpenRecentFile(crate::actions::OpenRecentFile {
+                target: RecentFileTarget {
+                    workspace_path: std::path::PathBuf::from("workspace"),
+                    relative_path: std::path::PathBuf::from("notes/a.md"),
+                }
             })
         );
         assert_eq!(

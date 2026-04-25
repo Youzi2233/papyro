@@ -1,8 +1,8 @@
 use super::super::support::*;
 use super::super::*;
-use papyro_core::models::{DocumentStats, SaveStatus};
-use papyro_core::storage::{OpenedNote, SavedNote};
-use papyro_core::{EditorTabs, TabContentsMap};
+use papyro_core::models::{DocumentStats, RecentFile, SaveStatus, Workspace};
+use papyro_core::storage::{OpenedNote, SavedNote, WorkspaceBootstrap};
+use papyro_core::{EditorTabs, FileState, TabContentsMap};
 use std::collections::HashMap;
 use std::path::PathBuf;
 
@@ -72,6 +72,81 @@ fn open_note_flow_reports_storage_failure() {
     .unwrap_err();
 
     assert!(error.to_string().contains("Missing opened note"));
+}
+
+#[test]
+fn open_recent_file_flow_bootstraps_target_workspace_before_opening_note() {
+    let archive_workspace = Workspace {
+        id: "archive".to_string(),
+        name: "Archive".to_string(),
+        path: PathBuf::from("archive"),
+        created_at: 0,
+        last_opened: Some(1),
+        sort_order: 0,
+    };
+    let note_path = PathBuf::from("archive/notes/a.md");
+    let opened_note = OpenedNote {
+        tab: tab("tab-a", "note-a", "archive/notes/a.md"),
+        content: "# Archive".to_string(),
+        recent_files: vec![RecentFile {
+            note_id: "note-a".to_string(),
+            title: "Archive".to_string(),
+            relative_path: PathBuf::from("notes/a.md"),
+            workspace_id: archive_workspace.id.clone(),
+            workspace_name: archive_workspace.name.clone(),
+            workspace_path: archive_workspace.path.clone(),
+            opened_at: 1,
+        }],
+    };
+    let storage = MockStorage {
+        opened_notes: HashMap::from([(note_path.clone(), opened_note)]),
+        bootstrap_result: Some(WorkspaceBootstrap {
+            file_state: FileState {
+                workspaces: vec![workspace(), archive_workspace.clone()],
+                current_workspace: Some(archive_workspace.clone()),
+                ..FileState::default()
+            },
+            status_message: "Loaded workspace".to_string(),
+            ..WorkspaceBootstrap::default()
+        }),
+        ..MockStorage::default()
+    };
+    let mut file_state = file_state_with_tree(Vec::new());
+    let mut editor_tabs = EditorTabs::default();
+    editor_tabs.open_tab(tab("old-tab", "old-note", "workspace/old.md"));
+    let mut tab_contents = TabContentsMap::default();
+    tab_contents.insert_tab(
+        "old-tab".to_string(),
+        "old".to_string(),
+        DocumentStats::default(),
+    );
+
+    open_recent_file_from_storage(
+        &storage,
+        &mut file_state,
+        &mut editor_tabs,
+        &mut tab_contents,
+        archive_workspace.path.clone(),
+        PathBuf::from("notes/a.md"),
+        |content| DocumentStats {
+            char_count: content.len(),
+            ..DocumentStats::default()
+        },
+    )
+    .unwrap();
+
+    assert_eq!(
+        file_state
+            .current_workspace
+            .as_ref()
+            .map(|workspace| workspace.path.clone()),
+        Some(PathBuf::from("archive"))
+    );
+    assert_eq!(file_state.selected_path, Some(note_path));
+    assert_eq!(editor_tabs.tabs.len(), 1);
+    assert_eq!(editor_tabs.active_tab_id.as_deref(), Some("tab-a"));
+    assert_eq!(tab_contents.content_for_tab("tab-a"), Some("# Archive"));
+    assert_eq!(tab_contents.content_for_tab("old-tab"), None);
 }
 
 #[test]

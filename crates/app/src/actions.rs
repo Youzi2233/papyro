@@ -1,5 +1,5 @@
 use papyro_core::models::{AppSettings, FileNode};
-use papyro_ui::commands::{ContentChange, FileTarget};
+use papyro_ui::commands::{ContentChange, FileTarget, RecentFileTarget};
 use std::path::PathBuf;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -10,6 +10,7 @@ pub enum AppAction {
     CreateNote(CreateNote),
     CreateFolder(CreateFolder),
     OpenNote(OpenNote),
+    OpenRecentFile(OpenRecentFile),
     ContentChanged(ContentChange),
     SaveActiveNote,
     SaveTab(SaveTab),
@@ -39,6 +40,11 @@ pub struct OpenWorkspacePath {
 #[derive(Debug, Clone, PartialEq)]
 pub struct OpenNote {
     pub node: FileNode,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OpenRecentFile {
+    pub target: RecentFileTarget,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -81,6 +87,10 @@ impl AppAction {
 
     pub fn open_note(node: FileNode) -> Self {
         Self::OpenNote(OpenNote { node })
+    }
+
+    pub fn open_recent_file(target: RecentFileTarget) -> Self {
+        Self::OpenRecentFile(OpenRecentFile { target })
     }
 
     pub fn content_changed(tab_id: String, content: String) -> Self {
