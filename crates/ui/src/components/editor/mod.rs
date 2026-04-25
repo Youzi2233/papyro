@@ -1,11 +1,9 @@
 use crate::commands::AppCommands;
-use crate::context::use_app_context;
+use crate::context::{use_app_context, EditorServices};
 use dioxus::document::Eval;
 use dioxus::prelude::*;
 use papyro_core::models::ViewMode;
 use papyro_core::{EditorTabs, TabContentsMap};
-use papyro_editor::parser::summarize_markdown;
-use papyro_editor::renderer::render_markdown_html;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
@@ -57,6 +55,7 @@ pub fn EditorPane() -> Element {
     let app = use_app_context();
     let editor_tabs = app.editor_tabs;
     let tab_contents = app.tab_contents;
+    let editor_services = app.editor_services;
     let mut ui_state = app.ui_state;
 
     let active_tab = editor_tabs.read().active_tab().cloned();
@@ -188,7 +187,7 @@ pub fn EditorPane() -> Element {
                                 .active_content(active_tab_id.as_deref())
                                 .unwrap_or_default()
                                 .to_string();
-                            rsx! { PreviewPane { content } }
+                            rsx! { PreviewPane { content, editor_services } }
                         }
                     }
                 }
@@ -236,8 +235,8 @@ fn ViewToggle(view_mode: ViewMode, on_change: EventHandler<ViewMode>) -> Element
 }
 
 #[component]
-fn PreviewPane(content: String) -> Element {
-    let html = render_markdown_html(&content);
+fn PreviewPane(content: String, editor_services: EditorServices) -> Element {
+    let html = editor_services.render_html(&content);
 
     rsx! {
         div {
@@ -291,6 +290,7 @@ fn EditorHost(tab_id: String, auto_save_delay_ms: u64, is_visible: bool) -> Elem
     let editor_tabs = app.editor_tabs;
     let tab_contents = app.tab_contents;
     let commands = app.commands;
+    let editor_services = app.editor_services;
     let bridges = use_context::<EditorBridgeMap>();
     let container_id = format!("mn-editor-{tab_id}");
     let runtime_state = use_signal(|| EditorRuntimeState::Loading);
@@ -441,6 +441,7 @@ fn EditorHost(tab_id: String, auto_save_delay_ms: u64, is_visible: bool) -> Elem
                                 editor_tabs,
                                 tab_contents,
                                 commands.clone(),
+                                editor_services,
                                 tab_id,
                                 content,
                                 auto_save_delay_ms,
@@ -522,6 +523,7 @@ fn record_content_change(
     mut editor_tabs: Signal<EditorTabs>,
     mut tab_contents: Signal<TabContentsMap>,
     commands: AppCommands,
+    editor_services: EditorServices,
     tab_id: String,
     content: String,
     auto_save_delay_ms: u64,
@@ -548,7 +550,7 @@ fn record_content_change(
                     .content_for_tab(&tab_id)
                     .unwrap_or_default()
                     .to_string();
-                let stats = summarize_markdown(&content);
+                let stats = editor_services.summarize(&content);
                 tab_contents.write().refresh_stats(&tab_id, stats);
                 commands.save_tab.call(tab_id);
             }

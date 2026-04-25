@@ -4,7 +4,7 @@ use papyro_core::models::{AppSettings, FileNode};
 use papyro_core::{EditorTabs, NoteStorage, TabContentsMap, UiState, WorkspaceBootstrap};
 use papyro_platform::PlatformApi;
 use papyro_ui::commands::{AppCommands, FileTarget};
-use papyro_ui::context::AppContext;
+use papyro_ui::context::{AppContext, EditorServices};
 use std::sync::Arc;
 
 fn perf_enabled() -> bool {
@@ -232,6 +232,10 @@ pub fn use_app_runtime(
         ui_state,
         pending_close_tab,
         commands,
+        editor_services: EditorServices {
+            summarize_markdown: papyro_editor::parser::summarize_markdown,
+            render_markdown_html: papyro_editor::renderer::render_markdown_html,
+        },
     });
 
     let _watch_workspace = use_resource(move || {

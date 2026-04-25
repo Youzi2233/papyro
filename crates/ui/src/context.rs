@@ -1,6 +1,28 @@
 use crate::commands::AppCommands;
 use dioxus::prelude::*;
-use papyro_core::{EditorTabs, FileState, TabContentsMap, UiState};
+use papyro_core::{models::DocumentStats, EditorTabs, FileState, TabContentsMap, UiState};
+
+#[derive(Clone, Copy)]
+pub struct EditorServices {
+    pub summarize_markdown: fn(&str) -> DocumentStats,
+    pub render_markdown_html: fn(&str) -> String,
+}
+
+impl EditorServices {
+    pub fn summarize(self, markdown: &str) -> DocumentStats {
+        (self.summarize_markdown)(markdown)
+    }
+
+    pub fn render_html(self, markdown: &str) -> String {
+        (self.render_markdown_html)(markdown)
+    }
+}
+
+impl PartialEq for EditorServices {
+    fn eq(&self, _other: &Self) -> bool {
+        true
+    }
+}
 
 #[derive(Clone, PartialEq)]
 pub struct AppContext {
@@ -10,6 +32,7 @@ pub struct AppContext {
     pub ui_state: Signal<UiState>,
     pub pending_close_tab: Signal<Option<String>>,
     pub commands: AppCommands,
+    pub editor_services: EditorServices,
 }
 
 pub fn use_app_context() -> AppContext {

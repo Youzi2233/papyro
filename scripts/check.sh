@@ -13,6 +13,9 @@ cargo clippy --workspace --all-targets --all-features -- -D warnings
 echo "=== cargo test ==="
 cargo test --workspace
 
+echo "=== workspace dependency check ==="
+node scripts/check-workspace-deps.js
+
 echo "=== npm run build ==="
 npm --prefix js run build
 

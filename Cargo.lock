@@ -3300,7 +3300,6 @@ version = "0.1.0"
 dependencies = [
  "dioxus",
  "papyro-core",
- "papyro-editor",
  "serde",
  "serde_json",
  "tokio",
