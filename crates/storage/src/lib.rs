@@ -134,6 +134,7 @@ impl SqliteStorage {
                     snapshot.file_tree.clone(),
                     snapshot.recent_files.clone(),
                 );
+                file_state.workspaces = self.recent_workspaces_with_current(&snapshot.workspace);
 
                 WorkspaceBootstrap {
                     file_state,
@@ -253,6 +254,22 @@ impl SqliteStorage {
 
     pub fn list_recent_workspaces(&self, limit: usize) -> Result<Vec<Workspace>> {
         db::workspaces::list_recent_workspaces(&self.pool, limit)
+    }
+
+    fn recent_workspaces_with_current(&self, current: &Workspace) -> Vec<Workspace> {
+        let mut workspaces = self.list_recent_workspaces(10).unwrap_or_else(|error| {
+            tracing::warn!("Failed to load recent workspaces: {error}");
+            Vec::new()
+        });
+
+        if !workspaces
+            .iter()
+            .any(|workspace| workspace.id == current.id)
+        {
+            workspaces.insert(0, current.clone());
+        }
+
+        workspaces
     }
 }
 
@@ -765,6 +782,42 @@ mod tests {
         assert_eq!(recent.len(), 1);
         assert_eq!(recent[0].id, snapshot_b.workspace.id);
         assert_eq!(recent[0].path, workspace_b);
+
+        Ok(())
+    }
+
+    #[test]
+    fn bootstrap_from_workspace_includes_recent_workspaces() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let workspace_a = temp.path().join("workspace-a");
+        let workspace_b = temp.path().join("workspace-b");
+        std::fs::create_dir_all(&workspace_a)?;
+        std::fs::create_dir_all(&workspace_b)?;
+
+        let storage = test_storage(&temp)?;
+        let snapshot_a = storage.initialize_workspace(&workspace_a)?;
+        let snapshot_b = storage.initialize_workspace(&workspace_b)?;
+        db::workspaces::update_last_opened(&storage.pool, &snapshot_a.workspace.id, 100)?;
+        db::workspaces::update_last_opened(&storage.pool, &snapshot_b.workspace.id, 200)?;
+
+        let bootstrap = storage.bootstrap_from_workspace(&workspace_a);
+        let workspace_paths = bootstrap
+            .file_state
+            .workspaces
+            .iter()
+            .map(|workspace| workspace.path.clone())
+            .collect::<Vec<_>>();
+
+        assert_eq!(
+            bootstrap
+                .file_state
+                .current_workspace
+                .as_ref()
+                .map(|workspace| workspace.path.clone()),
+            Some(workspace_a.clone())
+        );
+        assert_eq!(workspace_paths.first(), Some(&workspace_a));
+        assert!(workspace_paths.contains(&workspace_b));
 
         Ok(())
     }
