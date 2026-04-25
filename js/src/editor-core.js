@@ -281,6 +281,53 @@ export function collectMarkdownFrontMatterBlock(lines) {
   return null;
 }
 
+function parseMarkdownMathFenceLine(line) {
+  const trimmed = line.trim();
+  if (trimmed === "$$") return { kind: "fence" };
+
+  const singleLine = /^\$\$(.+)\$\$$/.exec(trimmed);
+  if (!singleLine) return null;
+
+  const source = singleLine[1].trim();
+  return source ? { kind: "single", source } : null;
+}
+
+export function collectMarkdownMathBlocks(lines) {
+  const blocks = [];
+  let openLine = null;
+
+  lines.forEach((line, index) => {
+    const fence = parseMarkdownMathFenceLine(line);
+    if (!fence) return;
+
+    const lineNumber = index + 1;
+    if (openLine !== null) {
+      if (fence.kind === "fence") {
+        blocks.push({
+          fromLine: openLine,
+          toLine: lineNumber,
+          source: lines.slice(openLine, index).join("\n").trim(),
+        });
+        openLine = null;
+      }
+      return;
+    }
+
+    if (fence.kind === "single") {
+      blocks.push({
+        fromLine: lineNumber,
+        toLine: lineNumber,
+        source: fence.source,
+      });
+      return;
+    }
+
+    openLine = lineNumber;
+  });
+
+  return blocks;
+}
+
 function parseMarkdownTableRow(line) {
   const trimmed = line.trim();
   if (!trimmed.includes("|")) return null;

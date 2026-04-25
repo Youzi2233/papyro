@@ -20,6 +20,7 @@ import {
   attachViewToTab as attachViewToTabCore,
   collectMarkdownCodeBlocks,
   collectMarkdownFrontMatterBlock,
+  collectMarkdownMathBlocks,
   collectMarkdownTableBlocks,
   handleRustMessage as handleRustMessageCore,
   parseMarkdownBlockquoteLine,
@@ -217,6 +218,28 @@ const editorTheme = EditorView.theme({
     color: "var(--mn-accent-strong)",
     fontFamily: 'var(--mn-editor-font, "Cascadia Code", monospace)',
   },
+  ".cm-hybrid-math-block": {
+    display: "block",
+    width: "100%",
+    boxSizing: "border-box",
+    margin: "0.75em 0",
+    padding: "0.85em 1em",
+    border: "1px solid var(--mn-border)",
+    borderRadius: "6px",
+    backgroundColor: "var(--mn-surface, #fbf6ea)",
+    color: "var(--mn-ink)",
+    overflowX: "auto",
+    textAlign: "center",
+  },
+  ".cm-hybrid-math-block math": {
+    fontSize: "1.15em",
+  },
+  ".cm-hybrid-math-block-error": {
+    color: "var(--mn-accent-strong)",
+    fontFamily: 'var(--mn-editor-font, "Cascadia Code", monospace)',
+    textAlign: "left",
+    whiteSpace: "pre-wrap",
+  },
   ".cm-hybrid-link": {
     color: "var(--mn-accent)",
     textDecoration: "underline",
@@ -366,14 +389,7 @@ class InlineMathWidget extends WidgetType {
     const wrapper = document.createElement("span");
     wrapper.className = "cm-hybrid-inline-math";
 
-    try {
-      wrapper.innerHTML = katex.renderToString(this.source, {
-        displayMode: false,
-        output: "mathml",
-        throwOnError: false,
-        strict: "ignore",
-      });
-    } catch {
+    if (!renderKatexMath(wrapper, this.source, false)) {
       wrapper.classList.add("cm-hybrid-inline-math-error");
       wrapper.textContent = `$${this.source}$`;
     }
@@ -384,6 +400,21 @@ class InlineMathWidget extends WidgetType {
   ignoreEvent() {
     return false;
   }
+}
+
+function renderKatexMath(target, source, displayMode) {
+  try {
+    target.innerHTML = katex.renderToString(source, {
+      displayMode,
+      output: "mathml",
+      throwOnError: false,
+      strict: "ignore",
+    });
+  } catch {
+    return false;
+  }
+
+  return true;
 }
 
 function addInlineDecorations(decorations, line) {
@@ -582,6 +613,33 @@ class CodeFenceWidget extends WidgetType {
   }
 }
 
+class MathBlockWidget extends WidgetType {
+  constructor(source) {
+    super();
+    this.source = source;
+  }
+
+  eq(other) {
+    return other instanceof MathBlockWidget && other.source === this.source;
+  }
+
+  toDOM() {
+    const wrapper = document.createElement("span");
+    wrapper.className = "cm-hybrid-math-block";
+
+    if (!renderKatexMath(wrapper, this.source, true)) {
+      wrapper.classList.add("cm-hybrid-math-block-error");
+      wrapper.textContent = this.source ? `$$\n${this.source}\n$$` : "$$";
+    }
+
+    return wrapper;
+  }
+
+  ignoreEvent() {
+    return false;
+  }
+}
+
 function addCodeBlockDecorations(decorations, line, block) {
   const isStart = line.number === block.fromLine;
   const isEnd = line.number === block.toLine;
@@ -599,6 +657,17 @@ function addCodeBlockDecorations(decorations, line, block) {
       }).range(line.from, line.to),
     );
   }
+}
+
+function addMathBlockDecorations(decorations, state, block) {
+  const from = state.doc.line(block.fromLine).from;
+  const to = state.doc.line(block.toLine).to;
+  decorations.push(
+    Decoration.replace({
+      block: true,
+      widget: new MathBlockWidget(block.source),
+    }).range(from, to),
+  );
 }
 
 function addFrontMatterDecorations(decorations, line, block) {
@@ -634,6 +703,7 @@ function buildHybridMarkdownDecorations(
   view,
   codeBlocks,
   frontMatterBlock,
+  mathBlocks,
   tableBlocks,
 ) {
   if (view.state.field(viewModeField, false) !== "hybrid") {
@@ -641,6 +711,7 @@ function buildHybridMarkdownDecorations(
   }
 
   const decorations = [];
+  const emittedMathBlocks = new Set();
   let lastLineNumber = -1;
 
   for (const range of view.visibleRanges) {
@@ -670,6 +741,19 @@ function buildHybridMarkdownDecorations(
           codeBlock.toLine,
         )) {
           addCodeBlockDecorations(decorations, line, codeBlock);
+        }
+        continue;
+      }
+
+      const mathBlock = rangeBlockForLine(mathBlocks, line.number);
+      if (mathBlock) {
+        if (!selectionTouchesLineRange(
+          view.state,
+          mathBlock.fromLine,
+          mathBlock.toLine,
+        ) && !emittedMathBlocks.has(mathBlock.fromLine)) {
+          emittedMathBlocks.add(mathBlock.fromLine);
+          addMathBlockDecorations(decorations, view.state, mathBlock);
         }
         continue;
       }
@@ -729,11 +813,13 @@ const hybridHeadingPlugin = ViewPlugin.fromClass(
       const lines = documentLineTexts(view.state.doc);
       this.codeBlocks = collectMarkdownCodeBlocks(lines);
       this.frontMatterBlock = collectMarkdownFrontMatterBlock(lines);
+      this.mathBlocks = collectMarkdownMathBlocks(lines);
       this.tableBlocks = collectMarkdownTableBlocks(lines);
       this.decorations = buildHybridMarkdownDecorations(
         view,
         this.codeBlocks,
         this.frontMatterBlock,
+        this.mathBlocks,
         this.tableBlocks,
       );
     }
@@ -743,6 +829,7 @@ const hybridHeadingPlugin = ViewPlugin.fromClass(
         const lines = documentLineTexts(update.state.doc);
         this.codeBlocks = collectMarkdownCodeBlocks(lines);
         this.frontMatterBlock = collectMarkdownFrontMatterBlock(lines);
+        this.mathBlocks = collectMarkdownMathBlocks(lines);
         this.tableBlocks = collectMarkdownTableBlocks(lines);
       }
       if (
@@ -755,6 +842,7 @@ const hybridHeadingPlugin = ViewPlugin.fromClass(
           update.view,
           this.codeBlocks,
           this.frontMatterBlock,
+          this.mathBlocks,
           this.tableBlocks,
         );
       }

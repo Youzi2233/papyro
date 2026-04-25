@@ -5,6 +5,7 @@ import {
   attachViewToTab,
   collectMarkdownCodeBlocks,
   collectMarkdownFrontMatterBlock,
+  collectMarkdownMathBlocks,
   collectMarkdownTableBlocks,
   handleRustMessage,
   normalizeViewMode,
@@ -227,6 +228,22 @@ test("collect_markdown_front_matter_block returns top metadata range", () => {
   });
   assert.equal(collectMarkdownFrontMatterBlock(["---", "title: Test"]), null);
   assert.equal(collectMarkdownFrontMatterBlock(["Body", "---", "x", "---"]), null);
+});
+
+test("collect_markdown_math_blocks returns display math ranges", () => {
+  assert.deepEqual(collectMarkdownMathBlocks([
+    "Before",
+    "$$",
+    "x^2 + y^2 = z^2",
+    "$$",
+    "After",
+  ]), [
+    { fromLine: 2, toLine: 4, source: "x^2 + y^2 = z^2" },
+  ]);
+  assert.deepEqual(collectMarkdownMathBlocks(["$$x^2$$"]), [
+    { fromLine: 1, toLine: 1, source: "x^2" },
+  ]);
+  assert.deepEqual(collectMarkdownMathBlocks(["$$", "x^2"]), []);
 });
 
 test("collect_markdown_table_blocks returns pipe table ranges", () => {
