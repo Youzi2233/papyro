@@ -30,8 +30,9 @@
 
 # Checklist
 
-- [ ] commit 标题符合 `type: 摘要`，最多 20 字
-- [ ] 复杂提交已用正文说明背景、影响范围、风险和验证
+- [ ] commit title/body use English
+- [ ] commit title follows `type: summary` and stays within 72 chars
+- [ ] complex commits explain context, scope, risk, and verification in the body
 - [ ] 无无关文件变更
 - [ ] 文档已按需更新
 - [ ] 测试已按风险补齐

@@ -58,11 +58,12 @@
 ## 提交规范
 
 - 一个提交只对应一个最小任务。
-- 提交标题采用轻量 Conventional Commits，最多 20 字，格式为 `type: 摘要`。
-- 20 字限制只约束标题，包含 type、scope、冒号、空格和摘要。
-- `scope` 可选，只有能显著提升检索价值时才使用：`type(scope): 摘要`。
-- 摘要不必过度压缩。优先在 20 字内清楚表达结果，而不是追求最短。
-- 提交正文可详细说明背景、主要改动、影响范围、风险和验证结果。
+- 提交标题采用英文 Conventional Commits，格式为 `type: summary`。
+- 标题使用祈使句或结果导向短句，例如 `feat: render hybrid headings`。
+- 标题建议控制在 50 字符以内，最多 72 字符。不要为了极短而牺牲可读性。
+- `scope` 可选，只有能显著提升检索价值时才使用：`type(scope): summary`。
+- 提交正文统一使用英文，可详细说明背景、主要改动、影响范围、风险和验证结果。
+- 正文建议每行 72 字符左右，按主题拆成短段落或 bullet。
 - 简单文档、注释或机械变更可以不写正文；涉及架构、协议、存储、数据安全或多模块协作时建议写正文。
 - 不把无关格式化、依赖升级、生成文件和功能改动混在同一提交。
 - 提交前确认源码、测试、文档和生成文件处于一致状态。
@@ -85,34 +86,39 @@
 推荐示例：
 
 ```text
-docs: 补开发规范
-fix: 稳保存状态
-feat: 加性能预算
-refactor: 迁自动保存
-test: 补保存用例
+docs: update commit standards
+fix: preserve dirty save state
+feat: render hybrid headings
+refactor: move autosave effects
+test: cover save retry flow
 ```
 
 正文示例：
 
 ```text
-feat: 接模式协议
+feat: route editor view mode
 
-- Add set_view_mode to the Rust/JS editor protocol so the runtime can receive Source, Hybrid, and Preview mode changes without relying on UI-only state.
+- Add set_view_mode to the Rust/JS editor protocol so the runtime can
+  receive Source, Hybrid, and Preview changes without relying on UI-only
+  state.
 
-- Store the normalized mode on the JS editor registry and DOM dataset. Reused editor hosts now keep mode state consistent when tabs are recycled or reattached.
+- Store the normalized mode on the JS editor registry and DOM dataset.
+  Reused editor hosts now keep mode state consistent when tabs are
+  recycled or reattached.
 
-- Cover protocol serialization and JS mode normalization with tests, then rebuild generated editor bundles so host assets stay synchronized.
+- Cover protocol serialization and JS mode normalization with tests, then
+  rebuild generated editor bundles so host assets stay synchronized.
 ```
 
 不推荐示例：
 
 ```text
-更新代码
-修复问题
-完成所有重构
-临时提交
-修改若干文件
-feat: 完成所有功能
+update code
+fix things
+finish all refactors
+wip
+misc changes
+feat: add everything
 ```
 
 ## PR 规范
@@ -131,7 +137,8 @@ PR 合入前必须满足：
 - 没有无关文件变更。
 - 没有违反模块依赖方向。
 - 文档、测试和生成物与代码行为一致。
-- commit 标题符合 `type: 摘要`，且最多 20 字。
+- commit title 和 body 都使用英文。
+- commit title 符合 `type: summary`，建议 50 字符以内，最多 72 字符。
 
 ## 标准检查命令
 
