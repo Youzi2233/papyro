@@ -56,4 +56,10 @@ pub trait NoteStorage: Send + Sync {
     fn list_recent(&self, limit: usize) -> Result<Vec<RecentFile>>;
     fn load_settings(&self) -> AppSettings;
     fn save_settings(&self, settings: &AppSettings) -> Result<()>;
+    fn load_workspace_settings(&self, workspace: &Workspace) -> WorkspaceSettingsOverrides;
+    fn save_workspace_settings(
+        &self,
+        workspace: &Workspace,
+        overrides: &WorkspaceSettingsOverrides,
+    ) -> Result<()>;
 }

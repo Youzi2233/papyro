@@ -1,6 +1,7 @@
 use anyhow::{anyhow, Result};
 use papyro_core::models::{
     AppSettings, EditorTab, FileNode, FileNodeKind, RecentFile, SaveStatus, Workspace,
+    WorkspaceSettingsOverrides,
 };
 use papyro_core::storage::{
     NoteStorage, OpenedNote, SavedNote, WorkspaceBootstrap, WorkspaceSnapshot,
@@ -115,6 +116,18 @@ impl NoteStorage for MockStorage {
     }
 
     fn save_settings(&self, _settings: &AppSettings) -> Result<()> {
+        Ok(())
+    }
+
+    fn load_workspace_settings(&self, _workspace: &Workspace) -> WorkspaceSettingsOverrides {
+        WorkspaceSettingsOverrides::default()
+    }
+
+    fn save_workspace_settings(
+        &self,
+        _workspace: &Workspace,
+        _overrides: &WorkspaceSettingsOverrides,
+    ) -> Result<()> {
         Ok(())
     }
 }

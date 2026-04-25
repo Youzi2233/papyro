@@ -9,12 +9,14 @@ use anyhow::Result;
 use chrono::Utc;
 use papyro_core::models::{
     AppSettings, EditorTab, FileNode, FileNodeKind, NoteMeta, RecentFile, Workspace,
+    WorkspaceSettingsOverrides,
 };
 use papyro_core::{FileState, NoteStorage};
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 
 const APP_SETTINGS_KEY: &str = "app_settings";
+const WORKSPACE_SETTINGS_PREFIX: &str = "workspace_settings:";
 
 #[derive(Debug, Clone)]
 pub struct SqliteStorage {
@@ -103,6 +105,24 @@ impl SqliteStorage {
         Ok(())
     }
 
+    pub fn load_workspace_settings(&self, workspace: &Workspace) -> WorkspaceSettingsOverrides {
+        db::settings::get(&self.pool, &workspace_settings_key(&workspace.id))
+            .ok()
+            .flatten()
+            .and_then(|json| serde_json::from_str(&json).ok())
+            .unwrap_or_default()
+    }
+
+    pub fn save_workspace_settings(
+        &self,
+        workspace: &Workspace,
+        overrides: &WorkspaceSettingsOverrides,
+    ) -> Result<()> {
+        let json = serde_json::to_string(overrides)?;
+        db::settings::set(&self.pool, &workspace_settings_key(&workspace.id), &json)?;
+        Ok(())
+    }
+
     pub fn bootstrap_from_env_or_current_dir(&self) -> WorkspaceBootstrap {
         let settings = self.load_settings();
         let workspace_root = std::env::var_os("PAPYRO_WORKSPACE")
@@ -137,6 +157,9 @@ impl SqliteStorage {
                     snapshot.recent_files.clone(),
                 );
                 file_state.workspaces = self.recent_workspaces_with_current(&snapshot.workspace);
+                let global_settings = self.load_settings();
+                let workspace_settings = self.load_workspace_settings(&snapshot.workspace);
+                let settings = global_settings.with_workspace_overrides(&workspace_settings);
 
                 WorkspaceBootstrap {
                     file_state,
@@ -148,9 +171,9 @@ impl SqliteStorage {
                         snapshot.workspace.path.display()
                     ),
                     error_message: None,
-                    settings: AppSettings::default(),
-                    global_settings: AppSettings::default(),
-                    workspace_settings: Default::default(),
+                    settings,
+                    global_settings,
+                    workspace_settings,
                 }
             }
             Err(error) => WorkspaceBootstrap {
@@ -341,6 +364,18 @@ impl NoteStorage for SqliteStorage {
     fn save_settings(&self, settings: &AppSettings) -> Result<()> {
         SqliteStorage::save_settings(self, settings)
     }
+
+    fn load_workspace_settings(&self, workspace: &Workspace) -> WorkspaceSettingsOverrides {
+        SqliteStorage::load_workspace_settings(self, workspace)
+    }
+
+    fn save_workspace_settings(
+        &self,
+        workspace: &Workspace,
+        overrides: &WorkspaceSettingsOverrides,
+    ) -> Result<()> {
+        SqliteStorage::save_workspace_settings(self, workspace, overrides)
+    }
 }
 
 pub fn load_app_settings() -> AppSettings {
@@ -351,6 +386,17 @@ pub fn load_app_settings() -> AppSettings {
 
 pub fn save_app_settings(settings: &AppSettings) -> Result<()> {
     SqliteStorage::shared()?.save_settings(settings)
+}
+
+pub fn load_workspace_settings(workspace: &Workspace) -> Result<WorkspaceSettingsOverrides> {
+    Ok(SqliteStorage::shared()?.load_workspace_settings(workspace))
+}
+
+pub fn save_workspace_settings(
+    workspace: &Workspace,
+    overrides: &WorkspaceSettingsOverrides,
+) -> Result<()> {
+    SqliteStorage::shared()?.save_workspace_settings(workspace, overrides)
 }
 
 pub fn bootstrap_from_env_or_current_dir() -> WorkspaceBootstrap {
@@ -457,6 +503,10 @@ fn ensure_workspace(pool: &DbPool, root: &Path) -> Result<Workspace> {
 
     db::workspaces::insert_workspace(pool, &workspace)?;
     Ok(workspace)
+}
+
+fn workspace_settings_key(workspace_id: &str) -> String {
+    format!("{WORKSPACE_SETTINGS_PREFIX}{workspace_id}")
 }
 
 fn sync_workspace_notes(
@@ -825,6 +875,45 @@ mod tests {
         );
         assert_eq!(workspace_paths.first(), Some(&workspace_a));
         assert!(workspace_paths.contains(&workspace_b));
+
+        Ok(())
+    }
+
+    #[test]
+    fn bootstrap_from_workspace_applies_workspace_settings() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let workspace_root = create_workspace(&temp)?;
+
+        let storage = test_storage(&temp)?;
+        let workspace = storage.initialize_workspace(&workspace_root)?.workspace;
+        let global_settings = AppSettings {
+            theme: papyro_core::models::Theme::Light,
+            font_size: 16,
+            auto_save_delay_ms: 500,
+            view_mode: papyro_core::models::ViewMode::Hybrid,
+            ..AppSettings::default()
+        };
+        let workspace_settings = WorkspaceSettingsOverrides {
+            theme: Some(papyro_core::models::Theme::Dark),
+            font_size: Some(19),
+            view_mode: Some(papyro_core::models::ViewMode::Source),
+            ..WorkspaceSettingsOverrides::default()
+        };
+
+        storage.save_settings(&global_settings)?;
+        storage.save_workspace_settings(&workspace, &workspace_settings)?;
+
+        let bootstrap = storage.bootstrap_from_workspace(&workspace_root);
+
+        assert_eq!(bootstrap.global_settings, global_settings);
+        assert_eq!(bootstrap.workspace_settings, workspace_settings);
+        assert_eq!(bootstrap.settings.theme, papyro_core::models::Theme::Dark);
+        assert_eq!(bootstrap.settings.font_size, 19);
+        assert_eq!(
+            bootstrap.settings.view_mode,
+            papyro_core::models::ViewMode::Source
+        );
+        assert_eq!(bootstrap.settings.auto_save_delay_ms, 500);
 
         Ok(())
     }
