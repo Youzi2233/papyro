@@ -1,0 +1,17 @@
+[application]
+name = "papyro-desktop"
+default_platform = "desktop"
+
+[desktop]
+# editor.js is synced at startup by the binary itself
+assets_dir = "apps/desktop/assets"
+
+[web.app]
+title = "papyro"
+
+[web.resource]
+style = []
+script = []
+
+[web.resource.dev]
+script = []

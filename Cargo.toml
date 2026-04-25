@@ -1,0 +1,63 @@
+[workspace]
+members = [
+    "apps/desktop",
+    "apps/mobile",
+    "crates/app",
+    "crates/core",
+    "crates/ui",
+    "crates/editor",
+    "crates/storage",
+    "crates/platform",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+authors = ["Youzi2233 <www.1348502923@qq.com>"]
+edition = "2021"
+
+[workspace.dependencies]
+# UI
+dioxus = { version = "=0.7.4", features = [] }
+
+# 异步
+tokio = { version = "1", features = ["full"] }
+async-trait = "0.1"
+futures = "0.3"
+flume = "0.11"
+
+# 序列化
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+
+# Markdown
+pulldown-cmark = "0.12"
+pulldown-cmark-to-cmark = "10"
+syntect = "5"
+
+# 存储
+rusqlite = { version = "0.31", features = ["bundled"] }
+rusqlite_migration = "1"
+r2d2 = "0.8"
+r2d2_sqlite = "0.24"
+notify = "6"
+walkdir = "2"
+dirs = "5"
+fs_extra = "1"
+tempfile = "3"
+
+# 文件对话框
+rfd = "0.14"
+
+# 错误与日志
+anyhow = "1"
+thiserror = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# 工具
+arboard = "3"
+open = "5"
+uuid = { version = "1", features = ["v4"] }
+chrono = { version = "0.4", features = ["serde"] }

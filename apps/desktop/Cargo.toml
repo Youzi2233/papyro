@@ -1,0 +1,11 @@
+[package]
+name = "papyro-desktop"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+dioxus = { workspace = true, features = ["desktop"] }
+papyro-app = { path = "../../crates/app", features = ["desktop-shell"] }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }

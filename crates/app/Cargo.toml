@@ -1,0 +1,22 @@
+[package]
+name = "papyro-app"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[features]
+default = []
+desktop-shell = ["dep:rfd"]
+
+[dependencies]
+dioxus = { workspace = true }
+anyhow = { workspace = true }
+flume = { workspace = true }
+rfd = { workspace = true, optional = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+papyro-core = { path = "../core" }
+papyro-ui = { path = "../ui" }
+papyro-editor = { path = "../editor" }
+papyro-storage = { path = "../storage" }
+papyro-platform = { path = "../platform" }

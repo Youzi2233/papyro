@@ -1,0 +1,14 @@
+[package]
+name = "papyro-platform"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+async-trait = { workspace = true }
+rfd = { workspace = true }
+open = { workspace = true }
+dirs = { workspace = true }

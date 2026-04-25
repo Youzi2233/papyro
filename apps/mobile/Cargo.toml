@@ -1,0 +1,11 @@
+[package]
+name = "papyro-mobile"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+dioxus = { workspace = true, features = ["mobile"] }
+papyro-app = { path = "../../crates/app" }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }

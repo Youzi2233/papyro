@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:dioxuslabs.com)",
+      "WebSearch",
+      "Bash(xargs grep *)",
+      "Bash(xargs cat *)",
+      "WebFetch(domain:medium.com)",
+      "Bash(cargo doc *)",
+      "Bash(npm --version)",
+      "Bash(npm install *)",
+      "Bash(node build.js)"
+    ]
+  }
+}
