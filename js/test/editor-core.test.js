@@ -49,6 +49,7 @@ function fakeView(initialDoc = "", selection = { from: 0, to: 0 }, onDispatch = 
   const view = {
     dom: { dataset: {}, parentElement: null },
     focused: false,
+    composing: false,
     requestMeasureCalled: false,
     get state() {
       return {
@@ -513,6 +514,23 @@ test("markdown shortcut view commands dispatch completions", () => {
   const fence = fakeView("```", { from: 3, to: 3 });
   assert.equal(handleMarkdownEnter(fence), true);
   assert.equal(fence.state.doc.toString(), "```\n\n```");
+});
+
+test("markdown input commands yield during IME composition", () => {
+  const space = fakeView("#", { from: 1, to: 1 });
+  space.composing = true;
+  assert.equal(completeMarkdownShortcutOnSpace(space), false);
+  assert.equal(space.state.doc.toString(), "#");
+
+  const enter = fakeView("> quote", { from: 7, to: 7 });
+  enter.composing = true;
+  assert.equal(handleMarkdownEnter(enter), false);
+  assert.equal(enter.state.doc.toString(), "> quote");
+
+  const indent = fakeView("- item", { from: 0, to: 0 });
+  indent.composing = true;
+  assert.equal(indentMarkdownListInView(indent, "indent"), false);
+  assert.equal(indent.state.doc.toString(), "- item");
 });
 
 test("markdown_list_indent_change indents selected list lines", () => {

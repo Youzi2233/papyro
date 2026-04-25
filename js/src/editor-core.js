@@ -95,6 +95,10 @@ export function applyFormatToView(view, kind) {
   return true;
 }
 
+function viewIsComposing(view) {
+  return Boolean(view.composing);
+}
+
 export function pasteMarkdownLinkInView(view, pastedText, preferences) {
   const range = view.state.selection.main;
   if (range.from === range.to) return false;
@@ -233,6 +237,8 @@ export function markdownShortcutSpaceChange(doc, cursor) {
 }
 
 export function handleMarkdownEnter(view) {
+  if (viewIsComposing(view)) return false;
+
   const range = view.state.selection.main;
   if (range.from !== range.to) return false;
 
@@ -247,6 +253,8 @@ export function handleMarkdownEnter(view) {
 }
 
 export function completeMarkdownShortcutOnSpace(view) {
+  if (viewIsComposing(view)) return false;
+
   const range = view.state.selection.main;
   if (range.from !== range.to) return false;
 
@@ -362,6 +370,8 @@ export function markdownListIndentChange(doc, from, to, direction) {
 }
 
 export function indentMarkdownListInView(view, direction) {
+  if (viewIsComposing(view)) return false;
+
   const range = view.state.selection.main;
   const result = markdownListIndentChange(
     view.state.doc.toString(),
