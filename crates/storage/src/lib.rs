@@ -686,6 +686,8 @@ mod tests {
         assert_eq!(opened.tab.title, "Note Title");
         assert_eq!(opened.recent_files.len(), 1);
         assert_eq!(opened.recent_files[0].title, "Note Title");
+        assert_eq!(opened.recent_files[0].workspace_id, workspace.id);
+        assert_eq!(opened.recent_files[0].workspace_path, workspace.path);
 
         let meta =
             db::notes::get_note(&storage.pool, &opened.tab.note_id)?.expect("note metadata exists");

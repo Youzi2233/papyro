@@ -163,7 +163,9 @@ pub(super) fn recent_file(note_id: &str, relative_path: &str) -> RecentFile {
         note_id: note_id.to_string(),
         title: note_id.to_string(),
         relative_path: PathBuf::from(relative_path),
+        workspace_id: "workspace-1".to_string(),
         workspace_name: "Workspace".to_string(),
+        workspace_path: PathBuf::from("workspace"),
         opened_at: 0,
     }
 }

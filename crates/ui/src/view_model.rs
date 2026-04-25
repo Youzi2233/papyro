@@ -197,7 +197,9 @@ mod tests {
                 note_id: "a".to_string(),
                 title: "A".to_string(),
                 relative_path: PathBuf::from("a.md"),
+                workspace_id: "w".to_string(),
                 workspace_name: "Workspace".to_string(),
+                workspace_path: PathBuf::from("workspace"),
                 opened_at: 0,
             }],
             ..Default::default()

@@ -71,7 +71,9 @@ pub struct RecentFile {
     pub note_id: String,
     pub title: String,
     pub relative_path: PathBuf,
+    pub workspace_id: String,
     pub workspace_name: String,
+    pub workspace_path: PathBuf,
     pub opened_at: i64,
 }
 

@@ -19,7 +19,7 @@ pub fn record_open(pool: &DbPool, note_id: &str, ts: i64) -> Result<()> {
 pub fn list_recent(pool: &DbPool, limit: usize) -> Result<Vec<RecentFile>> {
     let conn = pool.get()?;
     let mut stmt = conn.prepare(
-        "SELECT r.note_id, n.title, n.relative_path, w.name, r.opened_at
+        "SELECT r.note_id, n.title, n.relative_path, w.id, w.name, w.path, r.opened_at
          FROM recent_files r
          JOIN notes n ON r.note_id = n.id
          JOIN workspaces w ON n.workspace_id = w.id
@@ -32,8 +32,10 @@ pub fn list_recent(pool: &DbPool, limit: usize) -> Result<Vec<RecentFile>> {
             note_id: row.get(0)?,
             title: row.get(1)?,
             relative_path: std::path::PathBuf::from(row.get::<_, String>(2)?),
-            workspace_name: row.get(3)?,
-            opened_at: row.get(4)?,
+            workspace_id: row.get(3)?,
+            workspace_name: row.get(4)?,
+            workspace_path: std::path::PathBuf::from(row.get::<_, String>(5)?),
+            opened_at: row.get(6)?,
         })
     })?;
     rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
