@@ -1,3 +1,4 @@
+mod assets;
 mod bridge;
 mod fallback;
 mod host;

@@ -115,6 +115,18 @@ export function pasteMarkdownLinkInView(view, pastedText, preferences) {
   return true;
 }
 
+export function insertMarkdownInView(view, markdown) {
+  const text = markdown ?? "";
+  if (!text) return false;
+
+  const range = view.state.selection.main;
+  view.dispatch({
+    changes: { from: range.from, to: range.to, insert: text },
+    selection: { anchor: range.from + text.length },
+  });
+  return true;
+}
+
 export function markdownListEnterChange(doc, cursor) {
   const lineStart = doc.lastIndexOf("\n", cursor - 1) + 1;
   let lineEnd = doc.indexOf("\n", cursor);
@@ -764,6 +776,10 @@ export function handleRustMessage(editorRegistry, tabId, message, options = {}) 
       if (!entry) return "missing";
       applyFormat(entry.view, message.kind);
       return "formatted";
+    case "insert_markdown":
+      if (!entry) return "missing";
+      insertMarkdownInView(entry.view, message.markdown);
+      return "markdown_inserted";
     case "set_view_mode":
       if (!entry) return "missing";
       setMode(entry, message.mode);

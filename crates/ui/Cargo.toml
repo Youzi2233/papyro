@@ -5,6 +5,7 @@ authors.workspace = true
 edition.workspace = true
 
 [dependencies]
+base64 = { workspace = true }
 dioxus = { workspace = true }
 papyro-core = { path = "../core" }
 papyro-editor = { path = "../editor" }
@@ -12,3 +13,6 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }

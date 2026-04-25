@@ -54,6 +54,7 @@ pub fn use_app_runtime(
         editor_tabs: state.editor_tabs,
         tab_contents: state.tab_contents,
         ui_state: state.ui_state,
+        status_message: state.status_message,
         pending_close_tab: state.pending_close_tab,
         commands,
         editor_services: EditorServices {

@@ -9,6 +9,7 @@ import {
   collectMarkdownTableBlocks,
   handleRustMessage,
   indentMarkdownListInView,
+  insertMarkdownInView,
   markdownLinkPasteChange,
   markdownListIndentChange,
   markdownListEnterChange,
@@ -418,6 +419,14 @@ test("paste_markdown_link_in_view dispatches selected URL paste", () => {
   assert.deepEqual(view.state.selection.main, { from: 33, to: 33 });
 });
 
+test("insert_markdown_in_view replaces selection and moves cursor", () => {
+  const view = fakeView("before selection after", { from: 7, to: 16 });
+
+  assert.equal(insertMarkdownInView(view, "![image](assets/paste.png)"), true);
+  assert.equal(view.state.doc.toString(), "before ![image](assets/paste.png) after");
+  assert.deepEqual(view.state.selection.main, { from: 33, to: 33 });
+});
+
 test("markdown_list_enter_change continues unordered and ordered lists", () => {
   assert.deepEqual(markdownListEnterChange("- item", 6), {
     changes: { from: 6, to: 6, insert: "\n- " },
@@ -546,4 +555,19 @@ test("set_preferences stores editor preferences on entry", () => {
   assert.deepEqual(registry.get("tab-a").preferences, {
     autoLinkPaste: false,
   });
+});
+
+test("insert_markdown message inserts markdown into editor", () => {
+  const registry = new Map();
+  const view = fakeView("body", { from: 4, to: 4 });
+
+  attach(registry, view, "tab-a", "body");
+
+  const result = handleRustMessage(registry, "tab-a", {
+    type: "insert_markdown",
+    markdown: "![image](assets/paste.png)",
+  });
+
+  assert.equal(result, "markdown_inserted");
+  assert.equal(view.state.doc.toString(), "body![image](assets/paste.png)");
 });

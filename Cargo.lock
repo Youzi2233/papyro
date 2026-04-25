@@ -3298,11 +3298,13 @@ dependencies = [
 name = "papyro-ui"
 version = "0.1.0"
 dependencies = [
+ "base64",
  "dioxus",
  "papyro-core",
  "papyro-editor",
  "serde",
  "serde_json",
+ "tempfile",
  "tokio",
  "tracing",
 ]

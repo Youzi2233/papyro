@@ -49,6 +49,39 @@ import {
 // tabId → { view, dioxus, suppressChange }
 const editorRegistry = new Map();
 
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = String(reader.result ?? "");
+      const comma = result.indexOf(",");
+      resolve(comma >= 0 ? result.slice(comma + 1) : result);
+    };
+    reader.onerror = () => reject(reader.error ?? new Error("Failed to read image"));
+    reader.readAsDataURL(blob);
+  });
+}
+
+function clipboardImageItem(event) {
+  const items = Array.from(event.clipboardData?.items ?? []);
+  return items.find((item) => item.kind === "file" && item.type.startsWith("image/"));
+}
+
+async function sendPastedImage(tabId, item) {
+  const file = item.getAsFile();
+  if (!file) return;
+
+  const entry = editorRegistry.get(tabId);
+  const data = await blobToBase64(file);
+  editorRegistry.get(tabId)?.dioxus?.send({
+    type: "paste_image_requested",
+    tab_id: tabId,
+    mime_type: file.type || item.type || "image/png",
+    data,
+  });
+  entry?.view?.focus();
+}
+
 const setViewModeEffect = StateEffect.define();
 const viewModeField = StateField.define({
   create() {
@@ -1032,6 +1065,15 @@ function buildExtensions() {
         if (!tabId) return false;
         const entry = editorRegistry.get(tabId);
         if (!entry) return false;
+
+        const imageItem = clipboardImageItem(event);
+        if (imageItem && entry.dioxus) {
+          event.preventDefault();
+          sendPastedImage(tabId, imageItem).catch((error) => {
+            console.warn("Failed to send pasted image", error);
+          });
+          return true;
+        }
 
         const text = event.clipboardData?.getData("text/plain") ?? "";
         if (!pasteMarkdownLinkInView(view, text, entry.preferences)) return false;

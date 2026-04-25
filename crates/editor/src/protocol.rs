@@ -4,10 +4,25 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum EditorEvent {
-    RuntimeReady { tab_id: String },
-    RuntimeError { tab_id: String, message: String },
-    ContentChanged { tab_id: String, content: String },
-    SaveRequested { tab_id: String },
+    RuntimeReady {
+        tab_id: String,
+    },
+    RuntimeError {
+        tab_id: String,
+        message: String,
+    },
+    ContentChanged {
+        tab_id: String,
+        content: String,
+    },
+    SaveRequested {
+        tab_id: String,
+    },
+    PasteImageRequested {
+        tab_id: String,
+        mime_type: String,
+        data: String,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -16,6 +31,7 @@ pub enum EditorCommand {
     SetContent { content: String },
     SetViewMode { mode: ViewMode },
     SetPreferences { auto_link_paste: bool },
+    InsertMarkdown { markdown: String },
     ApplyFormat { kind: EditorFormat },
     Focus,
     RefreshLayout,
@@ -93,6 +109,19 @@ mod tests {
     }
 
     #[test]
+    fn serializes_insert_markdown_command() {
+        let value = serde_json::to_value(EditorCommand::InsertMarkdown {
+            markdown: "![image](assets/paste.png)".to_string(),
+        })
+        .unwrap();
+
+        assert_eq!(
+            value,
+            json!({ "type": "insert_markdown", "markdown": "![image](assets/paste.png)" })
+        );
+    }
+
+    #[test]
     fn deserializes_content_changed_event() {
         let event: EditorEvent = serde_json::from_value(json!({
             "type": "content_changed",
@@ -124,6 +153,26 @@ mod tests {
             EditorEvent::RuntimeError {
                 tab_id: "tab-a".to_string(),
                 message: "boom".to_string()
+            }
+        );
+    }
+
+    #[test]
+    fn deserializes_paste_image_requested_event() {
+        let event: EditorEvent = serde_json::from_value(json!({
+            "type": "paste_image_requested",
+            "tab_id": "tab-a",
+            "mime_type": "image/png",
+            "data": "abc123"
+        }))
+        .unwrap();
+
+        assert_eq!(
+            event,
+            EditorEvent::PasteImageRequested {
+                tab_id: "tab-a".to_string(),
+                mime_type: "image/png".to_string(),
+                data: "abc123".to_string()
             }
         );
     }

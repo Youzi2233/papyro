@@ -1,3 +1,4 @@
+use super::assets::save_pasted_image_asset;
 use super::bridge::{send_editor_destroy, EditorBridgeMap, EditorCommand, EditorEvent};
 use super::fallback::{EditorRuntimeState, FallbackEditor};
 use crate::commands::ContentChange;
@@ -8,8 +9,11 @@ use papyro_core::models::ViewMode;
 #[component]
 pub(super) fn EditorHost(tab_id: String, is_visible: bool, view_mode: ViewMode) -> Element {
     let app = use_app_context();
+    let file_state = app.file_state;
+    let editor_tabs = app.editor_tabs;
     let tab_contents = app.tab_contents;
     let ui_state = app.ui_state;
+    let status_message = app.status_message;
     let commands = app.commands;
     let bridges = use_context::<EditorBridgeMap>();
     let container_id = format!("mn-editor-{tab_id}");
@@ -25,9 +29,12 @@ pub(super) fn EditorHost(tab_id: String, is_visible: bool, view_mode: ViewMode) 
             }
 
             let mut bridges = bridges;
+            let file_state = file_state;
+            let editor_tabs = editor_tabs;
             let tab_contents = tab_contents;
             let commands = commands.clone();
             let mut runtime_state = runtime_state;
+            let mut status_message = status_message;
             let initial_view_mode = startup_view_mode.clone();
             let tab_id = tab_id.clone();
             let container_id = container_id.clone();
@@ -173,6 +180,37 @@ pub(super) fn EditorHost(tab_id: String, is_visible: bool, view_mode: ViewMode) 
                         }
                         EditorEvent::SaveRequested { tab_id } => {
                             commands.save_tab.call(tab_id);
+                        }
+                        EditorEvent::PasteImageRequested {
+                            tab_id,
+                            mime_type,
+                            data,
+                        } => {
+                            let workspace = file_state.read().current_workspace.clone();
+                            let tab = editor_tabs.read().tab_by_id(&tab_id).cloned();
+
+                            let Some((workspace, tab)) = workspace.zip(tab) else {
+                                status_message.set(Some(
+                                    "Open a workspace note before pasting images".to_string(),
+                                ));
+                                continue;
+                            };
+
+                            let Some(eval) = bridges.read().get(&tab_id).copied() else {
+                                continue;
+                            };
+
+                            match save_pasted_image_asset(&workspace, &tab, &mime_type, &data).await
+                            {
+                                Ok(saved) => {
+                                    let _ = eval.send(EditorCommand::InsertMarkdown {
+                                        markdown: saved.markdown,
+                                    });
+                                }
+                                Err(error) => {
+                                    status_message.set(Some(error));
+                                }
+                            }
                         }
                     }
                 }

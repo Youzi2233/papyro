@@ -36,6 +36,7 @@ pub struct AppContext {
     pub editor_tabs: Signal<EditorTabs>,
     pub tab_contents: Signal<TabContentsMap>,
     pub ui_state: Signal<UiState>,
+    pub status_message: Signal<Option<String>>,
     pub pending_close_tab: Signal<Option<String>>,
     pub commands: AppCommands,
     pub editor_services: EditorServices,
