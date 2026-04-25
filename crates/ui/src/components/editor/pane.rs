@@ -139,13 +139,10 @@ pub fn EditorPane() -> Element {
                         }
                     }
                     if view_mode == ViewMode::Preview {
-                        {
-                            let content = tab_contents
-                                .read()
-                                .active_content(active_tab_id.as_deref())
-                                .unwrap_or_default()
-                                .to_string();
-                            rsx! { PreviewPane { content, editor_services } }
+                        PreviewPane {
+                            active_tab_id: active_tab_id.clone(),
+                            tab_contents,
+                            editor_services,
                         }
                     }
                 }

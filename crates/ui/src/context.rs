@@ -7,6 +7,7 @@ use papyro_core::{models::DocumentStats, EditorTabs, FileState, TabContentsMap, 
 pub struct EditorServices {
     pub summarize_markdown: fn(&str) -> DocumentStats,
     pub render_markdown_html: fn(&str) -> String,
+    pub render_markdown_html_with_highlighting: fn(&str, bool) -> String,
 }
 
 impl EditorServices {
@@ -16,6 +17,10 @@ impl EditorServices {
 
     pub fn render_html(self, markdown: &str) -> String {
         (self.render_markdown_html)(markdown)
+    }
+
+    pub fn render_html_with_highlighting(self, markdown: &str, highlight_code: bool) -> String {
+        (self.render_markdown_html_with_highlighting)(markdown, highlight_code)
     }
 }
 

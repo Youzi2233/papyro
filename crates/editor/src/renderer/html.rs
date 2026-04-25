@@ -9,6 +9,13 @@ thread_local! {
 }
 
 pub fn render_markdown_html(markdown: &str) -> String {
+    render_markdown_html_with_highlighting(
+        markdown,
+        crate::performance::should_highlight_code(markdown.len()),
+    )
+}
+
+pub fn render_markdown_html_with_highlighting(markdown: &str, highlight_code: bool) -> String {
     let mut options = Options::empty();
     options.insert(Options::ENABLE_TABLES);
     options.insert(Options::ENABLE_TASKLISTS);
@@ -16,7 +23,11 @@ pub fn render_markdown_html(markdown: &str) -> String {
     options.insert(Options::ENABLE_HEADING_ATTRIBUTES);
 
     let parser = Parser::new_ext(markdown, options);
-    let highlighted = highlight_code_blocks(parser);
+    let highlighted = if highlight_code {
+        highlight_code_blocks(parser)
+    } else {
+        parser.collect()
+    };
 
     let mut output = String::new();
     html::push_html(&mut output, highlighted.into_iter());

@@ -829,6 +829,25 @@ button { border: 0; cursor: pointer; background: transparent; }
 }
 
 /* ── Preview pane ── */
+.mn-preview-shell {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.mn-preview-notice {
+    flex-shrink: 0;
+    border: 1px solid var(--mn-border);
+    border-radius: var(--mn-radius-sm);
+    background: var(--mn-surface);
+    color: var(--mn-ink-2);
+    padding: 10px 14px;
+    font-family: var(--mn-font-sans);
+    font-size: 12px;
+}
+
 .mn-preview {
     flex: 1;
     min-height: 0;
@@ -842,6 +861,14 @@ button { border: 0; cursor: pointer; background: transparent; }
     font-size: 17px;
     line-height: 1.75;
     color: var(--mn-ink);
+}
+
+.mn-preview-paused {
+    display: grid;
+    place-items: center;
+    color: var(--mn-ink-3);
+    font-family: var(--mn-font-sans);
+    font-size: 13px;
 }
 
 .mn-preview > *:first-child { margin-top: 0; }

@@ -59,6 +59,8 @@ pub fn use_app_runtime(
         editor_services: EditorServices {
             summarize_markdown: papyro_editor::parser::summarize_markdown,
             render_markdown_html: papyro_editor::renderer::render_markdown_html,
+            render_markdown_html_with_highlighting:
+                papyro_editor::renderer::render_markdown_html_with_highlighting,
         },
         view_model,
     });
