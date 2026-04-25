@@ -5,6 +5,7 @@ import {
   attachViewToTab,
   handleRustMessage,
   normalizeViewMode,
+  parseMarkdownBlockquoteLine,
   parseMarkdownHeadingLine,
   parseMarkdownHorizontalRuleLine,
   parseMarkdownImageSpans,
@@ -137,6 +138,13 @@ test("parse_markdown_horizontal_rule_line recognizes thematic breaks", () => {
   assert.equal(parseMarkdownHorizontalRuleLine("--"), null);
   assert.equal(parseMarkdownHorizontalRuleLine("--- text"), null);
   assert.equal(parseMarkdownHorizontalRuleLine("- _ -"), null);
+});
+
+test("parse_markdown_blockquote_line recognizes quote markers", () => {
+  assert.deepEqual(parseMarkdownBlockquoteLine("> quote"), { markerLength: 2 });
+  assert.deepEqual(parseMarkdownBlockquoteLine("   >quote"), { markerLength: 4 });
+  assert.equal(parseMarkdownBlockquoteLine("    > code"), null);
+  assert.equal(parseMarkdownBlockquoteLine("plain > quote"), null);
 });
 
 test("parse_markdown_inline_spans ignores emphasis inside image alt", () => {

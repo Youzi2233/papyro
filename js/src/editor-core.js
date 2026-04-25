@@ -144,6 +144,15 @@ export function parseMarkdownHorizontalRuleLine(line) {
   return { marker };
 }
 
+export function parseMarkdownBlockquoteLine(line) {
+  const match = /^([ \t]{0,3}>[ \t]?)/.exec(line);
+  if (!match) return null;
+
+  return {
+    markerLength: match[1].length,
+  };
+}
+
 function collectLinkSpans(line, spans, occupied) {
   const regexp = /(!?)\[([^\]\n]+)\]\(([^)\n]+)\)/g;
   for (const match of line.matchAll(regexp)) {

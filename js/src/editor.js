@@ -18,6 +18,7 @@ import {
   applyFormatToView,
   attachViewToTab as attachViewToTabCore,
   handleRustMessage as handleRustMessageCore,
+  parseMarkdownBlockquoteLine,
   parseMarkdownHeadingLine,
   parseMarkdownHorizontalRuleLine,
   parseMarkdownImageSpans,
@@ -88,6 +89,11 @@ const editorTheme = EditorView.theme({
   },
   ".cm-line.cm-hybrid-heading-line": {
     letterSpacing: "0",
+  },
+  ".cm-line.cm-hybrid-blockquote-line": {
+    borderLeft: "3px solid var(--mn-border)",
+    color: "var(--mn-ink-2)",
+    paddingLeft: "0.85em",
   },
   ".cm-hybrid-heading": {
     color: "var(--mn-ink)",
@@ -346,6 +352,21 @@ function addHorizontalRuleDecorations(decorations, line) {
   return true;
 }
 
+function addBlockquoteDecorations(decorations, line) {
+  const blockquote = parseMarkdownBlockquoteLine(line.text);
+  if (!blockquote) return false;
+
+  decorations.push(
+    Decoration.line({
+      class: "cm-hybrid-blockquote-line",
+    }).range(line.from),
+  );
+  decorations.push(
+    Decoration.replace({}).range(line.from, line.from + blockquote.markerLength),
+  );
+  return true;
+}
+
 function buildHybridMarkdownDecorations(view) {
   if (view.state.field(viewModeField, false) !== "hybrid") {
     return Decoration.none;
@@ -366,6 +387,7 @@ function buildHybridMarkdownDecorations(view) {
       const heading = parseMarkdownHeadingLine(line.text);
       if (!heading) {
         if (addHorizontalRuleDecorations(decorations, line)) continue;
+        addBlockquoteDecorations(decorations, line);
         addTaskDecorations(decorations, line);
         addImageDecorations(decorations, line);
         addInlineDecorations(decorations, line);
