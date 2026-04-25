@@ -16,11 +16,20 @@ pub struct WorkspaceViewModel {
     pub name: Option<String>,
     pub path: Option<PathBuf>,
     pub recent_workspaces: Vec<WorkspaceListItem>,
+    pub recent_files: Vec<RecentFileListItem>,
     pub selected_name: Option<String>,
     pub has_selection: bool,
     pub selected_is_directory: bool,
     pub note_count: usize,
     pub recent_count: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RecentFileListItem {
+    pub title: String,
+    pub relative_path: PathBuf,
+    pub workspace_name: String,
+    pub workspace_path: PathBuf,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -91,6 +100,16 @@ impl WorkspaceViewModel {
                     is_current: current_path
                         .as_ref()
                         .is_some_and(|path| path == &workspace.path),
+                })
+                .collect(),
+            recent_files: file_state
+                .recent_files
+                .iter()
+                .map(|recent| RecentFileListItem {
+                    title: recent.title.clone(),
+                    relative_path: recent.relative_path.clone(),
+                    workspace_name: recent.workspace_name.clone(),
+                    workspace_path: recent.workspace_path.clone(),
                 })
                 .collect(),
             selected_name: selected_node.as_ref().map(|node| node.name.clone()),
@@ -256,6 +275,15 @@ mod tests {
                     is_current: false,
                 },
             ]
+        );
+        assert_eq!(
+            view_model.workspace.recent_files,
+            vec![RecentFileListItem {
+                title: "A".to_string(),
+                relative_path: PathBuf::from("a.md"),
+                workspace_name: "Workspace".to_string(),
+                workspace_path: PathBuf::from("workspace"),
+            }]
         );
         assert_eq!(view_model.workspace.note_count, 2);
         assert_eq!(view_model.workspace.recent_count, 1);

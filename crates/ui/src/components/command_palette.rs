@@ -1,4 +1,4 @@
-use crate::commands::AppCommands;
+use crate::commands::{AppCommands, RecentFileTarget};
 use crate::context::use_app_context;
 use dioxus::prelude::*;
 use papyro_core::models::{Theme, ViewMode};
@@ -19,6 +19,7 @@ pub(crate) struct CommandPaletteAction {
 pub(crate) enum CommandPaletteActionKind {
     OpenWorkspace,
     OpenWorkspacePath(PathBuf),
+    OpenRecentFile(RecentFileTarget),
     RefreshWorkspace,
     SaveActiveNote,
     ExportHtml,
@@ -40,6 +41,7 @@ pub fn CommandPaletteModal(on_close: EventHandler<()>, on_settings: EventHandler
     let actions = command_palette_actions(
         view_model.workspace.name.is_some(),
         &view_model.workspace.recent_workspaces,
+        &view_model.workspace.recent_files,
         view_model.editor.has_active_tab,
         view_model.settings.theme,
         view_model.editor.view_mode,
@@ -165,6 +167,7 @@ fn execute_command_action(
         CommandPaletteActionKind::OpenWorkspacePath(path) => {
             commands.open_workspace_path.call(path)
         }
+        CommandPaletteActionKind::OpenRecentFile(target) => commands.open_recent_file.call(target),
         CommandPaletteActionKind::RefreshWorkspace => commands.refresh_workspace.call(()),
         CommandPaletteActionKind::SaveActiveNote => commands.save_active_note.call(()),
         CommandPaletteActionKind::ExportHtml => commands.export_html.call(()),
@@ -195,6 +198,7 @@ fn execute_command_action(
 pub(crate) fn command_palette_actions(
     has_workspace: bool,
     recent_workspaces: &[crate::view_model::WorkspaceListItem],
+    recent_files: &[crate::view_model::RecentFileListItem],
     has_active_tab: bool,
     theme: Theme,
     view_mode: ViewMode,
@@ -245,6 +249,18 @@ pub(crate) fn command_palette_actions(
             &workspace.path.display().to_string(),
             "WS",
             CommandPaletteActionKind::OpenWorkspacePath(workspace.path.clone()),
+        ));
+    }
+
+    for file in recent_files {
+        actions.push(action(
+            &format!("Open {}", file.title),
+            &format!("{} / {}", file.workspace_name, file.relative_path.display()),
+            "REC",
+            CommandPaletteActionKind::OpenRecentFile(RecentFileTarget {
+                workspace_path: file.workspace_path.clone(),
+                relative_path: file.relative_path.clone(),
+            }),
         ));
     }
 
@@ -335,7 +351,7 @@ mod tests {
 
     #[test]
     fn command_palette_actions_reflect_workspace_and_tab_state() {
-        let actions = command_palette_actions(true, &[], true, Theme::Dark, ViewMode::Hybrid);
+        let actions = command_palette_actions(true, &[], &[], true, Theme::Dark, ViewMode::Hybrid);
         let titles = actions
             .iter()
             .map(|action| action.title.as_str())
@@ -351,7 +367,8 @@ mod tests {
 
     #[test]
     fn command_palette_actions_hide_file_commands_without_active_tab() {
-        let actions = command_palette_actions(false, &[], false, Theme::System, ViewMode::Preview);
+        let actions =
+            command_palette_actions(false, &[], &[], false, Theme::System, ViewMode::Preview);
         let titles = actions
             .iter()
             .map(|action| action.title.as_str())
@@ -365,7 +382,7 @@ mod tests {
 
     #[test]
     fn command_palette_filter_matches_title_detail_and_group() {
-        let actions = command_palette_actions(true, &[], true, Theme::Light, ViewMode::Source);
+        let actions = command_palette_actions(true, &[], &[], true, Theme::Light, ViewMode::Source);
 
         assert_eq!(
             filter_command_palette_actions(&actions, "file save")
@@ -399,6 +416,7 @@ mod tests {
                     is_current: false,
                 },
             ],
+            &[],
             false,
             Theme::Light,
             ViewMode::Hybrid,
@@ -413,5 +431,34 @@ mod tests {
                 )
         }));
         assert!(!actions.iter().any(|action| action.title == "Open Current"));
+    }
+
+    #[test]
+    fn command_palette_actions_include_recent_files() {
+        let actions = command_palette_actions(
+            true,
+            &[],
+            &[crate::view_model::RecentFileListItem {
+                title: "Meeting".to_string(),
+                relative_path: PathBuf::from("notes/meeting.md"),
+                workspace_name: "Work".to_string(),
+                workspace_path: PathBuf::from("work"),
+            }],
+            false,
+            Theme::Light,
+            ViewMode::Hybrid,
+        );
+
+        assert!(actions.iter().any(|action| {
+            action.title == "Open Meeting"
+                && action.detail == "Work / notes/meeting.md"
+                && action.group == "REC"
+                && matches!(
+                    &action.kind,
+                    CommandPaletteActionKind::OpenRecentFile(target)
+                        if target.workspace_path == std::path::Path::new("work")
+                            && target.relative_path == std::path::Path::new("notes/meeting.md")
+                )
+        }));
     }
 }
