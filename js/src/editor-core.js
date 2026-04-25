@@ -100,6 +100,50 @@ function collectInlineCodeSpans(line, spans, occupied) {
   }
 }
 
+function isEscaped(line, index) {
+  let backslashes = 0;
+  for (let cursor = index - 1; cursor >= 0 && line[cursor] === "\\"; cursor -= 1) {
+    backslashes += 1;
+  }
+  return backslashes % 2 === 1;
+}
+
+function isValidInlineMathBoundary(line, open, close) {
+  const afterOpen = line[open + 1];
+  const beforeClose = line[close - 1];
+  if (!afterOpen || !beforeClose) return false;
+  if (/\s/.test(afterOpen) || /\s/.test(beforeClose)) return false;
+  if (/\d/.test(line[open - 1] ?? "") && /\d/.test(afterOpen)) return false;
+  return true;
+}
+
+function collectInlineMathSpans(line, spans, occupied) {
+  let from = 0;
+  while (from < line.length) {
+    const open = line.indexOf("$", from);
+    if (open < 0) break;
+
+    if (line[open - 1] === "$" || line[open + 1] === "$" || isEscaped(line, open)) {
+      from = open + 1;
+      continue;
+    }
+
+    let close = line.indexOf("$", open + 1);
+    while (
+      close >= 0 &&
+      (line[close - 1] === "$" || line[close + 1] === "$" || isEscaped(line, close))
+    ) {
+      close = line.indexOf("$", close + 1);
+    }
+    if (close < 0) break;
+
+    if (isValidInlineMathBoundary(line, open, close)) {
+      addInlineSpan(spans, occupied, "inline_math", open, close + 1, open + 1, close);
+    }
+    from = close + 1;
+  }
+}
+
 const imageRegexp = /!\[([^\]\n]*)\]\(([^)\s\n]+)(?:\s+"([^"]*)")?\)/g;
 
 function collectImageRanges(line, occupied) {
@@ -321,6 +365,7 @@ export function parseMarkdownInlineSpans(line) {
   collectImageRanges(line, occupied);
   collectLinkSpans(line, spans, occupied);
   collectInlineCodeSpans(line, spans, occupied);
+  collectInlineMathSpans(line, spans, occupied);
   collectDelimitedInlineSpans(line, spans, occupied, "strong", "**");
   collectDelimitedInlineSpans(line, spans, occupied, "strong", "__");
   collectDelimitedInlineSpans(line, spans, occupied, "strikethrough", "~~");

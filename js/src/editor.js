@@ -14,6 +14,7 @@ import { markdown } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
 import { syntaxHighlighting, HighlightStyle } from "@codemirror/language";
 import { tags as t } from "@lezer/highlight";
+import katex from "katex";
 import {
   applyFormatToView,
   attachViewToTab as attachViewToTabCore,
@@ -201,6 +202,21 @@ const editorTheme = EditorView.theme({
     fontSize: ".92em",
     padding: "0 4px",
   },
+  ".cm-hybrid-inline-math": {
+    display: "inline-flex",
+    alignItems: "baseline",
+    color: "var(--mn-ink)",
+    fontFamily: "Georgia, 'Times New Roman', serif",
+    padding: "0 2px",
+    verticalAlign: "baseline",
+  },
+  ".cm-hybrid-inline-math math": {
+    fontSize: "1.05em",
+  },
+  ".cm-hybrid-inline-math-error": {
+    color: "var(--mn-accent-strong)",
+    fontFamily: 'var(--mn-editor-font, "Cascadia Code", monospace)',
+  },
   ".cm-hybrid-link": {
     color: "var(--mn-accent)",
     textDecoration: "underline",
@@ -336,10 +352,53 @@ function inlineClassForType(type) {
   }
 }
 
+class InlineMathWidget extends WidgetType {
+  constructor(source) {
+    super();
+    this.source = source;
+  }
+
+  eq(other) {
+    return other instanceof InlineMathWidget && other.source === this.source;
+  }
+
+  toDOM() {
+    const wrapper = document.createElement("span");
+    wrapper.className = "cm-hybrid-inline-math";
+
+    try {
+      wrapper.innerHTML = katex.renderToString(this.source, {
+        displayMode: false,
+        output: "mathml",
+        throwOnError: false,
+        strict: "ignore",
+      });
+    } catch {
+      wrapper.classList.add("cm-hybrid-inline-math-error");
+      wrapper.textContent = `$${this.source}$`;
+    }
+
+    return wrapper;
+  }
+
+  ignoreEvent() {
+    return false;
+  }
+}
+
 function addInlineDecorations(decorations, line) {
   for (const span of parseMarkdownInlineSpans(line.text)) {
     const contentFrom = line.from + span.openTo;
     const contentTo = line.from + span.closeFrom;
+    if (span.type === "inline_math") {
+      decorations.push(
+        Decoration.replace({
+          widget: new InlineMathWidget(line.text.slice(span.openTo, span.closeFrom)),
+        }).range(line.from + span.from, line.from + span.to),
+      );
+      continue;
+    }
+
     const className = inlineClassForType(span.type);
     if (!className) continue;
 

@@ -97,11 +97,12 @@ test("parse_markdown_heading_line recognizes atx headings", () => {
 });
 
 test("parse_markdown_inline_spans recognizes strong emphasis and code", () => {
-  assert.deepEqual(parseMarkdownInlineSpans("A **bold** and *soft* ~~old~~ `code`"), [
+  assert.deepEqual(parseMarkdownInlineSpans("A **bold** and *soft* ~~old~~ `code` $x^2$"), [
     { type: "strong", from: 2, to: 10, openTo: 4, closeFrom: 8 },
     { type: "emphasis", from: 15, to: 21, openTo: 16, closeFrom: 20 },
     { type: "strikethrough", from: 22, to: 29, openTo: 24, closeFrom: 27 },
     { type: "inline_code", from: 30, to: 36, openTo: 31, closeFrom: 35 },
+    { type: "inline_math", from: 37, to: 42, openTo: 38, closeFrom: 41 },
   ]);
 });
 
@@ -259,6 +260,13 @@ test("parse_markdown_inline_spans prefers code inside nested delimiters", () => 
   assert.deepEqual(parseMarkdownInlineSpans("**bold `code`**"), [
     { type: "inline_code", from: 7, to: 13, openTo: 8, closeFrom: 12 },
   ]);
+});
+
+test("parse_markdown_inline_spans skips ambiguous inline math", () => {
+  assert.deepEqual(parseMarkdownInlineSpans("Price is $5 and `cost $x$`"), [
+    { type: "inline_code", from: 16, to: 26, openTo: 17, closeFrom: 25 },
+  ]);
+  assert.deepEqual(parseMarkdownInlineSpans("Escaped \\$x$ and $$block$$"), []);
 });
 
 test("parse_markdown_inline_spans skips empty spans", () => {
