@@ -8,6 +8,7 @@ import {
   parseMarkdownHeadingLine,
   parseMarkdownImageSpans,
   parseMarkdownInlineSpans,
+  parseMarkdownTaskLine,
   recycleEditor,
 } from "../src/editor-core.js";
 
@@ -113,6 +114,18 @@ test("parse_markdown_image_spans recognizes image syntax", () => {
       title: "Title",
     },
   ]);
+});
+
+test("parse_markdown_task_line recognizes task markers", () => {
+  assert.deepEqual(parseMarkdownTaskLine("- [ ] todo"), {
+    markerLength: 6,
+    checked: false,
+  });
+  assert.deepEqual(parseMarkdownTaskLine("  * [X] done"), {
+    markerLength: 8,
+    checked: true,
+  });
+  assert.equal(parseMarkdownTaskLine("- todo"), null);
 });
 
 test("parse_markdown_inline_spans ignores emphasis inside image alt", () => {

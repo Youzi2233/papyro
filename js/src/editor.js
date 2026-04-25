@@ -21,6 +21,7 @@ import {
   parseMarkdownHeadingLine,
   parseMarkdownImageSpans,
   parseMarkdownInlineSpans,
+  parseMarkdownTaskLine,
   recycleEditor as recycleEditorCore,
   setViewMode as setViewModeCore,
 } from "./editor-core.js";
@@ -137,6 +138,20 @@ const editorTheme = EditorView.theme({
     border: "1px solid var(--mn-border)",
     backgroundColor: "var(--mn-surface)",
     boxShadow: "var(--mn-shadow-xs)",
+  },
+  ".cm-hybrid-task-checkbox": {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "1.4em",
+    marginRight: "0.35em",
+    verticalAlign: "middle",
+  },
+  ".cm-hybrid-task-checkbox input": {
+    width: "14px",
+    height: "14px",
+    accentColor: "var(--mn-accent)",
+    cursor: "default",
   },
 });
 
@@ -255,6 +270,45 @@ function addImageDecorations(decorations, line) {
   }
 }
 
+class TaskCheckboxWidget extends WidgetType {
+  constructor(checked) {
+    super();
+    this.checked = checked;
+  }
+
+  eq(other) {
+    return other.checked === this.checked;
+  }
+
+  toDOM() {
+    const wrapper = document.createElement("span");
+    wrapper.className = "cm-hybrid-task-checkbox";
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = this.checked;
+    checkbox.disabled = true;
+    wrapper.appendChild(checkbox);
+
+    return wrapper;
+  }
+
+  ignoreEvent() {
+    return false;
+  }
+}
+
+function addTaskDecorations(decorations, line) {
+  const task = parseMarkdownTaskLine(line.text);
+  if (!task) return;
+
+  decorations.push(
+    Decoration.replace({
+      widget: new TaskCheckboxWidget(task.checked),
+    }).range(line.from, line.from + task.markerLength),
+  );
+}
+
 function buildHybridMarkdownDecorations(view) {
   if (view.state.field(viewModeField, false) !== "hybrid") {
     return Decoration.none;
@@ -274,6 +328,7 @@ function buildHybridMarkdownDecorations(view) {
 
       const heading = parseMarkdownHeadingLine(line.text);
       if (!heading) {
+        addTaskDecorations(decorations, line);
         addImageDecorations(decorations, line);
         addInlineDecorations(decorations, line);
         continue;

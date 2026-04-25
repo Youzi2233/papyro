@@ -121,6 +121,16 @@ export function parseMarkdownImageSpans(line) {
   }));
 }
 
+export function parseMarkdownTaskLine(line) {
+  const match = /^(\s*[-*+]\s+\[([ xX])\]\s+)/.exec(line);
+  if (!match) return null;
+
+  return {
+    markerLength: match[1].length,
+    checked: match[2].toLowerCase() === "x",
+  };
+}
+
 function collectLinkSpans(line, spans, occupied) {
   const regexp = /(!?)\[([^\]\n]+)\]\(([^)\n]+)\)/g;
   for (const match of line.matchAll(regexp)) {
