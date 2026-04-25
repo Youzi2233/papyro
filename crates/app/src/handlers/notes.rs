@@ -1,12 +1,13 @@
 use dioxus::prelude::*;
 use papyro_core::models::FileNode;
-use papyro_core::{EditorTabs, FileState, NoteStorage, TabContentsMap};
+use papyro_core::{EditorTabs, FileState, NoteStorage, TabContentsMap, UiState};
 use papyro_editor::parser::summarize_markdown;
 use papyro_ui::commands::RecentFileTarget;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Instant;
 
+use crate::state::RuntimeState;
 use crate::workspace_flow::{
     apply_save_failure, apply_save_success, begin_save_tab, open_note_from_storage,
     open_recent_file_from_storage, write_save_snapshot,
@@ -102,25 +103,18 @@ pub fn open_note_path(
 
 pub async fn open_recent_file(
     storage: Arc<dyn NoteStorage>,
-    mut file_state: Signal<FileState>,
-    mut editor_tabs: Signal<EditorTabs>,
-    mut tab_contents: Signal<TabContentsMap>,
-    mut status_message: Signal<Option<String>>,
-    mut workspace_watch_path: Signal<Option<PathBuf>>,
+    mut state: RuntimeState,
     target: RecentFileTarget,
 ) {
     let perf_started_at = perf_enabled().then(Instant::now);
     let perf_path = target.workspace_path.join(&target.relative_path);
     let watch_path = target.workspace_path.clone();
-    let mut next_file_state = file_state.read().clone();
-    let mut next_editor_tabs = editor_tabs.read().clone();
-    let mut next_tab_contents = tab_contents.read().clone();
+    let mut next_file_state = state.file_state.read().clone();
+    let mut next_editor_tabs = state.editor_tabs.read().clone();
+    let mut next_tab_contents = state.tab_contents.read().clone();
 
-    let result: Result<
-        Result<(FileState, EditorTabs, TabContentsMap), anyhow::Error>,
-        tokio::task::JoinError,
-    > = tokio::task::spawn_blocking(move || {
-        open_recent_file_from_storage(
+    let result = tokio::task::spawn_blocking(move || {
+        let outcome = open_recent_file_from_storage(
             storage.as_ref(),
             &mut next_file_state,
             &mut next_editor_tabs,
@@ -130,15 +124,21 @@ pub async fn open_recent_file(
             summarize_markdown,
         )?;
 
-        Ok::<_, anyhow::Error>((next_file_state, next_editor_tabs, next_tab_contents))
+        Ok::<_, anyhow::Error>(RecentFileStateUpdate {
+            file_state: next_file_state,
+            editor_tabs: next_editor_tabs,
+            tab_contents: next_tab_contents,
+            ui_state: outcome.ui_state,
+        })
     })
     .await;
 
     match result {
-        Ok(Ok((next_file_state, next_editor_tabs, next_tab_contents))) => {
+        Ok(Ok(next_state)) => {
             if let Some(started_at) = perf_started_at {
-                let active_tab_id = next_editor_tabs.active_tab_id.as_deref();
-                let bytes = next_tab_contents
+                let active_tab_id = next_state.editor_tabs.active_tab_id.as_deref();
+                let bytes = next_state
+                    .tab_contents
                     .active_content(active_tab_id)
                     .map(str::len)
                     .unwrap_or_default();
@@ -149,18 +149,32 @@ pub async fn open_recent_file(
                     "perf editor open recent file"
                 );
             }
-            file_state.set(next_file_state);
-            editor_tabs.set(next_editor_tabs);
-            tab_contents.set(next_tab_contents);
-            workspace_watch_path.set(Some(watch_path));
+            state.file_state.set(next_state.file_state);
+            state.editor_tabs.set(next_state.editor_tabs);
+            state.tab_contents.set(next_state.tab_contents);
+            if let Some(next_ui_state) = next_state.ui_state {
+                state.ui_state.set(next_ui_state);
+            }
+            state.workspace_watch_path.set(Some(watch_path));
         }
         Ok(Err(error)) => {
-            status_message.set(Some(format!("Open recent file failed: {error}")));
+            state
+                .status_message
+                .set(Some(format!("Open recent file failed: {error}")));
         }
         Err(error) => {
-            status_message.set(Some(format!("Open recent file failed: {error}")));
+            state
+                .status_message
+                .set(Some(format!("Open recent file failed: {error}")));
         }
     }
+}
+
+struct RecentFileStateUpdate {
+    file_state: FileState,
+    editor_tabs: EditorTabs,
+    tab_contents: TabContentsMap,
+    ui_state: Option<UiState>,
 }
 
 fn perf_enabled() -> bool {

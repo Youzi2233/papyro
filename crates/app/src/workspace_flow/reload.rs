@@ -1,7 +1,7 @@
 use super::utils::{current_workspace, tree_contains_path};
 use anyhow::Result;
 use papyro_core::storage::{NoteStorage, WorkspaceBootstrap};
-use papyro_core::{EditorTabs, FileState, TabContentsMap};
+use papyro_core::{EditorTabs, FileState, TabContentsMap, UiState};
 use std::path::Path;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -9,6 +9,7 @@ pub(crate) struct AppliedBootstrap {
     pub file_state: FileState,
     pub editor_tabs: EditorTabs,
     pub tab_contents: TabContentsMap,
+    pub ui_state: UiState,
     pub status_message: String,
 }
 
@@ -48,6 +49,10 @@ pub(crate) fn apply_workspace_bootstrap(bootstrap: WorkspaceBootstrap) -> Applie
         file_state: bootstrap.file_state,
         editor_tabs: EditorTabs::default(),
         tab_contents: TabContentsMap::default(),
+        ui_state: UiState::from_settings_with_overrides(
+            bootstrap.global_settings,
+            bootstrap.workspace_settings,
+        ),
         status_message: detail,
     }
 }

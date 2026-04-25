@@ -1,6 +1,9 @@
 use super::super::support::*;
 use super::super::*;
-use papyro_core::models::{DocumentStats, RecentFile, SaveStatus, Workspace};
+use papyro_core::models::{
+    AppSettings, DocumentStats, RecentFile, SaveStatus, Theme, ViewMode, Workspace,
+    WorkspaceSettingsOverrides,
+};
 use papyro_core::storage::{OpenedNote, SavedNote, WorkspaceBootstrap};
 use papyro_core::{EditorTabs, FileState, TabContentsMap};
 use std::collections::HashMap;
@@ -107,6 +110,18 @@ fn open_recent_file_flow_bootstraps_target_workspace_before_opening_note() {
                 ..FileState::default()
             },
             status_message: "Loaded workspace".to_string(),
+            global_settings: AppSettings {
+                theme: Theme::Light,
+                font_size: 16,
+                view_mode: ViewMode::Hybrid,
+                ..AppSettings::default()
+            },
+            workspace_settings: WorkspaceSettingsOverrides {
+                theme: Some(Theme::Dark),
+                font_size: Some(19),
+                view_mode: Some(ViewMode::Preview),
+                ..WorkspaceSettingsOverrides::default()
+            },
             ..WorkspaceBootstrap::default()
         }),
         ..MockStorage::default()
@@ -121,7 +136,7 @@ fn open_recent_file_flow_bootstraps_target_workspace_before_opening_note() {
         DocumentStats::default(),
     );
 
-    open_recent_file_from_storage(
+    let outcome = open_recent_file_from_storage(
         &storage,
         &mut file_state,
         &mut editor_tabs,
@@ -134,6 +149,9 @@ fn open_recent_file_flow_bootstraps_target_workspace_before_opening_note() {
         },
     )
     .unwrap();
+    let ui_state = outcome
+        .ui_state
+        .expect("cross-workspace open applies settings");
 
     assert_eq!(
         file_state
@@ -147,6 +165,9 @@ fn open_recent_file_flow_bootstraps_target_workspace_before_opening_note() {
     assert_eq!(editor_tabs.active_tab_id.as_deref(), Some("tab-a"));
     assert_eq!(tab_contents.content_for_tab("tab-a"), Some("# Archive"));
     assert_eq!(tab_contents.content_for_tab("old-tab"), None);
+    assert_eq!(ui_state.settings.theme, Theme::Dark);
+    assert_eq!(ui_state.settings.font_size, 19);
+    assert_eq!(ui_state.view_mode, ViewMode::Preview);
 }
 
 #[test]

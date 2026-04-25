@@ -49,16 +49,7 @@ impl AppDispatcher {
                         return;
                     }
 
-                    workspace::open_workspace(
-                        platform,
-                        storage,
-                        state.file_state,
-                        state.editor_tabs,
-                        state.tab_contents,
-                        state.status_message,
-                        state.workspace_watch_path,
-                    )
-                    .await;
+                    workspace::open_workspace(platform, storage, state).await;
                 });
             }
             AppAction::OpenWorkspacePath(action) => {
@@ -69,16 +60,7 @@ impl AppDispatcher {
                         return;
                     }
 
-                    workspace::open_workspace_path(
-                        storage,
-                        state.file_state,
-                        state.editor_tabs,
-                        state.tab_contents,
-                        state.status_message,
-                        state.workspace_watch_path,
-                        action.path,
-                    )
-                    .await;
+                    workspace::open_workspace_path(storage, state, action.path).await;
                 });
             }
             AppAction::RefreshWorkspace => {
@@ -124,16 +106,7 @@ impl AppDispatcher {
                         return;
                     }
 
-                    notes::open_recent_file(
-                        storage,
-                        state.file_state,
-                        state.editor_tabs,
-                        state.tab_contents,
-                        state.status_message,
-                        state.workspace_watch_path,
-                        action.target,
-                    )
-                    .await;
+                    notes::open_recent_file(storage, state, action.target).await;
                 });
             }
             AppAction::ContentChanged(action) => {

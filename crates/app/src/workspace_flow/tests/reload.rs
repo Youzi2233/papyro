@@ -1,5 +1,6 @@
 use super::super::support::*;
 use super::super::*;
+use papyro_core::models::{AppSettings, Theme, ViewMode, WorkspaceSettingsOverrides};
 use papyro_core::storage::WorkspaceBootstrap;
 use papyro_core::{EditorTabs, FileState, TabContentsMap};
 use std::path::{Path, PathBuf};
@@ -13,12 +14,27 @@ fn apply_workspace_bootstrap_resets_editor_state_and_formats_status() {
         file_state: file_state.clone(),
         status_message: "Loaded workspace".to_string(),
         error_message: Some("warning".to_string()),
+        global_settings: AppSettings {
+            theme: Theme::Light,
+            font_size: 16,
+            view_mode: ViewMode::Hybrid,
+            ..AppSettings::default()
+        },
+        workspace_settings: WorkspaceSettingsOverrides {
+            theme: Some(Theme::Dark),
+            font_size: Some(18),
+            view_mode: Some(ViewMode::Source),
+            ..WorkspaceSettingsOverrides::default()
+        },
         ..WorkspaceBootstrap::default()
     });
 
     assert_eq!(applied.file_state, file_state);
     assert_eq!(applied.editor_tabs, EditorTabs::default());
     assert_eq!(applied.tab_contents, TabContentsMap::default());
+    assert_eq!(applied.ui_state.settings.theme, Theme::Dark);
+    assert_eq!(applied.ui_state.settings.font_size, 18);
+    assert_eq!(applied.ui_state.view_mode, ViewMode::Source);
     assert_eq!(applied.status_message, "Loaded workspace (warning)");
 }
 

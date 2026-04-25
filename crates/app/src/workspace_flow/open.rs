@@ -2,7 +2,7 @@ use super::utils::current_workspace;
 use anyhow::{bail, Result};
 use papyro_core::models::DocumentStats;
 use papyro_core::storage::{NoteStorage, WorkspaceBootstrap};
-use papyro_core::{open_note, EditorTabs, FileState, TabContentsMap};
+use papyro_core::{open_note, EditorTabs, FileState, TabContentsMap, UiState};
 use std::path::PathBuf;
 
 pub(crate) fn open_note_from_storage<S>(
@@ -36,7 +36,7 @@ pub(crate) fn open_recent_file_from_storage<S>(
     workspace_path: PathBuf,
     relative_path: PathBuf,
     summarize: S,
-) -> Result<()>
+) -> Result<OpenRecentFileOutcome>
 where
     S: FnOnce(&str) -> DocumentStats,
 {
@@ -45,13 +45,15 @@ where
         .as_ref()
         .is_some_and(|workspace| workspace.path == workspace_path);
 
+    let mut ui_state = None;
+
     if !already_loaded {
-        apply_recent_workspace_bootstrap(
+        ui_state = Some(apply_recent_workspace_bootstrap(
             file_state,
             editor_tabs,
             tab_contents,
             storage.bootstrap_from_workspace(&workspace_path),
-        )?;
+        )?);
     }
 
     open_note_from_storage(
@@ -61,7 +63,14 @@ where
         tab_contents,
         workspace_path.join(relative_path),
         summarize,
-    )
+    )?;
+
+    Ok(OpenRecentFileOutcome { ui_state })
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) struct OpenRecentFileOutcome {
+    pub ui_state: Option<UiState>,
 }
 
 fn apply_recent_workspace_bootstrap(
@@ -69,14 +78,18 @@ fn apply_recent_workspace_bootstrap(
     editor_tabs: &mut EditorTabs,
     tab_contents: &mut TabContentsMap,
     bootstrap: WorkspaceBootstrap,
-) -> Result<()> {
+) -> Result<UiState> {
     if let Some(error) = bootstrap.error_message {
         bail!("{} ({error})", bootstrap.status_message);
     }
 
+    let ui_state = UiState::from_settings_with_overrides(
+        bootstrap.global_settings,
+        bootstrap.workspace_settings,
+    );
     *file_state = bootstrap.file_state;
     *editor_tabs = EditorTabs::default();
     *tab_contents = TabContentsMap::default();
 
-    Ok(())
+    Ok(ui_state)
 }

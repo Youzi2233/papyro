@@ -1,9 +1,10 @@
 use dioxus::prelude::*;
-use papyro_core::{EditorTabs, FileState, NoteStorage, TabContentsMap};
+use papyro_core::{EditorTabs, FileState, NoteStorage};
 use papyro_platform::PlatformApi;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
+use crate::state::RuntimeState;
 use crate::workspace_flow::{
     apply_workspace_bootstrap, reload_workspace_or_bootstrap, WorkspaceReloadOutcome,
 };
@@ -11,41 +12,28 @@ use crate::workspace_flow::{
 pub async fn open_workspace(
     platform: Arc<dyn PlatformApi>,
     storage: Arc<dyn NoteStorage>,
-    file_state: Signal<FileState>,
-    editor_tabs: Signal<EditorTabs>,
-    tab_contents: Signal<TabContentsMap>,
-    mut status_message: Signal<Option<String>>,
-    workspace_watch_path: Signal<Option<PathBuf>>,
+    mut state: RuntimeState,
 ) {
     match platform.pick_folder().await {
         Ok(Some(path)) => {
-            open_workspace_path(
-                storage,
-                file_state,
-                editor_tabs,
-                tab_contents,
-                status_message,
-                workspace_watch_path,
-                path,
-            )
-            .await;
+            open_workspace_path(storage, state, path).await;
         }
         Ok(None) => {
-            status_message.set(Some("Workspace selection cancelled".to_string()));
+            state
+                .status_message
+                .set(Some("Workspace selection cancelled".to_string()));
         }
         Err(error) => {
-            status_message.set(Some(format!("Open workspace failed: {error}")));
+            state
+                .status_message
+                .set(Some(format!("Open workspace failed: {error}")));
         }
     }
 }
 
 pub async fn open_workspace_path(
     storage: Arc<dyn NoteStorage>,
-    mut file_state: Signal<FileState>,
-    mut editor_tabs: Signal<EditorTabs>,
-    mut tab_contents: Signal<TabContentsMap>,
-    mut status_message: Signal<Option<String>>,
-    mut workspace_watch_path: Signal<Option<PathBuf>>,
+    mut state: RuntimeState,
     path: PathBuf,
 ) {
     let result = {
@@ -57,14 +45,17 @@ pub async fn open_workspace_path(
     match result {
         Ok(bootstrap) => {
             let applied = apply_workspace_bootstrap(bootstrap);
-            file_state.set(applied.file_state);
-            editor_tabs.set(applied.editor_tabs);
-            tab_contents.set(applied.tab_contents);
-            status_message.set(Some(applied.status_message));
-            workspace_watch_path.set(Some(path));
+            state.file_state.set(applied.file_state);
+            state.editor_tabs.set(applied.editor_tabs);
+            state.tab_contents.set(applied.tab_contents);
+            state.ui_state.set(applied.ui_state);
+            state.status_message.set(Some(applied.status_message));
+            state.workspace_watch_path.set(Some(path));
         }
         Err(error) => {
-            status_message.set(Some(format!("Open workspace failed: {error}")));
+            state
+                .status_message
+                .set(Some(format!("Open workspace failed: {error}")));
         }
     }
 }
