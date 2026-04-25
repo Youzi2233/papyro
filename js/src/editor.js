@@ -23,6 +23,7 @@ import {
   parseMarkdownHorizontalRuleLine,
   parseMarkdownImageSpans,
   parseMarkdownInlineSpans,
+  parseMarkdownListLine,
   parseMarkdownTaskLine,
   recycleEditor as recycleEditorCore,
   setViewMode as setViewModeCore,
@@ -163,6 +164,14 @@ const editorTheme = EditorView.theme({
     height: "14px",
     accentColor: "var(--mn-accent)",
     cursor: "default",
+  },
+  ".cm-hybrid-list-marker": {
+    display: "inline-flex",
+    justifyContent: "flex-end",
+    minWidth: "1.4em",
+    marginRight: "0.45em",
+    color: "var(--mn-accent)",
+    fontVariantNumeric: "tabular-nums",
   },
   ".cm-hybrid-horizontal-rule": {
     display: "block",
@@ -329,6 +338,39 @@ function addTaskDecorations(decorations, line) {
   );
 }
 
+class ListMarkerWidget extends WidgetType {
+  constructor(marker) {
+    super();
+    this.marker = marker;
+  }
+
+  eq(other) {
+    return other instanceof ListMarkerWidget && other.marker === this.marker;
+  }
+
+  toDOM() {
+    const marker = document.createElement("span");
+    marker.className = "cm-hybrid-list-marker";
+    marker.textContent = this.marker;
+    return marker;
+  }
+}
+
+function addListDecorations(decorations, line) {
+  const list = parseMarkdownListLine(line.text);
+  if (!list) return false;
+
+  decorations.push(
+    Decoration.replace({
+      widget: new ListMarkerWidget(list.ordered ? list.marker : "•"),
+    }).range(
+      line.from + list.indentLength,
+      line.from + list.markerLength,
+    ),
+  );
+  return true;
+}
+
 class HorizontalRuleWidget extends WidgetType {
   eq(other) {
     return other instanceof HorizontalRuleWidget;
@@ -389,6 +431,7 @@ function buildHybridMarkdownDecorations(view) {
         if (addHorizontalRuleDecorations(decorations, line)) continue;
         addBlockquoteDecorations(decorations, line);
         addTaskDecorations(decorations, line);
+        addListDecorations(decorations, line);
         addImageDecorations(decorations, line);
         addInlineDecorations(decorations, line);
         continue;

@@ -10,6 +10,7 @@ import {
   parseMarkdownHorizontalRuleLine,
   parseMarkdownImageSpans,
   parseMarkdownInlineSpans,
+  parseMarkdownListLine,
   parseMarkdownTaskLine,
   recycleEditor,
 } from "../src/editor-core.js";
@@ -129,6 +130,23 @@ test("parse_markdown_task_line recognizes task markers", () => {
     checked: true,
   });
   assert.equal(parseMarkdownTaskLine("- todo"), null);
+});
+
+test("parse_markdown_list_line recognizes plain list markers", () => {
+  assert.deepEqual(parseMarkdownListLine("- item"), {
+    markerLength: 2,
+    indentLength: 0,
+    marker: "-",
+    ordered: false,
+  });
+  assert.deepEqual(parseMarkdownListLine("  12. item"), {
+    markerLength: 6,
+    indentLength: 2,
+    marker: "12.",
+    ordered: true,
+  });
+  assert.equal(parseMarkdownListLine("- [ ] todo"), null);
+  assert.equal(parseMarkdownListLine("plain - item"), null);
 });
 
 test("parse_markdown_horizontal_rule_line recognizes thematic breaks", () => {

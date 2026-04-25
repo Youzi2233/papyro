@@ -131,6 +131,20 @@ export function parseMarkdownTaskLine(line) {
   };
 }
 
+export function parseMarkdownListLine(line) {
+  if (parseMarkdownTaskLine(line)) return null;
+
+  const match = /^(\s*)((?:[-*+])|(?:\d{1,9}[.)]))([ \t]+)/.exec(line);
+  if (!match) return null;
+
+  return {
+    markerLength: match[0].length,
+    indentLength: match[1].length,
+    marker: match[2],
+    ordered: /^\d/.test(match[2]),
+  };
+}
+
 export function parseMarkdownHorizontalRuleLine(line) {
   if (!/^[ \t]{0,3}(?:[-*_][ \t]*){3,}$/.test(line)) return null;
 
