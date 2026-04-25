@@ -28,6 +28,7 @@ import {
   collectMarkdownFrontMatterBlock,
   collectMarkdownMathBlocks,
   collectMarkdownTableBlocks,
+  completeMarkdownShortcutOnSpace,
   continueMarkdownListOnEnter,
   handleRustMessage as handleRustMessageCore,
   indentMarkdownListInView,
@@ -1057,6 +1058,7 @@ function buildExtensions() {
     { key: "Mod-k", run(view) { applyFormatToView(view, "link"); return true; } },
     { key: "Mod-h", run: openSearchPanel },
     { key: "Enter", run: continueMarkdownListOnEnter },
+    { key: "Space", run: completeMarkdownShortcutOnSpace },
     { key: "Tab", run: (view) => indentMarkdownListInView(view, "indent") },
     { key: "Shift-Tab", run: (view) => indentMarkdownListInView(view, "outdent") },
   ]);

@@ -7,12 +7,18 @@ import {
   collectMarkdownFrontMatterBlock,
   collectMarkdownMathBlocks,
   collectMarkdownTableBlocks,
+  completeMarkdownShortcutOnSpace,
   handleRustMessage,
+  handleMarkdownEnter,
   indentMarkdownListInView,
   insertMarkdownInView,
   markdownLinkPasteChange,
+  markdownBlockquoteEnterChange,
+  markdownCodeFenceEnterChange,
+  markdownEnterChange,
   markdownListIndentChange,
   markdownListEnterChange,
+  markdownShortcutSpaceChange,
   normalizeEditorPreferences,
   normalizeViewMode,
   parseMarkdownBlockquoteLine,
@@ -455,6 +461,58 @@ test("markdown_list_enter_change exits empty list items", () => {
 
 test("markdown_list_enter_change ignores non-list lines", () => {
   assert.equal(markdownListEnterChange("plain", 5), null);
+});
+
+test("markdown_blockquote_enter_change continues and exits quotes", () => {
+  assert.deepEqual(markdownBlockquoteEnterChange("> quote", 7), {
+    changes: { from: 7, to: 7, insert: "\n> " },
+    selection: { anchor: 10 },
+    doc: "> quote\n> ",
+  });
+  assert.deepEqual(markdownBlockquoteEnterChange("> ", 2), {
+    changes: { from: 0, to: 2, insert: "" },
+    selection: { anchor: 0 },
+    doc: "",
+  });
+});
+
+test("markdown_code_fence_enter_change inserts closing fence", () => {
+  assert.deepEqual(markdownCodeFenceEnterChange("```rust", 7), {
+    changes: { from: 7, to: 7, insert: "\n\n```" },
+    selection: { anchor: 8 },
+    doc: "```rust\n\n```",
+  });
+  assert.deepEqual(markdownCodeFenceEnterChange("text", 4), null);
+});
+
+test("markdown_enter_change combines list quote and fence handling", () => {
+  assert.equal(markdownEnterChange("- item", 6)?.doc, "- item\n- ");
+  assert.equal(markdownEnterChange("> quote", 7)?.doc, "> quote\n> ");
+  assert.equal(markdownEnterChange("```", 3)?.doc, "```\n\n```");
+});
+
+test("markdown_shortcut_space_change completes line-start markers", () => {
+  assert.deepEqual(markdownShortcutSpaceChange("#", 1), {
+    changes: { from: 1, to: 1, insert: " " },
+    selection: { anchor: 2 },
+    doc: "# ",
+  });
+  assert.deepEqual(markdownShortcutSpaceChange("note\n>", 6), {
+    changes: { from: 6, to: 6, insert: " " },
+    selection: { anchor: 7 },
+    doc: "note\n> ",
+  });
+  assert.equal(markdownShortcutSpaceChange("word#", 5), null);
+});
+
+test("markdown shortcut view commands dispatch completions", () => {
+  const heading = fakeView("#", { from: 1, to: 1 });
+  assert.equal(completeMarkdownShortcutOnSpace(heading), true);
+  assert.equal(heading.state.doc.toString(), "# ");
+
+  const fence = fakeView("```", { from: 3, to: 3 });
+  assert.equal(handleMarkdownEnter(fence), true);
+  assert.equal(fence.state.doc.toString(), "```\n\n```");
 });
 
 test("markdown_list_indent_change indents selected list lines", () => {

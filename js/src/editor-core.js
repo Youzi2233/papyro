@@ -97,7 +97,7 @@ export function applyFormatToView(view, kind) {
 
 export function pasteMarkdownLinkInView(view, pastedText, preferences) {
   const range = view.state.selection.main;
-  if (range.empty) return false;
+  if (range.from === range.to) return false;
 
   const result = markdownLinkPasteChange(
     view.state.doc.toString(),
@@ -161,11 +161,82 @@ export function markdownListEnterChange(doc, cursor) {
   };
 }
 
-export function continueMarkdownListOnEnter(view) {
-  const range = view.state.selection.main;
-  if (!range.empty) return false;
+export function markdownBlockquoteEnterChange(doc, cursor) {
+  const lineStart = doc.lastIndexOf("\n", cursor - 1) + 1;
+  let lineEnd = doc.indexOf("\n", cursor);
+  if (lineEnd < 0) lineEnd = doc.length;
+  if (cursor !== lineEnd) return null;
 
-  const result = markdownListEnterChange(view.state.doc.toString(), range.from);
+  const line = doc.slice(lineStart, lineEnd);
+  const marker = /^([ \t]{0,3}>[ \t]?)/.exec(line);
+  if (!marker) return null;
+
+  const content = line.slice(marker[0].length);
+  if (!content.trim()) {
+    return {
+      changes: { from: lineStart, to: cursor, insert: "" },
+      selection: { anchor: lineStart },
+      doc: `${doc.slice(0, lineStart)}${doc.slice(cursor)}`,
+    };
+  }
+
+  const prefix = /[ \t]$/.test(marker[0]) ? marker[0] : `${marker[0]} `;
+  const insert = `\n${prefix}`;
+  return {
+    changes: { from: cursor, to: cursor, insert },
+    selection: { anchor: cursor + insert.length },
+    doc: `${doc.slice(0, cursor)}${insert}${doc.slice(cursor)}`,
+  };
+}
+
+export function markdownCodeFenceEnterChange(doc, cursor) {
+  const lineStart = doc.lastIndexOf("\n", cursor - 1) + 1;
+  let lineEnd = doc.indexOf("\n", cursor);
+  if (lineEnd < 0) lineEnd = doc.length;
+  if (cursor !== lineEnd) return null;
+
+  const line = doc.slice(lineStart, lineEnd);
+  const marker = /^([ \t]{0,3})(`{3,}|~{3,})(.*)$/.exec(line);
+  if (!marker || !marker[3].trim().match(/^[\w-]*$/)) return null;
+
+  const insert = `\n\n${marker[1]}${marker[2]}`;
+  return {
+    changes: { from: cursor, to: cursor, insert },
+    selection: { anchor: cursor + 1 },
+    doc: `${doc.slice(0, cursor)}${insert}${doc.slice(cursor)}`,
+  };
+}
+
+export function markdownEnterChange(doc, cursor) {
+  return (
+    markdownListEnterChange(doc, cursor) ??
+    markdownBlockquoteEnterChange(doc, cursor) ??
+    markdownCodeFenceEnterChange(doc, cursor)
+  );
+}
+
+export function markdownShortcutSpaceChange(doc, cursor) {
+  const lineStart = doc.lastIndexOf("\n", cursor - 1) + 1;
+  const beforeCursor = doc.slice(lineStart, cursor);
+  if (
+    !/^[ \t]{0,3}(?:#{1,6}|>)$/.test(beforeCursor) ||
+    doc.slice(lineStart, cursor).trimEnd() !== beforeCursor
+  ) {
+    return null;
+  }
+
+  return {
+    changes: { from: cursor, to: cursor, insert: " " },
+    selection: { anchor: cursor + 1 },
+    doc: `${doc.slice(0, cursor)} ${doc.slice(cursor)}`,
+  };
+}
+
+export function handleMarkdownEnter(view) {
+  const range = view.state.selection.main;
+  if (range.from !== range.to) return false;
+
+  const result = markdownEnterChange(view.state.doc.toString(), range.from);
   if (!result) return false;
 
   view.dispatch({
@@ -174,6 +245,22 @@ export function continueMarkdownListOnEnter(view) {
   });
   return true;
 }
+
+export function completeMarkdownShortcutOnSpace(view) {
+  const range = view.state.selection.main;
+  if (range.from !== range.to) return false;
+
+  const result = markdownShortcutSpaceChange(view.state.doc.toString(), range.from);
+  if (!result) return false;
+
+  view.dispatch({
+    changes: result.changes,
+    selection: result.selection,
+  });
+  return true;
+}
+
+export const continueMarkdownListOnEnter = handleMarkdownEnter;
 
 function parseIndentableMarkdownListLine(line) {
   const task = /^(\s*)[-*+][ \t]+\[[ xX]\][ \t]+/.exec(line);
