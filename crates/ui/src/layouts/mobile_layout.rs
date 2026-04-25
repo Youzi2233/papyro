@@ -3,7 +3,10 @@ use papyro_core::models::{FileNodeKind, Theme};
 
 use crate::commands::FileTarget;
 use crate::components::{
-    editor::EditorPane, header::AppHeader, settings::SettingsModal, sidebar::FileTree,
+    editor::EditorPane,
+    header::AppHeader,
+    settings::SettingsModal,
+    sidebar::{FileTree, FileTreeSortMode},
     status_bar::StatusBar,
 };
 use crate::context::use_app_context;
@@ -20,6 +23,7 @@ pub fn MobileLayout(status_message: Option<String>) -> Element {
     let mut show_rename = use_signal(|| false);
     let mut create_name = use_signal(String::new);
     let mut rename_name = use_signal(String::new);
+    let mut tree_sort = use_signal(FileTreeSortMode::default);
 
     let theme = ui_state.read().theme().clone();
     let browser_visible = !ui_state.read().sidebar_collapsed();
@@ -223,7 +227,22 @@ pub fn MobileLayout(status_message: Option<String>) -> Element {
                             }
                         }
 
-                        FileTree {}
+                        div {
+                            class: "mn-tree-sortbar",
+                            role: "group",
+                            "aria-label": "File tree sort",
+                            for mode in FileTreeSortMode::all() {
+                                button {
+                                    class: if tree_sort() == mode { "mn-tree-sort-btn active" } else { "mn-tree-sort-btn" },
+                                    title: "Sort by {mode.label()}",
+                                    "aria-pressed": "{tree_sort() == mode}",
+                                    onclick: move |_| tree_sort.set(mode),
+                                    "{mode.label()}"
+                                }
+                            }
+                        }
+
+                        FileTree { sort_mode: tree_sort() }
                     }
                 }
 

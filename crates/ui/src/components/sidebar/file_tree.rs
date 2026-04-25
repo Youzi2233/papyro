@@ -3,11 +3,34 @@ use crate::context::use_app_context;
 use dioxus::prelude::*;
 use papyro_core::models::{FileNode, FileNodeKind};
 use papyro_core::FileState;
+use std::cmp::Ordering;
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum FileTreeSortMode {
+    #[default]
+    Name,
+    Updated,
+    Created,
+}
+
+impl FileTreeSortMode {
+    pub fn all() -> [Self; 3] {
+        [Self::Name, Self::Updated, Self::Created]
+    }
+
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Name => "Name",
+            Self::Updated => "Updated",
+            Self::Created => "Created",
+        }
+    }
+}
+
 #[component]
-pub fn FileTree() -> Element {
+pub fn FileTree(sort_mode: FileTreeSortMode) -> Element {
     let app = use_app_context();
     let mut file_state = app.file_state;
     let commands = app.commands;
@@ -15,7 +38,8 @@ pub fn FileTree() -> Element {
     let nodes = file_state.read().file_tree.clone();
     let expanded_paths = file_state.read().expanded_paths.clone();
     let selected_path = file_state.read().selected_path.clone();
-    let visible_items = visible_file_tree_items(&nodes, &expanded_paths);
+    let sorted_nodes = sorted_file_tree_nodes(&nodes, sort_mode);
+    let visible_items = visible_file_tree_items(&sorted_nodes, &expanded_paths);
     let keyboard_items = visible_items.clone();
     let mut context_menu = use_signal(|| None::<FileTreeContextMenu>);
     let mut rename_draft = use_signal(|| None::<FileTreeRenameDraft>);
@@ -480,6 +504,43 @@ struct VisibleFileTreeItem {
     depth: u32,
 }
 
+fn sorted_file_tree_nodes(nodes: &[FileNode], sort_mode: FileTreeSortMode) -> Vec<FileNode> {
+    let mut sorted = nodes
+        .iter()
+        .map(|node| {
+            let mut node = node.clone();
+            if let FileNodeKind::Directory { children } = &mut node.kind {
+                *children = sorted_file_tree_nodes(children, sort_mode);
+            }
+            node
+        })
+        .collect::<Vec<_>>();
+
+    sorted.sort_by(|a, b| compare_file_nodes(a, b, sort_mode));
+    sorted
+}
+
+fn compare_file_nodes(a: &FileNode, b: &FileNode, sort_mode: FileTreeSortMode) -> Ordering {
+    let a_is_dir = matches!(a.kind, FileNodeKind::Directory { .. });
+    let b_is_dir = matches!(b.kind, FileNodeKind::Directory { .. });
+
+    b_is_dir.cmp(&a_is_dir).then_with(|| match sort_mode {
+        FileTreeSortMode::Name => compare_node_names(a, b),
+        FileTreeSortMode::Updated => b
+            .updated_at
+            .cmp(&a.updated_at)
+            .then_with(|| compare_node_names(a, b)),
+        FileTreeSortMode::Created => b
+            .created_at
+            .cmp(&a.created_at)
+            .then_with(|| compare_node_names(a, b)),
+    })
+}
+
+fn compare_node_names(a: &FileNode, b: &FileNode) -> Ordering {
+    a.name.to_lowercase().cmp(&b.name.to_lowercase())
+}
+
 fn visible_file_tree_items(
     nodes: &[FileNode],
     expanded_paths: &HashSet<PathBuf>,
@@ -641,6 +702,14 @@ mod tests {
         }
     }
 
+    fn note_with_times(path: &str, created_at: i64, updated_at: i64) -> FileNode {
+        FileNode {
+            created_at,
+            updated_at,
+            ..note(path)
+        }
+    }
+
     fn directory(path: &str, children: Vec<FileNode>) -> FileNode {
         FileNode {
             name: path
@@ -653,6 +722,19 @@ mod tests {
             created_at: 0,
             updated_at: 0,
             kind: FileNodeKind::Directory { children },
+        }
+    }
+
+    fn directory_with_times(
+        path: &str,
+        created_at: i64,
+        updated_at: i64,
+        children: Vec<FileNode>,
+    ) -> FileNode {
+        FileNode {
+            created_at,
+            updated_at,
+            ..directory(path, children)
         }
     }
 
@@ -678,6 +760,72 @@ mod tests {
                 (PathBuf::from("workspace/notes/a.md"), 1),
                 (PathBuf::from("workspace/notes/b.md"), 1),
             ]
+        );
+    }
+
+    #[test]
+    fn sorted_tree_orders_by_name_with_directories_first() {
+        let nodes = vec![
+            note("workspace/z.md"),
+            directory("workspace/B", Vec::new()),
+            note("workspace/a.md"),
+            directory("workspace/A", Vec::new()),
+        ];
+
+        let sorted = sorted_file_tree_nodes(&nodes, FileTreeSortMode::Name);
+
+        assert_eq!(
+            sorted
+                .iter()
+                .map(|node| node.name.as_str())
+                .collect::<Vec<_>>(),
+            vec!["A", "B", "a.md", "z.md"]
+        );
+    }
+
+    #[test]
+    fn sorted_tree_orders_by_updated_and_created_times() {
+        let nodes = vec![
+            note_with_times("workspace/old.md", 10, 20),
+            note_with_times("workspace/new.md", 30, 40),
+            directory_with_times(
+                "workspace/dir",
+                5,
+                50,
+                vec![
+                    note_with_times("workspace/dir/child-old.md", 1, 2),
+                    note_with_times("workspace/dir/child-new.md", 3, 4),
+                ],
+            ),
+        ];
+
+        let updated = sorted_file_tree_nodes(&nodes, FileTreeSortMode::Updated);
+        let created = sorted_file_tree_nodes(&nodes, FileTreeSortMode::Created);
+
+        assert_eq!(
+            updated
+                .iter()
+                .map(|node| node.name.as_str())
+                .collect::<Vec<_>>(),
+            vec!["dir", "new.md", "old.md"]
+        );
+        assert_eq!(
+            created
+                .iter()
+                .map(|node| node.name.as_str())
+                .collect::<Vec<_>>(),
+            vec!["dir", "new.md", "old.md"]
+        );
+
+        let FileNodeKind::Directory { children } = &updated[0].kind else {
+            panic!("expected directory children");
+        };
+        assert_eq!(
+            children
+                .iter()
+                .map(|node| node.name.as_str())
+                .collect::<Vec<_>>(),
+            vec!["child-new.md", "child-old.md"]
         );
     }
 

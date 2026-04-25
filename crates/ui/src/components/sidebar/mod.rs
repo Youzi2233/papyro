@@ -4,7 +4,7 @@ use crate::commands::FileTarget;
 use crate::context::use_app_context;
 use dioxus::prelude::*;
 
-pub use file_tree::FileTree;
+pub use file_tree::{FileTree, FileTreeSortMode};
 
 #[component]
 pub fn Sidebar() -> Element {
@@ -16,6 +16,7 @@ pub fn Sidebar() -> Element {
 
     let mut create_name = use_signal(String::new);
     let mut show_create = use_signal(|| false);
+    let mut tree_sort = use_signal(FileTreeSortMode::default);
 
     let workspace = file_state.read().current_workspace.clone();
     let sidebar_width = settings_model.sidebar_width;
@@ -105,8 +106,23 @@ pub fn Sidebar() -> Element {
                 }
             }
 
+            div {
+                class: "mn-tree-sortbar",
+                role: "group",
+                "aria-label": "File tree sort",
+                for mode in FileTreeSortMode::all() {
+                    button {
+                        class: if tree_sort() == mode { "mn-tree-sort-btn active" } else { "mn-tree-sort-btn" },
+                        title: "Sort by {mode.label()}",
+                        "aria-pressed": "{tree_sort() == mode}",
+                        onclick: move |_| tree_sort.set(mode),
+                        "{mode.label()}"
+                    }
+                }
+            }
+
             // ── File tree ──
-            FileTree {}
+            FileTree { sort_mode: tree_sort() }
 
             // ── Context-sensitive ops for selected item ──
             if has_selection {

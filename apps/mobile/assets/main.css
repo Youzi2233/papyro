@@ -216,6 +216,33 @@ small {
     margin-top: 14px;
 }
 
+.mn-tree-sortbar {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+    margin: 10px 10px 0;
+    padding: 4px;
+    border: 1px solid var(--mn-border);
+    border-radius: 14px;
+    background: rgba(255, 250, 242, 0.78);
+}
+
+.mn-tree-sort-btn {
+    min-width: 0;
+    min-height: 32px;
+    border-radius: 10px;
+    color: var(--mn-muted);
+    font-size: 12px;
+    font-weight: 800;
+    text-align: center;
+}
+
+.mn-tree-sort-btn.active {
+    background: #fffdf8;
+    color: var(--mn-accent-dark);
+    box-shadow: 0 1px 8px rgba(68, 54, 42, 0.08);
+}
+
 .mn-tree-row {
     display: flex;
     align-items: center;

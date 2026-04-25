@@ -369,6 +369,38 @@ button { border: 0; cursor: pointer; background: transparent; }
     border-radius: 999px;
 }
 
+.mn-tree-sortbar {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 3px;
+    margin: 8px 10px 0;
+    padding: 3px;
+    border: 1px solid var(--mn-border);
+    border-radius: var(--mn-radius-sm);
+    background: var(--mn-surface-raised);
+}
+
+.mn-tree-sort-btn {
+    min-width: 0;
+    min-height: 26px;
+    border-radius: 7px;
+    color: var(--mn-ink-3);
+    font-size: 11px;
+    font-weight: 600;
+    text-align: center;
+    transition: background 0.14s, color 0.14s, box-shadow 0.14s;
+}
+
+.mn-tree-sort-btn:hover {
+    color: var(--mn-ink);
+}
+
+.mn-tree-sort-btn.active {
+    background: var(--mn-surface);
+    color: var(--mn-accent);
+    box-shadow: var(--mn-shadow-xs);
+}
+
 /* ── File tree ── */
 .mn-file-tree {
     flex: 1;
