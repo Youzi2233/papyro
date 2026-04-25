@@ -45,6 +45,10 @@ impl AppDispatcher {
                 let storage = self.storage.clone();
                 let state = self.state;
                 spawn(async move {
+                    if !effects::flush_dirty_tabs(storage.clone(), state).await {
+                        return;
+                    }
+
                     workspace::open_workspace(
                         platform,
                         storage,
@@ -122,7 +126,7 @@ impl AppDispatcher {
                 );
             }
             AppAction::CloseTab(action) => {
-                close_tab(self.shell, self.state, action.tab_id);
+                close_tab(self.shell, self.storage.clone(), self.state, action.tab_id);
             }
             AppAction::RenameSelected(action) => {
                 file_ops::rename_selected(
@@ -226,7 +230,12 @@ fn perf_enabled() -> bool {
     std::env::var_os("PAPYRO_PERF").is_some()
 }
 
-fn close_tab(shell: AppShell, mut state: RuntimeState, tab_id: String) {
+fn close_tab(
+    shell: AppShell,
+    storage: Arc<dyn NoteStorage>,
+    mut state: RuntimeState,
+    tab_id: String,
+) {
     let perf_started_at = perf_enabled().then(std::time::Instant::now);
 
     let tab = state
@@ -239,6 +248,14 @@ fn close_tab(shell: AppShell, mut state: RuntimeState, tab_id: String) {
     let Some(tab) = tab else { return };
 
     if tab.is_dirty && state.pending_close_tab.read().as_deref() != Some(&tab_id) {
+        notes::save_tab_by_id(
+            storage,
+            state.file_state,
+            state.editor_tabs,
+            state.tab_contents,
+            state.status_message,
+            &tab_id,
+        );
         state.pending_close_tab.set(Some(tab_id));
         state
             .status_message

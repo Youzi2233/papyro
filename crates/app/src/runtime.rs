@@ -37,6 +37,7 @@ pub fn use_app_runtime(
 ) -> Signal<Option<String>> {
     let state = use_runtime_state(bootstrap);
     let watch_storage = storage.clone();
+    let flush_storage = storage.clone();
     let dispatcher = AppDispatcher::new(shell, state, storage, platform);
     let commands = dispatcher.commands();
     let view_model = use_memo(move || {
@@ -63,6 +64,7 @@ pub fn use_app_runtime(
     });
 
     crate::effects::use_workspace_watcher(state, watch_storage);
+    crate::effects::use_flush_on_drop(state, flush_storage);
 
     state.status_message
 }
