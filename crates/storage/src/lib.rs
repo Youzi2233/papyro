@@ -751,10 +751,10 @@ mod tests {
         assert_eq!(notes.len(), 2);
         assert!(notes
             .iter()
-            .any(|note| note.relative_path == PathBuf::from("root.md")));
+            .any(|note| note.relative_path == Path::new("root.md")));
         assert!(notes
             .iter()
-            .any(|note| note.relative_path == PathBuf::from("nested").join("child.md")));
+            .any(|note| note.relative_path == Path::new("nested").join("child.md")));
 
         Ok(())
     }

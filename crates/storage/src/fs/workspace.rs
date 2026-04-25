@@ -69,6 +69,6 @@ pub fn get_db_path() -> Result<PathBuf> {
 }
 
 pub fn get_db_path_in_app_data_dir(data_dir: &Path) -> Result<PathBuf> {
-    std::fs::create_dir_all(&data_dir)?;
+    std::fs::create_dir_all(data_dir)?;
     Ok(data_dir.join("meta.db"))
 }

@@ -14,7 +14,7 @@ pub fn Sidebar() -> Element {
     let ui_state = app.ui_state;
     let commands = app.commands;
 
-    let mut create_name = use_signal(|| String::new());
+    let mut create_name = use_signal(String::new);
     let mut rename_name = use_signal(String::new);
     let mut show_create = use_signal(|| false);
     let mut show_rename = use_signal(|| false);
@@ -26,7 +26,7 @@ pub fn Sidebar() -> Element {
 
     let selected_is_dir = selected_node
         .as_ref()
-        .map_or(false, |n| matches!(n.kind, FileNodeKind::Directory { .. }));
+        .is_some_and(|n| matches!(n.kind, FileNodeKind::Directory { .. }));
     let selected_target = selected_node.as_ref().map(|node| FileTarget {
         path: node.path.clone(),
         name: node.name.clone(),
@@ -66,7 +66,7 @@ pub fn Sidebar() -> Element {
                         onclick: move |_| commands.refresh_workspace.call(()),
                         "⟳"
                     }
-                    if !workspace.is_some() {
+                    if workspace.is_none() {
                         button {
                             class: "mn-button primary",
                             onclick: move |_| commands.open_workspace.call(()),

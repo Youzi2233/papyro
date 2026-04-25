@@ -11,7 +11,7 @@ pub fn StatusBar(status_message: Option<String>) -> Element {
         .read()
         .active_stats(tabs.active_tab_id.as_deref());
     let active_tab = tabs.active_tab().cloned();
-    let is_dirty = active_tab.as_ref().map_or(false, |t| t.is_dirty);
+    let is_dirty = active_tab.as_ref().is_some_and(|t| t.is_dirty);
 
     rsx! {
         footer { class: "mn-status-bar",

@@ -11,6 +11,8 @@ use crate::workspace_flow::{
     rename_selected_path,
 };
 
+type BlockingResult<T> = Result<Result<T, anyhow::Error>, tokio::task::JoinError>;
+
 pub fn create_note(
     storage: Arc<dyn NoteStorage>,
     mut file_state: Signal<FileState>,
@@ -25,22 +27,20 @@ pub fn create_note(
     let name = normalized_name(&name, "Untitled");
 
     spawn(async move {
-        let result: Result<
-            Result<(PathBuf, FileState, EditorTabs, TabContentsMap), anyhow::Error>,
-            tokio::task::JoinError,
-        > = tokio::task::spawn_blocking(move || {
-            let path = create_note_in_storage(
-                storage.as_ref(),
-                &mut next_file_state,
-                &mut next_editor_tabs,
-                &mut next_tab_contents,
-                &name,
-                summarize_markdown,
-            )?;
+        let result: BlockingResult<(PathBuf, FileState, EditorTabs, TabContentsMap)> =
+            tokio::task::spawn_blocking(move || {
+                let path = create_note_in_storage(
+                    storage.as_ref(),
+                    &mut next_file_state,
+                    &mut next_editor_tabs,
+                    &mut next_tab_contents,
+                    &name,
+                    summarize_markdown,
+                )?;
 
-            Ok::<_, anyhow::Error>((path, next_file_state, next_editor_tabs, next_tab_contents))
-        })
-        .await;
+                Ok::<_, anyhow::Error>((path, next_file_state, next_editor_tabs, next_tab_contents))
+            })
+            .await;
 
         match result {
             Ok(Ok((path, next_file_state, next_editor_tabs, next_tab_contents))) => {
@@ -119,26 +119,24 @@ pub fn rename_selected(
     let mut next_tab_contents = tab_contents.read().clone();
 
     spawn(async move {
-        let result: Result<
-            Result<(PathBuf, FileState, EditorTabs, TabContentsMap), anyhow::Error>,
-            tokio::task::JoinError,
-        > = tokio::task::spawn_blocking(move || {
-            let new_path = rename_selected_path(
-                storage.as_ref(),
-                &mut next_file_state,
-                &mut next_editor_tabs,
-                &mut next_tab_contents,
-                &name,
-            )?;
+        let result: BlockingResult<(PathBuf, FileState, EditorTabs, TabContentsMap)> =
+            tokio::task::spawn_blocking(move || {
+                let new_path = rename_selected_path(
+                    storage.as_ref(),
+                    &mut next_file_state,
+                    &mut next_editor_tabs,
+                    &mut next_tab_contents,
+                    &name,
+                )?;
 
-            Ok::<_, anyhow::Error>((
-                new_path,
-                next_file_state,
-                next_editor_tabs,
-                next_tab_contents,
-            ))
-        })
-        .await;
+                Ok::<_, anyhow::Error>((
+                    new_path,
+                    next_file_state,
+                    next_editor_tabs,
+                    next_tab_contents,
+                ))
+            })
+            .await;
 
         match result {
             Ok(Ok((new_path, next_file_state, next_editor_tabs, next_tab_contents))) => {
@@ -183,25 +181,23 @@ pub fn delete_selected(
     let mut next_tab_contents = tab_contents.read().clone();
 
     spawn(async move {
-        let result: Result<
-            Result<(PathBuf, FileState, EditorTabs, TabContentsMap), anyhow::Error>,
-            tokio::task::JoinError,
-        > = tokio::task::spawn_blocking(move || {
-            let deleted_path = delete_selected_path(
-                storage.as_ref(),
-                &mut next_file_state,
-                &mut next_editor_tabs,
-                &mut next_tab_contents,
-            )?;
+        let result: BlockingResult<(PathBuf, FileState, EditorTabs, TabContentsMap)> =
+            tokio::task::spawn_blocking(move || {
+                let deleted_path = delete_selected_path(
+                    storage.as_ref(),
+                    &mut next_file_state,
+                    &mut next_editor_tabs,
+                    &mut next_tab_contents,
+                )?;
 
-            Ok::<_, anyhow::Error>((
-                deleted_path,
-                next_file_state,
-                next_editor_tabs,
-                next_tab_contents,
-            ))
-        })
-        .await;
+                Ok::<_, anyhow::Error>((
+                    deleted_path,
+                    next_file_state,
+                    next_editor_tabs,
+                    next_tab_contents,
+                ))
+            })
+            .await;
 
         match result {
             Ok(Ok((_deleted_path, next_file_state, next_editor_tabs, next_tab_contents))) => {

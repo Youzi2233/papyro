@@ -106,8 +106,7 @@ pub fn EditorPane() -> Element {
             if stale.is_empty() {
                 // Even when no bridges are stale, drain retired hosts whose
                 // tabs no longer exist so the list doesn't grow forever.
-                let open: std::collections::HashSet<String> =
-                    open_ids.into_iter().collect();
+                let open: std::collections::HashSet<String> = open_ids.into_iter().collect();
                 retired_hosts.with_mut(|ids| ids.retain(|id| open.contains(id)));
                 return;
             }
@@ -656,9 +655,8 @@ fn EditorTabButton(tab: papyro_core::models::EditorTab, is_active: bool) -> Elem
         if is_active {
             tabs.tabs
                 .iter()
-                .filter(|candidate| candidate.id != close_tab_id)
+                .rfind(|candidate| candidate.id != close_tab_id)
                 .map(|candidate| candidate.id.clone())
-                .last()
                 .unwrap_or_default()
         } else {
             tabs.active_tab_id.clone().unwrap_or_default()

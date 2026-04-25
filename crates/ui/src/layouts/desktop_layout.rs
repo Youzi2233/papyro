@@ -44,15 +44,10 @@ pub fn DesktopLayout(status_message: Option<String>) -> Element {
         );
 
         spawn(async move {
-            loop {
-                match eval.recv::<String>().await {
-                    Ok(_) => {
-                        ui_state.write().toggle_sidebar();
-                        let settings = ui_state.read().settings.clone();
-                        commands.save_settings.call(settings);
-                    }
-                    Err(_) => break,
-                }
+            while eval.recv::<String>().await.is_ok() {
+                ui_state.write().toggle_sidebar();
+                let settings = ui_state.read().settings.clone();
+                commands.save_settings.call(settings);
             }
         });
     });

@@ -1,7 +1,7 @@
 use crate::traits::PlatformApi;
 use anyhow::Result;
 use async_trait::async_trait;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 pub struct DesktopPlatform;
 
@@ -24,7 +24,7 @@ impl PlatformApi for DesktopPlatform {
         Ok(handle.map(|h| h.path().to_owned()))
     }
 
-    fn open_in_explorer(&self, path: &PathBuf) -> Result<()> {
+    fn open_in_explorer(&self, path: &Path) -> Result<()> {
         open::that(path)?;
         Ok(())
     }

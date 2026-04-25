@@ -42,10 +42,9 @@ pub fn use_app_runtime(
     let mut file_state = use_signal(|| bootstrap.file_state.clone());
     let mut editor_tabs = use_signal(EditorTabs::default);
     let mut tab_contents = use_signal(TabContentsMap::default);
-    let ui_state = use_signal(|| {
-        let mut state = UiState::default();
-        state.settings = bootstrap.settings.clone();
-        state
+    let ui_state = use_signal(|| UiState {
+        settings: bootstrap.settings.clone(),
+        ..Default::default()
     });
     let mut status_message = use_signal(|| Some(bootstrap.status_message.clone()));
     let workspace_watch_path = use_signal(|| bootstrap.workspace_root.clone());
