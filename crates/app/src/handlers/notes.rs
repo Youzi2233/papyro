@@ -5,7 +5,10 @@ use papyro_editor::parser::summarize_markdown;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use crate::workspace_flow::{open_note_from_storage, save_tab_to_storage};
+use crate::workspace_flow::{
+    apply_save_failure, apply_save_success, begin_save_tab, open_note_from_storage,
+    write_save_snapshot,
+};
 
 pub fn open_note(
     storage: Arc<dyn NoteStorage>,
@@ -119,36 +122,51 @@ pub fn save_tab_by_id(
         return;
     }
 
-    let mut next_file_state = file_state.read().clone();
-    next_file_state.current_workspace = Some(workspace);
-    let mut next_editor_tabs = editor_tabs.read().clone();
-    let next_tab_contents = tab_contents.read().clone();
-    let tab_id = tab_id.to_string();
+    let snapshot = {
+        let mut next_file_state = file_state.read().clone();
+        next_file_state.current_workspace = Some(workspace);
+        let mut editor_tabs = editor_tabs.write();
+        let tab_contents = tab_contents.read();
+        begin_save_tab(&next_file_state, &mut editor_tabs, &tab_contents, tab_id)
+    };
 
+    let Ok(snapshot) = snapshot else {
+        return;
+    };
     spawn(async move {
-        let result: Result<Result<(FileState, EditorTabs), anyhow::Error>, tokio::task::JoinError> =
-            tokio::task::spawn_blocking(move || {
-                save_tab_to_storage(
-                    storage.as_ref(),
-                    &mut next_file_state,
-                    &mut next_editor_tabs,
-                    &next_tab_contents,
-                    &tab_id,
-                )?;
-
-                Ok::<_, anyhow::Error>((next_file_state, next_editor_tabs))
-            })
-            .await;
+        let snapshot_for_io = snapshot.clone();
+        let result: Result<
+            Result<(papyro_core::SavedNote, Vec<papyro_core::RecentFile>), anyhow::Error>,
+            tokio::task::JoinError,
+        > = tokio::task::spawn_blocking(move || {
+            write_save_snapshot(storage.as_ref(), &snapshot_for_io)
+        })
+        .await;
 
         match result {
-            Ok(Ok((next_file_state, next_editor_tabs))) => {
-                file_state.set(next_file_state);
-                editor_tabs.set(next_editor_tabs);
+            Ok(Ok((saved_note, recent_files))) => {
+                let tab_contents = tab_contents.read();
+                let mut file_state = file_state.write();
+                let mut editor_tabs = editor_tabs.write();
+                apply_save_success(
+                    &mut file_state,
+                    &mut editor_tabs,
+                    &tab_contents,
+                    &snapshot,
+                    saved_note,
+                    recent_files,
+                );
             }
             Ok(Err(error)) => {
+                let tab_contents = tab_contents.read();
+                let mut editor_tabs = editor_tabs.write();
+                apply_save_failure(&mut editor_tabs, &tab_contents, &snapshot);
                 status_message.set(Some(format!("Save failed: {error}")));
             }
             Err(error) => {
+                let tab_contents = tab_contents.read();
+                let mut editor_tabs = editor_tabs.write();
+                apply_save_failure(&mut editor_tabs, &tab_contents, &snapshot);
                 status_message.set(Some(format!("Save failed: {error}")));
             }
         }

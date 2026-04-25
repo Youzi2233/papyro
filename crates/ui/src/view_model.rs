@@ -1,4 +1,6 @@
-use papyro_core::models::{AppSettings, DocumentStats, FileNode, FileNodeKind, Theme, ViewMode};
+use papyro_core::models::{
+    AppSettings, DocumentStats, FileNode, FileNodeKind, SaveStatus, Theme, ViewMode,
+};
 use papyro_core::{EditorTabs, FileState, TabContentsMap, UiState};
 use std::path::PathBuf;
 
@@ -27,6 +29,7 @@ pub struct EditorViewModel {
     pub has_active_tab: bool,
     pub tab_count: usize,
     pub active_is_dirty: bool,
+    pub active_save_status: SaveStatus,
     pub active_stats: DocumentStats,
     pub view_mode: ViewMode,
 }
@@ -93,6 +96,9 @@ impl EditorViewModel {
             has_active_tab: active_tab.is_some(),
             tab_count: editor_tabs.tabs.len(),
             active_is_dirty: active_tab.is_some_and(|tab| tab.is_dirty),
+            active_save_status: active_tab
+                .map(|tab| tab.save_status.clone())
+                .unwrap_or_default(),
             active_stats: tab_contents.active_stats(active_tab_id.as_deref()),
             view_mode: ui_state.view_mode.clone(),
         }
@@ -171,6 +177,7 @@ mod tests {
             title: "A".to_string(),
             path: PathBuf::from("a.md"),
             is_dirty: true,
+            save_status: SaveStatus::Dirty,
         });
 
         let mut tab_contents = TabContentsMap::default();
@@ -203,6 +210,7 @@ mod tests {
         assert!(view_model.workspace.selected_is_directory);
         assert_eq!(view_model.editor.active_title.as_deref(), Some("A"));
         assert!(view_model.editor.active_is_dirty);
+        assert_eq!(view_model.editor.active_save_status, SaveStatus::Dirty);
         assert_eq!(view_model.editor.active_stats.char_count, 5);
         assert_eq!(view_model.settings.theme, Theme::Dark);
         assert!(view_model.settings.sidebar_collapsed);

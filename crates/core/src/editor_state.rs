@@ -1,4 +1,4 @@
-use crate::models::{DocumentStats, EditorTab};
+use crate::models::{DocumentStats, EditorTab, SaveStatus};
 use std::collections::HashMap;
 
 #[derive(Debug, Clone, PartialEq, Default)]
@@ -60,6 +60,16 @@ impl EditorTabs {
     pub fn mark_tab_dirty(&mut self, tab_id: &str) -> bool {
         if let Some(tab) = self.tabs.iter_mut().find(|tab| tab.id == tab_id) {
             tab.is_dirty = true;
+            tab.save_status = SaveStatus::Dirty;
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn mark_tab_saving(&mut self, tab_id: &str) -> bool {
+        if let Some(tab) = self.tabs.iter_mut().find(|tab| tab.id == tab_id) {
+            tab.save_status = SaveStatus::Saving;
             true
         } else {
             false
@@ -69,7 +79,18 @@ impl EditorTabs {
     pub fn mark_tab_saved(&mut self, tab_id: &str, title: String) {
         if let Some(tab) = self.tabs.iter_mut().find(|tab| tab.id == tab_id) {
             tab.is_dirty = false;
+            tab.save_status = SaveStatus::Saved;
             tab.title = title;
+        }
+    }
+
+    pub fn mark_tab_save_failed(&mut self, tab_id: &str) -> bool {
+        if let Some(tab) = self.tabs.iter_mut().find(|tab| tab.id == tab_id) {
+            tab.is_dirty = true;
+            tab.save_status = SaveStatus::Failed;
+            true
+        } else {
+            false
         }
     }
 
@@ -170,6 +191,10 @@ impl TabContentsMap {
         }
     }
 
+    pub fn revision_for_tab(&self, tab_id: &str) -> Option<u64> {
+        self.tab_revisions.get(tab_id).copied()
+    }
+
     pub fn should_auto_save_revision(&self, tab_id: &str, revision: u64) -> bool {
         self.tab_revisions.get(tab_id).copied() == Some(revision)
     }
@@ -188,6 +213,7 @@ mod tests {
             title: format!("Note {id}"),
             path: PathBuf::from(format!("{id}.md")),
             is_dirty: false,
+            save_status: SaveStatus::Saved,
         }
     }
 
@@ -230,10 +256,23 @@ mod tests {
 
         assert_eq!(revision, Some(1));
         assert!(tabs.tab_by_id(&tab_id).is_some_and(|tab| tab.is_dirty));
+        assert_eq!(
+            tabs.tab_by_id(&tab_id).map(|tab| tab.save_status.clone()),
+            Some(SaveStatus::Dirty)
+        );
         assert!(contents.should_auto_save_revision(&tab_id, 1));
         assert!(!contents.should_auto_save_revision(&tab_id, 0));
+        tabs.mark_tab_saving(&tab_id);
+        assert_eq!(
+            tabs.tab_by_id(&tab_id).map(|tab| tab.save_status.clone()),
+            Some(SaveStatus::Saving)
+        );
         tabs.mark_tab_saved(&tab_id, "Saved".to_string());
         assert!(!tabs.tab_by_id(&tab_id).is_some_and(|tab| tab.is_dirty));
+        assert_eq!(
+            tabs.tab_by_id(&tab_id).map(|tab| tab.save_status.clone()),
+            Some(SaveStatus::Saved)
+        );
     }
 
     #[test]

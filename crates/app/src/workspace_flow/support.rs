@@ -1,5 +1,7 @@
 use anyhow::{anyhow, Result};
-use papyro_core::models::{AppSettings, EditorTab, FileNode, FileNodeKind, RecentFile, Workspace};
+use papyro_core::models::{
+    AppSettings, EditorTab, FileNode, FileNodeKind, RecentFile, SaveStatus, Workspace,
+};
 use papyro_core::storage::{
     NoteStorage, OpenedNote, SavedNote, WorkspaceBootstrap, WorkspaceSnapshot,
 };
@@ -169,6 +171,7 @@ pub(super) fn tab(id: &str, note_id: &str, path: &str) -> EditorTab {
         title: id.to_string(),
         path: PathBuf::from(path),
         is_dirty: false,
+        save_status: SaveStatus::Saved,
     }
 }
 

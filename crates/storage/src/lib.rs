@@ -172,6 +172,7 @@ impl SqliteStorage {
                 title: note_meta.title,
                 path: path.to_path_buf(),
                 is_dirty: false,
+                save_status: papyro_core::models::SaveStatus::Saved,
             },
             content,
             recent_files,

@@ -1,5 +1,6 @@
 use crate::context::use_app_context;
 use dioxus::prelude::*;
+use papyro_core::models::SaveStatus;
 
 #[component]
 pub fn StatusBar(status_message: Option<String>) -> Element {
@@ -20,10 +21,19 @@ pub fn StatusBar(status_message: Option<String>) -> Element {
                 if editor.has_active_tab {
                     span { "{stats.word_count} words" }
                     span { "{stats.char_count} chars" }
-                    if editor.active_is_dirty {
-                        span { class: "mn-status-unsaved", "Unsaved" }
-                    } else {
-                        span { "Saved" }
+                    match editor.active_save_status {
+                        SaveStatus::Saving => rsx! {
+                            span { class: "mn-status-saving", "Saving" }
+                        },
+                        SaveStatus::Failed => rsx! {
+                            span { class: "mn-status-unsaved", "Save failed" }
+                        },
+                        SaveStatus::Dirty => rsx! {
+                            span { class: "mn-status-unsaved", "Unsaved" }
+                        },
+                        SaveStatus::Saved => rsx! {
+                            span { "Saved" }
+                        },
                     }
                 }
             }

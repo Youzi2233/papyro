@@ -46,6 +46,42 @@ pub fn mark_tab_saved(tabs: &mut EditorTabs, saved_note: SavedNote) {
     tabs.mark_tab_saved(&saved_note.tab_id, saved_note.title);
 }
 
+pub fn begin_tab_save(
+    tabs: &mut EditorTabs,
+    contents: &TabContentsMap,
+    tab_id: &str,
+) -> Option<u64> {
+    let revision = contents.revision_for_tab(tab_id)?;
+    tabs.mark_tab_saving(tab_id).then_some(revision)
+}
+
+pub fn mark_tab_saved_if_current(
+    tabs: &mut EditorTabs,
+    contents: &TabContentsMap,
+    saved_note: SavedNote,
+    revision: u64,
+) -> bool {
+    if !contents.should_auto_save_revision(&saved_note.tab_id, revision) {
+        return false;
+    }
+
+    tabs.mark_tab_saved(&saved_note.tab_id, saved_note.title);
+    true
+}
+
+pub fn mark_tab_save_failed_if_current(
+    tabs: &mut EditorTabs,
+    contents: &TabContentsMap,
+    tab_id: &str,
+    revision: u64,
+) -> bool {
+    if !contents.should_auto_save_revision(tab_id, revision) {
+        return false;
+    }
+
+    tabs.mark_tab_save_failed(tab_id)
+}
+
 pub fn close_tab(tabs: &mut EditorTabs, contents: &mut TabContentsMap, tab_id: &str) -> bool {
     let closed = tabs.close_tab(tab_id);
     if closed {
@@ -76,6 +112,7 @@ mod tests {
             title: format!("Note {id}"),
             path: PathBuf::from(path),
             is_dirty: false,
+            save_status: crate::models::SaveStatus::Saved,
         }
     }
 
@@ -97,15 +134,29 @@ mod tests {
         let revision = change_tab_content(&mut tabs, &mut contents, "a", "# A\n\nBody".to_string());
         assert_eq!(revision, Some(1));
         assert!(should_auto_save(&tabs, &contents, "a", 1));
+        assert_eq!(begin_tab_save(&mut tabs, &contents, "a"), Some(1));
 
-        mark_tab_saved(
+        assert!(mark_tab_saved_if_current(
             &mut tabs,
+            &contents,
             SavedNote {
                 tab_id: "a".to_string(),
                 title: "A".to_string(),
             },
-        );
+            1,
+        ));
         assert!(!should_auto_save(&tabs, &contents, "a", 1));
+
+        let stale_save = SavedNote {
+            tab_id: "a".to_string(),
+            title: "Old".to_string(),
+        };
+        let revision = change_tab_content(&mut tabs, &mut contents, "a", "# A\n\nNew".to_string());
+        assert_eq!(revision, Some(2));
+        assert!(!mark_tab_saved_if_current(
+            &mut tabs, &contents, stale_save, 1,
+        ));
+        assert!(tabs.tab_by_id("a").is_some_and(|tab| tab.is_dirty));
 
         assert!(close_tab(&mut tabs, &mut contents, "a"));
         assert!(tabs.active_tab().is_none());

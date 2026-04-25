@@ -1,12 +1,10 @@
-use dioxus::prelude::*;
-use papyro_core::{EditorTabs, TabContentsMap};
-
 #[cfg(feature = "desktop-shell")]
 pub(crate) async fn export_active_note_html(
-    editor_tabs: Signal<EditorTabs>,
-    tab_contents: Signal<TabContentsMap>,
-    mut status_message: Signal<Option<String>>,
+    editor_tabs: dioxus::prelude::Signal<papyro_core::EditorTabs>,
+    tab_contents: dioxus::prelude::Signal<papyro_core::TabContentsMap>,
+    mut status_message: dioxus::prelude::Signal<Option<String>>,
 ) {
+    use dioxus::prelude::{ReadableExt, WritableExt};
     use papyro_editor::renderer::render_markdown_html;
 
     let (title, content) = {

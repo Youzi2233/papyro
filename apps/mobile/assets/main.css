@@ -531,6 +531,11 @@ small {
     font-weight: 700;
 }
 
+.mn-status-saving {
+    color: var(--mn-muted);
+    font-weight: 700;
+}
+
 .mn-modal-overlay {
     position: fixed;
     inset: 0;

@@ -54,6 +54,16 @@ pub struct EditorTab {
     pub title: String,
     pub path: PathBuf,
     pub is_dirty: bool,
+    pub save_status: SaveStatus,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub enum SaveStatus {
+    #[default]
+    Saved,
+    Dirty,
+    Saving,
+    Failed,
 }
 
 #[derive(Debug, Clone, PartialEq)]

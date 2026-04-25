@@ -1,6 +1,6 @@
 use super::super::support::*;
 use super::super::*;
-use papyro_core::models::DocumentStats;
+use papyro_core::models::{DocumentStats, SaveStatus};
 use papyro_core::storage::{OpenedNote, SavedNote};
 use papyro_core::{EditorTabs, TabContentsMap};
 use std::collections::HashMap;
@@ -88,6 +88,7 @@ fn save_tab_flow_marks_tab_clean_and_refreshes_recent_files() {
     let mut editor_tabs = EditorTabs::default();
     let mut tab = tab("tab-a", "note-a", "workspace/notes/a.md");
     tab.is_dirty = true;
+    tab.save_status = SaveStatus::Dirty;
     editor_tabs.open_tab(tab);
     let mut tab_contents = TabContentsMap::default();
     tab_contents.insert_tab(
@@ -95,6 +96,7 @@ fn save_tab_flow_marks_tab_clean_and_refreshes_recent_files() {
         "body".to_string(),
         DocumentStats::default(),
     );
+    tab_contents.update_tab_content("tab-a", "body updated".to_string());
 
     save_tab_to_storage(
         &storage,
@@ -107,18 +109,56 @@ fn save_tab_flow_marks_tab_clean_and_refreshes_recent_files() {
 
     assert_eq!(
         storage.saved_payloads.lock().unwrap().clone(),
-        vec![("tab-a".to_string(), "body".to_string())]
+        vec![("tab-a".to_string(), "body updated".to_string())]
     );
     assert_eq!(
         file_state.recent_files,
         vec![recent_file("note-a", "notes/a.md")]
     );
     assert_eq!(
+        editor_tabs.tab_by_id("tab-a").map(|tab| (
+            tab.is_dirty,
+            tab.save_status.clone(),
+            tab.title.clone()
+        )),
+        Some((false, SaveStatus::Saved, "Saved Title".to_string()))
+    );
+}
+
+#[test]
+fn save_tab_flow_keeps_dirty_state_when_storage_fails() {
+    let storage = MockStorage::default();
+    let mut file_state = file_state_with_tree(vec![note_node("workspace/notes/a.md", "note-a")]);
+    let mut editor_tabs = EditorTabs::default();
+    let mut tab = tab("tab-a", "note-a", "workspace/notes/a.md");
+    tab.is_dirty = true;
+    tab.save_status = SaveStatus::Dirty;
+    editor_tabs.open_tab(tab);
+    let mut tab_contents = TabContentsMap::default();
+    tab_contents.insert_tab(
+        "tab-a".to_string(),
+        "body".to_string(),
+        DocumentStats::default(),
+    );
+    tab_contents.update_tab_content("tab-a", "body updated".to_string());
+
+    let error = save_tab_to_storage(
+        &storage,
+        &mut file_state,
+        &mut editor_tabs,
+        &tab_contents,
+        "tab-a",
+    )
+    .unwrap_err();
+
+    assert!(error.to_string().contains("Missing save result"));
+    assert_eq!(
         editor_tabs
             .tab_by_id("tab-a")
-            .map(|tab| (tab.is_dirty, tab.title.clone())),
-        Some((false, "Saved Title".to_string()))
+            .map(|tab| (tab.is_dirty, tab.save_status.clone())),
+        Some((true, SaveStatus::Failed))
     );
+    assert_eq!(tab_contents.content_for_tab("tab-a"), Some("body updated"));
 }
 
 #[test]

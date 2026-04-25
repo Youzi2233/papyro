@@ -5,7 +5,8 @@ pub mod models;
 pub mod storage;
 pub mod ui_state;
 pub use editor_service::{
-    change_tab_content, close_tab, close_tabs_under_path, mark_tab_saved, open_note,
+    begin_tab_save, change_tab_content, close_tab, close_tabs_under_path,
+    mark_tab_save_failed_if_current, mark_tab_saved, mark_tab_saved_if_current, open_note,
     should_auto_save,
 };
 pub use editor_state::{EditorTabs, TabContentsMap};

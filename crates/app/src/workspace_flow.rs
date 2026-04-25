@@ -18,5 +18,9 @@ pub(crate) use reload::{
     apply_workspace_bootstrap, reload_workspace_or_bootstrap, WorkspaceReloadOutcome,
 };
 pub(crate) use rename::rename_selected_path;
+#[cfg(test)]
 pub(crate) use save::save_tab_to_storage;
+pub(crate) use save::{
+    apply_save_failure, apply_save_success, begin_save_tab, write_save_snapshot,
+};
 pub(crate) use utils::normalized_name;

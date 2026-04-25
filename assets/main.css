@@ -1255,6 +1255,11 @@ select.mn-input {
     font-weight: 600;
 }
 
+.mn-status-saving {
+    color: var(--mn-ink-3);
+    font-weight: 600;
+}
+
 /* ── Mobile shell (placeholder) ── */
 .mn-shell-mobile { grid-template-rows: 52px minmax(0, 1fr); }
 
