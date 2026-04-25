@@ -1,5 +1,6 @@
 use anyhow::Result;
 use flume::Sender;
+use notify::event::{ModifyKind, RenameMode};
 use notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use std::path::Path;
 
@@ -23,6 +24,15 @@ pub fn start_watching(path: &Path, tx: Sender<WatchEvent>) -> Result<WorkspaceWa
         let Ok(event) = res else { return };
         let watch_event = match event.kind {
             EventKind::Create(_) => event.paths.first().map(|p| WatchEvent::Created(p.clone())),
+            EventKind::Modify(ModifyKind::Name(RenameMode::Both)) => {
+                match (event.paths.first(), event.paths.get(1)) {
+                    (Some(from), Some(to)) => Some(WatchEvent::Renamed {
+                        from: from.clone(),
+                        to: to.clone(),
+                    }),
+                    _ => event.paths.first().map(|p| WatchEvent::Modified(p.clone())),
+                }
+            }
             EventKind::Modify(_) => event.paths.first().map(|p| WatchEvent::Modified(p.clone())),
             EventKind::Remove(_) => event.paths.first().map(|p| WatchEvent::Deleted(p.clone())),
             _ => None,

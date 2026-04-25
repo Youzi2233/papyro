@@ -126,6 +126,32 @@ pub async fn reload_workspace_tree_async(
     }
 }
 
+pub fn external_tab_event_message(
+    event: &papyro_storage::fs::WatchEvent,
+    editor_tabs: &EditorTabs,
+) -> Option<String> {
+    let tab = editor_tabs.tabs.iter().find(|tab| match event {
+        papyro_storage::fs::WatchEvent::Deleted(path) => tab.path.starts_with(path),
+        papyro_storage::fs::WatchEvent::Renamed { from, .. } => tab.path.starts_with(from),
+        papyro_storage::fs::WatchEvent::Created(_)
+        | papyro_storage::fs::WatchEvent::Modified(_) => false,
+    })?;
+
+    match event {
+        papyro_storage::fs::WatchEvent::Deleted(_) => Some(format!(
+            "{} was removed outside Papyro. The open tab was kept so you can review or save it.",
+            tab.title
+        )),
+        papyro_storage::fs::WatchEvent::Renamed { to, .. } => Some(format!(
+            "{} was moved outside Papyro to {}. Reopen it from the file tree to continue tracking the new path.",
+            tab.title,
+            to.display()
+        )),
+        papyro_storage::fs::WatchEvent::Created(_)
+        | papyro_storage::fs::WatchEvent::Modified(_) => None,
+    }
+}
+
 pub fn should_refresh_for_event(
     event: &papyro_storage::fs::WatchEvent,
     workspace_path: &Path,
@@ -137,5 +163,75 @@ pub fn should_refresh_for_event(
         papyro_storage::fs::WatchEvent::Renamed { from, to } => {
             from.starts_with(workspace_path) || to.starts_with(workspace_path)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use papyro_core::models::{EditorTab, SaveStatus};
+
+    fn tab(title: &str, path: &str) -> EditorTab {
+        EditorTab {
+            id: title.to_lowercase(),
+            note_id: format!("note-{title}"),
+            title: title.to_string(),
+            path: PathBuf::from(path),
+            is_dirty: false,
+            save_status: SaveStatus::Saved,
+        }
+    }
+
+    #[test]
+    fn external_tab_event_message_reports_deleted_open_file() {
+        let editor_tabs = EditorTabs {
+            tabs: vec![tab("Draft", "workspace/notes/draft.md")],
+            active_tab_id: Some("draft".to_string()),
+        };
+
+        let message = external_tab_event_message(
+            &papyro_storage::fs::WatchEvent::Deleted(PathBuf::from("workspace/notes/draft.md")),
+            &editor_tabs,
+        )
+        .unwrap();
+
+        assert!(message.contains("Draft was removed outside Papyro"));
+        assert!(message.contains("open tab was kept"));
+    }
+
+    #[test]
+    fn external_tab_event_message_reports_renamed_open_file() {
+        let editor_tabs = EditorTabs {
+            tabs: vec![tab("Draft", "workspace/notes/draft.md")],
+            active_tab_id: Some("draft".to_string()),
+        };
+
+        let message = external_tab_event_message(
+            &papyro_storage::fs::WatchEvent::Renamed {
+                from: PathBuf::from("workspace/notes/draft.md"),
+                to: PathBuf::from("workspace/archive/draft.md"),
+            },
+            &editor_tabs,
+        )
+        .unwrap();
+
+        assert!(message.contains("Draft was moved outside Papyro"));
+        assert!(message.contains("workspace/archive/draft.md"));
+    }
+
+    #[test]
+    fn external_tab_event_message_ignores_unopened_changes() {
+        let editor_tabs = EditorTabs {
+            tabs: vec![tab("Draft", "workspace/notes/draft.md")],
+            active_tab_id: Some("draft".to_string()),
+        };
+
+        assert_eq!(
+            external_tab_event_message(
+                &papyro_storage::fs::WatchEvent::Deleted(PathBuf::from("workspace/other.md")),
+                &editor_tabs,
+            ),
+            None
+        );
     }
 }

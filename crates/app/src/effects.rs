@@ -205,6 +205,7 @@ fn apply_flush_failure(mut state: RuntimeState, snapshot: &SaveTabSnapshot) -> b
 
 pub(crate) fn use_workspace_watcher(state: RuntimeState, storage: Arc<dyn NoteStorage>) {
     let mut file_state = state.file_state;
+    let editor_tabs = state.editor_tabs;
     let mut status_message = state.status_message;
     let workspace_watch_path = state.workspace_watch_path;
 
@@ -227,6 +228,8 @@ pub(crate) fn use_workspace_watcher(state: RuntimeState, storage: Arc<dyn NoteSt
                 if !workspace::should_refresh_for_event(&event, &path) {
                     continue;
                 }
+                let external_message =
+                    workspace::external_tab_event_message(&event, &editor_tabs.read());
                 while rx.try_recv().is_ok() {}
                 workspace::reload_workspace_tree_async(
                     &mut file_state,
@@ -235,6 +238,9 @@ pub(crate) fn use_workspace_watcher(state: RuntimeState, storage: Arc<dyn NoteSt
                     storage.clone(),
                 )
                 .await;
+                if let Some(message) = external_message {
+                    status_message.set(Some(message));
+                }
             }
         }
     });
