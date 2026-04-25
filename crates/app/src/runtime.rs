@@ -1,7 +1,10 @@
+#[cfg(feature = "desktop-shell")]
+use crate::export::export_active_note_html;
 use crate::handlers::{file_ops, notes, workspace};
+use crate::state::use_runtime_state;
 use dioxus::prelude::*;
 use papyro_core::models::{AppSettings, FileNode};
-use papyro_core::{EditorTabs, NoteStorage, TabContentsMap, UiState, WorkspaceBootstrap};
+use papyro_core::{NoteStorage, UiState, WorkspaceBootstrap};
 use papyro_platform::PlatformApi;
 use papyro_ui::commands::{AppCommands, FileTarget};
 use papyro_ui::context::{AppContext, EditorServices};
@@ -39,16 +42,14 @@ pub fn use_app_runtime(
     storage: Arc<dyn NoteStorage>,
     platform: Arc<dyn PlatformApi>,
 ) -> Signal<Option<String>> {
-    let mut file_state = use_signal(|| bootstrap.file_state.clone());
-    let mut editor_tabs = use_signal(EditorTabs::default);
-    let mut tab_contents = use_signal(TabContentsMap::default);
-    let ui_state = use_signal(|| UiState {
-        settings: bootstrap.settings.clone(),
-        ..Default::default()
-    });
-    let mut status_message = use_signal(|| Some(bootstrap.status_message.clone()));
-    let workspace_watch_path = use_signal(|| bootstrap.workspace_root.clone());
-    let mut pending_close_tab = use_signal(|| None::<String>);
+    let state = use_runtime_state(bootstrap);
+    let file_state = state.file_state;
+    let mut editor_tabs = state.editor_tabs;
+    let mut tab_contents = state.tab_contents;
+    let ui_state = state.ui_state;
+    let mut status_message = state.status_message;
+    let workspace_watch_path = state.workspace_watch_path;
+    let mut pending_close_tab = state.pending_close_tab;
 
     let open_workspace_platform = platform.clone();
     let open_workspace_storage = storage.clone();
@@ -238,36 +239,7 @@ pub fn use_app_runtime(
         },
     });
 
-    let _watch_workspace = use_resource(move || {
-        let storage = watch_storage.clone();
-        async move {
-            let path = workspace_watch_path();
-            let Some(path) = path else { return };
-
-            let (tx, rx) = flume::unbounded();
-            let Ok(_watcher) = papyro_storage::fs::start_watching(&path, tx) else {
-                status_message.set(Some(format!(
-                    "Workspace watcher failed to start for {}",
-                    path.display()
-                )));
-                return;
-            };
-
-            while let Ok(event) = rx.recv_async().await {
-                if !workspace::should_refresh_for_event(&event, &path) {
-                    continue;
-                }
-                while rx.try_recv().is_ok() {}
-                workspace::reload_workspace_tree_async(
-                    &mut file_state,
-                    &mut status_message,
-                    &path,
-                    storage.clone(),
-                )
-                .await;
-            }
-        }
-    });
+    crate::effects::use_workspace_watcher(state, watch_storage);
 
     status_message
 }
@@ -283,112 +255,4 @@ fn apply_settings(
     if let Err(error) = storage.save_settings(&settings) {
         tracing::warn!("Failed to save settings: {error}");
     }
-}
-
-#[cfg(feature = "desktop-shell")]
-async fn export_active_note_html(
-    editor_tabs: Signal<EditorTabs>,
-    tab_contents: Signal<TabContentsMap>,
-    mut status_message: Signal<Option<String>>,
-) {
-    use papyro_editor::renderer::render_markdown_html;
-
-    let (title, content) = {
-        let tabs = editor_tabs.read();
-        let title = tabs
-            .active_tab()
-            .map(|t| t.title.clone())
-            .unwrap_or_else(|| "note".to_string());
-        let content = tab_contents
-            .read()
-            .active_content(tabs.active_tab_id.as_deref())
-            .unwrap_or_default()
-            .to_string();
-        (title, content)
-    };
-
-    if content.is_empty() {
-        status_message.set(Some("Nothing to export".to_string()));
-        return;
-    }
-
-    let html_body = render_markdown_html(&content);
-    let html = build_html_document(&title, &html_body);
-
-    let file = rfd::AsyncFileDialog::new()
-        .set_title("Export as HTML")
-        .set_file_name(format!("{title}.html"))
-        .add_filter("HTML", &["html"])
-        .save_file()
-        .await;
-
-    let Some(file) = file else { return };
-
-    match tokio::fs::write(file.path(), html.as_bytes()).await {
-        Ok(_) => status_message.set(Some(format!("Exported {title}.html"))),
-        Err(error) => status_message.set(Some(format!("Export failed: {error}"))),
-    }
-}
-
-#[cfg(feature = "desktop-shell")]
-fn build_html_document(title: &str, body: &str) -> String {
-    format!(
-        r#"<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{title}</title>
-<style>
-  *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
-  body {{
-    font-family: "Inter", "Segoe UI", system-ui, sans-serif;
-    font-size: 16px;
-    line-height: 1.75;
-    color: #25211a;
-    background: #fffaf2;
-    padding: 48px clamp(16px, 8vw, 120px);
-  }}
-  .content {{ max-width: 760px; margin: 0 auto; }}
-  h1 {{ font-size: 2em; font-weight: 700; letter-spacing: -0.03em; margin: 0 0 .5em; }}
-  h2 {{ font-size: 1.5em; font-weight: 700; margin: 1.5em 0 .5em; }}
-  h3 {{ font-size: 1.25em; font-weight: 600; margin: 1.25em 0 .4em; }}
-  h4, h5, h6 {{ font-size: 1em; font-weight: 600; margin: 1em 0 .3em; }}
-  p {{ margin: 0 0 1em; }}
-  ul, ol {{ margin: 0 0 1em 1.5em; }}
-  li {{ margin: .25em 0; }}
-  blockquote {{
-    border-left: 3px solid #c0533a;
-    padding: .5em 1em;
-    margin: 0 0 1em;
-    color: #5c5347;
-    background: rgba(192, 83, 58, 0.08);
-    border-radius: 0 8px 8px 0;
-  }}
-  code {{
-    font-family: "Cascadia Code", "JetBrains Mono", monospace;
-    font-size: .875em;
-    background: rgba(192, 83, 58, 0.1);
-    border: 1px solid #e0d4c0;
-    border-radius: 4px;
-    padding: .1em .4em;
-    color: #c0533a;
-  }}
-  pre {{ border-radius: 10px; margin: 0 0 1em; overflow-x: auto; }}
-  pre code {{ background: none; border: none; padding: 0; color: inherit; }}
-  table {{ width: 100%; border-collapse: collapse; margin: 0 0 1em; font-size: .9em; }}
-  th {{ background: rgba(192,83,58,.1); font-weight: 600; text-align: left; padding: 8px 12px; border: 1px solid #e0d4c0; }}
-  td {{ padding: 7px 12px; border: 1px solid #e0d4c0; }}
-  a {{ color: #c0533a; text-decoration: underline; text-underline-offset: 3px; }}
-  img {{ max-width: 100%; border-radius: 8px; }}
-  hr {{ border: none; border-top: 1px solid #e0d4c0; margin: 1.5em 0; }}
-</style>
-</head>
-<body>
-<div class="content">
-{body}
-</div>
-</body>
-</html>"#
-    )
 }
