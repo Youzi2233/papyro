@@ -237,6 +237,52 @@ export function collectMarkdownFrontMatterBlock(lines) {
   return null;
 }
 
+function parseMarkdownTableRow(line) {
+  const trimmed = line.trim();
+  if (!trimmed.includes("|")) return null;
+
+  const body = trimmed.startsWith("|") ? trimmed.slice(1) : trimmed;
+  const trimmedBody = body.endsWith("|") ? body.slice(0, -1) : body;
+  const cells = trimmedBody.split("|").map((cell) => cell.trim());
+  if (cells.length < 2 || cells.every((cell) => cell.length === 0)) return null;
+
+  return cells;
+}
+
+function isMarkdownTableSeparator(line) {
+  const cells = parseMarkdownTableRow(line);
+  if (!cells) return false;
+
+  return cells.every((cell) => /^:?-{3,}:?$/.test(cell));
+}
+
+export function collectMarkdownTableBlocks(lines) {
+  const blocks = [];
+  let index = 0;
+
+  while (index < lines.length - 1) {
+    const header = parseMarkdownTableRow(lines[index]);
+    if (!header || !isMarkdownTableSeparator(lines[index + 1])) {
+      index += 1;
+      continue;
+    }
+
+    const fromLine = index + 1;
+    let rowIndex = index + 2;
+    while (rowIndex < lines.length && parseMarkdownTableRow(lines[rowIndex])) {
+      rowIndex += 1;
+    }
+
+    blocks.push({
+      fromLine,
+      toLine: rowIndex,
+    });
+    index = rowIndex;
+  }
+
+  return blocks;
+}
+
 function collectLinkSpans(line, spans, occupied) {
   const regexp = /(!?)\[([^\]\n]+)\]\(([^)\n]+)\)/g;
   for (const match of line.matchAll(regexp)) {

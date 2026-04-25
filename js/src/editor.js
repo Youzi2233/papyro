@@ -19,6 +19,7 @@ import {
   attachViewToTab as attachViewToTabCore,
   collectMarkdownCodeBlocks,
   collectMarkdownFrontMatterBlock,
+  collectMarkdownTableBlocks,
   handleRustMessage as handleRustMessageCore,
   parseMarkdownBlockquoteLine,
   parseMarkdownHeadingLine,
@@ -129,6 +130,32 @@ const editorTheme = EditorView.theme({
     paddingTop: "0.45em",
   },
   ".cm-line.cm-hybrid-front-matter-end": {
+    borderBottom: "1px solid var(--mn-border)",
+    borderBottomLeftRadius: "6px",
+    borderBottomRightRadius: "6px",
+    paddingBottom: "0.45em",
+  },
+  ".cm-line.cm-hybrid-table-line": {
+    fontFamily: 'var(--mn-editor-font, "Cascadia Code", monospace)',
+    backgroundColor: "var(--mn-surface, #fbf6ea)",
+    borderLeft: "1px solid var(--mn-border)",
+    borderRight: "1px solid var(--mn-border)",
+    paddingLeft: "12px",
+    paddingRight: "12px",
+  },
+  ".cm-line.cm-hybrid-table-header": {
+    color: "var(--mn-ink)",
+    fontWeight: "700",
+    borderTop: "1px solid var(--mn-border)",
+    borderTopLeftRadius: "6px",
+    borderTopRightRadius: "6px",
+    paddingTop: "0.45em",
+  },
+  ".cm-line.cm-hybrid-table-separator": {
+    color: "var(--mn-ink-3)",
+    fontSize: ".85em",
+  },
+  ".cm-line.cm-hybrid-table-end": {
     borderBottom: "1px solid var(--mn-border)",
     borderBottomLeftRadius: "6px",
     borderBottomRightRadius: "6px",
@@ -282,7 +309,7 @@ function documentLineTexts(doc) {
   return lines;
 }
 
-function codeBlockForLine(blocks, lineNumber) {
+function rangeBlockForLine(blocks, lineNumber) {
   return blocks.find(
     (block) => lineNumber >= block.fromLine && lineNumber <= block.toLine,
   );
@@ -530,7 +557,26 @@ function addFrontMatterDecorations(decorations, line, block) {
   }
 }
 
-function buildHybridMarkdownDecorations(view, codeBlocks, frontMatterBlock) {
+function addTableDecorations(decorations, line, block) {
+  const isHeader = line.number === block.fromLine;
+  const isSeparator = line.number === block.fromLine + 1;
+  const isEnd = line.number === block.toLine;
+  const classes = [
+    "cm-hybrid-table-line",
+    isHeader ? "cm-hybrid-table-header" : "",
+    isSeparator ? "cm-hybrid-table-separator" : "",
+    isEnd ? "cm-hybrid-table-end" : "",
+  ].filter(Boolean).join(" ");
+
+  decorations.push(Decoration.line({ class: classes }).range(line.from));
+}
+
+function buildHybridMarkdownDecorations(
+  view,
+  codeBlocks,
+  frontMatterBlock,
+  tableBlocks,
+) {
   if (view.state.field(viewModeField, false) !== "hybrid") {
     return Decoration.none;
   }
@@ -557,7 +603,7 @@ function buildHybridMarkdownDecorations(view, codeBlocks, frontMatterBlock) {
         continue;
       }
 
-      const codeBlock = codeBlockForLine(codeBlocks, line.number);
+      const codeBlock = rangeBlockForLine(codeBlocks, line.number);
       if (codeBlock) {
         if (!selectionTouchesLineRange(
           view.state,
@@ -565,6 +611,18 @@ function buildHybridMarkdownDecorations(view, codeBlocks, frontMatterBlock) {
           codeBlock.toLine,
         )) {
           addCodeBlockDecorations(decorations, line, codeBlock);
+        }
+        continue;
+      }
+
+      const tableBlock = rangeBlockForLine(tableBlocks, line.number);
+      if (tableBlock) {
+        if (!selectionTouchesLineRange(
+          view.state,
+          tableBlock.fromLine,
+          tableBlock.toLine,
+        )) {
+          addTableDecorations(decorations, line, tableBlock);
         }
         continue;
       }
@@ -612,10 +670,12 @@ const hybridHeadingPlugin = ViewPlugin.fromClass(
       const lines = documentLineTexts(view.state.doc);
       this.codeBlocks = collectMarkdownCodeBlocks(lines);
       this.frontMatterBlock = collectMarkdownFrontMatterBlock(lines);
+      this.tableBlocks = collectMarkdownTableBlocks(lines);
       this.decorations = buildHybridMarkdownDecorations(
         view,
         this.codeBlocks,
         this.frontMatterBlock,
+        this.tableBlocks,
       );
     }
 
@@ -624,6 +684,7 @@ const hybridHeadingPlugin = ViewPlugin.fromClass(
         const lines = documentLineTexts(update.state.doc);
         this.codeBlocks = collectMarkdownCodeBlocks(lines);
         this.frontMatterBlock = collectMarkdownFrontMatterBlock(lines);
+        this.tableBlocks = collectMarkdownTableBlocks(lines);
       }
       if (
         update.docChanged ||
@@ -635,6 +696,7 @@ const hybridHeadingPlugin = ViewPlugin.fromClass(
           update.view,
           this.codeBlocks,
           this.frontMatterBlock,
+          this.tableBlocks,
         );
       }
     }

@@ -5,6 +5,7 @@ import {
   attachViewToTab,
   collectMarkdownCodeBlocks,
   collectMarkdownFrontMatterBlock,
+  collectMarkdownTableBlocks,
   handleRustMessage,
   normalizeViewMode,
   parseMarkdownBlockquoteLine,
@@ -225,6 +226,29 @@ test("collect_markdown_front_matter_block returns top metadata range", () => {
   });
   assert.equal(collectMarkdownFrontMatterBlock(["---", "title: Test"]), null);
   assert.equal(collectMarkdownFrontMatterBlock(["Body", "---", "x", "---"]), null);
+});
+
+test("collect_markdown_table_blocks returns pipe table ranges", () => {
+  assert.deepEqual(collectMarkdownTableBlocks([
+    "Before",
+    "| Name | Value |",
+    "| --- | :---: |",
+    "| A | 1 |",
+    "| B | |",
+    "After",
+  ]), [
+    { fromLine: 2, toLine: 5 },
+  ]);
+  assert.deepEqual(collectMarkdownTableBlocks([
+    "Name | Value",
+    "--- | ---",
+  ]), [
+    { fromLine: 1, toLine: 2 },
+  ]);
+  assert.deepEqual(collectMarkdownTableBlocks([
+    "| Name | Value |",
+    "| -- | --- |",
+  ]), []);
 });
 
 test("parse_markdown_inline_spans ignores emphasis inside image alt", () => {
