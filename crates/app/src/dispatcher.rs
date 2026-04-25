@@ -61,6 +61,26 @@ impl AppDispatcher {
                     .await;
                 });
             }
+            AppAction::OpenWorkspacePath(action) => {
+                let storage = self.storage.clone();
+                let state = self.state;
+                spawn(async move {
+                    if !effects::flush_dirty_tabs(storage.clone(), state).await {
+                        return;
+                    }
+
+                    workspace::open_workspace_path(
+                        storage,
+                        state.file_state,
+                        state.editor_tabs,
+                        state.tab_contents,
+                        state.status_message,
+                        state.workspace_watch_path,
+                        action.path,
+                    )
+                    .await;
+                });
+            }
             AppAction::RefreshWorkspace => {
                 workspace::refresh_workspace(
                     self.storage.clone(),
@@ -165,6 +185,7 @@ impl AppDispatcher {
 
     pub fn commands(&self) -> AppCommands {
         let open_workspace = self.clone();
+        let open_workspace_path = self.clone();
         let refresh_workspace = self.clone();
         let create_note = self.clone();
         let create_folder = self.clone();
@@ -182,6 +203,9 @@ impl AppDispatcher {
         AppCommands {
             open_workspace: EventHandler::new(move |_| {
                 open_workspace.dispatch(AppAction::OpenWorkspace);
+            }),
+            open_workspace_path: EventHandler::new(move |path| {
+                open_workspace_path.dispatch(AppAction::open_workspace_path(path));
             }),
             refresh_workspace: EventHandler::new(move |_| {
                 refresh_workspace.dispatch(AppAction::RefreshWorkspace);
@@ -337,6 +361,12 @@ mod tests {
             AppAction::save_tab("tab-a".to_string()),
             AppAction::SaveTab(crate::actions::SaveTab {
                 tab_id: "tab-a".to_string()
+            })
+        );
+        assert_eq!(
+            AppAction::open_workspace_path(std::path::PathBuf::from("workspace")),
+            AppAction::OpenWorkspacePath(crate::actions::OpenWorkspacePath {
+                path: std::path::PathBuf::from("workspace")
             })
         );
         assert_eq!(

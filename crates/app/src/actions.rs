@@ -1,9 +1,11 @@
 use papyro_core::models::{AppSettings, FileNode};
 use papyro_ui::commands::{ContentChange, FileTarget};
+use std::path::PathBuf;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum AppAction {
     OpenWorkspace,
+    OpenWorkspacePath(OpenWorkspacePath),
     RefreshWorkspace,
     CreateNote(CreateNote),
     CreateFolder(CreateFolder),
@@ -27,6 +29,11 @@ pub struct CreateNote {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CreateFolder {
     pub name: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OpenWorkspacePath {
+    pub path: PathBuf,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -66,6 +73,10 @@ impl AppAction {
 
     pub fn create_folder(name: String) -> Self {
         Self::CreateFolder(CreateFolder { name })
+    }
+
+    pub fn open_workspace_path(path: PathBuf) -> Self {
+        Self::OpenWorkspacePath(OpenWorkspacePath { path })
     }
 
     pub fn open_note(node: FileNode) -> Self {

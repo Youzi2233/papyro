@@ -17,6 +17,7 @@ pub struct FileTarget {
 #[derive(Clone, PartialEq)]
 pub struct AppCommands {
     pub open_workspace: EventHandler<()>,
+    pub open_workspace_path: EventHandler<PathBuf>,
     pub refresh_workspace: EventHandler<()>,
     pub create_note: EventHandler<String>,
     pub create_folder: EventHandler<String>,

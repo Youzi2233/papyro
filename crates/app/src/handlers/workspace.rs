@@ -11,35 +11,57 @@ use crate::workspace_flow::{
 pub async fn open_workspace(
     platform: Arc<dyn PlatformApi>,
     storage: Arc<dyn NoteStorage>,
+    file_state: Signal<FileState>,
+    editor_tabs: Signal<EditorTabs>,
+    tab_contents: Signal<TabContentsMap>,
+    mut status_message: Signal<Option<String>>,
+    workspace_watch_path: Signal<Option<PathBuf>>,
+) {
+    match platform.pick_folder().await {
+        Ok(Some(path)) => {
+            open_workspace_path(
+                storage,
+                file_state,
+                editor_tabs,
+                tab_contents,
+                status_message,
+                workspace_watch_path,
+                path,
+            )
+            .await;
+        }
+        Ok(None) => {
+            status_message.set(Some("Workspace selection cancelled".to_string()));
+        }
+        Err(error) => {
+            status_message.set(Some(format!("Open workspace failed: {error}")));
+        }
+    }
+}
+
+pub async fn open_workspace_path(
+    storage: Arc<dyn NoteStorage>,
     mut file_state: Signal<FileState>,
     mut editor_tabs: Signal<EditorTabs>,
     mut tab_contents: Signal<TabContentsMap>,
     mut status_message: Signal<Option<String>>,
     mut workspace_watch_path: Signal<Option<PathBuf>>,
+    path: PathBuf,
 ) {
-    match platform.pick_folder().await {
-        Ok(Some(path)) => {
-            let result = {
-                let p = path.clone();
-                let storage = storage.clone();
-                tokio::task::spawn_blocking(move || storage.bootstrap_from_workspace(&p)).await
-            };
-            match result {
-                Ok(bootstrap) => {
-                    let applied = apply_workspace_bootstrap(bootstrap);
-                    file_state.set(applied.file_state);
-                    editor_tabs.set(applied.editor_tabs);
-                    tab_contents.set(applied.tab_contents);
-                    status_message.set(Some(applied.status_message));
-                    workspace_watch_path.set(Some(path));
-                }
-                Err(error) => {
-                    status_message.set(Some(format!("Open workspace failed: {error}")));
-                }
-            }
-        }
-        Ok(None) => {
-            status_message.set(Some("Workspace selection cancelled".to_string()));
+    let result = {
+        let p = path.clone();
+        let storage = storage.clone();
+        tokio::task::spawn_blocking(move || storage.bootstrap_from_workspace(&p)).await
+    };
+
+    match result {
+        Ok(bootstrap) => {
+            let applied = apply_workspace_bootstrap(bootstrap);
+            file_state.set(applied.file_state);
+            editor_tabs.set(applied.editor_tabs);
+            tab_contents.set(applied.tab_contents);
+            status_message.set(Some(applied.status_message));
+            workspace_watch_path.set(Some(path));
         }
         Err(error) => {
             status_message.set(Some(format!("Open workspace failed: {error}")));
