@@ -460,6 +460,57 @@ button { border: 0; cursor: pointer; background: transparent; }
     font-size: 13.5px;
 }
 
+.mn-tree-context-dismiss {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background: transparent;
+}
+
+.mn-tree-context-menu {
+    position: fixed;
+    z-index: 41;
+    min-width: 180px;
+    padding: 5px;
+    border: 1px solid var(--mn-border);
+    border-radius: var(--mn-radius-sm);
+    background: var(--mn-surface-raised);
+    box-shadow: var(--mn-shadow-md);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.mn-tree-context-menu button {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 30px;
+    border-radius: 7px;
+    padding: 6px 9px;
+    background: transparent;
+    color: var(--mn-ink);
+    font-size: 13px;
+    text-align: left;
+}
+
+.mn-tree-context-menu button:hover,
+.mn-tree-context-menu button:focus-visible {
+    outline: 0;
+    background: var(--mn-accent-wash);
+    color: var(--mn-accent);
+}
+
+.mn-tree-context-menu button.danger {
+    color: var(--mn-accent);
+}
+
+.mn-tree-context-menu-separator {
+    height: 1px;
+    margin: 4px;
+    background: var(--mn-divider);
+}
+
 .mn-sidebar-empty {
     padding: 14px 18px;
     color: var(--mn-ink-3);

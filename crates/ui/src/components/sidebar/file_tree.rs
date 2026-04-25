@@ -1,3 +1,4 @@
+use crate::commands::FileTarget;
 use crate::context::use_app_context;
 use dioxus::prelude::*;
 use papyro_core::models::{FileNode, FileNodeKind};
@@ -15,6 +16,7 @@ pub fn FileTree() -> Element {
     let selected_path = file_state.read().selected_path.clone();
     let visible_items = visible_file_tree_items(&nodes, &expanded_paths);
     let keyboard_items = visible_items.clone();
+    let mut context_menu = use_signal(|| None::<FileTreeContextMenu>);
 
     rsx! {
         div {
@@ -22,7 +24,14 @@ pub fn FileTree() -> Element {
             tabindex: "0",
             role: "tree",
             "aria-label": "Workspace files",
+            onclick: move |_| context_menu.set(None),
             onkeydown: move |event| {
+                if event.key() == Key::Escape {
+                    event.prevent_default();
+                    context_menu.set(None);
+                    return;
+                }
+
                 let Some(key) = FileTreeKey::from_dioxus_key(event.key()) else {
                     return;
                 };
@@ -54,7 +63,25 @@ pub fn FileTree() -> Element {
                 div { class: "mn-sidebar-empty", "No Markdown files found" }
             } else {
                 for item in visible_items {
-                    FileTreeNode { node: item.node, depth: item.depth }
+                    FileTreeNode {
+                        node: item.node,
+                        depth: item.depth,
+                        on_context_menu: move |menu| context_menu.set(Some(menu)),
+                    }
+                }
+            }
+            if let Some(menu) = context_menu() {
+                div {
+                    class: "mn-tree-context-dismiss",
+                    onclick: move |_| context_menu.set(None),
+                    oncontextmenu: move |event| {
+                        event.prevent_default();
+                        context_menu.set(None);
+                    },
+                }
+                FileTreeContextMenuView {
+                    menu,
+                    on_close: move |_| context_menu.set(None),
                 }
             }
         }
@@ -62,7 +89,11 @@ pub fn FileTree() -> Element {
 }
 
 #[component]
-fn FileTreeNode(node: FileNode, depth: u32) -> Element {
+fn FileTreeNode(
+    node: FileNode,
+    depth: u32,
+    on_context_menu: EventHandler<FileTreeContextMenu>,
+) -> Element {
     let app = use_app_context();
     let mut file_state = app.file_state;
     let commands = app.commands;
@@ -80,6 +111,8 @@ fn FileTreeNode(node: FileNode, depth: u32) -> Element {
         FileNodeKind::Directory { .. } => {
             let is_expanded = file_state.read().is_expanded(&node_path);
             let dir_path = node_path.clone();
+            let menu_node = node.clone();
+            let menu_path = node_path.clone();
 
             rsx! {
                 button {
@@ -91,6 +124,12 @@ fn FileTreeNode(node: FileNode, depth: u32) -> Element {
                     onclick: move |_| {
                         commands.toggle_expanded_path.call(dir_path.clone());
                     },
+                    oncontextmenu: move |event| {
+                        event.prevent_default();
+                        event.stop_propagation();
+                        file_state.write().select_path(menu_path.clone());
+                        on_context_menu.call(FileTreeContextMenu::from_event(&menu_node, &event));
+                    },
                     span { class: "mn-tree-caret", if is_expanded { "v" } else { ">" } }
                     span { class: "mn-tree-icon", "dir" }
                     span { class: "mn-tree-label", "{node.name}" }
@@ -100,6 +139,8 @@ fn FileTreeNode(node: FileNode, depth: u32) -> Element {
         FileNodeKind::Note { .. } => {
             let node_title = node.name.trim_end_matches(".md").to_string();
             let open_node = node.clone();
+            let menu_node = node.clone();
+            let menu_path = node_path.clone();
 
             rsx! {
                 button {
@@ -111,9 +152,139 @@ fn FileTreeNode(node: FileNode, depth: u32) -> Element {
                         file_state.write().select_path(open_node.path.clone());
                         commands.open_note.call(open_node.clone());
                     },
+                    oncontextmenu: move |event| {
+                        event.prevent_default();
+                        event.stop_propagation();
+                        file_state.write().select_path(menu_path.clone());
+                        on_context_menu.call(FileTreeContextMenu::from_event(&menu_node, &event));
+                    },
                     span { class: "mn-tree-icon", "md" }
                     span { class: "mn-tree-label", "{node_title}" }
                 }
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+struct FileTreeContextMenu {
+    node: FileNode,
+    position: ContextMenuPosition,
+}
+
+impl FileTreeContextMenu {
+    fn from_event(node: &FileNode, event: &MouseEvent) -> Self {
+        let point = event.client_coordinates();
+        Self {
+            node: node.clone(),
+            position: ContextMenuPosition {
+                x: point.x,
+                y: point.y,
+            },
+        }
+    }
+
+    fn is_directory(&self) -> bool {
+        matches!(self.node.kind, FileNodeKind::Directory { .. })
+    }
+
+    fn file_target(&self) -> FileTarget {
+        FileTarget {
+            path: self.node.path.clone(),
+            name: self.node.name.clone(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+struct ContextMenuPosition {
+    x: f64,
+    y: f64,
+}
+
+fn context_menu_style(position: ContextMenuPosition) -> String {
+    let left = position.x.max(8.0);
+    let top = position.y.max(8.0);
+    format!(
+        "left: min({left:.0}px, calc(100vw - 188px)); top: min({top:.0}px, calc(100vh - 220px));"
+    )
+}
+
+#[component]
+fn FileTreeContextMenuView(menu: FileTreeContextMenu, on_close: EventHandler<()>) -> Element {
+    let app = use_app_context();
+    let commands = app.commands;
+    let mut file_state = app.file_state;
+    let style = context_menu_style(menu.position);
+    let is_directory = menu.is_directory();
+    let open_node = menu.node.clone();
+    let toggle_path = menu.node.path.clone();
+    let reveal_target = menu.file_target();
+
+    rsx! {
+        div {
+            class: "mn-tree-context-menu",
+            role: "menu",
+            style,
+            onclick: move |event| event.stop_propagation(),
+            oncontextmenu: move |event| {
+                event.prevent_default();
+                event.stop_propagation();
+            },
+            if !is_directory {
+                button {
+                    role: "menuitem",
+                    onclick: move |_| {
+                        file_state.write().select_path(open_node.path.clone());
+                        commands.open_note.call(open_node.clone());
+                        on_close.call(());
+                    },
+                    "Open"
+                }
+            }
+            if is_directory {
+                button {
+                    role: "menuitem",
+                    onclick: move |_| {
+                        commands.toggle_expanded_path.call(toggle_path.clone());
+                        on_close.call(());
+                    },
+                    "Expand / collapse"
+                }
+            }
+            button {
+                role: "menuitem",
+                onclick: move |_| {
+                    commands.create_note.call("Untitled".to_string());
+                    on_close.call(());
+                },
+                "New note"
+            }
+            button {
+                role: "menuitem",
+                onclick: move |_| {
+                    commands.create_folder.call("New Folder".to_string());
+                    on_close.call(());
+                },
+                "New folder"
+            }
+            button {
+                role: "menuitem",
+                onclick: move |_| {
+                    commands.reveal_in_explorer.call(reveal_target.clone());
+                    on_close.call(());
+                },
+                "Reveal"
+            }
+            div { class: "mn-tree-context-menu-separator" }
+            button {
+                class: "danger",
+                role: "menuitem",
+                onclick: move |_| {
+                    commands.delete_selected.call(());
+                    on_close.call(());
+                },
+                "Delete"
             }
         }
     }
@@ -387,5 +558,34 @@ mod tests {
             FileTreeKeyboardAction::OpenNote(node)
                 if node.path == Path::new("workspace/notes/a.md")
         ));
+    }
+
+    #[test]
+    fn context_menu_model_detects_directory_and_target() {
+        let menu = FileTreeContextMenu {
+            node: directory("workspace/notes", Vec::new()),
+            position: ContextMenuPosition { x: 24.0, y: 36.0 },
+        };
+
+        assert!(menu.is_directory());
+        assert_eq!(
+            menu.file_target(),
+            FileTarget {
+                path: PathBuf::from("workspace/notes"),
+                name: "notes".to_string(),
+            }
+        );
+    }
+
+    #[test]
+    fn context_menu_style_clamps_to_viewport() {
+        assert_eq!(
+            context_menu_style(ContextMenuPosition { x: -4.0, y: 3.0 }),
+            "left: min(8px, calc(100vw - 188px)); top: min(8px, calc(100vh - 220px));"
+        );
+        assert_eq!(
+            context_menu_style(ContextMenuPosition { x: 42.4, y: 99.7 }),
+            "left: min(42px, calc(100vw - 188px)); top: min(100px, calc(100vh - 220px));"
+        );
     }
 }
