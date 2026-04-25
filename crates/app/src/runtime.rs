@@ -4,6 +4,7 @@ use dioxus::prelude::*;
 use papyro_core::{NoteStorage, WorkspaceBootstrap};
 use papyro_platform::PlatformApi;
 use papyro_ui::context::{AppContext, EditorServices};
+use papyro_ui::view_model::AppViewModel;
 use std::sync::Arc;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -38,6 +39,14 @@ pub fn use_app_runtime(
     let watch_storage = storage.clone();
     let dispatcher = AppDispatcher::new(shell, state, storage, platform);
     let commands = dispatcher.commands();
+    let view_model = use_memo(move || {
+        AppViewModel::from_state(
+            &state.file_state.read(),
+            &state.editor_tabs.read(),
+            &state.tab_contents.read(),
+            &state.ui_state.read(),
+        )
+    });
 
     use_context_provider(|| AppContext {
         file_state: state.file_state,
@@ -50,6 +59,7 @@ pub fn use_app_runtime(
             summarize_markdown: papyro_editor::parser::summarize_markdown,
             render_markdown_html: papyro_editor::renderer::render_markdown_html,
         },
+        view_model,
     });
 
     crate::effects::use_workspace_watcher(state, watch_storage);

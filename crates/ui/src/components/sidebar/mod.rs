@@ -3,7 +3,6 @@
 use crate::commands::FileTarget;
 use crate::context::use_app_context;
 use dioxus::prelude::*;
-use papyro_core::models::FileNodeKind;
 
 pub use file_tree::FileTree;
 
@@ -11,8 +10,9 @@ pub use file_tree::FileTree;
 pub fn Sidebar() -> Element {
     let app = use_app_context();
     let file_state = app.file_state;
-    let ui_state = app.ui_state;
     let commands = app.commands;
+    let workspace_model = app.view_model.read().workspace.clone();
+    let settings_model = app.view_model.read().settings.clone();
 
     let mut create_name = use_signal(String::new);
     let mut rename_name = use_signal(String::new);
@@ -20,13 +20,11 @@ pub fn Sidebar() -> Element {
     let mut show_rename = use_signal(|| false);
 
     let workspace = file_state.read().current_workspace.clone();
-    let sidebar_width = ui_state.read().settings.sidebar_width;
+    let sidebar_width = settings_model.sidebar_width;
     let selected_node = file_state.read().selected_node();
-    let has_selection = selected_node.is_some();
+    let has_selection = workspace_model.has_selection;
 
-    let selected_is_dir = selected_node
-        .as_ref()
-        .is_some_and(|n| matches!(n.kind, FileNodeKind::Directory { .. }));
+    let selected_is_dir = workspace_model.selected_is_directory;
     let selected_target = selected_node.as_ref().map(|node| FileTarget {
         path: node.path.clone(),
         name: node.name.clone(),

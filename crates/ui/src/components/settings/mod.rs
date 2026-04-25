@@ -7,7 +7,7 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
     let app = use_app_context();
     let ui_state = app.ui_state;
     let commands = app.commands;
-    let settings = ui_state.read().settings.clone();
+    let settings = app.view_model.read().settings.settings.clone();
 
     let mut font_family = use_signal(|| settings.font_family.clone());
     let mut font_size = use_signal(|| settings.font_size);

@@ -12,9 +12,10 @@ pub fn DesktopLayout(status_message: Option<String>) -> Element {
     let mut ui_state = app.ui_state;
     let commands = app.commands;
     let mut show_settings = use_signal(|| false);
+    let settings = app.view_model.read().settings.clone();
 
-    let theme = ui_state.read().theme().clone();
-    let sidebar_collapsed = ui_state.read().sidebar_collapsed();
+    let theme = settings.theme;
+    let sidebar_collapsed = settings.sidebar_collapsed;
 
     use_effect(use_reactive((&theme,), move |(theme,)| {
         let script = match theme {

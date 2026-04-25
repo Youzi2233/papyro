@@ -1,4 +1,5 @@
 use crate::commands::AppCommands;
+use crate::view_model::AppViewModel;
 use dioxus::prelude::*;
 use papyro_core::{models::DocumentStats, EditorTabs, FileState, TabContentsMap, UiState};
 
@@ -33,6 +34,7 @@ pub struct AppContext {
     pub pending_close_tab: Signal<Option<String>>,
     pub commands: AppCommands,
     pub editor_services: EditorServices,
+    pub view_model: Memo<AppViewModel>,
 }
 
 pub fn use_app_context() -> AppContext {
