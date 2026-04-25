@@ -44,7 +44,7 @@
 - 错误处理要保留上下文。不要用静默失败掩盖数据丢失、保存失败或 watcher 异常。
 - 状态写入失败时，不得错误清除 dirty 标记。
 - 避免在渲染路径做大文档 clone、阻塞 IO 或无界计算。确需这样做时，必须给出理由并更新性能预算。
-- 修改编辑器 JS 时，只手动改 `js/src/editor.js`，再运行 `npm --prefix js run build` 同步生成物。
+- 修改编辑器 JS 时，只手动改 `js/src/editor.js` 与 `js/src/editor-core.js`，再运行 `npm --prefix js run build` 同步生成物。
 - 生成文件必须和源文件同提交，不能让构建产物处于未同步状态。
 
 ## 测试策略
