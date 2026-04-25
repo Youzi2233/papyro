@@ -3,9 +3,11 @@ import assert from "node:assert/strict";
 import {
   applyFormatToView,
   attachViewToTab,
+  collectMarkdownCodeBlocks,
   handleRustMessage,
   normalizeViewMode,
   parseMarkdownBlockquoteLine,
+  parseMarkdownCodeFenceLine,
   parseMarkdownHeadingLine,
   parseMarkdownHorizontalRuleLine,
   parseMarkdownImageSpans,
@@ -163,6 +165,39 @@ test("parse_markdown_blockquote_line recognizes quote markers", () => {
   assert.deepEqual(parseMarkdownBlockquoteLine("   >quote"), { markerLength: 4 });
   assert.equal(parseMarkdownBlockquoteLine("    > code"), null);
   assert.equal(parseMarkdownBlockquoteLine("plain > quote"), null);
+});
+
+test("parse_markdown_code_fence_line recognizes fenced code markers", () => {
+  assert.deepEqual(parseMarkdownCodeFenceLine("```rust"), {
+    marker: "`",
+    markerLength: 3,
+    info: "rust",
+  });
+  assert.deepEqual(parseMarkdownCodeFenceLine("~~~"), {
+    marker: "~",
+    markerLength: 3,
+    info: "",
+  });
+  assert.equal(parseMarkdownCodeFenceLine("``code`"), null);
+  assert.equal(parseMarkdownCodeFenceLine("    ```"), null);
+});
+
+test("collect_markdown_code_blocks returns fenced ranges", () => {
+  assert.deepEqual(collectMarkdownCodeBlocks([
+    "Intro",
+    "```js",
+    "const value = 1;",
+    "```",
+    "Outro",
+  ]), [
+    { fromLine: 2, toLine: 4, info: "js" },
+  ]);
+  assert.deepEqual(collectMarkdownCodeBlocks([
+    "~~~",
+    "open",
+  ]), [
+    { fromLine: 1, toLine: 2, info: "" },
+  ]);
 });
 
 test("parse_markdown_inline_spans ignores emphasis inside image alt", () => {

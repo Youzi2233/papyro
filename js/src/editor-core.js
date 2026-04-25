@@ -167,6 +167,60 @@ export function parseMarkdownBlockquoteLine(line) {
   };
 }
 
+export function parseMarkdownCodeFenceLine(line) {
+  const match = /^[ \t]{0,3}(`{3,}|~{3,})(.*)$/.exec(line);
+  if (!match) return null;
+
+  const fence = match[1];
+  const info = match[2].trim();
+  if (fence[0] === "`" && info.includes("`")) return null;
+
+  return {
+    marker: fence[0],
+    markerLength: fence.length,
+    info,
+  };
+}
+
+export function collectMarkdownCodeBlocks(lines) {
+  const blocks = [];
+  let open = null;
+
+  lines.forEach((line, index) => {
+    const fence = parseMarkdownCodeFenceLine(line);
+    if (!fence) return;
+
+    const lineNumber = index + 1;
+    if (!open) {
+      open = { ...fence, fromLine: lineNumber };
+      return;
+    }
+
+    const closesBlock =
+      fence.marker === open.marker &&
+      fence.markerLength >= open.markerLength &&
+      fence.info === "";
+    if (!closesBlock) return;
+
+    blocks.push({
+      fromLine: open.fromLine,
+      toLine: lineNumber,
+      info: open.info,
+    });
+    open = null;
+  });
+
+  if (open) {
+    blocks.push({
+      fromLine: open.fromLine,
+      toLine: lines.length,
+      info: open.info,
+    });
+  }
+
+  return blocks;
+}
+
 function collectLinkSpans(line, spans, occupied) {
   const regexp = /(!?)\[([^\]\n]+)\]\(([^)\n]+)\)/g;
   for (const match of line.matchAll(regexp)) {

@@ -17,6 +17,7 @@ import { tags as t } from "@lezer/highlight";
 import {
   applyFormatToView,
   attachViewToTab as attachViewToTabCore,
+  collectMarkdownCodeBlocks,
   handleRustMessage as handleRustMessageCore,
   parseMarkdownBlockquoteLine,
   parseMarkdownHeadingLine,
@@ -95,6 +96,28 @@ const editorTheme = EditorView.theme({
     borderLeft: "3px solid var(--mn-border)",
     color: "var(--mn-ink-2)",
     paddingLeft: "0.85em",
+  },
+  ".cm-line.cm-hybrid-code-block-line": {
+    backgroundColor: "var(--mn-code-bg, rgba(178,75,47,.08))",
+    color: "var(--mn-ink)",
+    fontFamily: 'var(--mn-editor-font, "Cascadia Code", monospace)',
+    paddingLeft: "12px",
+    paddingRight: "12px",
+  },
+  ".cm-line.cm-hybrid-code-block-start": {
+    borderTopLeftRadius: "6px",
+    borderTopRightRadius: "6px",
+    paddingTop: "0.45em",
+  },
+  ".cm-line.cm-hybrid-code-block-end": {
+    borderBottomLeftRadius: "6px",
+    borderBottomRightRadius: "6px",
+    paddingBottom: "0.45em",
+  },
+  ".cm-hybrid-code-info": {
+    color: "var(--mn-ink-3)",
+    fontSize: ".78em",
+    textTransform: "uppercase",
   },
   ".cm-hybrid-heading": {
     color: "var(--mn-ink)",
@@ -221,6 +244,28 @@ function selectionTouchesLine(state, line) {
     const toLine = state.doc.lineAt(range.to);
     return line.number >= fromLine.number && line.number <= toLine.number;
   });
+}
+
+function selectionTouchesLineRange(state, fromLineNumber, toLineNumber) {
+  return state.selection.ranges.some((range) => {
+    const fromLine = state.doc.lineAt(range.from);
+    const toLine = state.doc.lineAt(range.to);
+    return fromLine.number <= toLineNumber && toLine.number >= fromLineNumber;
+  });
+}
+
+function documentLineTexts(doc) {
+  const lines = [];
+  for (let lineNumber = 1; lineNumber <= doc.lines; lineNumber += 1) {
+    lines.push(doc.line(lineNumber).text);
+  }
+  return lines;
+}
+
+function codeBlockForLine(blocks, lineNumber) {
+  return blocks.find(
+    (block) => lineNumber >= block.fromLine && lineNumber <= block.toLine,
+  );
 }
 
 function inlineClassForType(type) {
@@ -409,7 +454,44 @@ function addBlockquoteDecorations(decorations, line) {
   return true;
 }
 
-function buildHybridMarkdownDecorations(view) {
+class CodeFenceWidget extends WidgetType {
+  constructor(info) {
+    super();
+    this.info = info;
+  }
+
+  eq(other) {
+    return other instanceof CodeFenceWidget && other.info === this.info;
+  }
+
+  toDOM() {
+    const label = document.createElement("span");
+    label.className = "cm-hybrid-code-info";
+    label.textContent = this.info;
+    return label;
+  }
+}
+
+function addCodeBlockDecorations(decorations, line, block) {
+  const isStart = line.number === block.fromLine;
+  const isEnd = line.number === block.toLine;
+  const classes = [
+    "cm-hybrid-code-block-line",
+    isStart ? "cm-hybrid-code-block-start" : "",
+    isEnd ? "cm-hybrid-code-block-end" : "",
+  ].filter(Boolean).join(" ");
+
+  decorations.push(Decoration.line({ class: classes }).range(line.from));
+  if (isStart || isEnd) {
+    decorations.push(
+      Decoration.replace({
+        widget: new CodeFenceWidget(isStart ? block.info : ""),
+      }).range(line.from, line.to),
+    );
+  }
+}
+
+function buildHybridMarkdownDecorations(view, codeBlocks) {
   if (view.state.field(viewModeField, false) !== "hybrid") {
     return Decoration.none;
   }
@@ -424,6 +506,19 @@ function buildHybridMarkdownDecorations(view) {
 
       if (line.number === lastLineNumber) continue;
       lastLineNumber = line.number;
+
+      const codeBlock = codeBlockForLine(codeBlocks, line.number);
+      if (codeBlock) {
+        if (!selectionTouchesLineRange(
+          view.state,
+          codeBlock.fromLine,
+          codeBlock.toLine,
+        )) {
+          addCodeBlockDecorations(decorations, line, codeBlock);
+        }
+        continue;
+      }
+
       if (selectionTouchesLine(view.state, line)) continue;
 
       const heading = parseMarkdownHeadingLine(line.text);
@@ -464,17 +559,26 @@ function viewModeChanged(update) {
 const hybridHeadingPlugin = ViewPlugin.fromClass(
   class {
     constructor(view) {
-      this.decorations = buildHybridMarkdownDecorations(view);
+      this.codeBlocks = collectMarkdownCodeBlocks(documentLineTexts(view.state.doc));
+      this.decorations = buildHybridMarkdownDecorations(view, this.codeBlocks);
     }
 
     update(update) {
+      if (update.docChanged) {
+        this.codeBlocks = collectMarkdownCodeBlocks(
+          documentLineTexts(update.state.doc),
+        );
+      }
       if (
         update.docChanged ||
         update.selectionSet ||
         update.viewportChanged ||
         viewModeChanged(update)
       ) {
-        this.decorations = buildHybridMarkdownDecorations(update.view);
+        this.decorations = buildHybridMarkdownDecorations(
+          update.view,
+          this.codeBlocks,
+        );
       }
     }
   },
