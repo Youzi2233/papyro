@@ -1,6 +1,8 @@
-import { EditorState } from "@codemirror/state";
+import { EditorState, StateEffect, StateField } from "@codemirror/state";
 import {
   EditorView,
+  Decoration,
+  ViewPlugin,
   keymap,
   lineNumbers,
   drawSelection,
@@ -15,11 +17,26 @@ import {
   applyFormatToView,
   attachViewToTab as attachViewToTabCore,
   handleRustMessage as handleRustMessageCore,
+  parseMarkdownHeadingLine,
   recycleEditor as recycleEditorCore,
+  setViewMode as setViewModeCore,
 } from "./editor-core.js";
 
 // tabId → { view, dioxus, suppressChange }
 const editorRegistry = new Map();
+
+const setViewModeEffect = StateEffect.define();
+const viewModeField = StateField.define({
+  create() {
+    return "hybrid";
+  },
+  update(mode, transaction) {
+    for (const effect of transaction.effects) {
+      if (effect.is(setViewModeEffect)) return effect.value;
+    }
+    return mode;
+  },
+});
 
 const editorTheme = EditorView.theme({
   "&": {
@@ -64,6 +81,24 @@ const editorTheme = EditorView.theme({
     backgroundColor: "var(--mn-surface, #fbf6ea)",
     color: "var(--mn-ink, #25211a)",
   },
+  ".cm-line.cm-hybrid-heading-line": {
+    letterSpacing: "0",
+  },
+  ".cm-hybrid-heading": {
+    color: "var(--mn-ink)",
+    fontFamily: "var(--mn-editor-heading-font, Georgia, serif)",
+    fontWeight: "700",
+    lineHeight: "1.25",
+  },
+  ".cm-hybrid-heading-1": { fontSize: "1.9em" },
+  ".cm-hybrid-heading-2": { fontSize: "1.55em" },
+  ".cm-hybrid-heading-3": { fontSize: "1.3em" },
+  ".cm-hybrid-heading-4": { fontSize: "1.12em" },
+  ".cm-hybrid-heading-5, .cm-hybrid-heading-6": {
+    fontSize: "1em",
+    letterSpacing: "0",
+    textTransform: "uppercase",
+  },
 });
 
 const markdownHighlightStyle = HighlightStyle.define([
@@ -99,6 +134,80 @@ const markdownHighlightStyle = HighlightStyle.define([
   { tag: t.definition(t.variableName), color: "var(--mn-ink)" },
 ]);
 
+function selectionTouchesLine(state, line) {
+  return state.selection.ranges.some((range) => {
+    const fromLine = state.doc.lineAt(range.from);
+    const toLine = state.doc.lineAt(range.to);
+    return line.number >= fromLine.number && line.number <= toLine.number;
+  });
+}
+
+function buildHybridHeadingDecorations(view) {
+  if (view.state.field(viewModeField, false) !== "hybrid") {
+    return Decoration.none;
+  }
+
+  const decorations = [];
+  let lastLineNumber = -1;
+
+  for (const range of view.visibleRanges) {
+    for (let pos = range.from; pos <= range.to;) {
+      const line = view.state.doc.lineAt(pos);
+      pos = line.to + 1;
+
+      if (line.number === lastLineNumber) continue;
+      lastLineNumber = line.number;
+      if (selectionTouchesLine(view.state, line)) continue;
+
+      const heading = parseMarkdownHeadingLine(line.text);
+      if (!heading) continue;
+
+      const markerTo = line.from + heading.markerLength;
+      decorations.push(
+        Decoration.line({
+          class: `cm-hybrid-heading-line cm-hybrid-heading-line-${heading.level}`,
+        }).range(line.from),
+      );
+      decorations.push(Decoration.replace({}).range(line.from, markerTo));
+      decorations.push(
+        Decoration.mark({
+          class: `cm-hybrid-heading cm-hybrid-heading-${heading.level}`,
+        }).range(markerTo, line.to),
+      );
+    }
+  }
+
+  return Decoration.set(decorations, true);
+}
+
+function viewModeChanged(update) {
+  return update.transactions.some((transaction) =>
+    transaction.effects.some((effect) => effect.is(setViewModeEffect)),
+  );
+}
+
+const hybridHeadingPlugin = ViewPlugin.fromClass(
+  class {
+    constructor(view) {
+      this.decorations = buildHybridHeadingDecorations(view);
+    }
+
+    update(update) {
+      if (
+        update.docChanged ||
+        update.selectionSet ||
+        update.viewportChanged ||
+        viewModeChanged(update)
+      ) {
+        this.decorations = buildHybridHeadingDecorations(update.view);
+      }
+    }
+  },
+  {
+    decorations: (plugin) => plugin.decorations,
+  },
+);
+
 /* Extensions read the current tab id from `view.dom.dataset.tabId` instead of
  * closure-capturing it. That lets a single view be recycled across tabs
  * without rebuilding all its extensions — the hot path for pool reuse. */
@@ -122,6 +231,7 @@ function buildExtensions() {
   ]);
 
   return [
+    viewModeField,
     lineNumbers(),
     drawSelection(),
     highlightActiveLine(),
@@ -130,6 +240,7 @@ function buildExtensions() {
     syntaxHighlighting(markdownHighlightStyle, { fallback: true }),
     keymap.of([...defaultKeymap, ...historyKeymap]),
     routedSaveKeymap,
+    hybridHeadingPlugin,
     EditorView.lineWrapping,
     editorTheme,
     EditorView.updateListener.of((update) => {
@@ -227,6 +338,14 @@ function refreshEditorLayout(view) {
   }
 }
 
+function setEditorViewMode(entry, mode) {
+  const normalized = setViewModeCore(entry, mode);
+  entry.view?.dispatch({
+    effects: setViewModeEffect.of(normalized),
+  });
+  return normalized;
+}
+
 function attachViewToTab(view, tabId, container, initialContent, viewMode) {
   attachViewToTabCore({
     editorRegistry,
@@ -236,6 +355,7 @@ function attachViewToTab(view, tabId, container, initialContent, viewMode) {
     initialContent,
     viewMode,
     refreshEditorLayout,
+    setViewMode: setEditorViewMode,
   });
 }
 
@@ -253,7 +373,7 @@ function ensureEditor({ tabId, containerId, initialContent, viewMode }) {
     handleRustMessageCore(editorRegistry, tabId, {
       type: "set_view_mode",
       mode: viewMode ?? existing.viewMode ?? "hybrid",
-    }, { refreshEditorLayout });
+    }, { refreshEditorLayout, setViewMode: setEditorViewMode });
     return existing.view;
   }
 
@@ -278,7 +398,7 @@ function ensureEditor({ tabId, containerId, initialContent, viewMode }) {
     handleRustMessageCore(editorRegistry, tabId, {
       type: "set_view_mode",
       mode: viewMode ?? "hybrid",
-    }, { refreshEditorLayout });
+    }, { refreshEditorLayout, setViewMode: setEditorViewMode });
     scheduleWarmSpare();
   }
 
@@ -319,6 +439,7 @@ window.papyroEditor = {
     return handleRustMessageCore(editorRegistry, tabId, message, {
       applyFormat: applyFormatToView,
       refreshEditorLayout,
+      setViewMode: setEditorViewMode,
     });
   },
 

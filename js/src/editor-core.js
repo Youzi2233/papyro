@@ -64,6 +64,17 @@ export function replaceViewContent(view, content) {
   return true;
 }
 
+export function parseMarkdownHeadingLine(line) {
+  const match = /^(#{1,6})([ \t]+)(\S.*)$/.exec(line);
+  if (!match) return null;
+
+  return {
+    level: match[1].length,
+    markerLength: match[1].length + match[2].length,
+    text: match[3],
+  };
+}
+
 export function normalizeViewMode(mode) {
   if (typeof mode !== "string") return "hybrid";
   const normalized = mode.trim().toLowerCase();
@@ -89,12 +100,13 @@ export function attachViewToTab({
   initialContent,
   viewMode = "hybrid",
   refreshEditorLayout,
+  setViewMode: setMode = setViewMode,
 }) {
   view.dom.dataset.tabId = tabId;
 
   const entry = { view, dioxus: null, suppressChange: true, viewMode: "hybrid" };
   editorRegistry.set(tabId, entry);
-  setViewMode(entry, viewMode);
+  setMode(entry, viewMode);
 
   replaceViewContent(view, initialContent ?? "");
   entry.suppressChange = false;

@@ -5,6 +5,7 @@ import {
   attachViewToTab,
   handleRustMessage,
   normalizeViewMode,
+  parseMarkdownHeadingLine,
   recycleEditor,
 } from "../src/editor-core.js";
 
@@ -68,6 +69,21 @@ test("normalize_view_mode accepts known modes and falls back to hybrid", () => {
   assert.equal(normalizeViewMode("HYBRID"), "hybrid");
   assert.equal(normalizeViewMode("preview"), "preview");
   assert.equal(normalizeViewMode("unknown"), "hybrid");
+});
+
+test("parse_markdown_heading_line recognizes atx headings", () => {
+  assert.deepEqual(parseMarkdownHeadingLine("### Section"), {
+    level: 3,
+    markerLength: 4,
+    text: "Section",
+  });
+  assert.deepEqual(parseMarkdownHeadingLine("#\tTabbed"), {
+    level: 1,
+    markerLength: 2,
+    text: "Tabbed",
+  });
+  assert.equal(parseMarkdownHeadingLine("#NoSpace"), null);
+  assert.equal(parseMarkdownHeadingLine("####### Too deep"), null);
 });
 
 test("set_content updates content without echoing content_changed", () => {
