@@ -6,6 +6,7 @@ import {
   handleRustMessage,
   normalizeViewMode,
   parseMarkdownHeadingLine,
+  parseMarkdownHorizontalRuleLine,
   parseMarkdownImageSpans,
   parseMarkdownInlineSpans,
   parseMarkdownTaskLine,
@@ -127,6 +128,15 @@ test("parse_markdown_task_line recognizes task markers", () => {
     checked: true,
   });
   assert.equal(parseMarkdownTaskLine("- todo"), null);
+});
+
+test("parse_markdown_horizontal_rule_line recognizes thematic breaks", () => {
+  assert.deepEqual(parseMarkdownHorizontalRuleLine("---"), { marker: "-" });
+  assert.deepEqual(parseMarkdownHorizontalRuleLine("  * * *"), { marker: "*" });
+  assert.deepEqual(parseMarkdownHorizontalRuleLine("___"), { marker: "_" });
+  assert.equal(parseMarkdownHorizontalRuleLine("--"), null);
+  assert.equal(parseMarkdownHorizontalRuleLine("--- text"), null);
+  assert.equal(parseMarkdownHorizontalRuleLine("- _ -"), null);
 });
 
 test("parse_markdown_inline_spans ignores emphasis inside image alt", () => {

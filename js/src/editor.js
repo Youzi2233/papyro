@@ -19,6 +19,7 @@ import {
   attachViewToTab as attachViewToTabCore,
   handleRustMessage as handleRustMessageCore,
   parseMarkdownHeadingLine,
+  parseMarkdownHorizontalRuleLine,
   parseMarkdownImageSpans,
   parseMarkdownInlineSpans,
   parseMarkdownTaskLine,
@@ -156,6 +157,13 @@ const editorTheme = EditorView.theme({
     height: "14px",
     accentColor: "var(--mn-accent)",
     cursor: "default",
+  },
+  ".cm-hybrid-horizontal-rule": {
+    display: "block",
+    width: "100%",
+    height: "1px",
+    margin: "0.9em 0",
+    backgroundColor: "var(--mn-border)",
   },
 });
 
@@ -315,6 +323,29 @@ function addTaskDecorations(decorations, line) {
   );
 }
 
+class HorizontalRuleWidget extends WidgetType {
+  eq(other) {
+    return other instanceof HorizontalRuleWidget;
+  }
+
+  toDOM() {
+    const rule = document.createElement("span");
+    rule.className = "cm-hybrid-horizontal-rule";
+    return rule;
+  }
+}
+
+function addHorizontalRuleDecorations(decorations, line) {
+  if (!parseMarkdownHorizontalRuleLine(line.text)) return false;
+
+  decorations.push(
+    Decoration.replace({
+      widget: new HorizontalRuleWidget(),
+    }).range(line.from, line.to),
+  );
+  return true;
+}
+
 function buildHybridMarkdownDecorations(view) {
   if (view.state.field(viewModeField, false) !== "hybrid") {
     return Decoration.none;
@@ -334,6 +365,7 @@ function buildHybridMarkdownDecorations(view) {
 
       const heading = parseMarkdownHeadingLine(line.text);
       if (!heading) {
+        if (addHorizontalRuleDecorations(decorations, line)) continue;
         addTaskDecorations(decorations, line);
         addImageDecorations(decorations, line);
         addInlineDecorations(decorations, line);

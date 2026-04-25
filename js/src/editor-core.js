@@ -131,6 +131,19 @@ export function parseMarkdownTaskLine(line) {
   };
 }
 
+export function parseMarkdownHorizontalRuleLine(line) {
+  if (!/^[ \t]{0,3}(?:[-*_][ \t]*){3,}$/.test(line)) return null;
+
+  const compact = line.trim().replace(/[ \t]/g, "");
+  if (compact.length < 3) return null;
+
+  const marker = compact[0];
+  if (!["-", "*", "_"].includes(marker)) return null;
+  if ([...compact].some((char) => char !== marker)) return null;
+
+  return { marker };
+}
+
 function collectLinkSpans(line, spans, occupied) {
   const regexp = /(!?)\[([^\]\n]+)\]\(([^)\n]+)\)/g;
   for (const match of line.matchAll(regexp)) {
