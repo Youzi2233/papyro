@@ -132,6 +132,17 @@ export function insertMarkdownInView(view, markdown) {
   return true;
 }
 
+export function requestSaveForView(editorRegistry, view) {
+  const tabId = view.dom.dataset.tabId;
+  if (!tabId) return false;
+
+  editorRegistry.get(tabId)?.dioxus?.send({
+    type: "save_requested",
+    tab_id: tabId,
+  });
+  return true;
+}
+
 export function markdownListEnterChange(doc, cursor) {
   const lineStart = doc.lastIndexOf("\n", cursor - 1) + 1;
   let lineEnd = doc.indexOf("\n", cursor);

@@ -43,6 +43,7 @@ import {
   parseMarkdownTaskLine,
   pasteMarkdownLinkInView,
   recycleEditor as recycleEditorCore,
+  requestSaveForView,
   setEditorPreferences as setEditorPreferencesCore,
   setViewMode as setViewModeCore,
 } from "./editor-core.js";
@@ -1047,15 +1048,7 @@ function buildExtensions() {
   const routedSaveKeymap = keymap.of([
     {
       key: "Mod-s",
-      run(view) {
-        const tabId = view.dom.dataset.tabId;
-        if (!tabId) return false;
-        editorRegistry.get(tabId)?.dioxus?.send({
-          type: "save_requested",
-          tab_id: tabId,
-        });
-        return true;
-      },
+      run: (view) => requestSaveForView(editorRegistry, view),
     },
     { key: "Mod-b", run: runFormatShortcut("bold") },
     { key: "Mod-i", run: runFormatShortcut("italic") },

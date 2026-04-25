@@ -33,6 +33,7 @@ import {
   parseMarkdownTaskLine,
   pasteMarkdownLinkInView,
   recycleEditor,
+  requestSaveForView,
 } from "../src/editor-core.js";
 
 function fakeContainer() {
@@ -451,6 +452,24 @@ test("insert_markdown_in_view replaces selection and moves cursor", () => {
   assert.equal(insertMarkdownInView(view, "![image](assets/paste.png)"), true);
   assert.equal(view.state.doc.toString(), "before ![image](assets/paste.png) after");
   assert.deepEqual(view.state.selection.main, { from: 33, to: 33 });
+});
+
+test("request_save_for_view routes active tab save requests", () => {
+  const sent = [];
+  const view = fakeView("body");
+  view.dom.dataset.tabId = "tab-a";
+  const registry = new Map([
+    ["tab-a", { dioxus: { send: (message) => sent.push(message) } }],
+  ]);
+
+  assert.equal(requestSaveForView(registry, view), true);
+  assert.deepEqual(sent, [{ type: "save_requested", tab_id: "tab-a" }]);
+});
+
+test("request_save_for_view ignores unrouted editor views", () => {
+  const view = fakeView("body");
+
+  assert.equal(requestSaveForView(new Map(), view), false);
 });
 
 test("markdown_list_enter_change continues unordered and ordered lists", () => {
