@@ -1,6 +1,6 @@
 use crate::components::{
-    editor::EditorPane, header::AppHeader, settings::SettingsModal, sidebar::Sidebar,
-    status_bar::StatusBar,
+    editor::EditorPane, header::AppHeader, quick_open::QuickOpenModal, settings::SettingsModal,
+    sidebar::Sidebar, status_bar::StatusBar,
 };
 use crate::context::use_app_context;
 use dioxus::prelude::*;
@@ -12,6 +12,7 @@ pub fn DesktopLayout(status_message: Option<String>) -> Element {
     let mut ui_state = app.ui_state;
     let commands = app.commands;
     let mut show_settings = use_signal(|| false);
+    let mut show_quick_open = use_signal(|| false);
     let settings = app.view_model.read().settings.clone();
 
     let theme = settings.theme;
@@ -26,12 +27,20 @@ pub fn DesktopLayout(status_message: Option<String>) -> Element {
         document::eval(script);
     }));
 
-    // Global keyboard shortcut: Ctrl+\ to toggle sidebar.
+    // Global keyboard shortcuts that must work while CodeMirror has focus.
     // Registered via JS to ensure it fires even when CodeMirror has focus.
     use_effect(move || {
         let mut eval = document::eval(
             r#"
             const handler = (e) => {
+                const mod = e.ctrlKey || e.metaKey;
+                const key = String(e.key || '').toLowerCase();
+                if (mod && key === 'p' && !e.shiftKey && !e.altKey) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dioxus.send("quick_open");
+                    return;
+                }
                 if (e.ctrlKey && e.key === '\\' && !e.shiftKey && !e.altKey) {
                     e.preventDefault();
                     e.stopPropagation();
@@ -45,10 +54,16 @@ pub fn DesktopLayout(status_message: Option<String>) -> Element {
         );
 
         spawn(async move {
-            while eval.recv::<String>().await.is_ok() {
-                ui_state.write().toggle_sidebar();
-                let settings = ui_state.read().settings.clone();
-                commands.save_settings.call(settings);
+            while let Ok(message) = eval.recv::<String>().await {
+                match message.as_str() {
+                    "quick_open" => show_quick_open.set(true),
+                    "toggle_sidebar" => {
+                        ui_state.write().toggle_sidebar();
+                        let settings = ui_state.read().settings.clone();
+                        commands.save_settings.call(settings);
+                    }
+                    _ => {}
+                }
             }
         });
     });
@@ -68,6 +83,9 @@ pub fn DesktopLayout(status_message: Option<String>) -> Element {
             StatusBar { status_message }
             if *show_settings.read() {
                 SettingsModal { on_close: move |_| show_settings.set(false) }
+            }
+            if *show_quick_open.read() {
+                QuickOpenModal { on_close: move |_| show_quick_open.set(false) }
             }
         }
     }

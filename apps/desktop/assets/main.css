@@ -1226,6 +1226,110 @@ button { border: 0; cursor: pointer; background: transparent; }
     flex-shrink: 0;
 }
 
+.mn-command-modal {
+    width: min(680px, 92vw);
+    max-height: min(620px, 78vh);
+}
+
+.mn-command-search {
+    padding: 14px;
+    border-bottom: 1px solid var(--mn-border);
+    background: var(--mn-surface-sunken);
+}
+
+.mn-command-input {
+    width: 100%;
+    border: 1px solid var(--mn-border);
+    border-radius: var(--mn-radius-sm);
+    background: var(--mn-surface-raised);
+    color: var(--mn-ink);
+    padding: 12px 14px;
+    outline: 0;
+    font-size: 15px;
+    box-shadow: var(--mn-shadow-xs);
+}
+
+.mn-command-input:focus {
+    border-color: var(--mn-accent);
+    box-shadow: 0 0 0 3px var(--mn-accent-dim);
+}
+
+.mn-command-input::placeholder {
+    color: var(--mn-ink-3);
+}
+
+.mn-command-list {
+    padding: 8px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.mn-command-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    width: 100%;
+    min-height: 52px;
+    border-radius: var(--mn-radius-sm);
+    padding: 8px 10px;
+    text-align: left;
+    color: var(--mn-ink);
+}
+
+.mn-command-row:hover,
+.mn-command-row.active {
+    background: var(--mn-accent-dim);
+}
+
+.mn-command-row-main {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.mn-command-title,
+.mn-command-path {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mn-command-title {
+    font-size: 14px;
+    font-weight: 650;
+}
+
+.mn-command-path {
+    font-family: var(--mn-font-mono);
+    font-size: 11px;
+    color: var(--mn-ink-3);
+}
+
+.mn-command-kind {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 34px;
+    height: 24px;
+    border-radius: 6px;
+    border: 1px solid var(--mn-border);
+    color: var(--mn-ink-2);
+    font-size: 10px;
+    font-weight: 700;
+    font-family: var(--mn-font-mono);
+}
+
+.mn-command-empty {
+    padding: 28px 12px;
+    color: var(--mn-ink-3);
+    text-align: center;
+    font-size: 13px;
+}
+
 .mn-setting-section {
     display: flex;
     flex-direction: column;
