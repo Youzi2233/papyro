@@ -114,8 +114,15 @@ pub enum Theme {
 #[derive(Debug, Clone, PartialEq, Default)]
 pub enum ViewMode {
     #[default]
-    Edit,
+    Hybrid,
+    Source,
     Preview,
+}
+
+impl ViewMode {
+    pub fn is_editable(&self) -> bool {
+        matches!(self, Self::Source | Self::Hybrid)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]

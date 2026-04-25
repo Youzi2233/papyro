@@ -112,7 +112,7 @@ pub fn EditorPane() -> Element {
                         }
                     }
                     div { class: "mn-tabbar-spacer" }
-                    if view_mode == ViewMode::Edit {
+                    if view_mode.is_editable() {
                         EditorToolbar { active_tab_id: tab.id.clone() }
                         div { class: "mn-toolbar-sep" }
                     }
@@ -132,7 +132,7 @@ pub fn EditorPane() -> Element {
                                     class: if is_active { "mn-editor-host-slot" } else { "mn-editor-host-slot hidden" },
                                     EditorHost {
                                         tab_id: tab_id.clone(),
-                                        is_visible: is_active && view_mode == ViewMode::Edit,
+                                        is_visible: is_active && view_mode.is_editable(),
                                     }
                                 }
                             }
@@ -173,14 +173,20 @@ fn ViewToggle(view_mode: ViewMode, on_change: EventHandler<ViewMode>) -> Element
     rsx! {
         div { class: "mn-view-toggle",
             button {
-                class: if view_mode == ViewMode::Edit { "mn-view-btn active" } else { "mn-view-btn" },
-                title: "Edit mode",
-                onclick: move |_| on_change.call(ViewMode::Edit),
-                "Edit"
+                class: if view_mode == ViewMode::Source { "mn-view-btn active" } else { "mn-view-btn" },
+                title: "Source mode",
+                onclick: move |_| on_change.call(ViewMode::Source),
+                "Source"
+            }
+            button {
+                class: if view_mode == ViewMode::Hybrid { "mn-view-btn active" } else { "mn-view-btn" },
+                title: "Hybrid editing mode",
+                onclick: move |_| on_change.call(ViewMode::Hybrid),
+                "Hybrid"
             }
             button {
                 class: if view_mode == ViewMode::Preview { "mn-view-btn active" } else { "mn-view-btn" },
-                title: "Preview rendered markdown",
+                title: "Read-only preview mode",
                 onclick: move |_| on_change.call(ViewMode::Preview),
                 "Preview"
             }

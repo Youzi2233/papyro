@@ -9,7 +9,7 @@ pub struct UiState {
 impl Default for UiState {
     fn default() -> Self {
         Self {
-            view_mode: ViewMode::Edit,
+            view_mode: ViewMode::Hybrid,
             settings: AppSettings::default(),
         }
     }
