@@ -16,6 +16,9 @@ cargo test --workspace
 echo "=== workspace dependency check ==="
 node scripts/check-workspace-deps.js
 
+echo "=== file line report ==="
+node scripts/report-file-lines.js
+
 echo "=== npm run build ==="
 npm --prefix js run build
 
