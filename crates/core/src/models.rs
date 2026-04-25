@@ -94,6 +94,30 @@ pub struct AppSettings {
     pub view_mode: ViewMode,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
+pub struct WorkspaceSettingsOverrides {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub theme: Option<Theme>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub font_family: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub font_size: Option<u8>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub line_height: Option<f32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub auto_link_paste: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub auto_save_delay_ms: Option<u64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub show_word_count: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sidebar_width: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sidebar_collapsed: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub view_mode: Option<ViewMode>,
+}
+
 impl Default for AppSettings {
     fn default() -> Self {
         Self {
@@ -107,6 +131,36 @@ impl Default for AppSettings {
             sidebar_width: 260,
             sidebar_collapsed: false,
             view_mode: ViewMode::Hybrid,
+        }
+    }
+}
+
+impl AppSettings {
+    pub fn with_workspace_overrides(&self, overrides: &WorkspaceSettingsOverrides) -> AppSettings {
+        AppSettings {
+            theme: overrides
+                .theme
+                .clone()
+                .unwrap_or_else(|| self.theme.clone()),
+            font_family: overrides
+                .font_family
+                .clone()
+                .unwrap_or_else(|| self.font_family.clone()),
+            font_size: overrides.font_size.unwrap_or(self.font_size),
+            line_height: overrides.line_height.unwrap_or(self.line_height),
+            auto_link_paste: overrides.auto_link_paste.unwrap_or(self.auto_link_paste),
+            auto_save_delay_ms: overrides
+                .auto_save_delay_ms
+                .unwrap_or(self.auto_save_delay_ms),
+            show_word_count: overrides.show_word_count.unwrap_or(self.show_word_count),
+            sidebar_width: overrides.sidebar_width.unwrap_or(self.sidebar_width),
+            sidebar_collapsed: overrides
+                .sidebar_collapsed
+                .unwrap_or(self.sidebar_collapsed),
+            view_mode: overrides
+                .view_mode
+                .clone()
+                .unwrap_or_else(|| self.view_mode.clone()),
         }
     }
 }
@@ -143,4 +197,49 @@ pub struct DocumentStats {
     pub word_count: usize,
     pub char_count: usize,
     pub heading_count: usize,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn workspace_overrides_merge_with_global_settings() {
+        let global = AppSettings {
+            theme: Theme::Light,
+            font_size: 16,
+            auto_save_delay_ms: 500,
+            view_mode: ViewMode::Hybrid,
+            ..AppSettings::default()
+        };
+        let overrides = WorkspaceSettingsOverrides {
+            theme: Some(Theme::Dark),
+            font_size: Some(18),
+            auto_save_delay_ms: Some(1000),
+            view_mode: Some(ViewMode::Source),
+            ..WorkspaceSettingsOverrides::default()
+        };
+
+        let effective = global.with_workspace_overrides(&overrides);
+
+        assert_eq!(effective.theme, Theme::Dark);
+        assert_eq!(effective.font_size, 18);
+        assert_eq!(effective.auto_save_delay_ms, 1000);
+        assert_eq!(effective.view_mode, ViewMode::Source);
+        assert_eq!(effective.font_family, global.font_family);
+    }
+
+    #[test]
+    fn empty_workspace_overrides_keep_global_settings() {
+        let global = AppSettings {
+            theme: Theme::Dark,
+            font_size: 20,
+            ..AppSettings::default()
+        };
+
+        assert_eq!(
+            global.with_workspace_overrides(&WorkspaceSettingsOverrides::default()),
+            global
+        );
+    }
 }

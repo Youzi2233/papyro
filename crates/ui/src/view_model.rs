@@ -246,15 +246,18 @@ mod tests {
             },
         );
 
-        let ui_state = UiState {
-            settings: AppSettings {
-                theme: Theme::Dark,
-                sidebar_width: 320,
-                sidebar_collapsed: true,
-                view_mode: ViewMode::Source,
-                ..Default::default()
-            },
+        let settings = AppSettings {
+            theme: Theme::Dark,
+            sidebar_width: 320,
+            sidebar_collapsed: true,
             view_mode: ViewMode::Source,
+            ..Default::default()
+        };
+        let ui_state = UiState {
+            view_mode: ViewMode::Source,
+            settings: settings.clone(),
+            global_settings: settings,
+            workspace_overrides: Default::default(),
         };
 
         let view_model =

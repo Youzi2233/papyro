@@ -115,13 +115,15 @@ impl SqliteStorage {
                 error_message: Some(
                     "Unable to resolve PAPYRO_WORKSPACE or current directory".to_string(),
                 ),
-                settings,
+                settings: settings.clone(),
+                global_settings: settings,
                 ..WorkspaceBootstrap::default()
             };
         };
 
         let mut bootstrap = self.bootstrap_from_workspace(&workspace_root);
-        bootstrap.settings = settings;
+        bootstrap.settings = settings.clone();
+        bootstrap.global_settings = settings;
         bootstrap
     }
 
@@ -147,6 +149,8 @@ impl SqliteStorage {
                     ),
                     error_message: None,
                     settings: AppSettings::default(),
+                    global_settings: AppSettings::default(),
+                    workspace_settings: Default::default(),
                 }
             }
             Err(error) => WorkspaceBootstrap {
@@ -356,6 +360,7 @@ pub fn bootstrap_from_env_or_current_dir() -> WorkspaceBootstrap {
             status_message: "Failed to initialize storage".to_string(),
             error_message: Some(error.to_string()),
             settings: AppSettings::default(),
+            global_settings: AppSettings::default(),
             ..WorkspaceBootstrap::default()
         })
 }

@@ -15,7 +15,8 @@ pub(crate) struct RuntimeState {
 
 pub(crate) fn use_runtime_state(bootstrap: WorkspaceBootstrap) -> RuntimeState {
     let initial_file_state = bootstrap.file_state;
-    let initial_settings = bootstrap.settings;
+    let initial_global_settings = bootstrap.global_settings;
+    let initial_workspace_overrides = bootstrap.workspace_settings;
     let initial_status_message = bootstrap.status_message;
     let initial_workspace_root = bootstrap.workspace_root;
 
@@ -23,7 +24,12 @@ pub(crate) fn use_runtime_state(bootstrap: WorkspaceBootstrap) -> RuntimeState {
         file_state: use_signal(|| initial_file_state),
         editor_tabs: use_signal(EditorTabs::default),
         tab_contents: use_signal(TabContentsMap::default),
-        ui_state: use_signal(|| UiState::from_settings(initial_settings)),
+        ui_state: use_signal(|| {
+            UiState::from_settings_with_overrides(
+                initial_global_settings,
+                initial_workspace_overrides,
+            )
+        }),
         status_message: use_signal(|| Some(initial_status_message)),
         workspace_watch_path: use_signal(|| initial_workspace_root),
         pending_close_tab: use_signal(|| None::<String>),

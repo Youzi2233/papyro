@@ -1,4 +1,6 @@
-use crate::models::{AppSettings, EditorTab, FileNode, RecentFile, Workspace};
+use crate::models::{
+    AppSettings, EditorTab, FileNode, RecentFile, Workspace, WorkspaceSettingsOverrides,
+};
 use crate::FileState;
 use anyhow::Result;
 use std::path::{Path, PathBuf};
@@ -32,6 +34,8 @@ pub struct WorkspaceBootstrap {
     pub status_message: String,
     pub error_message: Option<String>,
     pub settings: AppSettings,
+    pub global_settings: AppSettings,
+    pub workspace_settings: WorkspaceSettingsOverrides,
 }
 
 pub trait NoteStorage: Send + Sync {
