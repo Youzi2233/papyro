@@ -221,6 +221,22 @@ export function collectMarkdownCodeBlocks(lines) {
   return blocks;
 }
 
+export function collectMarkdownFrontMatterBlock(lines) {
+  if (lines.length < 2 || lines[0].trim() !== "---") return null;
+
+  for (let index = 1; index < lines.length; index += 1) {
+    const line = lines[index].trim();
+    if (line === "---" || line === "...") {
+      return {
+        fromLine: 1,
+        toLine: index + 1,
+      };
+    }
+  }
+
+  return null;
+}
+
 function collectLinkSpans(line, spans, occupied) {
   const regexp = /(!?)\[([^\]\n]+)\]\(([^)\n]+)\)/g;
   for (const match of line.matchAll(regexp)) {

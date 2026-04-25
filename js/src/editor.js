@@ -18,6 +18,7 @@ import {
   applyFormatToView,
   attachViewToTab as attachViewToTabCore,
   collectMarkdownCodeBlocks,
+  collectMarkdownFrontMatterBlock,
   handleRustMessage as handleRustMessageCore,
   parseMarkdownBlockquoteLine,
   parseMarkdownHeadingLine,
@@ -110,6 +111,25 @@ const editorTheme = EditorView.theme({
     paddingTop: "0.45em",
   },
   ".cm-line.cm-hybrid-code-block-end": {
+    borderBottomLeftRadius: "6px",
+    borderBottomRightRadius: "6px",
+    paddingBottom: "0.45em",
+  },
+  ".cm-line.cm-hybrid-front-matter-line": {
+    backgroundColor: "var(--mn-surface, #fbf6ea)",
+    color: "var(--mn-ink-3)",
+    fontSize: ".92em",
+    paddingLeft: "12px",
+    paddingRight: "12px",
+  },
+  ".cm-line.cm-hybrid-front-matter-start": {
+    borderTop: "1px solid var(--mn-border)",
+    borderTopLeftRadius: "6px",
+    borderTopRightRadius: "6px",
+    paddingTop: "0.45em",
+  },
+  ".cm-line.cm-hybrid-front-matter-end": {
+    borderBottom: "1px solid var(--mn-border)",
     borderBottomLeftRadius: "6px",
     borderBottomRightRadius: "6px",
     paddingBottom: "0.45em",
@@ -266,6 +286,10 @@ function codeBlockForLine(blocks, lineNumber) {
   return blocks.find(
     (block) => lineNumber >= block.fromLine && lineNumber <= block.toLine,
   );
+}
+
+function frontMatterContainsLine(block, lineNumber) {
+  return block && lineNumber >= block.fromLine && lineNumber <= block.toLine;
 }
 
 function inlineClassForType(type) {
@@ -491,7 +515,22 @@ function addCodeBlockDecorations(decorations, line, block) {
   }
 }
 
-function buildHybridMarkdownDecorations(view, codeBlocks) {
+function addFrontMatterDecorations(decorations, line, block) {
+  const isStart = line.number === block.fromLine;
+  const isEnd = line.number === block.toLine;
+  const classes = [
+    "cm-hybrid-front-matter-line",
+    isStart ? "cm-hybrid-front-matter-start" : "",
+    isEnd ? "cm-hybrid-front-matter-end" : "",
+  ].filter(Boolean).join(" ");
+
+  decorations.push(Decoration.line({ class: classes }).range(line.from));
+  if (isStart || isEnd) {
+    decorations.push(Decoration.replace({}).range(line.from, line.to));
+  }
+}
+
+function buildHybridMarkdownDecorations(view, codeBlocks, frontMatterBlock) {
   if (view.state.field(viewModeField, false) !== "hybrid") {
     return Decoration.none;
   }
@@ -506,6 +545,17 @@ function buildHybridMarkdownDecorations(view, codeBlocks) {
 
       if (line.number === lastLineNumber) continue;
       lastLineNumber = line.number;
+
+      if (frontMatterContainsLine(frontMatterBlock, line.number)) {
+        if (!selectionTouchesLineRange(
+          view.state,
+          frontMatterBlock.fromLine,
+          frontMatterBlock.toLine,
+        )) {
+          addFrontMatterDecorations(decorations, line, frontMatterBlock);
+        }
+        continue;
+      }
 
       const codeBlock = codeBlockForLine(codeBlocks, line.number);
       if (codeBlock) {
@@ -559,15 +609,21 @@ function viewModeChanged(update) {
 const hybridHeadingPlugin = ViewPlugin.fromClass(
   class {
     constructor(view) {
-      this.codeBlocks = collectMarkdownCodeBlocks(documentLineTexts(view.state.doc));
-      this.decorations = buildHybridMarkdownDecorations(view, this.codeBlocks);
+      const lines = documentLineTexts(view.state.doc);
+      this.codeBlocks = collectMarkdownCodeBlocks(lines);
+      this.frontMatterBlock = collectMarkdownFrontMatterBlock(lines);
+      this.decorations = buildHybridMarkdownDecorations(
+        view,
+        this.codeBlocks,
+        this.frontMatterBlock,
+      );
     }
 
     update(update) {
       if (update.docChanged) {
-        this.codeBlocks = collectMarkdownCodeBlocks(
-          documentLineTexts(update.state.doc),
-        );
+        const lines = documentLineTexts(update.state.doc);
+        this.codeBlocks = collectMarkdownCodeBlocks(lines);
+        this.frontMatterBlock = collectMarkdownFrontMatterBlock(lines);
       }
       if (
         update.docChanged ||
@@ -578,6 +634,7 @@ const hybridHeadingPlugin = ViewPlugin.fromClass(
         this.decorations = buildHybridMarkdownDecorations(
           update.view,
           this.codeBlocks,
+          this.frontMatterBlock,
         );
       }
     }

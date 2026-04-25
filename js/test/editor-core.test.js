@@ -4,6 +4,7 @@ import {
   applyFormatToView,
   attachViewToTab,
   collectMarkdownCodeBlocks,
+  collectMarkdownFrontMatterBlock,
   handleRustMessage,
   normalizeViewMode,
   parseMarkdownBlockquoteLine,
@@ -198,6 +199,32 @@ test("collect_markdown_code_blocks returns fenced ranges", () => {
   ]), [
     { fromLine: 1, toLine: 2, info: "" },
   ]);
+});
+
+test("collect_markdown_front_matter_block returns top metadata range", () => {
+  assert.deepEqual(collectMarkdownFrontMatterBlock([
+    "---",
+    "title: Test",
+    "---",
+    "Body",
+  ]), {
+    fromLine: 1,
+    toLine: 3,
+  });
+  assert.deepEqual(collectMarkdownFrontMatterBlock([
+    "---",
+    "title: Test",
+    "...",
+  ]), {
+    fromLine: 1,
+    toLine: 3,
+  });
+  assert.deepEqual(collectMarkdownFrontMatterBlock(["---", "---"]), {
+    fromLine: 1,
+    toLine: 2,
+  });
+  assert.equal(collectMarkdownFrontMatterBlock(["---", "title: Test"]), null);
+  assert.equal(collectMarkdownFrontMatterBlock(["Body", "---", "x", "---"]), null);
 });
 
 test("parse_markdown_inline_spans ignores emphasis inside image alt", () => {
