@@ -267,6 +267,6 @@ User action
 
 - `crates/app` 从集中式 runtime 拆分为 state / actions / dispatcher / effects
 - `AppContext` 收敛为更小的 view model + action facade，UI 不再直接操作原始 Signal
-- `crates/ui/components/editor/mod.rs` 拆分为 tabbar / toolbar / host / bridge / autosave 等独立模块
+- `crates/ui/components/editor/mod.rs` 拆分为 tabbar / toolbar / host / bridge 等独立模块，autosave 由 `crates/app/src/effects.rs` 管理
 - Rust/JS 编辑器协议固化到 `crates/editor`，不在 UI 内部私有定义
 - 未来按需新增 `search/`、`export/` crate

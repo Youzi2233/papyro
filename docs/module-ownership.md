@@ -10,7 +10,7 @@
 | --- | --- | --- | --- |
 | `crates/app/src/workspace_flow.rs` | `crates/app` use case flow | 文件过长，集中承载 workspace、文件、tab 状态编排 | 拆为 `workspace/create.rs`、`workspace/open.rs`、`workspace/save.rs`、`workspace/rename.rs`、`workspace/delete.rs` |
 | `crates/app/src/runtime.rs` | `crates/app` composition root | 同时承担 state 初始化、command 装配、watcher、export、settings | 迁出 `state.rs`、`actions.rs`、`dispatcher.rs`、`effects.rs`、`export.rs` |
-| `crates/ui/src/components/editor/mod.rs` | `crates/ui` editor surface | 同时承担 tabbar、toolbar、preview、host、bridge、autosave、fallback | 拆为 `pane.rs`、`tabbar.rs`、`toolbar.rs`、`preview.rs`、`host.rs`、`bridge.rs`、`autosave.rs`、`fallback.rs` |
+| `crates/ui/src/components/editor/mod.rs` | `crates/ui` editor surface | 同时承担 tabbar、toolbar、preview、host、bridge、fallback | 拆为 `pane.rs`、`tabbar.rs`、`toolbar.rs`、`preview.rs`、`host.rs`、`bridge.rs`、`fallback.rs`；autosave 迁入 `crates/app/src/effects.rs` |
 
 ## 当前模块 Owner
 
