@@ -4,7 +4,7 @@ use papyro_core::models::{
     WorkspaceSettingsOverrides, WorkspaceTreeState,
 };
 use papyro_core::storage::{
-    NoteStorage, OpenedNote, SavedNote, WorkspaceBootstrap, WorkspaceSnapshot,
+    DeletePreview, NoteStorage, OpenedNote, SavedNote, WorkspaceBootstrap, WorkspaceSnapshot,
 };
 use papyro_core::FileState;
 use std::collections::HashMap;
@@ -22,7 +22,9 @@ pub(super) struct MockStorage {
     pub create_note_result: Option<PathBuf>,
     pub create_folder_result: Option<PathBuf>,
     pub bootstrap_result: Option<WorkspaceBootstrap>,
+    pub delete_preview: DeletePreview,
     pub deleted_paths: Mutex<Vec<PathBuf>>,
+    pub deleted_extra_paths: Mutex<Vec<PathBuf>>,
     pub saved_payloads: Mutex<Vec<(String, String)>>,
     pub saved_tree_states: Mutex<Vec<(String, WorkspaceTreeState)>>,
     pub created_note_requests: Mutex<Vec<(PathBuf, String)>>,
@@ -75,6 +77,18 @@ impl NoteStorage for MockStorage {
 
     fn delete_path(&self, path: &Path) -> Result<()> {
         self.deleted_paths.lock().unwrap().push(path.to_path_buf());
+        Ok(())
+    }
+
+    fn preview_delete_path(&self, _workspace: &Workspace, _path: &Path) -> Result<DeletePreview> {
+        Ok(self.delete_preview.clone())
+    }
+
+    fn delete_paths(&self, paths: &[PathBuf]) -> Result<()> {
+        self.deleted_extra_paths
+            .lock()
+            .unwrap()
+            .extend(paths.iter().cloned());
         Ok(())
     }
 

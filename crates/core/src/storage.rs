@@ -27,6 +27,11 @@ pub struct SavedNote {
     pub title: String,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct DeletePreview {
+    pub orphaned_assets: Vec<PathBuf>,
+}
+
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct WorkspaceBootstrap {
     pub file_state: FileState,
@@ -46,6 +51,8 @@ pub trait NoteStorage: Send + Sync {
     fn create_note(&self, parent: &Path, name: &str) -> Result<PathBuf>;
     fn create_folder(&self, parent: &Path, name: &str) -> Result<PathBuf>;
     fn delete_path(&self, path: &Path) -> Result<()>;
+    fn preview_delete_path(&self, workspace: &Workspace, path: &Path) -> Result<DeletePreview>;
+    fn delete_paths(&self, paths: &[PathBuf]) -> Result<()>;
     fn rename_path(&self, workspace: &Workspace, path: &Path, new_name: &str) -> Result<PathBuf>;
     fn move_path(&self, workspace: &Workspace, path: &Path, target_dir: &Path) -> Result<PathBuf>;
     fn bootstrap_from_workspace(&self, root: &Path) -> WorkspaceBootstrap;

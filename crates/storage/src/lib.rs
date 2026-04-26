@@ -3,7 +3,9 @@ pub mod fs;
 pub mod index;
 
 pub use db::{create_pool, DbPool};
-pub use papyro_core::{OpenedNote, SavedNote, WorkspaceBootstrap, WorkspaceSnapshot};
+pub use papyro_core::{
+    DeletePreview, OpenedNote, SavedNote, WorkspaceBootstrap, WorkspaceSnapshot,
+};
 
 use anyhow::Result;
 use chrono::Utc;
@@ -11,7 +13,10 @@ use papyro_core::models::{
     AppSettings, EditorTab, FileNode, FileNodeKind, NoteMeta, RecentFile, Workspace,
     WorkspaceSettingsOverrides, WorkspaceTreeState,
 };
-use papyro_core::{rewrite_moved_note_image_links, FileState, NoteStorage};
+use papyro_core::{
+    local_markdown_image_targets, rewrite_moved_note_image_links, workspace_assets_dir, FileState,
+    NoteStorage,
+};
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 
@@ -294,6 +299,12 @@ impl SqliteStorage {
         Ok(new_path)
     }
 
+    pub fn preview_delete_path(&self, workspace: &Workspace, path: &Path) -> Result<DeletePreview> {
+        Ok(DeletePreview {
+            orphaned_assets: orphaned_assets_after_delete(workspace, path)?,
+        })
+    }
+
     pub fn initialize_workspace(&self, root: &Path) -> Result<WorkspaceSnapshot> {
         let workspace = ensure_workspace(&self.pool, root)?;
         let mut file_tree = fs::scan_workspace(root)?;
@@ -377,6 +388,22 @@ impl NoteStorage for SqliteStorage {
         } else {
             fs::delete_note(path)
         }
+    }
+
+    fn preview_delete_path(&self, workspace: &Workspace, path: &Path) -> Result<DeletePreview> {
+        SqliteStorage::preview_delete_path(self, workspace, path)
+    }
+
+    fn delete_paths(&self, paths: &[PathBuf]) -> Result<()> {
+        for path in paths {
+            if path.is_dir() {
+                fs::delete_folder(path)?;
+            } else if path.exists() {
+                fs::delete_note(path)?;
+            }
+        }
+
+        Ok(())
     }
 
     fn rename_path(&self, workspace: &Workspace, path: &Path, new_name: &str) -> Result<PathBuf> {
@@ -799,6 +826,88 @@ fn rewrite_note_image_links(
     Ok(())
 }
 
+fn orphaned_assets_after_delete(workspace: &Workspace, delete_path: &Path) -> Result<Vec<PathBuf>> {
+    let assets_dir = workspace_assets_dir(workspace);
+    let deleting_notes = markdown_files_under(delete_path);
+    if deleting_notes.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let mut deleting_assets = Vec::new();
+    for note_path in &deleting_notes {
+        let content = fs::read_note(note_path)?;
+        collect_existing_assets(
+            workspace,
+            &assets_dir,
+            note_path,
+            &content,
+            &mut deleting_assets,
+        );
+    }
+
+    if deleting_assets.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let remaining_notes = remaining_workspace_notes(workspace, delete_path);
+    let mut retained_assets = Vec::new();
+    for note_path in remaining_notes {
+        let content = fs::read_note(&note_path)?;
+        collect_existing_assets(
+            workspace,
+            &assets_dir,
+            &note_path,
+            &content,
+            &mut retained_assets,
+        );
+    }
+
+    deleting_assets.retain(|asset| !retained_assets.contains(asset));
+    deleting_assets.sort();
+    deleting_assets.dedup();
+    Ok(deleting_assets)
+}
+
+fn collect_existing_assets(
+    workspace: &Workspace,
+    assets_dir: &Path,
+    note_path: &Path,
+    content: &str,
+    output: &mut Vec<PathBuf>,
+) {
+    for target in local_markdown_image_targets(content, &workspace.path, note_path) {
+        if target.starts_with(assets_dir) && target.is_file() && !output.contains(&target) {
+            output.push(target);
+        }
+    }
+}
+
+fn markdown_files_under(path: &Path) -> Vec<PathBuf> {
+    if path.is_file() && is_markdown(path) {
+        return vec![path.to_path_buf()];
+    }
+    if !path.is_dir() {
+        return Vec::new();
+    }
+
+    walkdir::WalkDir::new(path)
+        .into_iter()
+        .filter_map(Result::ok)
+        .filter(|entry| entry.file_type().is_file() && is_markdown(entry.path()))
+        .map(|entry| entry.path().to_path_buf())
+        .collect()
+}
+
+fn remaining_workspace_notes(workspace: &Workspace, delete_path: &Path) -> Vec<PathBuf> {
+    walkdir::WalkDir::new(&workspace.path)
+        .into_iter()
+        .filter_entry(|entry| entry.path() != delete_path)
+        .filter_map(Result::ok)
+        .filter(|entry| entry.file_type().is_file() && is_markdown(entry.path()))
+        .map(|entry| entry.path().to_path_buf())
+        .collect()
+}
+
 fn is_markdown(path: &Path) -> bool {
     path.extension()
         .and_then(|ext| ext.to_str())
@@ -1054,6 +1163,61 @@ mod tests {
         assert_eq!(note_count(&tree), 1);
         assert!(tree.iter().any(|node| node.path == keep_path));
         assert!(!tree.iter().any(|node| node.path == delete_path));
+
+        Ok(())
+    }
+
+    #[test]
+    fn preview_delete_path_lists_only_unreferenced_workspace_assets() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let workspace_root = create_workspace(&temp)?;
+        let assets_dir = workspace_root.join("assets");
+        std::fs::create_dir_all(&assets_dir)?;
+        std::fs::write(assets_dir.join("orphan.png"), b"orphan")?;
+        std::fs::write(assets_dir.join("shared.png"), b"shared")?;
+        let delete_path = workspace_root.join("delete.md");
+        let keep_path = workspace_root.join("keep.md");
+        std::fs::write(
+            &delete_path,
+            "![orphan](assets/orphan.png)\n![shared](assets/shared.png)",
+        )?;
+        std::fs::write(&keep_path, "![shared](assets/shared.png)")?;
+
+        let storage = test_storage(&temp)?;
+        let workspace = storage.initialize_workspace(&workspace_root)?.workspace;
+
+        let preview = storage.preview_delete_path(&workspace, &delete_path)?;
+
+        assert_eq!(preview.orphaned_assets, vec![assets_dir.join("orphan.png")]);
+        assert!(assets_dir.join("orphan.png").exists());
+        assert!(delete_path.exists());
+
+        Ok(())
+    }
+
+    #[test]
+    fn preview_delete_path_finds_orphans_for_deleted_folder() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let workspace_root = create_workspace(&temp)?;
+        let assets_dir = workspace_root.join("assets");
+        let notes_dir = workspace_root.join("notes");
+        std::fs::create_dir_all(&assets_dir)?;
+        std::fs::create_dir_all(&notes_dir)?;
+        std::fs::write(assets_dir.join("folder-only.png"), b"image")?;
+        std::fs::write(
+            notes_dir.join("delete.md"),
+            "![only](../assets/folder-only.png)",
+        )?;
+
+        let storage = test_storage(&temp)?;
+        let workspace = storage.initialize_workspace(&workspace_root)?.workspace;
+
+        let preview = storage.preview_delete_path(&workspace, &notes_dir)?;
+
+        assert_eq!(
+            preview.orphaned_assets,
+            vec![assets_dir.join("folder-only.png")]
+        );
 
         Ok(())
     }
