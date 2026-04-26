@@ -1,4 +1,4 @@
-use crate::models::{FileNode, RecentFile, TrashedNote, Workspace};
+use crate::models::{FileNode, RecentFile, Tag, TrashedNote, Workspace};
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
@@ -10,6 +10,7 @@ pub struct FileState {
     pub expanded_paths: HashSet<PathBuf>,
     pub recent_files: Vec<RecentFile>,
     pub trashed_notes: Vec<TrashedNote>,
+    pub tags: Vec<Tag>,
     pub selected_path: Option<PathBuf>,
 }
 
@@ -20,6 +21,7 @@ impl FileState {
         file_tree: Vec<FileNode>,
         recent_files: Vec<RecentFile>,
         trashed_notes: Vec<TrashedNote>,
+        tags: Vec<Tag>,
     ) {
         if !self.workspaces.iter().any(|item| item.id == workspace.id) {
             self.workspaces.push(workspace.clone());
@@ -29,6 +31,7 @@ impl FileState {
         self.file_tree = file_tree;
         self.recent_files = recent_files;
         self.trashed_notes = trashed_notes;
+        self.tags = tags;
     }
 
     pub fn select_path(&mut self, path: PathBuf) {

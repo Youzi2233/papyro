@@ -181,6 +181,7 @@ impl SqliteStorage {
                     snapshot.file_tree.clone(),
                     snapshot.recent_files.clone(),
                     snapshot.trashed_notes.clone(),
+                    snapshot.tags.clone(),
                 );
                 file_state.workspaces = self.recent_workspaces_with_current(&snapshot.workspace);
                 file_state.expanded_paths = self
@@ -399,6 +400,7 @@ impl SqliteStorage {
         db::workspaces::update_last_opened(&self.pool, &workspace.id, now)?;
         let recent_files = db::recent::list_recent(&self.pool, 10)?;
         let trashed_notes = self.list_trashed_notes(&workspace)?;
+        let tags = self.list_tags()?;
 
         Ok(WorkspaceSnapshot {
             workspace: Workspace {
@@ -408,6 +410,7 @@ impl SqliteStorage {
             file_tree,
             recent_files,
             trashed_notes,
+            tags,
             db_path: self.db_path.clone(),
         })
     }
@@ -415,12 +418,17 @@ impl SqliteStorage {
     pub fn reload_workspace_tree(
         &self,
         workspace: &Workspace,
-    ) -> Result<(Vec<FileNode>, Vec<RecentFile>)> {
+    ) -> Result<(
+        Vec<FileNode>,
+        Vec<RecentFile>,
+        Vec<papyro_core::models::Tag>,
+    )> {
         let mut file_tree = fs::scan_workspace(&workspace.path)?;
         attach_note_ids(&mut file_tree, workspace);
         prune_missing_recent_files(&self.pool, workspace, &file_tree)?;
         let recent_files = db::recent::list_recent(&self.pool, 10)?;
-        Ok((file_tree, recent_files))
+        let tags = self.list_tags()?;
+        Ok((file_tree, recent_files, tags))
     }
 
     pub fn search_workspace(
@@ -585,7 +593,11 @@ impl NoteStorage for SqliteStorage {
     fn reload_workspace_tree(
         &self,
         workspace: &Workspace,
-    ) -> Result<(Vec<FileNode>, Vec<RecentFile>)> {
+    ) -> Result<(
+        Vec<FileNode>,
+        Vec<RecentFile>,
+        Vec<papyro_core::models::Tag>,
+    )> {
         SqliteStorage::reload_workspace_tree(self, workspace)
     }
 
@@ -779,7 +791,13 @@ pub fn initialize_workspace(root: &Path) -> Result<WorkspaceSnapshot> {
 /// This variant does only what a post-mutation reload actually needs: walk
 /// the directory, re-attach deterministic note IDs (no DB query), and fetch
 /// the recent list. Cost is effectively a directory stat, not O(N) file IO.
-pub fn reload_workspace_tree(workspace: &Workspace) -> Result<(Vec<FileNode>, Vec<RecentFile>)> {
+pub fn reload_workspace_tree(
+    workspace: &Workspace,
+) -> Result<(
+    Vec<FileNode>,
+    Vec<RecentFile>,
+    Vec<papyro_core::models::Tag>,
+)> {
     SqliteStorage::shared()?.reload_workspace_tree(workspace)
 }
 

@@ -18,6 +18,7 @@ pub struct WorkspaceViewModel {
     pub recent_workspaces: Vec<WorkspaceListItem>,
     pub recent_files: Vec<RecentFileListItem>,
     pub trashed_notes: Vec<TrashedNoteListItem>,
+    pub tags: Vec<TagListItem>,
     pub selected_name: Option<String>,
     pub has_selection: bool,
     pub selected_is_directory: bool,
@@ -40,6 +41,13 @@ pub struct TrashedNoteListItem {
     pub title: String,
     pub relative_path: PathBuf,
     pub trashed_at: i64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TagListItem {
+    pub id: String,
+    pub name: String,
+    pub color: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -134,6 +142,15 @@ impl WorkspaceViewModel {
                     trashed_at: trashed.trashed_at,
                 })
                 .collect(),
+            tags: file_state
+                .tags
+                .iter()
+                .map(|tag| TagListItem {
+                    id: tag.id.clone(),
+                    name: tag.name.clone(),
+                    color: tag.color.clone(),
+                })
+                .collect(),
             selected_name: selected_node.as_ref().map(|node| node.name.clone()),
             has_selection: selected_node.is_some(),
             selected_is_directory: selected_node
@@ -195,7 +212,7 @@ fn count_notes(nodes: &[FileNode]) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use papyro_core::models::{EditorTab, NoteMeta, RecentFile, TrashedNote, Workspace};
+    use papyro_core::models::{EditorTab, NoteMeta, RecentFile, Tag, TrashedNote, Workspace};
 
     fn note(path: &str) -> FileNode {
         FileNode {
@@ -265,6 +282,18 @@ mod tests {
                 },
                 trashed_at: 1,
             }],
+            tags: vec![
+                Tag {
+                    id: "rust".to_string(),
+                    name: "Rust".to_string(),
+                    color: "#DEA584".to_string(),
+                },
+                Tag {
+                    id: "search".to_string(),
+                    name: "Search".to_string(),
+                    color: "#2563EB".to_string(),
+                },
+            ],
             ..Default::default()
         };
         file_state.select_path(PathBuf::from("notes"));
@@ -345,6 +374,21 @@ mod tests {
                 relative_path: PathBuf::from("deleted.md"),
                 trashed_at: 1,
             }]
+        );
+        assert_eq!(
+            view_model.workspace.tags,
+            vec![
+                TagListItem {
+                    id: "rust".to_string(),
+                    name: "Rust".to_string(),
+                    color: "#DEA584".to_string(),
+                },
+                TagListItem {
+                    id: "search".to_string(),
+                    name: "Search".to_string(),
+                    color: "#2563EB".to_string(),
+                },
+            ]
         );
         assert_eq!(view_model.workspace.note_count, 2);
         assert_eq!(view_model.workspace.recent_count, 1);

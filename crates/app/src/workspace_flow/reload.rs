@@ -25,12 +25,13 @@ pub(super) fn reload_current_workspace_tree(
 ) -> Result<()> {
     let workspace = current_workspace(file_state)?;
     let previous_selected = file_state.selected_path.clone();
-    let (file_tree, recent_files) = storage.reload_workspace_tree(&workspace)?;
+    let (file_tree, recent_files, tags) = storage.reload_workspace_tree(&workspace)?;
     let trashed_notes = storage.list_trashed_notes(&workspace)?;
 
     file_state.file_tree = file_tree;
     file_state.recent_files = recent_files;
     file_state.trashed_notes = trashed_notes;
+    file_state.tags = tags;
 
     if let Some(selected_path) = previous_selected {
         file_state.selected_path =
@@ -88,12 +89,13 @@ pub(crate) fn reload_workspace_or_bootstrap(
             .clone()
             .expect("already_loaded implies Some");
 
-        if let Ok((file_tree, recent_files)) = storage.reload_workspace_tree(&workspace) {
+        if let Ok((file_tree, recent_files, tags)) = storage.reload_workspace_tree(&workspace) {
             let trashed_notes = storage.list_trashed_notes(&workspace)?;
             let mut next_state = previous.clone();
             next_state.file_tree = file_tree;
             next_state.recent_files = recent_files;
             next_state.trashed_notes = trashed_notes;
+            next_state.tags = tags;
 
             if let Some(selected_path) = previous.selected_path.clone() {
                 next_state.selected_path =

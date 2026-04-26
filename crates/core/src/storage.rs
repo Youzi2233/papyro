@@ -13,6 +13,7 @@ pub struct WorkspaceSnapshot {
     pub file_tree: Vec<FileNode>,
     pub recent_files: Vec<RecentFile>,
     pub trashed_notes: Vec<TrashedNote>,
+    pub tags: Vec<Tag>,
     pub db_path: PathBuf,
 }
 
@@ -66,7 +67,7 @@ pub trait NoteStorage: Send + Sync {
     fn reload_workspace_tree(
         &self,
         workspace: &Workspace,
-    ) -> Result<(Vec<FileNode>, Vec<RecentFile>)>;
+    ) -> Result<(Vec<FileNode>, Vec<RecentFile>, Vec<Tag>)>;
     fn search_workspace(
         &self,
         workspace: &Workspace,

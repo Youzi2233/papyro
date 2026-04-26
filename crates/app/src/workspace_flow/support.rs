@@ -158,10 +158,13 @@ impl NoteStorage for MockStorage {
     fn reload_workspace_tree(
         &self,
         _workspace: &Workspace,
-    ) -> Result<(Vec<FileNode>, Vec<RecentFile>)> {
-        self.reload_result
+    ) -> Result<(Vec<FileNode>, Vec<RecentFile>, Vec<Tag>)> {
+        let (file_tree, recent_files) = self
+            .reload_result
             .clone()
-            .ok_or_else(|| anyhow!("Missing reload result"))
+            .ok_or_else(|| anyhow!("Missing reload result"))?;
+        let tags = self.tags.lock().unwrap().clone();
+        Ok((file_tree, recent_files, tags))
     }
 
     fn search_workspace(
