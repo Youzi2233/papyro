@@ -56,6 +56,12 @@ pub fn DesktopLayout(status_message: Option<String>) -> Element {
                     dioxus.send("quick_open");
                     return;
                 }
+                if (mod && key === 's' && !e.shiftKey && !e.altKey) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dioxus.send("save_active_note");
+                    return;
+                }
                 if (e.ctrlKey && e.key === '\\' && !e.shiftKey && !e.altKey) {
                     e.preventDefault();
                     e.stopPropagation();
@@ -74,6 +80,7 @@ pub fn DesktopLayout(status_message: Option<String>) -> Element {
                     "quick_open" => show_quick_open.set(true),
                     "command_palette" => show_command_palette.set(true),
                     "workspace_search" => show_search.set(true),
+                    "save_active_note" => commands.save_active_note.call(()),
                     "toggle_sidebar" => {
                         ui_state.write().toggle_sidebar();
                         let settings = ui_state.read().settings.clone();
