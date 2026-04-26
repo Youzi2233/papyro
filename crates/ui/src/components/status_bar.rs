@@ -1,3 +1,4 @@
+use crate::components::primitives::{StatusIndicator, StatusMessage, StatusTone};
 use crate::context::use_app_context;
 use dioxus::prelude::*;
 use papyro_core::models::SaveStatus;
@@ -13,26 +14,32 @@ pub fn StatusBar(status_message: Option<String>) -> Element {
             div { class: "mn-status-left",
                 if let Some(msg) = &status_message {
                     if !msg.is_empty() {
-                        span { class: "mn-status-message", "{msg}" }
+                        StatusMessage { message: msg.clone() }
                     }
                 }
             }
             div { class: "mn-status-right",
                 if editor.has_active_tab {
-                    span { "{stats.word_count} words" }
-                    span { "{stats.char_count} chars" }
+                    StatusIndicator {
+                        label: format!("{} words", stats.word_count),
+                        tone: StatusTone::Default,
+                    }
+                    StatusIndicator {
+                        label: format!("{} chars", stats.char_count),
+                        tone: StatusTone::Default,
+                    }
                     match editor.active_save_status {
                         SaveStatus::Saving => rsx! {
-                            span { class: "mn-status-saving", "Saving" }
+                            StatusIndicator { label: "Saving", tone: StatusTone::Saving }
                         },
                         SaveStatus::Failed => rsx! {
-                            span { class: "mn-status-unsaved", "Save failed" }
+                            StatusIndicator { label: "Save failed", tone: StatusTone::Attention }
                         },
                         SaveStatus::Dirty => rsx! {
-                            span { class: "mn-status-unsaved", "Unsaved" }
+                            StatusIndicator { label: "Unsaved", tone: StatusTone::Attention }
                         },
                         SaveStatus::Saved => rsx! {
-                            span { "Saved" }
+                            StatusIndicator { label: "Saved", tone: StatusTone::Default }
                         },
                     }
                 }

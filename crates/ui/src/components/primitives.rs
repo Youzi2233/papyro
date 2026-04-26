@@ -7,6 +7,13 @@ pub enum ButtonVariant {
     Danger,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum StatusTone {
+    Default,
+    Saving,
+    Attention,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SegmentedControlOption {
     pub label: String,
@@ -63,6 +70,14 @@ fn menu_item_class(danger: bool) -> &'static str {
     }
 }
 
+fn status_tone_class(tone: StatusTone) -> &'static str {
+    match tone {
+        StatusTone::Default => "mn-status-item",
+        StatusTone::Saving => "mn-status-saving",
+        StatusTone::Attention => "mn-status-unsaved",
+    }
+}
+
 #[component]
 pub fn Button(
     label: String,
@@ -79,6 +94,20 @@ pub fn Button(
             onclick: move |_| on_click.call(()),
             "{label}"
         }
+    }
+}
+
+#[component]
+pub fn StatusMessage(message: String) -> Element {
+    rsx! {
+        span { class: "mn-status-message", "{message}" }
+    }
+}
+
+#[component]
+pub fn StatusIndicator(label: String, tone: StatusTone) -> Element {
+    rsx! {
+        span { class: status_tone_class(tone), "{label}" }
     }
 }
 
@@ -325,5 +354,15 @@ mod tests {
     fn menu_item_class_marks_danger_option() {
         assert_eq!(menu_item_class(false), "mn-menu-item");
         assert_eq!(menu_item_class(true), "mn-menu-item danger");
+    }
+
+    #[test]
+    fn status_tone_class_maps_status_styles() {
+        assert_eq!(status_tone_class(StatusTone::Default), "mn-status-item");
+        assert_eq!(status_tone_class(StatusTone::Saving), "mn-status-saving");
+        assert_eq!(
+            status_tone_class(StatusTone::Attention),
+            "mn-status-unsaved"
+        );
     }
 }

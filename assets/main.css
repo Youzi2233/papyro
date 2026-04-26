@@ -1783,6 +1783,10 @@ select.mn-input {
     font-style: italic;
 }
 
+.mn-status-item {
+    color: inherit;
+}
+
 .mn-status-unsaved {
     color: var(--mn-accent);
     font-weight: 600;
