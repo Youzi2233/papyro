@@ -171,6 +171,14 @@ impl AppDispatcher {
                     action.target_dir,
                 );
             }
+            AppAction::SetSelectedFavorite(action) => {
+                file_ops::set_selected_favorite(
+                    self.storage.clone(),
+                    self.state.file_state,
+                    self.state.status_message,
+                    action.favorite,
+                );
+            }
             AppAction::DeleteSelected => {
                 file_ops::delete_selected(
                     self.shell,
@@ -235,6 +243,7 @@ impl AppDispatcher {
         let close_tab = self.clone();
         let rename_selected = self.clone();
         let move_selected_to = self.clone();
+        let set_selected_favorite = self.clone();
         let delete_selected = self.clone();
         let toggle_expanded_path = self.clone();
         let reveal_in_explorer = self.clone();
@@ -284,6 +293,9 @@ impl AppDispatcher {
             }),
             move_selected_to: EventHandler::new(move |target_dir| {
                 move_selected_to.dispatch(AppAction::move_selected_to(target_dir));
+            }),
+            set_selected_favorite: EventHandler::new(move |favorite| {
+                set_selected_favorite.dispatch(AppAction::set_selected_favorite(favorite));
             }),
             delete_selected: EventHandler::new(move |_| {
                 delete_selected.dispatch(AppAction::DeleteSelected);
@@ -549,6 +561,10 @@ mod tests {
             AppAction::MoveSelectedTo(crate::actions::MoveSelectedTo {
                 target_dir: std::path::PathBuf::from("workspace/archive")
             })
+        );
+        assert_eq!(
+            AppAction::set_selected_favorite(true),
+            AppAction::SetSelectedFavorite(crate::actions::SetSelectedFavorite { favorite: true })
         );
     }
 }

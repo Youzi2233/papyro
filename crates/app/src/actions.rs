@@ -18,6 +18,7 @@ pub enum AppAction {
     CloseTab(CloseTab),
     RenameSelected(RenameSelected),
     MoveSelectedTo(MoveSelectedTo),
+    SetSelectedFavorite(SetSelectedFavorite),
     DeleteSelected,
     ToggleExpandedPath(ToggleExpandedPath),
     RevealInExplorer(RevealInExplorer),
@@ -74,6 +75,11 @@ pub struct RenameSelected {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MoveSelectedTo {
     pub target_dir: PathBuf,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SetSelectedFavorite {
+    pub favorite: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -139,6 +145,10 @@ impl AppAction {
 
     pub fn move_selected_to(target_dir: PathBuf) -> Self {
         Self::MoveSelectedTo(MoveSelectedTo { target_dir })
+    }
+
+    pub fn set_selected_favorite(favorite: bool) -> Self {
+        Self::SetSelectedFavorite(SetSelectedFavorite { favorite })
     }
 
     pub fn toggle_expanded_path(path: PathBuf) -> Self {

@@ -1,4 +1,5 @@
 use dioxus::prelude::*;
+use papyro_core::models::FileNodeKind;
 use papyro_core::{EditorTabs, FileState, NoteStorage, TabContentsMap};
 use papyro_editor::parser::summarize_markdown;
 use papyro_platform::PlatformApi;
@@ -243,6 +244,55 @@ pub fn delete_selected(
             }
             Err(error) => {
                 status_message.set(Some(format!("Delete failed: {error}")));
+            }
+        }
+    });
+}
+
+pub fn set_selected_favorite(
+    storage: Arc<dyn NoteStorage>,
+    file_state: Signal<FileState>,
+    mut status_message: Signal<Option<String>>,
+    favorite: bool,
+) {
+    let workspace = file_state.read().current_workspace.clone();
+    let selected_node = file_state.read().selected_node();
+
+    let Some(workspace) = workspace else {
+        status_message.set(Some(
+            "Open a workspace before changing favorites".to_string(),
+        ));
+        return;
+    };
+    let Some(selected_node) = selected_node else {
+        status_message.set(Some("Select a note to change favorites".to_string()));
+        return;
+    };
+    if matches!(selected_node.kind, FileNodeKind::Directory { .. }) {
+        status_message.set(Some("Select a note to change favorites".to_string()));
+        return;
+    }
+
+    let selected_path = selected_node.path.clone();
+    let selected_name = selected_node.name.clone();
+
+    spawn(async move {
+        let result: Result<Result<(), anyhow::Error>, tokio::task::JoinError> =
+            tokio::task::spawn_blocking(move || {
+                storage.set_note_favorite(&workspace, &selected_path, favorite)
+            })
+            .await;
+
+        match result {
+            Ok(Ok(())) => {
+                let action = if favorite { "Favorited" } else { "Unfavorited" };
+                status_message.set(Some(format!("{action} {selected_name}")));
+            }
+            Ok(Err(error)) => {
+                status_message.set(Some(format!("Favorite update failed: {error}")));
+            }
+            Err(error) => {
+                status_message.set(Some(format!("Favorite update failed: {error}")));
             }
         }
     });
