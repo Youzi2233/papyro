@@ -10,7 +10,7 @@ use crate::components::{
     status_bar::StatusBar,
 };
 use crate::context::use_app_context;
-use crate::perf::{perf_timer, trace_sidebar_toggle};
+use crate::perf::{perf_timer, trace_chrome_open_modal, trace_sidebar_toggle};
 
 #[component]
 pub fn MobileLayout(status_message: Option<String>) -> Element {
@@ -51,7 +51,11 @@ pub fn MobileLayout(status_message: Option<String>) -> Element {
     rsx! {
         div { class: "mn-shell mn-shell-mobile",
             AppHeader {
-                on_settings: move |_| show_settings.set(true),
+                on_settings: move |_| {
+                    let started_at = perf_timer();
+                    show_settings.set(true);
+                    trace_chrome_open_modal("settings", "header", started_at);
+                },
             }
             div { class: "mn-mobile-stack",
                 div { class: "mn-mobile-toolbar",
@@ -109,7 +113,11 @@ pub fn MobileLayout(status_message: Option<String>) -> Element {
                     }
                     button {
                         class: "mn-button",
-                        onclick: move |_| show_settings.set(true),
+                        onclick: move |_| {
+                            let started_at = perf_timer();
+                            show_settings.set(true);
+                            trace_chrome_open_modal("settings", "mobile_toolbar", started_at);
+                        },
                         "Settings"
                     }
                 }

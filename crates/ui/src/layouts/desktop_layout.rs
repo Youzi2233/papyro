@@ -4,7 +4,7 @@ use crate::components::{
     status_bar::StatusBar,
 };
 use crate::context::use_app_context;
-use crate::perf::{perf_timer, trace_sidebar_toggle};
+use crate::perf::{perf_timer, trace_chrome_open_modal, trace_sidebar_toggle};
 use dioxus::prelude::*;
 use papyro_core::models::Theme;
 
@@ -78,9 +78,21 @@ pub fn DesktopLayout(status_message: Option<String>) -> Element {
         spawn(async move {
             while let Ok(message) = eval.recv::<String>().await {
                 match message.as_str() {
-                    "quick_open" => show_quick_open.set(true),
-                    "command_palette" => show_command_palette.set(true),
-                    "workspace_search" => show_search.set(true),
+                    "quick_open" => {
+                        let started_at = perf_timer();
+                        show_quick_open.set(true);
+                        trace_chrome_open_modal("quick_open", "shortcut", started_at);
+                    }
+                    "command_palette" => {
+                        let started_at = perf_timer();
+                        show_command_palette.set(true);
+                        trace_chrome_open_modal("command_palette", "shortcut", started_at);
+                    }
+                    "workspace_search" => {
+                        let started_at = perf_timer();
+                        show_search.set(true);
+                        trace_chrome_open_modal("workspace_search", "shortcut", started_at);
+                    }
                     "save_active_note" => commands.save_active_note.call(()),
                     "toggle_sidebar" => {
                         let started_at = perf_timer();
@@ -99,7 +111,11 @@ pub fn DesktopLayout(status_message: Option<String>) -> Element {
         div {
             class: "mn-shell",
             AppHeader {
-                on_settings: move |_| show_settings.set(true),
+                on_settings: move |_| {
+                    let started_at = perf_timer();
+                    show_settings.set(true);
+                    trace_chrome_open_modal("settings", "header", started_at);
+                },
             }
             div { class: "mn-workbench",
                 if !sidebar_collapsed {

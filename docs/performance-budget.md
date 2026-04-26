@@ -30,12 +30,15 @@ The 5MB preview budget is for the degradation path, not full HTML rendering.
 - `perf editor open note`
 - `perf editor switch tab`
 - `perf editor view mode change`
+- `perf editor outline extract`
 - `perf editor command refresh_layout`
 - `perf editor command set_view_mode`
 - `perf editor command set_preferences`
 - `perf editor input change`
 - `perf editor preview render`
 - `perf chrome toggle sidebar`
+- `perf chrome resize sidebar`
+- `perf chrome open modal`
 - `perf tab close trigger`
 - `perf runtime close_tab handler`
 
@@ -50,7 +53,9 @@ Run these scenarios with `PAPYRO_PERF=1` before and after editor architecture ch
 3. Switch between Source, Hybrid, and Preview from the command palette.
 4. Collapse and expand the sidebar from the header button.
 5. Collapse and expand the sidebar with `Ctrl+\`.
-6. Close the active tab after editing content.
+6. Resize the sidebar and release the drag handle.
+7. Open Settings, Quick Open, Command Palette, and Workspace Search.
+8. Close the active tab after editing content.
 
 Mode changes should be checked as a chain:
 
@@ -61,3 +66,7 @@ Mode changes should be checked as a chain:
 Sidebar changes should only emit `perf chrome toggle sidebar` plus layout work for
 visible editor hosts. If one sidebar toggle sends repeated editor commands for hidden
 or inactive hosts, treat it as an architecture regression.
+
+Chrome modal opens should emit `perf chrome open modal` once per user action. Repeated
+editor command traces after opening a modal are a signal that chrome state is leaking
+into the document lane.

@@ -24,6 +24,33 @@ pub(crate) fn trace_sidebar_toggle(
     }
 }
 
+pub(crate) fn trace_sidebar_resize(start_width: u32, end_width: u32, started_at: Option<Instant>) {
+    if let Some(started_at) = started_at {
+        tracing::info!(
+            start_width,
+            end_width,
+            delta_px = end_width as i64 - start_width as i64,
+            elapsed_ms = started_at.elapsed().as_millis(),
+            "perf chrome resize sidebar"
+        );
+    }
+}
+
+pub(crate) fn trace_chrome_open_modal(
+    modal: &'static str,
+    trigger: &'static str,
+    started_at: Option<Instant>,
+) {
+    if let Some(started_at) = started_at {
+        tracing::info!(
+            modal,
+            trigger,
+            elapsed_ms = started_at.elapsed().as_millis(),
+            "perf chrome open modal"
+        );
+    }
+}
+
 pub(crate) fn trace_view_mode_change(
     trigger: &'static str,
     from: &ViewMode,
@@ -37,6 +64,23 @@ pub(crate) fn trace_view_mode_change(
             to = view_mode_name(to),
             elapsed_ms = started_at.elapsed().as_millis(),
             "perf editor view mode change"
+        );
+    }
+}
+
+pub(crate) fn trace_outline_extract(
+    tab_id: Option<&str>,
+    content_bytes: usize,
+    heading_count: usize,
+    started_at: Option<Instant>,
+) {
+    if let Some(started_at) = started_at {
+        tracing::info!(
+            tab_id,
+            content_bytes,
+            heading_count,
+            elapsed_ms = started_at.elapsed().as_millis(),
+            "perf editor outline extract"
         );
     }
 }

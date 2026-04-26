@@ -2,7 +2,9 @@ pub mod file_tree;
 
 use crate::commands::FileTarget;
 use crate::context::use_app_context;
+use crate::perf::{perf_timer, trace_sidebar_resize};
 use dioxus::prelude::*;
+use std::time::Instant;
 
 pub use file_tree::{FileTree, FileTreeSortMode};
 
@@ -13,6 +15,7 @@ const SIDEBAR_MAX_WIDTH: u32 = 380;
 struct SidebarResizeDrag {
     start_x: f64,
     start_width: u32,
+    started_at: Option<Instant>,
 }
 
 #[component]
@@ -190,9 +193,11 @@ pub fn Sidebar() -> Element {
                 onmousedown: move |event| {
                     event.prevent_default();
                     event.stop_propagation();
+                    let started_at = perf_timer();
                     resize_drag.set(Some(SidebarResizeDrag {
                         start_x: event.client_coordinates().x,
                         start_width: sidebar_width,
+                        started_at,
                     }));
                 },
             }
@@ -209,6 +214,7 @@ pub fn Sidebar() -> Element {
                         let width = sidebar_width_from_drag(drag, event.client_coordinates().x);
                         update_sidebar_width(ui_state, width);
                         persist_sidebar_width(ui_state, resize_commands.clone(), width);
+                        trace_sidebar_resize(drag.start_width, width, drag.started_at);
                         resize_drag.set(None);
                     },
                 }
@@ -275,6 +281,7 @@ mod tests {
         let drag = SidebarResizeDrag {
             start_x: 100.0,
             start_width: 260,
+            started_at: None,
         };
 
         assert_eq!(sidebar_width_from_drag(drag, 140.0), 300);
