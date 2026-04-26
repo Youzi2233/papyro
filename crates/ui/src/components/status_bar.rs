@@ -6,8 +6,21 @@ use papyro_core::models::SaveStatus;
 #[component]
 pub fn StatusBar(status_message: Option<String>) -> Element {
     let app = use_app_context();
-    let editor = app.view_model.read().editor.clone();
-    let stats = editor.active_stats.clone();
+    let (active_tab_id, active_save_status, has_active_tab) = {
+        let editor_tabs = app.editor_tabs.read();
+        let active_tab = editor_tabs.active_tab();
+        (
+            editor_tabs.active_tab_id.clone(),
+            active_tab
+                .map(|tab| tab.save_status.clone())
+                .unwrap_or_default(),
+            active_tab.is_some(),
+        )
+    };
+    let stats = app
+        .tab_contents
+        .read()
+        .active_stats(active_tab_id.as_deref());
 
     rsx! {
         footer { class: "mn-status-bar",
@@ -19,7 +32,7 @@ pub fn StatusBar(status_message: Option<String>) -> Element {
                 }
             }
             div { class: "mn-status-right",
-                if editor.has_active_tab {
+                if has_active_tab {
                     StatusIndicator {
                         label: format!("{} words", stats.word_count),
                         tone: StatusTone::Default,
@@ -28,7 +41,7 @@ pub fn StatusBar(status_message: Option<String>) -> Element {
                         label: format!("{} chars", stats.char_count),
                         tone: StatusTone::Default,
                     }
-                    match editor.active_save_status {
+                    match active_save_status {
                         SaveStatus::Saving => rsx! {
                             StatusIndicator { label: "Saving", tone: StatusTone::Saving }
                         },
