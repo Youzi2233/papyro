@@ -29,4 +29,8 @@ echo "=== editor.js bundle sync ==="
 diff assets/editor.js apps/desktop/assets/editor.js
 diff assets/editor.js apps/mobile/assets/editor.js
 
+echo "=== performance trace note ==="
+echo "Runtime interaction traces are manual: PAPYRO_PERF=1 cargo run -p papyro-desktop"
+echo "See docs/performance-budget.md before changing editor or chrome render paths."
+
 echo "=== All checks passed ==="

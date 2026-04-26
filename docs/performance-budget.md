@@ -18,6 +18,19 @@ PAPYRO_PERF=1 dx serve
 
 The 5MB preview budget is for the degradation path, not full HTML rendering.
 
+## Interaction Targets
+
+| Action | Target | Notes |
+| --- | ---: | --- |
+| Chrome action | 50ms | Sidebar toggle, sidebar resize commit, modal open, and theme/settings chrome updates. |
+| View mode switch | 100ms | Rust UI action plus editor command dispatch for the active host. |
+| Tab switch | 80ms | The active editor host should become usable without rebuilding hidden hosts. |
+| Tab close | 80ms | UI close trigger; heavy cleanup should run after the interaction path. |
+| Input frame | 16ms | Preview, outline, and stats must not block keystroke handling. |
+
+Treat these as interaction budgets, not full async completion budgets. A command may
+continue work after the interaction if the writing surface stays responsive.
+
 ## Degradation
 
 - At 1MB, preview keeps rendering but disables syntax highlighting.
@@ -47,6 +60,10 @@ Add new trace points before changing the budget.
 ## Manual Scenarios
 
 Run these scenarios with `PAPYRO_PERF=1` before and after editor architecture changes:
+
+```bash
+PAPYRO_PERF=1 cargo run -p papyro-desktop
+```
 
 1. Open a 100KB, 1MB, and 5MB Markdown file.
 2. Switch between Source, Hybrid, and Preview from the editor toolbar.
