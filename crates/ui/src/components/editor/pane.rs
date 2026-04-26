@@ -25,6 +25,9 @@ pub fn EditorPane() -> Element {
     let active_tab = editor_tabs.read().active_tab().cloned();
     let active_tab_id = editor_tabs.read().active_tab_id.clone();
     let tabs = editor_tabs.read().tabs.clone();
+    let active_document = active_tab_id
+        .as_deref()
+        .and_then(|id| tab_contents.read().snapshot_for_tab(id));
     let view_mode = ui_state.read().view_mode.clone();
     let settings = ui_state.read().settings.clone();
 
@@ -158,14 +161,12 @@ pub fn EditorPane() -> Element {
                         }
                         if view_mode == ViewMode::Preview {
                             PreviewPane {
-                                active_tab_id: active_tab_id.clone(),
-                                tab_contents,
+                                active_document: active_document.clone(),
                                 editor_services,
                             }
                         }
                         OutlinePane {
-                            active_tab_id: active_tab_id.clone(),
-                            tab_contents,
+                            active_document: active_document.clone(),
                         }
                     }
                 }

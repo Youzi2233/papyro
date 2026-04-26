@@ -1,5 +1,6 @@
 use crate::models::{DocumentStats, EditorTab, SaveStatus};
 use std::collections::HashMap;
+use std::sync::Arc;
 
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct EditorTabs {
@@ -10,12 +11,29 @@ pub struct EditorTabs {
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct TabContentsMap {
     /// tab_id -> markdown content
-    pub tab_contents: HashMap<String, String>,
+    pub tab_contents: HashMap<String, Arc<str>>,
     /// tab_id -> local edit revision for debounce-based autosave
     pub tab_revisions: HashMap<String, u64>,
     /// tab_id -> cached document stats (updated on content change, not on every render)
     pub tab_stats: HashMap<String, DocumentStats>,
 }
+
+#[derive(Debug, Clone)]
+pub struct TabContentSnapshot {
+    pub tab_id: String,
+    pub revision: u64,
+    pub content: Arc<str>,
+}
+
+impl PartialEq for TabContentSnapshot {
+    fn eq(&self, other: &Self) -> bool {
+        self.tab_id == other.tab_id
+            && self.revision == other.revision
+            && Arc::ptr_eq(&self.content, &other.content)
+    }
+}
+
+impl Eq for TabContentSnapshot {}
 
 impl EditorTabs {
     pub fn active_tab(&self) -> Option<&EditorTab> {
@@ -131,13 +149,22 @@ impl EditorTabs {
 
 impl TabContentsMap {
     pub fn active_content(&self, active_tab_id: Option<&str>) -> Option<&str> {
-        active_tab_id.and_then(|id| self.tab_contents.get(id).map(|s| s.as_str()))
+        active_tab_id.and_then(|id| self.tab_contents.get(id).map(|s| s.as_ref()))
     }
 
     pub fn content_for_tab(&self, tab_id: &str) -> Option<&str> {
         self.tab_contents
             .get(tab_id)
-            .map(|content| content.as_str())
+            .map(|content| content.as_ref())
+    }
+
+    pub fn snapshot_for_tab(&self, tab_id: &str) -> Option<TabContentSnapshot> {
+        let content = self.tab_contents.get(tab_id)?.clone();
+        Some(TabContentSnapshot {
+            tab_id: tab_id.to_string(),
+            revision: self.revision_for_tab(tab_id).unwrap_or_default(),
+            content,
+        })
     }
 
     pub fn active_stats(&self, active_tab_id: Option<&str>) -> DocumentStats {
@@ -149,7 +176,7 @@ impl TabContentsMap {
 
     pub fn insert_tab(&mut self, tab_id: String, content: String, stats: DocumentStats) {
         self.tab_stats.insert(tab_id.clone(), stats);
-        self.tab_contents.insert(tab_id.clone(), content);
+        self.tab_contents.insert(tab_id.clone(), Arc::from(content));
         self.tab_revisions.insert(tab_id, 0);
     }
 
@@ -169,7 +196,7 @@ impl TabContentsMap {
         if self
             .tab_contents
             .get(tab_id)
-            .is_some_and(|existing| existing == &content)
+            .is_some_and(|existing| existing.as_ref() == content)
         {
             return None;
         }
@@ -181,7 +208,8 @@ impl TabContentsMap {
         let revision = self.tab_revisions.entry(tab_id.to_string()).or_insert(0);
         *revision += 1;
         let current_revision = *revision;
-        self.tab_contents.insert(tab_id.to_string(), content);
+        self.tab_contents
+            .insert(tab_id.to_string(), Arc::from(content));
         Some(current_revision)
     }
 
@@ -201,7 +229,8 @@ impl TabContentsMap {
             return false;
         }
 
-        self.tab_contents.insert(tab_id.to_string(), content);
+        self.tab_contents
+            .insert(tab_id.to_string(), Arc::from(content));
         self.tab_stats.insert(tab_id.to_string(), stats);
         self.tab_revisions.insert(tab_id.to_string(), 0);
         true
@@ -337,6 +366,28 @@ mod tests {
             contents.tab_stats.get("a").map(|stats| stats.char_count),
             Some(5)
         );
+    }
+
+    #[test]
+    fn content_snapshot_tracks_revision_and_shared_content_handle() {
+        let mut contents = TabContentsMap::default();
+        contents.insert_tab("a".to_string(), "old".to_string(), DocumentStats::default());
+
+        let first = contents.snapshot_for_tab("a").unwrap();
+        let cloned = contents.clone();
+        assert_eq!(first, cloned.snapshot_for_tab("a").unwrap());
+
+        contents.refresh_stats(
+            "a",
+            DocumentStats {
+                word_count: 1,
+                ..DocumentStats::default()
+            },
+        );
+        assert_eq!(first, contents.snapshot_for_tab("a").unwrap());
+
+        contents.update_tab_content("a", "new".to_string());
+        assert_ne!(first, contents.snapshot_for_tab("a").unwrap());
     }
 
     #[test]

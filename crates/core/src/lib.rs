@@ -15,7 +15,7 @@ pub use editor_service::{
     mark_tab_save_failed_if_current, mark_tab_saved, mark_tab_saved_if_current, open_note,
     should_auto_save,
 };
-pub use editor_state::{EditorTabs, TabContentsMap};
+pub use editor_state::{EditorTabs, TabContentSnapshot, TabContentsMap};
 pub use file_state::FileState;
 pub use models::*;
 pub use search::{
