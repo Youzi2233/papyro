@@ -23,6 +23,7 @@ use std::sync::OnceLock;
 const APP_SETTINGS_KEY: &str = "app_settings";
 const WORKSPACE_SETTINGS_PREFIX: &str = "workspace_settings:";
 const WORKSPACE_TREE_STATE_PREFIX: &str = "workspace_tree_state:";
+const WORKSPACE_TRASH_DIR_NAME: &str = ".papyro-trash";
 
 #[derive(Debug, Clone)]
 pub struct SqliteStorage {
@@ -305,6 +306,38 @@ impl SqliteStorage {
         })
     }
 
+    pub fn trash_path(&self, workspace: &Workspace, path: &Path) -> Result<PathBuf> {
+        let mut trashed_at = Utc::now().timestamp_millis();
+        let trash_root = workspace.path.join(WORKSPACE_TRASH_DIR_NAME);
+        let relative_path = path.strip_prefix(&workspace.path).unwrap_or(path);
+        let mut trash_batch_dir = trash_root.join(trashed_at.to_string());
+        while trash_batch_dir.exists() {
+            trashed_at += 1;
+            trash_batch_dir = trash_root.join(trashed_at.to_string());
+        }
+        let trash_path = trash_batch_dir.join(relative_path);
+
+        if let Some(parent) = trash_path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+        std::fs::rename(path, &trash_path)?;
+
+        for note_path in markdown_files_under(&trash_path) {
+            let relative = note_path
+                .strip_prefix(&trash_path)
+                .unwrap_or(&note_path)
+                .to_path_buf();
+            let original_note_path = path.join(relative);
+            let original_relative = original_note_path
+                .strip_prefix(&workspace.path)
+                .unwrap_or(&original_note_path);
+            let note_id = stable_note_id(workspace, original_relative);
+            db::notes::trash_note(&self.pool, &note_id, trashed_at)?;
+        }
+
+        Ok(trash_path)
+    }
+
     pub fn initialize_workspace(&self, root: &Path) -> Result<WorkspaceSnapshot> {
         let workspace = ensure_workspace(&self.pool, root)?;
         let mut file_tree = fs::scan_workspace(root)?;
@@ -416,6 +449,10 @@ impl NoteStorage for SqliteStorage {
         } else {
             fs::delete_note(path)
         }
+    }
+
+    fn trash_path(&self, workspace: &Workspace, path: &Path) -> Result<PathBuf> {
+        SqliteStorage::trash_path(self, workspace, path)
     }
 
     fn preview_delete_path(&self, workspace: &Workspace, path: &Path) -> Result<DeletePreview> {
@@ -1104,6 +1141,36 @@ mod tests {
         storage.set_note_favorite(&workspace, &note_path, false)?;
         let meta = db::notes::get_note(&storage.pool, &note_id)?.expect("note metadata exists");
         assert!(!meta.is_favorite);
+
+        Ok(())
+    }
+
+    #[test]
+    fn trash_path_moves_note_and_marks_metadata_trashed() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let workspace_root = create_workspace(&temp)?;
+        let note_path = workspace_root.join("notes").join("old.md");
+        std::fs::create_dir_all(note_path.parent().unwrap())?;
+        std::fs::write(&note_path, "# Old")?;
+        let storage = test_storage(&temp)?;
+        let workspace = storage.initialize_workspace(&workspace_root)?.workspace;
+        let note_id = stable_note_id(&workspace, Path::new("notes").join("old.md").as_path());
+
+        let trashed_path = storage.trash_path(&workspace, &note_path)?;
+
+        assert!(!note_path.exists());
+        assert!(trashed_path.ends_with(Path::new("notes").join("old.md")));
+        assert!(trashed_path.exists());
+        assert!(trashed_path.starts_with(workspace_root.join(WORKSPACE_TRASH_DIR_NAME)));
+        assert!(db::notes::get_note(&storage.pool, &note_id)?.is_none());
+
+        let conn = storage.pool.get()?;
+        let is_trashed: i32 = conn.query_row(
+            "SELECT is_trashed FROM notes WHERE id = ?1",
+            rusqlite::params![note_id],
+            |row| row.get(0),
+        )?;
+        assert_eq!(is_trashed, 1);
 
         Ok(())
     }

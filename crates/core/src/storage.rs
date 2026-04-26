@@ -52,6 +52,7 @@ pub trait NoteStorage: Send + Sync {
     fn create_note(&self, parent: &Path, name: &str) -> Result<PathBuf>;
     fn create_folder(&self, parent: &Path, name: &str) -> Result<PathBuf>;
     fn delete_path(&self, path: &Path) -> Result<()>;
+    fn trash_path(&self, workspace: &Workspace, path: &Path) -> Result<PathBuf>;
     fn preview_delete_path(&self, workspace: &Workspace, path: &Path) -> Result<DeletePreview>;
     fn delete_paths(&self, paths: &[PathBuf]) -> Result<()>;
     fn rename_path(&self, workspace: &Workspace, path: &Path, new_name: &str) -> Result<PathBuf>;

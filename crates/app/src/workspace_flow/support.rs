@@ -81,6 +81,11 @@ impl NoteStorage for MockStorage {
         Ok(())
     }
 
+    fn trash_path(&self, _workspace: &Workspace, path: &Path) -> Result<PathBuf> {
+        self.deleted_paths.lock().unwrap().push(path.to_path_buf());
+        Ok(path.to_path_buf())
+    }
+
     fn preview_delete_path(&self, _workspace: &Workspace, _path: &Path) -> Result<DeletePreview> {
         Ok(self.delete_preview.clone())
     }
