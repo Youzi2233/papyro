@@ -161,6 +161,21 @@ test("parse_markdown_image_spans recognizes image syntax", () => {
   ]);
 });
 
+test("parse_markdown_image_spans keeps external image urls", () => {
+  const markdown =
+    '![Remote](https://cdn.example.test/images/photo.webp?size=large "Remote title")';
+
+  assert.deepEqual(parseMarkdownImageSpans(markdown), [
+    {
+      from: 0,
+      to: markdown.length,
+      alt: "Remote",
+      src: "https://cdn.example.test/images/photo.webp?size=large",
+      title: "Remote title",
+    },
+  ]);
+});
+
 test("parse_markdown_task_line recognizes task markers", () => {
   assert.deepEqual(parseMarkdownTaskLine("- [ ] todo"), {
     markerLength: 6,
