@@ -11,7 +11,7 @@ use papyro_core::models::{
     AppSettings, EditorTab, FileNode, FileNodeKind, NoteMeta, RecentFile, Workspace,
     WorkspaceSettingsOverrides, WorkspaceTreeState,
 };
-use papyro_core::{FileState, NoteStorage};
+use papyro_core::{rewrite_moved_note_image_links, FileState, NoteStorage};
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 
@@ -264,6 +264,8 @@ impl SqliteStorage {
             db::notes::update_note_id(&self.pool, &old_id, &new_id, &new_relative_path)?;
         }
 
+        rewrite_moved_image_links(&self.pool, workspace, &old_path, &new_path)?;
+
         Ok(new_path)
     }
 
@@ -286,6 +288,8 @@ impl SqliteStorage {
         {
             db::notes::update_note_id(&self.pool, &old_id, &new_id, &new_relative_path)?;
         }
+
+        rewrite_moved_image_links(&self.pool, workspace, &old_path, &new_path)?;
 
         Ok(new_path)
     }
@@ -743,6 +747,58 @@ fn push_note_id_update(
     ));
 }
 
+fn rewrite_moved_image_links(
+    pool: &DbPool,
+    workspace: &Workspace,
+    old_path: &Path,
+    new_path: &Path,
+) -> Result<()> {
+    let moved_root = new_path.is_dir().then_some((old_path, new_path));
+
+    if new_path.is_dir() {
+        for entry in walkdir::WalkDir::new(new_path)
+            .into_iter()
+            .filter_map(Result::ok)
+            .filter(|entry| entry.file_type().is_file() && is_markdown(entry.path()))
+        {
+            let new_note_path = entry.path();
+            let suffix = new_note_path
+                .strip_prefix(new_path)
+                .unwrap_or(new_note_path);
+            let old_note_path = old_path.join(suffix);
+            rewrite_note_image_links(pool, workspace, &old_note_path, new_note_path, moved_root)?;
+        }
+    } else if is_markdown(new_path) {
+        rewrite_note_image_links(pool, workspace, old_path, new_path, moved_root)?;
+    }
+
+    Ok(())
+}
+
+fn rewrite_note_image_links(
+    pool: &DbPool,
+    workspace: &Workspace,
+    old_note_path: &Path,
+    new_note_path: &Path,
+    moved_root: Option<(&Path, &Path)>,
+) -> Result<()> {
+    let content = fs::read_note(new_note_path)?;
+    let rewritten = rewrite_moved_note_image_links(
+        &content,
+        &workspace.path,
+        old_note_path,
+        new_note_path,
+        moved_root,
+    );
+
+    if rewritten != content {
+        fs::write_note(new_note_path, &rewritten)?;
+        upsert_note_meta_for_path(pool, workspace, new_note_path, &rewritten)?;
+    }
+
+    Ok(())
+}
+
 fn is_markdown(path: &Path) -> bool {
     path.extension()
         .and_then(|ext| ext.to_str())
@@ -803,6 +859,31 @@ mod tests {
     }
 
     #[test]
+    fn rename_note_rewrites_relative_workspace_asset_links() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let workspace_root = create_workspace(&temp)?;
+        let notes_dir = workspace_root.join("notes").join("daily");
+        let assets_dir = workspace_root.join("assets");
+        std::fs::create_dir_all(&notes_dir)?;
+        std::fs::create_dir_all(&assets_dir)?;
+        std::fs::write(assets_dir.join("logo.png"), b"png")?;
+        let old_path = notes_dir.join("old.md");
+        std::fs::write(&old_path, "![logo](../../assets/logo.png)")?;
+
+        let storage = test_storage(&temp)?;
+        let workspace = storage.initialize_workspace(&workspace_root)?.workspace;
+
+        let renamed_path = storage.rename_path(&workspace, &old_path, "renamed")?;
+
+        assert_eq!(
+            std::fs::read_to_string(renamed_path)?,
+            "![logo](../../assets/logo.png)"
+        );
+
+        Ok(())
+    }
+
+    #[test]
     fn move_note_updates_note_id_and_recent_files() -> Result<()> {
         let temp = tempfile::tempdir()?;
         let workspace_root = create_workspace(&temp)?;
@@ -835,6 +916,70 @@ mod tests {
         assert_eq!(recent.len(), 1);
         assert_eq!(recent[0].note_id, new_id);
         assert_eq!(recent[0].relative_path, new_relative);
+
+        Ok(())
+    }
+
+    #[test]
+    fn move_note_rewrites_relative_workspace_asset_links() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let workspace_root = create_workspace(&temp)?;
+        let notes_dir = workspace_root.join("notes").join("daily");
+        let archive_dir = workspace_root.join("archive");
+        let assets_dir = workspace_root.join("assets");
+        std::fs::create_dir_all(&notes_dir)?;
+        std::fs::create_dir_all(&archive_dir)?;
+        std::fs::create_dir_all(&assets_dir)?;
+        std::fs::write(assets_dir.join("logo.png"), b"png")?;
+        let note_path = notes_dir.join("note.md");
+        std::fs::write(&note_path, "![logo](../../assets/logo.png)")?;
+
+        let storage = test_storage(&temp)?;
+        let workspace = storage.initialize_workspace(&workspace_root)?.workspace;
+
+        let moved_path = storage.move_path(&workspace, &note_path, &archive_dir)?;
+
+        assert_eq!(
+            std::fs::read_to_string(&moved_path)?,
+            "![logo](../assets/logo.png)"
+        );
+        let moved_relative = moved_path
+            .strip_prefix(&workspace_root)
+            .unwrap_or(&moved_path)
+            .to_path_buf();
+        let moved_id = stable_note_id(&workspace, &moved_relative);
+        let moved_meta = db::notes::get_note(&storage.pool, &moved_id)?.expect("moved note");
+        assert_eq!(
+            moved_meta.char_count,
+            "![logo](../assets/logo.png)".chars().count() as u32
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn move_folder_preserves_links_to_assets_moved_with_folder() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let workspace_root = create_workspace(&temp)?;
+        let notes_dir = workspace_root.join("notes");
+        let day_dir = notes_dir.join("day");
+        let archive_dir = workspace_root.join("archive");
+        std::fs::create_dir_all(day_dir.join("images"))?;
+        std::fs::create_dir_all(&archive_dir)?;
+        std::fs::write(day_dir.join("images").join("photo.png"), b"png")?;
+        let note_path = day_dir.join("note.md");
+        std::fs::write(&note_path, "![photo](images/photo.png)")?;
+
+        let storage = test_storage(&temp)?;
+        let workspace = storage.initialize_workspace(&workspace_root)?.workspace;
+
+        let moved_dir = storage.move_path(&workspace, &day_dir, &archive_dir)?;
+        let moved_note = moved_dir.join("note.md");
+
+        assert_eq!(
+            std::fs::read_to_string(moved_note)?,
+            "![photo](images/photo.png)"
+        );
 
         Ok(())
     }
