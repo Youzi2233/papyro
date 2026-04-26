@@ -600,6 +600,7 @@ button { border: 0; cursor: pointer; background: transparent; }
     background: transparent;
 }
 
+.mn-menu,
 .mn-tree-context-menu {
     position: fixed;
     z-index: 41;
@@ -614,6 +615,7 @@ button { border: 0; cursor: pointer; background: transparent; }
     gap: 2px;
 }
 
+.mn-menu-item,
 .mn-tree-context-menu button {
     display: flex;
     align-items: center;
@@ -627,6 +629,8 @@ button { border: 0; cursor: pointer; background: transparent; }
     text-align: left;
 }
 
+.mn-menu-item:hover,
+.mn-menu-item:focus-visible,
 .mn-tree-context-menu button:hover,
 .mn-tree-context-menu button:focus-visible {
     outline: 0;
@@ -634,10 +638,12 @@ button { border: 0; cursor: pointer; background: transparent; }
     color: var(--mn-accent);
 }
 
+.mn-menu-item.danger,
 .mn-tree-context-menu button.danger {
     color: var(--mn-accent);
 }
 
+.mn-menu-separator,
 .mn-tree-context-menu-separator {
     height: 1px;
     margin: 4px;

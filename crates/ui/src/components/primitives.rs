@@ -55,6 +55,14 @@ fn segmented_option_class(is_selected: bool) -> &'static str {
     }
 }
 
+fn menu_item_class(danger: bool) -> &'static str {
+    if danger {
+        "mn-menu-item danger"
+    } else {
+        "mn-menu-item"
+    }
+}
+
 #[component]
 pub fn Button(
     label: String,
@@ -130,6 +138,44 @@ pub fn Dropdown(
                 }
             }
         }
+    }
+}
+
+#[component]
+pub fn Menu(label: String, class_name: String, style: String, children: Element) -> Element {
+    rsx! {
+        div {
+            class: "{class_name}",
+            role: "menu",
+            "aria-label": "{label}",
+            style,
+            onclick: move |event| event.stop_propagation(),
+            oncontextmenu: move |event| {
+                event.prevent_default();
+                event.stop_propagation();
+            },
+            {children}
+        }
+    }
+}
+
+#[component]
+pub fn MenuItem(label: String, danger: bool, on_select: EventHandler<()>) -> Element {
+    rsx! {
+        button {
+            class: menu_item_class(danger),
+            r#type: "button",
+            role: "menuitem",
+            onclick: move |_| on_select.call(()),
+            "{label}"
+        }
+    }
+}
+
+#[component]
+pub fn MenuSeparator() -> Element {
+    rsx! {
+        div { class: "mn-menu-separator" }
     }
 }
 
@@ -273,5 +319,11 @@ mod tests {
     fn segmented_option_class_marks_active_option() {
         assert_eq!(segmented_option_class(false), "mn-segmented-option");
         assert_eq!(segmented_option_class(true), "mn-segmented-option active");
+    }
+
+    #[test]
+    fn menu_item_class_marks_danger_option() {
+        assert_eq!(menu_item_class(false), "mn-menu-item");
+        assert_eq!(menu_item_class(true), "mn-menu-item danger");
     }
 }

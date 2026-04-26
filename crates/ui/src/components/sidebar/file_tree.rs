@@ -1,4 +1,5 @@
 use crate::commands::{AppCommands, FileTarget};
+use crate::components::primitives::{Menu, MenuItem, MenuSeparator};
 use crate::context::use_app_context;
 use dioxus::prelude::*;
 use papyro_core::models::{FileNode, FileNodeKind};
@@ -532,77 +533,71 @@ fn FileTreeContextMenuView(
     let reveal_target = menu.file_target();
 
     rsx! {
-        div {
-            class: "mn-tree-context-menu",
-            role: "menu",
+        Menu {
+            label: "File actions",
+            class_name: "mn-tree-context-menu",
             style,
-            onclick: move |event| event.stop_propagation(),
-            oncontextmenu: move |event| {
-                event.prevent_default();
-                event.stop_propagation();
-            },
             if !is_directory {
-                button {
-                    role: "menuitem",
-                    onclick: move |_| {
+                MenuItem {
+                    label: "Open",
+                    danger: false,
+                    on_select: move |_| {
                         file_state.write().select_path(open_node.path.clone());
                         commands.open_note.call(open_node.clone());
                         on_close.call(());
                     },
-                    "Open"
                 }
             }
             if is_directory {
-                button {
-                    role: "menuitem",
-                    onclick: move |_| {
+                MenuItem {
+                    label: "Expand / collapse",
+                    danger: false,
+                    on_select: move |_| {
                         commands.toggle_expanded_path.call(toggle_path.clone());
                         on_close.call(());
                     },
-                    "Expand / collapse"
                 }
             }
-            button {
-                role: "menuitem",
-                onclick: move |_| {
+            MenuItem {
+                label: "Rename",
+                danger: false,
+                on_select: move |_| {
                     on_rename_start.call(rename_node.clone());
                     on_close.call(());
                 },
-                "Rename"
             }
-            button {
-                role: "menuitem",
-                onclick: move |_| {
+            MenuItem {
+                label: "New note",
+                danger: false,
+                on_select: move |_| {
                     commands.create_note.call("Untitled".to_string());
                     on_close.call(());
                 },
-                "New note"
             }
-            button {
-                role: "menuitem",
-                onclick: move |_| {
+            MenuItem {
+                label: "New folder",
+                danger: false,
+                on_select: move |_| {
                     commands.create_folder.call("New Folder".to_string());
                     on_close.call(());
                 },
-                "New folder"
             }
-            button {
-                role: "menuitem",
-                onclick: move |_| {
+            MenuItem {
+                label: "Reveal",
+                danger: false,
+                on_select: move |_| {
                     commands.reveal_in_explorer.call(reveal_target.clone());
                     on_close.call(());
                 },
-                "Reveal"
             }
-            div { class: "mn-tree-context-menu-separator" }
-            button {
-                class: "danger",
-                role: "menuitem",
-                onclick: move |_| {
+            MenuSeparator {}
+            MenuItem {
+                label: "Delete",
+                danger: true,
+                on_select: move |_| {
                     commands.delete_selected.call(());
                     on_close.call(());
                 },
-                "Delete"
             }
         }
     }
