@@ -1,4 +1,4 @@
-use crate::commands::{AppCommands, RecentFileTarget};
+use crate::commands::{AppCommands, RecentFileTarget, RestoreTrashedNoteTarget};
 use crate::context::use_app_context;
 use dioxus::prelude::*;
 use papyro_core::models::{Theme, ViewMode};
@@ -6,6 +6,17 @@ use papyro_core::UiState;
 use std::path::PathBuf;
 
 const COMMAND_PALETTE_LIMIT: usize = 24;
+
+pub(crate) struct CommandPaletteActionInput<'a> {
+    pub has_workspace: bool,
+    pub recent_workspaces: &'a [crate::view_model::WorkspaceListItem],
+    pub recent_files: &'a [crate::view_model::RecentFileListItem],
+    pub trashed_notes: &'a [crate::view_model::TrashedNoteListItem],
+    pub has_active_tab: bool,
+    pub selected_note_name: Option<&'a str>,
+    pub theme: Theme,
+    pub view_mode: ViewMode,
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct CommandPaletteAction {
@@ -28,6 +39,7 @@ pub(crate) enum CommandPaletteActionKind {
     OpenSettings,
     SetViewMode(ViewMode),
     SetSelectedFavorite(bool),
+    RestoreTrashedNote(RestoreTrashedNoteTarget),
 }
 
 #[component]
@@ -39,15 +51,16 @@ pub fn CommandPaletteModal(on_close: EventHandler<()>, on_settings: EventHandler
     let mut query = use_signal(String::new);
     let mut active_index = use_signal(|| 0usize);
 
-    let actions = command_palette_actions(
-        view_model.workspace.name.is_some(),
-        &view_model.workspace.recent_workspaces,
-        &view_model.workspace.recent_files,
-        view_model.editor.has_active_tab,
-        selected_note_name(&view_model.workspace),
-        view_model.settings.theme,
-        view_model.editor.view_mode,
-    );
+    let actions = command_palette_actions(CommandPaletteActionInput {
+        has_workspace: view_model.workspace.name.is_some(),
+        recent_workspaces: &view_model.workspace.recent_workspaces,
+        recent_files: &view_model.workspace.recent_files,
+        trashed_notes: &view_model.workspace.trashed_notes,
+        has_active_tab: view_model.editor.has_active_tab,
+        selected_note_name: selected_note_name(&view_model.workspace),
+        theme: view_model.settings.theme,
+        view_mode: view_model.editor.view_mode,
+    });
     let query_value = query();
     let filtered = filter_command_palette_actions(&actions, &query_value);
     let active = if filtered.is_empty() {
@@ -195,26 +208,23 @@ fn execute_command_action(
         CommandPaletteActionKind::SetSelectedFavorite(favorite) => {
             commands.set_selected_favorite.call(favorite);
         }
+        CommandPaletteActionKind::RestoreTrashedNote(target) => {
+            commands.restore_trashed_note.call(target);
+        }
     }
 
     on_close.call(());
 }
 
 pub(crate) fn command_palette_actions(
-    has_workspace: bool,
-    recent_workspaces: &[crate::view_model::WorkspaceListItem],
-    recent_files: &[crate::view_model::RecentFileListItem],
-    has_active_tab: bool,
-    selected_note_name: Option<&str>,
-    theme: Theme,
-    view_mode: ViewMode,
+    input: CommandPaletteActionInput<'_>,
 ) -> Vec<CommandPaletteAction> {
-    let workspace_title = if has_workspace {
+    let workspace_title = if input.has_workspace {
         "Switch workspace"
     } else {
         "Open workspace"
     };
-    let next_theme = match theme {
+    let next_theme = match input.theme {
         Theme::Dark => "Light",
         Theme::Light | Theme::System => "Dark",
     };
@@ -246,7 +256,8 @@ pub(crate) fn command_palette_actions(
         ),
     ];
 
-    for workspace in recent_workspaces
+    for workspace in input
+        .recent_workspaces
         .iter()
         .filter(|workspace| !workspace.is_current)
     {
@@ -258,7 +269,7 @@ pub(crate) fn command_palette_actions(
         ));
     }
 
-    for file in recent_files {
+    for file in input.recent_files {
         actions.push(action(
             &format!("Open {}", file.title),
             &format!("{} / {}", file.workspace_name, file.relative_path.display()),
@@ -270,7 +281,20 @@ pub(crate) fn command_palette_actions(
         ));
     }
 
-    if has_workspace {
+    if input.has_workspace {
+        for trashed in input.trashed_notes {
+            actions.push(action(
+                &format!("Restore {}", trashed.title),
+                &trashed.relative_path.display().to_string(),
+                "TRASH",
+                CommandPaletteActionKind::RestoreTrashedNote(RestoreTrashedNoteTarget {
+                    note_id: trashed.note_id.clone(),
+                }),
+            ));
+        }
+    }
+
+    if input.has_workspace {
         actions.push(action(
             "Refresh workspace",
             "Reload the file tree",
@@ -279,7 +303,7 @@ pub(crate) fn command_palette_actions(
         ));
     }
 
-    if has_active_tab {
+    if input.has_active_tab {
         actions.push(action(
             "Save active note",
             "Write current note changes",
@@ -294,7 +318,7 @@ pub(crate) fn command_palette_actions(
         ));
     }
 
-    if let Some(name) = selected_note_name {
+    if let Some(name) = input.selected_note_name {
         actions.push(action(
             "Favorite selected note",
             name,
@@ -314,7 +338,7 @@ pub(crate) fn command_palette_actions(
         (ViewMode::Source, "Use source mode"),
         (ViewMode::Preview, "Use preview mode"),
     ] {
-        if mode != view_mode {
+        if mode != input.view_mode {
             actions.push(action(
                 title,
                 "Change editor rendering mode",
@@ -378,17 +402,27 @@ pub(crate) fn filter_command_palette_actions(
 mod tests {
     use super::*;
 
+    fn test_input() -> CommandPaletteActionInput<'static> {
+        CommandPaletteActionInput {
+            has_workspace: true,
+            recent_workspaces: &[],
+            recent_files: &[],
+            trashed_notes: &[],
+            has_active_tab: false,
+            selected_note_name: None,
+            theme: Theme::Light,
+            view_mode: ViewMode::Hybrid,
+        }
+    }
+
     #[test]
     fn command_palette_actions_reflect_workspace_and_tab_state() {
-        let actions = command_palette_actions(
-            true,
-            &[],
-            &[],
-            true,
-            Some("Draft.md"),
-            Theme::Dark,
-            ViewMode::Hybrid,
-        );
+        let actions = command_palette_actions(CommandPaletteActionInput {
+            has_active_tab: true,
+            selected_note_name: Some("Draft.md"),
+            theme: Theme::Dark,
+            ..test_input()
+        });
         let titles = actions
             .iter()
             .map(|action| action.title.as_str())
@@ -406,15 +440,12 @@ mod tests {
 
     #[test]
     fn command_palette_actions_hide_file_commands_without_active_tab() {
-        let actions = command_palette_actions(
-            false,
-            &[],
-            &[],
-            false,
-            None,
-            Theme::System,
-            ViewMode::Preview,
-        );
+        let actions = command_palette_actions(CommandPaletteActionInput {
+            has_workspace: false,
+            theme: Theme::System,
+            view_mode: ViewMode::Preview,
+            ..test_input()
+        });
         let titles = actions
             .iter()
             .map(|action| action.title.as_str())
@@ -428,8 +459,11 @@ mod tests {
 
     #[test]
     fn command_palette_filter_matches_title_detail_and_group() {
-        let actions =
-            command_palette_actions(true, &[], &[], true, None, Theme::Light, ViewMode::Source);
+        let actions = command_palette_actions(CommandPaletteActionInput {
+            has_active_tab: true,
+            view_mode: ViewMode::Source,
+            ..test_input()
+        });
 
         assert_eq!(
             filter_command_palette_actions(&actions, "file save")
@@ -449,26 +483,22 @@ mod tests {
 
     #[test]
     fn command_palette_actions_include_recent_workspaces() {
-        let actions = command_palette_actions(
-            true,
-            &[
-                crate::view_model::WorkspaceListItem {
-                    name: "Current".to_string(),
-                    path: PathBuf::from("current"),
-                    is_current: true,
-                },
-                crate::view_model::WorkspaceListItem {
-                    name: "Archive".to_string(),
-                    path: PathBuf::from("archive"),
-                    is_current: false,
-                },
-            ],
-            &[],
-            false,
-            None,
-            Theme::Light,
-            ViewMode::Hybrid,
-        );
+        let recent_workspaces = [
+            crate::view_model::WorkspaceListItem {
+                name: "Current".to_string(),
+                path: PathBuf::from("current"),
+                is_current: true,
+            },
+            crate::view_model::WorkspaceListItem {
+                name: "Archive".to_string(),
+                path: PathBuf::from("archive"),
+                is_current: false,
+            },
+        ];
+        let actions = command_palette_actions(CommandPaletteActionInput {
+            recent_workspaces: &recent_workspaces,
+            ..test_input()
+        });
 
         assert!(actions.iter().any(|action| {
             action.title == "Open Archive"
@@ -483,20 +513,16 @@ mod tests {
 
     #[test]
     fn command_palette_actions_include_recent_files() {
-        let actions = command_palette_actions(
-            true,
-            &[],
-            &[crate::view_model::RecentFileListItem {
-                title: "Meeting".to_string(),
-                relative_path: PathBuf::from("notes/meeting.md"),
-                workspace_name: "Work".to_string(),
-                workspace_path: PathBuf::from("work"),
-            }],
-            false,
-            None,
-            Theme::Light,
-            ViewMode::Hybrid,
-        );
+        let recent_files = [crate::view_model::RecentFileListItem {
+            title: "Meeting".to_string(),
+            relative_path: PathBuf::from("notes/meeting.md"),
+            workspace_name: "Work".to_string(),
+            workspace_path: PathBuf::from("work"),
+        }];
+        let actions = command_palette_actions(CommandPaletteActionInput {
+            recent_files: &recent_files,
+            ..test_input()
+        });
 
         assert!(actions.iter().any(|action| {
             action.title == "Open Meeting"
@@ -512,16 +538,36 @@ mod tests {
     }
 
     #[test]
+    fn command_palette_actions_include_trashed_notes() {
+        let trashed_notes = [crate::view_model::TrashedNoteListItem {
+            note_id: "note-a".to_string(),
+            title: "Deleted draft".to_string(),
+            relative_path: PathBuf::from("notes/deleted.md"),
+            trashed_at: 1,
+        }];
+        let actions = command_palette_actions(CommandPaletteActionInput {
+            trashed_notes: &trashed_notes,
+            ..test_input()
+        });
+
+        assert!(actions.iter().any(|action| {
+            action.title == "Restore Deleted draft"
+                && action.detail == "notes/deleted.md"
+                && action.group == "TRASH"
+                && matches!(
+                    &action.kind,
+                    CommandPaletteActionKind::RestoreTrashedNote(target)
+                        if target.note_id == "note-a"
+                )
+        }));
+    }
+
+    #[test]
     fn command_palette_actions_include_selected_note_favorites() {
-        let actions = command_palette_actions(
-            true,
-            &[],
-            &[],
-            false,
-            Some("Draft.md"),
-            Theme::Light,
-            ViewMode::Hybrid,
-        );
+        let actions = command_palette_actions(CommandPaletteActionInput {
+            selected_note_name: Some("Draft.md"),
+            ..test_input()
+        });
 
         assert!(actions.iter().any(|action| {
             action.title == "Favorite selected note"

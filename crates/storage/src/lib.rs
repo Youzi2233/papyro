@@ -180,6 +180,7 @@ impl SqliteStorage {
                     snapshot.workspace.clone(),
                     snapshot.file_tree.clone(),
                     snapshot.recent_files.clone(),
+                    snapshot.trashed_notes.clone(),
                 );
                 file_state.workspaces = self.recent_workspaces_with_current(&snapshot.workspace);
                 file_state.expanded_paths = self
@@ -386,6 +387,7 @@ impl SqliteStorage {
         let now = Utc::now().timestamp_millis();
         db::workspaces::update_last_opened(&self.pool, &workspace.id, now)?;
         let recent_files = db::recent::list_recent(&self.pool, 10)?;
+        let trashed_notes = self.list_trashed_notes(&workspace)?;
 
         Ok(WorkspaceSnapshot {
             workspace: Workspace {
@@ -394,6 +396,7 @@ impl SqliteStorage {
             },
             file_tree,
             recent_files,
+            trashed_notes,
             db_path: self.db_path.clone(),
         })
     }

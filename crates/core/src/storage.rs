@@ -1,6 +1,6 @@
 use crate::models::{
-    AppSettings, EditorTab, FileNode, RecentFile, Workspace, WorkspaceSettingsOverrides,
-    WorkspaceTreeState,
+    AppSettings, EditorTab, FileNode, RecentFile, TrashedNote, Workspace,
+    WorkspaceSettingsOverrides, WorkspaceTreeState,
 };
 use crate::FileState;
 use crate::{SearchResult, WorkspaceSearchQuery};
@@ -12,6 +12,7 @@ pub struct WorkspaceSnapshot {
     pub workspace: Workspace,
     pub file_tree: Vec<FileNode>,
     pub recent_files: Vec<RecentFile>,
+    pub trashed_notes: Vec<TrashedNote>,
     pub db_path: PathBuf,
 }
 

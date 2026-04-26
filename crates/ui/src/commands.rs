@@ -20,6 +20,11 @@ pub struct RecentFileTarget {
     pub relative_path: PathBuf,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RestoreTrashedNoteTarget {
+    pub note_id: String,
+}
+
 #[derive(Clone, PartialEq)]
 pub struct AppCommands {
     pub open_workspace: EventHandler<()>,
@@ -37,6 +42,7 @@ pub struct AppCommands {
     pub rename_selected: EventHandler<String>,
     pub move_selected_to: EventHandler<PathBuf>,
     pub set_selected_favorite: EventHandler<bool>,
+    pub restore_trashed_note: EventHandler<RestoreTrashedNoteTarget>,
     pub delete_selected: EventHandler<()>,
     pub toggle_expanded_path: EventHandler<PathBuf>,
     pub reveal_in_explorer: EventHandler<FileTarget>,

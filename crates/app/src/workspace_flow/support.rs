@@ -16,6 +16,7 @@ pub(super) struct MockStorage {
     pub opened_notes: HashMap<PathBuf, OpenedNote>,
     pub save_result: Option<SavedNote>,
     pub recent_files: Vec<RecentFile>,
+    pub trashed_notes: Mutex<Vec<TrashedNote>>,
     pub search_results: Vec<SearchResult>,
     pub rename_result: Option<PathBuf>,
     pub move_result: Option<PathBuf>,
@@ -31,6 +32,7 @@ pub(super) struct MockStorage {
     pub created_note_requests: Mutex<Vec<(PathBuf, String)>>,
     pub created_folder_requests: Mutex<Vec<(PathBuf, String)>>,
     pub moved_paths: Mutex<Vec<(PathBuf, PathBuf)>>,
+    pub restored_notes: Mutex<Vec<String>>,
 }
 
 impl NoteStorage for MockStorage {
@@ -87,11 +89,21 @@ impl NoteStorage for MockStorage {
     }
 
     fn list_trashed_notes(&self, _workspace: &Workspace) -> Result<Vec<TrashedNote>> {
-        Ok(Vec::new())
+        Ok(self.trashed_notes.lock().unwrap().clone())
     }
 
-    fn restore_trashed_note(&self, _workspace: &Workspace, _note_id: &str) -> Result<PathBuf> {
-        Ok(PathBuf::new())
+    fn restore_trashed_note(&self, _workspace: &Workspace, note_id: &str) -> Result<PathBuf> {
+        self.restored_notes
+            .lock()
+            .unwrap()
+            .push(note_id.to_string());
+        let mut trashed_notes = self.trashed_notes.lock().unwrap();
+        let index = trashed_notes
+            .iter()
+            .position(|item| item.note.id == note_id)
+            .ok_or_else(|| anyhow!("Missing trashed note {note_id}"))?;
+        let trashed = trashed_notes.remove(index);
+        Ok(PathBuf::from("workspace").join(trashed.note.relative_path))
     }
 
     fn preview_delete_path(&self, _workspace: &Workspace, _path: &Path) -> Result<DeletePreview> {
@@ -259,6 +271,25 @@ pub(super) fn recent_file(note_id: &str, relative_path: &str) -> RecentFile {
         workspace_name: "Workspace".to_string(),
         workspace_path: PathBuf::from("workspace"),
         opened_at: 0,
+    }
+}
+
+pub(super) fn trashed_note(note_id: &str, title: &str, relative_path: &str) -> TrashedNote {
+    TrashedNote {
+        note: papyro_core::models::NoteMeta {
+            id: note_id.to_string(),
+            workspace_id: "workspace-1".to_string(),
+            relative_path: PathBuf::from(relative_path),
+            title: title.to_string(),
+            created_at: 0,
+            updated_at: 0,
+            word_count: 0,
+            char_count: 0,
+            is_favorite: false,
+            is_trashed: true,
+            tags: Vec::new(),
+        },
+        trashed_at: 1,
     }
 }
 

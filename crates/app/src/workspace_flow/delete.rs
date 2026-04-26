@@ -34,3 +34,15 @@ pub(crate) fn delete_selected_path(
         orphaned_asset_count: 0,
     })
 }
+
+pub(crate) fn restore_trashed_note(
+    storage: &dyn NoteStorage,
+    file_state: &mut FileState,
+    note_id: &str,
+) -> Result<PathBuf> {
+    let workspace = current_workspace(file_state)?;
+    let restored_path = storage.restore_trashed_note(&workspace, note_id)?;
+    reload_current_workspace_tree(storage, file_state)?;
+    file_state.selected_path = Some(restored_path.clone());
+    Ok(restored_path)
+}

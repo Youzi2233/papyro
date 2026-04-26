@@ -289,6 +289,40 @@ fn delete_selected_path_keeps_orphan_assets_for_trash() {
 }
 
 #[test]
+fn restore_trashed_note_restores_refreshes_and_selects_file() {
+    let storage = MockStorage {
+        trashed_notes: std::sync::Mutex::new(vec![trashed_note("note-a", "Draft", "notes/a.md")]),
+        reload_result: Some((
+            vec![directory_node(
+                "workspace/notes",
+                vec![note_node("workspace/notes/a.md", "note-a")],
+            )],
+            vec![recent_file("note-a", "notes/a.md")],
+        )),
+        ..MockStorage::default()
+    };
+    let mut file_state = file_state_with_tree(Vec::new());
+
+    let restored =
+        restore_trashed_note(&storage, &mut file_state, "note-a").expect("restore succeeds");
+
+    assert_eq!(restored, PathBuf::from("workspace/notes/a.md"));
+    assert_eq!(
+        storage.restored_notes.lock().unwrap().clone(),
+        vec!["note-a".to_string()]
+    );
+    assert_eq!(
+        file_state.selected_path,
+        Some(PathBuf::from("workspace/notes/a.md"))
+    );
+    assert!(file_state.trashed_notes.is_empty());
+    assert_eq!(
+        file_state.recent_files,
+        vec![recent_file("note-a", "notes/a.md")]
+    );
+}
+
+#[test]
 fn delete_selected_path_fails_without_selection() {
     let storage = MockStorage::default();
     let mut file_state = file_state_with_tree(Vec::new());

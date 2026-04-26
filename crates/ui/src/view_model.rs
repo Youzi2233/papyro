@@ -17,6 +17,7 @@ pub struct WorkspaceViewModel {
     pub path: Option<PathBuf>,
     pub recent_workspaces: Vec<WorkspaceListItem>,
     pub recent_files: Vec<RecentFileListItem>,
+    pub trashed_notes: Vec<TrashedNoteListItem>,
     pub selected_name: Option<String>,
     pub has_selection: bool,
     pub selected_is_directory: bool,
@@ -31,6 +32,14 @@ pub struct RecentFileListItem {
     pub relative_path: PathBuf,
     pub workspace_name: String,
     pub workspace_path: PathBuf,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TrashedNoteListItem {
+    pub note_id: String,
+    pub title: String,
+    pub relative_path: PathBuf,
+    pub trashed_at: i64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -115,6 +124,16 @@ impl WorkspaceViewModel {
                     workspace_path: recent.workspace_path.clone(),
                 })
                 .collect(),
+            trashed_notes: file_state
+                .trashed_notes
+                .iter()
+                .map(|trashed| TrashedNoteListItem {
+                    note_id: trashed.note.id.clone(),
+                    title: trashed.note.title.clone(),
+                    relative_path: trashed.note.relative_path.clone(),
+                    trashed_at: trashed.trashed_at,
+                })
+                .collect(),
             selected_name: selected_node.as_ref().map(|node| node.name.clone()),
             has_selection: selected_node.is_some(),
             selected_is_directory: selected_node
@@ -176,7 +195,7 @@ fn count_notes(nodes: &[FileNode]) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use papyro_core::models::{EditorTab, RecentFile, Workspace};
+    use papyro_core::models::{EditorTab, NoteMeta, RecentFile, TrashedNote, Workspace};
 
     fn note(path: &str) -> FileNode {
         FileNode {
@@ -229,6 +248,22 @@ mod tests {
                 workspace_name: "Workspace".to_string(),
                 workspace_path: PathBuf::from("workspace"),
                 opened_at: 0,
+            }],
+            trashed_notes: vec![TrashedNote {
+                note: NoteMeta {
+                    id: "deleted".to_string(),
+                    workspace_id: "w".to_string(),
+                    relative_path: PathBuf::from("deleted.md"),
+                    title: "Deleted".to_string(),
+                    created_at: 0,
+                    updated_at: 0,
+                    word_count: 0,
+                    char_count: 0,
+                    is_favorite: false,
+                    is_trashed: true,
+                    tags: Vec::new(),
+                },
+                trashed_at: 1,
             }],
             ..Default::default()
         };
@@ -300,6 +335,15 @@ mod tests {
                 relative_path: PathBuf::from("a.md"),
                 workspace_name: "Workspace".to_string(),
                 workspace_path: PathBuf::from("workspace"),
+            }]
+        );
+        assert_eq!(
+            view_model.workspace.trashed_notes,
+            vec![TrashedNoteListItem {
+                note_id: "deleted".to_string(),
+                title: "Deleted".to_string(),
+                relative_path: PathBuf::from("deleted.md"),
+                trashed_at: 1,
             }]
         );
         assert_eq!(view_model.workspace.note_count, 2);

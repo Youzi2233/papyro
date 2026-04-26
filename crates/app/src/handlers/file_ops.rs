@@ -10,7 +10,7 @@ use std::sync::Arc;
 use crate::runtime::AppShell;
 use crate::workspace_flow::{
     create_folder_in_storage, create_note_in_storage, delete_selected_path, move_selected_path,
-    normalized_name, rename_selected_path,
+    normalized_name, rename_selected_path, restore_trashed_note,
 };
 
 type BlockingResult<T> = Result<Result<T, anyhow::Error>, tokio::task::JoinError>;
@@ -283,6 +283,37 @@ pub fn set_selected_favorite(
             }
             Err(error) => {
                 status_message.set(Some(format!("Favorite update failed: {error}")));
+            }
+        }
+    });
+}
+
+pub fn restore_trashed(
+    storage: Arc<dyn NoteStorage>,
+    mut file_state: Signal<FileState>,
+    mut status_message: Signal<Option<String>>,
+    note_id: String,
+) {
+    let mut next_file_state = file_state.read().clone();
+
+    spawn(async move {
+        let result: BlockingResult<(PathBuf, FileState)> = tokio::task::spawn_blocking(move || {
+            let restored_path =
+                restore_trashed_note(storage.as_ref(), &mut next_file_state, &note_id)?;
+            Ok::<_, anyhow::Error>((restored_path, next_file_state))
+        })
+        .await;
+
+        match result {
+            Ok(Ok((restored_path, next_file_state))) => {
+                file_state.set(next_file_state);
+                status_message.set(Some(format!("Restored {}", restored_path.display())));
+            }
+            Ok(Err(error)) => {
+                status_message.set(Some(format!("Restore failed: {error}")));
+            }
+            Err(error) => {
+                status_message.set(Some(format!("Restore failed: {error}")));
             }
         }
     });

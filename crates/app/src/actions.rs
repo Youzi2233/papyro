@@ -1,5 +1,5 @@
 use papyro_core::models::{AppSettings, FileNode, WorkspaceSettingsOverrides};
-use papyro_ui::commands::{ContentChange, FileTarget, RecentFileTarget};
+use papyro_ui::commands::{ContentChange, FileTarget, RecentFileTarget, RestoreTrashedNoteTarget};
 use std::path::PathBuf;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -19,6 +19,7 @@ pub enum AppAction {
     RenameSelected(RenameSelected),
     MoveSelectedTo(MoveSelectedTo),
     SetSelectedFavorite(SetSelectedFavorite),
+    RestoreTrashedNote(RestoreTrashedNote),
     DeleteSelected,
     ToggleExpandedPath(ToggleExpandedPath),
     RevealInExplorer(RevealInExplorer),
@@ -80,6 +81,11 @@ pub struct MoveSelectedTo {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SetSelectedFavorite {
     pub favorite: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RestoreTrashedNote {
+    pub target: RestoreTrashedNoteTarget,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -149,6 +155,10 @@ impl AppAction {
 
     pub fn set_selected_favorite(favorite: bool) -> Self {
         Self::SetSelectedFavorite(SetSelectedFavorite { favorite })
+    }
+
+    pub fn restore_trashed_note(target: RestoreTrashedNoteTarget) -> Self {
+        Self::RestoreTrashedNote(RestoreTrashedNote { target })
     }
 
     pub fn toggle_expanded_path(path: PathBuf) -> Self {

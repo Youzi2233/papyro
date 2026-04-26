@@ -179,6 +179,14 @@ impl AppDispatcher {
                     action.favorite,
                 );
             }
+            AppAction::RestoreTrashedNote(action) => {
+                file_ops::restore_trashed(
+                    self.storage.clone(),
+                    self.state.file_state,
+                    self.state.status_message,
+                    action.target.note_id,
+                );
+            }
             AppAction::DeleteSelected => {
                 file_ops::delete_selected(
                     self.shell,
@@ -244,6 +252,7 @@ impl AppDispatcher {
         let rename_selected = self.clone();
         let move_selected_to = self.clone();
         let set_selected_favorite = self.clone();
+        let restore_trashed_note = self.clone();
         let delete_selected = self.clone();
         let toggle_expanded_path = self.clone();
         let reveal_in_explorer = self.clone();
@@ -296,6 +305,9 @@ impl AppDispatcher {
             }),
             set_selected_favorite: EventHandler::new(move |favorite| {
                 set_selected_favorite.dispatch(AppAction::set_selected_favorite(favorite));
+            }),
+            restore_trashed_note: EventHandler::new(move |target| {
+                restore_trashed_note.dispatch(AppAction::restore_trashed_note(target));
             }),
             delete_selected: EventHandler::new(move |_| {
                 delete_selected.dispatch(AppAction::DeleteSelected);
