@@ -38,8 +38,7 @@ pub(super) async fn save_pasted_image_asset(
         .await
         .map_err(|error| format!("failed to write pasted image: {error}"))?;
 
-    let relative_path = path.strip_prefix(&workspace.path).unwrap_or(path.as_path());
-    let link = markdown_path(relative_path);
+    let link = markdown_asset_link(workspace, &tab.path, &path);
 
     Ok(SavedEditorAsset {
         markdown: format!("![image]({link})"),
@@ -101,6 +100,24 @@ fn pasted_image_stem() -> String {
     format!("pasted-image-{millis}")
 }
 
+fn markdown_asset_link(workspace: &Workspace, note_path: &Path, asset_path: &Path) -> String {
+    let asset_relative = asset_path
+        .strip_prefix(&workspace.path)
+        .unwrap_or(asset_path);
+    let note_dir_relative = note_path
+        .parent()
+        .and_then(|parent| parent.strip_prefix(&workspace.path).ok())
+        .unwrap_or_else(|| Path::new(""));
+
+    let mut link = PathBuf::new();
+    for _ in note_dir_relative.components() {
+        link.push("..");
+    }
+    link.push(asset_relative);
+
+    markdown_path(&link)
+}
+
 fn markdown_path(path: &Path) -> String {
     path.components()
         .map(|component| component.as_os_str().to_string_lossy())
@@ -150,6 +167,20 @@ mod tests {
         assert!(saved.path.starts_with(root.join("assets")));
         assert!(saved.markdown.starts_with("![image](assets/pasted-image-"));
         assert!(saved.markdown.ends_with(".png)"));
+    }
+
+    #[test]
+    fn markdown_asset_link_is_relative_to_note_directory() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let root = temp.path();
+        let workspace = workspace(root);
+        let link = markdown_asset_link(
+            &workspace,
+            &root.join("notes/daily/note.md"),
+            &root.join("assets/pasted-image.png"),
+        );
+
+        assert_eq!(link, "../../assets/pasted-image.png");
     }
 
     #[tokio::test]
