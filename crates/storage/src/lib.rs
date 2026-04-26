@@ -726,7 +726,14 @@ fn build_note_meta(
         char_count: content.chars().count() as u32,
         is_favorite: false,
         is_trashed: false,
-        tags: Vec::new(),
+        tags: fs::extract_front_matter_tags(content)
+            .into_iter()
+            .map(|name| papyro_core::models::Tag {
+                id: tag_id(&name),
+                name,
+                color: "#6B7280".to_string(),
+            })
+            .collect(),
     })
 }
 
@@ -742,6 +749,10 @@ fn note_count(nodes: &[FileNode]) -> usize {
 
 fn stable_note_id(workspace: &Workspace, relative_path: &Path) -> String {
     format!("{}::{}", workspace.id, relative_path.to_string_lossy())
+}
+
+fn tag_id(name: &str) -> String {
+    name.trim().to_lowercase()
 }
 
 fn renamed_note_ids(
@@ -951,6 +962,35 @@ mod tests {
         let workspace_root = temp.path().join("workspace");
         std::fs::create_dir_all(&workspace_root)?;
         Ok(workspace_root)
+    }
+
+    #[test]
+    fn build_note_meta_extracts_front_matter_tags() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let workspace_root = create_workspace(&temp)?;
+        let note_path = workspace_root.join("tagged.md");
+        let content = "---\ntags:\n  - Rust\n  - search\n---\n# Tagged";
+        std::fs::write(&note_path, content)?;
+        let workspace = Workspace {
+            id: "workspace".to_string(),
+            name: "Workspace".to_string(),
+            path: workspace_root.clone(),
+            created_at: 1,
+            last_opened: None,
+            sort_order: 0,
+        };
+
+        let meta = build_note_meta(&workspace, &workspace_root, &note_path, content)?;
+
+        assert_eq!(
+            meta.tags
+                .iter()
+                .map(|tag| (tag.id.as_str(), tag.name.as_str(), tag.color.as_str()))
+                .collect::<Vec<_>>(),
+            vec![("rust", "Rust", "#6B7280"), ("search", "search", "#6B7280")]
+        );
+
+        Ok(())
     }
 
     #[test]
