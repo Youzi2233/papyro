@@ -1446,6 +1446,42 @@ button { border: 0; cursor: pointer; background: transparent; }
     font-family: var(--mn-font-mono);
 }
 
+.mn-search-row {
+    min-height: 72px;
+    align-items: flex-start;
+}
+
+.mn-search-snippet {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    min-width: 0;
+    color: var(--mn-ink-2);
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.mn-search-line {
+    flex-shrink: 0;
+    color: var(--mn-ink-3);
+    font-family: var(--mn-font-mono);
+    font-size: 10px;
+}
+
+.mn-search-excerpt {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mn-search-highlight {
+    border-radius: 3px;
+    background: var(--mn-accent-dim);
+    color: var(--mn-accent-strong);
+    padding: 0 2px;
+}
+
 .mn-command-empty {
     padding: 28px 12px;
     color: var(--mn-ink-3);

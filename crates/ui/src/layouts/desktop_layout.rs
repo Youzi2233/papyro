@@ -1,6 +1,7 @@
 use crate::components::{
     command_palette::CommandPaletteModal, editor::EditorPane, header::AppHeader,
-    quick_open::QuickOpenModal, settings::SettingsModal, sidebar::Sidebar, status_bar::StatusBar,
+    quick_open::QuickOpenModal, search::SearchModal, settings::SettingsModal, sidebar::Sidebar,
+    status_bar::StatusBar,
 };
 use crate::context::use_app_context;
 use dioxus::prelude::*;
@@ -14,6 +15,7 @@ pub fn DesktopLayout(status_message: Option<String>) -> Element {
     let mut show_settings = use_signal(|| false);
     let mut show_quick_open = use_signal(|| false);
     let mut show_command_palette = use_signal(|| false);
+    let mut show_search = use_signal(|| false);
     let settings = app.view_model.read().settings.clone();
 
     let theme = settings.theme;
@@ -42,6 +44,12 @@ pub fn DesktopLayout(status_message: Option<String>) -> Element {
                     dioxus.send("command_palette");
                     return;
                 }
+                if (mod && key === 'f' && e.shiftKey && !e.altKey) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dioxus.send("workspace_search");
+                    return;
+                }
                 if (mod && key === 'p' && !e.shiftKey && !e.altKey) {
                     e.preventDefault();
                     e.stopPropagation();
@@ -65,6 +73,7 @@ pub fn DesktopLayout(status_message: Option<String>) -> Element {
                 match message.as_str() {
                     "quick_open" => show_quick_open.set(true),
                     "command_palette" => show_command_palette.set(true),
+                    "workspace_search" => show_search.set(true),
                     "toggle_sidebar" => {
                         ui_state.write().toggle_sidebar();
                         let settings = ui_state.read().settings.clone();
@@ -100,6 +109,9 @@ pub fn DesktopLayout(status_message: Option<String>) -> Element {
                     on_close: move |_| show_command_palette.set(false),
                     on_settings: move |_| show_settings.set(true),
                 }
+            }
+            if *show_search.read() {
+                SearchModal { on_close: move |_| show_search.set(false) }
             }
         }
     }
