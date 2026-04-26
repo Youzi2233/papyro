@@ -1,5 +1,41 @@
 use dioxus::prelude::*;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ButtonVariant {
+    Default,
+    Primary,
+    Danger,
+}
+
+impl ButtonVariant {
+    fn class(self) -> &'static str {
+        match self {
+            Self::Default => "mn-button",
+            Self::Primary => "mn-button primary",
+            Self::Danger => "mn-button danger",
+        }
+    }
+}
+
+#[component]
+pub fn Button(
+    label: String,
+    variant: ButtonVariant,
+    disabled: bool,
+    on_click: EventHandler<()>,
+) -> Element {
+    let class = variant.class();
+
+    rsx! {
+        button {
+            class,
+            disabled,
+            onclick: move |_| on_click.call(()),
+            "{label}"
+        }
+    }
+}
+
 #[component]
 pub fn IconButton(label: String, icon: String, on_click: EventHandler<()>) -> Element {
     rsx! {
@@ -10,5 +46,17 @@ pub fn IconButton(label: String, icon: String, on_click: EventHandler<()>) -> El
             onclick: move |_| on_click.call(()),
             "{icon}"
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn button_variant_maps_to_existing_classes() {
+        assert_eq!(ButtonVariant::Default.class(), "mn-button");
+        assert_eq!(ButtonVariant::Primary.class(), "mn-button primary");
+        assert_eq!(ButtonVariant::Danger.class(), "mn-button danger");
     }
 }

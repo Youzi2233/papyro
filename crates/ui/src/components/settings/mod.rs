@@ -1,6 +1,7 @@
 use crate::commands::{
     AppCommands, DeleteTagRequest, RenameTagRequest, SetTagColorRequest, UpsertTagRequest,
 };
+use crate::components::primitives::{Button, ButtonVariant};
 use crate::context::use_app_context;
 use crate::view_model::TagListItem;
 use dioxus::prelude::*;
@@ -235,12 +236,18 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
                     }
                 }
                 div { class: "mn-modal-footer",
-                    button {
-                        class: "mn-button",
-                        onclick: move |_| on_close.call(()),
-                        "Cancel"
+                    Button {
+                        label: "Cancel",
+                        variant: ButtonVariant::Default,
+                        disabled: false,
+                        on_click: move |_| on_close.call(()),
                     }
-                    button { class: "mn-button primary", onclick: save, "{save_label}" }
+                    Button {
+                        label: save_label,
+                        variant: ButtonVariant::Primary,
+                        disabled: false,
+                        on_click: save,
+                    }
                 }
             }
         }
@@ -313,10 +320,11 @@ fn TagManagementSection(
                             value: "{new_color_value}",
                             oninput: move |event| new_color.set(event.value()),
                         }
-                        button {
-                            class: "mn-button primary",
+                        Button {
+                            label: "Add",
+                            variant: ButtonVariant::Primary,
                             disabled: !can_create,
-                            onclick: {
+                            on_click: {
                                 let commands = commands.clone();
                                 move |_| {
                                     let name = cleaned_tag_name(&new_name());
@@ -329,7 +337,6 @@ fn TagManagementSection(
                                     }
                                 }
                             },
-                            "Add"
                         }
                     }
                     if tags.is_empty() {
@@ -409,10 +416,11 @@ fn TagEditorRow(tag: TagListItem, has_workspace: bool, commands: AppCommands) ->
                     confirm_delete.set(false);
                 },
             }
-            button {
-                class: "mn-button",
+            Button {
+                label: "Rename",
+                variant: ButtonVariant::Default,
                 disabled: !can_rename,
-                onclick: {
+                on_click: {
                     let commands = commands.clone();
                     let tag_id = tag.id.clone();
                     move |_| {
@@ -425,12 +433,12 @@ fn TagEditorRow(tag: TagListItem, has_workspace: bool, commands: AppCommands) ->
                         }
                     }
                 },
-                "Rename"
             }
-            button {
-                class: "mn-button",
+            Button {
+                label: "Color",
+                variant: ButtonVariant::Default,
                 disabled: !can_recolor,
-                onclick: {
+                on_click: {
                     let commands = commands.clone();
                     let tag_id = tag.id.clone();
                     move |_| {
@@ -443,7 +451,6 @@ fn TagEditorRow(tag: TagListItem, has_workspace: bool, commands: AppCommands) ->
                         }
                     }
                 },
-                "Color"
             }
             button {
                 class: if confirm_delete() { "mn-button danger active" } else { "mn-button danger" },
