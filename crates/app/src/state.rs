@@ -1,5 +1,7 @@
 use dioxus::prelude::*;
-use papyro_core::{EditorTabs, FileState, TabContentsMap, UiState, WorkspaceBootstrap};
+use papyro_core::{
+    EditorTabs, FileState, TabContentsMap, UiState, WorkspaceBootstrap, WorkspaceSearchState,
+};
 use std::path::PathBuf;
 
 #[derive(Clone, Copy)]
@@ -8,6 +10,7 @@ pub(crate) struct RuntimeState {
     pub editor_tabs: Signal<EditorTabs>,
     pub tab_contents: Signal<TabContentsMap>,
     pub ui_state: Signal<UiState>,
+    pub workspace_search: Signal<WorkspaceSearchState>,
     pub status_message: Signal<Option<String>>,
     pub workspace_watch_path: Signal<Option<PathBuf>>,
     pub pending_close_tab: Signal<Option<String>>,
@@ -31,6 +34,7 @@ pub(crate) fn use_runtime_state(bootstrap: WorkspaceBootstrap) -> RuntimeState {
                 initial_workspace_overrides,
             )
         }),
+        workspace_search: use_signal(WorkspaceSearchState::default),
         status_message: use_signal(|| Some(initial_status_message)),
         workspace_watch_path: use_signal(|| initial_workspace_root),
         pending_close_tab: use_signal(|| None::<String>),

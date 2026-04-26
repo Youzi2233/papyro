@@ -29,6 +29,7 @@ pub struct AppCommands {
     pub create_folder: EventHandler<String>,
     pub open_note: EventHandler<FileNode>,
     pub open_recent_file: EventHandler<RecentFileTarget>,
+    pub search_workspace: EventHandler<String>,
     pub content_changed: EventHandler<ContentChange>,
     pub save_active_note: EventHandler<()>,
     pub save_tab: EventHandler<String>,

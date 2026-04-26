@@ -1,6 +1,6 @@
 use crate::actions::AppAction;
 use crate::effects;
-use crate::handlers::{file_ops, notes, workspace};
+use crate::handlers::{file_ops, notes, search, workspace};
 use crate::runtime::AppShell;
 use crate::state::RuntimeState;
 use dioxus::prelude::*;
@@ -111,6 +111,14 @@ impl AppDispatcher {
                     notes::open_recent_file(storage, state, action.target).await;
                 });
             }
+            AppAction::SearchWorkspace(action) => {
+                search::search_workspace(
+                    self.storage.clone(),
+                    self.state.file_state,
+                    self.state.workspace_search,
+                    action.query,
+                );
+            }
             AppAction::ContentChanged(action) => {
                 effects::record_content_change(
                     self.storage.clone(),
@@ -220,6 +228,7 @@ impl AppDispatcher {
         let create_folder = self.clone();
         let open_note = self.clone();
         let open_recent_file = self.clone();
+        let search_workspace = self.clone();
         let content_changed = self.clone();
         let save_active_note = self.clone();
         let save_tab = self.clone();
@@ -254,6 +263,9 @@ impl AppDispatcher {
             }),
             open_recent_file: EventHandler::new(move |target| {
                 open_recent_file.dispatch(AppAction::open_recent_file(target));
+            }),
+            search_workspace: EventHandler::new(move |query| {
+                search_workspace.dispatch(AppAction::search_workspace(query));
             }),
             content_changed: EventHandler::new(move |change: ContentChange| {
                 content_changed.dispatch(AppAction::content_changed(change.tab_id, change.content));
@@ -485,6 +497,12 @@ mod tests {
                     workspace_path: std::path::PathBuf::from("workspace"),
                     relative_path: std::path::PathBuf::from("notes/a.md"),
                 }
+            })
+        );
+        assert_eq!(
+            AppAction::search_workspace("release".to_string()),
+            AppAction::SearchWorkspace(crate::actions::SearchWorkspace {
+                query: "release".to_string()
             })
         );
         assert_eq!(

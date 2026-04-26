@@ -11,6 +11,7 @@ pub enum AppAction {
     CreateFolder(CreateFolder),
     OpenNote(OpenNote),
     OpenRecentFile(OpenRecentFile),
+    SearchWorkspace(SearchWorkspace),
     ContentChanged(ContentChange),
     SaveActiveNote,
     SaveTab(SaveTab),
@@ -48,6 +49,11 @@ pub struct OpenNote {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OpenRecentFile {
     pub target: RecentFileTarget,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SearchWorkspace {
+    pub query: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -109,6 +115,10 @@ impl AppAction {
 
     pub fn open_recent_file(target: RecentFileTarget) -> Self {
         Self::OpenRecentFile(OpenRecentFile { target })
+    }
+
+    pub fn search_workspace(query: String) -> Self {
+        Self::SearchWorkspace(SearchWorkspace { query })
     }
 
     pub fn content_changed(tab_id: String, content: String) -> Self {

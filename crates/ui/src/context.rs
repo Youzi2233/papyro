@@ -1,7 +1,9 @@
 use crate::commands::AppCommands;
 use crate::view_model::AppViewModel;
 use dioxus::prelude::*;
-use papyro_core::{models::DocumentStats, EditorTabs, FileState, TabContentsMap, UiState};
+use papyro_core::{
+    models::DocumentStats, EditorTabs, FileState, TabContentsMap, UiState, WorkspaceSearchState,
+};
 
 #[derive(Clone, Copy)]
 pub struct EditorServices {
@@ -36,6 +38,7 @@ pub struct AppContext {
     pub editor_tabs: Signal<EditorTabs>,
     pub tab_contents: Signal<TabContentsMap>,
     pub ui_state: Signal<UiState>,
+    pub workspace_search: Signal<WorkspaceSearchState>,
     pub status_message: Signal<Option<String>>,
     pub pending_close_tab: Signal<Option<String>>,
     pub commands: AppCommands,

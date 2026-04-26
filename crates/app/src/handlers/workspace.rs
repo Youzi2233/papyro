@@ -49,6 +49,7 @@ pub async fn open_workspace_path(
             state.editor_tabs.set(applied.editor_tabs);
             state.tab_contents.set(applied.tab_contents);
             state.ui_state.set(applied.ui_state);
+            state.workspace_search.write().clear();
             state.status_message.set(Some(applied.status_message));
             state.workspace_watch_path.set(Some(path));
         }
