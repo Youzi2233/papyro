@@ -140,6 +140,15 @@ impl NoteStorage for MockStorage {
         Ok(self.search_results.clone())
     }
 
+    fn set_note_favorite(
+        &self,
+        _workspace: &Workspace,
+        _path: &Path,
+        _favorite: bool,
+    ) -> Result<()> {
+        Ok(())
+    }
+
     fn list_recent_workspaces(&self, _limit: usize) -> Result<Vec<Workspace>> {
         Ok(Vec::new())
     }

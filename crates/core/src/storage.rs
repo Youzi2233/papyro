@@ -75,6 +75,7 @@ pub trait NoteStorage: Send + Sync {
     ) -> Result<Vec<SearchResult>> {
         self.search_workspace(workspace, &query.text, query.limit)
     }
+    fn set_note_favorite(&self, workspace: &Workspace, path: &Path, favorite: bool) -> Result<()>;
     fn list_recent_workspaces(&self, limit: usize) -> Result<Vec<Workspace>>;
     fn list_recent(&self, limit: usize) -> Result<Vec<RecentFile>>;
     fn load_settings(&self) -> AppSettings;

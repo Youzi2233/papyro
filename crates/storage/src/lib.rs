@@ -356,6 +356,17 @@ impl SqliteStorage {
         index::search_workspace_with_query(workspace, query)
     }
 
+    pub fn set_note_favorite(
+        &self,
+        workspace: &Workspace,
+        path: &Path,
+        favorite: bool,
+    ) -> Result<()> {
+        let relative_path = path.strip_prefix(&workspace.path).unwrap_or(path);
+        let note_id = stable_note_id(workspace, relative_path);
+        db::notes::set_favorite(&self.pool, &note_id, favorite)
+    }
+
     pub fn list_recent_workspaces(&self, limit: usize) -> Result<Vec<Workspace>> {
         db::workspaces::list_recent_workspaces(&self.pool, limit)
     }
@@ -461,6 +472,10 @@ impl NoteStorage for SqliteStorage {
         query: &WorkspaceSearchQuery,
     ) -> Result<Vec<SearchResult>> {
         SqliteStorage::search_workspace_with_query(self, workspace, query)
+    }
+
+    fn set_note_favorite(&self, workspace: &Workspace, path: &Path, favorite: bool) -> Result<()> {
+        SqliteStorage::set_note_favorite(self, workspace, path, favorite)
     }
 
     fn list_recent_workspaces(&self, limit: usize) -> Result<Vec<Workspace>> {
@@ -1068,6 +1083,27 @@ mod tests {
         let meta =
             db::notes::get_note(&storage.pool, &opened.tab.note_id)?.expect("note metadata exists");
         assert!(meta.is_favorite);
+
+        Ok(())
+    }
+
+    #[test]
+    fn set_note_favorite_updates_note_metadata() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let workspace_root = create_workspace(&temp)?;
+        let note_path = workspace_root.join("favorite.md");
+        std::fs::write(&note_path, "# Favorite")?;
+        let storage = test_storage(&temp)?;
+        let workspace = storage.initialize_workspace(&workspace_root)?.workspace;
+
+        storage.set_note_favorite(&workspace, &note_path, true)?;
+        let note_id = stable_note_id(&workspace, Path::new("favorite.md"));
+        let meta = db::notes::get_note(&storage.pool, &note_id)?.expect("note metadata exists");
+        assert!(meta.is_favorite);
+
+        storage.set_note_favorite(&workspace, &note_path, false)?;
+        let meta = db::notes::get_note(&storage.pool, &note_id)?.expect("note metadata exists");
+        assert!(!meta.is_favorite);
 
         Ok(())
     }
