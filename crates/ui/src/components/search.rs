@@ -1,5 +1,5 @@
 use crate::commands::AppCommands;
-use crate::components::primitives::Modal;
+use crate::components::primitives::{Modal, TextInput};
 use crate::context::use_app_context;
 use dioxus::prelude::*;
 use papyro_core::{
@@ -30,6 +30,11 @@ pub fn SearchModal(on_close: EventHandler<()>) -> Element {
     };
     let results_for_keys = results.clone();
     let commands_for_keys = commands.clone();
+    let empty_message = empty_search_message(
+        query_value.as_str(),
+        state.is_loading,
+        state.error.as_deref(),
+    );
 
     rsx! {
         Modal {
@@ -37,16 +42,16 @@ pub fn SearchModal(on_close: EventHandler<()>) -> Element {
             class_name: "mn-modal mn-command-modal",
             on_close,
                 div { class: "mn-command-search",
-                    input {
-                        class: "mn-command-input",
+                    TextInput {
+                        class_name: "mn-command-input",
                         autofocus: true,
                         placeholder: "Search notes",
-                        value: "{query_value}",
-                        oninput: move |event| {
+                        value: query_value,
+                        on_input: move |value| {
                             active_index.set(0);
-                            commands.search_workspace.call(event.value());
+                            commands.search_workspace.call(value);
                         },
-                        onkeydown: move |event| {
+                        on_keydown: move |event: KeyboardEvent| {
                             match event.key() {
                                 Key::Escape => {
                                     event.prevent_default();
@@ -81,7 +86,7 @@ pub fn SearchModal(on_close: EventHandler<()>) -> Element {
                 div { class: "mn-command-list",
                     if results.is_empty() {
                         div { class: "mn-command-empty",
-                            "{empty_search_message(query_value.as_str(), state.is_loading, state.error.as_deref())}"
+                            "{empty_message}"
                         }
                     } else {
                         for index in 0..results.len() {

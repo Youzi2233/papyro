@@ -75,6 +75,28 @@ pub fn Modal(
 }
 
 #[component]
+pub fn TextInput(
+    class_name: String,
+    placeholder: String,
+    value: String,
+    autofocus: bool,
+    on_input: EventHandler<String>,
+    on_keydown: EventHandler<KeyboardEvent>,
+) -> Element {
+    rsx! {
+        input {
+            class: "{class_name}",
+            r#type: "text",
+            autofocus,
+            placeholder: "{placeholder}",
+            value: "{value}",
+            oninput: move |event| on_input.call(event.value()),
+            onkeydown: move |event| on_keydown.call(event),
+        }
+    }
+}
+
+#[component]
 pub fn Tooltip(label: String, children: Element) -> Element {
     rsx! {
         span {

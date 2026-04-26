@@ -1,5 +1,5 @@
 use crate::commands::AppCommands;
-use crate::components::primitives::Modal;
+use crate::components::primitives::{Modal, TextInput};
 use crate::context::use_app_context;
 use dioxus::prelude::*;
 use papyro_core::models::{FileNode, FileNodeKind};
@@ -39,16 +39,16 @@ pub fn QuickOpenModal(on_close: EventHandler<()>) -> Element {
             class_name: "mn-modal mn-command-modal",
             on_close,
                 div { class: "mn-command-search",
-                    input {
-                        class: "mn-command-input",
+                    TextInput {
+                        class_name: "mn-command-input",
                         autofocus: true,
                         placeholder: "Open note",
-                        value: "{query_value}",
-                        oninput: move |event| {
-                            query.set(event.value());
+                        value: query_value,
+                        on_input: move |value| {
+                            query.set(value);
                             active_index.set(0);
                         },
-                        onkeydown: move |event| {
+                        on_keydown: move |event: KeyboardEvent| {
                             match event.key() {
                                 Key::Escape => {
                                     event.prevent_default();
