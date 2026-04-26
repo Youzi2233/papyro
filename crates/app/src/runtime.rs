@@ -69,6 +69,7 @@ pub fn use_app_runtime(
         workspace_search: state.workspace_search,
         status_message: state.status_message,
         pending_close_tab: state.pending_close_tab,
+        pending_delete_path: state.pending_delete_path,
         commands,
         editor_services: EditorServices {
             summarize_markdown: papyro_editor::parser::summarize_markdown,

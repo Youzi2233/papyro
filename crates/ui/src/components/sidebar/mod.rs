@@ -23,10 +23,9 @@ pub fn Sidebar() -> Element {
     let app = use_app_context();
     let file_state = app.file_state;
     let ui_state = app.ui_state;
+    let pending_delete_path = app.pending_delete_path;
     let commands = app.commands;
     let resize_commands = commands.clone();
-    let workspace_model = app.view_model.read().workspace.clone();
-    let settings_model = app.view_model.read().settings.clone();
 
     let mut create_name = use_signal(String::new);
     let mut show_create = use_signal(|| false);
@@ -34,21 +33,27 @@ pub fn Sidebar() -> Element {
     let mut resize_drag = use_signal(|| None::<SidebarResizeDrag>);
 
     let workspace = file_state.read().current_workspace.clone();
-    let sidebar_width = settings_model.sidebar_width;
+    let sidebar_width = ui_state.read().settings.sidebar_width;
     let sidebar_class = if resize_drag().is_some() {
         "mn-sidebar resizing"
     } else {
         "mn-sidebar"
     };
     let selected_node = file_state.read().selected_node();
-    let has_selection = workspace_model.has_selection;
-
-    let selected_is_dir = workspace_model.selected_is_directory;
+    let has_selection = selected_node.is_some();
+    let selected_is_dir = selected_node.as_ref().is_some_and(|node| {
+        matches!(
+            node.kind,
+            papyro_core::models::FileNodeKind::Directory { .. }
+        )
+    });
     let selected_target = selected_node.as_ref().map(|node| FileTarget {
         path: node.path.clone(),
         name: node.name.clone(),
     });
-    let selected_delete_pending = workspace_model.selected_delete_pending;
+    let selected_delete_pending = selected_node
+        .as_ref()
+        .is_some_and(|node| pending_delete_path.read().as_deref() == Some(node.path.as_path()));
 
     rsx! {
         aside {

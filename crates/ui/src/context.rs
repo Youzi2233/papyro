@@ -4,6 +4,7 @@ use dioxus::prelude::*;
 use papyro_core::{
     models::DocumentStats, EditorTabs, FileState, TabContentsMap, UiState, WorkspaceSearchState,
 };
+use std::path::PathBuf;
 
 #[derive(Clone, Copy)]
 pub struct EditorServices {
@@ -41,6 +42,7 @@ pub struct AppContext {
     pub workspace_search: Signal<WorkspaceSearchState>,
     pub status_message: Signal<Option<String>>,
     pub pending_close_tab: Signal<Option<String>>,
+    pub pending_delete_path: Signal<Option<PathBuf>>,
     pub commands: AppCommands,
     pub editor_services: EditorServices,
     pub view_model: Memo<AppViewModel>,
