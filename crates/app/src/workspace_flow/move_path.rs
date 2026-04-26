@@ -1,5 +1,5 @@
 use super::reload::reload_current_workspace_tree;
-use super::utils::current_workspace;
+use super::utils::{current_workspace, refresh_open_note_after_path_change};
 use anyhow::{anyhow, bail, Result};
 use papyro_core::models::{FileNode, FileNodeKind};
 use papyro_core::storage::NoteStorage;
@@ -40,6 +40,13 @@ pub(crate) fn move_selected_path(
             close_tabs_under_path(editor_tabs, tab_contents, &old_path);
         }
         FileNodeKind::Note { .. } => {
+            refresh_open_note_after_path_change(
+                &workspace,
+                editor_tabs,
+                tab_contents,
+                &old_path,
+                &new_path,
+            )?;
             editor_tabs.update_tab_path(&old_path, new_path.clone());
         }
     }

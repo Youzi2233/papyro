@@ -191,6 +191,22 @@ impl TabContentsMap {
         }
     }
 
+    pub fn replace_saved_content(
+        &mut self,
+        tab_id: &str,
+        content: String,
+        stats: DocumentStats,
+    ) -> bool {
+        if !self.tab_contents.contains_key(tab_id) {
+            return false;
+        }
+
+        self.tab_contents.insert(tab_id.to_string(), content);
+        self.tab_stats.insert(tab_id.to_string(), stats);
+        self.tab_revisions.insert(tab_id.to_string(), 0);
+        true
+    }
+
     pub fn revision_for_tab(&self, tab_id: &str) -> Option<u64> {
         self.tab_revisions.get(tab_id).copied()
     }
@@ -298,6 +314,29 @@ mod tests {
         contents.close_tab(&tab_id);
         assert!(tabs.active_tab().is_none());
         assert!(contents.content_for_tab(&tab_id).is_none());
+    }
+
+    #[test]
+    fn replace_saved_content_refreshes_content_stats_and_revision() {
+        let mut contents = TabContentsMap::default();
+        contents.insert_tab("a".to_string(), "old".to_string(), DocumentStats::default());
+        contents.update_tab_content("a", "dirty".to_string());
+
+        assert!(contents.replace_saved_content(
+            "a",
+            "saved".to_string(),
+            DocumentStats {
+                char_count: 5,
+                ..DocumentStats::default()
+            },
+        ));
+
+        assert_eq!(contents.content_for_tab("a"), Some("saved"));
+        assert_eq!(contents.revision_for_tab("a"), Some(0));
+        assert_eq!(
+            contents.tab_stats.get("a").map(|stats| stats.char_count),
+            Some(5)
+        );
     }
 
     #[test]

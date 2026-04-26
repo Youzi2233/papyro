@@ -26,6 +26,7 @@ fn rename_selected_note_updates_tree_selection_and_tab_path() {
     file_state.select_path(old_path.clone());
     let mut editor_tabs = EditorTabs::default();
     editor_tabs.open_tab(tab("tab-a", "note-a", "workspace/notes/a.md"));
+    editor_tabs.mark_tab_dirty("tab-a");
     let mut tab_contents = TabContentsMap::default();
     tab_contents.insert_tab(
         "tab-a".to_string(),
@@ -77,7 +78,7 @@ fn rename_selected_path_fails_without_selection() {
 
 #[test]
 fn move_selected_note_updates_tree_selection_and_tab_path() {
-    let old_path = PathBuf::from("workspace/notes/a.md");
+    let old_path = PathBuf::from("workspace/notes/daily/a.md");
     let target_dir = PathBuf::from("workspace/archive");
     let new_path = PathBuf::from("workspace/archive/a.md");
     let storage = MockStorage {
@@ -94,17 +95,21 @@ fn move_selected_note_updates_tree_selection_and_tab_path() {
     let mut file_state = file_state_with_tree(vec![
         directory_node(
             "workspace/notes",
-            vec![note_node("workspace/notes/a.md", "note-a")],
+            vec![directory_node(
+                "workspace/notes/daily",
+                vec![note_node("workspace/notes/daily/a.md", "note-a")],
+            )],
         ),
         directory_node("workspace/archive", Vec::new()),
     ]);
     file_state.select_path(old_path.clone());
     let mut editor_tabs = EditorTabs::default();
-    editor_tabs.open_tab(tab("tab-a", "note-a", "workspace/notes/a.md"));
+    editor_tabs.open_tab(tab("tab-a", "note-a", "workspace/notes/daily/a.md"));
+    editor_tabs.mark_tab_dirty("tab-a");
     let mut tab_contents = TabContentsMap::default();
     tab_contents.insert_tab(
         "tab-a".to_string(),
-        "body".to_string(),
+        "![logo](../../assets/logo.png)".to_string(),
         DocumentStats::default(),
     );
 
@@ -133,7 +138,10 @@ fn move_selected_note_updates_tree_selection_and_tab_path() {
             .map(|tab| (tab.path.clone(), tab.title.clone())),
         Some((new_path, "a".to_string()))
     );
-    assert_eq!(tab_contents.content_for_tab("tab-a"), Some("body"));
+    assert_eq!(
+        tab_contents.content_for_tab("tab-a"),
+        Some("![logo](../assets/logo.png)")
+    );
 }
 
 #[test]
