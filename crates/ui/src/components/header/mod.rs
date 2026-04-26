@@ -9,9 +9,9 @@ pub fn AppHeader(on_settings: EventHandler<()>) -> Element {
     let app = use_app_context();
     let mut ui_state = app.ui_state;
     let commands = app.commands;
-    let settings = app.view_model.read().settings.clone();
+    let settings = ui_state.read().settings.clone();
 
-    let theme = settings.theme;
+    let theme = ui_state.read().theme().clone();
     let collapsed = settings.sidebar_collapsed;
 
     let theme_icon = match theme {

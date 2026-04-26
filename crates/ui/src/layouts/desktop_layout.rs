@@ -17,9 +17,9 @@ pub fn DesktopLayout(status_message: Option<String>) -> Element {
     let mut show_quick_open = use_signal(|| false);
     let mut show_command_palette = use_signal(|| false);
     let mut show_search = use_signal(|| false);
-    let settings = app.view_model.read().settings.clone();
+    let settings = ui_state.read().settings.clone();
 
-    let theme = settings.theme;
+    let theme = ui_state.read().theme().clone();
     let sidebar_collapsed = settings.sidebar_collapsed;
 
     use_effect(use_reactive((&theme,), move |(theme,)| {
