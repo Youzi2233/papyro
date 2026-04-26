@@ -34,7 +34,11 @@ impl FileState {
 
     pub fn selected_node(&self) -> Option<FileNode> {
         let selected_path = self.selected_path.as_ref()?;
-        find_node(&self.file_tree, selected_path).cloned()
+        self.node_for_path(selected_path)
+    }
+
+    pub fn node_for_path(&self, path: &Path) -> Option<FileNode> {
+        find_node(&self.file_tree, path).cloned()
     }
 
     pub fn is_expanded(&self, path: &Path) -> bool {
@@ -119,5 +123,37 @@ mod tests {
         state.select_path(PathBuf::from("workspace/folder/note.md"));
 
         assert_eq!(state.selected_node(), Some(nested_note));
+    }
+
+    #[test]
+    fn node_for_path_finds_nested_nodes_without_selection() {
+        let nested_note = FileNode {
+            name: "note.md".to_string(),
+            path: PathBuf::from("workspace/folder/note.md"),
+            relative_path: PathBuf::from("folder/note.md"),
+            created_at: 0,
+            updated_at: 0,
+            kind: FileNodeKind::Note {
+                note_id: Some("note-id".to_string()),
+            },
+        };
+        let state = FileState {
+            file_tree: vec![FileNode {
+                name: "folder".to_string(),
+                path: PathBuf::from("workspace/folder"),
+                relative_path: PathBuf::from("folder"),
+                created_at: 0,
+                updated_at: 0,
+                kind: FileNodeKind::Directory {
+                    children: vec![nested_note.clone()],
+                },
+            }],
+            ..FileState::default()
+        };
+
+        assert_eq!(
+            state.node_for_path(Path::new("workspace/folder/note.md")),
+            Some(nested_note)
+        );
     }
 }
