@@ -116,6 +116,15 @@ pub fn delete_note(pool: &DbPool, id: &str) -> Result<()> {
     Ok(())
 }
 
+pub fn delete_trashed_notes(pool: &DbPool, workspace_id: &str) -> Result<usize> {
+    let conn = pool.get()?;
+    let changed = conn.execute(
+        "DELETE FROM notes WHERE workspace_id = ?1 AND is_trashed = 1",
+        rusqlite::params![workspace_id],
+    )?;
+    Ok(changed)
+}
+
 pub fn update_note_id(
     pool: &DbPool,
     old_id: &str,

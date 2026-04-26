@@ -106,6 +106,13 @@ impl NoteStorage for MockStorage {
         Ok(PathBuf::from("workspace").join(trashed.note.relative_path))
     }
 
+    fn empty_trash(&self, _workspace: &Workspace) -> Result<usize> {
+        let mut trashed_notes = self.trashed_notes.lock().unwrap();
+        let count = trashed_notes.len();
+        trashed_notes.clear();
+        Ok(count)
+    }
+
     fn preview_delete_path(&self, _workspace: &Workspace, _path: &Path) -> Result<DeletePreview> {
         Ok(self.delete_preview.clone())
     }

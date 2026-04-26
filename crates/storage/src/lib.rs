@@ -376,6 +376,17 @@ impl SqliteStorage {
         Ok(restore_path)
     }
 
+    pub fn empty_trash(&self, workspace: &Workspace) -> Result<usize> {
+        let trash_root = workspace.path.join(WORKSPACE_TRASH_DIR_NAME);
+        if trash_root.is_dir() {
+            std::fs::remove_dir_all(&trash_root)?;
+        } else if trash_root.exists() {
+            std::fs::remove_file(&trash_root)?;
+        }
+
+        db::notes::delete_trashed_notes(&self.pool, &workspace.id)
+    }
+
     pub fn initialize_workspace(&self, root: &Path) -> Result<WorkspaceSnapshot> {
         let workspace = ensure_workspace(&self.pool, root)?;
         let mut file_tree = fs::scan_workspace(root)?;
@@ -501,6 +512,10 @@ impl NoteStorage for SqliteStorage {
 
     fn restore_trashed_note(&self, workspace: &Workspace, note_id: &str) -> Result<PathBuf> {
         SqliteStorage::restore_trashed_note(self, workspace, note_id)
+    }
+
+    fn empty_trash(&self, workspace: &Workspace) -> Result<usize> {
+        SqliteStorage::empty_trash(self, workspace)
     }
 
     fn preview_delete_path(&self, workspace: &Workspace, path: &Path) -> Result<DeletePreview> {
@@ -714,6 +729,10 @@ pub fn initialize_workspace(root: &Path) -> Result<WorkspaceSnapshot> {
 /// the recent list. Cost is effectively a directory stat, not O(N) file IO.
 pub fn reload_workspace_tree(workspace: &Workspace) -> Result<(Vec<FileNode>, Vec<RecentFile>)> {
     SqliteStorage::shared()?.reload_workspace_tree(workspace)
+}
+
+pub fn empty_trash(workspace: &Workspace) -> Result<usize> {
+    SqliteStorage::shared()?.empty_trash(workspace)
 }
 
 pub fn list_recent_workspaces(limit: usize) -> Result<Vec<Workspace>> {
@@ -1309,6 +1328,50 @@ mod tests {
             .expect("restored note metadata exists");
         assert_eq!(restored.relative_path, restored_relative);
         assert!(!restored.is_trashed);
+
+        Ok(())
+    }
+
+    #[test]
+    fn empty_trash_removes_files_and_trashed_metadata() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let workspace_root = create_workspace(&temp)?;
+        let notes_dir = workspace_root.join("notes");
+        std::fs::create_dir_all(&notes_dir)?;
+        let deleted_path = notes_dir.join("old.md");
+        let kept_path = notes_dir.join("keep.md");
+        std::fs::write(&deleted_path, "# Old")?;
+        std::fs::write(&kept_path, "# Keep")?;
+        let storage = test_storage(&temp)?;
+        let workspace = storage.initialize_workspace(&workspace_root)?.workspace;
+        let deleted_id = stable_note_id(&workspace, Path::new("notes").join("old.md").as_path());
+        let kept_id = stable_note_id(&workspace, Path::new("notes").join("keep.md").as_path());
+
+        storage.open_note(&workspace, &deleted_path)?;
+        storage.trash_path(&workspace, &deleted_path)?;
+
+        let deleted_count = storage.empty_trash(&workspace)?;
+
+        assert_eq!(deleted_count, 1);
+        assert!(!workspace_root.join(WORKSPACE_TRASH_DIR_NAME).exists());
+        assert!(storage.list_trashed_notes(&workspace)?.is_empty());
+        assert!(db::notes::get_note(&storage.pool, &deleted_id)?.is_none());
+        assert!(db::notes::get_note(&storage.pool, &kept_id)?.is_some());
+        assert!(kept_path.exists());
+
+        let conn = storage.pool.get()?;
+        let deleted_rows: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM notes WHERE id = ?1",
+            rusqlite::params![deleted_id],
+            |row| row.get(0),
+        )?;
+        let deleted_recent_rows: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM recent_files WHERE note_id = ?1",
+            rusqlite::params![deleted_id],
+            |row| row.get(0),
+        )?;
+        assert_eq!(deleted_rows, 0);
+        assert_eq!(deleted_recent_rows, 0);
 
         Ok(())
     }

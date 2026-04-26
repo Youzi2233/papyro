@@ -56,6 +56,7 @@ pub trait NoteStorage: Send + Sync {
     fn trash_path(&self, workspace: &Workspace, path: &Path) -> Result<PathBuf>;
     fn list_trashed_notes(&self, workspace: &Workspace) -> Result<Vec<crate::models::TrashedNote>>;
     fn restore_trashed_note(&self, workspace: &Workspace, note_id: &str) -> Result<PathBuf>;
+    fn empty_trash(&self, workspace: &Workspace) -> Result<usize>;
     fn preview_delete_path(&self, workspace: &Workspace, path: &Path) -> Result<DeletePreview>;
     fn delete_paths(&self, paths: &[PathBuf]) -> Result<()>;
     fn rename_path(&self, workspace: &Workspace, path: &Path, new_name: &str) -> Result<PathBuf>;
