@@ -4,6 +4,7 @@ use super::outline::OutlinePane;
 use super::preview::PreviewPane;
 use super::tabbar::EditorTabButton;
 use super::toolbar::EditorToolbar;
+use crate::components::primitives::EmptyState;
 use crate::context::use_app_context;
 use dioxus::prelude::*;
 use papyro_core::models::ViewMode;
@@ -160,7 +161,10 @@ pub fn EditorPane() -> Element {
                     }
                 }
             } else {
-                EmptyEditor {}
+                EmptyState {
+                    title: "Open a note to start editing",
+                    description: "Select a file from the sidebar, or create a new note with the New button.",
+                }
                 if !host_items.is_empty() {
                     div { class: "mn-editor-retired-hosts",
                         for (tab_id, _) in host_items {
@@ -203,18 +207,6 @@ fn ViewToggle(view_mode: ViewMode, on_change: EventHandler<ViewMode>) -> Element
                 title: "Read-only preview mode",
                 onclick: move |_| on_change.call(ViewMode::Preview),
                 "Preview"
-            }
-        }
-    }
-}
-
-#[component]
-fn EmptyEditor() -> Element {
-    rsx! {
-        section { class: "mn-empty",
-            div { class: "mn-empty-card",
-                h1 { "Open a note to start editing" }
-                p { "Select a file from the sidebar, or create a new note with the New button." }
             }
         }
     }

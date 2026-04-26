@@ -97,6 +97,18 @@ pub fn TextInput(
 }
 
 #[component]
+pub fn EmptyState(title: String, description: String) -> Element {
+    rsx! {
+        section { class: "mn-empty",
+            div { class: "mn-empty-card",
+                h1 { "{title}" }
+                p { "{description}" }
+            }
+        }
+    }
+}
+
+#[component]
 pub fn Tooltip(label: String, children: Element) -> Element {
     rsx! {
         span {
