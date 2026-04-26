@@ -1,5 +1,8 @@
 use base64::{engine::general_purpose::STANDARD, Engine as _};
-use papyro_core::models::{EditorTab, Workspace};
+use papyro_core::{
+    models::{EditorTab, Workspace},
+    workspace_assets_dir,
+};
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::io::AsyncWriteExt;
@@ -28,7 +31,7 @@ pub(super) async fn save_pasted_image_asset(
         return Err("pasted image data is empty".to_string());
     }
 
-    let assets_dir = workspace.path.join("assets");
+    let assets_dir = workspace_assets_dir(workspace);
     tokio::fs::create_dir_all(&assets_dir)
         .await
         .map_err(|error| format!("failed to create assets directory: {error}"))?;
