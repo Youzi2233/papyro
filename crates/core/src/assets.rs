@@ -43,6 +43,39 @@ pub fn rewrite_moved_note_image_links(
     output
 }
 
+pub fn local_markdown_image_targets(
+    markdown: &str,
+    workspace_root: &Path,
+    note_path: &Path,
+) -> Vec<PathBuf> {
+    let mut targets = Vec::new();
+    let mut cursor = 0;
+
+    while let Some(relative_start) = markdown[cursor..].find("![") {
+        let start = cursor + relative_start;
+        if let Some(image) = parse_next_image_link(&markdown[start..]) {
+            let (target, _) = split_link_target(image.body);
+            if let Some(target_path) = resolve_relative_target(target, workspace_root, note_path) {
+                if !targets.contains(&target_path) {
+                    targets.push(target_path);
+                }
+            }
+            cursor = start + image.consumed;
+        } else {
+            cursor = start + 2;
+        }
+    }
+
+    targets
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct ParsedImageLink<'a> {
+    alt: &'a str,
+    body: &'a str,
+    consumed: usize,
+}
+
 fn rewrite_next_image_link(
     markdown: &str,
     workspace_root: &Path,
@@ -50,6 +83,23 @@ fn rewrite_next_image_link(
     new_note_path: &Path,
     moved_root: Option<(&Path, &Path)>,
 ) -> Option<(String, usize)> {
+    let image = parse_next_image_link(markdown)?;
+    let (target, suffix) = split_link_target(image.body);
+    let rewritten_target = rewrite_relative_target(
+        target,
+        workspace_root,
+        old_note_path,
+        new_note_path,
+        moved_root,
+    )?;
+
+    Some((
+        format!("![{}]({rewritten_target}{suffix})", image.alt),
+        image.consumed,
+    ))
+}
+
+fn parse_next_image_link(markdown: &str) -> Option<ParsedImageLink<'_>> {
     let after_marker = markdown.strip_prefix("![")?;
     let alt_end = after_marker.find("](")?;
     let alt = &after_marker[..alt_end];
@@ -65,17 +115,11 @@ fn rewrite_next_image_link(
         return None;
     }
 
-    let (target, suffix) = split_link_target(body);
-    let rewritten_target = rewrite_relative_target(
-        target,
-        workspace_root,
-        old_note_path,
-        new_note_path,
-        moved_root,
-    )?;
-    let consumed = target_start + target_end + 1;
-
-    Some((format!("![{alt}]({rewritten_target}{suffix})"), consumed))
+    Some(ParsedImageLink {
+        alt,
+        body,
+        consumed: target_start + target_end + 1,
+    })
 }
 
 fn split_link_target(body: &str) -> (&str, &str) {
@@ -100,17 +144,9 @@ fn rewrite_relative_target(
     }
 
     let (path_part, target_suffix) = split_target_path_suffix(target);
-    if path_part.is_empty() {
-        return None;
-    }
-
-    let old_note_dir = old_note_path.parent().unwrap_or_else(|| Path::new(""));
-    let new_note_dir = new_note_path.parent().unwrap_or_else(|| Path::new(""));
-    let old_target = normalize_lexical(&old_note_dir.join(path_part));
+    let old_target = resolve_relative_target(path_part, workspace_root, old_note_path)?;
     let workspace_root = normalize_lexical(workspace_root);
-    if !old_target.starts_with(&workspace_root) {
-        return None;
-    }
+    let new_note_dir = new_note_path.parent().unwrap_or_else(|| Path::new(""));
 
     let new_target = moved_root
         .and_then(|(old_root, new_root)| {
@@ -130,6 +166,29 @@ fn rewrite_relative_target(
 
     let relative = relative_path(new_note_dir, &new_target);
     Some(format!("{}{}", markdown_path(&relative), target_suffix))
+}
+
+fn resolve_relative_target(
+    target: &str,
+    workspace_root: &Path,
+    note_path: &Path,
+) -> Option<PathBuf> {
+    if !is_rewritable_relative_target(target) {
+        return None;
+    }
+
+    let (path_part, _) = split_target_path_suffix(target);
+    if path_part.is_empty() {
+        return None;
+    }
+
+    let note_dir = note_path.parent().unwrap_or_else(|| Path::new(""));
+    let target_path = normalize_lexical(&note_dir.join(path_part));
+    if target_path.starts_with(normalize_lexical(workspace_root)) {
+        Some(target_path)
+    } else {
+        None
+    }
 }
 
 fn split_target_path_suffix(target: &str) -> (&str, &str) {
@@ -287,6 +346,33 @@ mod tests {
         assert_eq!(
             rewritten,
             "![logo](../../assets/logo.png?size=large#preview \"Logo\")"
+        );
+    }
+
+    #[test]
+    fn local_markdown_image_targets_resolves_workspace_relative_images() {
+        let markdown = concat!(
+            "![logo](../assets/logo.png?size=large)\n",
+            "![duplicate](../assets/logo.png)\n",
+            "![local](images/photo.webp \"Photo\")\n",
+            "![remote](https://example.test/remote.png)\n",
+            "![root](/assets/root.png)\n",
+            "![data](data:image/png;base64,abc)\n",
+            "![outside](../../outside.png)\n",
+        );
+
+        let targets = local_markdown_image_targets(
+            markdown,
+            Path::new("workspace"),
+            Path::new("workspace/notes/note.md"),
+        );
+
+        assert_eq!(
+            targets,
+            vec![
+                PathBuf::from("workspace/assets/logo.png"),
+                PathBuf::from("workspace/notes/images/photo.webp"),
+            ]
         );
     }
 }
