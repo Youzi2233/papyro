@@ -27,6 +27,7 @@ pub(crate) enum CommandPaletteActionKind {
     ToggleTheme,
     OpenSettings,
     SetViewMode(ViewMode),
+    SetSelectedFavorite(bool),
 }
 
 #[component]
@@ -43,6 +44,7 @@ pub fn CommandPaletteModal(on_close: EventHandler<()>, on_settings: EventHandler
         &view_model.workspace.recent_workspaces,
         &view_model.workspace.recent_files,
         view_model.editor.has_active_tab,
+        selected_note_name(&view_model.workspace),
         view_model.settings.theme,
         view_model.editor.view_mode,
     );
@@ -190,6 +192,9 @@ fn execute_command_action(
             settings.view_mode = mode;
             commands.save_settings.call(settings);
         }
+        CommandPaletteActionKind::SetSelectedFavorite(favorite) => {
+            commands.set_selected_favorite.call(favorite);
+        }
     }
 
     on_close.call(());
@@ -200,6 +205,7 @@ pub(crate) fn command_palette_actions(
     recent_workspaces: &[crate::view_model::WorkspaceListItem],
     recent_files: &[crate::view_model::RecentFileListItem],
     has_active_tab: bool,
+    selected_note_name: Option<&str>,
     theme: Theme,
     view_mode: ViewMode,
 ) -> Vec<CommandPaletteAction> {
@@ -288,6 +294,21 @@ pub(crate) fn command_palette_actions(
         ));
     }
 
+    if let Some(name) = selected_note_name {
+        actions.push(action(
+            "Favorite selected note",
+            name,
+            "FILE",
+            CommandPaletteActionKind::SetSelectedFavorite(true),
+        ));
+        actions.push(action(
+            "Unfavorite selected note",
+            name,
+            "FILE",
+            CommandPaletteActionKind::SetSelectedFavorite(false),
+        ));
+    }
+
     for (mode, title) in [
         (ViewMode::Hybrid, "Use hybrid mode"),
         (ViewMode::Source, "Use source mode"),
@@ -317,6 +338,14 @@ fn action(
         detail: detail.to_string(),
         group: group.to_string(),
         kind,
+    }
+}
+
+fn selected_note_name(workspace: &crate::view_model::WorkspaceViewModel) -> Option<&str> {
+    if workspace.has_selection && !workspace.selected_is_directory {
+        workspace.selected_name.as_deref()
+    } else {
+        None
     }
 }
 
@@ -351,7 +380,15 @@ mod tests {
 
     #[test]
     fn command_palette_actions_reflect_workspace_and_tab_state() {
-        let actions = command_palette_actions(true, &[], &[], true, Theme::Dark, ViewMode::Hybrid);
+        let actions = command_palette_actions(
+            true,
+            &[],
+            &[],
+            true,
+            Some("Draft.md"),
+            Theme::Dark,
+            ViewMode::Hybrid,
+        );
         let titles = actions
             .iter()
             .map(|action| action.title.as_str())
@@ -361,14 +398,23 @@ mod tests {
         assert!(titles.contains(&"Refresh workspace"));
         assert!(titles.contains(&"Save active note"));
         assert!(titles.contains(&"Export HTML"));
+        assert!(titles.contains(&"Favorite selected note"));
+        assert!(titles.contains(&"Unfavorite selected note"));
         assert!(titles.contains(&"Use source mode"));
         assert!(!titles.contains(&"Use hybrid mode"));
     }
 
     #[test]
     fn command_palette_actions_hide_file_commands_without_active_tab() {
-        let actions =
-            command_palette_actions(false, &[], &[], false, Theme::System, ViewMode::Preview);
+        let actions = command_palette_actions(
+            false,
+            &[],
+            &[],
+            false,
+            None,
+            Theme::System,
+            ViewMode::Preview,
+        );
         let titles = actions
             .iter()
             .map(|action| action.title.as_str())
@@ -382,7 +428,8 @@ mod tests {
 
     #[test]
     fn command_palette_filter_matches_title_detail_and_group() {
-        let actions = command_palette_actions(true, &[], &[], true, Theme::Light, ViewMode::Source);
+        let actions =
+            command_palette_actions(true, &[], &[], true, None, Theme::Light, ViewMode::Source);
 
         assert_eq!(
             filter_command_palette_actions(&actions, "file save")
@@ -418,6 +465,7 @@ mod tests {
             ],
             &[],
             false,
+            None,
             Theme::Light,
             ViewMode::Hybrid,
         );
@@ -445,6 +493,7 @@ mod tests {
                 workspace_path: PathBuf::from("work"),
             }],
             false,
+            None,
             Theme::Light,
             ViewMode::Hybrid,
         );
@@ -458,6 +507,36 @@ mod tests {
                     CommandPaletteActionKind::OpenRecentFile(target)
                         if target.workspace_path == std::path::Path::new("work")
                             && target.relative_path == std::path::Path::new("notes/meeting.md")
+                )
+        }));
+    }
+
+    #[test]
+    fn command_palette_actions_include_selected_note_favorites() {
+        let actions = command_palette_actions(
+            true,
+            &[],
+            &[],
+            false,
+            Some("Draft.md"),
+            Theme::Light,
+            ViewMode::Hybrid,
+        );
+
+        assert!(actions.iter().any(|action| {
+            action.title == "Favorite selected note"
+                && action.detail == "Draft.md"
+                && matches!(
+                    action.kind,
+                    CommandPaletteActionKind::SetSelectedFavorite(true)
+                )
+        }));
+        assert!(actions.iter().any(|action| {
+            action.title == "Unfavorite selected note"
+                && action.detail == "Draft.md"
+                && matches!(
+                    action.kind,
+                    CommandPaletteActionKind::SetSelectedFavorite(false)
                 )
         }));
     }
