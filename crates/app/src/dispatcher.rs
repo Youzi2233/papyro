@@ -153,6 +153,16 @@ impl AppDispatcher {
                     action.name,
                 );
             }
+            AppAction::MoveSelectedTo(action) => {
+                file_ops::move_selected_to(
+                    self.storage.clone(),
+                    self.state.file_state,
+                    self.state.editor_tabs,
+                    self.state.tab_contents,
+                    self.state.status_message,
+                    action.target_dir,
+                );
+            }
             AppAction::DeleteSelected => {
                 file_ops::delete_selected(
                     self.shell,
@@ -215,6 +225,7 @@ impl AppDispatcher {
         let save_tab = self.clone();
         let close_tab = self.clone();
         let rename_selected = self.clone();
+        let move_selected_to = self.clone();
         let delete_selected = self.clone();
         let toggle_expanded_path = self.clone();
         let reveal_in_explorer = self.clone();
@@ -258,6 +269,9 @@ impl AppDispatcher {
             }),
             rename_selected: EventHandler::new(move |name| {
                 rename_selected.dispatch(AppAction::rename_selected(name));
+            }),
+            move_selected_to: EventHandler::new(move |target_dir| {
+                move_selected_to.dispatch(AppAction::move_selected_to(target_dir));
             }),
             delete_selected: EventHandler::new(move |_| {
                 delete_selected.dispatch(AppAction::DeleteSelected);
@@ -510,6 +524,12 @@ mod tests {
             AppAction::toggle_expanded_path(std::path::PathBuf::from("workspace/notes")),
             AppAction::ToggleExpandedPath(crate::actions::ToggleExpandedPath {
                 path: std::path::PathBuf::from("workspace/notes")
+            })
+        );
+        assert_eq!(
+            AppAction::move_selected_to(std::path::PathBuf::from("workspace/archive")),
+            AppAction::MoveSelectedTo(crate::actions::MoveSelectedTo {
+                target_dir: std::path::PathBuf::from("workspace/archive")
             })
         );
     }

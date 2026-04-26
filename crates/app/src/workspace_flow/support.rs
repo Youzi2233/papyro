@@ -17,6 +17,7 @@ pub(super) struct MockStorage {
     pub save_result: Option<SavedNote>,
     pub recent_files: Vec<RecentFile>,
     pub rename_result: Option<PathBuf>,
+    pub move_result: Option<PathBuf>,
     pub reload_result: Option<(Vec<FileNode>, Vec<RecentFile>)>,
     pub create_note_result: Option<PathBuf>,
     pub create_folder_result: Option<PathBuf>,
@@ -26,6 +27,7 @@ pub(super) struct MockStorage {
     pub saved_tree_states: Mutex<Vec<(String, WorkspaceTreeState)>>,
     pub created_note_requests: Mutex<Vec<(PathBuf, String)>>,
     pub created_folder_requests: Mutex<Vec<(PathBuf, String)>>,
+    pub moved_paths: Mutex<Vec<(PathBuf, PathBuf)>>,
 }
 
 impl NoteStorage for MockStorage {
@@ -85,6 +87,16 @@ impl NoteStorage for MockStorage {
         self.rename_result
             .clone()
             .ok_or_else(|| anyhow!("Missing rename result"))
+    }
+
+    fn move_path(&self, _workspace: &Workspace, path: &Path, target_dir: &Path) -> Result<PathBuf> {
+        self.moved_paths
+            .lock()
+            .unwrap()
+            .push((path.to_path_buf(), target_dir.to_path_buf()));
+        self.move_result
+            .clone()
+            .ok_or_else(|| anyhow!("Missing move result"))
     }
 
     fn bootstrap_from_workspace(&self, _root: &Path) -> WorkspaceBootstrap {

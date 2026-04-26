@@ -8,8 +8,8 @@ use std::sync::Arc;
 
 use crate::runtime::AppShell;
 use crate::workspace_flow::{
-    create_folder_in_storage, create_note_in_storage, delete_selected_path, normalized_name,
-    rename_selected_path,
+    create_folder_in_storage, create_note_in_storage, delete_selected_path, move_selected_path,
+    normalized_name, rename_selected_path,
 };
 
 type BlockingResult<T> = Result<Result<T, anyhow::Error>, tokio::task::JoinError>;
@@ -228,6 +228,68 @@ pub fn delete_selected(
             }
             Err(error) => {
                 status_message.set(Some(format!("Delete failed: {error}")));
+            }
+        }
+    });
+}
+
+pub fn move_selected_to(
+    storage: Arc<dyn NoteStorage>,
+    mut file_state: Signal<FileState>,
+    mut editor_tabs: Signal<EditorTabs>,
+    mut tab_contents: Signal<TabContentsMap>,
+    mut status_message: Signal<Option<String>>,
+    target_dir: PathBuf,
+) {
+    let workspace = file_state.read().current_workspace.clone();
+    let selected_node = file_state.read().selected_node();
+
+    let Some(workspace) = workspace else {
+        status_message.set(Some("Open a workspace before moving files".to_string()));
+        return;
+    };
+    if selected_node.is_none() {
+        status_message.set(Some("Select a note or folder to move".to_string()));
+        return;
+    }
+
+    let mut next_file_state = file_state.read().clone();
+    next_file_state.current_workspace = Some(workspace);
+    let mut next_editor_tabs = editor_tabs.read().clone();
+    let mut next_tab_contents = tab_contents.read().clone();
+
+    spawn(async move {
+        let result: BlockingResult<(PathBuf, FileState, EditorTabs, TabContentsMap)> =
+            tokio::task::spawn_blocking(move || {
+                let moved_path = move_selected_path(
+                    storage.as_ref(),
+                    &mut next_file_state,
+                    &mut next_editor_tabs,
+                    &mut next_tab_contents,
+                    &target_dir,
+                )?;
+
+                Ok::<_, anyhow::Error>((
+                    moved_path,
+                    next_file_state,
+                    next_editor_tabs,
+                    next_tab_contents,
+                ))
+            })
+            .await;
+
+        match result {
+            Ok(Ok((moved_path, next_file_state, next_editor_tabs, next_tab_contents))) => {
+                file_state.set(next_file_state);
+                editor_tabs.set(next_editor_tabs);
+                tab_contents.set(next_tab_contents);
+                status_message.set(Some(format!("Moved to {}", moved_path.display())));
+            }
+            Ok(Err(error)) => {
+                status_message.set(Some(format!("Move failed: {error}")));
+            }
+            Err(error) => {
+                status_message.set(Some(format!("Move failed: {error}")));
             }
         }
     });

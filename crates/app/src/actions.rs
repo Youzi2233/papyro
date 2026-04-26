@@ -16,6 +16,7 @@ pub enum AppAction {
     SaveTab(SaveTab),
     CloseTab(CloseTab),
     RenameSelected(RenameSelected),
+    MoveSelectedTo(MoveSelectedTo),
     DeleteSelected,
     ToggleExpandedPath(ToggleExpandedPath),
     RevealInExplorer(RevealInExplorer),
@@ -62,6 +63,11 @@ pub struct CloseTab {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RenameSelected {
     pub name: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MoveSelectedTo {
+    pub target_dir: PathBuf,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -119,6 +125,10 @@ impl AppAction {
 
     pub fn rename_selected(name: String) -> Self {
         Self::RenameSelected(RenameSelected { name })
+    }
+
+    pub fn move_selected_to(target_dir: PathBuf) -> Self {
+        Self::MoveSelectedTo(MoveSelectedTo { target_dir })
     }
 
     pub fn toggle_expanded_path(path: PathBuf) -> Self {

@@ -267,6 +267,29 @@ impl SqliteStorage {
         Ok(new_path)
     }
 
+    pub fn move_path(
+        &self,
+        workspace: &Workspace,
+        path: &Path,
+        target_dir: &Path,
+    ) -> Result<PathBuf> {
+        let was_dir = path.is_dir();
+        let old_path = path.to_path_buf();
+        let new_path = if was_dir {
+            fs::move_folder(path, target_dir)?
+        } else {
+            fs::move_note(path, target_dir)?
+        };
+
+        for (old_id, new_id, new_relative_path) in
+            renamed_note_ids(workspace, &old_path, &new_path)?
+        {
+            db::notes::update_note_id(&self.pool, &old_id, &new_id, &new_relative_path)?;
+        }
+
+        Ok(new_path)
+    }
+
     pub fn initialize_workspace(&self, root: &Path) -> Result<WorkspaceSnapshot> {
         let workspace = ensure_workspace(&self.pool, root)?;
         let mut file_tree = fs::scan_workspace(root)?;
@@ -354,6 +377,10 @@ impl NoteStorage for SqliteStorage {
 
     fn rename_path(&self, workspace: &Workspace, path: &Path, new_name: &str) -> Result<PathBuf> {
         SqliteStorage::rename_path(self, workspace, path, new_name)
+    }
+
+    fn move_path(&self, workspace: &Workspace, path: &Path, target_dir: &Path) -> Result<PathBuf> {
+        SqliteStorage::move_path(self, workspace, path, target_dir)
     }
 
     fn bootstrap_from_workspace(&self, root: &Path) -> WorkspaceBootstrap {
@@ -482,6 +509,10 @@ pub fn create_folder_in_directory(directory: &Path, suggested_name: &str) -> Res
 
 pub fn rename_path(workspace: &Workspace, path: &Path, new_name: &str) -> Result<PathBuf> {
     SqliteStorage::shared()?.rename_path(workspace, path, new_name)
+}
+
+pub fn move_path(workspace: &Workspace, path: &Path, target_dir: &Path) -> Result<PathBuf> {
+    SqliteStorage::shared()?.move_path(workspace, path, target_dir)
 }
 
 pub fn delete_path(path: &Path) -> Result<()> {
@@ -767,6 +798,43 @@ mod tests {
         assert_eq!(recent.len(), 1);
         assert_eq!(recent[0].note_id, new_id);
         assert_eq!(recent[0].relative_path, PathBuf::from("new.md"));
+
+        Ok(())
+    }
+
+    #[test]
+    fn move_note_updates_note_id_and_recent_files() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let workspace_root = create_workspace(&temp)?;
+        let target_dir = workspace_root.join("archive");
+        std::fs::create_dir_all(&target_dir)?;
+        let old_path = workspace_root.join("old.md");
+        std::fs::write(&old_path, "# Old\n\nBody")?;
+
+        let storage = test_storage(&temp)?;
+        let snapshot = storage.initialize_workspace(&workspace_root)?;
+        let workspace = snapshot.workspace;
+        let old_id = stable_note_id(&workspace, Path::new("old.md"));
+
+        storage.open_note(&workspace, &old_path)?;
+        let new_path = storage.move_path(&workspace, &old_path, &target_dir)?;
+        let new_relative = new_path
+            .strip_prefix(&workspace_root)
+            .unwrap_or(&new_path)
+            .to_path_buf();
+        let new_id = stable_note_id(&workspace, &new_relative);
+
+        assert_eq!(new_path, target_dir.join("old.md"));
+        assert!(!old_path.exists());
+        assert!(new_path.exists());
+        assert!(db::notes::get_note(&storage.pool, &old_id)?.is_none());
+        let moved = db::notes::get_note(&storage.pool, &new_id)?.expect("moved note exists");
+        assert_eq!(moved.relative_path, new_relative);
+
+        let recent = storage.list_recent(10)?;
+        assert_eq!(recent.len(), 1);
+        assert_eq!(recent[0].note_id, new_id);
+        assert_eq!(recent[0].relative_path, new_relative);
 
         Ok(())
     }

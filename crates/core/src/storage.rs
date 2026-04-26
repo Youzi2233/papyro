@@ -47,6 +47,7 @@ pub trait NoteStorage: Send + Sync {
     fn create_folder(&self, parent: &Path, name: &str) -> Result<PathBuf>;
     fn delete_path(&self, path: &Path) -> Result<()>;
     fn rename_path(&self, workspace: &Workspace, path: &Path, new_name: &str) -> Result<PathBuf>;
+    fn move_path(&self, workspace: &Workspace, path: &Path, target_dir: &Path) -> Result<PathBuf>;
     fn bootstrap_from_workspace(&self, root: &Path) -> WorkspaceBootstrap;
     fn initialize_workspace(&self, root: &Path) -> Result<WorkspaceSnapshot>;
     fn reload_workspace_tree(

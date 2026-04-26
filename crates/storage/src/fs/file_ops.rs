@@ -45,6 +45,28 @@ pub fn rename_folder(path: &Path, new_name: &str) -> Result<PathBuf> {
     Ok(new_path)
 }
 
+pub fn move_note(path: &Path, target_dir: &Path) -> Result<PathBuf> {
+    std::fs::create_dir_all(target_dir)?;
+    let stem = path
+        .file_stem()
+        .and_then(|stem| stem.to_str())
+        .unwrap_or("Untitled");
+    let new_path = unique_path(target_dir, stem, "md");
+    std::fs::rename(path, &new_path)?;
+    Ok(new_path)
+}
+
+pub fn move_folder(path: &Path, target_dir: &Path) -> Result<PathBuf> {
+    std::fs::create_dir_all(target_dir)?;
+    let name = path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or("Folder");
+    let new_path = unique_folder_path(target_dir, name);
+    std::fs::rename(path, &new_path)?;
+    Ok(new_path)
+}
+
 pub fn create_folder(parent: &Path, name: &str) -> Result<PathBuf> {
     let folder = unique_folder_path(parent, &sanitize_filename(name));
     std::fs::create_dir_all(&folder)?;
