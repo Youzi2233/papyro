@@ -13,7 +13,22 @@ pub struct SegmentedControlOption {
     pub value: String,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DropdownOption {
+    pub label: String,
+    pub value: String,
+}
+
 impl SegmentedControlOption {
+    pub fn new(label: &str, value: &str) -> Self {
+        Self {
+            label: label.to_string(),
+            value: value.to_string(),
+        }
+    }
+}
+
+impl DropdownOption {
     pub fn new(label: &str, value: &str) -> Self {
         Self {
             label: label.to_string(),
@@ -88,6 +103,29 @@ pub fn SegmentedControl(
                         let value = option.value.clone();
                         move |_| on_change.call(value.clone())
                     },
+                    "{option.label}"
+                }
+            }
+        }
+    }
+}
+
+#[component]
+pub fn Dropdown(
+    label: String,
+    options: Vec<DropdownOption>,
+    selected: String,
+    on_change: EventHandler<String>,
+) -> Element {
+    rsx! {
+        select {
+            class: "mn-input",
+            "aria-label": "{label}",
+            value: "{selected}",
+            onchange: move |event| on_change.call(event.value()),
+            for option in options {
+                option {
+                    value: "{option.value}",
                     "{option.label}"
                 }
             }

@@ -2,7 +2,8 @@ use crate::commands::{
     AppCommands, DeleteTagRequest, RenameTagRequest, SetTagColorRequest, UpsertTagRequest,
 };
 use crate::components::primitives::{
-    Button, ButtonVariant, SegmentedControl, SegmentedControlOption, Slider, Toggle,
+    Button, ButtonVariant, Dropdown, DropdownOption, SegmentedControl, SegmentedControlOption,
+    Slider, Toggle,
 };
 use crate::context::use_app_context;
 use crate::view_model::TagListItem;
@@ -54,6 +55,15 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
         SegmentedControlOption::new("System", "system"),
         SegmentedControlOption::new("Light", "light"),
         SegmentedControlOption::new("Dark", "dark"),
+    ];
+    let font_options = vec![
+        DropdownOption::new(
+            "Cascadia Code",
+            "\"Cascadia Code\", \"JetBrains Mono\", monospace",
+        ),
+        DropdownOption::new("JetBrains Mono", "\"JetBrains Mono\", monospace"),
+        DropdownOption::new("Fira Code", "\"Fira Code\", monospace"),
+        DropdownOption::new("Courier New", "\"Courier New\", monospace"),
     ];
 
     let save = move |_| {
@@ -145,16 +155,11 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
                     }
                     SettingSection { label: "Editor",
                         SettingRow { label: "Font family",
-                            select {
-                                class: "mn-input",
-                                value: "{font_family}",
-                                onchange: move |e| font_family.set(e.value().clone()),
-                                option { value: "\"Cascadia Code\", \"JetBrains Mono\", monospace",
-                                    "Cascadia Code"
-                                }
-                                option { value: "\"JetBrains Mono\", monospace", "JetBrains Mono" }
-                                option { value: "\"Fira Code\", monospace", "Fira Code" }
-                                option { value: "\"Courier New\", monospace", "Courier New" }
+                            Dropdown {
+                                label: "Font family",
+                                options: font_options,
+                                selected: font_family(),
+                                on_change: move |value: String| font_family.set(value),
                             }
                         }
                         SettingRow { label: "Font size ({font_size}px)",
