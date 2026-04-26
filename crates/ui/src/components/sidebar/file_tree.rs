@@ -43,6 +43,8 @@ pub fn FileTree(sort_mode: FileTreeSortMode) -> Element {
     let keyboard_items = visible_items.clone();
     let mut context_menu = use_signal(|| None::<FileTreeContextMenu>);
     let mut rename_draft = use_signal(|| None::<FileTreeRenameDraft>);
+    let drag_source = use_signal(|| None::<FileTreeDragSource>);
+    let drop_target = use_signal(|| None::<PathBuf>);
 
     rsx! {
         div {
@@ -98,6 +100,8 @@ pub fn FileTree(sort_mode: FileTreeSortMode) -> Element {
                         node: item.node,
                         depth: item.depth,
                         rename_draft,
+                        drag_source,
+                        drop_target,
                         on_context_menu: move |menu| {
                             rename_draft.set(None);
                             context_menu.set(Some(menu));
@@ -132,6 +136,8 @@ fn FileTreeNode(
     node: FileNode,
     depth: u32,
     rename_draft: Signal<Option<FileTreeRenameDraft>>,
+    drag_source: Signal<Option<FileTreeDragSource>>,
+    drop_target: Signal<Option<PathBuf>>,
     on_context_menu: EventHandler<FileTreeContextMenu>,
 ) -> Element {
     let app = use_app_context();
@@ -155,18 +161,29 @@ fn FileTreeNode(
         .as_ref()
         .filter(|draft| draft.path == node_path)
         .cloned();
+    let is_dragging = drag_source
+        .read()
+        .as_ref()
+        .is_some_and(|source| source.path == node_path);
+    let is_drop_target = drop_target.read().as_ref() == Some(&node_path);
 
     match &node.kind {
         FileNodeKind::Directory { .. } => {
             let is_expanded = file_state.read().is_expanded(&node_path);
-            let dir_path = node_path.clone();
+            let toggle_path = node_path.clone();
+            let toggle_commands = commands.clone();
             let menu_node = node.clone();
             let menu_path = node_path.clone();
+            let drag_node = node.clone();
+            let drop_path_over = node_path.clone();
+            let drop_path_leave = node_path.clone();
+            let drop_path_drop = node_path.clone();
+            let drop_commands = commands.clone();
 
             if let Some(draft) = active_rename {
                 rsx! {
                     div {
-                        class: "mn-tree-row directory active editing",
+                        class: file_tree_row_class("directory", true, true, false, false),
                         style: "padding-left: {indent}px",
                         role: "treeitem",
                         "aria-selected": "true",
@@ -210,19 +227,54 @@ fn FileTreeNode(
             } else {
                 rsx! {
                     button {
-                        class: if is_selected { "mn-tree-row directory active" } else { "mn-tree-row directory" },
+                        class: file_tree_row_class("directory", is_selected, false, is_dragging, is_drop_target),
                         style: "padding-left: {indent}px",
                         role: "treeitem",
+                        draggable: true,
                         "aria-selected": "{is_selected}",
                         "aria-expanded": "{is_expanded}",
                         onclick: move |_| {
-                            commands.toggle_expanded_path.call(dir_path.clone());
+                            toggle_commands.toggle_expanded_path.call(toggle_path.clone());
                         },
                         oncontextmenu: move |event| {
                             event.prevent_default();
                             event.stop_propagation();
                             file_state.write().select_path(menu_path.clone());
                             on_context_menu.call(FileTreeContextMenu::from_event(&menu_node, &event));
+                        },
+                        ondragstart: move |event| {
+                            event.stop_propagation();
+                            file_state.write().select_path(drag_node.path.clone());
+                            drag_source.set(Some(FileTreeDragSource::from_node(&drag_node)));
+                        },
+                        ondragend: move |_| {
+                            drag_source.set(None);
+                            drop_target.set(None);
+                        },
+                        ondragover: move |event| {
+                            if let Some(source) = drag_source() {
+                                if can_drop_on_directory(&source, &drop_path_over) {
+                                    event.prevent_default();
+                                    drop_target.set(Some(drop_path_over.clone()));
+                                }
+                            }
+                        },
+                        ondragleave: move |_| {
+                            if drop_target.read().as_ref() == Some(&drop_path_leave) {
+                                drop_target.set(None);
+                            }
+                        },
+                        ondrop: move |event| {
+                            event.prevent_default();
+                            event.stop_propagation();
+                            if let Some(source) = drag_source() {
+                                if can_drop_on_directory(&source, &drop_path_drop) {
+                                    file_state.write().select_path(source.path.clone());
+                                    drop_commands.move_selected_to.call(drop_path_drop.clone());
+                                }
+                            }
+                            drag_source.set(None);
+                            drop_target.set(None);
                         },
                         span { class: "mn-tree-caret", if is_expanded { "v" } else { ">" } }
                         span { class: "mn-tree-icon", "dir" }
@@ -234,13 +286,15 @@ fn FileTreeNode(
         FileNodeKind::Note { .. } => {
             let node_title = node.name.trim_end_matches(".md").to_string();
             let open_node = node.clone();
+            let open_commands = commands.clone();
             let menu_node = node.clone();
             let menu_path = node_path.clone();
+            let drag_node = node.clone();
 
             if let Some(draft) = active_rename {
                 rsx! {
                     div {
-                        class: "mn-tree-row note active editing",
+                        class: file_tree_row_class("note", true, true, false, false),
                         style: "padding-left: {indent + 18}px",
                         role: "treeitem",
                         "aria-selected": "true",
@@ -282,19 +336,29 @@ fn FileTreeNode(
             } else {
                 rsx! {
                     button {
-                        class: if is_selected { "mn-tree-row note active" } else { "mn-tree-row note" },
+                        class: file_tree_row_class("note", is_selected, false, is_dragging, false),
                         style: "padding-left: {indent + 18}px",
                         role: "treeitem",
+                        draggable: true,
                         "aria-selected": "{is_selected}",
                         onclick: move |_| {
                             file_state.write().select_path(open_node.path.clone());
-                            commands.open_note.call(open_node.clone());
+                            open_commands.open_note.call(open_node.clone());
                         },
                         oncontextmenu: move |event| {
                             event.prevent_default();
                             event.stop_propagation();
                             file_state.write().select_path(menu_path.clone());
                             on_context_menu.call(FileTreeContextMenu::from_event(&menu_node, &event));
+                        },
+                        ondragstart: move |event| {
+                            event.stop_propagation();
+                            file_state.write().select_path(drag_node.path.clone());
+                            drag_source.set(Some(FileTreeDragSource::from_node(&drag_node)));
+                        },
+                        ondragend: move |_| {
+                            drag_source.set(None);
+                            drop_target.set(None);
                         },
                         span { class: "mn-tree-icon", "md" }
                         span { class: "mn-tree-label", "{node_title}" }
@@ -333,6 +397,52 @@ fn rename_input_value(node: &FileNode) -> String {
         FileNodeKind::Note { .. } => node.name.trim_end_matches(".md").to_string(),
         FileNodeKind::Directory { .. } => node.name.clone(),
     }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+struct FileTreeDragSource {
+    path: PathBuf,
+    is_directory: bool,
+}
+
+impl FileTreeDragSource {
+    fn from_node(node: &FileNode) -> Self {
+        Self {
+            path: node.path.clone(),
+            is_directory: matches!(node.kind, FileNodeKind::Directory { .. }),
+        }
+    }
+}
+
+fn can_drop_on_directory(source: &FileTreeDragSource, target_dir: &Path) -> bool {
+    if source.path == target_dir || source.path.parent() == Some(target_dir) {
+        return false;
+    }
+
+    !source.is_directory || !target_dir.starts_with(&source.path)
+}
+
+fn file_tree_row_class(
+    kind: &str,
+    is_selected: bool,
+    is_editing: bool,
+    is_dragging: bool,
+    is_drop_target: bool,
+) -> String {
+    let mut classes = vec!["mn-tree-row", kind];
+    if is_selected {
+        classes.push("active");
+    }
+    if is_editing {
+        classes.push("editing");
+    }
+    if is_dragging {
+        classes.push("dragging");
+    }
+    if is_drop_target {
+        classes.push("drop-target");
+    }
+    classes.join(" ")
 }
 
 fn begin_inline_rename(
@@ -826,6 +936,51 @@ mod tests {
                 .map(|node| node.name.as_str())
                 .collect::<Vec<_>>(),
             vec!["child-new.md", "child-old.md"]
+        );
+    }
+
+    #[test]
+    fn drag_drop_model_allows_valid_directory_targets_only() {
+        let note_source = FileTreeDragSource {
+            path: PathBuf::from("workspace/notes/a.md"),
+            is_directory: false,
+        };
+        let directory_source = FileTreeDragSource {
+            path: PathBuf::from("workspace/notes"),
+            is_directory: true,
+        };
+
+        assert!(can_drop_on_directory(
+            &note_source,
+            Path::new("workspace/archive")
+        ));
+        assert!(!can_drop_on_directory(
+            &note_source,
+            Path::new("workspace/notes")
+        ));
+        assert!(!can_drop_on_directory(
+            &directory_source,
+            Path::new("workspace/notes")
+        ));
+        assert!(!can_drop_on_directory(
+            &directory_source,
+            Path::new("workspace/notes/nested")
+        ));
+        assert!(can_drop_on_directory(
+            &directory_source,
+            Path::new("workspace/archive")
+        ));
+    }
+
+    #[test]
+    fn tree_row_class_reflects_drag_states() {
+        assert_eq!(
+            file_tree_row_class("directory", true, false, true, true),
+            "mn-tree-row directory active dragging drop-target"
+        );
+        assert_eq!(
+            file_tree_row_class("note", false, true, false, false),
+            "mn-tree-row note editing"
         );
     }
 

@@ -465,6 +465,16 @@ button { border: 0; cursor: pointer; background: transparent; }
     gap: 7px;
 }
 
+.mn-tree-row.dragging {
+    opacity: 0.58;
+}
+
+.mn-tree-row.drop-target {
+    background: var(--mn-accent-wash);
+    border-color: var(--mn-accent);
+    box-shadow: inset 3px 0 0 var(--mn-accent), var(--mn-shadow-xs);
+}
+
 .mn-tree-caret {
     width: 12px;
     flex-shrink: 0;
