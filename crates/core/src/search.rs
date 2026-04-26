@@ -24,6 +24,25 @@ impl WorkspaceSearchQuery {
         }
     }
 
+    pub fn from_input(input: &str, limit: usize) -> Self {
+        let mut text_tokens = Vec::new();
+        let mut tags = Vec::new();
+
+        for token in input.split_whitespace() {
+            if token.starts_with('#') && token.len() > 1 {
+                tags.push(token.to_string());
+            } else {
+                text_tokens.push(token);
+            }
+        }
+
+        Self {
+            text: text_tokens.join(" "),
+            tags,
+            limit,
+        }
+    }
+
     pub fn normalized_tags(&self) -> Vec<String> {
         let mut tags = self
             .tags
@@ -141,6 +160,18 @@ mod tests {
             vec!["rust".to_string(), "search".to_string()]
         );
         assert!(query.has_filters());
+    }
+
+    #[test]
+    fn workspace_search_query_splits_hash_tags_from_input() {
+        let query = WorkspaceSearchQuery::from_input("release #Rust plan #search", 24);
+
+        assert_eq!(query.text, "release plan");
+        assert_eq!(
+            query.normalized_tags(),
+            vec!["rust".to_string(), "search".to_string()]
+        );
+        assert_eq!(query.limit, 24);
     }
 
     #[test]

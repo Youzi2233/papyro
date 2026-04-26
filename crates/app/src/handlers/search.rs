@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use papyro_core::{FileState, NoteStorage, WorkspaceSearchState};
+use papyro_core::{FileState, NoteStorage, WorkspaceSearchQuery, WorkspaceSearchState};
 use std::sync::Arc;
 
 const WORKSPACE_SEARCH_LIMIT: usize = 50;
@@ -27,8 +27,9 @@ pub fn search_workspace(
 
     spawn(async move {
         let search_query = query.clone();
+        let parsed_query = WorkspaceSearchQuery::from_input(&search_query, WORKSPACE_SEARCH_LIMIT);
         let result = tokio::task::spawn_blocking(move || {
-            storage.search_workspace(&workspace, &search_query, WORKSPACE_SEARCH_LIMIT)
+            storage.search_workspace_with_query(&workspace, &parsed_query)
         })
         .await;
 

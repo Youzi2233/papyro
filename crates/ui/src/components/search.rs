@@ -206,7 +206,7 @@ fn fallback_note_node(result: &SearchResult) -> FileNode {
 
 fn empty_search_message(query: &str, is_loading: bool, error: Option<&str>) -> String {
     if query.trim().is_empty() {
-        return "Search by title, path, or note content".to_string();
+        return "Ready".to_string();
     }
 
     if is_loading {
