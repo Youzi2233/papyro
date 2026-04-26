@@ -71,7 +71,14 @@ async fn create_unique_asset_file(
     extension: &str,
 ) -> Result<(tokio::fs::File, PathBuf), String> {
     let stem = pasted_image_stem();
+    create_unique_asset_file_with_stem(assets_dir, &stem, extension).await
+}
 
+async fn create_unique_asset_file_with_stem(
+    assets_dir: &Path,
+    stem: &str,
+    extension: &str,
+) -> Result<(tokio::fs::File, PathBuf), String> {
     for suffix in 0..1000 {
         let filename = if suffix == 0 {
             format!("{stem}.{extension}")
@@ -170,6 +177,27 @@ mod tests {
         assert!(saved.path.starts_with(root.join("assets")));
         assert!(saved.markdown.starts_with("![image](assets/pasted-image-"));
         assert!(saved.markdown.ends_with(".png)"));
+    }
+
+    #[tokio::test]
+    async fn create_unique_asset_file_appends_suffix_when_name_exists() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let assets_dir = temp.path().join("assets");
+        tokio::fs::create_dir_all(&assets_dir).await.unwrap();
+        tokio::fs::write(assets_dir.join("pasted-image.png"), b"existing")
+            .await
+            .unwrap();
+
+        let (file, path) = create_unique_asset_file_with_stem(&assets_dir, "pasted-image", "png")
+            .await
+            .expect("unique file");
+        drop(file);
+
+        assert_eq!(
+            path.file_name().and_then(|name| name.to_str()),
+            Some("pasted-image-1.png")
+        );
+        assert!(tokio::fs::try_exists(path).await.unwrap());
     }
 
     #[test]
