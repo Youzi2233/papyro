@@ -111,6 +111,25 @@ pub fn IconButton(label: String, icon: String, on_click: EventHandler<()>) -> El
 }
 
 #[component]
+pub fn Toggle(label: String, checked: bool, on_change: EventHandler<bool>) -> Element {
+    rsx! {
+        label {
+            class: "mn-setting-switch",
+            title: "{label}",
+            input {
+                r#type: "checkbox",
+                checked,
+                "aria-label": "{label}",
+                onchange: move |event| on_change.call(event.checked()),
+            }
+            span { class: "mn-setting-switch-track",
+                span { class: "mn-setting-switch-thumb" }
+            }
+        }
+    }
+}
+
+#[component]
 pub fn Modal(
     label: String,
     class_name: String,

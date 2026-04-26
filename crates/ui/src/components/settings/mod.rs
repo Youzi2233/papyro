@@ -2,7 +2,7 @@ use crate::commands::{
     AppCommands, DeleteTagRequest, RenameTagRequest, SetTagColorRequest, UpsertTagRequest,
 };
 use crate::components::primitives::{
-    Button, ButtonVariant, SegmentedControl, SegmentedControlOption,
+    Button, ButtonVariant, SegmentedControl, SegmentedControlOption, Toggle,
 };
 use crate::context::use_app_context;
 use crate::view_model::TagListItem;
@@ -188,15 +188,10 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
                             }
                         }
                         SettingRow { label: "Paste URL as link",
-                            label { class: "mn-setting-switch",
-                                input {
-                                    r#type: "checkbox",
-                                    checked: *auto_link_paste.read(),
-                                    onchange: move |e| auto_link_paste.set(e.checked()),
-                                }
-                                span { class: "mn-setting-switch-track",
-                                    span { class: "mn-setting-switch-thumb" }
-                                }
+                            Toggle {
+                                label: "Paste URL as link",
+                                checked: auto_link_paste(),
+                                on_change: move |checked| auto_link_paste.set(checked),
                             }
                         }
                     }
