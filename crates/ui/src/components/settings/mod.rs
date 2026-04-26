@@ -22,8 +22,8 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
     let app = use_app_context();
     let ui_state = app.ui_state;
     let commands = app.commands.clone();
-    let view_model = app.view_model.read().clone();
-    let has_workspace = view_model.workspace.name.is_some();
+    let workspace_model = app.workspace_model.read().clone();
+    let has_workspace = workspace_model.name.is_some();
     let ui_snapshot = ui_state.read().clone();
     let initial_scope = if has_workspace
         && ui_snapshot.workspace_overrides != WorkspaceSettingsOverrides::default()
@@ -215,7 +215,7 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
                         }
                     }
                     TagManagementSection {
-                        tags: view_model.workspace.tags.clone(),
+                        tags: workspace_model.tags.clone(),
                         has_workspace,
                         commands: tag_commands,
                     }

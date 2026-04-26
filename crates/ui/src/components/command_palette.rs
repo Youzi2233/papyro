@@ -52,19 +52,21 @@ pub fn CommandPaletteModal(on_close: EventHandler<()>, on_settings: EventHandler
     let app = use_app_context();
     let ui_state = app.ui_state;
     let commands = app.commands.clone();
-    let view_model = app.view_model.read().clone();
+    let workspace_model = app.workspace_model.read().clone();
+    let editor_model = app.editor_model.read().clone();
+    let settings_model = app.settings_model.read().clone();
     let mut query = use_signal(String::new);
     let mut active_index = use_signal(|| 0usize);
 
     let actions = command_palette_actions(CommandPaletteActionInput {
-        has_workspace: view_model.workspace.name.is_some(),
-        recent_workspaces: &view_model.workspace.recent_workspaces,
-        recent_files: &view_model.workspace.recent_files,
-        trashed_notes: &view_model.workspace.trashed_notes,
-        has_active_tab: view_model.editor.has_active_tab,
-        selected_note_name: selected_note_name(&view_model.workspace),
-        theme: view_model.settings.theme,
-        view_mode: view_model.editor.view_mode,
+        has_workspace: workspace_model.name.is_some(),
+        recent_workspaces: &workspace_model.recent_workspaces,
+        recent_files: &workspace_model.recent_files,
+        trashed_notes: &workspace_model.trashed_notes,
+        has_active_tab: editor_model.has_active_tab,
+        selected_note_name: selected_note_name(&workspace_model),
+        theme: settings_model.theme,
+        view_mode: editor_model.view_mode,
     });
     let query_value = query();
     let filtered = filter_command_palette_actions(&actions, &query_value);
