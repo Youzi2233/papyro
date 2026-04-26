@@ -1,5 +1,5 @@
 use crate::commands::AppCommands;
-use crate::view_model::{AppViewModel, EditorViewModel, SettingsViewModel, WorkspaceViewModel};
+use crate::view_model::{EditorViewModel, SettingsViewModel, WorkspaceViewModel};
 use dioxus::prelude::*;
 use papyro_core::{
     models::DocumentStats, EditorTabs, FileState, TabContentsMap, UiState, WorkspaceSearchState,
@@ -48,7 +48,6 @@ pub struct AppContext {
     pub workspace_model: Memo<WorkspaceViewModel>,
     pub editor_model: Memo<EditorViewModel>,
     pub settings_model: Memo<SettingsViewModel>,
-    pub view_model: Memo<AppViewModel>,
 }
 
 pub fn use_app_context() -> AppContext {

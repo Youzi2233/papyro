@@ -4,7 +4,7 @@ use dioxus::prelude::*;
 use papyro_core::{NoteStorage, WorkspaceBootstrap};
 use papyro_platform::PlatformApi;
 use papyro_ui::context::{AppContext, EditorServices};
-use papyro_ui::view_model::{AppViewModel, EditorViewModel, SettingsViewModel, WorkspaceViewModel};
+use papyro_ui::view_model::{EditorViewModel, SettingsViewModel, WorkspaceViewModel};
 use std::sync::Arc;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -65,12 +65,6 @@ pub fn use_app_runtime(
         )
     });
     let settings_model = use_memo(move || SettingsViewModel::from_ui_state(&state.ui_state.read()));
-    let view_model = use_memo(move || AppViewModel {
-        workspace: workspace_model(),
-        editor: editor_model(),
-        settings: settings_model(),
-    });
-
     use_context_provider(|| AppContext {
         file_state: state.file_state,
         editor_tabs: state.editor_tabs,
@@ -90,7 +84,6 @@ pub fn use_app_runtime(
         workspace_model,
         editor_model,
         settings_model,
-        view_model,
     });
 
     crate::effects::use_workspace_watcher(state, watch_storage);
