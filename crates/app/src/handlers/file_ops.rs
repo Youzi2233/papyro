@@ -185,8 +185,18 @@ pub fn delete_selected(
     if pending_delete_decision(pending_delete_path.read().as_deref(), &selected_path)
         == DeleteConfirmationDecision::Prompt
     {
+        let preview = match storage.preview_delete_path(&workspace, &selected_path) {
+            Ok(preview) => preview,
+            Err(error) => {
+                pending_delete_path.set(None);
+                status_message.set(Some(format!("Delete preview failed: {error}")));
+                return;
+            }
+        };
         pending_delete_path.set(Some(selected_path));
-        status_message.set(Some(shell.delete_confirmation(&node_name)));
+        status_message.set(Some(
+            shell.delete_confirmation(&node_name, preview.orphaned_assets.len()),
+        ));
         return;
     }
 
@@ -198,17 +208,18 @@ pub fn delete_selected(
     let mut next_tab_contents = tab_contents.read().clone();
 
     spawn(async move {
-        let result: BlockingResult<(PathBuf, FileState, EditorTabs, TabContentsMap)> =
+        let result: BlockingResult<(usize, FileState, EditorTabs, TabContentsMap)> =
             tokio::task::spawn_blocking(move || {
-                let deleted_path = delete_selected_path(
+                let outcome = delete_selected_path(
                     storage.as_ref(),
                     &mut next_file_state,
                     &mut next_editor_tabs,
                     &mut next_tab_contents,
+                    true,
                 )?;
 
                 Ok::<_, anyhow::Error>((
-                    deleted_path,
+                    outcome.orphaned_asset_count,
                     next_file_state,
                     next_editor_tabs,
                     next_tab_contents,
@@ -217,11 +228,15 @@ pub fn delete_selected(
             .await;
 
         match result {
-            Ok(Ok((_deleted_path, next_file_state, next_editor_tabs, next_tab_contents))) => {
+            Ok(Ok((orphan_asset_count, next_file_state, next_editor_tabs, next_tab_contents))) => {
                 file_state.set(next_file_state);
                 editor_tabs.set(next_editor_tabs);
                 tab_contents.set(next_tab_contents);
-                status_message.set(Some(format!("Deleted {node_name}")));
+                let mut message = format!("Deleted {node_name}");
+                if orphan_asset_count > 0 {
+                    message.push_str(&format!(" and cleaned {orphan_asset_count} attachment(s)"));
+                }
+                status_message.set(Some(message));
             }
             Ok(Err(error)) => {
                 status_message.set(Some(format!("Delete failed: {error}")));

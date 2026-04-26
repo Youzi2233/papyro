@@ -234,10 +234,12 @@ fn delete_selected_directory_closes_nested_tabs_and_selects_parent() {
         &mut file_state,
         &mut editor_tabs,
         &mut tab_contents,
+        false,
     )
     .unwrap();
 
-    assert_eq!(deleted, target.clone());
+    assert_eq!(deleted.deleted_path, target.clone());
+    assert_eq!(deleted.orphaned_asset_count, 0);
     assert_eq!(
         storage.deleted_paths.lock().unwrap().clone(),
         vec![target.clone()]
@@ -253,6 +255,43 @@ fn delete_selected_directory_closes_nested_tabs_and_selects_parent() {
 }
 
 #[test]
+fn delete_selected_path_cleans_previewed_orphan_assets() {
+    let target = PathBuf::from("workspace/notes/a.md");
+    let orphan = PathBuf::from("workspace/assets/a.png");
+    let storage = MockStorage {
+        delete_preview: papyro_core::DeletePreview {
+            orphaned_assets: vec![orphan.clone()],
+        },
+        reload_result: Some((Vec::new(), Vec::new())),
+        ..MockStorage::default()
+    };
+    let mut file_state = file_state_with_tree(vec![directory_node(
+        "workspace/notes",
+        vec![note_node("workspace/notes/a.md", "note-a")],
+    )]);
+    file_state.select_path(target.clone());
+    let mut editor_tabs = EditorTabs::default();
+    let mut tab_contents = TabContentsMap::default();
+
+    let deleted = delete_selected_path(
+        &storage,
+        &mut file_state,
+        &mut editor_tabs,
+        &mut tab_contents,
+        true,
+    )
+    .unwrap();
+
+    assert_eq!(deleted.deleted_path, target.clone());
+    assert_eq!(deleted.orphaned_asset_count, 1);
+    assert_eq!(storage.deleted_paths.lock().unwrap().clone(), vec![target]);
+    assert_eq!(
+        storage.deleted_extra_paths.lock().unwrap().clone(),
+        vec![orphan]
+    );
+}
+
+#[test]
 fn delete_selected_path_fails_without_selection() {
     let storage = MockStorage::default();
     let mut file_state = file_state_with_tree(Vec::new());
@@ -264,6 +303,7 @@ fn delete_selected_path_fails_without_selection() {
         &mut file_state,
         &mut editor_tabs,
         &mut tab_contents,
+        false,
     )
     .unwrap_err();
 
