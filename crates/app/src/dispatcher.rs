@@ -187,6 +187,14 @@ impl AppDispatcher {
                     action.target.note_id,
                 );
             }
+            AppAction::EmptyTrash => {
+                file_ops::empty_workspace_trash(
+                    self.storage.clone(),
+                    self.state.file_state,
+                    self.state.status_message,
+                    self.state.pending_empty_trash,
+                );
+            }
             AppAction::DeleteSelected => {
                 file_ops::delete_selected(
                     self.shell,
@@ -253,6 +261,7 @@ impl AppDispatcher {
         let move_selected_to = self.clone();
         let set_selected_favorite = self.clone();
         let restore_trashed_note = self.clone();
+        let empty_trash = self.clone();
         let delete_selected = self.clone();
         let toggle_expanded_path = self.clone();
         let reveal_in_explorer = self.clone();
@@ -308,6 +317,9 @@ impl AppDispatcher {
             }),
             restore_trashed_note: EventHandler::new(move |target| {
                 restore_trashed_note.dispatch(AppAction::restore_trashed_note(target));
+            }),
+            empty_trash: EventHandler::new(move |_| {
+                empty_trash.dispatch(AppAction::empty_trash());
             }),
             delete_selected: EventHandler::new(move |_| {
                 delete_selected.dispatch(AppAction::DeleteSelected);
@@ -489,7 +501,7 @@ fn toggle_expanded_path(
 mod tests {
     use super::*;
     use papyro_core::models::{Theme, ViewMode, WorkspaceSettingsOverrides};
-    use papyro_ui::commands::RecentFileTarget;
+    use papyro_ui::commands::{RecentFileTarget, RestoreTrashedNoteTarget};
 
     #[test]
     fn app_action_helpers_wrap_payloads() {
@@ -577,6 +589,17 @@ mod tests {
         assert_eq!(
             AppAction::set_selected_favorite(true),
             AppAction::SetSelectedFavorite(crate::actions::SetSelectedFavorite { favorite: true })
+        );
+        assert_eq!(AppAction::empty_trash(), AppAction::EmptyTrash);
+        assert_eq!(
+            AppAction::restore_trashed_note(RestoreTrashedNoteTarget {
+                note_id: "note-a".to_string(),
+            }),
+            AppAction::RestoreTrashedNote(crate::actions::RestoreTrashedNote {
+                target: RestoreTrashedNoteTarget {
+                    note_id: "note-a".to_string(),
+                }
+            })
         );
     }
 }

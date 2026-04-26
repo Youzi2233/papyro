@@ -43,6 +43,7 @@ pub struct AppCommands {
     pub move_selected_to: EventHandler<PathBuf>,
     pub set_selected_favorite: EventHandler<bool>,
     pub restore_trashed_note: EventHandler<RestoreTrashedNoteTarget>,
+    pub empty_trash: EventHandler<()>,
     pub delete_selected: EventHandler<()>,
     pub toggle_expanded_path: EventHandler<PathBuf>,
     pub reveal_in_explorer: EventHandler<FileTarget>,

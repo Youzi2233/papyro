@@ -20,6 +20,7 @@ pub enum AppAction {
     MoveSelectedTo(MoveSelectedTo),
     SetSelectedFavorite(SetSelectedFavorite),
     RestoreTrashedNote(RestoreTrashedNote),
+    EmptyTrash,
     DeleteSelected,
     ToggleExpandedPath(ToggleExpandedPath),
     RevealInExplorer(RevealInExplorer),
@@ -159,6 +160,10 @@ impl AppAction {
 
     pub fn restore_trashed_note(target: RestoreTrashedNoteTarget) -> Self {
         Self::RestoreTrashedNote(RestoreTrashedNote { target })
+    }
+
+    pub fn empty_trash() -> Self {
+        Self::EmptyTrash
     }
 
     pub fn toggle_expanded_path(path: PathBuf) -> Self {

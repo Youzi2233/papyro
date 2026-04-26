@@ -15,6 +15,7 @@ pub(crate) struct RuntimeState {
     pub workspace_watch_path: Signal<Option<PathBuf>>,
     pub pending_close_tab: Signal<Option<String>>,
     pub pending_delete_path: Signal<Option<PathBuf>>,
+    pub pending_empty_trash: Signal<bool>,
 }
 
 pub(crate) fn use_runtime_state(bootstrap: WorkspaceBootstrap) -> RuntimeState {
@@ -39,5 +40,6 @@ pub(crate) fn use_runtime_state(bootstrap: WorkspaceBootstrap) -> RuntimeState {
         workspace_watch_path: use_signal(|| initial_workspace_root),
         pending_close_tab: use_signal(|| None::<String>),
         pending_delete_path: use_signal(|| None::<PathBuf>),
+        pending_empty_trash: use_signal(|| false),
     }
 }

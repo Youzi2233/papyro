@@ -9,8 +9,8 @@ use std::sync::Arc;
 
 use crate::runtime::AppShell;
 use crate::workspace_flow::{
-    create_folder_in_storage, create_note_in_storage, delete_selected_path, move_selected_path,
-    normalized_name, rename_selected_path, restore_trashed_note,
+    create_folder_in_storage, create_note_in_storage, delete_selected_path, empty_trash,
+    move_selected_path, normalized_name, rename_selected_path, restore_trashed_note,
 };
 
 type BlockingResult<T> = Result<Result<T, anyhow::Error>, tokio::task::JoinError>;
@@ -314,6 +314,60 @@ pub fn restore_trashed(
             }
             Err(error) => {
                 status_message.set(Some(format!("Restore failed: {error}")));
+            }
+        }
+    });
+}
+
+pub fn empty_workspace_trash(
+    storage: Arc<dyn NoteStorage>,
+    mut file_state: Signal<FileState>,
+    mut status_message: Signal<Option<String>>,
+    mut pending_empty_trash: Signal<bool>,
+) {
+    if file_state.read().current_workspace.is_none() {
+        pending_empty_trash.set(false);
+        status_message.set(Some("Open a workspace before emptying trash".to_string()));
+        return;
+    }
+
+    let trashed_count = file_state.read().trashed_notes.len();
+    if trashed_count == 0 {
+        pending_empty_trash.set(false);
+        status_message.set(Some("Trash is already empty".to_string()));
+        return;
+    }
+
+    if !pending_empty_trash() {
+        pending_empty_trash.set(true);
+        status_message.set(Some(format!(
+            "{trashed_count} trashed note(s) will be permanently deleted. Run Empty trash again to confirm."
+        )));
+        return;
+    }
+
+    pending_empty_trash.set(false);
+    let mut next_file_state = file_state.read().clone();
+
+    spawn(async move {
+        let result: BlockingResult<(usize, FileState)> = tokio::task::spawn_blocking(move || {
+            let emptied_count = empty_trash(storage.as_ref(), &mut next_file_state)?;
+            Ok::<_, anyhow::Error>((emptied_count, next_file_state))
+        })
+        .await;
+
+        match result {
+            Ok(Ok((emptied_count, next_file_state))) => {
+                file_state.set(next_file_state);
+                status_message.set(Some(format!(
+                    "Emptied trash and permanently deleted {emptied_count} note(s)"
+                )));
+            }
+            Ok(Err(error)) => {
+                status_message.set(Some(format!("Empty trash failed: {error}")));
+            }
+            Err(error) => {
+                status_message.set(Some(format!("Empty trash failed: {error}")));
             }
         }
     });

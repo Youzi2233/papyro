@@ -46,3 +46,11 @@ pub(crate) fn restore_trashed_note(
     file_state.selected_path = Some(restored_path.clone());
     Ok(restored_path)
 }
+
+pub(crate) fn empty_trash(storage: &dyn NoteStorage, file_state: &mut FileState) -> Result<usize> {
+    let workspace = current_workspace(file_state)?;
+    let count = storage.empty_trash(&workspace)?;
+    reload_current_workspace_tree(storage, file_state)?;
+    file_state.trashed_notes.clear();
+    Ok(count)
+}

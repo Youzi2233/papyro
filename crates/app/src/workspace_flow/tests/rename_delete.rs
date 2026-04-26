@@ -323,6 +323,26 @@ fn restore_trashed_note_restores_refreshes_and_selects_file() {
 }
 
 #[test]
+fn empty_trash_clears_trashed_notes_and_refreshes_tree() {
+    let storage = MockStorage {
+        trashed_notes: std::sync::Mutex::new(vec![trashed_note("note-a", "Draft", "notes/a.md")]),
+        reload_result: Some((Vec::new(), Vec::new())),
+        ..MockStorage::default()
+    };
+    let mut file_state = file_state_with_tree(vec![directory_node(
+        "workspace/notes",
+        vec![note_node("workspace/notes/keep.md", "note-keep")],
+    )]);
+
+    let emptied_count = empty_trash(&storage, &mut file_state).expect("empty trash succeeds");
+
+    assert_eq!(emptied_count, 1);
+    assert!(storage.trashed_notes.lock().unwrap().is_empty());
+    assert!(file_state.trashed_notes.is_empty());
+    assert!(file_state.file_tree.is_empty());
+}
+
+#[test]
 fn delete_selected_path_fails_without_selection() {
     let storage = MockStorage::default();
     let mut file_state = file_state_with_tree(Vec::new());

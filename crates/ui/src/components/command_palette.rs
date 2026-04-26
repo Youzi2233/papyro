@@ -40,6 +40,7 @@ pub(crate) enum CommandPaletteActionKind {
     SetViewMode(ViewMode),
     SetSelectedFavorite(bool),
     RestoreTrashedNote(RestoreTrashedNoteTarget),
+    EmptyTrash,
 }
 
 #[component]
@@ -211,6 +212,9 @@ fn execute_command_action(
         CommandPaletteActionKind::RestoreTrashedNote(target) => {
             commands.restore_trashed_note.call(target);
         }
+        CommandPaletteActionKind::EmptyTrash => {
+            commands.empty_trash.call(());
+        }
     }
 
     on_close.call(());
@@ -290,6 +294,18 @@ pub(crate) fn command_palette_actions(
                 CommandPaletteActionKind::RestoreTrashedNote(RestoreTrashedNoteTarget {
                     note_id: trashed.note_id.clone(),
                 }),
+            ));
+        }
+
+        if !input.trashed_notes.is_empty() {
+            actions.push(action(
+                "Empty trash",
+                &format!(
+                    "Permanently delete {} trashed note(s)",
+                    input.trashed_notes.len()
+                ),
+                "TRASH",
+                CommandPaletteActionKind::EmptyTrash,
             ));
         }
     }
@@ -559,6 +575,12 @@ mod tests {
                     CommandPaletteActionKind::RestoreTrashedNote(target)
                         if target.note_id == "note-a"
                 )
+        }));
+        assert!(actions.iter().any(|action| {
+            action.title == "Empty trash"
+                && action.detail == "Permanently delete 1 trashed note(s)"
+                && action.group == "TRASH"
+                && matches!(action.kind, CommandPaletteActionKind::EmptyTrash)
         }));
     }
 
