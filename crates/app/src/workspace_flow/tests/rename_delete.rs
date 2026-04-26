@@ -255,7 +255,7 @@ fn delete_selected_directory_closes_nested_tabs_and_selects_parent() {
 }
 
 #[test]
-fn delete_selected_path_cleans_previewed_orphan_assets() {
+fn delete_selected_path_keeps_orphan_assets_for_trash() {
     let target = PathBuf::from("workspace/notes/a.md");
     let orphan = PathBuf::from("workspace/assets/a.png");
     let storage = MockStorage {
@@ -283,12 +283,9 @@ fn delete_selected_path_cleans_previewed_orphan_assets() {
     .unwrap();
 
     assert_eq!(deleted.deleted_path, target.clone());
-    assert_eq!(deleted.orphaned_asset_count, 1);
+    assert_eq!(deleted.orphaned_asset_count, 0);
     assert_eq!(storage.deleted_paths.lock().unwrap().clone(), vec![target]);
-    assert_eq!(
-        storage.deleted_extra_paths.lock().unwrap().clone(),
-        vec![orphan]
-    );
+    assert!(storage.deleted_extra_paths.lock().unwrap().is_empty());
 }
 
 #[test]

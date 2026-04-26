@@ -21,19 +21,13 @@ impl AppShell {
         }
     }
 
-    pub(crate) fn delete_confirmation(self, title: &str, orphan_asset_count: usize) -> String {
-        let orphan_detail = if orphan_asset_count == 0 {
-            String::new()
-        } else {
-            format!(" and {orphan_asset_count} orphan attachment(s) will be cleaned")
-        };
-
+    pub(crate) fn delete_confirmation(self, title: &str, _orphan_asset_count: usize) -> String {
         match self {
             Self::Desktop => {
-                format!("{title} will be deleted{orphan_detail}. Click Delete again to confirm.")
+                format!("{title} will be moved to trash. Click Delete again to confirm.")
             }
             Self::Mobile => {
-                format!("{title} will be deleted{orphan_detail}. Tap Delete again to confirm.")
+                format!("{title} will be moved to trash. Tap Delete again to confirm.")
             }
         }
     }
@@ -96,14 +90,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn delete_confirmation_mentions_orphan_attachments() {
+    fn delete_confirmation_mentions_trash() {
         assert_eq!(
             AppShell::Desktop.delete_confirmation("Draft", 2),
-            "Draft will be deleted and 2 orphan attachment(s) will be cleaned. Click Delete again to confirm."
+            "Draft will be moved to trash. Click Delete again to confirm."
         );
         assert_eq!(
             AppShell::Mobile.delete_confirmation("Draft", 0),
-            "Draft will be deleted. Tap Delete again to confirm."
+            "Draft will be moved to trash. Tap Delete again to confirm."
         );
     }
 }

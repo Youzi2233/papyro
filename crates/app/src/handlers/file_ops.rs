@@ -186,18 +186,8 @@ pub fn delete_selected(
     if pending_delete_decision(pending_delete_path.read().as_deref(), &selected_path)
         == DeleteConfirmationDecision::Prompt
     {
-        let preview = match storage.preview_delete_path(&workspace, &selected_path) {
-            Ok(preview) => preview,
-            Err(error) => {
-                pending_delete_path.set(None);
-                status_message.set(Some(format!("Delete preview failed: {error}")));
-                return;
-            }
-        };
         pending_delete_path.set(Some(selected_path));
-        status_message.set(Some(
-            shell.delete_confirmation(&node_name, preview.orphaned_assets.len()),
-        ));
+        status_message.set(Some(shell.delete_confirmation(&node_name, 0)));
         return;
     }
 
@@ -233,7 +223,7 @@ pub fn delete_selected(
                 file_state.set(next_file_state);
                 editor_tabs.set(next_editor_tabs);
                 tab_contents.set(next_tab_contents);
-                let mut message = format!("Deleted {node_name}");
+                let mut message = format!("Moved {node_name} to trash");
                 if orphan_asset_count > 0 {
                     message.push_str(&format!(" and cleaned {orphan_asset_count} attachment(s)"));
                 }
