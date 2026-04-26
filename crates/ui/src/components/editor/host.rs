@@ -3,6 +3,10 @@ use super::bridge::{send_editor_destroy, EditorBridgeMap, EditorCommand, EditorE
 use super::fallback::{EditorRuntimeState, FallbackEditor};
 use crate::commands::ContentChange;
 use crate::context::use_app_context;
+use crate::perf::{
+    perf_timer, trace_editor_refresh_layout, trace_editor_set_preferences,
+    trace_editor_set_view_mode,
+};
 use dioxus::prelude::*;
 use papyro_core::models::ViewMode;
 
@@ -162,11 +166,15 @@ pub(super) fn EditorHost(tab_id: String, is_visible: bool, view_mode: ViewMode) 
                                 .to_string();
                             if let Some(eval) = bridges.read().get(&tab_id) {
                                 let _ = eval.send(EditorCommand::SetContent { content });
+                                let started_at = perf_timer();
                                 let _ = eval.send(EditorCommand::SetViewMode {
                                     mode: initial_view_mode.clone(),
                                 });
+                                trace_editor_set_view_mode(&tab_id, &initial_view_mode, started_at);
+                                let started_at = perf_timer();
                                 let _ =
                                     eval.send(EditorCommand::SetPreferences { auto_link_paste });
+                                trace_editor_set_preferences(&tab_id, auto_link_paste, started_at);
                             }
                         }
                         EditorEvent::RuntimeError { tab_id, message } => {
@@ -226,7 +234,9 @@ pub(super) fn EditorHost(tab_id: String, is_visible: bool, view_mode: ViewMode) 
             }
 
             if let Some(eval) = bridges.read().get(&tab_id) {
+                let started_at = perf_timer();
                 let _ = eval.send(EditorCommand::RefreshLayout);
+                trace_editor_refresh_layout(&tab_id, started_at);
             }
         },
     ));
@@ -235,7 +245,9 @@ pub(super) fn EditorHost(tab_id: String, is_visible: bool, view_mode: ViewMode) 
         (&tab_id, &view_mode),
         move |(tab_id, mode)| {
             if let Some(eval) = bridges.read().get(&tab_id) {
-                let _ = eval.send(EditorCommand::SetViewMode { mode });
+                let started_at = perf_timer();
+                let _ = eval.send(EditorCommand::SetViewMode { mode: mode.clone() });
+                trace_editor_set_view_mode(&tab_id, &mode, started_at);
             }
         },
     ));
@@ -244,7 +256,9 @@ pub(super) fn EditorHost(tab_id: String, is_visible: bool, view_mode: ViewMode) 
         (&tab_id, &auto_link_paste),
         move |(tab_id, auto_link_paste)| {
             if let Some(eval) = bridges.read().get(&tab_id) {
+                let started_at = perf_timer();
                 let _ = eval.send(EditorCommand::SetPreferences { auto_link_paste });
+                trace_editor_set_preferences(&tab_id, auto_link_paste, started_at);
             }
         },
     ));

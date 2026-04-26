@@ -1,6 +1,7 @@
 use crate::commands::{AppCommands, RecentFileTarget, RestoreTrashedNoteTarget};
 use crate::components::primitives::{Modal, TextInput};
 use crate::context::use_app_context;
+use crate::perf::{perf_timer, trace_sidebar_toggle, trace_view_mode_change};
 use dioxus::prelude::*;
 use papyro_core::models::{Theme, ViewMode};
 use papyro_core::UiState;
@@ -190,8 +191,10 @@ fn execute_command_action(
         CommandPaletteActionKind::SaveActiveNote => commands.save_active_note.call(()),
         CommandPaletteActionKind::ExportHtml => commands.export_html.call(()),
         CommandPaletteActionKind::ToggleSidebar => {
+            let started_at = perf_timer();
             ui_state.write().toggle_sidebar();
             let settings = ui_state.read().settings.clone();
+            trace_sidebar_toggle("command_palette", settings.sidebar_collapsed, started_at);
             commands.save_settings.call(settings);
         }
         CommandPaletteActionKind::ToggleTheme => {
@@ -205,7 +208,15 @@ fn execute_command_action(
         CommandPaletteActionKind::OpenSettings => on_settings.call(()),
         CommandPaletteActionKind::SetViewMode(mode) => {
             let mut settings = ui_state.read().settings.clone();
+            let previous_mode = settings.view_mode.clone();
+            let started_at = perf_timer();
             settings.view_mode = mode;
+            trace_view_mode_change(
+                "command_palette",
+                &previous_mode,
+                &settings.view_mode,
+                started_at,
+            );
             commands.save_settings.call(settings);
         }
         CommandPaletteActionKind::SetSelectedFavorite(favorite) => {

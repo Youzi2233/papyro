@@ -1,5 +1,6 @@
 use crate::components::primitives::IconButton;
 use crate::context::use_app_context;
+use crate::perf::{perf_timer, trace_sidebar_toggle};
 use dioxus::prelude::*;
 use papyro_core::models::Theme;
 
@@ -26,8 +27,14 @@ pub fn AppHeader(on_settings: EventHandler<()>) -> Element {
                 label: "Toggle sidebar (Ctrl+\\)",
                 icon: sidebar_icon,
                 on_click: move |_| {
+                    let started_at = perf_timer();
                     ui_state.write().toggle_sidebar();
                     let settings = ui_state.read().settings.clone();
+                    trace_sidebar_toggle(
+                        "header",
+                        settings.sidebar_collapsed,
+                        started_at,
+                    );
                     commands.save_settings.call(settings);
                 },
             }

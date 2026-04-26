@@ -29,9 +29,35 @@ The 5MB preview budget is for the degradation path, not full HTML rendering.
 - `perf editor pane render prep`
 - `perf editor open note`
 - `perf editor switch tab`
+- `perf editor view mode change`
+- `perf editor command refresh_layout`
+- `perf editor command set_view_mode`
+- `perf editor command set_preferences`
 - `perf editor input change`
 - `perf editor preview render`
+- `perf chrome toggle sidebar`
 - `perf tab close trigger`
 - `perf runtime close_tab handler`
 
 Add new trace points before changing the budget.
+
+## Manual Scenarios
+
+Run these scenarios with `PAPYRO_PERF=1` before and after editor architecture changes:
+
+1. Open a 100KB, 1MB, and 5MB Markdown file.
+2. Switch between Source, Hybrid, and Preview from the editor toolbar.
+3. Switch between Source, Hybrid, and Preview from the command palette.
+4. Collapse and expand the sidebar from the header button.
+5. Collapse and expand the sidebar with `Ctrl+\`.
+6. Close the active tab after editing content.
+
+Mode changes should be checked as a chain:
+
+- `perf editor view mode change` records the UI action and trigger.
+- `perf editor command set_view_mode` records command sends to each editor host.
+- `perf editor command refresh_layout` records layout refresh pressure.
+
+Sidebar changes should only emit `perf chrome toggle sidebar` plus layout work for
+visible editor hosts. If one sidebar toggle sends repeated editor commands for hidden
+or inactive hosts, treat it as an architecture regression.

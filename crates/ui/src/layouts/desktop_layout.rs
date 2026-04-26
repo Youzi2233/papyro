@@ -4,6 +4,7 @@ use crate::components::{
     status_bar::StatusBar,
 };
 use crate::context::use_app_context;
+use crate::perf::{perf_timer, trace_sidebar_toggle};
 use dioxus::prelude::*;
 use papyro_core::models::Theme;
 
@@ -82,8 +83,10 @@ pub fn DesktopLayout(status_message: Option<String>) -> Element {
                     "workspace_search" => show_search.set(true),
                     "save_active_note" => commands.save_active_note.call(()),
                     "toggle_sidebar" => {
+                        let started_at = perf_timer();
                         ui_state.write().toggle_sidebar();
                         let settings = ui_state.read().settings.clone();
+                        trace_sidebar_toggle("shortcut", settings.sidebar_collapsed, started_at);
                         commands.save_settings.call(settings);
                     }
                     _ => {}

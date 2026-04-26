@@ -20,5 +20,5 @@ pub(super) fn send_editor_destroy(eval: Eval) {
 }
 
 pub(super) fn perf_enabled() -> bool {
-    std::env::var_os("PAPYRO_PERF").is_some()
+    crate::perf::perf_enabled()
 }

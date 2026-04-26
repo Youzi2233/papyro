@@ -10,6 +10,7 @@ use crate::components::{
     status_bar::StatusBar,
 };
 use crate::context::use_app_context;
+use crate::perf::{perf_timer, trace_sidebar_toggle};
 
 #[component]
 pub fn MobileLayout(status_message: Option<String>) -> Element {
@@ -59,8 +60,14 @@ pub fn MobileLayout(status_message: Option<String>) -> Element {
                         onclick: move |_| {
                             commands.open_workspace.call(());
                             if ui_state.read().sidebar_collapsed() {
+                                let started_at = perf_timer();
                                 ui_state.write().toggle_sidebar();
                                 let settings = ui_state.read().settings.clone();
+                                trace_sidebar_toggle(
+                                    "mobile_open_workspace",
+                                    settings.sidebar_collapsed,
+                                    started_at,
+                                );
                                 commands.save_settings.call(settings);
                             }
                         },
@@ -70,8 +77,14 @@ pub fn MobileLayout(status_message: Option<String>) -> Element {
                         button {
                             class: "mn-button",
                             onclick: move |_| {
+                                let started_at = perf_timer();
                                 ui_state.write().toggle_sidebar();
                                 let settings = ui_state.read().settings.clone();
+                                trace_sidebar_toggle(
+                                    "mobile_toolbar",
+                                    settings.sidebar_collapsed,
+                                    started_at,
+                                );
                                 commands.save_settings.call(settings);
                             },
                             if browser_visible { "Hide browser" } else { "Browse files" }

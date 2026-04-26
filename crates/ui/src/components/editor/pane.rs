@@ -6,6 +6,7 @@ use super::tabbar::EditorTabButton;
 use super::toolbar::EditorToolbar;
 use crate::components::primitives::{EmptyState, SegmentedControl, SegmentedControlOption};
 use crate::context::use_app_context;
+use crate::perf::{perf_timer, trace_view_mode_change};
 use dioxus::prelude::*;
 use papyro_core::models::ViewMode;
 use std::collections::HashMap;
@@ -123,7 +124,15 @@ pub fn EditorPane() -> Element {
                         view_mode: view_mode.clone(),
                         on_change: move |mode| {
                             let mut settings = ui_state.read().settings.clone();
+                            let previous_mode = settings.view_mode.clone();
+                            let started_at = perf_timer();
                             settings.view_mode = mode;
+                            trace_view_mode_change(
+                                "toolbar",
+                                &previous_mode,
+                                &settings.view_mode,
+                                started_at,
+                            );
                             commands.save_settings.call(settings);
                         },
                     }

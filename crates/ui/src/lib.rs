@@ -2,5 +2,6 @@ pub mod commands;
 pub mod components;
 pub mod context;
 pub mod layouts;
+mod perf;
 pub mod theme;
 pub mod view_model;
