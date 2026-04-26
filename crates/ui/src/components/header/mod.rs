@@ -1,3 +1,4 @@
+use crate::components::primitives::IconButton;
 use crate::context::use_app_context;
 use dioxus::prelude::*;
 use papyro_core::models::Theme;
@@ -21,23 +22,22 @@ pub fn AppHeader(on_settings: EventHandler<()>) -> Element {
 
     rsx! {
         header { class: "mn-header",
-            button {
-                class: "mn-icon-btn",
-                title: "Toggle sidebar (Ctrl+\\)",
-                onclick: move |_| {
+            IconButton {
+                label: "Toggle sidebar (Ctrl+\\)",
+                icon: sidebar_icon,
+                on_click: move |_| {
                     ui_state.write().toggle_sidebar();
                     let settings = ui_state.read().settings.clone();
                     commands.save_settings.call(settings);
                 },
-                "{sidebar_icon}"
             }
             span { class: "mn-brand-title", "Papyro" }
             div { class: "mn-header-spacer" }
             div { class: "mn-header-actions",
-                button {
-                    class: "mn-icon-btn",
-                    title: "Toggle theme",
-                    onclick: move |_| {
+                IconButton {
+                    label: "Toggle theme",
+                    icon: theme_icon,
+                    on_click: move |_| {
                         let mut settings = ui_state.read().settings.clone();
                         settings.theme = match ui_state.read().theme() {
                             Theme::Light | Theme::System => Theme::Dark,
@@ -45,13 +45,11 @@ pub fn AppHeader(on_settings: EventHandler<()>) -> Element {
                         };
                         commands.save_settings.call(settings);
                     },
-                    "{theme_icon}"
                 }
-                button {
-                    class: "mn-icon-btn",
-                    title: "Settings",
-                    onclick: move |_| on_settings.call(()),
-                    "\u{2699}"
+                IconButton {
+                    label: "Settings",
+                    icon: "\u{2699}",
+                    on_click: move |_| on_settings.call(()),
                 }
             }
         }
