@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Result};
 use papyro_core::models::{
-    AppSettings, EditorTab, FileNode, FileNodeKind, RecentFile, SaveStatus, TrashedNote, Workspace,
-    WorkspaceSettingsOverrides, WorkspaceTreeState,
+    AppSettings, EditorTab, FileNode, FileNodeKind, RecentFile, SaveStatus, Tag, TrashedNote,
+    Workspace, WorkspaceSettingsOverrides, WorkspaceTreeState,
 };
 use papyro_core::storage::{
     DeletePreview, NoteStorage, OpenedNote, SavedNote, WorkspaceBootstrap, WorkspaceSnapshot,
@@ -16,6 +16,7 @@ pub(super) struct MockStorage {
     pub opened_notes: HashMap<PathBuf, OpenedNote>,
     pub save_result: Option<SavedNote>,
     pub recent_files: Vec<RecentFile>,
+    pub tags: Mutex<Vec<Tag>>,
     pub trashed_notes: Mutex<Vec<TrashedNote>>,
     pub search_results: Vec<SearchResult>,
     pub rename_result: Option<PathBuf>,
@@ -181,6 +182,53 @@ impl NoteStorage for MockStorage {
         Ok(())
     }
 
+    fn list_tags(&self) -> Result<Vec<Tag>> {
+        Ok(self.tags.lock().unwrap().clone())
+    }
+
+    fn upsert_tag(&self, name: &str, color: &str) -> Result<Tag> {
+        let tag = test_tag(name, color);
+        let mut tags = self.tags.lock().unwrap();
+        if let Some(existing) = tags.iter_mut().find(|existing| existing.id == tag.id) {
+            *existing = tag.clone();
+        } else {
+            tags.push(tag.clone());
+        }
+        Ok(tag)
+    }
+
+    fn rename_tag(&self, old_id: &str, name: &str) -> Result<Tag> {
+        let mut tags = self.tags.lock().unwrap();
+        let index = tags
+            .iter()
+            .position(|tag| tag.id == old_id)
+            .ok_or_else(|| anyhow!("Missing tag {old_id}"))?;
+        let color = tags[index].color.clone();
+        let tag = test_tag(name, &color);
+        tags[index] = tag.clone();
+        Ok(tag)
+    }
+
+    fn set_tag_color(&self, id: &str, color: &str) -> Result<Tag> {
+        let mut tags = self.tags.lock().unwrap();
+        let tag = tags
+            .iter_mut()
+            .find(|tag| tag.id == id)
+            .ok_or_else(|| anyhow!("Missing tag {id}"))?;
+        tag.color = color.to_string();
+        Ok(tag.clone())
+    }
+
+    fn delete_tag(&self, id: &str) -> Result<()> {
+        let mut tags = self.tags.lock().unwrap();
+        let before = tags.len();
+        tags.retain(|tag| tag.id != id);
+        if tags.len() == before {
+            return Err(anyhow!("Missing tag {id}"));
+        }
+        Ok(())
+    }
+
     fn list_recent_workspaces(&self, _limit: usize) -> Result<Vec<Workspace>> {
         Ok(Vec::new())
     }
@@ -297,6 +345,14 @@ pub(super) fn trashed_note(note_id: &str, title: &str, relative_path: &str) -> T
             tags: Vec::new(),
         },
         trashed_at: 1,
+    }
+}
+
+pub(super) fn test_tag(name: &str, color: &str) -> Tag {
+    Tag {
+        id: name.trim().trim_start_matches('#').trim().to_lowercase(),
+        name: name.trim().trim_start_matches('#').trim().to_string(),
+        color: color.to_string(),
     }
 }
 

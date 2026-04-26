@@ -7,7 +7,7 @@ pub use papyro_core::{
     DeletePreview, OpenedNote, SavedNote, WorkspaceBootstrap, WorkspaceSnapshot,
 };
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use chrono::Utc;
 use papyro_core::models::{
     AppSettings, EditorTab, FileNode, FileNodeKind, NoteMeta, RecentFile, TrashedNote, Workspace,
@@ -451,6 +451,36 @@ impl SqliteStorage {
         db::notes::set_favorite(&self.pool, &note_id, favorite)
     }
 
+    pub fn list_tags(&self) -> Result<Vec<papyro_core::models::Tag>> {
+        db::tags::list_tags(&self.pool)
+    }
+
+    pub fn upsert_tag(&self, name: &str, color: &str) -> Result<papyro_core::models::Tag> {
+        let tag = build_tag(name, color)?;
+        db::tags::upsert_tag(&self.pool, &tag)
+    }
+
+    pub fn rename_tag(&self, old_id: &str, name: &str) -> Result<papyro_core::models::Tag> {
+        let current = db::tags::get_tag(&self.pool, old_id)?
+            .ok_or_else(|| anyhow!("Missing tag {old_id}"))?;
+        let tag = build_tag(name, &current.color)?;
+        db::tags::rename_tag(&self.pool, old_id, &tag)
+    }
+
+    pub fn set_tag_color(&self, id: &str, color: &str) -> Result<papyro_core::models::Tag> {
+        let current =
+            db::tags::get_tag(&self.pool, id)?.ok_or_else(|| anyhow!("Missing tag {id}"))?;
+        let tag = papyro_core::models::Tag {
+            color: normalized_tag_color(color)?,
+            ..current
+        };
+        db::tags::upsert_tag(&self.pool, &tag)
+    }
+
+    pub fn delete_tag(&self, id: &str) -> Result<()> {
+        db::tags::delete_tag(&self.pool, id)
+    }
+
     pub fn list_recent_workspaces(&self, limit: usize) -> Result<Vec<Workspace>> {
         db::workspaces::list_recent_workspaces(&self.pool, limit)
     }
@@ -576,6 +606,26 @@ impl NoteStorage for SqliteStorage {
 
     fn set_note_favorite(&self, workspace: &Workspace, path: &Path, favorite: bool) -> Result<()> {
         SqliteStorage::set_note_favorite(self, workspace, path, favorite)
+    }
+
+    fn list_tags(&self) -> Result<Vec<papyro_core::models::Tag>> {
+        SqliteStorage::list_tags(self)
+    }
+
+    fn upsert_tag(&self, name: &str, color: &str) -> Result<papyro_core::models::Tag> {
+        SqliteStorage::upsert_tag(self, name, color)
+    }
+
+    fn rename_tag(&self, old_id: &str, name: &str) -> Result<papyro_core::models::Tag> {
+        SqliteStorage::rename_tag(self, old_id, name)
+    }
+
+    fn set_tag_color(&self, id: &str, color: &str) -> Result<papyro_core::models::Tag> {
+        SqliteStorage::set_tag_color(self, id, color)
+    }
+
+    fn delete_tag(&self, id: &str) -> Result<()> {
+        SqliteStorage::delete_tag(self, id)
     }
 
     fn list_recent_workspaces(&self, limit: usize) -> Result<Vec<Workspace>> {
@@ -886,6 +936,36 @@ fn stable_note_id(workspace: &Workspace, relative_path: &Path) -> String {
     format!("{}::{}", workspace.id, relative_path.to_string_lossy())
 }
 
+fn build_tag(name: &str, color: &str) -> Result<papyro_core::models::Tag> {
+    let name = normalized_tag_name(name)?;
+    Ok(papyro_core::models::Tag {
+        id: tag_id(&name),
+        name,
+        color: normalized_tag_color(color)?,
+    })
+}
+
+fn normalized_tag_name(name: &str) -> Result<String> {
+    let name = name.trim().trim_start_matches('#').trim();
+    if name.is_empty() {
+        return Err(anyhow!("Tag name cannot be empty"));
+    }
+
+    Ok(name.to_string())
+}
+
+fn normalized_tag_color(color: &str) -> Result<String> {
+    let color = color.trim();
+    let valid = color.len() == 7
+        && color.starts_with('#')
+        && color.chars().skip(1).all(|ch| ch.is_ascii_hexdigit());
+    if !valid {
+        return Err(anyhow!("Tag color must be a #RRGGBB hex value"));
+    }
+
+    Ok(color.to_ascii_uppercase())
+}
+
 fn unique_restore_path(path: &Path) -> PathBuf {
     if !path.exists() {
         return path.to_path_buf();
@@ -913,7 +993,7 @@ fn unique_restore_path(path: &Path) -> PathBuf {
 }
 
 fn tag_id(name: &str) -> String {
-    name.trim().to_lowercase()
+    name.trim().trim_start_matches('#').trim().to_lowercase()
 }
 
 fn renamed_note_ids(
@@ -1192,6 +1272,58 @@ mod tests {
                 .map(|tag| tag.name.as_str())
                 .collect::<Vec<_>>(),
             vec!["archive"]
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn tag_crud_manages_names_colors_and_links() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let workspace_root = create_workspace(&temp)?;
+        let note_path = workspace_root.join("tagged.md");
+        std::fs::write(
+            &note_path,
+            "---\ntags: [Rust, search]\n---\n# Tagged\n\nhello",
+        )?;
+        let storage = test_storage(&temp)?;
+        let workspace = storage.initialize_workspace(&workspace_root)?.workspace;
+        let note_id = stable_note_id(&workspace, Path::new("tagged.md"));
+
+        let created = storage.upsert_tag("Planning", "#1a2b3c")?;
+
+        assert_eq!(created.id, "planning");
+        assert_eq!(created.name, "Planning");
+        assert_eq!(created.color, "#1A2B3C");
+        assert!(storage
+            .list_tags()?
+            .iter()
+            .any(|tag| tag.id == "planning" && tag.color == "#1A2B3C"));
+
+        let renamed = storage.rename_tag("rust", "Systems")?;
+
+        assert_eq!(renamed.id, "systems");
+        assert_eq!(renamed.name, "Systems");
+        let note = db::notes::get_note(&storage.pool, &note_id)?.expect("note metadata exists");
+        assert_eq!(
+            note.tags
+                .iter()
+                .map(|tag| tag.name.as_str())
+                .collect::<Vec<_>>(),
+            vec!["search", "Systems"]
+        );
+
+        let recolored = storage.set_tag_color("systems", "#abcdef")?;
+
+        assert_eq!(recolored.color, "#ABCDEF");
+        storage.delete_tag("search")?;
+        let note = db::notes::get_note(&storage.pool, &note_id)?.expect("note metadata exists");
+        assert_eq!(
+            note.tags
+                .iter()
+                .map(|tag| tag.id.as_str())
+                .collect::<Vec<_>>(),
+            vec!["systems"]
         );
 
         Ok(())

@@ -1,5 +1,5 @@
 use crate::models::{
-    AppSettings, EditorTab, FileNode, RecentFile, TrashedNote, Workspace,
+    AppSettings, EditorTab, FileNode, RecentFile, Tag, TrashedNote, Workspace,
     WorkspaceSettingsOverrides, WorkspaceTreeState,
 };
 use crate::FileState;
@@ -81,6 +81,11 @@ pub trait NoteStorage: Send + Sync {
         self.search_workspace(workspace, &query.text, query.limit)
     }
     fn set_note_favorite(&self, workspace: &Workspace, path: &Path, favorite: bool) -> Result<()>;
+    fn list_tags(&self) -> Result<Vec<Tag>>;
+    fn upsert_tag(&self, name: &str, color: &str) -> Result<Tag>;
+    fn rename_tag(&self, old_id: &str, name: &str) -> Result<Tag>;
+    fn set_tag_color(&self, id: &str, color: &str) -> Result<Tag>;
+    fn delete_tag(&self, id: &str) -> Result<()>;
     fn list_recent_workspaces(&self, limit: usize) -> Result<Vec<Workspace>>;
     fn list_recent(&self, limit: usize) -> Result<Vec<RecentFile>>;
     fn load_settings(&self) -> AppSettings;
