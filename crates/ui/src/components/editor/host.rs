@@ -10,6 +10,12 @@ use crate::perf::{
 use dioxus::prelude::*;
 use papyro_core::models::ViewMode;
 
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+struct EditorCommandCache {
+    view_mode: Option<ViewMode>,
+    auto_link_paste: Option<bool>,
+}
+
 #[component]
 pub(super) fn EditorHost(tab_id: String, is_visible: bool, view_mode: ViewMode) -> Element {
     let app = use_app_context();
@@ -22,8 +28,11 @@ pub(super) fn EditorHost(tab_id: String, is_visible: bool, view_mode: ViewMode) 
     let bridges = use_context::<EditorBridgeMap>();
     let container_id = format!("mn-editor-{tab_id}");
     let runtime_state = use_signal(|| EditorRuntimeState::Loading);
+    let command_cache = use_signal(EditorCommandCache::default);
     let startup_view_mode = view_mode.clone();
     let auto_link_paste = ui_state.read().settings.auto_link_paste;
+    let state = runtime_state();
+    let runtime_ready = state == EditorRuntimeState::Ready;
 
     use_effect(use_reactive(
         (&tab_id, &container_id),
@@ -39,6 +48,7 @@ pub(super) fn EditorHost(tab_id: String, is_visible: bool, view_mode: ViewMode) 
             let commands = commands.clone();
             let mut runtime_state = runtime_state;
             let mut status_message = status_message;
+            let command_cache = command_cache;
             let initial_view_mode = startup_view_mode.clone();
             let tab_id = tab_id.clone();
             let container_id = container_id.clone();
@@ -166,15 +176,13 @@ pub(super) fn EditorHost(tab_id: String, is_visible: bool, view_mode: ViewMode) 
                                 .to_string();
                             if let Some(eval) = bridges.read().get(&tab_id) {
                                 let _ = eval.send(EditorCommand::SetContent { content });
-                                let started_at = perf_timer();
-                                let _ = eval.send(EditorCommand::SetViewMode {
-                                    mode: initial_view_mode.clone(),
-                                });
-                                trace_editor_set_view_mode(&tab_id, &initial_view_mode, started_at);
-                                let started_at = perf_timer();
-                                let _ =
-                                    eval.send(EditorCommand::SetPreferences { auto_link_paste });
-                                trace_editor_set_preferences(&tab_id, auto_link_paste, started_at);
+                                send_set_view_mode(
+                                    eval,
+                                    command_cache,
+                                    &tab_id,
+                                    initial_view_mode.clone(),
+                                );
+                                send_set_preferences(eval, command_cache, &tab_id, auto_link_paste);
                             }
                         }
                         EditorEvent::RuntimeError { tab_id, message } => {
@@ -227,9 +235,9 @@ pub(super) fn EditorHost(tab_id: String, is_visible: bool, view_mode: ViewMode) 
     ));
 
     use_effect(use_reactive(
-        (&tab_id, &is_visible),
-        move |(tab_id, is_visible)| {
-            if !is_visible {
+        (&tab_id, &is_visible, &runtime_ready),
+        move |(tab_id, is_visible, runtime_ready)| {
+            if !is_visible || !runtime_ready {
                 return;
             }
 
@@ -242,23 +250,27 @@ pub(super) fn EditorHost(tab_id: String, is_visible: bool, view_mode: ViewMode) 
     ));
 
     use_effect(use_reactive(
-        (&tab_id, &view_mode),
-        move |(tab_id, mode)| {
+        (&tab_id, &is_visible, &view_mode, &runtime_ready),
+        move |(tab_id, is_visible, mode, runtime_ready)| {
+            if !is_visible || !runtime_ready {
+                return;
+            }
+
             if let Some(eval) = bridges.read().get(&tab_id) {
-                let started_at = perf_timer();
-                let _ = eval.send(EditorCommand::SetViewMode { mode: mode.clone() });
-                trace_editor_set_view_mode(&tab_id, &mode, started_at);
+                send_set_view_mode(eval, command_cache, &tab_id, mode);
             }
         },
     ));
 
     use_effect(use_reactive(
-        (&tab_id, &auto_link_paste),
-        move |(tab_id, auto_link_paste)| {
+        (&tab_id, &is_visible, &auto_link_paste, &runtime_ready),
+        move |(tab_id, is_visible, auto_link_paste, runtime_ready)| {
+            if !is_visible || !runtime_ready {
+                return;
+            }
+
             if let Some(eval) = bridges.read().get(&tab_id) {
-                let started_at = perf_timer();
-                let _ = eval.send(EditorCommand::SetPreferences { auto_link_paste });
-                trace_editor_set_preferences(&tab_id, auto_link_paste, started_at);
+                send_set_preferences(eval, command_cache, &tab_id, auto_link_paste);
             }
         },
     ));
@@ -273,7 +285,6 @@ pub(super) fn EditorHost(tab_id: String, is_visible: bool, view_mode: ViewMode) 
         }
     });
 
-    let state = runtime_state();
     let show_fallback = state != EditorRuntimeState::Ready;
 
     rsx! {
@@ -290,4 +301,38 @@ pub(super) fn EditorHost(tab_id: String, is_visible: bool, view_mode: ViewMode) 
             }
         }
     }
+}
+
+fn send_set_view_mode(
+    eval: &dioxus::document::Eval,
+    mut command_cache: Signal<EditorCommandCache>,
+    tab_id: &str,
+    mode: ViewMode,
+) {
+    let already_sent = { command_cache.read().view_mode.as_ref() == Some(&mode) };
+    if already_sent {
+        return;
+    }
+
+    let started_at = perf_timer();
+    let _ = eval.send(EditorCommand::SetViewMode { mode: mode.clone() });
+    command_cache.with_mut(|cache| cache.view_mode = Some(mode.clone()));
+    trace_editor_set_view_mode(tab_id, &mode, started_at);
+}
+
+fn send_set_preferences(
+    eval: &dioxus::document::Eval,
+    mut command_cache: Signal<EditorCommandCache>,
+    tab_id: &str,
+    auto_link_paste: bool,
+) {
+    let already_sent = { command_cache.read().auto_link_paste == Some(auto_link_paste) };
+    if already_sent {
+        return;
+    }
+
+    let started_at = perf_timer();
+    let _ = eval.send(EditorCommand::SetPreferences { auto_link_paste });
+    command_cache.with_mut(|cache| cache.auto_link_paste = Some(auto_link_paste));
+    trace_editor_set_preferences(tab_id, auto_link_paste, started_at);
 }
