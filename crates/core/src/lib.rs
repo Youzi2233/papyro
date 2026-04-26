@@ -3,6 +3,7 @@ pub mod editor_service;
 pub mod editor_state;
 pub mod file_state;
 pub mod models;
+pub mod search;
 pub mod storage;
 pub mod ui_state;
 pub use assets::{
@@ -17,6 +18,7 @@ pub use editor_service::{
 pub use editor_state::{EditorTabs, TabContentsMap};
 pub use file_state::FileState;
 pub use models::*;
+pub use search::{SearchField, SearchHighlight, SearchMatch, SearchResult};
 pub use storage::{
     DeletePreview, NoteStorage, OpenedNote, SavedNote, WorkspaceBootstrap, WorkspaceSnapshot,
 };

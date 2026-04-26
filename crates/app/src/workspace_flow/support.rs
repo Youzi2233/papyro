@@ -6,7 +6,7 @@ use papyro_core::models::{
 use papyro_core::storage::{
     DeletePreview, NoteStorage, OpenedNote, SavedNote, WorkspaceBootstrap, WorkspaceSnapshot,
 };
-use papyro_core::FileState;
+use papyro_core::{FileState, SearchResult};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
@@ -16,6 +16,7 @@ pub(super) struct MockStorage {
     pub opened_notes: HashMap<PathBuf, OpenedNote>,
     pub save_result: Option<SavedNote>,
     pub recent_files: Vec<RecentFile>,
+    pub search_results: Vec<SearchResult>,
     pub rename_result: Option<PathBuf>,
     pub move_result: Option<PathBuf>,
     pub reload_result: Option<(Vec<FileNode>, Vec<RecentFile>)>,
@@ -128,6 +129,15 @@ impl NoteStorage for MockStorage {
         self.reload_result
             .clone()
             .ok_or_else(|| anyhow!("Missing reload result"))
+    }
+
+    fn search_workspace(
+        &self,
+        _workspace: &Workspace,
+        _query: &str,
+        _limit: usize,
+    ) -> Result<Vec<SearchResult>> {
+        Ok(self.search_results.clone())
     }
 
     fn list_recent_workspaces(&self, _limit: usize) -> Result<Vec<Workspace>> {

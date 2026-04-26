@@ -3,6 +3,7 @@ use crate::models::{
     WorkspaceTreeState,
 };
 use crate::FileState;
+use crate::SearchResult;
 use anyhow::Result;
 use std::path::{Path, PathBuf};
 
@@ -61,6 +62,12 @@ pub trait NoteStorage: Send + Sync {
         &self,
         workspace: &Workspace,
     ) -> Result<(Vec<FileNode>, Vec<RecentFile>)>;
+    fn search_workspace(
+        &self,
+        workspace: &Workspace,
+        query: &str,
+        limit: usize,
+    ) -> Result<Vec<SearchResult>>;
     fn list_recent_workspaces(&self, limit: usize) -> Result<Vec<Workspace>>;
     fn list_recent(&self, limit: usize) -> Result<Vec<RecentFile>>;
     fn load_settings(&self) -> AppSettings;

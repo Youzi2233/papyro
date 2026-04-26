@@ -15,7 +15,7 @@ use papyro_core::models::{
 };
 use papyro_core::{
     local_markdown_image_targets, rewrite_moved_note_image_links, workspace_assets_dir, FileState,
-    NoteStorage,
+    NoteStorage, SearchResult,
 };
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
@@ -339,6 +339,15 @@ impl SqliteStorage {
         Ok((file_tree, recent_files))
     }
 
+    pub fn search_workspace(
+        &self,
+        workspace: &Workspace,
+        query: &str,
+        limit: usize,
+    ) -> Result<Vec<SearchResult>> {
+        index::search_workspace(workspace, query, limit)
+    }
+
     pub fn list_recent_workspaces(&self, limit: usize) -> Result<Vec<Workspace>> {
         db::workspaces::list_recent_workspaces(&self.pool, limit)
     }
@@ -427,6 +436,15 @@ impl NoteStorage for SqliteStorage {
         workspace: &Workspace,
     ) -> Result<(Vec<FileNode>, Vec<RecentFile>)> {
         SqliteStorage::reload_workspace_tree(self, workspace)
+    }
+
+    fn search_workspace(
+        &self,
+        workspace: &Workspace,
+        query: &str,
+        limit: usize,
+    ) -> Result<Vec<SearchResult>> {
+        SqliteStorage::search_workspace(self, workspace, query, limit)
     }
 
     fn list_recent_workspaces(&self, limit: usize) -> Result<Vec<Workspace>> {
