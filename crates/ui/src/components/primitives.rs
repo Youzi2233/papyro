@@ -130,6 +130,29 @@ pub fn Toggle(label: String, checked: bool, on_change: EventHandler<bool>) -> El
 }
 
 #[component]
+pub fn Slider(
+    label: String,
+    value: String,
+    min: String,
+    max: String,
+    step: String,
+    on_input: EventHandler<String>,
+) -> Element {
+    rsx! {
+        input {
+            class: "mn-range",
+            r#type: "range",
+            "aria-label": "{label}",
+            min: "{min}",
+            max: "{max}",
+            step: "{step}",
+            value: "{value}",
+            oninput: move |event| on_input.call(event.value()),
+        }
+    }
+}
+
+#[component]
 pub fn Modal(
     label: String,
     class_name: String,

@@ -2,7 +2,7 @@ use crate::commands::{
     AppCommands, DeleteTagRequest, RenameTagRequest, SetTagColorRequest, UpsertTagRequest,
 };
 use crate::components::primitives::{
-    Button, ButtonVariant, SegmentedControl, SegmentedControlOption, Toggle,
+    Button, ButtonVariant, SegmentedControl, SegmentedControlOption, Slider, Toggle,
 };
 use crate::context::use_app_context;
 use crate::view_model::TagListItem;
@@ -158,30 +158,28 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
                             }
                         }
                         SettingRow { label: "Font size ({font_size}px)",
-                            input {
-                                class: "mn-range",
-                                r#type: "range",
+                            Slider {
+                                label: "Font size",
+                                value: font_size().to_string(),
                                 min: "12",
                                 max: "24",
                                 step: "1",
-                                value: "{font_size}",
-                                oninput: move |e| {
-                                    if let Ok(v) = e.value().parse::<u8>() {
+                                on_input: move |value: String| {
+                                    if let Ok(v) = value.parse::<u8>() {
                                         font_size.set(v);
                                     }
                                 },
                             }
                         }
                         SettingRow { label: "Line height ({line_height:.1})",
-                            input {
-                                class: "mn-range",
-                                r#type: "range",
+                            Slider {
+                                label: "Line height",
+                                value: format!("{:.1}", line_height()),
                                 min: "1.2",
                                 max: "2.4",
                                 step: "0.1",
-                                value: "{line_height}",
-                                oninput: move |e| {
-                                    if let Ok(v) = e.value().parse::<f32>() {
+                                on_input: move |value: String| {
+                                    if let Ok(v) = value.parse::<f32>() {
                                         line_height.set(v);
                                     }
                                 },
@@ -197,15 +195,14 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
                     }
                     SettingSection { label: "Saving",
                         SettingRow { label: "Auto-save delay ({auto_save_ms}ms)",
-                            input {
-                                class: "mn-range",
-                                r#type: "range",
+                            Slider {
+                                label: "Auto-save delay",
+                                value: auto_save_ms().to_string(),
                                 min: "200",
                                 max: "3000",
                                 step: "100",
-                                value: "{auto_save_ms}",
-                                oninput: move |e| {
-                                    if let Ok(v) = e.value().parse::<u64>() {
+                                on_input: move |value: String| {
+                                    if let Ok(v) = value.parse::<u64>() {
                                         auto_save_ms.set(v);
                                     }
                                 },
