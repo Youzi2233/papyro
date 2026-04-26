@@ -1,6 +1,6 @@
 use crate::actions::AppAction;
 use crate::effects;
-use crate::handlers::{file_ops, notes, search, workspace};
+use crate::handlers::{file_ops, notes, search, tags, workspace};
 use crate::runtime::AppShell;
 use crate::state::RuntimeState;
 use dioxus::prelude::*;
@@ -195,6 +195,38 @@ impl AppDispatcher {
                     self.state.pending_empty_trash,
                 );
             }
+            AppAction::UpsertTag(action) => {
+                tags::mutate_tag(
+                    self.storage.clone(),
+                    self.state.file_state,
+                    self.state.status_message,
+                    tags::TagMutation::Upsert(action.request),
+                );
+            }
+            AppAction::RenameTag(action) => {
+                tags::mutate_tag(
+                    self.storage.clone(),
+                    self.state.file_state,
+                    self.state.status_message,
+                    tags::TagMutation::Rename(action.request),
+                );
+            }
+            AppAction::SetTagColor(action) => {
+                tags::mutate_tag(
+                    self.storage.clone(),
+                    self.state.file_state,
+                    self.state.status_message,
+                    tags::TagMutation::SetColor(action.request),
+                );
+            }
+            AppAction::DeleteTag(action) => {
+                tags::mutate_tag(
+                    self.storage.clone(),
+                    self.state.file_state,
+                    self.state.status_message,
+                    tags::TagMutation::Delete(action.request),
+                );
+            }
             AppAction::DeleteSelected => {
                 file_ops::delete_selected(
                     self.shell,
@@ -262,6 +294,10 @@ impl AppDispatcher {
         let set_selected_favorite = self.clone();
         let restore_trashed_note = self.clone();
         let empty_trash = self.clone();
+        let upsert_tag = self.clone();
+        let rename_tag = self.clone();
+        let set_tag_color = self.clone();
+        let delete_tag = self.clone();
         let delete_selected = self.clone();
         let toggle_expanded_path = self.clone();
         let reveal_in_explorer = self.clone();
@@ -320,6 +356,18 @@ impl AppDispatcher {
             }),
             empty_trash: EventHandler::new(move |_| {
                 empty_trash.dispatch(AppAction::empty_trash());
+            }),
+            upsert_tag: EventHandler::new(move |request| {
+                upsert_tag.dispatch(AppAction::upsert_tag(request));
+            }),
+            rename_tag: EventHandler::new(move |request| {
+                rename_tag.dispatch(AppAction::rename_tag(request));
+            }),
+            set_tag_color: EventHandler::new(move |request| {
+                set_tag_color.dispatch(AppAction::set_tag_color(request));
+            }),
+            delete_tag: EventHandler::new(move |request| {
+                delete_tag.dispatch(AppAction::delete_tag(request));
             }),
             delete_selected: EventHandler::new(move |_| {
                 delete_selected.dispatch(AppAction::DeleteSelected);
@@ -501,7 +549,10 @@ fn toggle_expanded_path(
 mod tests {
     use super::*;
     use papyro_core::models::{Theme, ViewMode, WorkspaceSettingsOverrides};
-    use papyro_ui::commands::{RecentFileTarget, RestoreTrashedNoteTarget};
+    use papyro_ui::commands::{
+        DeleteTagRequest, RecentFileTarget, RenameTagRequest, RestoreTrashedNoteTarget,
+        SetTagColorRequest, UpsertTagRequest,
+    };
 
     #[test]
     fn app_action_helpers_wrap_payloads() {
@@ -591,6 +642,52 @@ mod tests {
             AppAction::SetSelectedFavorite(crate::actions::SetSelectedFavorite { favorite: true })
         );
         assert_eq!(AppAction::empty_trash(), AppAction::EmptyTrash);
+        assert_eq!(
+            AppAction::upsert_tag(UpsertTagRequest {
+                name: "Planning".to_string(),
+                color: "#2563EB".to_string(),
+            }),
+            AppAction::UpsertTag(crate::actions::UpsertTag {
+                request: UpsertTagRequest {
+                    name: "Planning".to_string(),
+                    color: "#2563EB".to_string(),
+                }
+            })
+        );
+        assert_eq!(
+            AppAction::rename_tag(RenameTagRequest {
+                id: "planning".to_string(),
+                name: "Roadmap".to_string(),
+            }),
+            AppAction::RenameTag(crate::actions::RenameTag {
+                request: RenameTagRequest {
+                    id: "planning".to_string(),
+                    name: "Roadmap".to_string(),
+                }
+            })
+        );
+        assert_eq!(
+            AppAction::set_tag_color(SetTagColorRequest {
+                id: "planning".to_string(),
+                color: "#111827".to_string(),
+            }),
+            AppAction::SetTagColor(crate::actions::SetTagColor {
+                request: SetTagColorRequest {
+                    id: "planning".to_string(),
+                    color: "#111827".to_string(),
+                }
+            })
+        );
+        assert_eq!(
+            AppAction::delete_tag(DeleteTagRequest {
+                id: "planning".to_string(),
+            }),
+            AppAction::DeleteTag(crate::actions::DeleteTag {
+                request: DeleteTagRequest {
+                    id: "planning".to_string(),
+                }
+            })
+        );
         assert_eq!(
             AppAction::restore_trashed_note(RestoreTrashedNoteTarget {
                 note_id: "note-a".to_string(),

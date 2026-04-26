@@ -1,5 +1,8 @@
 use papyro_core::models::{AppSettings, FileNode, WorkspaceSettingsOverrides};
-use papyro_ui::commands::{ContentChange, FileTarget, RecentFileTarget, RestoreTrashedNoteTarget};
+use papyro_ui::commands::{
+    ContentChange, DeleteTagRequest, FileTarget, RecentFileTarget, RenameTagRequest,
+    RestoreTrashedNoteTarget, SetTagColorRequest, UpsertTagRequest,
+};
 use std::path::PathBuf;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -21,6 +24,10 @@ pub enum AppAction {
     SetSelectedFavorite(SetSelectedFavorite),
     RestoreTrashedNote(RestoreTrashedNote),
     EmptyTrash,
+    UpsertTag(UpsertTag),
+    RenameTag(RenameTag),
+    SetTagColor(SetTagColor),
+    DeleteTag(DeleteTag),
     DeleteSelected,
     ToggleExpandedPath(ToggleExpandedPath),
     RevealInExplorer(RevealInExplorer),
@@ -87,6 +94,26 @@ pub struct SetSelectedFavorite {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RestoreTrashedNote {
     pub target: RestoreTrashedNoteTarget,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct UpsertTag {
+    pub request: UpsertTagRequest,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RenameTag {
+    pub request: RenameTagRequest,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SetTagColor {
+    pub request: SetTagColorRequest,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DeleteTag {
+    pub request: DeleteTagRequest,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -164,6 +191,22 @@ impl AppAction {
 
     pub fn empty_trash() -> Self {
         Self::EmptyTrash
+    }
+
+    pub fn upsert_tag(request: UpsertTagRequest) -> Self {
+        Self::UpsertTag(UpsertTag { request })
+    }
+
+    pub fn rename_tag(request: RenameTagRequest) -> Self {
+        Self::RenameTag(RenameTag { request })
+    }
+
+    pub fn set_tag_color(request: SetTagColorRequest) -> Self {
+        Self::SetTagColor(SetTagColor { request })
+    }
+
+    pub fn delete_tag(request: DeleteTagRequest) -> Self {
+        Self::DeleteTag(DeleteTag { request })
     }
 
     pub fn toggle_expanded_path(path: PathBuf) -> Self {

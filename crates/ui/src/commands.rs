@@ -25,6 +25,29 @@ pub struct RestoreTrashedNoteTarget {
     pub note_id: String,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct UpsertTagRequest {
+    pub name: String,
+    pub color: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RenameTagRequest {
+    pub id: String,
+    pub name: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SetTagColorRequest {
+    pub id: String,
+    pub color: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DeleteTagRequest {
+    pub id: String,
+}
+
 #[derive(Clone, PartialEq)]
 pub struct AppCommands {
     pub open_workspace: EventHandler<()>,
@@ -44,6 +67,10 @@ pub struct AppCommands {
     pub set_selected_favorite: EventHandler<bool>,
     pub restore_trashed_note: EventHandler<RestoreTrashedNoteTarget>,
     pub empty_trash: EventHandler<()>,
+    pub upsert_tag: EventHandler<UpsertTagRequest>,
+    pub rename_tag: EventHandler<RenameTagRequest>,
+    pub set_tag_color: EventHandler<SetTagColorRequest>,
+    pub delete_tag: EventHandler<DeleteTagRequest>,
     pub delete_selected: EventHandler<()>,
     pub toggle_expanded_path: EventHandler<PathBuf>,
     pub reveal_in_explorer: EventHandler<FileTarget>,

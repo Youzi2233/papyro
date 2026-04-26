@@ -1779,7 +1779,7 @@ mod tests {
         let workspace = storage.initialize_workspace(&workspace_root)?.workspace;
 
         NoteStorage::delete_path(&storage, &delete_path)?;
-        let (tree, _recent) = storage.reload_workspace_tree(&workspace)?;
+        let (tree, _recent, _tags) = storage.reload_workspace_tree(&workspace)?;
 
         assert!(!delete_path.exists());
         assert_eq!(note_count(&tree), 1);
@@ -1857,7 +1857,7 @@ mod tests {
         assert_eq!(opened.recent_files.len(), 1);
 
         std::fs::remove_file(&note_path)?;
-        let (_tree, recent) = storage.reload_workspace_tree(&workspace)?;
+        let (_tree, recent, _tags) = storage.reload_workspace_tree(&workspace)?;
 
         assert!(recent.is_empty());
         assert!(storage.list_recent(10)?.is_empty());
