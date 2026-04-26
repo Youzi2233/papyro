@@ -1053,6 +1053,26 @@ mod tests {
     }
 
     #[test]
+    fn note_metadata_upsert_preserves_favorite_state() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let workspace_root = create_workspace(&temp)?;
+        let note_path = workspace_root.join("favorite.md");
+        std::fs::write(&note_path, "# Favorite\n\nold")?;
+        let storage = test_storage(&temp)?;
+        let workspace = storage.initialize_workspace(&workspace_root)?.workspace;
+        let opened = storage.open_note(&workspace, &note_path)?;
+
+        db::notes::set_favorite(&storage.pool, &opened.tab.note_id, true)?;
+        storage.save_note(&workspace, &opened.tab, "# Favorite\n\nnew")?;
+
+        let meta =
+            db::notes::get_note(&storage.pool, &opened.tab.note_id)?.expect("note metadata exists");
+        assert!(meta.is_favorite);
+
+        Ok(())
+    }
+
+    #[test]
     fn rename_note_updates_note_id_and_recent_files() -> Result<()> {
         let temp = tempfile::tempdir()?;
         let workspace_root = create_workspace(&temp)?;

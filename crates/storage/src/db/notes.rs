@@ -13,9 +13,7 @@ pub fn upsert_note(pool: &DbPool, note: &NoteMeta) -> Result<()> {
              title = excluded.title,
              updated_at = excluded.updated_at,
              word_count = excluded.word_count,
-             char_count = excluded.char_count,
-             is_favorite = excluded.is_favorite,
-             is_trashed = excluded.is_trashed",
+             char_count = excluded.char_count",
         rusqlite::params![
             note.id,
             note.workspace_id,
