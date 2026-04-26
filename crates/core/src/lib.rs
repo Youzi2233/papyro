@@ -18,7 +18,10 @@ pub use editor_service::{
 pub use editor_state::{EditorTabs, TabContentsMap};
 pub use file_state::FileState;
 pub use models::*;
-pub use search::{SearchField, SearchHighlight, SearchMatch, SearchResult, WorkspaceSearchState};
+pub use search::{
+    SearchField, SearchHighlight, SearchMatch, SearchResult, WorkspaceSearchQuery,
+    WorkspaceSearchState,
+};
 pub use storage::{
     DeletePreview, NoteStorage, OpenedNote, SavedNote, WorkspaceBootstrap, WorkspaceSnapshot,
 };

@@ -8,6 +8,38 @@ pub struct SearchResult {
     pub matches: Vec<SearchMatch>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct WorkspaceSearchQuery {
+    pub text: String,
+    pub tags: Vec<String>,
+    pub limit: usize,
+}
+
+impl WorkspaceSearchQuery {
+    pub fn text(text: impl Into<String>, limit: usize) -> Self {
+        Self {
+            text: text.into(),
+            tags: Vec::new(),
+            limit,
+        }
+    }
+
+    pub fn normalized_tags(&self) -> Vec<String> {
+        let mut tags = self
+            .tags
+            .iter()
+            .filter_map(|tag| normalize_tag_filter(tag))
+            .collect::<Vec<_>>();
+        let mut seen = std::collections::HashSet::new();
+        tags.retain(|tag| seen.insert(tag.clone()));
+        tags
+    }
+
+    pub fn has_filters(&self) -> bool {
+        !self.text.trim().is_empty() || !self.normalized_tags().is_empty()
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SearchMatch {
     pub field: SearchField,
@@ -27,6 +59,11 @@ pub enum SearchField {
 pub struct SearchHighlight {
     pub start: usize,
     pub end: usize,
+}
+
+pub fn normalize_tag_filter(tag: &str) -> Option<String> {
+    let tag = tag.trim().trim_start_matches('#').trim().to_lowercase();
+    (!tag.is_empty()).then_some(tag)
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
@@ -84,6 +121,26 @@ mod tests {
             relative_path: PathBuf::from(format!("{title}.md")),
             matches: Vec::new(),
         }
+    }
+
+    #[test]
+    fn workspace_search_query_normalizes_tag_filters() {
+        let query = WorkspaceSearchQuery {
+            text: String::new(),
+            tags: vec![
+                " #Rust ".to_string(),
+                "rust".to_string(),
+                "Search".to_string(),
+                " ".to_string(),
+            ],
+            limit: 10,
+        };
+
+        assert_eq!(
+            query.normalized_tags(),
+            vec!["rust".to_string(), "search".to_string()]
+        );
+        assert!(query.has_filters());
     }
 
     #[test]

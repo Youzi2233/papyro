@@ -1,5 +1,8 @@
 use anyhow::Result;
-use papyro_core::{SearchField, SearchHighlight, SearchMatch, SearchResult, Workspace};
+use papyro_core::{
+    SearchField, SearchHighlight, SearchMatch, SearchResult, Workspace, WorkspaceSearchQuery,
+};
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
 pub fn search_workspace(
@@ -7,8 +10,16 @@ pub fn search_workspace(
     query: &str,
     limit: usize,
 ) -> Result<Vec<SearchResult>> {
-    let tokens = query_tokens(query);
-    if tokens.is_empty() || limit == 0 {
+    search_workspace_with_query(workspace, &WorkspaceSearchQuery::text(query, limit))
+}
+
+pub fn search_workspace_with_query(
+    workspace: &Workspace,
+    query: &WorkspaceSearchQuery,
+) -> Result<Vec<SearchResult>> {
+    let tokens = query_tokens(&query.text);
+    let tag_filters = query.normalized_tags();
+    if (!query.has_filters()) || query.limit == 0 {
         return Ok(Vec::new());
     }
 
@@ -21,17 +32,22 @@ pub fn search_workspace(
             .to_path_buf();
         let title = crate::fs::extract_title(&note_path, &content);
         let path = relative_path.to_string_lossy().replace('\\', "/");
-        if !document_matches_all_tokens(&title, &path, &content, &tokens) {
+        if !document_matches_tags(&content, &tag_filters) {
+            continue;
+        }
+        if !tokens.is_empty() && !document_matches_all_tokens(&title, &path, &content, &tokens) {
             continue;
         }
 
         let mut matches = Vec::new();
 
-        collect_field_match(SearchField::Title, None, &title, &tokens, &mut matches);
-        collect_field_match(SearchField::Path, None, &path, &tokens, &mut matches);
-        collect_body_matches(&content, &tokens, &mut matches);
+        if !tokens.is_empty() {
+            collect_field_match(SearchField::Title, None, &title, &tokens, &mut matches);
+            collect_field_match(SearchField::Path, None, &path, &tokens, &mut matches);
+            collect_body_matches(&content, &tokens, &mut matches);
+        }
 
-        if !matches.is_empty() {
+        if tokens.is_empty() || !matches.is_empty() {
             results.push(SearchResult {
                 title,
                 path: note_path,
@@ -40,7 +56,7 @@ pub fn search_workspace(
             });
         }
 
-        if results.len() >= limit {
+        if results.len() >= query.limit {
             break;
         }
     }
@@ -93,6 +109,18 @@ fn collect_body_matches(content: &str, tokens: &[String], matches: &mut Vec<Sear
 fn document_matches_all_tokens(title: &str, path: &str, content: &str, tokens: &[String]) -> bool {
     let haystack = format!("{title} {path} {content}").to_lowercase();
     tokens.iter().all(|token| haystack.contains(token))
+}
+
+fn document_matches_tags(content: &str, tag_filters: &[String]) -> bool {
+    if tag_filters.is_empty() {
+        return true;
+    }
+
+    let note_tags = crate::fs::extract_front_matter_tags(content)
+        .into_iter()
+        .map(|tag| tag.to_lowercase())
+        .collect::<HashSet<_>>();
+    tag_filters.iter().all(|tag| note_tags.contains(tag))
 }
 
 fn search_highlights(value: &str, tokens: &[String]) -> Option<Vec<SearchHighlight>> {
@@ -184,6 +212,61 @@ mod tests {
         assert!(results[0].matches.iter().any(|result_match| {
             result_match.field == SearchField::Body && result_match.line == Some(3)
         }));
+
+        Ok(())
+    }
+
+    #[test]
+    fn search_workspace_filters_by_front_matter_tags() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let root = temp.path();
+        std::fs::write(
+            root.join("a.md"),
+            "---\ntags: [rust, search]\n---\n# Alpha\n\nSearch Token",
+        )?;
+        std::fs::write(
+            root.join("b.md"),
+            "---\ntags: [archive]\n---\n# Beta\n\nSearch Token",
+        )?;
+
+        let results = search_workspace_with_query(
+            &workspace(root),
+            &WorkspaceSearchQuery {
+                text: "search".to_string(),
+                tags: vec!["#rust".to_string()],
+                limit: 10,
+            },
+        )?;
+
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].relative_path, PathBuf::from("a.md"));
+        assert!(results[0]
+            .matches
+            .iter()
+            .any(|result_match| result_match.field == SearchField::Body));
+
+        Ok(())
+    }
+
+    #[test]
+    fn search_workspace_supports_tag_only_filters() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let root = temp.path();
+        std::fs::write(root.join("a.md"), "---\ntags: [rust]\n---\n# Alpha")?;
+        std::fs::write(root.join("b.md"), "---\ntags: [archive]\n---\n# Beta")?;
+
+        let results = search_workspace_with_query(
+            &workspace(root),
+            &WorkspaceSearchQuery {
+                text: String::new(),
+                tags: vec!["rust".to_string()],
+                limit: 10,
+            },
+        )?;
+
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].relative_path, PathBuf::from("a.md"));
+        assert!(results[0].matches.is_empty());
 
         Ok(())
     }
