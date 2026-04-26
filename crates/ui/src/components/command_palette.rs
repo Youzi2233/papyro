@@ -1,4 +1,5 @@
 use crate::commands::{AppCommands, RecentFileTarget, RestoreTrashedNoteTarget};
+use crate::components::primitives::Modal;
 use crate::context::use_app_context;
 use dioxus::prelude::*;
 use papyro_core::models::{Theme, ViewMode};
@@ -73,8 +74,10 @@ pub fn CommandPaletteModal(on_close: EventHandler<()>, on_settings: EventHandler
     let commands_for_keys = commands.clone();
 
     rsx! {
-        div { class: "mn-modal-overlay", onclick: move |_| on_close.call(()),
-            div { class: "mn-modal mn-command-modal", onclick: move |event| event.stop_propagation(),
+        Modal {
+            label: "Command palette",
+            class_name: "mn-modal mn-command-modal",
+            on_close,
                 div { class: "mn-command-search",
                     input {
                         class: "mn-command-input",
@@ -134,7 +137,6 @@ pub fn CommandPaletteModal(on_close: EventHandler<()>, on_settings: EventHandler
                         }
                     }
                 }
-            }
         }
     }
 }

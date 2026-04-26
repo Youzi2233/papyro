@@ -1,4 +1,5 @@
 use crate::commands::AppCommands;
+use crate::components::primitives::Modal;
 use crate::context::use_app_context;
 use dioxus::prelude::*;
 use papyro_core::models::{FileNode, FileNodeKind};
@@ -33,8 +34,10 @@ pub fn QuickOpenModal(on_close: EventHandler<()>) -> Element {
     let commands_for_keys = commands.clone();
 
     rsx! {
-        div { class: "mn-modal-overlay", onclick: move |_| on_close.call(()),
-            div { class: "mn-modal mn-command-modal", onclick: move |e| e.stop_propagation(),
+        Modal {
+            label: "Quick open",
+            class_name: "mn-modal mn-command-modal",
+            on_close,
                 div { class: "mn-command-search",
                     input {
                         class: "mn-command-input",
@@ -98,7 +101,6 @@ pub fn QuickOpenModal(on_close: EventHandler<()>) -> Element {
                         }
                     }
                 }
-            }
         }
     }
 }

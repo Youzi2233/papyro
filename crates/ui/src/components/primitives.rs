@@ -52,6 +52,29 @@ pub fn IconButton(label: String, icon: String, on_click: EventHandler<()>) -> El
 }
 
 #[component]
+pub fn Modal(
+    label: String,
+    class_name: String,
+    on_close: EventHandler<()>,
+    children: Element,
+) -> Element {
+    rsx! {
+        div {
+            class: "mn-modal-overlay",
+            onclick: move |_| on_close.call(()),
+            div {
+                class: "{class_name}",
+                role: "dialog",
+                "aria-modal": "true",
+                "aria-label": "{label}",
+                onclick: move |event| event.stop_propagation(),
+                {children}
+            }
+        }
+    }
+}
+
+#[component]
 pub fn Tooltip(label: String, children: Element) -> Element {
     rsx! {
         span {
