@@ -17,8 +17,8 @@ pub fn MobileLayout(status_message: Option<String>) -> Element {
     let app = use_app_context();
     let mut ui_state = app.ui_state;
     let file_state = app.file_state;
+    let pending_delete_path = app.pending_delete_path;
     let commands = app.commands;
-    let workspace_model = app.view_model.read().workspace.clone();
     let mut show_settings = use_signal(|| false);
     let mut show_create = use_signal(|| false);
     let mut show_rename = use_signal(|| false);
@@ -37,7 +37,9 @@ pub fn MobileLayout(status_message: Option<String>) -> Element {
         path: node.path.clone(),
         name: node.name.clone(),
     });
-    let selected_delete_pending = workspace_model.selected_delete_pending;
+    let selected_delete_pending = selected_node
+        .as_ref()
+        .is_some_and(|node| pending_delete_path.read().as_deref() == Some(node.path.as_path()));
 
     use_effect(use_reactive((&theme,), move |(theme,)| {
         let script = match theme {
