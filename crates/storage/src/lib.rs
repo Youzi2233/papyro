@@ -10,7 +10,7 @@ pub use papyro_core::{
 use anyhow::Result;
 use chrono::Utc;
 use papyro_core::models::{
-    AppSettings, EditorTab, FileNode, FileNodeKind, NoteMeta, RecentFile, Workspace,
+    AppSettings, EditorTab, FileNode, FileNodeKind, NoteMeta, RecentFile, TrashedNote, Workspace,
     WorkspaceSettingsOverrides, WorkspaceTreeState,
 };
 use papyro_core::{
@@ -338,6 +338,43 @@ impl SqliteStorage {
         Ok(trash_path)
     }
 
+    pub fn list_trashed_notes(&self, workspace: &Workspace) -> Result<Vec<TrashedNote>> {
+        db::notes::list_trashed_notes(&self.pool, &workspace.id)
+    }
+
+    pub fn restore_trashed_note(&self, workspace: &Workspace, note_id: &str) -> Result<PathBuf> {
+        let trashed = self
+            .list_trashed_notes(workspace)?
+            .into_iter()
+            .find(|item| item.note.id == note_id)
+            .ok_or_else(|| anyhow::anyhow!("Missing trashed note {note_id}"))?;
+        let trash_path = workspace
+            .path
+            .join(WORKSPACE_TRASH_DIR_NAME)
+            .join(trashed.trashed_at.to_string())
+            .join(&trashed.note.relative_path);
+        let restore_path = unique_restore_path(&workspace.path.join(&trashed.note.relative_path));
+
+        if let Some(parent) = restore_path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+        std::fs::rename(&trash_path, &restore_path)?;
+
+        let restored_relative = restore_path
+            .strip_prefix(&workspace.path)
+            .unwrap_or(&restore_path)
+            .to_path_buf();
+        if restored_relative != trashed.note.relative_path {
+            let new_id = stable_note_id(workspace, &restored_relative);
+            db::notes::update_note_id(&self.pool, note_id, &new_id, &restored_relative)?;
+            db::notes::restore_note(&self.pool, &new_id)?;
+        } else {
+            db::notes::restore_note(&self.pool, note_id)?;
+        }
+
+        Ok(restore_path)
+    }
+
     pub fn initialize_workspace(&self, root: &Path) -> Result<WorkspaceSnapshot> {
         let workspace = ensure_workspace(&self.pool, root)?;
         let mut file_tree = fs::scan_workspace(root)?;
@@ -453,6 +490,14 @@ impl NoteStorage for SqliteStorage {
 
     fn trash_path(&self, workspace: &Workspace, path: &Path) -> Result<PathBuf> {
         SqliteStorage::trash_path(self, workspace, path)
+    }
+
+    fn list_trashed_notes(&self, workspace: &Workspace) -> Result<Vec<TrashedNote>> {
+        SqliteStorage::list_trashed_notes(self, workspace)
+    }
+
+    fn restore_trashed_note(&self, workspace: &Workspace, note_id: &str) -> Result<PathBuf> {
+        SqliteStorage::restore_trashed_note(self, workspace, note_id)
     }
 
     fn preview_delete_path(&self, workspace: &Workspace, path: &Path) -> Result<DeletePreview> {
@@ -819,6 +864,32 @@ fn stable_note_id(workspace: &Workspace, relative_path: &Path) -> String {
     format!("{}::{}", workspace.id, relative_path.to_string_lossy())
 }
 
+fn unique_restore_path(path: &Path) -> PathBuf {
+    if !path.exists() {
+        return path.to_path_buf();
+    }
+
+    let parent = path.parent().unwrap_or(Path::new(""));
+    let stem = path
+        .file_stem()
+        .and_then(|stem| stem.to_str())
+        .unwrap_or("restored");
+    let extension = path.extension().and_then(|extension| extension.to_str());
+
+    for index in 1..=999 {
+        let file_name = match extension {
+            Some(extension) => format!("{stem} ({index}).{extension}"),
+            None => format!("{stem} ({index})"),
+        };
+        let candidate = parent.join(file_name);
+        if !candidate.exists() {
+            return candidate;
+        }
+    }
+
+    path.to_path_buf()
+}
+
 fn tag_id(name: &str) -> String {
     name.trim().to_lowercase()
 }
@@ -1171,6 +1242,70 @@ mod tests {
             |row| row.get(0),
         )?;
         assert_eq!(is_trashed, 1);
+
+        Ok(())
+    }
+
+    #[test]
+    fn restore_trashed_note_moves_file_back_and_untrashes_metadata() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let workspace_root = create_workspace(&temp)?;
+        let note_path = workspace_root.join("notes").join("old.md");
+        std::fs::create_dir_all(note_path.parent().unwrap())?;
+        std::fs::write(&note_path, "# Old")?;
+        let storage = test_storage(&temp)?;
+        let workspace = storage.initialize_workspace(&workspace_root)?.workspace;
+        let note_id = stable_note_id(&workspace, Path::new("notes").join("old.md").as_path());
+
+        let trashed_path = storage.trash_path(&workspace, &note_path)?;
+        let trashed_notes = storage.list_trashed_notes(&workspace)?;
+
+        assert_eq!(trashed_notes.len(), 1);
+        assert_eq!(trashed_notes[0].note.id, note_id);
+
+        let restored_path = storage.restore_trashed_note(&workspace, &note_id)?;
+
+        assert_eq!(restored_path, note_path);
+        assert!(note_path.exists());
+        assert!(!trashed_path.exists());
+        assert!(storage.list_trashed_notes(&workspace)?.is_empty());
+        let restored =
+            db::notes::get_note(&storage.pool, &note_id)?.expect("restored note metadata exists");
+        assert_eq!(
+            restored.relative_path,
+            PathBuf::from("notes").join("old.md")
+        );
+        assert!(!restored.is_trashed);
+
+        Ok(())
+    }
+
+    #[test]
+    fn restore_trashed_note_renames_when_original_path_exists() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let workspace_root = create_workspace(&temp)?;
+        let note_path = workspace_root.join("notes").join("old.md");
+        std::fs::create_dir_all(note_path.parent().unwrap())?;
+        std::fs::write(&note_path, "# Old")?;
+        let storage = test_storage(&temp)?;
+        let workspace = storage.initialize_workspace(&workspace_root)?.workspace;
+        let note_id = stable_note_id(&workspace, Path::new("notes").join("old.md").as_path());
+
+        storage.trash_path(&workspace, &note_path)?;
+        std::fs::write(&note_path, "# Replacement")?;
+
+        let restored_path = storage.restore_trashed_note(&workspace, &note_id)?;
+        let restored_relative = PathBuf::from("notes").join("old (1).md");
+        let restored_id = stable_note_id(&workspace, &restored_relative);
+
+        assert_eq!(restored_path, workspace_root.join(&restored_relative));
+        assert_eq!(std::fs::read_to_string(&note_path)?, "# Replacement");
+        assert_eq!(std::fs::read_to_string(&restored_path)?, "# Old");
+        assert!(db::notes::get_note(&storage.pool, &note_id)?.is_none());
+        let restored = db::notes::get_note(&storage.pool, &restored_id)?
+            .expect("restored note metadata exists");
+        assert_eq!(restored.relative_path, restored_relative);
+        assert!(!restored.is_trashed);
 
         Ok(())
     }

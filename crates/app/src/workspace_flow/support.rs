@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Result};
 use papyro_core::models::{
-    AppSettings, EditorTab, FileNode, FileNodeKind, RecentFile, SaveStatus, Workspace,
+    AppSettings, EditorTab, FileNode, FileNodeKind, RecentFile, SaveStatus, TrashedNote, Workspace,
     WorkspaceSettingsOverrides, WorkspaceTreeState,
 };
 use papyro_core::storage::{
@@ -84,6 +84,14 @@ impl NoteStorage for MockStorage {
     fn trash_path(&self, _workspace: &Workspace, path: &Path) -> Result<PathBuf> {
         self.deleted_paths.lock().unwrap().push(path.to_path_buf());
         Ok(path.to_path_buf())
+    }
+
+    fn list_trashed_notes(&self, _workspace: &Workspace) -> Result<Vec<TrashedNote>> {
+        Ok(Vec::new())
+    }
+
+    fn restore_trashed_note(&self, _workspace: &Workspace, _note_id: &str) -> Result<PathBuf> {
+        Ok(PathBuf::new())
     }
 
     fn preview_delete_path(&self, _workspace: &Workspace, _path: &Path) -> Result<DeletePreview> {

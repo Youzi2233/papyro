@@ -1,6 +1,7 @@
-﻿use crate::db::schema::DbPool;
+use crate::db::schema::DbPool;
+use anyhow::anyhow;
 use anyhow::Result;
-use papyro_core::models::NoteMeta;
+use papyro_core::models::{NoteMeta, TrashedNote};
 
 pub fn upsert_note(pool: &DbPool, note: &NoteMeta) -> Result<()> {
     let mut conn = pool.get()?;
@@ -62,6 +63,51 @@ pub fn list_notes_in_workspace(pool: &DbPool, workspace_id: &str) -> Result<Vec<
     let mut notes = rows.collect::<Result<Vec<_>, _>>()?;
     hydrate_note_tags(pool, &mut notes)?;
     Ok(notes)
+}
+
+pub fn list_trashed_notes(pool: &DbPool, workspace_id: &str) -> Result<Vec<TrashedNote>> {
+    let conn = pool.get()?;
+    let mut stmt = conn.prepare(
+        "SELECT id, workspace_id, relative_path, title, created_at, updated_at,
+                word_count, char_count, is_favorite, is_trashed, trashed_at
+         FROM notes WHERE workspace_id = ?1 AND is_trashed = 1
+         ORDER BY trashed_at DESC, updated_at DESC",
+    )?;
+    let rows = stmt.query_map(rusqlite::params![workspace_id], |row| {
+        Ok(TrashedNote {
+            note: NoteMeta {
+                id: row.get(0)?,
+                workspace_id: row.get(1)?,
+                relative_path: std::path::PathBuf::from(row.get::<_, String>(2)?),
+                title: row.get(3)?,
+                created_at: row.get(4)?,
+                updated_at: row.get(5)?,
+                word_count: row.get::<_, u32>(6)?,
+                char_count: row.get::<_, u32>(7)?,
+                is_favorite: row.get::<_, i32>(8)? != 0,
+                is_trashed: row.get::<_, i32>(9)? != 0,
+                tags: Vec::new(),
+            },
+            trashed_at: row.get(10)?,
+        })
+    })?;
+    let mut trashed = rows.collect::<Result<Vec<_>, _>>()?;
+    for item in &mut trashed {
+        item.note.tags = crate::db::tags::list_note_tags(pool, &item.note.id)?;
+    }
+    Ok(trashed)
+}
+
+pub fn restore_note(pool: &DbPool, id: &str) -> Result<()> {
+    let conn = pool.get()?;
+    let changed = conn.execute(
+        "UPDATE notes SET is_trashed = 0, trashed_at = NULL WHERE id = ?1",
+        rusqlite::params![id],
+    )?;
+    if changed == 0 {
+        return Err(anyhow!("Missing trashed note {id}"));
+    }
+    Ok(())
 }
 
 pub fn delete_note(pool: &DbPool, id: &str) -> Result<()> {

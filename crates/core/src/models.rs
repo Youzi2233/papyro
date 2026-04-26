@@ -28,6 +28,12 @@ pub struct NoteMeta {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TrashedNote {
+    pub note: NoteMeta,
+    pub trashed_at: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Tag {
     pub id: String,
     pub name: String,
