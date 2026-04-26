@@ -7,6 +7,21 @@ pub enum ButtonVariant {
     Danger,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SegmentedControlOption {
+    pub label: String,
+    pub value: String,
+}
+
+impl SegmentedControlOption {
+    pub fn new(label: &str, value: &str) -> Self {
+        Self {
+            label: label.to_string(),
+            value: value.to_string(),
+        }
+    }
+}
+
 impl ButtonVariant {
     fn class(self) -> &'static str {
         match self {
@@ -14,6 +29,14 @@ impl ButtonVariant {
             Self::Primary => "mn-button primary",
             Self::Danger => "mn-button danger",
         }
+    }
+}
+
+fn segmented_option_class(is_selected: bool) -> &'static str {
+    if is_selected {
+        "mn-segmented-option active"
+    } else {
+        "mn-segmented-option"
     }
 }
 
@@ -32,6 +55,42 @@ pub fn Button(
             disabled,
             onclick: move |_| on_click.call(()),
             "{label}"
+        }
+    }
+}
+
+#[component]
+pub fn SegmentedControl(
+    label: String,
+    options: Vec<SegmentedControlOption>,
+    selected: String,
+    class_name: String,
+    on_change: EventHandler<String>,
+) -> Element {
+    let class = if class_name.trim().is_empty() {
+        "mn-segmented-control".to_string()
+    } else {
+        class_name
+    };
+
+    rsx! {
+        div {
+            class: "{class}",
+            role: "radiogroup",
+            "aria-label": "{label}",
+            for option in options {
+                button {
+                    class: segmented_option_class(option.value == selected),
+                    r#type: "button",
+                    role: "radio",
+                    "aria-checked": if option.value == selected { "true" } else { "false" },
+                    onclick: {
+                        let value = option.value.clone();
+                        move |_| on_change.call(value.clone())
+                    },
+                    "{option.label}"
+                }
+            }
         }
     }
 }
@@ -128,5 +187,11 @@ mod tests {
         assert_eq!(ButtonVariant::Default.class(), "mn-button");
         assert_eq!(ButtonVariant::Primary.class(), "mn-button primary");
         assert_eq!(ButtonVariant::Danger.class(), "mn-button danger");
+    }
+
+    #[test]
+    fn segmented_option_class_marks_active_option() {
+        assert_eq!(segmented_option_class(false), "mn-segmented-option");
+        assert_eq!(segmented_option_class(true), "mn-segmented-option active");
     }
 }

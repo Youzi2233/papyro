@@ -1,14 +1,16 @@
 use crate::commands::{
     AppCommands, DeleteTagRequest, RenameTagRequest, SetTagColorRequest, UpsertTagRequest,
 };
-use crate::components::primitives::{Button, ButtonVariant};
+use crate::components::primitives::{
+    Button, ButtonVariant, SegmentedControl, SegmentedControlOption,
+};
 use crate::context::use_app_context;
 use crate::view_model::TagListItem;
 use dioxus::prelude::*;
 use papyro_core::models::{AppSettings, Theme, WorkspaceSettingsOverrides};
 use papyro_core::UiState;
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum SettingsScope {
     Global,
     Workspace,
@@ -40,6 +42,19 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
     let mut theme = use_signal(|| settings.theme.clone());
     let save_commands = commands.clone();
     let tag_commands = commands.clone();
+    let scope_options = if has_workspace {
+        vec![
+            SegmentedControlOption::new("Global", "global"),
+            SegmentedControlOption::new("Workspace", "workspace"),
+        ]
+    } else {
+        vec![SegmentedControlOption::new("Global", "global")]
+    };
+    let theme_options = vec![
+        SegmentedControlOption::new("System", "system"),
+        SegmentedControlOption::new("Light", "light"),
+        SegmentedControlOption::new("Dark", "dark"),
+    ];
 
     let save = move |_| {
         let state = ui_state.read();
@@ -85,73 +100,46 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
                 div { class: "mn-modal-body",
                     SettingSection { label: "Scope",
                         SettingRow { label: "Save target",
-                            div { class: "mn-setting-radio-group",
-                                label { class: "mn-setting-radio",
-                                    input {
-                                        r#type: "radio",
-                                        name: "settings_scope",
-                                        checked: save_scope() == SettingsScope::Global,
-                                        onchange: move |_| {
-                                            let state = ui_state.read();
-                                            let next_settings = settings_for_scope(&state, SettingsScope::Global);
-                                            set_form_values(
-                                                &next_settings,
-                                                font_family,
-                                                font_size,
-                                                line_height,
-                                                auto_link_paste,
-                                                auto_save_ms,
-                                                theme,
-                                            );
-                                            save_scope.set(SettingsScope::Global);
-                                        },
-                                    }
-                                    "Global"
-                                }
-                                if has_workspace {
-                                    label { class: "mn-setting-radio",
-                                        input {
-                                            r#type: "radio",
-                                            name: "settings_scope",
-                                            checked: save_scope() == SettingsScope::Workspace,
-                                            onchange: move |_| {
-                                                let state = ui_state.read();
-                                                let next_settings = settings_for_scope(&state, SettingsScope::Workspace);
-                                                set_form_values(
-                                                    &next_settings,
-                                                    font_family,
-                                                    font_size,
-                                                    line_height,
-                                                    auto_link_paste,
-                                                    auto_save_ms,
-                                                    theme,
-                                                );
-                                                save_scope.set(SettingsScope::Workspace);
-                                            },
+                            SegmentedControl {
+                                label: "Settings save target",
+                                options: scope_options,
+                                selected: settings_scope_value(save_scope()).to_string(),
+                                class_name: String::new(),
+                                on_change: move |value: String| {
+                                    if let Some(next_scope) = settings_scope_from_value(&value) {
+                                        if next_scope == SettingsScope::Workspace && !has_workspace {
+                                            return;
                                         }
-                                        "Workspace"
+
+                                        let state = ui_state.read();
+                                        let next_settings = settings_for_scope(&state, next_scope);
+                                        set_form_values(
+                                            &next_settings,
+                                            font_family,
+                                            font_size,
+                                            line_height,
+                                            auto_link_paste,
+                                            auto_save_ms,
+                                            theme,
+                                        );
+                                        save_scope.set(next_scope);
                                     }
-                                }
+                                },
                             }
                         }
                     }
                     SettingSection { label: "Appearance",
                         SettingRow { label: "Theme",
-                            div { class: "mn-setting-radio-group",
-                                for (value , label) in [(Theme::System, "System"), (Theme::Light, "Light"), (Theme::Dark, "Dark")] {
-                                    label { class: "mn-setting-radio",
-                                        input {
-                                            r#type: "radio",
-                                            name: "theme",
-                                            checked: *theme.read() == value,
-                                            onchange: {
-                                                let v = value.clone();
-                                                move |_| theme.set(v.clone())
-                                            },
-                                        }
-                                        "{label}"
+                            SegmentedControl {
+                                label: "Theme",
+                                options: theme_options,
+                                selected: theme_value(&theme()).to_string(),
+                                class_name: String::new(),
+                                on_change: move |value: String| {
+                                    if let Some(next_theme) = theme_from_value(&value) {
+                                        theme.set(next_theme);
                                     }
-                                }
+                                },
                             }
                         }
                     }
@@ -482,6 +470,38 @@ fn settings_for_scope(ui_state: &UiState, scope: SettingsScope) -> AppSettings {
     }
 }
 
+fn settings_scope_value(scope: SettingsScope) -> &'static str {
+    match scope {
+        SettingsScope::Global => "global",
+        SettingsScope::Workspace => "workspace",
+    }
+}
+
+fn settings_scope_from_value(value: &str) -> Option<SettingsScope> {
+    match value {
+        "global" => Some(SettingsScope::Global),
+        "workspace" => Some(SettingsScope::Workspace),
+        _ => None,
+    }
+}
+
+fn theme_value(theme: &Theme) -> &'static str {
+    match theme {
+        Theme::System => "system",
+        Theme::Light => "light",
+        Theme::Dark => "dark",
+    }
+}
+
+fn theme_from_value(value: &str) -> Option<Theme> {
+    match value {
+        "system" => Some(Theme::System),
+        "light" => Some(Theme::Light),
+        "dark" => Some(Theme::Dark),
+        _ => None,
+    }
+}
+
 fn form_settings(
     base: &AppSettings,
     theme: Theme,
@@ -547,5 +567,18 @@ mod tests {
         assert!(is_tag_color("#ABCDEF"));
         assert!(!is_tag_color("ABCDEF"));
         assert!(!is_tag_color("#ABCDEG"));
+    }
+
+    #[test]
+    fn segmented_setting_values_round_trip() {
+        assert_eq!(settings_scope_value(SettingsScope::Global), "global");
+        assert_eq!(
+            settings_scope_from_value("workspace"),
+            Some(SettingsScope::Workspace)
+        );
+        assert_eq!(settings_scope_from_value("missing"), None);
+        assert_eq!(theme_value(&Theme::Dark), "dark");
+        assert_eq!(theme_from_value("system"), Some(Theme::System));
+        assert_eq!(theme_from_value("missing"), None);
     }
 }

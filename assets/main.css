@@ -798,7 +798,7 @@ button { border: 0; cursor: pointer; background: transparent; }
     margin: 0 0 0 4px;
 }
 
-/* ── View toggle ── */
+.mn-segmented-control,
 .mn-view-toggle {
     display: inline-flex;
     border: 1px solid var(--mn-border);
@@ -809,7 +809,7 @@ button { border: 0; cursor: pointer; background: transparent; }
     flex-shrink: 0;
 }
 
-.mn-view-btn {
+.mn-segmented-option {
     padding: 4px 14px;
     font-size: 12px;
     font-weight: 500;
@@ -818,9 +818,9 @@ button { border: 0; cursor: pointer; background: transparent; }
     transition: background 0.14s, color 0.14s;
 }
 
-.mn-view-btn:hover { color: var(--mn-ink); }
+.mn-segmented-option:hover { color: var(--mn-ink); }
 
-.mn-view-btn.active {
+.mn-segmented-option.active {
     background: var(--mn-accent);
     color: var(--mn-accent-ink);
     box-shadow: var(--mn-shadow-xs);
@@ -1596,16 +1596,17 @@ button { border: 0; cursor: pointer; background: transparent; }
     flex: 1;
 }
 
-.mn-setting-radio-group {
+.mn-setting-control .mn-segmented-control {
     display: flex;
     border: 1px solid var(--mn-border);
     border-radius: var(--mn-radius-sm);
     background: var(--mn-surface);
     padding: 2px;
     gap: 2px;
+    width: 100%;
 }
 
-.mn-setting-radio {
+.mn-setting-control .mn-segmented-option {
     flex: 1;
     display: flex;
     align-items: center;
@@ -1619,13 +1620,7 @@ button { border: 0; cursor: pointer; background: transparent; }
     transition: background 0.12s, color 0.12s;
 }
 
-.mn-setting-radio:hover { color: var(--mn-ink); }
-.mn-setting-radio input { appearance: none; width: 0; height: 0; }
-.mn-setting-radio:has(input:checked) {
-    background: var(--mn-accent);
-    color: var(--mn-accent-ink);
-    box-shadow: var(--mn-shadow-xs);
-}
+.mn-setting-control .mn-segmented-option:hover { color: var(--mn-ink); }
 
 .mn-setting-switch {
     display: inline-flex;

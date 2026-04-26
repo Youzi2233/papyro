@@ -4,7 +4,7 @@ use super::outline::OutlinePane;
 use super::preview::PreviewPane;
 use super::tabbar::EditorTabButton;
 use super::toolbar::EditorToolbar;
-use crate::components::primitives::EmptyState;
+use crate::components::primitives::{EmptyState, SegmentedControl, SegmentedControlOption};
 use crate::context::use_app_context;
 use dioxus::prelude::*;
 use papyro_core::models::ViewMode;
@@ -188,26 +188,41 @@ pub fn EditorPane() -> Element {
 
 #[component]
 fn ViewToggle(view_mode: ViewMode, on_change: EventHandler<ViewMode>) -> Element {
+    let selected = view_mode_value(&view_mode).to_string();
+    let options = vec![
+        SegmentedControlOption::new("Source", "source"),
+        SegmentedControlOption::new("Hybrid", "hybrid"),
+        SegmentedControlOption::new("Preview", "preview"),
+    ];
+
     rsx! {
-        div { class: "mn-view-toggle",
-            button {
-                class: if view_mode == ViewMode::Source { "mn-view-btn active" } else { "mn-view-btn" },
-                title: "Source mode",
-                onclick: move |_| on_change.call(ViewMode::Source),
-                "Source"
-            }
-            button {
-                class: if view_mode == ViewMode::Hybrid { "mn-view-btn active" } else { "mn-view-btn" },
-                title: "Hybrid editing mode",
-                onclick: move |_| on_change.call(ViewMode::Hybrid),
-                "Hybrid"
-            }
-            button {
-                class: if view_mode == ViewMode::Preview { "mn-view-btn active" } else { "mn-view-btn" },
-                title: "Read-only preview mode",
-                onclick: move |_| on_change.call(ViewMode::Preview),
-                "Preview"
-            }
+        SegmentedControl {
+            label: "Editor view mode",
+            options,
+            selected,
+            class_name: "mn-view-toggle",
+            on_change: move |value: String| {
+                if let Some(mode) = view_mode_from_value(&value) {
+                    on_change.call(mode);
+                }
+            },
         }
+    }
+}
+
+fn view_mode_value(view_mode: &ViewMode) -> &'static str {
+    match view_mode {
+        ViewMode::Source => "source",
+        ViewMode::Hybrid => "hybrid",
+        ViewMode::Preview => "preview",
+    }
+}
+
+fn view_mode_from_value(value: &str) -> Option<ViewMode> {
+    match value {
+        "source" => Some(ViewMode::Source),
+        "hybrid" => Some(ViewMode::Hybrid),
+        "preview" => Some(ViewMode::Preview),
+        _ => None,
     }
 }
