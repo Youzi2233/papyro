@@ -4,7 +4,7 @@ use dioxus::prelude::*;
 use papyro_core::{NoteStorage, WorkspaceBootstrap};
 use papyro_platform::PlatformApi;
 use papyro_ui::context::{AppContext, EditorServices};
-use papyro_ui::view_model::AppViewModel;
+use papyro_ui::view_model::{AppViewModel, EditorViewModel, SettingsViewModel, WorkspaceViewModel};
 use std::sync::Arc;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -51,14 +51,24 @@ pub fn use_app_runtime(
     let flush_storage = storage.clone();
     let dispatcher = AppDispatcher::new(shell, state, storage, platform);
     let commands = dispatcher.commands();
-    let view_model = use_memo(move || {
-        AppViewModel::from_state(
+    let workspace_model = use_memo(move || {
+        WorkspaceViewModel::from_file_state(
             &state.file_state.read(),
+            state.pending_delete_path.read().as_deref(),
+        )
+    });
+    let editor_model = use_memo(move || {
+        EditorViewModel::from_editor_state(
             &state.editor_tabs.read(),
             &state.tab_contents.read(),
             &state.ui_state.read(),
-            state.pending_delete_path.read().as_deref(),
         )
+    });
+    let settings_model = use_memo(move || SettingsViewModel::from_ui_state(&state.ui_state.read()));
+    let view_model = use_memo(move || AppViewModel {
+        workspace: workspace_model(),
+        editor: editor_model(),
+        settings: settings_model(),
     });
 
     use_context_provider(|| AppContext {
@@ -77,6 +87,9 @@ pub fn use_app_runtime(
             render_markdown_html_with_highlighting:
                 papyro_editor::renderer::render_markdown_html_with_highlighting,
         },
+        workspace_model,
+        editor_model,
+        settings_model,
         view_model,
     });
 

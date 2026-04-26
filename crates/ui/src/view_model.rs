@@ -94,7 +94,7 @@ impl AppViewModel {
 }
 
 impl WorkspaceViewModel {
-    fn from_file_state(file_state: &FileState, pending_delete_path: Option<&Path>) -> Self {
+    pub fn from_file_state(file_state: &FileState, pending_delete_path: Option<&Path>) -> Self {
         let selected_node = file_state.selected_node();
         let selected_path = selected_node.as_ref().map(|node| node.path.as_path());
         let current_path = file_state
@@ -165,7 +165,7 @@ impl WorkspaceViewModel {
 }
 
 impl EditorViewModel {
-    fn from_editor_state(
+    pub fn from_editor_state(
         editor_tabs: &EditorTabs,
         tab_contents: &TabContentsMap,
         ui_state: &UiState,
@@ -189,7 +189,7 @@ impl EditorViewModel {
 }
 
 impl SettingsViewModel {
-    fn from_ui_state(ui_state: &UiState) -> Self {
+    pub fn from_ui_state(ui_state: &UiState) -> Self {
         Self {
             settings: ui_state.settings.clone(),
             theme: ui_state.theme().clone(),
