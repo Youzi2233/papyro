@@ -268,6 +268,18 @@ button { border: 0; cursor: pointer; background: transparent; }
     border-color: var(--mn-accent-strong);
 }
 
+.mn-button.danger {
+    border-color: var(--mn-accent-dim);
+    color: var(--mn-accent);
+}
+
+.mn-button.danger:hover,
+.mn-button.danger.active {
+    background: var(--mn-accent-dim);
+    border-color: var(--mn-accent-dim);
+    color: var(--mn-accent-strong);
+}
+
 .mn-button:disabled {
     opacity: 0.4;
     cursor: not-allowed;
@@ -1291,6 +1303,10 @@ button { border: 0; cursor: pointer; background: transparent; }
     animation: mn-modal-in 0.22s cubic-bezier(.3, 1.2, .4, 1);
 }
 
+.mn-settings-modal {
+    width: min(640px, 94vw);
+}
+
 @keyframes mn-fade-in {
     from { opacity: 0; }
     to { opacity: 1; }
@@ -1616,6 +1632,60 @@ select.mn-input {
     padding-right: 30px;
 }
 
+.mn-tag-manager,
+.mn-tag-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.mn-tag-create-row,
+.mn-tag-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 38px auto auto auto;
+    gap: 8px;
+    align-items: center;
+}
+
+.mn-tag-create-row {
+    grid-template-columns: minmax(0, 1fr) 38px auto;
+}
+
+.mn-tag-name-input {
+    min-width: 0;
+}
+
+.mn-tag-color-input {
+    width: 38px;
+    height: 34px;
+    padding: 2px;
+    border: 1px solid var(--mn-border);
+    border-radius: var(--mn-radius-sm);
+    background: var(--mn-surface-raised);
+    box-shadow: var(--mn-shadow-xs);
+    cursor: pointer;
+}
+
+.mn-tag-color-input::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+
+.mn-tag-color-input::-webkit-color-swatch {
+    border: 0;
+    border-radius: 5px;
+}
+
+.mn-tag-color-input::-moz-color-swatch {
+    border: 0;
+    border-radius: 5px;
+}
+
+.mn-tag-empty {
+    padding: 8px 0;
+    color: var(--mn-ink-3);
+    font-size: 13px;
+}
+
 /* ── Status bar ── */
 .mn-status-bar {
     display: flex;
@@ -1670,4 +1740,10 @@ select.mn-input {
     .mn-header-center, .mn-header-actions { display: none; }
     .mn-sidebar { display: none; }
     .mn-workbench { padding: 10px; }
+    .mn-setting-row { align-items: stretch; flex-direction: column; }
+    .mn-setting-label { width: auto; }
+    .mn-tag-create-row,
+    .mn-tag-row { grid-template-columns: minmax(0, 1fr) 38px; }
+    .mn-tag-create-row .mn-button,
+    .mn-tag-row .mn-button { justify-content: center; }
 }

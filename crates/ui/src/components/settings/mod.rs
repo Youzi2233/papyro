@@ -1,4 +1,8 @@
+use crate::commands::{
+    AppCommands, DeleteTagRequest, RenameTagRequest, SetTagColorRequest, UpsertTagRequest,
+};
 use crate::context::use_app_context;
+use crate::view_model::TagListItem;
 use dioxus::prelude::*;
 use papyro_core::models::{AppSettings, Theme, WorkspaceSettingsOverrides};
 use papyro_core::UiState;
@@ -13,7 +17,7 @@ enum SettingsScope {
 pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
     let app = use_app_context();
     let ui_state = app.ui_state;
-    let commands = app.commands;
+    let commands = app.commands.clone();
     let view_model = app.view_model.read().clone();
     let has_workspace = view_model.workspace.name.is_some();
     let ui_snapshot = ui_state.read().clone();
@@ -33,6 +37,8 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
     let mut auto_link_paste = use_signal(|| settings.auto_link_paste);
     let mut auto_save_ms = use_signal(|| settings.auto_save_delay_ms);
     let mut theme = use_signal(|| settings.theme.clone());
+    let save_commands = commands.clone();
+    let tag_commands = commands.clone();
 
     let save = move |_| {
         let state = ui_state.read();
@@ -52,9 +58,9 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
                 &state.global_settings,
                 &new_settings,
             );
-            commands.save_workspace_settings.call(overrides);
+            save_commands.save_workspace_settings.call(overrides);
         } else {
-            commands.save_settings.call(new_settings);
+            save_commands.save_settings.call(new_settings);
         }
         on_close.call(());
     };
@@ -66,7 +72,7 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
 
     rsx! {
         div { class: "mn-modal-overlay", onclick: move |_| on_close.call(()),
-            div { class: "mn-modal", onclick: move |e| e.stop_propagation(),
+            div { class: "mn-modal mn-settings-modal", onclick: move |e| e.stop_propagation(),
                 div { class: "mn-modal-header",
                     h2 { class: "mn-modal-title", "Settings" }
                     button {
@@ -222,6 +228,11 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
                             }
                         }
                     }
+                    TagManagementSection {
+                        tags: view_model.workspace.tags.clone(),
+                        has_workspace,
+                        commands: tag_commands,
+                    }
                 }
                 div { class: "mn-modal-footer",
                     button {
@@ -255,6 +266,207 @@ fn SettingRow(label: String, children: Element) -> Element {
         }
     }
 }
+
+#[component]
+fn TagManagementSection(
+    tags: Vec<TagListItem>,
+    has_workspace: bool,
+    commands: AppCommands,
+) -> Element {
+    let mut new_name = use_signal(String::new);
+    let mut new_color = use_signal(|| DEFAULT_TAG_COLOR.to_string());
+    let new_name_value = new_name();
+    let new_color_value = new_color();
+    let can_create = has_workspace && !cleaned_tag_name(&new_name_value).is_empty();
+
+    rsx! {
+        SettingSection { label: "Tags",
+            if has_workspace {
+                div { class: "mn-tag-manager",
+                    div { class: "mn-tag-create-row",
+                        input {
+                            class: "mn-input mn-tag-name-input",
+                            placeholder: "New tag",
+                            value: "{new_name_value}",
+                            oninput: move |event| new_name.set(event.value()),
+                            onkeydown: {
+                                let commands = commands.clone();
+                                move |event| {
+                                    if event.key() == Key::Enter {
+                                        let name = cleaned_tag_name(&new_name());
+                                        if !name.is_empty() {
+                                            commands.upsert_tag.call(UpsertTagRequest {
+                                                name,
+                                                color: normalized_tag_color(&new_color()),
+                                            });
+                                            new_name.set(String::new());
+                                        }
+                                    }
+                                }
+                            },
+                        }
+                        input {
+                            class: "mn-tag-color-input",
+                            r#type: "color",
+                            title: "Tag color",
+                            "aria-label": "New tag color",
+                            value: "{new_color_value}",
+                            oninput: move |event| new_color.set(event.value()),
+                        }
+                        button {
+                            class: "mn-button primary",
+                            disabled: !can_create,
+                            onclick: {
+                                let commands = commands.clone();
+                                move |_| {
+                                    let name = cleaned_tag_name(&new_name());
+                                    if !name.is_empty() {
+                                        commands.upsert_tag.call(UpsertTagRequest {
+                                            name,
+                                            color: normalized_tag_color(&new_color()),
+                                        });
+                                        new_name.set(String::new());
+                                    }
+                                }
+                            },
+                            "Add"
+                        }
+                    }
+                    if tags.is_empty() {
+                        div { class: "mn-tag-empty", "No tags" }
+                    } else {
+                        div { class: "mn-tag-list",
+                            for tag in tags {
+                                TagEditorRow {
+                                    key: "{tag.id}",
+                                    tag,
+                                    has_workspace,
+                                    commands: commands.clone(),
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                div { class: "mn-tag-empty", "Open a workspace to manage tags" }
+            }
+        }
+    }
+}
+
+#[component]
+fn TagEditorRow(tag: TagListItem, has_workspace: bool, commands: AppCommands) -> Element {
+    let mut name = use_signal(|| tag.name.clone());
+    let mut color = use_signal(|| tag.color.clone());
+    let mut confirm_delete = use_signal(|| false);
+    let name_value = name();
+    let color_value = color();
+    let cleaned_name = cleaned_tag_name(&name_value);
+    let color_hex = normalized_tag_color(&color_value);
+    let can_rename = has_workspace && !cleaned_name.is_empty() && cleaned_name != tag.name;
+    let can_recolor =
+        has_workspace && !color_hex.eq_ignore_ascii_case(&tag.color) && is_tag_color(&color_hex);
+    let delete_label = if confirm_delete() {
+        "Confirm"
+    } else {
+        "Delete"
+    };
+
+    rsx! {
+        div { class: "mn-tag-row",
+            input {
+                class: "mn-input mn-tag-name-input",
+                value: "{name_value}",
+                oninput: move |event| {
+                    name.set(event.value());
+                    confirm_delete.set(false);
+                },
+                onkeydown: {
+                    let commands = commands.clone();
+                    let tag_id = tag.id.clone();
+                    let original_name = tag.name.clone();
+                    move |event| {
+                        if event.key() == Key::Enter {
+                            let next_name = cleaned_tag_name(&name());
+                            if !next_name.is_empty() && next_name != original_name {
+                                commands.rename_tag.call(RenameTagRequest {
+                                    id: tag_id.clone(),
+                                    name: next_name,
+                                });
+                            }
+                        }
+                    }
+                },
+            }
+            input {
+                class: "mn-tag-color-input",
+                r#type: "color",
+                title: "Tag color",
+                "aria-label": "Tag color for {tag.name}",
+                value: "{color_value}",
+                oninput: move |event| {
+                    color.set(event.value());
+                    confirm_delete.set(false);
+                },
+            }
+            button {
+                class: "mn-button",
+                disabled: !can_rename,
+                onclick: {
+                    let commands = commands.clone();
+                    let tag_id = tag.id.clone();
+                    move |_| {
+                        let next_name = cleaned_tag_name(&name());
+                        if !next_name.is_empty() {
+                            commands.rename_tag.call(RenameTagRequest {
+                                id: tag_id.clone(),
+                                name: next_name,
+                            });
+                        }
+                    }
+                },
+                "Rename"
+            }
+            button {
+                class: "mn-button",
+                disabled: !can_recolor,
+                onclick: {
+                    let commands = commands.clone();
+                    let tag_id = tag.id.clone();
+                    move |_| {
+                        let next_color = normalized_tag_color(&color());
+                        if is_tag_color(&next_color) {
+                            commands.set_tag_color.call(SetTagColorRequest {
+                                id: tag_id.clone(),
+                                color: next_color,
+                            });
+                        }
+                    }
+                },
+                "Color"
+            }
+            button {
+                class: if confirm_delete() { "mn-button danger active" } else { "mn-button danger" },
+                disabled: !has_workspace,
+                onclick: {
+                    let commands = commands.clone();
+                    let tag_id = tag.id.clone();
+                    move |_| {
+                        if confirm_delete() {
+                            commands.delete_tag.call(DeleteTagRequest { id: tag_id.clone() });
+                            confirm_delete.set(false);
+                        } else {
+                            confirm_delete.set(true);
+                        }
+                    }
+                },
+                "{delete_label}"
+            }
+        }
+    }
+}
+
+const DEFAULT_TAG_COLOR: &str = "#6B7280";
 
 fn settings_for_scope(ui_state: &UiState, scope: SettingsScope) -> AppSettings {
     match scope {
@@ -301,4 +513,32 @@ fn set_form_values(
     auto_link_paste.set(settings.auto_link_paste);
     auto_save_ms.set(settings.auto_save_delay_ms);
     theme.set(settings.theme.clone());
+}
+
+fn cleaned_tag_name(value: &str) -> String {
+    value.trim().trim_start_matches('#').trim().to_string()
+}
+
+fn normalized_tag_color(value: &str) -> String {
+    value.trim().to_ascii_uppercase()
+}
+
+fn is_tag_color(value: &str) -> bool {
+    value.len() == 7
+        && value.starts_with('#')
+        && value.chars().skip(1).all(|ch| ch.is_ascii_hexdigit())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn tag_form_helpers_normalize_inputs() {
+        assert_eq!(cleaned_tag_name("  #Planning  "), "Planning");
+        assert_eq!(normalized_tag_color(" #abcdef "), "#ABCDEF");
+        assert!(is_tag_color("#ABCDEF"));
+        assert!(!is_tag_color("ABCDEF"));
+        assert!(!is_tag_color("#ABCDEG"));
+    }
 }
