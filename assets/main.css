@@ -306,6 +306,65 @@ button { border: 0; cursor: pointer; background: transparent; }
     border-color: var(--mn-accent-dim);
 }
 
+.mn-tooltip {
+    position: relative;
+    display: inline-flex;
+}
+
+.mn-tooltip::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 8px);
+    z-index: 20;
+    max-width: 220px;
+    padding: 5px 8px;
+    border: 1px solid var(--mn-border);
+    border-radius: 6px;
+    background: var(--mn-surface-raised);
+    color: var(--mn-ink);
+    box-shadow: var(--mn-shadow-sm);
+    font-family: var(--mn-font-sans);
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.2;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, 3px);
+    transition: opacity 0.12s ease, transform 0.12s ease;
+    white-space: nowrap;
+}
+
+.mn-tooltip::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 3px);
+    z-index: 21;
+    width: 8px;
+    height: 8px;
+    border-right: 1px solid var(--mn-border);
+    border-bottom: 1px solid var(--mn-border);
+    background: var(--mn-surface-raised);
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, 3px) rotate(45deg);
+    transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+.mn-tooltip:hover::after,
+.mn-tooltip:hover::before,
+.mn-tooltip:focus-within::after,
+.mn-tooltip:focus-within::before {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
+.mn-tooltip:hover::before,
+.mn-tooltip:focus-within::before {
+    transform: translate(-50%, 0) rotate(45deg);
+}
+
 /* ── Workbench ── */
 .mn-workbench {
     display: flex;

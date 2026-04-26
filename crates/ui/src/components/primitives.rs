@@ -39,12 +39,25 @@ pub fn Button(
 #[component]
 pub fn IconButton(label: String, icon: String, on_click: EventHandler<()>) -> Element {
     rsx! {
-        button {
-            class: "mn-icon-btn",
-            title: "{label}",
-            "aria-label": "{label}",
-            onclick: move |_| on_click.call(()),
-            "{icon}"
+        Tooltip { label: label.clone(),
+            button {
+                class: "mn-icon-btn",
+                title: "{label}",
+                "aria-label": "{label}",
+                onclick: move |_| on_click.call(()),
+                "{icon}"
+            }
+        }
+    }
+}
+
+#[component]
+pub fn Tooltip(label: String, children: Element) -> Element {
+    rsx! {
+        span {
+            class: "mn-tooltip",
+            "data-tooltip": "{label}",
+            {children}
         }
     }
 }
