@@ -49,6 +49,25 @@ pub fn list_note_tags(pool: &DbPool, note_id: &str) -> Result<Vec<Tag>> {
     rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
 }
 
+pub fn list_note_paths_for_tag(pool: &DbPool, tag_id: &str) -> Result<Vec<std::path::PathBuf>> {
+    let conn = pool.get()?;
+    let mut stmt = conn.prepare(
+        "SELECT w.path, n.relative_path
+         FROM notes n
+         INNER JOIN note_tags nt ON nt.note_id = n.id
+         INNER JOIN workspaces w ON w.id = n.workspace_id
+         WHERE nt.tag_id = ?1 AND n.is_trashed = 0
+         ORDER BY w.path, n.relative_path",
+    )?;
+    let rows = stmt.query_map(rusqlite::params![tag_id], |row| {
+        let workspace_path = std::path::PathBuf::from(row.get::<_, String>(0)?);
+        let relative_path = std::path::PathBuf::from(row.get::<_, String>(1)?);
+        Ok(workspace_path.join(relative_path))
+    })?;
+
+    rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
+}
+
 pub fn list_tags(pool: &DbPool) -> Result<Vec<Tag>> {
     let conn = pool.get()?;
     let mut stmt = conn.prepare(

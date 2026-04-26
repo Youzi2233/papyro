@@ -464,6 +464,7 @@ impl SqliteStorage {
         let current = db::tags::get_tag(&self.pool, old_id)?
             .ok_or_else(|| anyhow!("Missing tag {old_id}"))?;
         let tag = build_tag(name, &current.color)?;
+        rewrite_tag_references(&self.pool, old_id, Some(&tag.name))?;
         db::tags::rename_tag(&self.pool, old_id, &tag)
     }
 
@@ -478,6 +479,7 @@ impl SqliteStorage {
     }
 
     pub fn delete_tag(&self, id: &str) -> Result<()> {
+        rewrite_tag_references(&self.pool, id, None)?;
         db::tags::delete_tag(&self.pool, id)
     }
 
@@ -936,6 +938,25 @@ fn stable_note_id(workspace: &Workspace, relative_path: &Path) -> String {
     format!("{}::{}", workspace.id, relative_path.to_string_lossy())
 }
 
+fn rewrite_tag_references(pool: &DbPool, tag_id: &str, new_name: Option<&str>) -> Result<()> {
+    for path in db::tags::list_note_paths_for_tag(pool, tag_id)? {
+        if !path.exists() {
+            continue;
+        }
+
+        let content = fs::read_note(&path)?;
+        let updated = match new_name {
+            Some(name) => fs::rename_front_matter_tag(&content, tag_id, name),
+            None => fs::remove_front_matter_tag(&content, tag_id),
+        };
+        if let Some(updated) = updated {
+            fs::write_note(&path, &updated)?;
+        }
+    }
+
+    Ok(())
+}
+
 fn build_tag(name: &str, color: &str) -> Result<papyro_core::models::Tag> {
     let name = normalized_tag_name(name)?;
     Ok(papyro_core::models::Tag {
@@ -1304,6 +1325,11 @@ mod tests {
 
         assert_eq!(renamed.id, "systems");
         assert_eq!(renamed.name, "Systems");
+        let content = std::fs::read_to_string(&note_path)?;
+        assert_eq!(
+            fs::extract_front_matter_tags(&content),
+            vec!["Systems".to_string(), "search".to_string()]
+        );
         let note = db::notes::get_note(&storage.pool, &note_id)?.expect("note metadata exists");
         assert_eq!(
             note.tags
@@ -1317,6 +1343,11 @@ mod tests {
 
         assert_eq!(recolored.color, "#ABCDEF");
         storage.delete_tag("search")?;
+        let content = std::fs::read_to_string(&note_path)?;
+        assert_eq!(
+            fs::extract_front_matter_tags(&content),
+            vec!["Systems".to_string()]
+        );
         let note = db::notes::get_note(&storage.pool, &note_id)?.expect("note metadata exists");
         assert_eq!(
             note.tags
