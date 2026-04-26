@@ -7,6 +7,7 @@ pub const SAMPLE_5_MB: usize = 5 * MB;
 
 pub const DISABLE_CODE_HIGHLIGHT_BYTES: usize = SAMPLE_1_MB;
 pub const DISABLE_LIVE_PREVIEW_BYTES: usize = SAMPLE_5_MB;
+pub const DISABLE_OUTLINE_BYTES: usize = SAMPLE_5_MB;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EditorPerfBudget {
@@ -70,6 +71,10 @@ pub fn should_highlight_code(byte_len: usize) -> bool {
     PreviewPolicy::for_len(byte_len).code_highlighting_enabled
 }
 
+pub fn should_extract_outline(byte_len: usize) -> bool {
+    byte_len < DISABLE_OUTLINE_BYTES
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -87,6 +92,12 @@ mod tests {
         let huge = PreviewPolicy::for_len(SAMPLE_5_MB);
         assert!(!huge.code_highlighting_enabled);
         assert!(!huge.live_preview_enabled);
+    }
+
+    #[test]
+    fn outline_extraction_degrades_for_huge_documents() {
+        assert!(should_extract_outline(SAMPLE_1_MB));
+        assert!(!should_extract_outline(SAMPLE_5_MB));
     }
 
     #[test]

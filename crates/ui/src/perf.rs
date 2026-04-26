@@ -72,6 +72,7 @@ pub(crate) fn trace_outline_extract(
     tab_id: Option<&str>,
     content_bytes: usize,
     heading_count: usize,
+    skipped: bool,
     started_at: Option<Instant>,
 ) {
     if let Some(started_at) = started_at {
@@ -79,6 +80,7 @@ pub(crate) fn trace_outline_extract(
             tab_id,
             content_bytes,
             heading_count,
+            skipped,
             elapsed_ms = started_at.elapsed().as_millis(),
             "perf editor outline extract"
         );

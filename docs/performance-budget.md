@@ -34,7 +34,7 @@ continue work after the interaction if the writing surface stays responsive.
 ## Degradation
 
 - At 1MB, preview keeps rendering but disables syntax highlighting.
-- At 5MB, live preview pauses and shows a large-document notice.
+- At 5MB, live preview pauses and outline extraction is skipped.
 - Editing remains available while expensive preview work is reduced.
 
 ## Trace Names
