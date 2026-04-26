@@ -6,20 +6,37 @@ use dioxus::prelude::*;
 
 pub use file_tree::{FileTree, FileTreeSortMode};
 
+const SIDEBAR_MIN_WIDTH: u32 = 240;
+const SIDEBAR_MAX_WIDTH: u32 = 380;
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+struct SidebarResizeDrag {
+    start_x: f64,
+    start_width: u32,
+}
+
 #[component]
 pub fn Sidebar() -> Element {
     let app = use_app_context();
     let file_state = app.file_state;
+    let ui_state = app.ui_state;
     let commands = app.commands;
+    let resize_commands = commands.clone();
     let workspace_model = app.view_model.read().workspace.clone();
     let settings_model = app.view_model.read().settings.clone();
 
     let mut create_name = use_signal(String::new);
     let mut show_create = use_signal(|| false);
     let mut tree_sort = use_signal(FileTreeSortMode::default);
+    let mut resize_drag = use_signal(|| None::<SidebarResizeDrag>);
 
     let workspace = file_state.read().current_workspace.clone();
     let sidebar_width = settings_model.sidebar_width;
+    let sidebar_class = if resize_drag().is_some() {
+        "mn-sidebar resizing"
+    } else {
+        "mn-sidebar"
+    };
     let selected_node = file_state.read().selected_node();
     let has_selection = workspace_model.has_selection;
 
@@ -32,7 +49,7 @@ pub fn Sidebar() -> Element {
 
     rsx! {
         aside {
-            class: "mn-sidebar",
+            class: "{sidebar_class}",
             style: "width: {sidebar_width}px",
 
             // ── Header ──
@@ -164,6 +181,103 @@ pub fn Sidebar() -> Element {
                 }
             }
 
+            div {
+                class: "mn-sidebar-resize-handle",
+                title: "Resize sidebar",
+                "aria-label": "Resize sidebar",
+                role: "separator",
+                "aria-orientation": "vertical",
+                onmousedown: move |event| {
+                    event.prevent_default();
+                    event.stop_propagation();
+                    resize_drag.set(Some(SidebarResizeDrag {
+                        start_x: event.client_coordinates().x,
+                        start_width: sidebar_width,
+                    }));
+                },
+            }
+            if let Some(drag) = resize_drag() {
+                div {
+                    class: "mn-sidebar-resize-overlay",
+                    onmousemove: move |event| {
+                        event.prevent_default();
+                        let width = sidebar_width_from_drag(drag, event.client_coordinates().x);
+                        update_sidebar_width(ui_state, width);
+                    },
+                    onmouseup: move |event| {
+                        event.prevent_default();
+                        let width = sidebar_width_from_drag(drag, event.client_coordinates().x);
+                        update_sidebar_width(ui_state, width);
+                        persist_sidebar_width(ui_state, resize_commands.clone(), width);
+                        resize_drag.set(None);
+                    },
+                }
+            }
         }
+    }
+}
+
+fn sidebar_width_from_drag(drag: SidebarResizeDrag, current_x: f64) -> u32 {
+    clamp_sidebar_width(drag.start_width as f64 + current_x - drag.start_x)
+}
+
+fn clamp_sidebar_width(width: f64) -> u32 {
+    width
+        .round()
+        .clamp(SIDEBAR_MIN_WIDTH as f64, SIDEBAR_MAX_WIDTH as f64) as u32
+}
+
+fn update_sidebar_width(mut ui_state: Signal<papyro_core::UiState>, width: u32) {
+    if ui_state.read().settings.sidebar_width != width {
+        ui_state.write().settings.sidebar_width = width;
+    }
+}
+
+fn persist_sidebar_width(
+    mut ui_state: Signal<papyro_core::UiState>,
+    commands: crate::commands::AppCommands,
+    width: u32,
+) {
+    let (settings, workspace_overrides) = {
+        let mut state = ui_state.write();
+        state.settings.sidebar_width = width;
+
+        if state.workspace_overrides.sidebar_width.is_some() {
+            state.workspace_overrides.sidebar_width = Some(width);
+            (None, Some(state.workspace_overrides.clone()))
+        } else {
+            let mut settings = state.settings.clone();
+            settings.sidebar_width = width;
+            (Some(settings), None)
+        }
+    };
+
+    if let Some(overrides) = workspace_overrides {
+        commands.save_workspace_settings.call(overrides);
+    } else if let Some(settings) = settings {
+        commands.save_settings.call(settings);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sidebar_resize_clamps_width() {
+        assert_eq!(clamp_sidebar_width(120.0), SIDEBAR_MIN_WIDTH);
+        assert_eq!(clamp_sidebar_width(640.0), SIDEBAR_MAX_WIDTH);
+        assert_eq!(clamp_sidebar_width(301.6), 302);
+    }
+
+    #[test]
+    fn sidebar_resize_uses_start_width_and_delta() {
+        let drag = SidebarResizeDrag {
+            start_x: 100.0,
+            start_width: 260,
+        };
+
+        assert_eq!(sidebar_width_from_drag(drag, 140.0), 300);
+        assert_eq!(sidebar_width_from_drag(drag, 0.0), SIDEBAR_MIN_WIDTH);
     }
 }

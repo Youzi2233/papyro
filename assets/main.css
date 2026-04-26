@@ -376,6 +376,7 @@ button { border: 0; cursor: pointer; background: transparent; }
 
 /* ── Sidebar ── */
 .mn-sidebar {
+    position: relative;
     display: flex;
     flex-direction: column;
     min-width: 240px;
@@ -388,6 +389,47 @@ button { border: 0; cursor: pointer; background: transparent; }
         linear-gradient(180deg, var(--mn-surface-raised) 0%, var(--mn-surface) 42%, var(--mn-surface-sunken) 100%);
     box-shadow: var(--mn-shadow-sm);
     transition: width 0.2s ease, opacity 0.15s ease;
+    flex-shrink: 0;
+}
+
+.mn-sidebar.resizing,
+.mn-sidebar-resize-overlay {
+    cursor: col-resize;
+    user-select: none;
+}
+
+.mn-sidebar-resize-handle {
+    position: absolute;
+    top: 0;
+    right: -4px;
+    bottom: 0;
+    width: 8px;
+    cursor: col-resize;
+    z-index: 25;
+}
+
+.mn-sidebar-resize-handle::after {
+    content: "";
+    position: absolute;
+    top: 10px;
+    right: 3px;
+    bottom: 10px;
+    width: 2px;
+    border-radius: 999px;
+    background: transparent;
+    transition: background 0.12s;
+}
+
+.mn-sidebar-resize-handle:hover::after,
+.mn-sidebar.resizing .mn-sidebar-resize-handle::after {
+    background: var(--mn-accent);
+}
+
+.mn-sidebar-resize-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    background: transparent;
 }
 
 .mn-sidebar-header {
