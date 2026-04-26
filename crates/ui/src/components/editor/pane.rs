@@ -1,4 +1,5 @@
 use super::bridge::{perf_enabled, send_editor_destroy, EditorBridgeMap, RetiredEditorHosts};
+use super::document_cache::{DocumentDerivedCache, DocumentDerivedCacheState};
 use super::host::EditorHost;
 use super::outline::OutlinePane;
 use super::preview::PreviewPane;
@@ -37,6 +38,8 @@ pub fn EditorPane() -> Element {
     );
     let bridges: EditorBridgeMap =
         use_context_provider(|| Signal::new(HashMap::<String, dioxus::document::Eval>::new()));
+    let _document_cache: DocumentDerivedCache =
+        use_context_provider(DocumentDerivedCacheState::shared);
     let mut retired_hosts: RetiredEditorHosts = use_context_provider(|| Signal::new(Vec::new()));
     let retired_host_ids = retired_hosts.read().clone();
 

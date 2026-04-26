@@ -1,23 +1,27 @@
 use super::bridge::perf_enabled;
+use super::document_cache::{CachedPreview, DocumentCacheKey, DocumentDerivedCache};
 use crate::context::EditorServices;
 use dioxus::prelude::*;
 use papyro_core::TabContentSnapshot;
 use papyro_editor::performance::PreviewPolicy;
 use std::time::Instant;
 
-#[derive(Clone, PartialEq)]
-struct RenderedPreview {
-    html: String,
-    policy: PreviewPolicy,
-}
-
 #[component]
 pub(super) fn PreviewPane(
     active_document: Option<TabContentSnapshot>,
     editor_services: EditorServices,
 ) -> Element {
+    let document_cache = use_context::<DocumentDerivedCache>();
     let rendered_preview = use_memo(use_reactive((&active_document,), move |(document,)| {
         let started_at = perf_enabled().then(Instant::now);
+        let key = document.as_ref().map(DocumentCacheKey::from_snapshot);
+        if let Some(preview) = key
+            .as_ref()
+            .and_then(|key| document_cache.borrow().preview(key))
+        {
+            return preview;
+        }
+
         let content = document
             .as_ref()
             .map(|document| document.content.as_ref())
@@ -39,7 +43,13 @@ pub(super) fn PreviewPane(
             );
         }
 
-        RenderedPreview { html, policy }
+        let preview = CachedPreview { html, policy };
+        if let Some(key) = key {
+            document_cache
+                .borrow_mut()
+                .insert_preview(key, preview.clone());
+        }
+        preview
     }))();
 
     let notice = preview_notice(rendered_preview.policy);

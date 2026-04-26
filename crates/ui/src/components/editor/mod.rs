@@ -1,5 +1,6 @@
 mod assets;
 mod bridge;
+mod document_cache;
 mod fallback;
 mod host;
 mod outline;
