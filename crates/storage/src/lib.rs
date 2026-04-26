@@ -994,6 +994,49 @@ mod tests {
     }
 
     #[test]
+    fn note_metadata_persists_front_matter_tags() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let workspace_root = create_workspace(&temp)?;
+        let note_path = workspace_root.join("tagged.md");
+        std::fs::write(
+            &note_path,
+            "---\ntags: [Rust, search]\n---\n# Tagged\n\nhello",
+        )?;
+        let storage = test_storage(&temp)?;
+        let workspace = storage.initialize_workspace(&workspace_root)?.workspace;
+
+        let notes = db::notes::list_notes_in_workspace(&storage.pool, &workspace.id)?;
+        assert_eq!(notes.len(), 1);
+        assert_eq!(
+            notes[0]
+                .tags
+                .iter()
+                .map(|tag| tag.name.as_str())
+                .collect::<Vec<_>>(),
+            vec!["Rust", "search"]
+        );
+
+        let opened = storage.open_note(&workspace, &note_path)?;
+        storage.save_note(
+            &workspace,
+            &opened.tab,
+            "---\ntags:\n  - archive\n---\n# Tagged\n\nupdated",
+        )?;
+        let meta =
+            db::notes::get_note(&storage.pool, &opened.tab.note_id)?.expect("note metadata exists");
+
+        assert_eq!(
+            meta.tags
+                .iter()
+                .map(|tag| tag.name.as_str())
+                .collect::<Vec<_>>(),
+            vec!["archive"]
+        );
+
+        Ok(())
+    }
+
+    #[test]
     fn rename_note_updates_note_id_and_recent_files() -> Result<()> {
         let temp = tempfile::tempdir()?;
         let workspace_root = create_workspace(&temp)?;

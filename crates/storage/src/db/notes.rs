@@ -3,8 +3,9 @@ use anyhow::Result;
 use papyro_core::models::NoteMeta;
 
 pub fn upsert_note(pool: &DbPool, note: &NoteMeta) -> Result<()> {
-    let conn = pool.get()?;
-    conn.execute(
+    let mut conn = pool.get()?;
+    let tx = conn.transaction()?;
+    tx.execute(
         "INSERT INTO notes (id, workspace_id, relative_path, title, created_at, updated_at,
                             word_count, char_count, is_favorite, is_trashed)
          VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
@@ -28,6 +29,8 @@ pub fn upsert_note(pool: &DbPool, note: &NoteMeta) -> Result<()> {
             note.is_trashed as i32,
         ],
     )?;
+    crate::db::tags::replace_note_tags(&tx, &note.id, &note.tags)?;
+    tx.commit()?;
     Ok(())
 }
 
@@ -40,7 +43,10 @@ pub fn get_note(pool: &DbPool, id: &str) -> Result<Option<NoteMeta>> {
     )?;
     let result = stmt.query_row(rusqlite::params![id], row_to_note_meta);
     match result {
-        Ok(note) => Ok(Some(note)),
+        Ok(mut note) => {
+            note.tags = crate::db::tags::list_note_tags(pool, &note.id)?;
+            Ok(Some(note))
+        }
         Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
         Err(e) => Err(e.into()),
     }
@@ -55,7 +61,9 @@ pub fn list_notes_in_workspace(pool: &DbPool, workspace_id: &str) -> Result<Vec<
          ORDER BY updated_at DESC",
     )?;
     let rows = stmt.query_map(rusqlite::params![workspace_id], row_to_note_meta)?;
-    rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
+    let mut notes = rows.collect::<Result<Vec<_>, _>>()?;
+    hydrate_note_tags(pool, &mut notes)?;
+    Ok(notes)
 }
 
 pub fn delete_note(pool: &DbPool, id: &str) -> Result<()> {
@@ -125,4 +133,12 @@ fn row_to_note_meta(row: &rusqlite::Row) -> rusqlite::Result<NoteMeta> {
         is_trashed: row.get::<_, i32>(9)? != 0,
         tags: vec![],
     })
+}
+
+fn hydrate_note_tags(pool: &DbPool, notes: &mut [NoteMeta]) -> Result<()> {
+    for note in notes {
+        note.tags = crate::db::tags::list_note_tags(pool, &note.id)?;
+    }
+
+    Ok(())
 }
