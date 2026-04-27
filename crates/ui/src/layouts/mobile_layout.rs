@@ -10,15 +10,17 @@ use crate::components::{
     status_bar::StatusBar,
 };
 use crate::context::use_app_context;
-use crate::perf::{perf_timer, trace_chrome_open_modal, trace_sidebar_toggle};
+use crate::perf::{perf_timer, trace_chrome_open_modal};
 
 #[component]
 pub fn MobileLayout(status_message: Option<String>) -> Element {
     let app = use_app_context();
-    let mut ui_state = app.ui_state;
+    let ui_state = app.ui_state;
     let file_state = app.file_state;
     let pending_delete_path = app.pending_delete_path;
     let commands = app.commands;
+    let open_workspace_commands = commands.clone();
+    let browser_toggle_commands = commands.clone();
     let mut show_settings = use_signal(|| false);
     let mut show_create = use_signal(|| false);
     let mut show_rename = use_signal(|| false);
@@ -66,15 +68,11 @@ pub fn MobileLayout(status_message: Option<String>) -> Element {
                         onclick: move |_| {
                             commands.open_workspace.call(());
                             if ui_state.read().sidebar_collapsed() {
-                                let started_at = perf_timer();
-                                ui_state.write().toggle_sidebar();
-                                let settings = ui_state.read().settings.clone();
-                                trace_sidebar_toggle(
+                                crate::chrome::toggle_sidebar(
+                                    ui_state,
+                                    open_workspace_commands.clone(),
                                     "mobile_open_workspace",
-                                    settings.sidebar_collapsed,
-                                    started_at,
                                 );
-                                commands.save_settings.call(settings);
                             }
                         },
                         if workspace.is_some() { "Switch workspace" } else { "Open workspace" }
@@ -83,15 +81,11 @@ pub fn MobileLayout(status_message: Option<String>) -> Element {
                         button {
                             class: "mn-button",
                             onclick: move |_| {
-                                let started_at = perf_timer();
-                                ui_state.write().toggle_sidebar();
-                                let settings = ui_state.read().settings.clone();
-                                trace_sidebar_toggle(
+                                crate::chrome::toggle_sidebar(
+                                    ui_state,
+                                    browser_toggle_commands.clone(),
                                     "mobile_toolbar",
-                                    settings.sidebar_collapsed,
-                                    started_at,
                                 );
-                                commands.save_settings.call(settings);
                             },
                             if browser_visible { "Hide browser" } else { "Browse files" }
                         }
