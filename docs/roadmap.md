@@ -307,6 +307,7 @@ Editor runtime lane
 - [ ] `DesktopLayout` 只能感知 shell/chrome 需要的数据。
 - [ ] `EditorPane` 只接收 active editor surface 所需数据。
 - [ ] Sidebar、Header、StatusBar 不读取 document content 或 editor host 状态。
+- [x] sidebar/theme/view mode 等 chrome 动作统一走 `crates/ui/src/chrome.rs` helper，不在入口组件里重复写 settings mutation。
 - [ ] 为 view model 派生函数补充“无关状态变化不改变输出”的测试。
 
 ### 1.5 Document Pipeline
@@ -350,6 +351,7 @@ Editor runtime lane
 - [ ] 拆分会导致大面积 rerender 的 props。
 - [ ] 大 Vec / HashMap 避免作为宽 props 穿过多层组件。
 - [ ] 对稳定结构使用更小 view model 或 id list。
+- [x] `EditorPaneModel` 使用 `use_memo` 派生，避免 chrome/settings render 重建 tab/document snapshot。
 - [ ] 避免在 render 中 clone 大内容、渲染 HTML、提取 outline。
 
 ### 2.3 Editor host 性能
