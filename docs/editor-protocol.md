@@ -15,7 +15,7 @@ Rust sends commands to `window.papyroEditor.handleRustMessage(tabId, message)`.
 | `ApplyFormat` | `apply_format` | `kind: EditorFormat` | Apply Markdown formatting to the current selection. |
 | `Focus` | `focus` | none | Focus the active editor. |
 | `RefreshLayout` | `refresh_layout` | none | Request CodeMirror layout measurement. |
-| `Destroy` | `destroy` | none | Detach the editor from the active tab registry. |
+| `Destroy` | `destroy` | `instance_id: string` | Detach the editor from the active tab registry only when the host instance still matches. |
 
 `EditorFormat` values are serialized as:
 
@@ -68,6 +68,6 @@ Example:
 
 - `set_content` must not emit `content_changed`.
 - Commands for a missing tab may return `"missing"` in JavaScript and should not throw.
-- `destroy` must detach the tab id so recycled editors cannot send events to the old tab.
+- `destroy` must include the host `instance_id`; JavaScript ignores stale destroy messages so delayed cleanup cannot detach a newer host for the same tab id.
 - `content_changed` is the only event that updates Rust document content.
 - `save_requested` asks Rust to save; JavaScript never writes files directly.

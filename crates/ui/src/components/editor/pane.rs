@@ -1,4 +1,4 @@
-use super::bridge::{perf_enabled, send_editor_destroy, EditorBridgeMap, RetiredEditorHosts};
+use super::bridge::{perf_enabled, send_editor_destroy_batch, EditorBridgeMap, RetiredEditorHosts};
 use super::document_cache::{DocumentDerivedCache, DocumentDerivedCacheState};
 use super::host::EditorHost;
 use super::outline::OutlinePane;
@@ -88,8 +88,7 @@ pub fn EditorPane() -> Element {
     let view_mode = ui_state.read().view_mode.clone();
     let settings = ui_state.read().settings.clone();
     let editor_style = editor_style(&settings);
-    let bridges: EditorBridgeMap =
-        use_context_provider(|| Signal::new(HashMap::<String, dioxus::document::Eval>::new()));
+    let bridges: EditorBridgeMap = use_context_provider(|| Signal::new(HashMap::new()));
     let _document_cache: DocumentDerivedCache =
         use_context_provider(DocumentDerivedCacheState::shared);
     let mut retired_hosts: RetiredEditorHosts = use_context_provider(|| Signal::new(Vec::new()));
@@ -118,14 +117,12 @@ pub fn EditorPane() -> Element {
                 return;
             }
 
-            let mut bridges = bridges;
-            let mut map = bridges.write();
-            for id in &stale {
-                if let Some(eval) = map.remove(id) {
-                    send_editor_destroy(eval);
-                }
-            }
-            drop(map);
+            let retired_bridges = {
+                let mut bridges = bridges;
+                let mut map = bridges.write();
+                stale.iter().filter_map(|id| map.remove(id)).collect()
+            };
+            send_editor_destroy_batch(retired_bridges);
 
             // Drain retired entries whose bridges have just been destroyed.
             let destroyed: std::collections::HashSet<&String> = stale.iter().collect();

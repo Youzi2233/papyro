@@ -1,5 +1,7 @@
 use super::assets::save_pasted_image_asset;
-use super::bridge::{send_editor_destroy, EditorBridgeMap, EditorCommand, EditorEvent};
+use super::bridge::{
+    send_editor_destroy, EditorBridge, EditorBridgeMap, EditorCommand, EditorEvent,
+};
 use super::fallback::{EditorRuntimeState, FallbackEditor};
 use crate::commands::ContentChange;
 use crate::context::use_app_context;
@@ -9,6 +11,7 @@ use crate::perf::{
 };
 use dioxus::prelude::*;
 use papyro_core::models::ViewMode;
+use uuid::Uuid;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 struct EditorCommandCache {
@@ -34,6 +37,8 @@ pub(super) fn EditorHost(tab_id: String, is_visible: bool, view_mode: ViewMode) 
     let commands = app.commands;
     let bridges = use_context::<EditorBridgeMap>();
     let container_id = format!("mn-editor-{tab_id}");
+    let instance_id = use_signal(|| format!("host-{}", Uuid::new_v4()));
+    let instance_id_value = instance_id();
     let runtime_state = use_signal(|| EditorRuntimeState::Loading);
     let command_cache = use_signal(EditorCommandCache::default);
     let mut latest_visibility = use_signal(|| is_visible);
@@ -65,6 +70,7 @@ pub(super) fn EditorHost(tab_id: String, is_visible: bool, view_mode: ViewMode) 
             let initial_view_mode = startup_view_mode.clone();
             let tab_id = tab_id.clone();
             let container_id = container_id.clone();
+            let instance_id = instance_id_value.clone();
 
             spawn(async move {
                 if bridges.read().contains_key(&tab_id) {
@@ -83,6 +89,7 @@ pub(super) fn EditorHost(tab_id: String, is_visible: bool, view_mode: ViewMode) 
                     r#"
                 const tabId = {tab_id_json};
                 const containerId = {container_id_json};
+                const instanceId = {instance_id_json};
                 const initialContent = {initial_content_json};
                 const initialViewMode = {initial_view_mode_json};
 
@@ -132,7 +139,7 @@ pub(super) fn EditorHost(tab_id: String, is_visible: bool, view_mode: ViewMode) 
                 try {{
                     await ensurePapyroEditorRuntime();
 
-                    window.papyroEditor.ensureEditor({{ tabId, containerId, initialContent, viewMode: initialViewMode }});
+                    window.papyroEditor.ensureEditor({{ tabId, containerId, instanceId, initialContent, viewMode: initialViewMode }});
                     window.papyroEditor.attachChannel(tabId, dioxus);
                     dioxus.send({{ type: "runtime_ready", tab_id: tabId }});
 
@@ -154,6 +161,8 @@ pub(super) fn EditorHost(tab_id: String, is_visible: bool, view_mode: ViewMode) 
                         serde_json::to_string(&tab_id).unwrap_or_else(|_| "\"\"".to_string()),
                     container_id_json =
                         serde_json::to_string(&container_id).unwrap_or_else(|_| "\"\"".to_string()),
+                    instance_id_json =
+                        serde_json::to_string(&instance_id).unwrap_or_else(|_| "\"\"".to_string()),
                     initial_content_json = serde_json::to_string(&initial_content)
                         .unwrap_or_else(|_| "\"\"".to_string()),
                     initial_view_mode_json = serde_json::to_string(&initial_view_mode)
@@ -161,19 +170,27 @@ pub(super) fn EditorHost(tab_id: String, is_visible: bool, view_mode: ViewMode) 
                 );
 
                 let eval = document::eval(&script);
-                bridges.write().insert(tab_id.clone(), eval);
+                bridges.write().insert(
+                    tab_id.clone(),
+                    EditorBridge {
+                        eval,
+                        instance_id: instance_id.clone(),
+                    },
+                );
                 let mut runtime_is_ready = false;
 
                 loop {
                     let event = {
-                        let Some(mut eval) = bridges.read().get(&tab_id).copied() else {
+                        let Some(mut eval) =
+                            bridge_eval_for_instance(bridges, &tab_id, &instance_id)
+                        else {
                             break;
                         };
                         eval.recv::<EditorEvent>().await
                     };
 
                     let Ok(event) = event else {
-                        bridges.write().remove(&tab_id);
+                        remove_bridge_for_instance(bridges, &tab_id, &instance_id);
                         runtime_state.set(EditorRuntimeState::Error(
                             "Editor runtime channel closed".to_string(),
                         ));
@@ -189,15 +206,22 @@ pub(super) fn EditorHost(tab_id: String, is_visible: bool, view_mode: ViewMode) 
                                 .content_for_tab(&tab_id)
                                 .unwrap_or_default()
                                 .to_string();
-                            if let Some(eval) = bridges.read().get(&tab_id) {
+                            if let Some(eval) =
+                                bridge_eval_for_instance(bridges, &tab_id, &instance_id)
+                            {
                                 let _ = eval.send(EditorCommand::SetContent { content });
                                 send_set_view_mode(
-                                    eval,
+                                    &eval,
                                     command_cache,
                                     &tab_id,
                                     initial_view_mode.clone(),
                                 );
-                                send_set_preferences(eval, command_cache, &tab_id, auto_link_paste);
+                                send_set_preferences(
+                                    &eval,
+                                    command_cache,
+                                    &tab_id,
+                                    auto_link_paste,
+                                );
                             }
                         }
                         EditorEvent::RuntimeError { tab_id, message } => {
@@ -227,7 +251,9 @@ pub(super) fn EditorHost(tab_id: String, is_visible: bool, view_mode: ViewMode) 
                                 continue;
                             };
 
-                            let Some(eval) = bridges.read().get(&tab_id).copied() else {
+                            let Some(eval) =
+                                bridge_eval_for_instance(bridges, &tab_id, &instance_id)
+                            else {
                                 continue;
                             };
 
@@ -259,7 +285,9 @@ pub(super) fn EditorHost(tab_id: String, is_visible: bool, view_mode: ViewMode) 
                                 continue;
                             }
 
-                            if let Some(eval) = bridges.read().get(&tab_id) {
+                            if let Some(eval) =
+                                bridge_eval_for_instance(bridges, &tab_id, &instance_id)
+                            {
                                 let started_at = perf_timer();
                                 let _ = eval.send(EditorCommand::RefreshLayout);
                                 trace_editor_refresh_layout(&tab_id, started_at);
@@ -278,8 +306,8 @@ pub(super) fn EditorHost(tab_id: String, is_visible: bool, view_mode: ViewMode) 
                 return;
             }
 
-            if let Some(eval) = bridges.read().get(&tab_id) {
-                send_set_view_mode(eval, command_cache, &tab_id, mode);
+            if let Some(bridge) = bridges.read().get(&tab_id) {
+                send_set_view_mode(&bridge.eval, command_cache, &tab_id, mode);
             }
         },
     ));
@@ -291,8 +319,8 @@ pub(super) fn EditorHost(tab_id: String, is_visible: bool, view_mode: ViewMode) 
                 return;
             }
 
-            if let Some(eval) = bridges.read().get(&tab_id) {
-                send_set_preferences(eval, command_cache, &tab_id, auto_link_paste);
+            if let Some(bridge) = bridges.read().get(&tab_id) {
+                send_set_preferences(&bridge.eval, command_cache, &tab_id, auto_link_paste);
             }
         },
     ));
@@ -301,8 +329,8 @@ pub(super) fn EditorHost(tab_id: String, is_visible: bool, view_mode: ViewMode) 
         let tab_id = tab_id.clone();
         let mut bridges = bridges;
         move || {
-            if let Some(eval) = bridges.write().remove(&tab_id) {
-                send_editor_destroy(eval);
+            if let Some(bridge) = bridges.write().remove(&tab_id) {
+                send_editor_destroy(bridge);
             }
         }
     });
@@ -357,6 +385,28 @@ fn send_set_preferences(
     let _ = eval.send(EditorCommand::SetPreferences { auto_link_paste });
     command_cache.with_mut(|cache| cache.auto_link_paste = Some(auto_link_paste));
     trace_editor_set_preferences(tab_id, auto_link_paste, started_at);
+}
+
+fn bridge_eval_for_instance(
+    bridges: EditorBridgeMap,
+    tab_id: &str,
+    instance_id: &str,
+) -> Option<dioxus::document::Eval> {
+    bridges
+        .read()
+        .get(tab_id)
+        .filter(|bridge| bridge.instance_id == instance_id)
+        .map(|bridge| bridge.eval)
+}
+
+fn remove_bridge_for_instance(mut bridges: EditorBridgeMap, tab_id: &str, instance_id: &str) {
+    let should_remove = bridges
+        .peek()
+        .get(tab_id)
+        .is_some_and(|bridge| bridge.instance_id == instance_id);
+    if should_remove {
+        bridges.write().remove(tab_id);
+    }
 }
 
 fn should_refresh_layout(

@@ -873,6 +873,7 @@ export function attachViewToTab({
   view,
   tabId,
   container,
+  instanceId = "",
   initialContent,
   viewMode = "hybrid",
   refreshEditorLayout,
@@ -883,6 +884,7 @@ export function attachViewToTab({
 
   const entry = {
     view,
+    instanceId,
     dioxus: null,
     suppressChange: true,
     viewMode: "hybrid",
@@ -960,6 +962,9 @@ export function handleRustMessage(editorRegistry, tabId, message, options = {}) 
       refreshEditorLayout(entry.view);
       return "refreshed";
     case "destroy":
+      if (entry?.instanceId && message.instance_id && entry.instanceId !== message.instance_id) {
+        return "destroyed";
+      }
       recycleEditor(editorRegistry, tabId);
       return "destroyed";
     default:

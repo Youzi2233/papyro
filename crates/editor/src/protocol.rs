@@ -40,7 +40,7 @@ pub enum EditorCommand {
     ApplyFormat { kind: EditorFormat },
     Focus,
     RefreshLayout,
-    Destroy,
+    Destroy { instance_id: String },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -124,6 +124,16 @@ mod tests {
             value,
             json!({ "type": "insert_markdown", "markdown": "![image](assets/paste.png)" })
         );
+    }
+
+    #[test]
+    fn serializes_destroy_command_with_instance_id() {
+        let value = serde_json::to_value(EditorCommand::Destroy {
+            instance_id: "host-1".to_string(),
+        })
+        .unwrap();
+
+        assert_eq!(value, json!({ "type": "destroy", "instance_id": "host-1" }));
     }
 
     #[test]

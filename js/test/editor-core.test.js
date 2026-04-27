@@ -94,12 +94,13 @@ function fakeView(initialDoc = "", selection = { from: 0, to: 0 }, onDispatch = 
   return view;
 }
 
-function attach(registry, view, tabId, initialContent = "") {
+function attach(registry, view, tabId, initialContent = "", instanceId = "") {
   attachViewToTab({
     editorRegistry: registry,
     view,
     tabId,
     container: fakeContainer(),
+    instanceId,
     initialContent,
     refreshEditorLayout: () => {},
   });
@@ -698,6 +699,31 @@ test("tab recycle detaches old tab and prevents stale content routing", () => {
   );
   assert.equal(view.state.doc.toString(), "B");
   assert.equal(recycleCalls, 1);
+});
+
+test("destroy ignores stale editor host instances", () => {
+  const registry = new Map();
+  const view = fakeView("body");
+
+  attach(registry, view, "tab-a", "body", "host-new");
+
+  assert.equal(
+    handleRustMessage(registry, "tab-a", {
+      type: "destroy",
+      instance_id: "host-old",
+    }),
+    "destroyed",
+  );
+  assert.equal(registry.has("tab-a"), true);
+
+  assert.equal(
+    handleRustMessage(registry, "tab-a", {
+      type: "destroy",
+      instance_id: "host-new",
+    }),
+    "destroyed",
+  );
+  assert.equal(registry.has("tab-a"), false);
 });
 
 test("set_view_mode stores mode on entry and editor dom", () => {

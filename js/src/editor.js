@@ -1298,12 +1298,13 @@ function setRuntimePreferences(entry, preferences) {
   return setEditorPreferencesCore(entry, preferences);
 }
 
-function attachViewToTab(view, tabId, container, initialContent, viewMode) {
+function attachViewToTab(view, tabId, container, instanceId, initialContent, viewMode) {
   attachViewToTabCore({
     editorRegistry,
     view,
     tabId,
     container,
+    instanceId,
     initialContent,
     viewMode,
     refreshEditorLayout,
@@ -1312,7 +1313,7 @@ function attachViewToTab(view, tabId, container, initialContent, viewMode) {
   });
 }
 
-function ensureEditor({ tabId, containerId, initialContent, viewMode }) {
+function ensureEditor({ tabId, containerId, instanceId = "", initialContent, viewMode }) {
   const container = document.getElementById(containerId);
   if (!container) throw new Error(`Editor container not found: ${containerId}`);
 
@@ -1323,6 +1324,7 @@ function ensureEditor({ tabId, containerId, initialContent, viewMode }) {
       container.replaceChildren(existing.view.dom);
     }
     existing.view.dom.dataset.tabId = tabId;
+    existing.instanceId = instanceId;
     handleRustMessageCore(editorRegistry, tabId, {
       type: "set_view_mode",
       mode: viewMode ?? existing.viewMode ?? "hybrid",
@@ -1334,7 +1336,7 @@ function ensureEditor({ tabId, containerId, initialContent, viewMode }) {
   if (spareViews.length > 0) {
     view = spareViews.pop();
     resetViewState(view, initialContent ?? "");
-    attachViewToTab(view, tabId, container, initialContent, viewMode);
+    attachViewToTab(view, tabId, container, instanceId, initialContent, viewMode);
     // Warm the next spare so a subsequent open is also instant.
     scheduleWarmSpare();
   } else {
@@ -1348,6 +1350,7 @@ function ensureEditor({ tabId, containerId, initialContent, viewMode }) {
     view.dom.dataset.tabId = tabId;
     const entry = {
       view,
+      instanceId,
       dioxus: null,
       suppressChange: false,
       viewMode: "hybrid",

@@ -30,8 +30,8 @@ fn ToolbarButton(
             class: "mn-toolbar-button",
             title: "{title}",
             onclick: move |_| {
-                if let Some(eval) = bridges.read().get(&tab_id) {
-                    let _ = eval.send(EditorCommand::ApplyFormat { kind });
+                if let Some(bridge) = bridges.read().get(&tab_id) {
+                    let _ = bridge.eval.send(EditorCommand::ApplyFormat { kind });
                 }
             },
             "{label}"
