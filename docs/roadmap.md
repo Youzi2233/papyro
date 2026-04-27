@@ -307,6 +307,7 @@ Editor runtime lane
 - [ ] `DesktopLayout` 只能感知 shell/chrome 需要的数据。
 - [ ] `EditorPane` 只接收 active editor surface 所需数据。
 - [ ] Sidebar、Header、StatusBar 不读取 document content 或 editor host 状态。
+- [x] StatusBar 改为消费 `EditorViewModel`，不再直接读取 `EditorTabs` 和 `TabContentsMap`。
 - [x] sidebar/theme/view mode 等 chrome 动作统一走 `crates/ui/src/chrome.rs` helper，不在入口组件里重复写 settings mutation。
 - [ ] 为 view model 派生函数补充“无关状态变化不改变输出”的测试。
 

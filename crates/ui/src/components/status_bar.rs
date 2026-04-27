@@ -1,26 +1,20 @@
 use crate::components::primitives::{StatusIndicator, StatusMessage, StatusTone};
 use crate::context::use_app_context;
+use crate::view_model::EditorViewModel;
 use dioxus::prelude::*;
 use papyro_core::models::SaveStatus;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct StatusBarItem {
+    label: String,
+    tone: StatusTone,
+}
 
 #[component]
 pub fn StatusBar(status_message: Option<String>) -> Element {
     let app = use_app_context();
-    let (active_tab_id, active_save_status, has_active_tab) = {
-        let editor_tabs = app.editor_tabs.read();
-        let active_tab = editor_tabs.active_tab();
-        (
-            editor_tabs.active_tab_id.clone(),
-            active_tab
-                .map(|tab| tab.save_status.clone())
-                .unwrap_or_default(),
-            active_tab.is_some(),
-        )
-    };
-    let stats = app
-        .tab_contents
-        .read()
-        .active_stats(active_tab_id.as_deref());
+    let editor_model = app.editor_model.read().clone();
+    let items = status_bar_items(&editor_model);
 
     rsx! {
         footer { class: "mn-status-bar",
@@ -32,31 +26,100 @@ pub fn StatusBar(status_message: Option<String>) -> Element {
                 }
             }
             div { class: "mn-status-right",
-                if has_active_tab {
+                for item in items {
                     StatusIndicator {
-                        label: format!("{} words", stats.word_count),
-                        tone: StatusTone::Default,
-                    }
-                    StatusIndicator {
-                        label: format!("{} chars", stats.char_count),
-                        tone: StatusTone::Default,
-                    }
-                    match active_save_status {
-                        SaveStatus::Saving => rsx! {
-                            StatusIndicator { label: "Saving", tone: StatusTone::Saving }
-                        },
-                        SaveStatus::Failed => rsx! {
-                            StatusIndicator { label: "Save failed", tone: StatusTone::Attention }
-                        },
-                        SaveStatus::Dirty => rsx! {
-                            StatusIndicator { label: "Unsaved", tone: StatusTone::Attention }
-                        },
-                        SaveStatus::Saved => rsx! {
-                            StatusIndicator { label: "Saved", tone: StatusTone::Default }
-                        },
+                        label: item.label,
+                        tone: item.tone,
                     }
                 }
             }
         }
+    }
+}
+
+fn status_bar_items(editor_model: &EditorViewModel) -> Vec<StatusBarItem> {
+    if !editor_model.has_active_tab {
+        return Vec::new();
+    }
+
+    vec![
+        StatusBarItem {
+            label: format!("{} words", editor_model.active_stats.word_count),
+            tone: StatusTone::Default,
+        },
+        StatusBarItem {
+            label: format!("{} chars", editor_model.active_stats.char_count),
+            tone: StatusTone::Default,
+        },
+        StatusBarItem {
+            label: save_status_label(&editor_model.active_save_status).to_string(),
+            tone: save_status_tone(&editor_model.active_save_status),
+        },
+    ]
+}
+
+fn save_status_label(status: &SaveStatus) -> &'static str {
+    match status {
+        SaveStatus::Saving => "Saving",
+        SaveStatus::Failed => "Save failed",
+        SaveStatus::Dirty => "Unsaved",
+        SaveStatus::Saved => "Saved",
+    }
+}
+
+fn save_status_tone(status: &SaveStatus) -> StatusTone {
+    match status {
+        SaveStatus::Saving => StatusTone::Saving,
+        SaveStatus::Failed | SaveStatus::Dirty => StatusTone::Attention,
+        SaveStatus::Saved => StatusTone::Default,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use papyro_core::models::{DocumentStats, ViewMode};
+
+    fn editor_model(has_active_tab: bool, save_status: SaveStatus) -> EditorViewModel {
+        EditorViewModel {
+            active_tab_id: has_active_tab.then(|| "tab-a".to_string()),
+            active_title: has_active_tab.then(|| "Draft".to_string()),
+            has_active_tab,
+            tab_count: usize::from(has_active_tab),
+            active_is_dirty: save_status == SaveStatus::Dirty,
+            active_save_status: save_status,
+            active_stats: DocumentStats {
+                word_count: 12,
+                char_count: 72,
+                ..Default::default()
+            },
+            view_mode: ViewMode::Hybrid,
+        }
+    }
+
+    #[test]
+    fn status_bar_items_hide_editor_stats_without_active_tab() {
+        assert!(status_bar_items(&editor_model(false, SaveStatus::Saved)).is_empty());
+    }
+
+    #[test]
+    fn status_bar_items_are_derived_from_editor_view_model() {
+        assert_eq!(
+            status_bar_items(&editor_model(true, SaveStatus::Dirty)),
+            vec![
+                StatusBarItem {
+                    label: "12 words".to_string(),
+                    tone: StatusTone::Default,
+                },
+                StatusBarItem {
+                    label: "72 chars".to_string(),
+                    tone: StatusTone::Default,
+                },
+                StatusBarItem {
+                    label: "Unsaved".to_string(),
+                    tone: StatusTone::Attention,
+                },
+            ]
+        );
     }
 }
