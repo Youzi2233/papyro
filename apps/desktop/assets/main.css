@@ -824,6 +824,52 @@ button { border: 0; cursor: pointer; background: transparent; }
 }
 
 /* ── Toolbar (inline in tab bar) ── */
+.mn-format-menu {
+    position: relative;
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+}
+
+.mn-format-toggle,
+.mn-outline-toggle {
+    flex-shrink: 0;
+    border: 1px solid transparent;
+    border-radius: 5px;
+    background: transparent;
+    color: var(--mn-ink-3);
+    cursor: pointer;
+    padding: 4px 8px;
+    font-size: 11px;
+    font-weight: 500;
+    transition: border-color 0.12s, color 0.12s, background 0.12s;
+}
+
+.mn-format-toggle:hover,
+.mn-outline-toggle:hover {
+    background: var(--mn-accent-wash);
+    color: var(--mn-ink);
+}
+
+.mn-format-toggle.active,
+.mn-outline-toggle.active {
+    border-color: var(--mn-divider);
+    background: var(--mn-surface);
+    color: var(--mn-ink);
+}
+
+.mn-format-panel {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 6px);
+    z-index: 30;
+    padding: 4px;
+    border: 1px solid var(--mn-divider);
+    border-radius: var(--mn-radius-sm);
+    background: var(--mn-surface);
+    box-shadow: var(--mn-shadow-sm);
+}
+
 .mn-toolbar {
     display: inline-flex;
     flex-wrap: nowrap;
@@ -851,37 +897,6 @@ button { border: 0; cursor: pointer; background: transparent; }
 .mn-toolbar-button:hover {
     background: var(--mn-accent-wash);
     border-color: transparent;
-    color: var(--mn-ink);
-}
-
-.mn-toolbar-sep {
-    width: 1px;
-    height: 18px;
-    background: var(--mn-divider);
-    margin: 0 4px;
-}
-
-.mn-outline-toggle {
-    flex-shrink: 0;
-    border: 1px solid transparent;
-    border-radius: 5px;
-    background: transparent;
-    color: var(--mn-ink-3);
-    cursor: pointer;
-    padding: 4px 8px;
-    font-size: 11px;
-    font-weight: 500;
-    transition: border-color 0.12s, color 0.12s, background 0.12s;
-}
-
-.mn-outline-toggle:hover {
-    background: var(--mn-accent-wash);
-    color: var(--mn-ink);
-}
-
-.mn-outline-toggle.active {
-    border-color: var(--mn-divider);
-    background: var(--mn-surface);
     color: var(--mn-ink);
 }
 

@@ -84,6 +84,7 @@ pub fn EditorPane() -> Element {
     let editor_services = app.editor_services;
     let mut ui_state = app.ui_state;
     let commands = app.commands;
+    let mut format_tools_open = use_signal(|| false);
 
     let view_mode = ui_state.read().view_mode.clone();
     let settings = ui_state.read().settings.clone();
@@ -96,6 +97,12 @@ pub fn EditorPane() -> Element {
     let retired_host_ids = retired_hosts.read().clone();
     let pane_model =
         editor_pane_model(&editor_tabs.read(), &tab_contents.read(), &retired_host_ids);
+
+    use_effect(use_reactive((&view_mode,), move |(view_mode,)| {
+        if !view_mode.is_editable() {
+            format_tools_open.set(false);
+        }
+    }));
 
     use_effect(use_reactive(
         (&pane_model.host_items, &pane_model.open_tab_ids),
@@ -160,8 +167,13 @@ pub fn EditorPane() -> Element {
                     }
                     div { class: "mn-tabbar-spacer" }
                     if view_mode.is_editable() {
-                        EditorToolbar { active_tab_id: tab.id.clone() }
-                        div { class: "mn-toolbar-sep" }
+                        FormatMenu {
+                            active_tab_id: tab.id.clone(),
+                            is_open: format_tools_open(),
+                            on_toggle: move |_| {
+                                format_tools_open.set(!format_tools_open());
+                            },
+                        }
                     }
                     OutlineToggle {
                         is_visible: outline_visible,
@@ -248,13 +260,50 @@ pub fn EditorPane() -> Element {
 fn OutlineToggle(is_visible: bool, on_toggle: EventHandler<()>) -> Element {
     rsx! {
         button {
-            class: if is_visible { "mn-outline-toggle active" } else { "mn-outline-toggle" },
+            class: outline_toggle_class(is_visible),
             title: if is_visible { "Hide outline" } else { "Show outline" },
             "aria-label": if is_visible { "Hide outline" } else { "Show outline" },
             "aria-pressed": if is_visible { "true" } else { "false" },
             onclick: move |_| on_toggle.call(()),
             "Outline"
         }
+    }
+}
+
+#[component]
+fn FormatMenu(active_tab_id: String, is_open: bool, on_toggle: EventHandler<()>) -> Element {
+    rsx! {
+        div { class: "mn-format-menu",
+            button {
+                class: format_toggle_class(is_open),
+                title: if is_open { "Hide formatting tools" } else { "Show formatting tools" },
+                "aria-label": if is_open { "Hide formatting tools" } else { "Show formatting tools" },
+                "aria-expanded": if is_open { "true" } else { "false" },
+                onclick: move |_| on_toggle.call(()),
+                "Format"
+            }
+            if is_open {
+                div { class: "mn-format-panel",
+                    EditorToolbar { active_tab_id: active_tab_id.clone() }
+                }
+            }
+        }
+    }
+}
+
+fn outline_toggle_class(is_visible: bool) -> &'static str {
+    if is_visible {
+        "mn-outline-toggle active"
+    } else {
+        "mn-outline-toggle"
+    }
+}
+
+fn format_toggle_class(is_open: bool) -> &'static str {
+    if is_open {
+        "mn-format-toggle active"
+    } else {
+        "mn-format-toggle"
     }
 }
 
@@ -376,5 +425,13 @@ mod tests {
 
         assert!(!editor_style(&settings).contains("360"));
         assert_eq!(before, editor_pane_model(&editor_tabs, &tab_contents, &[]));
+    }
+
+    #[test]
+    fn chrome_toggle_classes_mark_active_state() {
+        assert_eq!(outline_toggle_class(false), "mn-outline-toggle");
+        assert_eq!(outline_toggle_class(true), "mn-outline-toggle active");
+        assert_eq!(format_toggle_class(false), "mn-format-toggle");
+        assert_eq!(format_toggle_class(true), "mn-format-toggle active");
     }
 }
