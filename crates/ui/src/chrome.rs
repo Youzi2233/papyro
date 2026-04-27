@@ -1,7 +1,7 @@
 use crate::commands::AppCommands;
-use crate::perf::{perf_timer, trace_sidebar_toggle};
+use crate::perf::{perf_timer, trace_sidebar_toggle, trace_view_mode_change};
 use dioxus::prelude::*;
-use papyro_core::models::Theme;
+use papyro_core::models::{Theme, ViewMode};
 use papyro_core::UiState;
 
 pub(crate) fn toggle_sidebar(
@@ -52,6 +52,40 @@ pub(crate) fn toggle_theme(ui_state: Signal<UiState>, commands: AppCommands) {
             (Some(settings), None)
         }
     };
+
+    if let Some(overrides) = workspace_overrides {
+        commands.save_workspace_settings.call(overrides);
+    } else if let Some(settings) = settings {
+        commands.save_settings.call(settings);
+    }
+}
+
+pub(crate) fn set_view_mode(
+    ui_state: Signal<UiState>,
+    commands: AppCommands,
+    mode: ViewMode,
+    trigger: &'static str,
+) {
+    let started_at = perf_timer();
+    let (previous_mode, next_mode, settings, workspace_overrides) = {
+        let state = ui_state.read();
+        let previous_mode = state.settings.view_mode.clone();
+        if previous_mode == mode {
+            return;
+        }
+
+        if state.workspace_overrides.view_mode.is_some() {
+            let mut overrides = state.workspace_overrides.clone();
+            overrides.view_mode = Some(mode.clone());
+            (previous_mode, mode, None, Some(overrides))
+        } else {
+            let mut settings = state.settings.clone();
+            settings.view_mode = mode.clone();
+            (previous_mode, mode, Some(settings), None)
+        }
+    };
+
+    trace_view_mode_change(trigger, &previous_mode, &next_mode, started_at);
 
     if let Some(overrides) = workspace_overrides {
         commands.save_workspace_settings.call(overrides);

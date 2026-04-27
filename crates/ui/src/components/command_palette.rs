@@ -1,7 +1,7 @@
 use crate::commands::{AppCommands, RecentFileTarget, RestoreTrashedNoteTarget};
 use crate::components::primitives::{Modal, TextInput};
 use crate::context::use_app_context;
-use crate::perf::{perf_timer, trace_chrome_open_modal, trace_view_mode_change};
+use crate::perf::{perf_timer, trace_chrome_open_modal};
 use dioxus::prelude::*;
 use papyro_core::models::{Theme, ViewMode};
 use papyro_core::UiState;
@@ -208,17 +208,7 @@ fn execute_command_action(
             trace_chrome_open_modal("settings", "command_palette", started_at);
         }
         CommandPaletteActionKind::SetViewMode(mode) => {
-            let mut settings = ui_state.read().settings.clone();
-            let previous_mode = settings.view_mode.clone();
-            let started_at = perf_timer();
-            settings.view_mode = mode;
-            trace_view_mode_change(
-                "command_palette",
-                &previous_mode,
-                &settings.view_mode,
-                started_at,
-            );
-            commands.save_settings.call(settings);
+            crate::chrome::set_view_mode(ui_state, commands.clone(), mode, "command_palette");
         }
         CommandPaletteActionKind::SetSelectedFavorite(favorite) => {
             commands.set_selected_favorite.call(favorite);

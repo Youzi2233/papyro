@@ -7,7 +7,6 @@ use super::tabbar::EditorTabButton;
 use super::toolbar::EditorToolbar;
 use crate::components::primitives::{EmptyState, SegmentedControl, SegmentedControlOption};
 use crate::context::use_app_context;
-use crate::perf::{perf_timer, trace_view_mode_change};
 use dioxus::prelude::*;
 use papyro_core::models::{AppSettings, EditorTab, ViewMode};
 use papyro_core::{EditorTabs, TabContentSnapshot, TabContentsMap};
@@ -207,17 +206,12 @@ pub fn EditorPane() -> Element {
                     ViewToggle {
                         view_mode: view_mode.clone(),
                         on_change: move |mode| {
-                            let mut settings = ui_state.read().settings.clone();
-                            let previous_mode = settings.view_mode.clone();
-                            let started_at = perf_timer();
-                            settings.view_mode = mode;
-                            trace_view_mode_change(
+                            crate::chrome::set_view_mode(
+                                ui_state,
+                                commands.clone(),
+                                mode,
                                 "toolbar",
-                                &previous_mode,
-                                &settings.view_mode,
-                                started_at,
                             );
-                            commands.save_settings.call(settings);
                         },
                     }
                 }
