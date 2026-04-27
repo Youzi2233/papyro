@@ -395,18 +395,25 @@ fn bridge_eval_for_instance(
     bridges
         .read()
         .get(tab_id)
-        .filter(|bridge| bridge.instance_id == instance_id)
+        .filter(|bridge| bridge_instance_matches(Some(bridge.instance_id.as_str()), instance_id))
         .map(|bridge| bridge.eval)
 }
 
 fn remove_bridge_for_instance(mut bridges: EditorBridgeMap, tab_id: &str, instance_id: &str) {
-    let should_remove = bridges
-        .peek()
-        .get(tab_id)
-        .is_some_and(|bridge| bridge.instance_id == instance_id);
+    let should_remove = {
+        let bridges = bridges.peek();
+        let current_instance_id = bridges
+            .get(tab_id)
+            .map(|bridge| bridge.instance_id.as_str());
+        bridge_instance_matches(current_instance_id, instance_id)
+    };
     if should_remove {
         bridges.write().remove(tab_id);
     }
+}
+
+fn bridge_instance_matches(current_instance_id: Option<&str>, requested_instance_id: &str) -> bool {
+    current_instance_id == Some(requested_instance_id)
 }
 
 fn should_refresh_layout(
@@ -465,5 +472,12 @@ mod tests {
         assert!(record_layout_size_change(&mut cache, 800, 600, true, true));
         assert!(!record_layout_size_change(&mut cache, 800, 600, true, true));
         assert!(record_layout_size_change(&mut cache, 820, 600, true, true));
+    }
+
+    #[test]
+    fn bridge_instance_contract_rejects_stale_cleanup() {
+        assert!(bridge_instance_matches(Some("host-new"), "host-new"));
+        assert!(!bridge_instance_matches(Some("host-new"), "host-old"));
+        assert!(!bridge_instance_matches(None, "host-old"));
     }
 }
