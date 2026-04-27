@@ -139,7 +139,9 @@ impl Default for AppSettings {
     fn default() -> Self {
         Self {
             theme: Theme::System,
-            font_family: "Inter, system-ui, sans-serif".to_string(),
+            font_family:
+                "\"Aptos\", \"Segoe UI Variable Text\", \"Segoe UI\", system-ui, sans-serif"
+                    .to_string(),
             font_size: 16,
             line_height: 1.6,
             auto_link_paste: true,

@@ -70,8 +70,12 @@ fn editor_pane_model(
 
 fn editor_style(settings: &AppSettings) -> String {
     format!(
-        "--mn-editor-font: {}; --mn-editor-font-size: {}px; --mn-editor-line-height: {};",
-        settings.font_family, settings.font_size, settings.line_height
+        "--mn-editor-font: {}; --mn-editor-font-size: {}px; --mn-editor-line-height: {}; --mn-markdown-body-size: {}px; --mn-markdown-line-height: {};",
+        settings.font_family,
+        settings.font_size,
+        settings.line_height,
+        settings.font_size,
+        settings.line_height
     )
 }
 

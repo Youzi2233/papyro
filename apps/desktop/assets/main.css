@@ -61,6 +61,32 @@
     --mn-font-display:    "Iowan Old Style", "Palatino Linotype", Palatino, "Baskerville", "Cambria", Georgia, serif;
     --mn-font-sans:       "Aptos", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
     --mn-font-mono:       "Cascadia Code", "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+    --mn-markdown-font:              var(--mn-editor-font, var(--mn-font-sans));
+    --mn-markdown-heading-font:      var(--mn-font-display);
+    --mn-markdown-mono-font:         var(--mn-font-mono);
+    --mn-markdown-body-size:         var(--mn-editor-font-size, 16px);
+    --mn-markdown-line-height:       var(--mn-editor-line-height, 1.75);
+    --mn-markdown-heading-line:      1.18;
+    --mn-markdown-h1-size:           2.05em;
+    --mn-markdown-h2-size:           1.55em;
+    --mn-markdown-h3-size:           1.25em;
+    --mn-markdown-h4-size:           1.05em;
+    --mn-markdown-h5-size:           .9em;
+    --mn-markdown-block-gap:         1.05em;
+    --mn-markdown-list-indent:       1.7em;
+    --mn-markdown-list-item-gap:     .3em;
+    --mn-markdown-quote-border:      2px;
+    --mn-markdown-quote-pad-x:       1.1em;
+    --mn-markdown-quote-pad-y:       .5em;
+    --mn-markdown-code-bg:           var(--mn-surface-sunken);
+    --mn-markdown-code-block-bg:     var(--mn-surface-sunken);
+    --mn-markdown-code-radius:       var(--mn-radius-sm);
+    --mn-markdown-inline-code-pad:   .1em .42em;
+    --mn-markdown-code-block-pad-x:  22px;
+    --mn-markdown-code-block-pad-y:  18px;
+    --mn-markdown-table-cell-pad:    8px 14px;
+    --mn-markdown-table-head-pad:    9px 14px;
+    --mn-markdown-image-radius:      var(--mn-radius-sm);
 
     font-family: var(--mn-font-sans);
     font-size: 14px;
@@ -1093,9 +1119,9 @@ button { border: 0; cursor: pointer; background: transparent; }
     max-width: var(--mn-document-measure);
     margin-inline: auto;
 
-    font-family: var(--mn-font-display);
-    font-size: 18px;
-    line-height: 1.78;
+    font-family: var(--mn-markdown-font);
+    font-size: var(--mn-markdown-body-size);
+    line-height: var(--mn-markdown-line-height);
     color: var(--mn-ink);
 }
 
@@ -1113,38 +1139,41 @@ button { border: 0; cursor: pointer; background: transparent; }
 /* preview: headings — tight leading, display serif */
 .mn-preview h1, .mn-preview h2, .mn-preview h3,
 .mn-preview h4, .mn-preview h5, .mn-preview h6 {
-    font-family: var(--mn-font-display);
-    line-height: 1.2;
+    font-family: var(--mn-markdown-heading-font);
+    line-height: var(--mn-markdown-heading-line);
     color: var(--mn-ink);
 }
 .mn-preview h1 {
-    font-size: 2.05em;
+    font-size: var(--mn-markdown-h1-size);
     font-weight: 700;
     margin: 0 0 .55em;
     padding-bottom: .24em;
     border-bottom: 1px solid var(--mn-divider);
 }
-.mn-preview h2 { font-size: 1.55em; font-weight: 700; margin: 1.6em 0 .5em; }
-.mn-preview h3 { font-size: 1.25em; font-weight: 600; margin: 1.3em 0 .4em; }
-.mn-preview h4 { font-size: 1.05em; font-weight: 600; margin: 1.1em 0 .3em; }
+.mn-preview h2 { font-size: var(--mn-markdown-h2-size); font-weight: 700; margin: 1.6em 0 .5em; }
+.mn-preview h3 { font-size: var(--mn-markdown-h3-size); font-weight: 600; margin: 1.3em 0 .4em; }
+.mn-preview h4 { font-size: var(--mn-markdown-h4-size); font-weight: 600; margin: 1.1em 0 .3em; }
 .mn-preview h5, .mn-preview h6 {
-    font-size: .9em;
+    font-size: var(--mn-markdown-h5-size);
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.06em;
     color: var(--mn-ink-2);
     margin: 1em 0 .3em;
 }
 
 /* preview: block elements */
-.mn-preview p { margin: 0 0 1.05em; }
-.mn-preview ul, .mn-preview ol { margin: 0 0 1.05em 1.7em; padding: 0; }
-.mn-preview li { margin: .3em 0; }
+.mn-preview p { margin: 0 0 var(--mn-markdown-block-gap); }
+.mn-preview ul, .mn-preview ol {
+    margin: 0 0 var(--mn-markdown-block-gap) var(--mn-markdown-list-indent);
+    padding: 0;
+}
+.mn-preview li { margin: var(--mn-markdown-list-item-gap) 0; }
 .mn-preview li > ul, .mn-preview li > ol { margin-bottom: 0; }
 
 .mn-preview blockquote {
-    border-left: 2px solid var(--mn-border-strong);
-    padding: .5em 1.1em;
+    border-left: var(--mn-markdown-quote-border) solid var(--mn-border-strong);
+    padding: var(--mn-markdown-quote-pad-y) var(--mn-markdown-quote-pad-x);
     margin: 0 0 1.1em;
     color: var(--mn-ink-2);
     background: transparent;
@@ -1168,27 +1197,28 @@ button { border: 0; cursor: pointer; background: transparent; }
 .mn-preview a:hover { color: var(--mn-accent-strong); }
 
 .mn-preview code {
-    font-family: var(--mn-font-mono);
+    font-family: var(--mn-markdown-mono-font);
     font-size: .88em;
-    background: var(--mn-surface-sunken);
+    background: var(--mn-markdown-code-bg);
     border: 1px solid var(--mn-divider);
     border-radius: 5px;
-    padding: .1em .42em;
+    padding: var(--mn-markdown-inline-code-pad);
     color: var(--mn-accent-strong);
 }
 
 /* preview: code blocks from syntect */
 .mn-preview pre,
 .mn-preview .mn-code-block > pre {
-    font-family: var(--mn-font-mono);
-    border-radius: var(--mn-radius-sm);
+    font-family: var(--mn-markdown-mono-font);
+    border-radius: var(--mn-markdown-code-radius);
     margin: 0 0 1.1em;
     overflow-x: auto;
-    padding: 18px 22px !important;
+    padding: var(--mn-markdown-code-block-pad-y) var(--mn-markdown-code-block-pad-x) !important;
     font-size: 13.5px;
     line-height: 1.65;
     box-shadow: none;
     border: 1px solid var(--mn-divider);
+    background: var(--mn-markdown-code-block-bg);
 }
 
 .mn-preview pre code, .mn-preview .mn-code-block code {
@@ -1230,7 +1260,7 @@ button { border: 0; cursor: pointer; background: transparent; }
     background: var(--mn-surface-sunken);
     font-weight: 700;
     text-align: left;
-    padding: 9px 14px;
+    padding: var(--mn-markdown-table-head-pad);
     border: 1px solid var(--mn-border);
     font-size: .88em;
     text-transform: uppercase;
@@ -1239,7 +1269,7 @@ button { border: 0; cursor: pointer; background: transparent; }
 }
 
 .mn-preview td {
-    padding: 8px 14px;
+    padding: var(--mn-markdown-table-cell-pad);
     border: 1px solid var(--mn-border);
     vertical-align: top;
 }
@@ -1275,7 +1305,7 @@ button { border: 0; cursor: pointer; background: transparent; }
 /* preview: images */
 .mn-preview img {
     max-width: 100%;
-    border-radius: var(--mn-radius-sm);
+    border-radius: var(--mn-markdown-image-radius);
 }
 
 /* ── Empty editor ── */
