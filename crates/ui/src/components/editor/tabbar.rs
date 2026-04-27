@@ -4,6 +4,20 @@ use crate::context::use_app_context;
 use dioxus::prelude::*;
 use std::time::Instant;
 
+const MAX_RETIRED_HOSTS: usize = 2;
+
+fn retire_host_for_close(retired_ids: &mut Vec<String>, close_tab_id: &str) {
+    if retired_ids.iter().any(|id| id == close_tab_id) {
+        return;
+    }
+
+    retired_ids.push(close_tab_id.to_string());
+    let overflow = retired_ids.len().saturating_sub(MAX_RETIRED_HOSTS);
+    if overflow > 0 {
+        retired_ids.drain(0..overflow);
+    }
+}
+
 fn trace_close_ui_phases(tab_id: &str) {
     if !perf_enabled() {
         return;
@@ -65,9 +79,7 @@ fn request_tab_close(
     // render pass, eliminating the extra tick that caused the close stutter.
     if should_retire_host {
         retired_hosts.with_mut(|ids| {
-            if !ids.iter().any(|id| id == &close_tab_id) {
-                ids.push(close_tab_id.clone());
-            }
+            retire_host_for_close(ids, &close_tab_id);
         });
     }
 
@@ -80,6 +92,22 @@ fn request_tab_close(
             elapsed_ms = started_at.elapsed().as_millis(),
             "perf tab close trigger"
         );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn retired_hosts_are_unique_and_bounded() {
+        let mut retired = vec!["a".to_string(), "b".to_string()];
+
+        retire_host_for_close(&mut retired, "b");
+        assert_eq!(retired, vec!["a".to_string(), "b".to_string()]);
+
+        retire_host_for_close(&mut retired, "c");
+        assert_eq!(retired, vec!["b".to_string(), "c".to_string()]);
     }
 }
 
