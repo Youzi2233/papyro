@@ -27,12 +27,16 @@ struct EditorLayoutSize {
 }
 
 #[component]
-pub(super) fn EditorHost(tab_id: String, is_visible: bool, view_mode: ViewMode) -> Element {
+pub(super) fn EditorHost(
+    tab_id: String,
+    is_visible: bool,
+    view_mode: ViewMode,
+    auto_link_paste: bool,
+) -> Element {
     let app = use_app_context();
     let file_state = app.file_state;
     let editor_tabs = app.editor_tabs;
     let tab_contents = app.tab_contents;
-    let ui_state = app.ui_state;
     let status_message = app.status_message;
     let commands = app.commands;
     let bridges = use_context::<EditorBridgeMap>();
@@ -43,7 +47,6 @@ pub(super) fn EditorHost(tab_id: String, is_visible: bool, view_mode: ViewMode) 
     let command_cache = use_signal(EditorCommandCache::default);
     let mut latest_visibility = use_signal(|| is_visible);
     let startup_view_mode = view_mode.clone();
-    let auto_link_paste = ui_state.read().settings.auto_link_paste;
     let state = runtime_state();
     let runtime_ready = state == EditorRuntimeState::Ready;
 
@@ -376,14 +379,13 @@ fn send_set_preferences(
     tab_id: &str,
     auto_link_paste: bool,
 ) {
-    let already_sent = { command_cache.read().auto_link_paste == Some(auto_link_paste) };
-    if already_sent {
+    let changed = command_cache.with_mut(|cache| record_preferences_change(cache, auto_link_paste));
+    if !changed {
         return;
     }
 
     let started_at = perf_timer();
     let _ = eval.send(EditorCommand::SetPreferences { auto_link_paste });
-    command_cache.with_mut(|cache| cache.auto_link_paste = Some(auto_link_paste));
     trace_editor_set_preferences(tab_id, auto_link_paste, started_at);
 }
 
@@ -453,6 +455,18 @@ fn record_layout_size_change(
     true
 }
 
+fn record_preferences_change(
+    command_cache: &mut EditorCommandCache,
+    auto_link_paste: bool,
+) -> bool {
+    if command_cache.auto_link_paste == Some(auto_link_paste) {
+        return false;
+    }
+
+    command_cache.auto_link_paste = Some(auto_link_paste);
+    true
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -479,5 +493,15 @@ mod tests {
         assert!(bridge_instance_matches(Some("host-new"), "host-new"));
         assert!(!bridge_instance_matches(Some("host-new"), "host-old"));
         assert!(!bridge_instance_matches(None, "host-old"));
+    }
+
+    #[test]
+    fn preferences_change_is_idempotent() {
+        let mut cache = EditorCommandCache::default();
+
+        assert!(record_preferences_change(&mut cache, true));
+        assert!(!record_preferences_change(&mut cache, true));
+        assert!(record_preferences_change(&mut cache, false));
+        assert!(!record_preferences_change(&mut cache, false));
     }
 }

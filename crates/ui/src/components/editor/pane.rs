@@ -107,12 +107,15 @@ pub fn EditorPane() -> Element {
     let commands = app.commands;
     let mut format_tools_open = use_signal(|| false);
 
-    let view_mode = ui_state.read().view_mode.clone();
-    let editor_typography = {
+    let (view_mode, editor_typography, auto_link_paste, outline_visible) = {
         let state = ui_state.read();
-        EditorTypography::from_settings(&state.settings)
+        (
+            state.view_mode.clone(),
+            EditorTypography::from_settings(&state.settings),
+            state.settings.auto_link_paste,
+            state.outline_visible(),
+        )
     };
-    let outline_visible = ui_state.read().outline_visible();
     let editor_style = editor_style(&editor_typography);
     let bridges: EditorBridgeMap = use_context_provider(|| Signal::new(HashMap::new()));
     let _document_cache: DocumentDerivedCache =
@@ -236,6 +239,7 @@ pub fn EditorPane() -> Element {
                                             tab_id: host.tab_id.clone(),
                                             is_visible: host.is_active && view_mode.is_editable(),
                                             view_mode: view_mode.clone(),
+                                            auto_link_paste,
                                         }
                                     }
                                 }
@@ -270,6 +274,7 @@ pub fn EditorPane() -> Element {
                                     tab_id: host.tab_id.clone(),
                                     is_visible: false,
                                     view_mode: view_mode.clone(),
+                                    auto_link_paste,
                                 }
                             }
                         }
