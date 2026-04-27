@@ -996,8 +996,7 @@ button { border: 0; cursor: pointer; background: transparent; }
     align-items: center;
 }
 
-.mn-format-toggle,
-.mn-outline-toggle {
+.mn-format-toggle {
     flex-shrink: 0;
     border: 1px solid transparent;
     border-radius: 5px;
@@ -1010,14 +1009,12 @@ button { border: 0; cursor: pointer; background: transparent; }
     transition: border-color 0.12s, color 0.12s, background 0.12s;
 }
 
-.mn-format-toggle:hover,
-.mn-outline-toggle:hover {
+.mn-format-toggle:hover {
     background: var(--mn-accent-wash);
     color: var(--mn-ink);
 }
 
-.mn-format-toggle.active,
-.mn-outline-toggle.active {
+.mn-format-toggle.active {
     border-color: var(--mn-divider);
     background: var(--mn-surface);
     color: var(--mn-ink);

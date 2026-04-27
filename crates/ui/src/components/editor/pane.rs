@@ -103,7 +103,7 @@ pub fn EditorPane() -> Element {
     let editor_tabs = app.editor_tabs;
     let tab_contents = app.tab_contents;
     let editor_services = app.editor_services;
-    let mut ui_state = app.ui_state;
+    let ui_state = app.ui_state;
     let commands = app.commands;
     let mut format_tools_open = use_signal(|| false);
 
@@ -202,12 +202,6 @@ pub fn EditorPane() -> Element {
                             },
                         }
                     }
-                    OutlineToggle {
-                        is_visible: outline_visible,
-                        on_toggle: move |_| {
-                            ui_state.write().toggle_outline();
-                        },
-                    }
                     ViewToggle {
                         view_mode: view_mode.clone(),
                         on_change: move |mode| {
@@ -286,20 +280,6 @@ pub fn EditorPane() -> Element {
 }
 
 #[component]
-fn OutlineToggle(is_visible: bool, on_toggle: EventHandler<()>) -> Element {
-    rsx! {
-        button {
-            class: outline_toggle_class(is_visible),
-            title: if is_visible { "Hide outline" } else { "Show outline" },
-            "aria-label": if is_visible { "Hide outline" } else { "Show outline" },
-            "aria-pressed": if is_visible { "true" } else { "false" },
-            onclick: move |_| on_toggle.call(()),
-            "Outline"
-        }
-    }
-}
-
-#[component]
 fn FormatMenu(active_tab_id: String, is_open: bool, on_toggle: EventHandler<()>) -> Element {
     rsx! {
         div { class: "mn-format-menu",
@@ -317,14 +297,6 @@ fn FormatMenu(active_tab_id: String, is_open: bool, on_toggle: EventHandler<()>)
                 }
             }
         }
-    }
-}
-
-fn outline_toggle_class(is_visible: bool) -> &'static str {
-    if is_visible {
-        "mn-outline-toggle active"
-    } else {
-        "mn-outline-toggle"
     }
 }
 
@@ -460,9 +432,7 @@ mod tests {
     }
 
     #[test]
-    fn chrome_toggle_classes_mark_active_state() {
-        assert_eq!(outline_toggle_class(false), "mn-outline-toggle");
-        assert_eq!(outline_toggle_class(true), "mn-outline-toggle active");
+    fn format_toggle_class_marks_active_state() {
         assert_eq!(format_toggle_class(false), "mn-format-toggle");
         assert_eq!(format_toggle_class(true), "mn-format-toggle active");
     }
