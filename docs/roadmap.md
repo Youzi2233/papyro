@@ -373,7 +373,7 @@ Editor runtime lane
 ### 2.5 UI 操作性能
 
 - [ ] 侧栏折叠只影响 shell 布局和 visible host layout。
-- [ ] 侧栏拖拽过程中避免每帧持久化 settings。
+- [x] 侧栏拖拽过程中使用本地 preview width，释放鼠标时才提交 settings。
 - [ ] 打开 Command Palette、Quick Open、Settings、Workspace Search 不触发 editor command storm。
 - [ ] Tab close 交互路径不等待 JS destroy。
 - [ ] 切换 theme/settings 只更新必要 CSS variables 和 active host preferences。

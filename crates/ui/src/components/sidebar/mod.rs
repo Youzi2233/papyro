@@ -31,9 +31,11 @@ pub fn Sidebar() -> Element {
     let mut show_create = use_signal(|| false);
     let mut tree_sort = use_signal(FileTreeSortMode::default);
     let mut resize_drag = use_signal(|| None::<SidebarResizeDrag>);
+    let mut resize_preview_width = use_signal(|| None::<u32>);
 
     let workspace = file_state.read().current_workspace.clone();
-    let sidebar_width = ui_state.read().settings.sidebar_width;
+    let configured_sidebar_width = ui_state.read().settings.sidebar_width;
+    let sidebar_width = resize_preview_width().unwrap_or(configured_sidebar_width);
     let sidebar_class = if resize_drag().is_some() {
         "mn-sidebar resizing"
     } else {
@@ -204,6 +206,7 @@ pub fn Sidebar() -> Element {
                         start_width: sidebar_width,
                         started_at,
                     }));
+                    resize_preview_width.set(Some(sidebar_width));
                 },
             }
             if let Some(drag) = resize_drag() {
@@ -212,15 +215,16 @@ pub fn Sidebar() -> Element {
                     onmousemove: move |event| {
                         event.prevent_default();
                         let width = sidebar_width_from_drag(drag, event.client_coordinates().x);
-                        update_sidebar_width(ui_state, width);
+                        resize_preview_width.set(Some(width));
                     },
                     onmouseup: move |event| {
                         event.prevent_default();
                         let width = sidebar_width_from_drag(drag, event.client_coordinates().x);
-                        update_sidebar_width(ui_state, width);
+                        resize_preview_width.set(Some(width));
                         persist_sidebar_width(ui_state, resize_commands.clone(), width);
                         trace_sidebar_resize(drag.start_width, width, drag.started_at);
                         resize_drag.set(None);
+                        resize_preview_width.set(None);
                     },
                 }
             }
@@ -236,12 +240,6 @@ fn clamp_sidebar_width(width: f64) -> u32 {
     width
         .round()
         .clamp(SIDEBAR_MIN_WIDTH as f64, SIDEBAR_MAX_WIDTH as f64) as u32
-}
-
-fn update_sidebar_width(mut ui_state: Signal<papyro_core::UiState>, width: u32) {
-    if ui_state.read().settings.sidebar_width != width {
-        ui_state.write().settings.sidebar_width = width;
-    }
 }
 
 fn persist_sidebar_width(
