@@ -13,6 +13,7 @@ import {
   handleMarkdownEnter,
   indentMarkdownListInView,
   insertMarkdownInView,
+  layoutChangedEvent,
   markdownLinkPasteChange,
   markdownBlockquoteEnterChange,
   markdownCodeFenceEnterChange,
@@ -21,6 +22,7 @@ import {
   markdownListEnterChange,
   markdownShortcutSpaceChange,
   normalizeEditorPreferences,
+  nextLayoutSize,
   normalizeViewMode,
   openReplacePanelInView,
   parseMarkdownBlockquoteLine,
@@ -108,6 +110,29 @@ test("normalize_view_mode accepts known modes and falls back to hybrid", () => {
   assert.equal(normalizeViewMode("HYBRID"), "hybrid");
   assert.equal(normalizeViewMode("preview"), "preview");
   assert.equal(normalizeViewMode("unknown"), "hybrid");
+});
+
+test("next_layout_size only reports real nonzero size changes", () => {
+  assert.deepEqual(nextLayoutSize(null, { width: 800.4, height: 600.4 }), {
+    width: 800,
+    height: 600,
+  });
+  assert.equal(nextLayoutSize({ width: 800, height: 600 }, { width: 800, height: 600 }), null);
+  assert.equal(nextLayoutSize(null, { width: 0, height: 600 }), null);
+  assert.equal(nextLayoutSize(null, { width: 800, height: 0 }), null);
+  assert.deepEqual(nextLayoutSize({ width: 800, height: 600 }, { width: 801, height: 600 }), {
+    width: 801,
+    height: 600,
+  });
+});
+
+test("layout_changed_event matches the rust editor protocol", () => {
+  assert.deepEqual(layoutChangedEvent("tab-a", { width: 1280, height: 720 }), {
+    type: "layout_changed",
+    tab_id: "tab-a",
+    width: 1280,
+    height: 720,
+  });
 });
 
 test("parse_markdown_heading_line recognizes atx headings", () => {
@@ -652,8 +677,12 @@ test("indent_markdown_list_in_view dispatches list indentation", () => {
 test("tab recycle detaches old tab and prevents stale content routing", () => {
   const registry = new Map();
   const view = fakeView("first");
+  let recycleCalls = 0;
 
   attach(registry, view, "tab-a", "A");
+  registry.get("tab-a").onRecycle = () => {
+    recycleCalls += 1;
+  };
   assert.equal(registry.has("tab-a"), true);
 
   recycleEditor(registry, "tab-a");
@@ -668,6 +697,7 @@ test("tab recycle detaches old tab and prevents stale content routing", () => {
     "missing",
   );
   assert.equal(view.state.doc.toString(), "B");
+  assert.equal(recycleCalls, 1);
 });
 
 test("set_view_mode stores mode on entry and editor dom", () => {

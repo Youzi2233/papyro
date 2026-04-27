@@ -32,7 +32,9 @@ import {
   continueMarkdownListOnEnter,
   handleRustMessage as handleRustMessageCore,
   indentMarkdownListInView,
+  layoutChangedEvent,
   normalizeEditorPreferences,
+  nextLayoutSize,
   parseMarkdownBlockquoteLine,
   parseMarkdownFootnoteDefinitionLine,
   parseMarkdownHeadingLine,
@@ -51,6 +53,17 @@ import {
 
 // tabId → { view, dioxus, suppressChange }
 const editorRegistry = new Map();
+
+function isVisibleElement(element) {
+  if (!(element instanceof HTMLElement)) return false;
+
+  const style = getComputedStyle(element);
+  return (
+    style.display !== "none" &&
+    style.visibility !== "hidden" &&
+    style.visibility !== "collapse"
+  );
+}
 
 function blobToBase64(blob) {
   return new Promise((resolve, reject) => {
@@ -1213,6 +1226,66 @@ function refreshEditorLayout(view) {
   }
 }
 
+function disconnectLayoutObserver(entry) {
+  entry.layoutObserver?.disconnect();
+  entry.layoutCancel?.();
+  entry.layoutObserver = null;
+  entry.layoutFrame = 0;
+  entry.layoutCancel = null;
+  entry.layoutSize = null;
+}
+
+function attachLayoutObserver(tabId, container, dioxus) {
+  const entry = editorRegistry.get(tabId);
+  if (!entry || !("ResizeObserver" in window)) return;
+
+  disconnectLayoutObserver(entry);
+  entry.onRecycle = () => disconnectLayoutObserver(entry);
+
+  const sendSizeChange = (rect) => {
+    const nextSize = nextLayoutSize(entry.layoutSize, rect);
+    if (!nextSize) {
+      const width = Number(rect?.width ?? 0);
+      const height = Number(rect?.height ?? 0);
+      if (width <= 0 || height <= 0) {
+        entry.layoutSize = null;
+      }
+      return;
+    }
+
+    entry.layoutSize = nextSize;
+    dioxus.send(layoutChangedEvent(tabId, nextSize));
+  };
+
+  const measure = () => {
+    entry.layoutFrame = 0;
+    entry.layoutCancel = null;
+    if (!container.isConnected || !isVisibleElement(container)) {
+      entry.layoutSize = null;
+      return;
+    }
+    sendSizeChange(container.getBoundingClientRect());
+  };
+
+  const scheduleMeasure = () => {
+    if (entry.layoutFrame) return;
+
+    if (typeof requestAnimationFrame === "function") {
+      const frame = requestAnimationFrame(measure);
+      entry.layoutFrame = frame;
+      entry.layoutCancel = () => cancelAnimationFrame(frame);
+    } else {
+      const timer = setTimeout(measure, 0);
+      entry.layoutFrame = timer;
+      entry.layoutCancel = () => clearTimeout(timer);
+    }
+  };
+
+  entry.layoutObserver = new ResizeObserver(scheduleMeasure);
+  entry.layoutObserver.observe(container);
+  scheduleMeasure();
+}
+
 function setEditorViewMode(entry, mode) {
   const normalized = setViewModeCore(entry, mode);
   entry.view?.dispatch({
@@ -1315,6 +1388,10 @@ function releaseEditor(tabId) {
 }
 
 function recycleEditor(tabId) {
+  const entry = editorRegistry.get(tabId);
+  if (entry) {
+    disconnectLayoutObserver(entry);
+  }
   recycleEditorCore(editorRegistry, tabId);
 }
 
@@ -1332,6 +1409,12 @@ window.papyroEditor = {
 
   attachChannel(tabId, dioxus) {
     const entry = editorRegistry.get(tabId);
-    if (entry) entry.dioxus = dioxus;
+    if (!entry) return;
+
+    entry.dioxus = dioxus;
+    const container = entry.view?.dom?.parentElement;
+    if (container instanceof HTMLElement) {
+      attachLayoutObserver(tabId, container, dioxus);
+    }
   },
 };

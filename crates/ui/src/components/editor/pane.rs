@@ -348,11 +348,13 @@ mod tests {
         tab_contents.insert_tab("a".to_string(), "# A".to_string(), DocumentStats::default());
 
         let before = editor_pane_model(&editor_tabs, &tab_contents, &[]);
-        let mut settings = AppSettings::default();
-        settings.sidebar_width = 360;
-        settings.sidebar_collapsed = true;
+        let settings = AppSettings {
+            sidebar_width: 360,
+            sidebar_collapsed: true,
+            ..Default::default()
+        };
 
-        assert_eq!(editor_style(&settings).contains("360"), false);
+        assert!(!editor_style(&settings).contains("360"));
         assert_eq!(before, editor_pane_model(&editor_tabs, &tab_contents, &[]));
     }
 }

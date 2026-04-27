@@ -14,6 +14,13 @@ use papyro_core::models::ViewMode;
 struct EditorCommandCache {
     view_mode: Option<ViewMode>,
     auto_link_paste: Option<bool>,
+    layout_size: Option<EditorLayoutSize>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct EditorLayoutSize {
+    width: u32,
+    height: u32,
 }
 
 #[component]
@@ -29,10 +36,15 @@ pub(super) fn EditorHost(tab_id: String, is_visible: bool, view_mode: ViewMode) 
     let container_id = format!("mn-editor-{tab_id}");
     let runtime_state = use_signal(|| EditorRuntimeState::Loading);
     let command_cache = use_signal(EditorCommandCache::default);
+    let mut latest_visibility = use_signal(|| is_visible);
     let startup_view_mode = view_mode.clone();
     let auto_link_paste = ui_state.read().settings.auto_link_paste;
     let state = runtime_state();
     let runtime_ready = state == EditorRuntimeState::Ready;
+
+    use_effect(use_reactive((&is_visible,), move |(is_visible,)| {
+        latest_visibility.set(is_visible);
+    }));
 
     use_effect(use_reactive(
         (&tab_id, &container_id),
@@ -49,6 +61,7 @@ pub(super) fn EditorHost(tab_id: String, is_visible: bool, view_mode: ViewMode) 
             let mut runtime_state = runtime_state;
             let mut status_message = status_message;
             let command_cache = command_cache;
+            let latest_visibility = latest_visibility;
             let initial_view_mode = startup_view_mode.clone();
             let tab_id = tab_id.clone();
             let container_id = container_id.clone();
@@ -149,6 +162,7 @@ pub(super) fn EditorHost(tab_id: String, is_visible: bool, view_mode: ViewMode) 
 
                 let eval = document::eval(&script);
                 bridges.write().insert(tab_id.clone(), eval);
+                let mut runtime_is_ready = false;
 
                 loop {
                     let event = {
@@ -168,6 +182,7 @@ pub(super) fn EditorHost(tab_id: String, is_visible: bool, view_mode: ViewMode) 
 
                     match event {
                         EditorEvent::RuntimeReady { tab_id } => {
+                            runtime_is_ready = true;
                             runtime_state.set(EditorRuntimeState::Ready);
                             let content = tab_contents
                                 .read()
@@ -228,24 +243,31 @@ pub(super) fn EditorHost(tab_id: String, is_visible: bool, view_mode: ViewMode) 
                                 }
                             }
                         }
+                        EditorEvent::LayoutChanged {
+                            tab_id,
+                            width,
+                            height,
+                        } => {
+                            if !should_refresh_layout(
+                                command_cache,
+                                &tab_id,
+                                width,
+                                height,
+                                runtime_is_ready,
+                                latest_visibility(),
+                            ) {
+                                continue;
+                            }
+
+                            if let Some(eval) = bridges.read().get(&tab_id) {
+                                let started_at = perf_timer();
+                                let _ = eval.send(EditorCommand::RefreshLayout);
+                                trace_editor_refresh_layout(&tab_id, started_at);
+                            }
+                        }
                     }
                 }
             });
-        },
-    ));
-
-    use_effect(use_reactive(
-        (&tab_id, &is_visible, &runtime_ready),
-        move |(tab_id, is_visible, runtime_ready)| {
-            if !is_visible || !runtime_ready {
-                return;
-            }
-
-            if let Some(eval) = bridges.read().get(&tab_id) {
-                let started_at = perf_timer();
-                let _ = eval.send(EditorCommand::RefreshLayout);
-                trace_editor_refresh_layout(&tab_id, started_at);
-            }
         },
     ));
 
@@ -335,4 +357,63 @@ fn send_set_preferences(
     let _ = eval.send(EditorCommand::SetPreferences { auto_link_paste });
     command_cache.with_mut(|cache| cache.auto_link_paste = Some(auto_link_paste));
     trace_editor_set_preferences(tab_id, auto_link_paste, started_at);
+}
+
+fn should_refresh_layout(
+    mut command_cache: Signal<EditorCommandCache>,
+    tab_id: &str,
+    width: u32,
+    height: u32,
+    runtime_ready: bool,
+    is_visible: bool,
+) -> bool {
+    let changed = command_cache.with_mut(|cache| {
+        record_layout_size_change(cache, width, height, runtime_ready, is_visible)
+    });
+    if changed {
+        tracing::debug!(tab_id, width, height, "editor host layout changed");
+    }
+    changed
+}
+
+fn record_layout_size_change(
+    command_cache: &mut EditorCommandCache,
+    width: u32,
+    height: u32,
+    runtime_ready: bool,
+    is_visible: bool,
+) -> bool {
+    if !runtime_ready || !is_visible || width == 0 || height == 0 {
+        return false;
+    }
+
+    let next_size = EditorLayoutSize { width, height };
+    if command_cache.layout_size == Some(next_size) {
+        return false;
+    }
+
+    command_cache.layout_size = Some(next_size);
+    true
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn refresh_layout_requires_visible_nonzero_size_change() {
+        let mut cache = EditorCommandCache::default();
+
+        assert!(!record_layout_size_change(
+            &mut cache, 800, 600, false, true
+        ));
+        assert!(!record_layout_size_change(
+            &mut cache, 800, 600, true, false
+        ));
+        assert!(!record_layout_size_change(&mut cache, 0, 600, true, true));
+        assert!(!record_layout_size_change(&mut cache, 800, 0, true, true));
+        assert!(record_layout_size_change(&mut cache, 800, 600, true, true));
+        assert!(!record_layout_size_change(&mut cache, 800, 600, true, true));
+        assert!(record_layout_size_change(&mut cache, 820, 600, true, true));
+    }
 }

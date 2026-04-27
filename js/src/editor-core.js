@@ -826,6 +826,39 @@ export function normalizeViewMode(mode) {
     : "hybrid";
 }
 
+export function normalizeLayoutSize(rect) {
+  const width = Math.round(Number(rect?.width ?? 0));
+  const height = Math.round(Number(rect?.height ?? 0));
+
+  if (!Number.isFinite(width) || !Number.isFinite(height)) return null;
+  if (width <= 0 || height <= 0) return null;
+
+  return { width, height };
+}
+
+export function nextLayoutSize(previousSize, rect) {
+  const nextSize = normalizeLayoutSize(rect);
+  if (!nextSize) return null;
+
+  if (
+    previousSize?.width === nextSize.width &&
+    previousSize?.height === nextSize.height
+  ) {
+    return null;
+  }
+
+  return nextSize;
+}
+
+export function layoutChangedEvent(tabId, size) {
+  return {
+    type: "layout_changed",
+    tab_id: tabId,
+    width: size.width,
+    height: size.height,
+  };
+}
+
 export function setViewMode(entry, mode) {
   const normalized = normalizeViewMode(mode);
   entry.viewMode = normalized;
@@ -872,6 +905,7 @@ export function recycleEditor(editorRegistry, tabId) {
   const entry = editorRegistry.get(tabId);
   if (!entry) return false;
 
+  entry.onRecycle?.();
   editorRegistry.delete(tabId);
   entry.dioxus = null;
   delete entry.view.dom.dataset.tabId;

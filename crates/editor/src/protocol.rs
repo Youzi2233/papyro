@@ -23,6 +23,11 @@ pub enum EditorEvent {
         mime_type: String,
         data: String,
     },
+    LayoutChanged {
+        tab_id: String,
+        width: u32,
+        height: u32,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -173,6 +178,26 @@ mod tests {
                 tab_id: "tab-a".to_string(),
                 mime_type: "image/png".to_string(),
                 data: "abc123".to_string()
+            }
+        );
+    }
+
+    #[test]
+    fn deserializes_layout_changed_event() {
+        let event: EditorEvent = serde_json::from_value(json!({
+            "type": "layout_changed",
+            "tab_id": "tab-a",
+            "width": 1280,
+            "height": 720
+        }))
+        .unwrap();
+
+        assert_eq!(
+            event,
+            EditorEvent::LayoutChanged {
+                tab_id: "tab-a".to_string(),
+                width: 1280,
+                height: 720
             }
         );
     }
