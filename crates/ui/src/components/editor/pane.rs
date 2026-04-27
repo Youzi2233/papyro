@@ -30,6 +30,23 @@ struct EditorHostItem {
     is_active: bool,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+struct EditorTypography {
+    font_family: String,
+    font_size: u8,
+    line_height: f32,
+}
+
+impl EditorTypography {
+    fn from_settings(settings: &AppSettings) -> Self {
+        Self {
+            font_family: settings.font_family.clone(),
+            font_size: settings.font_size,
+            line_height: settings.line_height,
+        }
+    }
+}
+
 fn editor_pane_model(
     editor_tabs: &EditorTabs,
     tab_contents: &TabContentsMap,
@@ -68,14 +85,14 @@ fn editor_pane_model(
     }
 }
 
-fn editor_style(settings: &AppSettings) -> String {
+fn editor_style(typography: &EditorTypography) -> String {
     format!(
         "--mn-editor-font: {}; --mn-editor-font-size: {}px; --mn-editor-line-height: {}; --mn-markdown-body-size: {}px; --mn-markdown-line-height: {};",
-        settings.font_family,
-        settings.font_size,
-        settings.line_height,
-        settings.font_size,
-        settings.line_height
+        typography.font_family,
+        typography.font_size,
+        typography.line_height,
+        typography.font_size,
+        typography.line_height
     )
 }
 
@@ -91,9 +108,12 @@ pub fn EditorPane() -> Element {
     let mut format_tools_open = use_signal(|| false);
 
     let view_mode = ui_state.read().view_mode.clone();
-    let settings = ui_state.read().settings.clone();
+    let editor_typography = {
+        let state = ui_state.read();
+        EditorTypography::from_settings(&state.settings)
+    };
     let outline_visible = ui_state.read().outline_visible();
-    let editor_style = editor_style(&settings);
+    let editor_style = editor_style(&editor_typography);
     let bridges: EditorBridgeMap = use_context_provider(|| Signal::new(HashMap::new()));
     let _document_cache: DocumentDerivedCache =
         use_context_provider(DocumentDerivedCacheState::shared);
@@ -422,12 +442,15 @@ mod tests {
 
         let before = editor_pane_model(&editor_tabs, &tab_contents, &[]);
         let settings = AppSettings {
+            font_size: 18,
             sidebar_width: 360,
             sidebar_collapsed: true,
             ..Default::default()
         };
+        let typography = EditorTypography::from_settings(&settings);
 
-        assert!(!editor_style(&settings).contains("360"));
+        assert!(editor_style(&typography).contains("--mn-editor-font-size: 18px"));
+        assert!(!editor_style(&typography).contains("360"));
         assert_eq!(before, editor_pane_model(&editor_tabs, &tab_contents, &[]));
     }
 
