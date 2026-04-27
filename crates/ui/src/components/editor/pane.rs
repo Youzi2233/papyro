@@ -121,9 +121,11 @@ pub fn EditorPane() -> Element {
     let _document_cache: DocumentDerivedCache =
         use_context_provider(DocumentDerivedCacheState::shared);
     let mut retired_hosts: RetiredEditorHosts = use_context_provider(|| Signal::new(Vec::new()));
-    let retired_host_ids = retired_hosts.read().clone();
-    let pane_model =
-        editor_pane_model(&editor_tabs.read(), &tab_contents.read(), &retired_host_ids);
+    let pane_model = use_memo(move || {
+        let retired_host_ids = retired_hosts.read().clone();
+        editor_pane_model(&editor_tabs.read(), &tab_contents.read(), &retired_host_ids)
+    });
+    let pane = pane_model();
 
     use_effect(use_reactive((&view_mode,), move |(view_mode,)| {
         if !view_mode.is_editable() {
@@ -132,7 +134,7 @@ pub fn EditorPane() -> Element {
     }));
 
     use_effect(use_reactive(
-        (&pane_model.host_items, &pane_model.open_tab_ids),
+        (&pane.host_items, &pane.open_tab_ids),
         move |(ids, open_ids)| {
             let perf_started_at = perf_enabled().then(Instant::now);
             let valid: std::collections::HashSet<String> =
@@ -174,8 +176,8 @@ pub fn EditorPane() -> Element {
 
     if let Some(started_at) = perf_started_at {
         tracing::info!(
-            tab_count = pane_model.open_tab_ids.len(),
-            host_count = pane_model.host_items.len(),
+            tab_count = pane.open_tab_ids.len(),
+            host_count = pane.host_items.len(),
             elapsed_ms = started_at.elapsed().as_millis(),
             "perf editor pane render prep"
         );
@@ -183,12 +185,12 @@ pub fn EditorPane() -> Element {
 
     rsx! {
         main { class: "mn-editor", style: "{editor_style}",
-            if let Some(tab) = pane_model.active_tab.clone() {
+            if let Some(tab) = pane.active_tab.clone() {
                 div { class: "mn-tabbar",
-                    for item in pane_model.tabs.iter().cloned() {
+                    for item in pane.tabs.iter().cloned() {
                         EditorTabButton {
                             key: "{item.id}",
-                            is_active: Some(&item.id) == pane_model.active_tab_id.as_ref(),
+                            is_active: Some(&item.id) == pane.active_tab_id.as_ref(),
                             tab: item,
                         }
                     }
@@ -224,7 +226,7 @@ pub fn EditorPane() -> Element {
                         div {
                             class: if view_mode == ViewMode::Preview { "mn-editor-edit hidden" } else { "mn-editor-edit" },
                             div { class: "mn-editor-hosts",
-                                for host in pane_model.host_items.clone() {
+                                for host in pane.host_items.clone() {
                                     div {
                                         key: "{host.tab_id}",
                                         "data-tab-id": "{host.tab_id}",
@@ -241,13 +243,13 @@ pub fn EditorPane() -> Element {
                         }
                         if view_mode == ViewMode::Preview {
                             PreviewPane {
-                                active_document: pane_model.active_document.clone(),
+                                active_document: pane.active_document.clone(),
                                 editor_services,
                             }
                         }
                         if outline_visible {
                             OutlinePane {
-                                active_document: pane_model.active_document.clone(),
+                                active_document: pane.active_document.clone(),
                             }
                         }
                     }
@@ -257,9 +259,9 @@ pub fn EditorPane() -> Element {
                     title: "Open a note to start editing",
                     description: "Select a file from the sidebar, or create a new note with the New button.",
                 }
-                if !pane_model.host_items.is_empty() {
+                if !pane.host_items.is_empty() {
                     div { class: "mn-editor-retired-hosts",
-                        for host in pane_model.host_items.clone() {
+                        for host in pane.host_items.clone() {
                             div {
                                 key: "{host.tab_id}",
                                 "data-tab-id": "{host.tab_id}",
