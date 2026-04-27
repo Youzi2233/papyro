@@ -82,11 +82,12 @@ pub fn EditorPane() -> Element {
     let editor_tabs = app.editor_tabs;
     let tab_contents = app.tab_contents;
     let editor_services = app.editor_services;
-    let ui_state = app.ui_state;
+    let mut ui_state = app.ui_state;
     let commands = app.commands;
 
     let view_mode = ui_state.read().view_mode.clone();
     let settings = ui_state.read().settings.clone();
+    let outline_visible = ui_state.read().outline_visible();
     let editor_style = editor_style(&settings);
     let bridges: EditorBridgeMap = use_context_provider(|| Signal::new(HashMap::new()));
     let _document_cache: DocumentDerivedCache =
@@ -162,6 +163,12 @@ pub fn EditorPane() -> Element {
                         EditorToolbar { active_tab_id: tab.id.clone() }
                         div { class: "mn-toolbar-sep" }
                     }
+                    OutlineToggle {
+                        is_visible: outline_visible,
+                        on_toggle: move |_| {
+                            ui_state.write().toggle_outline();
+                        },
+                    }
                     ViewToggle {
                         view_mode: view_mode.clone(),
                         on_change: move |mode| {
@@ -204,8 +211,10 @@ pub fn EditorPane() -> Element {
                                 editor_services,
                             }
                         }
-                        OutlinePane {
-                            active_document: pane_model.active_document.clone(),
+                        if outline_visible {
+                            OutlinePane {
+                                active_document: pane_model.active_document.clone(),
+                            }
                         }
                     }
                 }
@@ -231,6 +240,20 @@ pub fn EditorPane() -> Element {
                     }
                 }
             }
+        }
+    }
+}
+
+#[component]
+fn OutlineToggle(is_visible: bool, on_toggle: EventHandler<()>) -> Element {
+    rsx! {
+        button {
+            class: if is_visible { "mn-outline-toggle active" } else { "mn-outline-toggle" },
+            title: if is_visible { "Hide outline" } else { "Show outline" },
+            "aria-label": if is_visible { "Hide outline" } else { "Show outline" },
+            "aria-pressed": if is_visible { "true" } else { "false" },
+            onclick: move |_| on_toggle.call(()),
+            "Outline"
         }
     }
 }

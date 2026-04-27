@@ -6,6 +6,7 @@ pub struct UiState {
     pub settings: AppSettings,
     pub global_settings: AppSettings,
     pub workspace_overrides: WorkspaceSettingsOverrides,
+    pub outline_visible: bool,
 }
 
 impl Default for UiState {
@@ -15,6 +16,7 @@ impl Default for UiState {
             settings: AppSettings::default(),
             global_settings: AppSettings::default(),
             workspace_overrides: WorkspaceSettingsOverrides::default(),
+            outline_visible: false,
         }
     }
 }
@@ -34,6 +36,7 @@ impl UiState {
             global_settings,
             workspace_overrides,
             settings,
+            outline_visible: false,
         }
     }
 
@@ -60,8 +63,16 @@ impl UiState {
         self.settings.sidebar_collapsed
     }
 
+    pub fn outline_visible(&self) -> bool {
+        self.outline_visible
+    }
+
     pub fn toggle_sidebar(&mut self) {
         self.settings.sidebar_collapsed = !self.settings.sidebar_collapsed;
+    }
+
+    pub fn toggle_outline(&mut self) {
+        self.outline_visible = !self.outline_visible;
     }
 
     fn refresh_effective_settings(&mut self) {
@@ -118,5 +129,20 @@ mod tests {
         assert_eq!(state.settings.theme, Theme::Dark);
         assert_eq!(state.settings.font_size, 20);
         assert_eq!(state.global_settings.theme, Theme::Light);
+    }
+
+    #[test]
+    fn outline_visibility_is_ephemeral_chrome_state() {
+        let mut state = UiState::from_settings(AppSettings::default());
+        assert!(!state.outline_visible());
+
+        state.toggle_outline();
+        assert!(state.outline_visible());
+
+        state.apply_global_settings(AppSettings {
+            theme: Theme::Dark,
+            ..AppSettings::default()
+        });
+        assert!(state.outline_visible());
     }
 }

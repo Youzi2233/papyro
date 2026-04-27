@@ -20,6 +20,7 @@ pub(crate) struct CommandPaletteActionInput<'a> {
     pub selected_note_name: Option<&'a str>,
     pub theme: Theme,
     pub view_mode: ViewMode,
+    pub outline_visible: bool,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -39,6 +40,7 @@ pub(crate) enum CommandPaletteActionKind {
     SaveActiveNote,
     ExportHtml,
     ToggleSidebar,
+    ToggleOutline,
     ToggleTheme,
     OpenSettings,
     SetViewMode(ViewMode),
@@ -67,6 +69,7 @@ pub fn CommandPaletteModal(on_close: EventHandler<()>, on_settings: EventHandler
         selected_note_name: selected_note_name(&workspace_model),
         theme: settings_model.theme,
         view_mode: editor_model.view_mode,
+        outline_visible: ui_state.read().outline_visible(),
     });
     let query_value = query();
     let filtered = filter_command_palette_actions(&actions, &query_value);
@@ -201,6 +204,9 @@ fn execute_command_action(
             trace_sidebar_toggle("command_palette", settings.sidebar_collapsed, started_at);
             commands.save_settings.call(settings);
         }
+        CommandPaletteActionKind::ToggleOutline => {
+            ui_state.write().toggle_outline();
+        }
         CommandPaletteActionKind::ToggleTheme => {
             let mut settings = ui_state.read().settings.clone();
             settings.theme = match ui_state.read().theme() {
@@ -266,6 +272,16 @@ pub(crate) fn command_palette_actions(
             "Show or hide the workspace browser",
             "VIEW",
             CommandPaletteActionKind::ToggleSidebar,
+        ),
+        action(
+            if input.outline_visible {
+                "Hide outline"
+            } else {
+                "Show outline"
+            },
+            "Toggle the active note heading outline",
+            "VIEW",
+            CommandPaletteActionKind::ToggleOutline,
         ),
         action(
             "Toggle theme",
@@ -449,6 +465,7 @@ mod tests {
             selected_note_name: None,
             theme: Theme::Light,
             view_mode: ViewMode::Hybrid,
+            outline_visible: false,
         }
     }
 
@@ -469,6 +486,7 @@ mod tests {
         assert!(titles.contains(&"Refresh workspace"));
         assert!(titles.contains(&"Save active note"));
         assert!(titles.contains(&"Export HTML"));
+        assert!(titles.contains(&"Show outline"));
         assert!(titles.contains(&"Favorite selected note"));
         assert!(titles.contains(&"Unfavorite selected note"));
         assert!(titles.contains(&"Use source mode"));
@@ -492,6 +510,24 @@ mod tests {
         assert!(!titles.contains(&"Refresh workspace"));
         assert!(!titles.contains(&"Save active note"));
         assert!(!titles.contains(&"Export HTML"));
+    }
+
+    #[test]
+    fn command_palette_actions_toggle_outline_label() {
+        let actions = command_palette_actions(CommandPaletteActionInput {
+            outline_visible: true,
+            ..test_input()
+        });
+        let titles = actions
+            .iter()
+            .map(|action| action.title.as_str())
+            .collect::<Vec<_>>();
+
+        assert!(titles.contains(&"Hide outline"));
+        assert!(!titles.contains(&"Show outline"));
+        assert!(actions
+            .iter()
+            .any(|action| matches!(action.kind, CommandPaletteActionKind::ToggleOutline)));
     }
 
     #[test]

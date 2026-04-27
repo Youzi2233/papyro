@@ -337,6 +337,7 @@ mod tests {
             settings: settings.clone(),
             global_settings: settings,
             workspace_overrides: Default::default(),
+            outline_visible: false,
         };
 
         ViewModelFixture {
