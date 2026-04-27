@@ -701,7 +701,7 @@ button { border: 0; cursor: pointer; background: transparent; }
     border: 1px solid var(--mn-border);
     border-radius: var(--mn-radius-sm);
     outline: none;
-    background: var(--mn-surface-raised);
+    background: var(--mn-surface);
     color: var(--mn-ink);
     padding: 6px 10px;
     font-size: 13px;
@@ -1398,8 +1398,8 @@ button { border: 0; cursor: pointer; background: transparent; }
 .mn-modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(20, 15, 8, 0.55);
-    backdrop-filter: blur(6px);
+    background: rgba(18, 20, 17, 0.38);
+    backdrop-filter: blur(3px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1408,16 +1408,16 @@ button { border: 0; cursor: pointer; background: transparent; }
 }
 
 .mn-modal {
-    background: var(--mn-surface-raised);
-    border: 1px solid var(--mn-border);
-    border-radius: var(--mn-radius-xl);
-    box-shadow: var(--mn-shadow-lg);
+    background: var(--mn-surface);
+    border: 1px solid var(--mn-divider);
+    border-radius: var(--mn-radius-lg);
+    box-shadow: 0 10px 36px rgba(18, 20, 17, 0.12);
     width: min(560px, 92vw);
     max-height: 82vh;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    animation: mn-modal-in 0.22s cubic-bezier(.3, 1.2, .4, 1);
+    animation: mn-modal-in 0.16s ease-out;
 }
 
 @keyframes mn-fade-in {
@@ -1425,16 +1425,16 @@ button { border: 0; cursor: pointer; background: transparent; }
     to { opacity: 1; }
 }
 @keyframes mn-modal-in {
-    from { opacity: 0; transform: translateY(8px) scale(.98); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .mn-modal-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 22px 26px 18px;
-    border-bottom: 1px solid var(--mn-border);
+    padding: 18px 22px 14px;
+    border-bottom: 1px solid var(--mn-divider);
     flex-shrink: 0;
 }
 
@@ -1442,7 +1442,7 @@ button { border: 0; cursor: pointer; background: transparent; }
     font-family: var(--mn-font-display);
     font-size: 22px;
     font-weight: 600;
-    letter-spacing: -0.02em;
+    letter-spacing: 0;
     color: var(--mn-ink);
 }
 
@@ -1462,7 +1462,7 @@ button { border: 0; cursor: pointer; background: transparent; }
 .mn-modal-body {
     flex: 1;
     overflow-y: auto;
-    padding: 22px 26px;
+    padding: 18px 22px;
     display: flex;
     flex-direction: column;
     gap: 22px;
@@ -1472,9 +1472,9 @@ button { border: 0; cursor: pointer; background: transparent; }
     display: flex;
     justify-content: flex-end;
     gap: 8px;
-    padding: 16px 26px;
-    border-top: 1px solid var(--mn-border);
-    background: var(--mn-surface-sunken);
+    padding: 14px 22px;
+    border-top: 1px solid var(--mn-divider);
+    background: transparent;
     flex-shrink: 0;
 }
 
@@ -1484,26 +1484,26 @@ button { border: 0; cursor: pointer; background: transparent; }
 }
 
 .mn-command-search {
-    padding: 14px;
-    border-bottom: 1px solid var(--mn-border);
-    background: var(--mn-surface-sunken);
+    padding: 12px;
+    border-bottom: 1px solid var(--mn-divider);
+    background: transparent;
 }
 
 .mn-command-input {
     width: 100%;
-    border: 1px solid var(--mn-border);
+    border: 1px solid var(--mn-divider);
     border-radius: var(--mn-radius-sm);
-    background: var(--mn-surface-raised);
+    background: var(--mn-surface);
     color: var(--mn-ink);
     padding: 12px 14px;
     outline: 0;
     font-size: 15px;
-    box-shadow: var(--mn-shadow-xs);
+    box-shadow: none;
 }
 
 .mn-command-input:focus {
     border-color: var(--mn-accent);
-    box-shadow: 0 0 0 3px var(--mn-accent-dim);
+    box-shadow: 0 0 0 2px var(--mn-accent-dim);
 }
 
 .mn-command-input::placeholder {
@@ -1533,7 +1533,7 @@ button { border: 0; cursor: pointer; background: transparent; }
 
 .mn-command-row:hover,
 .mn-command-row.active {
-    background: var(--mn-accent-dim);
+    background: var(--mn-accent-wash);
 }
 
 .mn-command-row-main {
@@ -1568,7 +1568,7 @@ button { border: 0; cursor: pointer; background: transparent; }
     min-width: 34px;
     height: 24px;
     border-radius: 6px;
-    border: 1px solid var(--mn-border);
+    border: 1px solid var(--mn-divider);
     color: var(--mn-ink-2);
     font-size: 10px;
     font-weight: 700;
@@ -1616,9 +1616,9 @@ button { border: 0; cursor: pointer; background: transparent; }
 
 .mn-setting-radio-group {
     display: flex;
-    border: 1px solid var(--mn-border);
+    border: 1px solid var(--mn-divider);
     border-radius: var(--mn-radius-sm);
-    background: var(--mn-surface);
+    background: transparent;
     padding: 2px;
     gap: 2px;
 }
@@ -1642,7 +1642,7 @@ button { border: 0; cursor: pointer; background: transparent; }
 .mn-setting-radio:has(input:checked) {
     background: var(--mn-accent);
     color: var(--mn-accent-ink);
-    box-shadow: var(--mn-shadow-xs);
+    box-shadow: none;
 }
 
 .mn-setting-switch {
@@ -1663,9 +1663,9 @@ button { border: 0; cursor: pointer; background: transparent; }
     position: relative;
     width: 44px;
     height: 24px;
-    border: 1px solid var(--mn-border);
+    border: 1px solid var(--mn-divider);
     border-radius: 999px;
-    background: var(--mn-surface-sunken);
+    background: transparent;
     transition: background 0.14s, border-color 0.14s;
 }
 
@@ -1677,7 +1677,7 @@ button { border: 0; cursor: pointer; background: transparent; }
     height: 18px;
     border-radius: 50%;
     background: var(--mn-surface);
-    box-shadow: var(--mn-shadow-xs);
+    box-shadow: 0 0 0 1px var(--mn-divider);
     transition: transform 0.14s, background 0.14s;
 }
 
