@@ -1,9 +1,7 @@
 use crate::commands::{AppCommands, RecentFileTarget, RestoreTrashedNoteTarget};
 use crate::components::primitives::{Modal, TextInput};
 use crate::context::use_app_context;
-use crate::perf::{
-    perf_timer, trace_chrome_open_modal, trace_sidebar_toggle, trace_view_mode_change,
-};
+use crate::perf::{perf_timer, trace_chrome_open_modal, trace_view_mode_change};
 use dioxus::prelude::*;
 use papyro_core::models::{Theme, ViewMode};
 use papyro_core::UiState;
@@ -196,11 +194,7 @@ fn execute_command_action(
         CommandPaletteActionKind::RefreshWorkspace => commands.refresh_workspace.call(()),
         CommandPaletteActionKind::SaveActiveNote => commands.save_active_note.call(()),
         CommandPaletteActionKind::ToggleSidebar => {
-            let started_at = perf_timer();
-            ui_state.write().toggle_sidebar();
-            let settings = ui_state.read().settings.clone();
-            trace_sidebar_toggle("command_palette", settings.sidebar_collapsed, started_at);
-            commands.save_settings.call(settings);
+            crate::chrome::toggle_sidebar(ui_state, commands.clone(), "command_palette");
         }
         CommandPaletteActionKind::ToggleOutline => {
             ui_state.write().toggle_outline();

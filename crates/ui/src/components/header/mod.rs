@@ -1,15 +1,16 @@
 use crate::components::primitives::IconButton;
 use crate::context::use_app_context;
-use crate::perf::{perf_timer, trace_sidebar_toggle};
 use dioxus::prelude::*;
 use papyro_core::models::Theme;
 
 #[component]
 pub fn AppHeader(on_settings: EventHandler<()>) -> Element {
     let app = use_app_context();
-    let mut ui_state = app.ui_state;
+    let ui_state = app.ui_state;
     let commands = app.commands;
     let settings = ui_state.read().settings.clone();
+    let sidebar_commands = commands.clone();
+    let theme_commands = commands.clone();
 
     let theme = ui_state.read().theme().clone();
     let collapsed = settings.sidebar_collapsed;
@@ -27,15 +28,7 @@ pub fn AppHeader(on_settings: EventHandler<()>) -> Element {
                 label: "Toggle sidebar (Ctrl+\\)",
                 icon: sidebar_icon,
                 on_click: move |_| {
-                    let started_at = perf_timer();
-                    ui_state.write().toggle_sidebar();
-                    let settings = ui_state.read().settings.clone();
-                    trace_sidebar_toggle(
-                        "header",
-                        settings.sidebar_collapsed,
-                        started_at,
-                    );
-                    commands.save_settings.call(settings);
+                    crate::chrome::toggle_sidebar(ui_state, sidebar_commands.clone(), "header");
                 },
             }
             span { class: "mn-brand-title", "Papyro" }
@@ -50,7 +43,7 @@ pub fn AppHeader(on_settings: EventHandler<()>) -> Element {
                             Theme::Light | Theme::System => Theme::Dark,
                             Theme::Dark => Theme::Light,
                         };
-                        commands.save_settings.call(settings);
+                        theme_commands.save_settings.call(settings);
                     },
                 }
                 IconButton {

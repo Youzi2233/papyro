@@ -4,14 +4,14 @@ use crate::components::{
     status_bar::StatusBar,
 };
 use crate::context::use_app_context;
-use crate::perf::{perf_timer, trace_chrome_open_modal, trace_sidebar_toggle};
+use crate::perf::{perf_timer, trace_chrome_open_modal};
 use dioxus::prelude::*;
 use papyro_core::models::Theme;
 
 #[component]
 pub fn DesktopLayout(status_message: Option<String>) -> Element {
     let app = use_app_context();
-    let mut ui_state = app.ui_state;
+    let ui_state = app.ui_state;
     let commands = app.commands;
     let mut show_settings = use_signal(|| false);
     let mut show_quick_open = use_signal(|| false);
@@ -75,6 +75,7 @@ pub fn DesktopLayout(status_message: Option<String>) -> Element {
         "#,
         );
 
+        let shortcut_commands = commands.clone();
         spawn(async move {
             while let Ok(message) = eval.recv::<String>().await {
                 match message.as_str() {
@@ -93,13 +94,13 @@ pub fn DesktopLayout(status_message: Option<String>) -> Element {
                         show_search.set(true);
                         trace_chrome_open_modal("workspace_search", "shortcut", started_at);
                     }
-                    "save_active_note" => commands.save_active_note.call(()),
+                    "save_active_note" => shortcut_commands.save_active_note.call(()),
                     "toggle_sidebar" => {
-                        let started_at = perf_timer();
-                        ui_state.write().toggle_sidebar();
-                        let settings = ui_state.read().settings.clone();
-                        trace_sidebar_toggle("shortcut", settings.sidebar_collapsed, started_at);
-                        commands.save_settings.call(settings);
+                        crate::chrome::toggle_sidebar(
+                            ui_state,
+                            shortcut_commands.clone(),
+                            "shortcut",
+                        );
                     }
                     _ => {}
                 }
