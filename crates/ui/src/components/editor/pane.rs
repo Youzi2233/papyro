@@ -4,7 +4,6 @@ use super::host::EditorHost;
 use super::outline::OutlinePane;
 use super::preview::PreviewPane;
 use super::tabbar::EditorTabButton;
-use super::toolbar::EditorToolbar;
 use crate::components::primitives::{EmptyState, SegmentedControl, SegmentedControlOption};
 use crate::context::use_app_context;
 use dioxus::prelude::*;
@@ -104,7 +103,6 @@ pub fn EditorPane() -> Element {
     let editor_services = app.editor_services;
     let ui_state = app.ui_state;
     let commands = app.commands;
-    let mut format_tools_open = use_signal(|| false);
 
     let (view_mode, editor_typography, auto_link_paste, outline_visible) = {
         let state = ui_state.read();
@@ -125,12 +123,6 @@ pub fn EditorPane() -> Element {
         editor_pane_model(&editor_tabs.read(), &tab_contents.read(), &retired_host_ids)
     });
     let pane = pane_model();
-
-    use_effect(use_reactive((&view_mode,), move |(view_mode,)| {
-        if !view_mode.is_editable() {
-            format_tools_open.set(false);
-        }
-    }));
 
     use_effect(use_reactive(
         (&pane.host_items, &pane.open_tab_ids),
@@ -184,7 +176,7 @@ pub fn EditorPane() -> Element {
 
     rsx! {
         main { class: "mn-editor", style: "{editor_style}",
-            if let Some(tab) = pane.active_tab.clone() {
+            if pane.active_tab.is_some() {
                 div { class: "mn-tabbar",
                     for item in pane.tabs.iter().cloned() {
                         EditorTabButton {
@@ -194,15 +186,6 @@ pub fn EditorPane() -> Element {
                         }
                     }
                     div { class: "mn-tabbar-spacer" }
-                    if view_mode.is_editable() {
-                        FormatMenu {
-                            active_tab_id: tab.id.clone(),
-                            is_open: format_tools_open(),
-                            on_toggle: move |_| {
-                                format_tools_open.set(!format_tools_open());
-                            },
-                        }
-                    }
                     ViewToggle {
                         view_mode: view_mode.clone(),
                         on_change: move |mode| {
@@ -210,7 +193,7 @@ pub fn EditorPane() -> Element {
                                 ui_state,
                                 commands.clone(),
                                 mode,
-                                "toolbar",
+                                "tabbar",
                             );
                         },
                     }
@@ -272,35 +255,6 @@ pub fn EditorPane() -> Element {
                 }
             }
         }
-    }
-}
-
-#[component]
-fn FormatMenu(active_tab_id: String, is_open: bool, on_toggle: EventHandler<()>) -> Element {
-    rsx! {
-        div { class: "mn-format-menu",
-            button {
-                class: format_toggle_class(is_open),
-                title: if is_open { "Hide formatting tools" } else { "Show formatting tools" },
-                "aria-label": if is_open { "Hide formatting tools" } else { "Show formatting tools" },
-                "aria-expanded": if is_open { "true" } else { "false" },
-                onclick: move |_| on_toggle.call(()),
-                "Format"
-            }
-            if is_open {
-                div { class: "mn-format-panel",
-                    EditorToolbar { active_tab_id: active_tab_id.clone() }
-                }
-            }
-        }
-    }
-}
-
-fn format_toggle_class(is_open: bool) -> &'static str {
-    if is_open {
-        "mn-format-toggle active"
-    } else {
-        "mn-format-toggle"
     }
 }
 
@@ -425,11 +379,5 @@ mod tests {
         assert!(editor_style(&typography).contains("--mn-editor-font-size: 18px"));
         assert!(!editor_style(&typography).contains("360"));
         assert_eq!(before, editor_pane_model(&editor_tabs, &tab_contents, &[]));
-    }
-
-    #[test]
-    fn format_toggle_class_marks_active_state() {
-        assert_eq!(format_toggle_class(false), "mn-format-toggle");
-        assert_eq!(format_toggle_class(true), "mn-format-toggle active");
     }
 }

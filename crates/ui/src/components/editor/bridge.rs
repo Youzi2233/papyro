@@ -4,7 +4,7 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use std::time::Duration;
 
-pub(super) use papyro_editor::protocol::{EditorCommand, EditorEvent, EditorFormat};
+pub(super) use papyro_editor::protocol::{EditorCommand, EditorEvent};
 
 #[derive(Debug, Clone, Deserialize)]
 pub(super) struct ClosePerfEvent {
