@@ -82,19 +82,19 @@ pub fn Sidebar() -> Element {
                         onclick: move |_| {
                             show_create.set(!show_create());
                         },
-                        if show_create() { "✕ Cancel" } else { "+ New" }
+                        if show_create() { "Cancel" } else { "New" }
                     }
                     button {
                         class: "mn-button",
                         title: "Reload workspace",
                         onclick: move |_| commands.refresh_workspace.call(()),
-                        "⟳"
+                        "Refresh"
                     }
                     if workspace.is_none() {
                         button {
                             class: "mn-button primary",
                             onclick: move |_| commands.open_workspace.call(()),
-                            "Open…"
+                            "Open"
                         }
                     }
                 }
@@ -166,14 +166,14 @@ pub fn Sidebar() -> Element {
                                     class: "mn-button",
                                     title: "Show in Explorer",
                                     onclick: move |_| commands.reveal_in_explorer.call(target.clone()),
-                                    "↗"
+                                    "Reveal"
                                 }
                             }
                             button {
                                 class: "mn-button danger",
                                 title: if selected_delete_pending { "Confirm delete" } else { "Delete selected" },
                                 onclick: move |_| commands.delete_selected.call(()),
-                                if selected_delete_pending { "Confirm" } else { "✕" }
+                                if selected_delete_pending { "Confirm" } else { "Delete" }
                             }
                         }
                     }

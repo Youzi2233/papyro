@@ -418,6 +418,7 @@ Editor runtime lane
 - [ ] Tabbar 只表达打开文档和 dirty/save 状态，不承担大工具栏职责。
 - [x] Outline toggle 从 tabbar 常驻控件降级到命令面板入口。
 - [x] Format toolbar 从 tabbar 常驻控件移除，避免顶部区域抢占写作注意力。
+- [x] Sidebar action 文案改为稳定文本，避免符号按钮在不同环境乱码或含义不清。
 - [ ] Status bar 只放必要状态，不做信息垃圾桶。
 - [ ] Sidebar 支持清晰的 workspace、文件树、搜索入口，但不抢主编辑区。
 - [ ] 设置、标签管理、回收站以 modal/panel 形式按需打开。
