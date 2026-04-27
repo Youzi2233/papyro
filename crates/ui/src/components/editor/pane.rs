@@ -9,9 +9,71 @@ use crate::components::primitives::{EmptyState, SegmentedControl, SegmentedContr
 use crate::context::use_app_context;
 use crate::perf::{perf_timer, trace_view_mode_change};
 use dioxus::prelude::*;
-use papyro_core::models::ViewMode;
+use papyro_core::models::{AppSettings, EditorTab, ViewMode};
+use papyro_core::{EditorTabs, TabContentSnapshot, TabContentsMap};
 use std::collections::HashMap;
 use std::time::Instant;
+
+#[derive(Debug, Clone, PartialEq)]
+struct EditorPaneModel {
+    active_tab: Option<EditorTab>,
+    active_tab_id: Option<String>,
+    active_document: Option<TabContentSnapshot>,
+    tabs: Vec<EditorTab>,
+    open_tab_ids: Vec<String>,
+    host_items: Vec<EditorHostItem>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct EditorHostItem {
+    tab_id: String,
+    is_active: bool,
+}
+
+fn editor_pane_model(
+    editor_tabs: &EditorTabs,
+    tab_contents: &TabContentsMap,
+    retired_host_ids: &[String],
+) -> EditorPaneModel {
+    let active_tab = editor_tabs.active_tab().cloned();
+    let active_tab_id = editor_tabs.active_tab_id.clone();
+    let tabs = editor_tabs.tabs.clone();
+    let open_tab_ids: Vec<String> = editor_tabs.tabs.iter().map(|tab| tab.id.clone()).collect();
+    let mut tracked_host_ids = open_tab_ids.clone();
+
+    for retired_id in retired_host_ids {
+        if !tracked_host_ids.iter().any(|id| id == retired_id) {
+            tracked_host_ids.push(retired_id.clone());
+        }
+    }
+
+    let active_document = active_tab_id
+        .as_deref()
+        .and_then(|id| tab_contents.snapshot_for_tab(id));
+    let host_items = tracked_host_ids
+        .into_iter()
+        .map(|tab_id| EditorHostItem {
+            is_active: Some(&tab_id) == active_tab_id.as_ref(),
+            tab_id,
+        })
+        .collect();
+
+    EditorPaneModel {
+        active_tab,
+        active_tab_id,
+        active_document,
+        tabs,
+        open_tab_ids,
+        host_items,
+    }
+}
+
+fn editor_style(settings: &AppSettings) -> String {
+    format!(
+        "--mn-editor-font: {}; --mn-editor-font-size: {}px; --mn-editor-line-height: {};",
+        settings.font_family, settings.font_size, settings.line_height
+    )
+}
 
 #[component]
 pub fn EditorPane() -> Element {
@@ -23,47 +85,24 @@ pub fn EditorPane() -> Element {
     let ui_state = app.ui_state;
     let commands = app.commands;
 
-    let active_tab = editor_tabs.read().active_tab().cloned();
-    let active_tab_id = editor_tabs.read().active_tab_id.clone();
-    let tabs = editor_tabs.read().tabs.clone();
-    let active_document = active_tab_id
-        .as_deref()
-        .and_then(|id| tab_contents.read().snapshot_for_tab(id));
     let view_mode = ui_state.read().view_mode.clone();
     let settings = ui_state.read().settings.clone();
-
-    let editor_style = format!(
-        "--mn-editor-font: {}; --mn-editor-font-size: {}px; --mn-editor-line-height: {};",
-        settings.font_family, settings.font_size, settings.line_height
-    );
+    let editor_style = editor_style(&settings);
     let bridges: EditorBridgeMap =
         use_context_provider(|| Signal::new(HashMap::<String, dioxus::document::Eval>::new()));
     let _document_cache: DocumentDerivedCache =
         use_context_provider(DocumentDerivedCacheState::shared);
     let mut retired_hosts: RetiredEditorHosts = use_context_provider(|| Signal::new(Vec::new()));
     let retired_host_ids = retired_hosts.read().clone();
-
-    let open_tab_ids: Vec<String> = tabs.iter().map(|t| t.id.clone()).collect();
-    let mut tracked_host_ids = open_tab_ids.clone();
-    for retired_id in retired_host_ids {
-        if !tracked_host_ids.iter().any(|id| id == &retired_id) {
-            tracked_host_ids.push(retired_id);
-        }
-    }
-
-    let host_items: Vec<(String, bool)> = tracked_host_ids
-        .iter()
-        .map(|id| {
-            let is_active = Some(id) == active_tab_id.as_ref();
-            (id.clone(), is_active)
-        })
-        .collect();
+    let pane_model =
+        editor_pane_model(&editor_tabs.read(), &tab_contents.read(), &retired_host_ids);
 
     use_effect(use_reactive(
-        (&tracked_host_ids, &open_tab_ids),
+        (&pane_model.host_items, &pane_model.open_tab_ids),
         move |(ids, open_ids)| {
             let perf_started_at = perf_enabled().then(Instant::now);
-            let valid: std::collections::HashSet<String> = ids.into_iter().collect();
+            let valid: std::collections::HashSet<String> =
+                ids.into_iter().map(|item| item.tab_id).collect();
             let stale: Vec<String> = bridges
                 .peek()
                 .keys()
@@ -103,8 +142,8 @@ pub fn EditorPane() -> Element {
 
     if let Some(started_at) = perf_started_at {
         tracing::info!(
-            tab_count = tabs.len(),
-            host_count = host_items.len(),
+            tab_count = pane_model.open_tab_ids.len(),
+            host_count = pane_model.host_items.len(),
             elapsed_ms = started_at.elapsed().as_millis(),
             "perf editor pane render prep"
         );
@@ -112,12 +151,12 @@ pub fn EditorPane() -> Element {
 
     rsx! {
         main { class: "mn-editor", style: "{editor_style}",
-            if let Some(tab) = active_tab {
+            if let Some(tab) = pane_model.active_tab.clone() {
                 div { class: "mn-tabbar",
-                    for item in tabs.iter().cloned() {
+                    for item in pane_model.tabs.iter().cloned() {
                         EditorTabButton {
                             key: "{item.id}",
-                            is_active: Some(&item.id) == active_tab_id.as_ref(),
+                            is_active: Some(&item.id) == pane_model.active_tab_id.as_ref(),
                             tab: item,
                         }
                     }
@@ -148,14 +187,14 @@ pub fn EditorPane() -> Element {
                         div {
                             class: if view_mode == ViewMode::Preview { "mn-editor-edit hidden" } else { "mn-editor-edit" },
                             div { class: "mn-editor-hosts",
-                                for (tab_id, is_active) in host_items {
+                                for host in pane_model.host_items.clone() {
                                     div {
-                                        key: "{tab_id}",
-                                        "data-tab-id": "{tab_id}",
-                                        class: if is_active { "mn-editor-host-slot" } else { "mn-editor-host-slot hidden" },
+                                        key: "{host.tab_id}",
+                                        "data-tab-id": "{host.tab_id}",
+                                        class: if host.is_active { "mn-editor-host-slot" } else { "mn-editor-host-slot hidden" },
                                         EditorHost {
-                                            tab_id: tab_id.clone(),
-                                            is_visible: is_active && view_mode.is_editable(),
+                                            tab_id: host.tab_id.clone(),
+                                            is_visible: host.is_active && view_mode.is_editable(),
                                             view_mode: view_mode.clone(),
                                         }
                                     }
@@ -164,12 +203,12 @@ pub fn EditorPane() -> Element {
                         }
                         if view_mode == ViewMode::Preview {
                             PreviewPane {
-                                active_document: active_document.clone(),
+                                active_document: pane_model.active_document.clone(),
                                 editor_services,
                             }
                         }
                         OutlinePane {
-                            active_document: active_document.clone(),
+                            active_document: pane_model.active_document.clone(),
                         }
                     }
                 }
@@ -178,15 +217,15 @@ pub fn EditorPane() -> Element {
                     title: "Open a note to start editing",
                     description: "Select a file from the sidebar, or create a new note with the New button.",
                 }
-                if !host_items.is_empty() {
+                if !pane_model.host_items.is_empty() {
                     div { class: "mn-editor-retired-hosts",
-                        for (tab_id, _) in host_items {
+                        for host in pane_model.host_items.clone() {
                             div {
-                                key: "{tab_id}",
-                                "data-tab-id": "{tab_id}",
+                                key: "{host.tab_id}",
+                                "data-tab-id": "{host.tab_id}",
                                 class: "mn-editor-host-slot hidden",
                                 EditorHost {
-                                    tab_id: tab_id.clone(),
+                                    tab_id: host.tab_id.clone(),
                                     is_visible: false,
                                     view_mode: view_mode.clone(),
                                 }
@@ -237,5 +276,83 @@ fn view_mode_from_value(value: &str) -> Option<ViewMode> {
         "hybrid" => Some(ViewMode::Hybrid),
         "preview" => Some(ViewMode::Preview),
         _ => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use papyro_core::models::{DocumentStats, SaveStatus};
+    use std::path::PathBuf;
+
+    fn tab(id: &str) -> EditorTab {
+        EditorTab {
+            id: id.to_string(),
+            note_id: format!("note-{id}"),
+            title: format!("Note {id}"),
+            path: PathBuf::from(format!("{id}.md")),
+            is_dirty: false,
+            save_status: SaveStatus::Saved,
+        }
+    }
+
+    #[test]
+    fn editor_pane_model_tracks_active_document_and_retired_hosts() {
+        let mut editor_tabs = EditorTabs::default();
+        editor_tabs.open_tab(tab("a"));
+        editor_tabs.open_tab(tab("b"));
+        editor_tabs.set_active_tab("a");
+
+        let mut tab_contents = TabContentsMap::default();
+        tab_contents.insert_tab("a".to_string(), "# A".to_string(), DocumentStats::default());
+        tab_contents.insert_tab("b".to_string(), "# B".to_string(), DocumentStats::default());
+
+        let model = editor_pane_model(&editor_tabs, &tab_contents, &["closed".to_string()]);
+
+        assert_eq!(model.active_tab_id.as_deref(), Some("a"));
+        assert_eq!(
+            model.active_document.as_ref().map(|document| {
+                (
+                    document.tab_id.as_str(),
+                    document.revision,
+                    document.content.as_ref(),
+                )
+            }),
+            Some(("a", 0, "# A"))
+        );
+        assert_eq!(
+            model.host_items,
+            vec![
+                EditorHostItem {
+                    tab_id: "a".to_string(),
+                    is_active: true,
+                },
+                EditorHostItem {
+                    tab_id: "b".to_string(),
+                    is_active: false,
+                },
+                EditorHostItem {
+                    tab_id: "closed".to_string(),
+                    is_active: false,
+                },
+            ]
+        );
+    }
+
+    #[test]
+    fn editor_pane_model_is_stable_across_settings_changes() {
+        let mut editor_tabs = EditorTabs::default();
+        editor_tabs.open_tab(tab("a"));
+
+        let mut tab_contents = TabContentsMap::default();
+        tab_contents.insert_tab("a".to_string(), "# A".to_string(), DocumentStats::default());
+
+        let before = editor_pane_model(&editor_tabs, &tab_contents, &[]);
+        let mut settings = AppSettings::default();
+        settings.sidebar_width = 360;
+        settings.sidebar_collapsed = true;
+
+        assert_eq!(editor_style(&settings).contains("360"), false);
+        assert_eq!(before, editor_pane_model(&editor_tabs, &tab_contents, &[]));
     }
 }
