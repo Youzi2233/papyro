@@ -1,75 +1,45 @@
 # Papyro Roadmap
 
-本文是一份新的产品与工程路线图。它的目标不是继续堆功能清单，而是把 Papyro 推进到一个可长期维护、可跨端演进、编辑体验对齐 Typora 的理想形态。
+本文是 Papyro 的产品与工程路线图。目标不是把功能越堆越多，而是把 Papyro 做成一个本地优先、长期可维护、性能稳定、视觉审美大众可接受的专业 Markdown 笔记软件。
 
-这份路线图基于当前代码库状态编写：
+当前最重要的判断：Papyro 现在的主要问题不是缺少更多功能或更多菜单，而是架构、性能和 UI/UX 的基础还没有达到专业笔记软件的标准。页面操作卡顿、Hybrid mode 和 Typora 体验差距明显、界面层级和设计语言不合理，这些都必须优先解决。
 
-- `cargo test --workspace` 当前通过，合计 29 个单元测试。
-- 当前已经形成 `apps/desktop`、`apps/mobile`、`crates/app`、`crates/core`、`crates/ui`、`crates/editor`、`crates/storage`、`crates/platform` 的 workspace 结构。
-- `crates/app` 已承担共享运行时与应用流程，`apps/*` 已基本收敛为平台宿主。
-- 编辑器当前采用 CodeMirror 6 本地 bundle，并通过 Dioxus `document::eval` / channel 与 Rust 状态同步。
+## 2026-04-28 路线重排
 
-## 2026-04-27 路线重排决策
+本版路线图重新拉回完整战略，但把当前重心放在三件事上：
 
-引入 Hybrid mode 后，应用已经出现明显的体验退化：模式切换、关闭 Tab、折叠侧边栏等本应很轻的 chrome 操作会变卡；主编辑区、预览区和整体 UI 也没有达到 Typora 级写作软件应有的克制、精致和稳定。
+1. 架构重设：把应用状态、文档状态、编辑器 runtime、窗口会话、workspace 和 chrome 状态彻底分层。
+2. 性能治理：让 tab 切换、关闭 tab、模式切换、侧栏折叠、打开面板和输入路径都达到明确预算。
+3. UI/UX 重做：重建桌面 shell、文档编辑区、Hybrid 体验、设计 token 和交互层级，让主界面真正像成熟笔记软件。
 
-因此从此处开始，路线图优先级暂停“继续补功能”，转为先完成性能架构和 UI/UX 重置。后续任何导出、移动端、发布、同步等能力，都必须让位于以下目标：
+后续仍会保留专业本地笔记软件需要的能力，例如数据保护、搜索、打包、跨端适配和长期维护边界。但它们不能抢占当前主线。当前主线没有完成前，新增大功能只会扩大卡顿和架构债。
 
-- chrome 操作不牵动编辑器重建：折叠侧栏、调整侧栏宽度、打开设置、关闭命令面板，不应重建 CodeMirror host、重算预览或重算大纲。
-- 编辑器状态分层：编辑器 runtime、文档内容派生视图、应用 chrome 状态、workspace 文件树状态必须分离，不能再通过一个大 view model 互相放大重渲染。
-- Hybrid mode 先稳定再美化：只有输入、选择、IME、撤销、滚动、图片、代码块、列表和表格都稳定后，才能继续扩展视觉 decoration。
-- UI 重新定位为“安静的专业写作桌面”：默认第一屏服务写作，不常用能力进入命令面板、菜单、设置或按需展开面板，不再把主区域切成工具展示区。
-- Roadmap 以后必须优先记录体验风险、性能预算、验收方式和停止条件，而不是只列功能清单。
+## 产品北极星
 
-新的近期判断：Phase 5.3 的 primitive 整理只是基础设施完成，不代表 UI/UX 已经达标。真正的 Phase 5 后半段要重做 shell、编辑器视觉、预览排版和交互优先级。
+Papyro 的理想形态：
 
-## 目标定义
+- 本地优先的 Markdown 笔记软件，用户自己的 `.md` 文件是第一等公民。
+- 默认体验接近 Typora 式单栏写作，而不是传统左右分栏 Markdown demo。
+- 支持 workspace 管理、快速打开、搜索、标签、附件、回收站、最近文件，以及可配置的 tab / 多窗口工作模式。
+- 对普通用户来说，界面干净、稳定、熟悉、专业，不需要理解内部架构。
+- 对高阶用户来说，Source、Hybrid、Preview、文件系统、快捷键和命令面板都足够可控。
+- 对工程来说，每个模块边界明确，能长期迭代，而不是靠临时状态和 UI 组件互相调用撑起来。
 
-### 产品目标
+## 专业级质量标准
 
-Papyro 的目标体验是“Typora 式 Markdown 写作软件”，不是传统左右分栏 Markdown 编辑器。
+“专业级”在 Papyro 里不是功能堆叠，而是先满足以下基础质量：
 
-核心体验标准：
+- 性能稳定：常见操作有预算、有指标、有回归测试。
+- 数据可靠：保存失败、外部修改、崩溃、删除、移动都可恢复或可解释。
+- 设计成熟：视觉风格克制、大众可接受，不依赖花哨装饰，不像实验性 demo。
+- 交互一致：同类操作在文件树、tab、命令面板、右键菜单中行为一致。
+- 架构清晰：UI 不直接承载 storage、platform、editor runtime 的业务真相。
+- 可测试：核心 use case、JS editor contract、UI smoke、性能预算和依赖方向都能自动检查。
+- 可扩展：未来打包、移动端和平台能力有边界，不污染当前核心本地笔记体验。
 
-- 单栏写作，编辑和阅读在同一空间完成。
-- 聚焦处保留可编辑 Markdown 语法，非聚焦内容尽量呈现接近最终排版的效果。
-- 输入、选择、撤销、重做、中文输入法、快捷键都必须稳定。
-- 文件、图片、搜索、导出、主题、设置等能力完整但不打扰写作。
-- 默认界面安静、简约、信息密度适中，不做花哨装饰。
-- 主编辑区是绝对主角：默认不显示宽 outline、不显示大工具栏、不让设置、标签、回收站等管理功能挤占写作空间。
-- Source、Hybrid、Preview 三种模式必须共享同一套排版尺度，切换时像同一篇文档的不同状态，而不是三个不同产品。
-- 常用动作用键盘和少量图标完成；低频动作进入命令面板、右键菜单或设置，不在首屏长期占位。
-- 视觉基调应是“克制、准确、专业”，优先清晰层级、舒适阅读宽度、稳定光标和高级排版，不追求装饰性背景。
+## 当前架构事实
 
-### 工程目标
-
-代码目标不是“能跑”，而是“能持续迭代”。
-
-- 分层边界清晰，依赖方向稳定。
-- Rust 负责核心模型、存储、解析、导出、搜索、用例编排和可测试逻辑。
-- Dioxus 0.7 负责跨端 UI、响应式状态、组件复用和宿主渲染。
-- JS 编辑器 runtime 只负责浏览器编辑能力，不成为业务真相来源。
-- 每个模块都有明确 owner、测试边界和失败策略。
-- 新功能先进入用例层，再进入 UI，不让布局组件继续吸收业务流程。
-- 任何 chrome 状态更新都必须说明会影响哪些 Dioxus signal、memo 和 CodeMirror command。
-- Markdown 派生数据（preview HTML、outline、stats、search snippets）必须以文档 revision 为边界缓存或异步计算，不能在无关 UI render 中同步重算。
-- 编辑器宿主生命周期必须有明确策略：active host、warm host、retired host 的数量、销毁时机和布局刷新时机都要可测。
-- UI 改动必须有产品验收标准：默认视野、信息密度、首屏层级、键盘路径、空状态和错误状态都要明确。
-
-## 当前现状
-
-### 已经做对的部分
-
-1. Workspace 结构已经从单体入口转向多 crate 分层。
-2. `apps/desktop` 和 `apps/mobile` 已经变薄，不再互相复用源码路径。
-3. `crates/app` 已经成为共享应用层，承接 runtime、commands、workspace flow 和 watcher。
-4. `crates/core` 已经主要保留模型、状态结构和 trait 边界。
-5. `crates/storage` 已经实现 SQLite、文件系统、workspace 扫描、recent files、settings 和 watcher。
-6. `crates/editor` 已经提供 Markdown 统计和 HTML 渲染。
-7. CodeMirror bundle 通过 `js/` 构建，避免运行时 CDN 依赖。
-8. 单元测试已经覆盖一部分 workspace、tab、storage、startup chrome 行为。
-
-### 当前架构图
+当前 workspace 已经形成基本分层：
 
 ```text
 apps/desktop
@@ -84,157 +54,45 @@ crates/app
     +--> crates/platform
     +--> crates/editor
 
-crates/ui       -> crates/core
-crates/ui       -> crates/editor (protocol and Markdown UI helpers only)
 crates/storage  -> crates/core
 crates/platform -> crates/core
 crates/editor   -> crates/core
+crates/ui       -> crates/core
+crates/ui       -> crates/editor
 ```
 
-### 当前关键文件
+当前已经做对的部分：
 
-```text
-apps/desktop/src/main.rs              desktop 宿主入口和首帧资源注入
-apps/mobile/src/main.rs               mobile 宿主入口和资源注入
-crates/app/src/runtime.rs             app composition root 与 context 注入
-crates/app/src/actions.rs             app action payload 定义
-crates/app/src/dispatcher.rs          action dispatcher 与 AppCommands 兼容层
-crates/app/src/effects.rs             watcher 等 app effect
-crates/app/src/export.rs              HTML export 逻辑
-crates/app/src/workspace_flow/*       workspace 与文件操作 use case
-crates/app/src/handlers/*             action/use case 到 async UI runtime 的连接层
-crates/ui/src/context.rs              UI 看到的 AppContext
-crates/ui/src/layouts/*               desktop / mobile 布局
-crates/ui/src/components/editor/mod.rs CodeMirror bridge、tabbar、toolbar、preview
-js/src/editor.js                      CodeMirror runtime
-crates/storage/src/lib.rs             SQLite + filesystem storage facade
-crates/editor/src/renderer/html.rs    Markdown HTML 渲染与代码高亮
-```
+- `apps/desktop` 和 `apps/mobile` 已经变薄，主要作为平台宿主。
+- `crates/app` 已经承担 runtime、dispatcher、workspace flow、effects。
+- `crates/core` 已经保留模型、状态结构和 trait 边界。
+- `crates/storage` 已经负责 SQLite、文件系统、workspace 扫描、recent files、settings、watcher。
+- `crates/editor` 已经提供 Markdown 统计、渲染和协议相关能力。
+- `js/` 构建 CodeMirror 6 本地 bundle，避免运行时 CDN 依赖。
+- `EditorTabs`、`TabContentsMap`、content revision、preview/outline cache 已经有基础。
+- 桌面端已有 Quick Open、Command Palette、workspace search、recent files 等入口。
 
-## 主要问题
+当前真正的问题：
 
-### 1. Roadmap 仍偏功能清单
+- 架构虽然分了 crate，但运行时状态和 UI 订阅边界仍然会互相放大重渲染。
+- UI 组件仍能接触过多 raw signal，导致 chrome 操作容易牵动 document/editor lane。
+- `EditorPane`、host pool、Preview、Outline、Tabbar、Toolbar 和 JS bridge 的配合仍然偏重。
+- Hybrid decoration 和 CodeMirror runtime 仍像在现有 editor 上叠能力，而不是从“所见即所得写作体验”倒推架构。
+- CSS 和视觉系统缺少真正的产品级设计语言，界面像功能拼装，而不是成熟工具。
+- 交互路径没有统一优先级，文件树、tabbar、toolbar、outline、settings、status bar 同时抢注意力。
+- 性能预算虽有文档和部分 trace，但还没有成为强制验收线。
+- 外部 Markdown 文件打开、系统双击和 tab / 多窗口工作模式还没有统一模型。
 
-旧路线图更多是在列“未来要做什么功能”。它缺少三类信息：
+## 当前停止条件
 
-- 功能之间的依赖顺序。
-- 当前架构距离目标架构的差距。
-- 每阶段怎么验收代码质量和体验质量。
+在 Phase 1 到 Phase 4 没有达到验收前，避免推进以下工作：
 
-新的路线图必须能指导后续 issue 拆分、PR 审查和版本发布。
-
-### 2. `crates/app` 已建立，但 runtime 仍偏集中
-
-`crates/app/src/runtime.rs` 同时承担：
-
-- signal 初始化
-- command 闭包组装
-- unsaved close 策略
-- export HTML
-- settings 持久化
-- watcher resource
-- context 注入
-
-这说明 composition root 已经出现，但还没有完全模块化。继续叠功能会让 runtime 变成新的大泥球。
-
-### 3. AppContext 仍暴露过多原始 Signal
-
-当前 UI 能直接拿到：
-
-- `file_state`
-- `editor_tabs`
-- `tab_contents`
-- `ui_state`
-- `pending_close_tab`
-- `commands`
-
-这比过去散乱 context 好，但依然让 UI 组件知道太多内部状态结构。后续应该逐步收敛为更小的 view model 和 action facade。
-
-### 4. 编辑器组件已经过重
-
-`crates/ui/src/components/editor/mod.rs` 当前同时承担：
-
-- tabbar
-- toolbar
-- preview
-- CodeMirror host lifecycle
-- JS bridge
-- autosave debounce
-- fallback UI
-- retired host 管理
-- performance tracing
-
-编辑器是产品核心，这部分必须拆成可测试、可替换、可渐进增强的结构。
-
-### 5. JS editor runtime 缺少协议级测试
-
-`js/src/editor.js` 已经有 CodeMirror runtime、spare pool、format command、Rust channel routing，但目前缺少：
-
-- JS 单元测试
-- Rust/JS message contract 文档
-- command/event schema 固化
-- bundle 产物一致性检查
-- IME、selection、tab recycle 的回归测试
-
-这会直接影响 Typora 式编辑体验的稳定性。
-
-### 6. Preview HTML 需要安全策略
-
-`PreviewPane` 使用 `dangerous_inner_html` 渲染 `render_markdown_html` 的结果。Markdown 是否允许原始 HTML、如何清理脚本、如何处理图片和链接，都需要明确策略。
-
-这是写作软件必须补齐的健壮性问题。
-
-### 7. UI 仍有流程编排残留
-
-`MobileLayout` 中仍然包含较多状态切换、设置保存、创建/重命名表单流程。后续如果继续把移动端交互塞进 layout，可读性会下降。
-
-### 8. 存储层可用，但缺少更完整的文档资产模型
-
-当前 storage 能读写 `.md`、维护 metadata、recent files 和 settings。对齐 Typora 还需要：
-
-- 图片 assets 复制策略
-- 相对路径规范
-- 删除/移动时资源引用处理
-- 回收站或安全删除
-- 外部文件变化冲突处理
-- 大 workspace 的增量索引
-
-### 9. 测试层级还不完整
-
-当前单元测试基础不错，但缺少：
-
-- UI smoke test
-- editor bridge contract test
-- JS runtime test
-- integration test
-- architecture dependency check
-- bundle sync check
-- performance budget test
-
-### 10. Hybrid mode 已经暴露性能风险
-
-当前卡顿集中出现在模式切换、关闭 Tab、侧栏折叠等操作。这些操作本身不重，但它们会穿过过宽的 signal 和 memo 边界，间接触发编辑器宿主管理、预览渲染、大纲提取或布局刷新。
-
-需要优先处理：
-
-- `AppViewModel` 目前由 file/editor/tab/ui 多个原始 signal 一次性派生，任何一侧变化都容易让无关组件重新读取大对象。
-- `EditorPane` 同时管理 tabbar、toolbar、view mode、host pool、preview、outline 和 retired hosts，chrome 变化与文档派生视图没有清晰隔离。
-- `PreviewPane` 和 `OutlinePane` 虽然使用 memo，但依赖边界仍以 active tab 为主，后续需要升级为 content revision / document digest 边界。
-- `EditorHost` 通过 effect 发送 `RefreshLayout`、`SetViewMode`、`SetPreferences`，这些命令需要节流、去重和可观测指标。
-- JS Hybrid decoration 同时处理 heading、inline、image、task、math、table、code block 等能力，需要有性能分级和可关闭策略。
-
-### 11. UI/UX 与 Typora 目标仍有明显距离
-
-目前界面更像“功能型 demo”：侧栏、tabbar、toolbar、outline、状态栏、设置入口和各种管理功能同时占据注意力，写作区没有成为第一主角。Hybrid、Source、Preview 三个模式的视觉语言也不统一，导致模式切换像是在切换不同产品。
-
-需要优先处理：
-
-- 默认界面减少常驻控件：格式工具、outline、管理动作默认收起或移入命令面板/上下文菜单。
-- 主编辑区建立统一文档纸面：固定舒适阅读宽度、稳定行高、统一标题/段落/代码/引用/表格节奏。
-- Hybrid mode 聚焦“当前块可编辑，其他块安静呈现”，避免过多 widget 和装饰制造跳动。
-- Preview mode 应接近最终成品排版，不能只是普通 HTML 样式堆叠。
-- Source mode 应是高级用户模式，保持清晰、快速、低干扰，而不是视觉降级版。
-- 设计系统要从“组件能复用”升级为“体验能复用”：同类弹窗、菜单、状态、输入、错误反馈都要有一致的信息层级。
+- 不新增首屏常驻功能入口，除非它直接服务写作。
+- 不新增会扩大 `EditorPane`、`EditorHost`、`PreviewPane`、`OutlinePane` 无关重渲染的状态依赖。
+- 不继续扩展 Hybrid decoration，除非先补输入稳定性、布局稳定性和性能验证。
+- 不把“组件 primitive 已完成”当作“UI/UX 已完成”。
+- 不推进与本地笔记主线无关的长尾能力。
+- 不为了功能完整牺牲主写作区的稳定、干净和响应速度。
 
 ## 目标架构
 
@@ -242,759 +100,752 @@ crates/editor/src/renderer/html.rs    Markdown HTML 渲染与代码高亮
 
 ```text
 apps/
-  desktop/              # 平台宿主：窗口、桌面资源、launch
-  mobile/               # 平台宿主：移动资源、launch
+  desktop/              # 窗口、启动参数、系统文件打开、桌面资源、Dioxus desktop launch
+  mobile/               # 移动宿主、移动资源、平台启动
 
 crates/
-  app/                  # composition root、action dispatcher、use cases、effects
-  core/                 # 领域模型、纯状态、trait、纯规则
-  ui/                   # Dioxus 0.7 组件、layout、view model 渲染
-  editor/               # Markdown/AST/render、editor protocol、document transform
-  storage/              # SQLite、文件系统、workspace repository、watcher
-  platform/             # desktop/mobile adapter
+  app/                  # application runtime、use cases、dispatcher、effects、window/session orchestration
+  core/                 # 领域模型、纯状态、trait、纯规则、无 Dioxus 依赖
+  ui/                   # Dioxus 0.7 组件、layout、view model、design system
+  editor/               # Markdown 派生、editor protocol、document transform、render helper
+  storage/              # SQLite、文件系统、workspace repository、watcher、metadata
+  platform/             # desktop/mobile adapter、系统文件选择、打开外链、reveal
 
-future crates when needed:
-  search/               # tantivy/FTS 索引与查询
-  export/               # HTML/PDF/DOCX/export templates
+future crates when justified:
+  search/               # FTS / Tantivy / incremental index
 ```
 
-### 依赖原则
+### 会话模型
 
-允许：
-
-- `apps/* -> app`
-- `app -> ui/core/editor/storage/platform`
-- `ui -> core`
-- `ui -> editor`（仅 editor protocol 与 Markdown UI helper）
-- `editor -> core`
-- `storage -> core`
-- `platform -> core`
-
-禁止：
-
-- `apps/mobile -> apps/desktop`
-- `ui -> storage`
-- `ui -> concrete platform`
-- `ui -> editor runtime business truth`
-- `core -> dioxus`
-- `storage -> dioxus`
-- `platform -> ui`
-- `editor JS runtime -> business truth`
-
-### 渲染通道原则
-
-后续架构要把应用拆成四条渲染通道，每条通道只订阅自己需要的状态：
+未来必须区分这些状态层级：
 
 ```text
-Workspace lane      文件树、workspace、recent files、tags、trash
-Chrome lane         sidebar、modal、command palette、settings、status bar
-Document lane       active tab content、stats、outline、preview HTML
-Editor runtime lane CodeMirror host、selection、view mode、runtime commands
+ProcessRuntime
+  - shared storage handle
+  - app settings cache
+  - effective note open mode
+  - recent workspaces/files metadata
+  - single-instance / file-open event routing
+
+WindowSession
+  - window id
+  - shell mode
+  - active workspace
+  - editor tabs
+  - tab contents
+  - chrome state
+  - pending close/delete state
+
+WorkspaceSession
+  - workspace metadata
+  - file tree
+  - expanded paths
+  - watcher subscription
+  - search index state
+
+DocumentSession
+  - tab id
+  - note id
+  - path
+  - content snapshot
+  - revision
+  - dirty/save/conflict state
+  - selection/scroll/undo restoration metadata
+
+EditorRuntimeSession
+  - CodeMirror host instance id
+  - runtime ready/error state
+  - view mode
+  - visible/layout size
+  - command dedupe cache
 ```
 
-关键约束：
+关键原则：
 
-- Chrome lane 的状态变化不能触发 Document lane 派生计算。折叠侧栏、打开设置、拖拽侧栏宽度不应重新渲染 preview HTML 或重新提取 outline。
-- Document lane 以 `tab_id + content_revision` 为缓存键。只要文档内容 revision 没变，预览、大纲、统计都不重算。
-- Editor runtime lane 只接收必要命令。`SetViewMode`、`RefreshLayout`、`SetPreferences` 必须去重，并记录耗时。
-- Workspace lane 不直接读取编辑器 runtime。文件树选择、排序、右键菜单不应让 CodeMirror host 重新 mount。
-- 大 view model 只能作为兼容层存在。新组件优先读取更小的 `WorkspaceViewModel`、`ChromeViewModel`、`DocumentViewModel` 或局部 signal。
+- 一个窗口关闭 tab，不影响另一个窗口的 tab 或 editor host。
+- storage 和 metadata 可以进程共享，但未保存编辑内容不能跨窗口静默覆盖。
+- `WindowSession` 可以共享 `ProcessRuntime`，但不能共享 `tab_contents`。
+- 系统双击 Markdown 文件、文件树打开笔记、Quick Open 和搜索结果，最终都进入同一条 app use case。
+- 笔记打开后的呈现方式由软件级 `note_open_mode` 决定，而不是由某个文件树手势临时决定。
+- `note_open_mode` 在启动时读取并成为本次进程的 effective mode；设置变更写入持久化配置，但重启后才生效。
 
-### 编辑器宿主策略
+### 渲染通道
 
-当前多个 tab 同时保留 CodeMirror host 的策略有利于快速切换，但会放大模式切换、布局刷新和销毁成本。后续要重新评估并落地明确策略：
+应用必须继续收敛到四条渲染通道：
 
-- 默认只保证 active host 完整可交互。
-- 允许保留一个 warm host 用于最近 tab，但必须有数量上限。
-- 非活动 tab 的 selection、scroll、undo 必须有可保存/可恢复策略。
-- Tab close 不应同步销毁重型 runtime；销毁应可延迟到 idle 或批处理。
-- 任何 host 创建、销毁、切换、刷新都必须有性能日志和测试覆盖。
+```text
+Workspace lane
+  input: workspace path, file watcher, file operations
+  output: file tree, recent files, trash, tags, selected path
 
-### Dioxus 0.7 使用原则
+Chrome lane
+  input: sidebar, modals, command palette, settings, status bar
+  output: shell layout and transient UI
 
-后续所有 Dioxus 代码必须遵守 0.7 风格：
+Document lane
+  input: active document snapshot and revision
+  output: stats, outline, preview HTML, search snippets
+
+Editor runtime lane
+  input: visible editor host, view mode, content snapshot, preferences
+  output: editor ready/error, content changes, save requests, selection/scroll
+```
+
+禁止事项：
+
+- Chrome lane 更新触发 preview HTML、outline 或 stats 重算。
+- Workspace lane 选择、排序、右键菜单触发 CodeMirror host 重建。
+- Document lane 派生数据在 Dioxus render path 中阻塞计算。
+- Editor runtime lane 持有业务真相，或绕过 `crates/app` 修改 storage。
+
+### Dioxus 0.7 约束
+
+后续所有 UI 代码必须遵守 Dioxus 0.7 风格：
 
 - 使用 `#[component] fn Name(...) -> Element`。
 - 使用 `Signal<T>`、`ReadOnlySignal<T>`、`use_signal`、`use_memo`、`use_resource`。
-- 使用 `rsx!` 里的 `for` 和 `if` 直接渲染元素。
-- 使用 `document::Stylesheet`、`document::Script`、`asset!` 管理资源。
+- 在 `rsx!` 里用 `for` 和 `if` 直接渲染元素。
+- 通过 `document::Stylesheet`、`document::Script`、`asset!` 管理资源。
 - 不引入旧 API：`cx`、`Scope`、`use_state`。
 
-## 版本路线
+## 性能预算
 
-```text
-v0.1   稳定桌面 MVP：架构收敛、基础编辑、文件闭环、可手动发布
-v0.2   Typora-like Alpha：单栏所见即所得核心体验、图片、搜索、命令面板
-v0.3   桌面 Beta：导出、主题、插件前置边界、可靠升级、完整测试
-v0.4   跨端 Beta：移动端可用、平台差异收敛、同步前置设计
-v1.0   稳定版：核心体验稳定、数据安全、发布流水线、完整文档
+性能预算不是建议，是重构验收线。
+
+| 场景 | 目标 | 说明 |
+| --- | ---: | --- |
+| 普通 chrome 操作 | 50ms | 侧栏折叠、侧栏 resize commit、打开 modal、settings chrome 更新 |
+| View mode 切换 | 100ms | Rust UI action + active host editor command |
+| Tab 切换 | 80ms | active editor host 可用，不重建隐藏 host |
+| Tab 关闭 | 80ms | 交互路径完成，heavy cleanup 延迟 |
+| 输入帧 | 16ms | preview、outline、stats 不阻塞输入 |
+| 100KB 文件打开 | 250ms | editor 可编辑，不要求所有派生数据完成 |
+| 1MB 文件打开 | 800ms | preview 可延迟，输入必须可用 |
+| 5MB 文件打开 | 2500ms | 走降级策略，编辑优先 |
+
+所有高风险改动必须检查这些 trace：
+
+- `perf editor pane render prep`
+- `perf editor open note`
+- `perf editor switch tab`
+- `perf editor view mode change`
+- `perf editor outline extract`
+- `perf editor command refresh_layout`
+- `perf editor command set_view_mode`
+- `perf editor command set_preferences`
+- `perf editor input change`
+- `perf editor preview render`
+- `perf chrome toggle sidebar`
+- `perf chrome resize sidebar`
+- `perf chrome open modal`
+- `perf tab close trigger`
+- `perf runtime close_tab handler`
+
+## Phase 0：重新建立产品和工程基线
+
+目标：让团队对“为什么当前要重做架构、UI、性能”有统一判断。
+
+### 0.1 产品基线
+
+- [ ] 明确 Papyro 当前阶段不是功能扩张，而是架构、性能、UI/UX 修复期。
+- [ ] 定义主用户路径：打开 workspace、打开笔记、编辑、保存、搜索、切换 tab、切换模式、关闭 tab。
+- [ ] 定义桌面首屏标准：第一眼是文档，不是工具集合。
+- [ ] 定义大众可接受视觉方向：克制、清晰、专业、低装饰、长时间阅读舒适。
+- [ ] 定义 Hybrid 体验目标：向 Typora 的单栏写作体验靠近，而不是传统 preview/editor 拼接。
+
+### 0.2 工程基线
+
+- [x] workspace 已拆分为 `apps/*` 与 `crates/*`。
+- [x] app runtime 已有 state / actions / dispatcher / effects 基础。
+- [x] editor 组件已拆分为 pane / host / bridge / preview / outline / tabbar / toolbar。
+- [x] preview/outline/stats 已有 revision cache 基础。
+- [x] editor host lifecycle 已有 instance id、stale destroy 防护和 contract test 基础。
+- [ ] 把性能预算变成 PR 必填项，而不是只存在文档里。
+- [ ] 把 UI/UX 验收纳入 Phase 任务，不允许“代码能跑但体验很差”算完成。
+
+验收标准：
+
+- 每个新 issue 能明确属于架构、性能、UI/UX、文件体验、可靠性或平台体验。
+- 每个 PR 能说明是否影响四条渲染通道。
+- 每次重构都能说明性能预算和 UI 验收方式。
+
+## Phase 1：顶层架构重设
+
+目标：用顶层会话模型和状态通道重新约束代码，让卡顿不再靠局部补丁解决。
+
+### 1.1 WindowSession 与 ProcessRuntime
+
+- [ ] 定义 `ProcessRuntime` 和 `WindowSession` 的边界文档。
+- [ ] 明确哪些状态进程共享：storage handle、settings metadata、effective note open mode、recent files、recent workspaces。
+- [ ] 明确哪些状态窗口独立：editor tabs、tab contents、active tab、chrome state、pending close/delete。
+- [ ] 为未来多窗口保留 `window_id` 或等价标识，不让 tab id 承担窗口身份。
+- [ ] 桌面启动参数和系统文件打开事件先进入 `apps/desktop`，再交给 `crates/app` use case。
+
+### 1.2 打开模式设置
+
+- [ ] 在 `AppSettings` 中增加软件级 `note_open_mode`，默认值为 `Tabs`。
+- [ ] 支持两个模式：`Tabs` 和 `MultiWindow`。
+- [ ] 设置页提供一个清晰的分段控件切换模式。
+- [ ] 保存设置后提示“重启后生效”，当前运行中的窗口和 tab 不迁移。
+- [ ] 启动时读取 `note_open_mode` 并写入 `ProcessRuntime` 的 effective mode。
+- [ ] 所有打开入口只提交 `OpenMarkdownTarget { path }`，具体打开到 tab 还是窗口由 effective mode 决定。
+- [ ] 为设置持久化、默认值、重启生效语义补测试。
+
+### 1.3 AppAction 与 use case 边界
+
+- [x] `AppAction` 和 dispatcher 已存在。
+- [ ] 所有打开笔记入口收敛到 path-based `OpenMarkdown` use case。
+- [ ] 文件树、Quick Open、Search、Recent、系统双击都不直接各写一套 open flow。
+- [ ] `OpenNote(FileNode)` 作为兼容入口时，也应转成 path-based open。
+- [ ] `crates/app` 暴露面向桌面宿主的启动/打开请求，不让 `apps/desktop` 调 UI command。
+- [ ] 为每个 use case 明确输入、输出、失败状态、状态更新范围。
+
+### 1.4 State Domain 切分
+
+- [ ] 将 runtime state 文档化为 WorkspaceState、ChromeState、DocumentState、EditorRuntimeState。
+- [ ] UI 组件优先读取 view model，不直接读多个 raw signal 拼业务判断。
+- [ ] `DesktopLayout` 只能感知 shell/chrome 需要的数据。
+- [ ] `EditorPane` 只接收 active editor surface 所需数据。
+- [ ] Sidebar、Header、StatusBar 不读取 document content 或 editor host 状态。
+- [ ] 为 view model 派生函数补充“无关状态变化不改变输出”的测试。
+
+### 1.5 Document Pipeline
+
+- [ ] 定义 `DocumentSnapshot { tab_id, path, revision, content }` 作为派生数据边界。
+- [ ] preview HTML、outline、stats、search snippets 统一按 `tab_id + revision` 缓存。
+- [ ] 大文档 preview 和 outline 计算移出 render path。
+- [ ] 派生数据计算支持取消或丢弃过期 revision。
+- [ ] 派生数据失败只影响对应面板，不阻塞编辑。
+
+### 1.6 Editor Runtime Boundary
+
+- [ ] Rust/JS 协议由 `crates/editor` 维护，不在 UI 内散落私有 schema。
+- [ ] JS runtime 只处理浏览器编辑能力：输入、selection、IME、scroll、decorations、format command。
+- [ ] Rust 仍是文档内容、保存状态、tab 状态、workspace 状态的真相来源。
+- [ ] `RefreshLayout`、`SetViewMode`、`SetPreferences` 必须去重。
+- [ ] host 创建、销毁、隐藏、恢复都有可观测 trace 和 contract test。
+
+验收标准：
+
+- 侧栏折叠、打开设置、打开命令面板不触发 preview/outline 重算。
+- 文件树点击非打开操作不触发 CodeMirror host 重建。
+- 同一 use case 可以被 UI、启动参数、系统打开事件复用。
+- 新增状态必须归属到明确 domain。
+
+## Phase 2：性能治理
+
+目标：把“卡顿”从体感问题变成可定位、可预算、可回归检查的问题。
+
+### 2.1 性能观测
+
+- [x] 已有 `PAPYRO_PERF` trace 基础。
+- [ ] 为每个主路径建立 trace chain：用户事件、Dioxus action、use case、state update、render prep、editor command。
+- [ ] trace 必须包含 tab id、window id、revision、view mode、file size、trigger reason。
+- [ ] 性能日志按交互路径聚合，避免只看到零散点。
+- [ ] 增加脚本化手工场景，覆盖 100KB、1MB、5MB Markdown。
+
+### 2.2 Dioxus render 收敛
+
+- [ ] 检查所有 `use_memo` 依赖，确保 chrome 更新不读 document content。
+- [ ] 拆分会导致大面积 rerender 的 props。
+- [ ] 大 Vec / HashMap 避免作为宽 props 穿过多层组件。
+- [ ] 对稳定结构使用更小 view model 或 id list。
+- [ ] 避免在 render 中 clone 大内容、渲染 HTML、提取 outline。
+
+### 2.3 Editor host 性能
+
+- [x] 已有 bounded retired host 和 stale destroy 防护。
+- [ ] 重新评估是否所有 open tab 都需要保留 host。
+- [ ] 明确 active host、warm host、hidden host 的数量上限。
+- [ ] 非活动 tab 的 selection、scroll、undo 状态保存策略文档化。
+- [ ] 关闭 tab 的 heavy cleanup 保持 idle 或批处理。
+- [ ] 模式切换只向 active/visible host 发送必要命令。
+
+### 2.4 文档派生性能
+
+- [x] preview/outline/stats 已有 revision cache 基础。
+- [ ] 1MB 以上文件默认降低 preview 和 syntax highlight 压力。
+- [ ] 5MB 文件默认暂停 live preview，保证编辑优先。
+- [ ] outline 提取异步化并支持过期结果丢弃。
+- [ ] preview HTML 渲染失败或超时显示轻量占位。
+- [ ] 搜索 snippet 生成不阻塞编辑器输入。
+
+### 2.5 UI 操作性能
+
+- [ ] 侧栏折叠只影响 shell 布局和 visible host layout。
+- [ ] 侧栏拖拽过程中避免每帧持久化 settings。
+- [ ] 打开 Command Palette、Quick Open、Settings、Workspace Search 不触发 editor command storm。
+- [ ] Tab close 交互路径不等待 JS destroy。
+- [ ] 切换 theme/settings 只更新必要 CSS variables 和 active host preferences。
+
+验收标准：
+
+- 普通 chrome 操作低于 50ms。
+- View mode 切换低于 100ms。
+- Tab 切换低于 80ms。
+- 输入不被 preview、outline、stats 阻塞。
+- 性能退化必须能通过 trace 定位到 lane 和 trigger。
+
+## Phase 3：UI/UX 重新设计
+
+目标：让 Papyro 从“功能型 demo”变成大众能接受的专业写作软件。
+
+### 3.1 视觉方向
+
+- [ ] 建立新的视觉原则：克制、清晰、专业、耐看、低装饰。
+- [ ] 避免强烈主题皮肤感，不使用大面积装饰性背景。
+- [ ] 亮色和暗色都以阅读舒适、光标清晰、层级稳定为先。
+- [ ] 主编辑区不使用过重 card、阴影、边框和多层容器。
+- [ ] 管理功能降低视觉权重，写作内容成为第一视觉主角。
+
+### 3.2 Design Tokens
+
+- [ ] 重建颜色 token：背景、surface、border、text、muted、accent、danger、success、selection。
+- [ ] 重建 typography token：UI 字体、正文、标题、代码、行高、段落节奏。
+- [ ] 重建 spacing token：shell、sidebar、tabbar、modal、editor paper、menu。
+- [ ] 重建 radius、border、shadow token，避免各组件随意硬编码。
+- [ ] 将 editor typography、Hybrid decoration、Preview typography 共用同一套文档 token。
+- [ ] CSS 中减少硬编码颜色和一次性 class。
+
+### 3.3 桌面 Shell
+
+- [ ] 重新定义默认桌面布局：左侧文件区、顶部轻量 chrome、中央文档。
+- [ ] 默认减少常驻控件，低频功能进入命令面板、右键菜单或按需面板。
+- [ ] Tabbar 只表达打开文档和 dirty/save 状态，不承担大工具栏职责。
+- [ ] Status bar 只放必要状态，不做信息垃圾桶。
+- [ ] Sidebar 支持清晰的 workspace、文件树、搜索入口，但不抢主编辑区。
+- [ ] 设置、标签管理、回收站以 modal/panel 形式按需打开。
+
+### 3.4 编辑区体验
+
+- [ ] 建立统一文档纸面：舒适阅读宽度、稳定 padding、稳定行高。
+- [ ] Source、Hybrid、Preview 使用同一套文档尺度。
+- [ ] 光标、selection、composition 状态清晰可见。
+- [ ] 图片、表格、代码块、引用、列表在三种模式中节奏一致。
+- [ ] 编辑区空状态直接引导打开或创建笔记，不展示大段说明文字。
+
+### 3.5 交互原则
+
+- [ ] 高频写作动作优先快捷键：保存、快速打开、搜索、命令面板、模式切换。
+- [ ] 次级动作进入右键菜单、命令面板或按需浮层。
+- [ ] 危险动作有确认和恢复路径。
+- [ ] 错误提示短、明确、可行动。
+- [ ] 同一动作在文件树、tab、搜索结果中的命名和行为一致。
+- [ ] 鼠标路径和键盘路径都完整。
+
+### 3.6 可访问性和大众接受度
+
+- [ ] 文字对比度满足长时间阅读。
+- [ ] 所有图标按钮有 tooltip / aria label。
+- [ ] 焦点环清晰，键盘导航不丢焦。
+- [ ] 不使用依赖文化偏好过强的视觉风格。
+- [ ] 常见屏幕尺寸下不出现文字溢出、遮挡、错位。
+- [ ] Windows 默认字体和 macOS 默认字体都要看起来正常。
+
+验收标准：
+
+- 打开应用第一眼是文档，不是工具集合。
+- UI 不再像临时 demo 或组件展示页。
+- 用户可以连续写作 30 分钟，不被视觉噪音和布局跳动打扰。
+- 亮色、暗色、系统主题都能达到专业工具的最低审美线。
+
+## Phase 4：Hybrid Editor 重做
+
+目标：让 Hybrid mode 真正接近 Typora 式体验，而不是 Source 与 Preview 的折中拼接。
+
+### 4.1 体验定义
+
+Hybrid mode 应该满足：
+
+- 当前聚焦块保留可编辑 Markdown 语法。
+- 非聚焦块尽量呈现接近最终排版的阅读效果。
+- 光标移动、选择、输入法、撤销、重做、快捷键稳定。
+- 滚动时不出现大量布局跳动。
+- 模式切换像同一篇文档的不同状态，不像切换到另一个产品。
+- 图片、代码块、表格、列表、引用、任务列表都有稳定编辑体验。
+
+### 4.2 Block Model
+
+- [ ] 在 `crates/editor` 中定义 Markdown block 分析边界，避免 JS runtime 私有解析所有业务语义。
+- [ ] 每个 block 有稳定范围、类型、revision 关联和降级策略。
+- [ ] JS decoration 只消费必要的 block hints，不成为文档真相来源。
+- [ ] 当前块、邻近块、远端块使用不同 decoration 等级。
+- [ ] 大文档中只对 viewport 附近 block 做重 decoration。
+
+### 4.3 Decoration Strategy
+
+- [ ] Heading、emphasis、link、image、task、code、quote、table 分层实现。
+- [ ] 每类 decoration 定义开启条件、关闭条件、性能预算和 fallback。
+- [ ] IME composition 期间暂停可能干扰输入的 decoration command。
+- [ ] selection 跨 block 时不强行重排或隐藏源语法。
+- [ ] 失焦块的渲染不能改变文档实际内容。
+
+### 4.4 CodeMirror Integration
+
+- [ ] Rust -> JS command schema 固化到 `crates/editor` protocol。
+- [ ] JS -> Rust event schema 固化并测试：content changed、save requested、runtime ready/error、layout changed。
+- [ ] Content update 支持 suppress echo，避免 Rust 更新再触发 JS 回流。
+- [ ] View mode、preferences、layout refresh 都做 idempotent。
+- [ ] Runtime error 必须回退到 fallback editor，而不是让页面空白。
+
+### 4.5 Typora-like 验收场景
+
+- [ ] 中文输入法连续输入、选词、回车、标点不丢字、不重复。
+- [ ] 输入 `# ` 后标题视觉变化不打断输入。
+- [ ] 粘贴图片后能插入相对 Markdown 链接并预览。
+- [ ] 在列表中回车、缩进、退格符合用户预期。
+- [ ] 代码块中输入不触发错误 decoration。
+- [ ] 表格编辑至少不破坏文本结构，后续再增强表格 UI。
+- [ ] Source / Hybrid / Preview 切换保持滚动位置和阅读宽度。
+
+验收标准：
+
+- Hybrid mode 在 100KB 文档中输入、选择、滚动稳定。
+- Hybrid mode 不再给用户“半成品 preview”的感觉。
+- 与 Typora 的差距被拆成明确缺口，而不是泛泛说“体验不像”。
+
+## Phase 5：Markdown 打开模式
+
+目标：让用户通过软件设置选择自己的工作方式。Papyro 提供 `Tabs` 和 `MultiWindow` 两种打开模式，设置保存后重启生效。文件树、Quick Open、搜索结果、最近文件和系统双击都服从同一个模式。
+
+### 5.1 打开模式定义
+
+目标类型：
+
+```rust
+pub enum NoteOpenMode {
+    Tabs,
+    MultiWindow,
+}
+
+pub struct OpenMarkdownTarget {
+    pub path: PathBuf,
+}
 ```
 
-## Phase 0：建立工程基线
+规则：
 
-目标：先冻结质量标准，让后续开发有清晰验收线。
+- `Tabs` 是默认模式。
+- `MultiWindow` 是软件级模式，不是某个文件树操作或右键菜单的临时动作。
+- 设置页可以修改 `note_open_mode`，但本次运行保持当前 effective mode。
+- 保存设置后显示“重启后生效”。
+- 重启后，所有打开入口都使用新的 effective mode。
 
-### 0.1 文档基线
+### 5.2 统一打开 use case
 
-- [x] 重写 `docs/roadmap.md`。
-- [x] 更新 `README.md` 的编码与展示，确保中文在常见终端和编辑器中正常显示。
-- [x] 在 README 中明确”先读 roadmap，再按阶段开发”。
-- [x] 将 `docs/architecture.md` 与本文中的目标架构保持一致。
-- [x] 标记旧文档中的历史内容，避免新成员把旧设计当成现状。
+- [ ] 在 `crates/app/src/actions.rs` 增加 `OpenMarkdown(OpenMarkdownTarget)`。
+- [ ] 在 `crates/ui/src/commands.rs` 增加 command，供 Dioxus UI 入口使用。
+- [ ] 桌面宿主通过 `crates/app` 启动/打开请求注入路径，不直接调用 UI command。
+- [ ] 在 `workspace_flow/open.rs` 增加 path-based open use case。
+- [ ] 统一文件树、Quick Open、Workspace Search、Recent File、系统双击的打开行为。
+- [ ] 打开流程先解析路径和 workspace，再根据 effective mode 选择 tab 或 window。
+- [ ] 非 Markdown 文件给出清晰错误，不改变当前 tab 或窗口。
 
-### 0.2 测试基线
+### 5.3 Tabs 模式
 
-- [x] 确认 `cargo test --workspace` 通过。
-- [x] 增加 `cargo check --workspace --all-features` 为固定检查命令。
-- [x] 增加 `cargo clippy --workspace --all-targets --all-features` 检查。
-- [x] 增加 `cargo fmt --check` 检查。
-- [x] 增加 `npm run build` 检查 editor bundle 是否可构建。
-- [x] 增加 bundle sync check，验证 `assets/editor.js`、`apps/desktop/assets/editor.js`、`apps/mobile/assets/editor.js` 一致。
+Tabs 模式适合一个窗口内管理多篇笔记，是默认工作方式。
 
-### 0.3 架构基线
+- [ ] 打开 `.md` 或 `.markdown` 时，在当前主窗口新增或激活 tab。
+- [ ] 同一窗口重复打开同一 note id，激活已有 tab，不重复创建。
+- [ ] 打开另一个 workspace 的文件前，先 flush dirty tabs 或给出保护提示。
+- [ ] 打开失败不清空已有 tab。
+- [ ] tabbar 表达 title、dirty、saving、failed 状态，不承担大工具栏职责。
+- [ ] recent files 记录系统双击和外部打开。
 
-- [x] 增加 workspace dependency check，禁止错误依赖方向。
-- [x] 增加文件行数报告，长期跟踪大文件。
-- [x] 把 `workspace_flow.rs`、`runtime.rs`、`editor/mod.rs` 标为拆分优先级最高的模块。
-- [x] 为所有新增模块建立 owner 注释或文档说明。
+### 5.4 MultiWindow 模式
 
-验收标准：
+MultiWindow 模式适合用户把多篇笔记摊开在多个窗口中写作。它由设置决定，重启后全局生效。
 
-- 所有基础检查可以一条命令运行。
-- 后续 PR 能明确说明属于哪个 Phase。
-- 新代码不再扩大当前大文件的职责。
+- [ ] 打开 `.md` 或 `.markdown` 时，为该笔记创建或聚焦独立文档窗口。
+- [ ] 每个文档窗口拥有独立 `WindowSession`、`tab_contents`、chrome state 和 editor host。
+- [ ] 多窗口模式下可以隐藏或弱化 tabbar，避免“窗口里再套 tab”的混乱体验。
+- [ ] 重复打开同一 note id 时，优先聚焦已有文档窗口，而不是创建重复窗口。
+- [ ] 新窗口复用 shared storage、settings metadata、recent files。
+- [ ] 原窗口关闭不销毁其他窗口的 editor host。
+- [ ] 同一文件被多个窗口编辑时，保存前检测 mtime/revision 冲突。
+- [ ] watcher 通知各窗口，但不覆盖 dirty 内容。
 
-## Phase 1：收敛应用层架构
+### 5.5 设置和重启生效
 
-目标：让 `crates/app` 从“共享 runtime 文件”进化成正式应用层。
+- [ ] Settings 增加 `Note open mode` 分段控件：`Tabs` / `Multi-window`。
+- [ ] 修改设置后只持久化，不迁移当前窗口结构。
+- [ ] 状态栏或设置页显示“Restart Papyro to apply this change”。
+- [ ] 启动时读取 `note_open_mode`，并注入 `ProcessRuntime` effective mode。
+- [ ] 为默认值、保存、重启后生效、当前运行不变补测试。
 
-### 1.1 拆分 app runtime
+### 5.6 系统集成
 
-- [x] 新建 `crates/app/src/state.rs`，集中创建 runtime state。
-- [x] 新建 `crates/app/src/actions.rs`，定义 `AppAction`。
-- [x] 新建 `crates/app/src/dispatcher.rs`，把 UI action 分发到 use case。
-- [x] 新建 `crates/app/src/effects.rs`，管理 watcher、autosave、background task。
-- [x] 新建 `crates/app/src/export.rs`，迁出 HTML export 逻辑。
-- [x] 保留 `runtime.rs` 为 composition root，不再承载具体业务分支。
-
-### 1.2 从 EventHandler 列表迁移到 action facade
-
-- [x] 保留 `AppCommands` 作为兼容层。
-- [x] 新增 `AppActions` 或 `AppDispatcher`，提供 `dispatch(AppAction)`。
-- [x] 将 `open_workspace`、`create_note`、`save_tab` 等命令映射为 action。
-- [x] 给 action 定义明确 payload 类型，避免到处传裸 `String`。
-- [x] 为 action dispatcher 增加单元测试。
-
-### 1.3 收敛 UI 可见状态
-
-- [x] 新建 `AppViewModel`，只暴露 UI 当前需要渲染的数据。
-- [x] 将 `file_state` 派生成 `WorkspaceViewModel`。
-- [x] 将 `editor_tabs` / `tab_contents` 派生成 `EditorViewModel`。
-- [x] 将 settings 派生成 `SettingsViewModel`。
-- [x] UI 优先读 view model，通过 action 修改状态。
-- [x] 保留 raw signal 兼容窗口，逐步迁移。
-
-### 1.4 拆分 workspace flow
-
-- [x] 将 `workspace_flow.rs` 拆为 `workspace/create.rs`、`workspace/open.rs`、`workspace/save.rs`、`workspace/rename.rs`、`workspace/delete.rs`。
-- [x] 将测试替身迁入 `tests/support` 或 `#[cfg(test)] mod support`。
-- [x] 把路径命名、选择目录、tree 查找等纯函数放入独立模块。
-- [x] 给每个 use case 补充失败路径测试。
-- [x] 明确“删除”是否直接删除还是进入回收站，当前阶段至少要有确认策略。
+- [ ] 用户在操作系统文件管理器中双击 `.md` / `.markdown` 且 Papyro 未运行时，由文件关联启动 Papyro 并把文件路径作为启动参数传入。
+- [ ] `apps/desktop` 解析启动参数中的 Markdown 路径，并提交 `OpenMarkdownTarget { path }`。
+- [ ] 支持已运行实例接收外部打开请求。第一阶段可先支持新进程参数，后续做单实例转发。
+- [ ] 规划 `.md` / `.markdown` 文件关联，不把完整打包发布提前塞进当前阶段。
+- [ ] 平台层提供必要文件打开事件抽象。
+- [ ] 系统双击只提交 `OpenMarkdownTarget { path }`，不指定 tab 或 window。
 
 验收标准：
 
-- `runtime.rs` 不再超过 200 行。
-- `workspace_flow` 单个文件不再超过 250 行。
-- UI 不再直接知道多数流程细节。
-- action dispatcher 有测试覆盖。
+- 设置页可以选择 `Tabs` 或 `Multi-window`，保存后明确提示重启生效。
+- Papyro 未运行时，系统双击 Markdown 文件可以启动 Papyro 并打开该文件。
+- 重启后，所有打开入口都遵守同一个 effective mode。
+- Tabs 模式下重复打开同一笔记只激活已有 tab。
+- MultiWindow 模式下重复打开同一笔记聚焦已有窗口。
+- 两个窗口编辑同一文件不会静默覆盖。
+- 所有打开入口共享同一套 use case 和错误处理。
 
-## Phase 2：重构编辑器模块
+## Phase 6：笔记工作流闭环
 
-目标：把编辑器从“大组件 + 大 JS 文件”重构为稳定内核。
+目标：让 Papyro 能承载真实长期笔记库。
 
-### 2.1 拆分 Dioxus 编辑器组件
+### 6.1 Workspace
 
-- [x] `components/editor/mod.rs` 只保留模块导出。
-- [x] 新建 `pane.rs`，负责编辑器整体布局。
-- [x] 新建 `tabbar.rs`，负责 tab 渲染和关闭交互。
-- [x] 新建 `toolbar.rs`，负责格式化按钮。
-- [x] 新建 `preview.rs`，负责 HTML preview。
-- [x] 新建 `host.rs`，负责单个 editor host 生命周期。
-- [x] 新建 `bridge.rs`，负责 Rust/JS 消息协议。
-- [x] autosave debounce 与 save request 已迁入 `crates/app/src/effects.rs`。
-- [x] 新建 `fallback.rs`，负责 runtime loading/error UI。
+- [x] 支持多个 workspace。
+- [x] 支持 recent workspace。
+- [x] 支持 workspace settings override。
+- [ ] 大 workspace 扫描分阶段加载，不阻塞首屏编辑。
+- [ ] watcher 事件合并，避免文件系统抖动触发 UI storm。
+- [ ] workspace reload 不关闭未保存 tab。
 
-### 2.2 固化 Rust/JS 编辑器协议
+### 6.2 文件操作
 
-- [x] 在 `crates/editor` 中定义 `EditorEvent` 和 `EditorCommand`，避免 UI 内部私有定义协议。
-- [x] 使用 `serde` schema 文档化 message 格式。
-- [x] 在 `docs/editor-protocol.md` 写清 command/event 列表。
-- [x] 给 Rust 侧序列化/反序列化增加测试。
-- [x] 给 JS 侧增加 lightweight test runner。
-- [x] 测试 `set_content` 不回声触发 content_changed。
-- [x] 测试 `apply_format` 对 selection、empty selection 的行为。
-- [x] 测试 tab recycle 不串内容。
+- [x] 创建、重命名、移动、删除已有基础。
+- [x] 删除进入 `.papyro-trash/` 并支持恢复。
+- [x] 移动/重命名时更新打开 tab 路径。
+- [ ] 保存采用临时文件 + atomic rename。
+- [ ] 外部删除已打开文件时，保留 tab 内容并提示另存或关闭。
+- [ ] 外部修改 clean tab 时可刷新，dirty tab 时提示冲突。
 
-### 2.3 改善 autosave 可靠性
+### 6.3 附件和图片
 
-- [x] 将 autosave 从 UI 组件中迁入 app effect 或 editor service。
-- [x] 每个 tab 使用 revision/version 防止旧任务覆盖新内容。
-- [x] 增加“保存中”“已保存”“保存失败”状态。
-- [x] 失败后保留 dirty，不误标 clean。
-- [x] app 退出、切换 workspace、关闭 tab 前触发 flush。
-- [x] 增加保存失败的单元测试。
+- [x] workspace `assets/` 作为默认附件目录。
+- [x] paste/drop 图片复制到附件目录。
+- [x] 插入相对 Markdown 图片链接。
+- [x] 移动/重命名笔记时重写相对图片引用。
+- [ ] 统一附件清理策略，避免误删仍被引用的文件。
+- [ ] 大图预览异步化，不阻塞 editor input。
 
-### 2.4 编辑器性能预算
+### 6.4 搜索、标签、收藏、回收站
 
-- [x] 记录打开文件、切换 tab、输入、预览渲染的耗时指标。
-- [x] 设定 100KB、1MB、5MB markdown 文件的性能基准。
-- [x] 大文件禁用昂贵实时特性，显示降级提示。
-- [x] 避免每次 render 克隆完整文档内容。
-- [x] 预览渲染使用 memo/resource，避免无关状态触发重渲染。
-
-验收标准：
-
-- `components/editor/mod.rs` 不再承载实现细节。
-- JS/Rust 协议有文档和测试。
-- autosave 失败不会丢数据。
-- 1MB 文档基础编辑可用。
-
-## Phase 3：实现 Typora-like 核心编辑体验
-
-目标：从“Markdown 编辑器 + 预览切换”升级为单栏所见即所得体验。
-
-### 3.1 设计编辑模式
-
-- [x] 定义三种模式：`Source`、`Hybrid`、`Preview`。
-- [x] 默认进入 `Hybrid`，保留 source mode 作为开发与高级用户模式。
-- [x] `Preview` 作为只读阅读模式，不作为主要写作模式。
-- [x] 将 `ViewMode` 从二值扩展为稳定 enum。
-- [x] 为模式切换增加状态持久化。
-
-### 3.2 Hybrid 渲染策略
-
-- [x] 基于 CodeMirror extension / decoration 实现非焦点区域渲染。
-- [x] 当前光标所在 block 显示原始 Markdown。
-- [x] 非焦点 heading 渲染为视觉标题。
-- [x] 非焦点 emphasis、strong、inline code 渲染为近似成品样式。
-- [x] 非焦点 link 显示文本，但保留可编辑入口。
-- [x] 非焦点 image 显示图片预览。
-- [x] 非焦点 task list 显示 checkbox。
-- [x] 保留纯文本 source 作为 fallback。
-
-### 3.3 Markdown block 能力
-
-- [x] 标题 H1-H6。
-- [x] 段落。
-- [x] 粗体、斜体、删除线。
-- [x] 行内代码。
-- [x] 代码块。
-- [x] 引用块。
-- [x] 有序/无序列表。
-- [x] 任务列表。
-- [x] 表格。
-- [x] 水平线。
-- [x] 链接。
-- [x] 图片。
-- [x] YAML front matter。
-
-### 3.4 高级内容
-
-- [x] KaTeX 行内公式。
-- [x] KaTeX 块级公式。
-- [ ] Mermaid 图表。（依赖策略暂缓：`mermaid@11.14.0` 当前依赖链要求 Node 22，且在当前 Node 20 工具链下引入生产审计告警。先进入 Phase 10 安全/依赖治理，确认运行时隔离、版本基线和审计策略后再实现。）
-- [x] 脚注。
-- [x] 目录/大纲。
-- [x] 文档内搜索替换。
-
-### 3.5 输入体验
-
-- [ ] 中文输入法组合输入不丢字、不重复。（已增加 Markdown 输入命令在 IME composition 期间让路的自动化回归测试；仍需在 Windows/macOS 中文输入法中手工验证候选确认、换行和快捷输入不会丢字或重复。）
-- [x] 列表回车自动延续。
-- [x] 空列表项回车退出列表。
-- [x] Tab / Shift+Tab 调整列表缩进。
-- [x] 粘贴 URL 自动生成链接可选。
-- [x] 粘贴图片自动保存到 assets。
-- [x] 拖拽图片自动复制到 assets。
-- [x] Markdown 快捷输入自动补全，例如 `# `、`> `、```。
-
-### 3.6 快捷键
-
-- [x] `Ctrl/Cmd+B` 粗体。
-- [x] `Ctrl/Cmd+I` 斜体。
-- [x] `Ctrl/Cmd+K` 链接。
-- [x] `Ctrl/Cmd+Shift+I` 图片。
-- [x] `Ctrl/Cmd+E` 行内代码。
-- [x] `Ctrl/Cmd+Alt+C` 代码块。
-- [x] `Ctrl/Cmd+S` 保存。
-- [x] `Ctrl/Cmd+F` 文内查找。
-- [x] `Ctrl/Cmd+H` 替换。
-- [x] `Ctrl/Cmd+P` 快速打开。
-- [x] `Ctrl/Cmd+Shift+P` 命令面板。
+- [x] workspace search 已有扫描版。
+- [x] Quick Open 已可过滤文件。
+- [x] 标签 CRUD、front matter 保持一致已有基础。
+- [x] 收藏和回收站已有基础。
+- [ ] 搜索 UI 重做，结果层级更清晰。
+- [ ] 大 workspace 引入增量索引或 FTS。
+- [ ] watcher 驱动索引更新。
+- [ ] 标签入口降噪，不抢占写作主路径。
 
 验收标准：
 
-- 用户无需切换预览即可获得接近 Typora 的写作体验。
-- Hybrid mode 下编辑、撤销、选择、中文输入稳定。
-- 所有 Markdown block 都有 source fallback。
+- 用户可以用 Papyro 管理真实笔记库，而不是只编辑单个 demo 文件。
+- 文件移动、删除、恢复、附件引用不会破坏数据。
+- 搜索 1000 篇笔记仍可用，且不会拖慢编辑器。
 
-## Phase 4：文件、资源与知识管理
+## Phase 7：可靠性、安全和数据保护
 
-目标：让软件从“能编辑文件”变成“能管理知识库”。
+目标：让 Papyro 适合长期存放重要笔记。
 
-### 4.1 Workspace 行为
+### 7.1 保存与冲突
 
-- [x] 支持多个 workspace：SQLite 记录多个 workspace，运行态保留最近 workspace 集合。
-- [x] 支持最近 workspace 列表：启动和打开 workspace 后会加载 recent workspace view model。
-- [x] 支持 workspace 快速切换：Command Palette 可直接打开非当前最近 workspace。
-- [x] 支持 workspace 设置覆盖全局设置：设置弹窗可选择保存到全局或当前 workspace，并在切换 workspace / 打开最近文件时应用有效设置。
-- [x] 支持打开最近文件时自动恢复 workspace：Command Palette 的 recent file 动作会先恢复所属 workspace。
-- [x] 外部移动/删除文件时给出清晰提示：watcher 命中已打开 tab 时状态栏提示并保留内容。
+- [ ] 保存前记录文件 mtime 或 content hash。
+- [ ] 写入失败保留内存内容和 dirty 状态。
+- [ ] 保存冲突提供 reload、overwrite、save as 的策略。
+- [ ] autosave 不覆盖外部修改。
+- [ ] 退出和关闭窗口前 flush dirty tabs 或提示。
 
-### 4.2 文件树 UX
+### 7.2 崩溃恢复
 
-- [x] 文件树键盘导航：文件树支持方向键移动、展开/折叠目录，并可用 Enter / Space 打开选中的笔记。
-- [x] 文件树右键菜单：右键文件或目录可打开上下文菜单，并通过现有 app commands 执行打开、展开/折叠、新建、Reveal、删除等操作。
-- [x] 新建文件默认在选中文件夹内：创建流程使用选中文件夹；选中笔记时使用其父目录。
-- [x] 重命名使用 inline input：文件树行内输入支持 F2 和右键菜单触发，确认后复用现有 rename command。
-- [x] 删除前确认：删除同一选中项需要连续触发两次，第二次才执行删除。
-- [x] 支持拖拽移动文件：文件树行可拖拽，目录行可作为 drop target，并通过 move command 保持树刷新、选中项和打开 tab 路径同步。
-- [x] 支持展开状态持久化：目录展开/折叠通过 app command 持久化到 workspace 级树状态，并在重新打开 workspace 时恢复。
-- [x] 支持按名称、更新时间、创建时间排序：桌面和移动文件树提供分段排序控件，排序基于扫描得到的文件节点时间戳。
+- [ ] dirty 内容定期写入 recovery cache。
+- [ ] 启动时检测未恢复草稿。
+- [ ] 提供恢复、比较、丢弃选项。
+- [ ] recovery cache 有清理策略。
 
-### 4.3 图片与附件
-
-- [x] 每个 workspace 约定附件目录：core 暴露 `workspace_assets_dir`，当前约定为 workspace 根目录下的 `assets/`。
-- [x] 插入图片时复制到附件目录：编辑器 paste/drop 图片事件写入 workspace `assets/` 并插入 Markdown 图片引用。
-- [x] 文件名冲突自动重命名：附件写入使用 create-new 语义，遇到同名文件时自动追加数字后缀。
-- [x] Markdown 引用使用相对路径：图片保存仍使用 workspace `assets/`，插入到笔记的链接按当前笔记目录生成相对路径。
-- [x] 删除笔记时提示是否清理孤儿附件：删除确认会预览孤儿附件数量，确认后删除笔记/目录并清理不再被其他笔记引用的 workspace `assets/` 文件。
-- [x] 移动/重命名笔记时保持相对引用可用：storage 重写受影响 Markdown 图片引用，打开的 clean/dirty tab 同步刷新，避免旧链接覆盖。
-- [x] 支持外链图片预览：hybrid editor 解析外链图片 URL，并通过图片 preview widget 直接渲染远程 `src`。
-
-### 4.4 搜索
-
-- [x] Phase 4 初期可继续使用 SQLite/简单扫描：storage 暴露扫描版 workspace search，返回标题、路径、正文匹配与高亮范围。
-- [ ] 内容量上来后引入 `tantivy`。
-- [ ] 建立增量索引。
-- [ ] watcher 触发索引更新。
-- [x] 支持标题、正文、路径搜索：搜索后端按 Markdown 文件扫描，结果包含 title/path/body 命中字段和正文行号。
-- [x] 支持标签过滤（底层查询）：`WorkspaceSearchQuery` 支持 tags 过滤，扫描搜索会按 front matter 标签筛选结果。
-- [x] 标签过滤 UI 入口：workspace search 输入支持 `#tag` token，剩余 token 继续作为标题、路径、正文搜索文本。
-- [x] 搜索结果高亮数据：搜索结果结构携带每个 snippet 的 highlight range，供 UI 渲染高亮片段。
-- [x] 搜索结果高亮 UI：桌面端 `Ctrl/Cmd+Shift+F` 打开 workspace search modal，结果按标题、路径、正文 snippet 渲染高亮并可直接打开笔记。
-- [x] 支持快速打开文件：`Ctrl/Cmd+P` Quick Open 已收敛为可过滤文件入口，并复用 file tree node 打开笔记。
-
-### 4.5 标签、收藏和回收站
-
-- [x] 标签 CRUD（底层）：storage 支持列出、创建、重命名和删除标签，并在重命名/删除时维护 note-tag 关联。
-- [x] 标签颜色（底层）：storage 支持设置 `#RRGGBB` 标签颜色，并在 tag metadata 中持久化。
-- [x] 标签管理 UI 入口：Settings 支持创建、重命名、改色和删除标签。
-- [x] 标签变更同步 Markdown front matter：重命名/删除标签时更新已关联笔记源文件。
-- [x] 从 front matter 解析标签：storage 解析 Markdown YAML front matter 中的 `tags`，写入 NoteMeta 标签列表。
-- [x] 同步标签元数据到 SQLite：NoteMeta upsert 时刷新 `tags` / `note_tags`，读取笔记元数据时回填标签列表。
-- [x] 收藏文件：SQLite 保留 favorite flag，Command Palette 可对选中的 note 执行 Favorite / Unfavorite。
-- [x] 回收站软删除：删除操作移动到 workspace `.papyro-trash/` 并标记 metadata trashed；附件清理延后到清空回收站。
-- [x] 恢复删除文件（底层）：storage 可列出 trashed notes，并从 `.papyro-trash/` 恢复文件；原路径被占用时使用编号文件名并同步 note id。
-- [x] 恢复删除文件 UI 入口：Command Palette 列出 trashed notes，可选择单条删除笔记并恢复到文件树。
-- [x] 清空回收站：storage 永久删除 `.papyro-trash/` 与 trashed metadata，Command Palette 提供二次确认入口。
-
-验收标准：
-
-- 用户可以长期维护一个真实笔记库。
-- 文件变动和附件处理不破坏数据。
-- 搜索在 1000 篇笔记下仍然可用。
-
-## Phase 5：UI 与 UX 系统化
-
-目标：形成简约、耐用、可复用的跨端界面系统。注意：组件 primitive 已经基本完成，但当前产品体验仍不达标。Phase 5 后续优先级应从“组件齐全”转为“写作主界面高级、稳定、低干扰”。
-
-### 5.0 性能与体验重置
-
-这一步是当前最高优先级。没有完成前，不推进 Phase 6 之后的新能力。
-
-#### 5.0.1 性能基线
-
-- [x] 为模式切换、关闭 Tab、切换 Tab、折叠侧栏、拖拽侧栏、打开设置、打开命令面板建立耗时日志。
-- [x] 记录 Dioxus render prep、CodeMirror command、preview render、outline extract 的耗时和触发原因。
-- [~] 建立可重复的手工性能脚本：空文档、10KB、100KB、1MB 文档各跑一遍。`docs/performance-budget.md` 已补充手工场景，后续需要固化成脚本。
-- [x] 定义体验预算：普通 chrome 操作目标低于 50ms，模式切换目标低于 100ms，输入延迟不能被 preview/outline 阻塞。
-- [x] `scripts/check.sh` 增加性能日志开关说明，避免性能回归只能靠体感。
-
-#### 5.0.2 渲染边界收敛
-
-- [x] 拆分 `AppViewModel`：从一个全量 memo 改为 workspace、chrome、editor、document 分别派生。
-- [x] 运行时不再提供大 view model 兼容层；UI 组件改读小 view model / focused signals。
-- [x] 让 `DesktopLayout` 只订阅 chrome 必要状态，不直接导致 `EditorPane` 重跑文档派生逻辑。
-- [x] 让 `Sidebar`、`Header`、`StatusBar` 不读取大 view model。
-- [x] 让 `EditorPane` 只接收 active editor 所需状态，避免侧栏/设置变更触发 host pool 大面积重算。
-- [x] 为 view model 派生函数补测试，确保无关状态变化不会改变对应 view model。
-
-#### 5.0.3 文档派生数据缓存
-
-- [x] 为 tab content 引入 `content_revision` 或等价版本号。
-- [x] Preview HTML、outline、stats 以 `tab_id + revision` 缓存。
-- [x] Preview 和 outline 只为 active tab 计算；隐藏状态下不计算。
-- [x] 大文档 preview、outline、syntax highlight 分级降级，降级策略写入测试。
-- [x] 将同步重计算从 render path 中移出；Preview 与 Outline 先读缓存/占位，再由 effect 更新派生缓存与局部状态，避免渲染阶段执行 Markdown HTML 渲染或 outline 提取。
-
-#### 5.0.4 编辑器宿主生命周期重设计
-
-- [x] 评估当前多 host / retired host 策略对关闭 Tab、模式切换、布局刷新的影响。
-- [x] 决定 active-only、active + warm spare、或 bounded host pool 策略：保留 open tab host，retired host 仅作为关闭交互的短暂 bounded pool。
-- [x] `SetViewMode` 与 `SetPreferences` 只发送给需要变化的 host，并做重复命令去重。
-- [x] `RefreshLayout` 只在尺寸真实变化、host 可见且 runtime ready 时发送；JS `ResizeObserver` 通过协议上报真实布局尺寸，Rust 侧再次按 visible/ready/size 去重。
-- [x] Tab close 的 heavy cleanup 延迟到 idle 或批处理；Rust 侧批量延迟发送 `Destroy`，JS 侧按 host `instance_id` 忽略 stale cleanup，避免误删快速重开的 host。
-- [x] 为 host create/destroy/recycle 增加 JS 和 Rust 两侧 contract test；JS 覆盖 recycle 与 stale destroy，Rust 覆盖 host instance cleanup contract。
-
-#### 5.0.5 UI/UX 重新定标
-
-- [x] 定义新的桌面 shell 第一切片：主编辑区去卡片化，移除暖纸背景装饰和编辑/预览外框阴影，让写作画布成为第一主角。
-- [x] 默认隐藏 outline，改为编辑器顶部轻量按钮和命令面板按需展开；默认不挂载 `OutlinePane`，避免写作路径常驻占用空间和触发 outline 派生计算。
-- [x] 格式工具栏从常驻 tabbar 移出，改为按需打开的轻量 Format 浮层；默认写作路径不再常驻展示格式按钮。
-- [x] 重新设计 Source / Hybrid / Preview 三种模式的视觉关系，让它们共享同一套文档排版尺度：CodeMirror 与 Preview 采用一致的 scroll/content 结构并共用 document measure、padding 与 gutter token；fallback editor 共用文档 padding。
-- [x] 重写编辑器和 preview typography：标题、段落、引用、代码、表格、列表、图片接入共享 markdown typography token，让 Hybrid decoration 与 Preview 像同一套出版系统。
-- [x] 移除主界面中过度 card 化、过重阴影、暖纸装饰和非必要背景效果；主编辑区、侧栏、modal 与设置页已完成第一轮收敛。
-
-### 5.1 视觉系统
-
-- [ ] 重新定义视觉方向：克制、专业、面向长时间写作，不走装饰性纸张/卡片风。
-- [ ] 整理 CSS token：颜色、字体、字号、间距、圆角、阴影、边框。
-- [ ] 减少硬编码颜色，消除一眼看上去偏“主题皮肤”的强风格依赖。
-- [ ] 保持亮色、暗色、系统主题一致，暗色模式优先保证阅读和光标清晰。
-- [x] 建立编辑器排版 token，并让 CodeMirror、Hybrid decoration、Preview 共用。
-- [ ] 建立 markdown preview typography，使 Preview mode 接近可发布文档。
-- [ ] 检查移动端字体、按钮和输入框尺寸，但移动端不优先于桌面写作体验重置。
-
-### 5.2 交互原则
-
-- [x] 常用写作动作优先快捷键：桌面端支持保存、快速打开、命令面板、workspace search 和侧栏切换快捷键。
-- [ ] 次级动作进入菜单或命令面板。
-- [ ] 不用大量说明性文字占据界面。
-- [ ] 错误提示简短但可恢复。
-- [ ] 空状态提供下一步动作。
-- [ ] 删除、覆盖、关闭未保存内容必须有保护。
-
-### 5.3 组件整理
-
-- [x] Button：Settings 的主要普通按钮已迁移到共享 primitive。
-- [x] IconButton：header 图标按钮已收敛到共享 primitive。
-- [x] Tooltip：IconButton 已使用共享 Tooltip primitive，支持 hover / focus 提示。
-- [x] Modal：Quick Open、Workspace Search 和 Command Palette 已迁移到共享 Modal primitive。
-- [x] Menu：文件树右键菜单已迁移到共享 Menu / MenuItem / MenuSeparator primitives。
-- [x] Dropdown：设置页字体选择器已迁移到共享 primitive。
-- [x] TextInput：Quick Open、Workspace Search 和 Command Palette 输入框已迁移到共享 primitive。
-- [x] SegmentedControl：编辑器视图切换、设置保存目标和主题选择已迁移到共享 primitive。
-- [x] Toggle：设置页 Paste URL as link 开关已迁移到共享 primitive。
-- [x] Slider：设置页字体大小、行高和自动保存延迟已迁移到共享 primitive。
-- [x] EmptyState：编辑器空页面已迁移到共享 primitive。
-- [x] Toast/Status：状态栏消息、统计信息和保存状态已迁移到共享 Status primitives。
-
-### 5.4 桌面体验
-
-- [x] 侧栏宽度可拖拽：桌面侧栏支持拖拽调整宽度，并在松手时持久化到现有设置。
-- [x] 侧栏折叠状态持久化：header / 快捷键切换会写回 AppSettings。
-- [ ] 支持无标题栏/原生标题栏策略评估。
-- [x] 命令面板：`Ctrl/Cmd+Shift+P` 打开 Command Palette。
-- [x] 快速打开：`Ctrl/Cmd+P` 打开 Quick Open。
-- [x] 最近文件：Command Palette 暴露 recent files 并支持恢复对应 workspace。
-- [x] 大纲侧栏：编辑器从当前 Markdown 提取 headings 并渲染 outline。
-- [ ] 全屏/专注模式。
-
-### 5.5 移动体验
-
-- [ ] 单栏优先。
-- [ ] 文件浏览改为抽屉或独立页面。
-- [ ] 工具栏触屏优化。
-- [ ] 长按文本弹出格式菜单。
-- [ ] 底部操作栏。
-- [ ] 移动端文件选择策略。
-- [ ] 移动端图片插入策略。
-
-验收标准：
-
-- 桌面端界面接近专业写作工具，而不是 demo。
-- 移动端不只是桌面布局压缩版。
-- UI 组件可复用，不再每个页面手写按钮和表单。
-
-## Phase 6：导出、导入与发布能力
-
-目标：补齐真实写作软件的输入输出闭环。
-
-### 6.1 导出 HTML
-
-- [x] 基础 HTML 导出。
-- [ ] 迁出 inline CSS 到 export template。
-- [ ] 支持主题选择。
-- [ ] 支持图片资源复制。
-- [ ] 支持代码高亮主题选择。
-
-- [ ] 支持导出前预览。
-
-### 6.2 导出 PDF
-
-- [ ] 桌面端通过系统打印或 webview print。
-- [ ] 支持页边距设置。
-- [ ] 支持纸张大小。
-- [ ] 支持页眉页脚。
-- [ ] 支持代码块分页策略。
-
-### 6.3 导出 DOCX
-
-- [ ] 评估 `docx-rs`。
-- [ ] 定义 Markdown 到 DOCX 样式映射。
-- [ ] 支持标题、列表、表格、图片。
-- [ ] 增加导出测试样例。
-
-### 6.4 导入
-
-- [ ] 导入 Markdown 文件夹。
-- [ ] 导入单个 Markdown 文件。
-- [ ] 导入图片资源。
-- [ ] 导入时处理文件名冲突。
-- [ ] 后续评估 HTML/DOCX 导入。
-
-验收标准：
-
-- 用户可以从 Papyro 产出可分享文档。
-- 导出不会破坏图片、代码块和表格。
-- 导出逻辑不留在 runtime 文件里。
-
-## Phase 7：安全、可靠性与数据保护
-
-目标：让 Papyro 适合承载长期笔记。
-
-### 7.1 Markdown HTML 安全
+### 7.3 Markdown 渲染安全
 
 - [ ] 明确是否支持原始 HTML。
-- [ ] 默认禁用或清理 `<script>`、事件属性、危险 URL。
-- [ ] 允许安全标签白名单。
-- [ ] 外链点击使用平台 open，而不是在 webview 中任意跳转。
-- [ ] 给渲染器补充安全测试。
+- [ ] 默认清理 `<script>`、事件属性和危险 URL。
+- [ ] 外链点击走 platform open，而不是在 webview 中任意跳转。
+- [ ] preview sanitizer 有测试覆盖。
 
-### 7.2 文件安全
+### 7.4 数据库和迁移
 
-- [ ] 保存采用临时文件 + rename，降低写坏风险。
-- [ ] 写入失败保留内存内容和 dirty 状态。
-- [ ] 外部修改时提示冲突。
-- [ ] 删除默认进入回收站或提供确认。
-- [ ] 批量操作支持撤销或确认。
-
-### 7.3 数据库迁移
-
-- [ ] 每个 schema 变更必须有 migration。
+- [ ] schema 变更必须有 migration。
 - [ ] migration 测试覆盖升级路径。
-- [ ] 启动失败时显示可理解错误。
-- [ ] 备份 metadata 数据库。
-
-### 7.4 崩溃恢复
-
-- [ ] 编辑内容定期写入 recovery cache。
-- [ ] 启动时检测未恢复草稿。
-- [ ] 提供恢复/丢弃选项。
-- [ ] 为 recovery cache 设置清理策略。
+- [ ] 启动失败显示可理解错误。
+- [ ] metadata 数据库支持备份和恢复策略。
 
 验收标准：
 
-- 异常退出不应丢失最近编辑。
+- 异常退出不丢失最近编辑。
 - 外部文件变化不会静默覆盖用户内容。
-- Markdown 渲染不会引入明显安全风险。
+- Markdown preview 不引入明显安全风险。
 
-## Phase 8：测试与质量体系
+## Phase 8：质量体系
 
-目标：让质量靠自动化保证，而不是靠记忆。
+目标：让质量靠系统保证，而不是靠记忆。
 
 ### 8.1 Rust 测试
 
-- [ ] `core`：纯状态与领域规则测试。
-- [ ] `app`：action/use case 测试。
-- [ ] `storage`：文件系统和 SQLite 集成测试。
-- [ ] `editor`：Markdown stats/render/protocol 测试。
-- [ ] `platform`：adapter fallback 测试。
+- [ ] `core`：纯状态、tab、settings、workspace 规则。
+- [ ] `app`：action、dispatcher、open/save/close use case。
+- [ ] `storage`：文件系统、SQLite、watcher、migration。
+- [ ] `editor`：Markdown stats、render、protocol。
+- [ ] `platform`：adapter fallback 和错误路径。
 
 ### 8.2 JS 测试
 
 - [ ] editor runtime 初始化。
-- [ ] format command。
-- [ ] message handling。
-- [ ] recycle editor。
-- [ ] save request。
+- [ ] Rust message handling。
 - [ ] content change suppress。
+- [ ] stale destroy。
+- [ ] format command。
+- [ ] IME composition safety。
+- [ ] decoration fallback。
 
-### 8.3 UI 测试
+### 8.3 UI 和视觉测试
 
-- [ ] 使用 browser/in-app browser 或 Playwright 做 smoke test。
-- [ ] 打开 workspace。
-- [ ] 创建文件。
-- [ ] 输入内容。
-- [ ] 自动保存。
-- [ ] 切换主题。
-- [ ] 切换编辑模式。
-- [ ] 打开设置。
+- [ ] UI smoke：打开 workspace、打开文件、输入、保存、关闭 tab。
+- [ ] UI smoke：切换 Source/Hybrid/Preview。
+- [ ] UI smoke：打开 Command Palette、Quick Open、Settings、Workspace Search。
+- [ ] UI smoke：侧栏折叠、resize、主题切换。
+- [ ] 截图检查主界面是否保持文档优先。
+- [ ] 检查文字溢出、遮挡、错位。
 
 ### 8.4 性能测试
 
-- [ ] 启动耗时。
-- [ ] 首次打开文件耗时。
-- [ ] 切换 tab 耗时。
-- [ ] 1MB 文档输入延迟。
-- [ ] 搜索 1000 文件耗时。
-- [ ] workspace reload 耗时。
+- [ ] 100KB、1MB、5MB 文件打开。
+- [ ] tab switch、tab close、mode switch。
+- [ ] 侧栏折叠和 modal open。
+- [ ] workspace search 1000 文件。
+- [ ] 输入延迟和 preview 降级。
 
-### 8.5 CI/CD
+### 8.5 CI 和门禁
 
-- [ ] GitHub Actions：Rust check/test/fmt/clippy。
-- [ ] GitHub Actions：JS install/build/test。
-- [ ] GitHub Actions：bundle sync check。
-- [ ] GitHub Actions：dependency direction check。
-- [ ] GitHub Actions：desktop packaging smoke。
+- [ ] `cargo fmt --check`
+- [ ] `cargo check --workspace --all-features`
+- [ ] `cargo clippy --workspace --all-targets --all-features -- -D warnings`
+- [ ] `cargo test --workspace`
+- [ ] JS build/test
+- [ ] bundle consistency check
+- [ ] dependency direction check
+- [ ] performance smoke 或手工性能 checklist
 
 验收标准：
 
-- 合并前能自动发现大多数回归。
-- 编辑器、存储、导出都有独立测试。
-- 性能退化有可观察指标。
+- 合并前能发现大多数架构、编辑器、UI、性能回归。
+- 性能和视觉问题不能只靠主观记忆。
+- 每个阶段都有可执行验收，而不是“感觉好了”。
 
-## Phase 9：跨端发布
+## Phase 9：本地应用平台体验
 
-目标：从可运行进入可分发。
+目标：在核心本地笔记体验稳定后，让 Papyro 更像一个完整桌面应用。这个阶段只关注本地平台体验和系统集成。
 
-### 9.1 Desktop 打包
+### 9.1 Desktop 分发
 
-- [ ] Windows `.msi` 或 installer。
-- [ ] macOS `.app` / `.dmg`。
-- [ ] Linux AppImage 或 deb/rpm 评估。
-- [ ] 应用图标。
-- [ ] 版本号展示。
-- [ ] 自动更新策略评估。
+- [ ] Windows installer / MSI 评估。
+- [ ] macOS `.app` / `.dmg` 评估。
+- [ ] Linux AppImage / deb / rpm 评估。
+- [ ] 文件关联安装策略。
+- [ ] 自动更新策略。
+- [ ] 崩溃日志和用户可理解错误报告。
 
-### 9.2 Desktop 平台能力
+### 9.2 桌面平台能力
 
-- [ ] 原生文件选择。
-- [ ] Reveal in explorer/finder。
-- [ ] 系统主题。
-- [ ] 系统剪贴板。
-- [ ] 打印。
-- [ ] 外链打开。
+- [ ] 系统双击 `.md` / `.markdown` 文件时可靠启动 Papyro。
+- [ ] 已运行实例接收外部文件打开请求。
+- [ ] Reveal in explorer / finder。
+- [ ] 使用系统默认方式打开外链。
+- [ ] 系统主题跟随和窗口尺寸恢复。
+- [ ] 多窗口模式下窗口标题、任务栏显示和关闭行为清晰。
 
-### 9.3 Mobile 可用性
+### 9.3 Mobile 本地体验
 
-- [ ] iOS 构建链路。
-- [ ] Android 构建链路。
-- [ ] 移动端存储目录策略。
-- [ ] 移动端文件导入/导出。
+- [ ] 移动端单栏写作优先。
+- [ ] 文件浏览改为抽屉或独立页面。
+- [ ] 触屏 toolbar 和 selection 菜单。
+- [ ] 移动端文件选择和图片插入策略。
 - [ ] 移动端键盘遮挡处理。
-- [ ] 移动端图片选择。
 
 验收标准：
 
-- 非开发者可以安装桌面版。
-- 移动端有独立交互设计，不复用桌面思维。
-
-## Phase 10：长期能力
-
-这些能力不应在架构稳定前提前开工。
-
-### 10.1 同步
-
-- [ ] WebDAV。
-- [ ] iCloud Drive。
-- [ ] Google Drive。
-- [ ] 冲突解决 UI。
-- [ ] 同步状态可视化。
-
-### 10.2 插件与主题
-
-- [ ] 插件 API 边界。
-- [ ] WASM 或脚本方案评估。
-- [ ] 主题包格式。
-- [ ] 用户自定义 CSS。
-- [ ] 插件安全模型。
-
-### 10.3 协作
-
-- [ ] CRDT 方案评估。
-- [ ] 本地优先协作模型。
-- [ ] 只读分享。
-- [ ] 版本历史。
+- 分发能力不反向污染核心架构。
+- 文件关联、系统打开和多窗口模式都服务本地笔记体验。
+- 移动端不只是桌面界面的压缩版。
 
 ## 当前优先级排序
 
-近期不要继续做高级功能。当前推荐顺序改为：
+当前推荐顺序：
 
-1. Phase 5.0：性能与体验重置。
-2. Phase 5.1：视觉系统重做，建立新的写作界面基调。
-3. Phase 5.4：桌面写作体验重做，先隐藏/降级低频 chrome。
-4. Phase 3.2 / 3.3 回补：重新设计 Hybrid decoration 与 Preview 排版一致性。
-5. Phase 8.3 / 8.4：补 UI smoke test 和性能预算测试。
-6. Phase 6：导出、导入等后续能力。
-7. Phase 9 / 10：发布、同步、插件、协作等长期能力。
+1. Phase 1：顶层架构重设，先解决状态边界和会话模型。
+2. Phase 2：性能治理，让卡顿可测、可定位、可回归。
+3. Phase 3：UI/UX 重新设计，重做桌面 shell 和设计系统。
+4. Phase 4：Hybrid Editor 重做，追 Typora 式单栏体验。
+5. Phase 5：Markdown 文件打开、tab 模式和多窗口模式。
+6. Phase 6：笔记工作流闭环，强化 workspace、文件、搜索、附件。
+7. Phase 7/8：可靠性、安全和质量体系。
+8. Phase 9：本地应用平台体验。
 
-原因很简单：如果模式切换、关 Tab、折叠侧栏都会卡，继续做导出、移动端或发布只会把问题带到更大的表面上。现在必须先让核心写作循环变快、变安静、变漂亮，再继续扩展能力。
-
-当前停止条件：
-
-- 不新增首屏常驻功能入口，除非它直接服务写作。
-- 不新增会让 `EditorPane`、`EditorHost`、`PreviewPane` 或 `OutlinePane` 在无关 chrome 操作中重渲染的状态依赖。
-- 不新增 Hybrid decoration，除非有输入稳定性和性能验证。
-- 不把“组件 primitive 已完成”等同于“UI 体验完成”。
+核心原因：如果侧栏折叠、关闭 tab、模式切换、打开 modal 都会卡，继续做高级能力只会把问题扩散到更大表面。现在必须先把架构、性能、UI/UX 和本地笔记打开体验打牢。
 
 ## Issue 拆分模板
-
-后续每个任务建议按这个模板拆：
 
 ```markdown
 ## 背景
 
-说明这个任务属于哪个 Phase，解决哪个问题。
+说明任务属于哪个 Phase，解决哪个具体体验或架构问题。
+
+## 当前问题
+
+- 用户可见问题
+- 代码结构问题
+- 性能或稳定性风险
 
 ## 范围
 
-- 改哪些文件或模块
-- 不改哪些内容
+- 改哪些模块
+- 不改哪些模块
+- 不顺手做哪些事
 
 ## 实现要点
 
-- 关键设计
-- 状态流向
+- 状态归属
+- 数据流向
 - 错误处理
-- 测试策略
+- 性能观测点
+- UI/UX 验收方式
 
 ## 验收标准
 
 - 功能验收
-- 测试验收
+- 性能验收
 - 架构验收
+- 测试验收
 ```
 
 ## PR 审查清单
 
 每个 PR 都要回答：
 
-- 是否扩大了错误依赖方向。
-- 是否让 UI 直接承担业务流程。
-- 是否引入了旧 Dioxus API。
-- 是否把 JS runtime 变成了业务真相来源。
-- 是否让 chrome 状态变化触发了编辑器 host、preview 或 outline 的无关重算。
-- 是否为模式切换、Tab 操作、侧栏操作或 preview/outline 计算补充了性能观察点。
-- 是否保持主写作区优先，避免把低频功能放回首屏。
-- 是否让 Source、Hybrid、Preview 的排版尺度继续分裂。
-- 是否有清晰错误处理。
-- 是否更新了相关测试。
-- 是否更新了相关文档。
-- 是否让大文件继续变大。
+- 是否直接改善当前主线：架构、性能、UI/UX、Hybrid、笔记打开或可靠性？
+- 是否扩大了错误依赖方向？
+- 是否让 UI 直接承担 storage、platform 或业务 use case？
+- 是否让 JS runtime 成为业务真相来源？
+- 是否让 chrome 状态变化触发 editor host、preview 或 outline 的无关重算？
+- 是否为新增交互补充性能 trace？
+- 是否保持主写作区优先？
+- 是否让 Source、Hybrid、Preview 的排版尺度继续分裂？
+- 是否保护了 dirty 内容和保存失败状态？
+- 是否更新了相关 Rust/JS/UI/性能测试？
+- 是否更新了相关文档？
 
 ## 完成定义
 
 一个阶段只有同时满足这些条件才算完成：
 
-- 功能能用。
-- 代码边界清楚。
-- 测试覆盖关键路径。
-- 文档同步。
+- 用户路径可用，失败状态可恢复。
+- 代码边界符合当前目标架构。
+- 性能预算没有退化。
+- UI 行为符合专业写作工具的体验目标。
+- 关键路径有测试或明确手工验收脚本。
+- 文档更新。
 - 没有留下新的跨层快捷方式。
-- 失败状态可恢复。
-- UI 行为符合简约写作工具的体验目标。
-- 核心写作循环不卡顿：输入、模式切换、Tab 切换、关闭 Tab、侧栏折叠不应出现明显阻塞。
 - 主界面第一眼是文档，不是工具集合。
