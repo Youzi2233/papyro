@@ -38,7 +38,6 @@ pub(crate) enum CommandPaletteActionKind {
     OpenRecentFile(RecentFileTarget),
     RefreshWorkspace,
     SaveActiveNote,
-    ExportHtml,
     ToggleSidebar,
     ToggleOutline,
     ToggleTheme,
@@ -196,7 +195,6 @@ fn execute_command_action(
         CommandPaletteActionKind::OpenRecentFile(target) => commands.open_recent_file.call(target),
         CommandPaletteActionKind::RefreshWorkspace => commands.refresh_workspace.call(()),
         CommandPaletteActionKind::SaveActiveNote => commands.save_active_note.call(()),
-        CommandPaletteActionKind::ExportHtml => commands.export_html.call(()),
         CommandPaletteActionKind::ToggleSidebar => {
             let started_at = perf_timer();
             ui_state.write().toggle_sidebar();
@@ -363,12 +361,6 @@ pub(crate) fn command_palette_actions(
             "FILE",
             CommandPaletteActionKind::SaveActiveNote,
         ));
-        actions.push(action(
-            "Export HTML",
-            "Export the active note",
-            "FILE",
-            CommandPaletteActionKind::ExportHtml,
-        ));
     }
 
     if let Some(name) = input.selected_note_name {
@@ -485,7 +477,6 @@ mod tests {
         assert!(titles.contains(&"Switch workspace"));
         assert!(titles.contains(&"Refresh workspace"));
         assert!(titles.contains(&"Save active note"));
-        assert!(titles.contains(&"Export HTML"));
         assert!(titles.contains(&"Show outline"));
         assert!(titles.contains(&"Favorite selected note"));
         assert!(titles.contains(&"Unfavorite selected note"));
@@ -509,7 +500,6 @@ mod tests {
         assert!(titles.contains(&"Open workspace"));
         assert!(!titles.contains(&"Refresh workspace"));
         assert!(!titles.contains(&"Save active note"));
-        assert!(!titles.contains(&"Export HTML"));
     }
 
     #[test]
