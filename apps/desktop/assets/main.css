@@ -50,6 +50,13 @@
     --mn-active-line-gutter: rgba(47, 111, 108, 0.09);
     --mn-selection:          rgba(47, 111, 108, 0.18);
 
+    /* Document rhythm shared by Source, Hybrid, and Preview */
+    --mn-document-measure:      860px;
+    --mn-document-pad-x:        clamp(24px, 6vw, 84px);
+    --mn-document-pad-top:      24px;
+    --mn-document-pad-bottom:   72px;
+    --mn-document-gutter-gap:   8px;
+
     /* Typography */
     --mn-font-display:    "Iowan Old Style", "Palatino Linotype", Palatino, "Baskerville", "Cambria", Georgia, serif;
     --mn-font-sans:       "Aptos", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
@@ -983,14 +990,20 @@ button { border: 0; cursor: pointer; background: transparent; }
 .mn-codemirror-host .cm-scroller {
     height: 100%;
     min-height: 0;
+    padding: var(--mn-document-pad-top) var(--mn-document-pad-x) var(--mn-document-pad-bottom);
 }
 
 .mn-codemirror-host .cm-content {
     min-height: 100%;
+    width: 100%;
+    max-width: var(--mn-document-measure);
+    margin-inline: auto;
 }
 
 .mn-codemirror-host .cm-gutters {
     min-height: 100%;
+    padding-top: var(--mn-document-pad-top);
+    padding-right: var(--mn-document-gutter-gap);
 }
 
 .mn-editor-fallback {
@@ -1028,7 +1041,7 @@ button { border: 0; cursor: pointer; background: transparent; }
     outline: none;
     background: transparent;
     color: var(--mn-editor-ink);
-    padding: 24px 28px;
+    padding: var(--mn-document-pad-top) var(--mn-document-pad-x) var(--mn-document-pad-bottom);
     font-family: var(--mn-editor-font, var(--mn-font-mono));
     font-size: var(--mn-editor-font-size, 15px);
     line-height: var(--mn-editor-line-height, 1.75);
@@ -1064,14 +1077,21 @@ button { border: 0; cursor: pointer; background: transparent; }
     font-size: 12px;
 }
 
-.mn-preview {
+.mn-preview-scroll {
     flex: 1;
     min-height: 0;
+    width: 100%;
     overflow-y: auto;
     border-radius: 0;
     border: 0;
-    padding: 10px clamp(24px, 6vw, 84px) 64px;
+    padding: var(--mn-document-pad-top) var(--mn-document-pad-x) var(--mn-document-pad-bottom);
     background: transparent;
+}
+
+.mn-preview {
+    width: 100%;
+    max-width: var(--mn-document-measure);
+    margin-inline: auto;
 
     font-family: var(--mn-font-display);
     font-size: 18px;

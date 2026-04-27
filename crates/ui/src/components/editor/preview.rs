@@ -55,12 +55,14 @@ pub(super) fn PreviewPane(
                 div { class: "mn-preview-notice", "{message}" }
             }
             if rendered_preview.policy.live_preview_enabled {
-                div {
-                    class: "mn-preview",
-                    dangerous_inner_html: "{rendered_preview.html}",
+                div { class: "mn-preview-scroll",
+                    article {
+                        class: "mn-preview",
+                        dangerous_inner_html: "{rendered_preview.html}",
+                    }
                 }
             } else {
-                div { class: "mn-preview mn-preview-paused",
+                div { class: "mn-preview-scroll mn-preview-paused",
                     "Live preview is paused for this large document."
                 }
             }
