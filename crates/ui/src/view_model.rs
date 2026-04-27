@@ -225,8 +225,14 @@ mod tests {
         }
     }
 
-    #[test]
-    fn view_model_derives_workspace_editor_and_settings() {
+    struct ViewModelFixture {
+        file_state: FileState,
+        editor_tabs: EditorTabs,
+        tab_contents: TabContentsMap,
+        ui_state: UiState,
+    }
+
+    fn view_model_fixture() -> ViewModelFixture {
         let current_workspace = Workspace {
             id: "w".to_string(),
             name: "Workspace".to_string(),
@@ -245,7 +251,7 @@ mod tests {
         };
 
         let mut file_state = FileState {
-            workspaces: vec![current_workspace.clone(), archive_workspace.clone()],
+            workspaces: vec![current_workspace.clone(), archive_workspace],
             current_workspace: Some(current_workspace),
             file_tree: vec![FileNode {
                 name: "notes".to_string(),
@@ -333,11 +339,23 @@ mod tests {
             workspace_overrides: Default::default(),
         };
 
+        ViewModelFixture {
+            file_state,
+            editor_tabs,
+            tab_contents,
+            ui_state,
+        }
+    }
+
+    #[test]
+    fn view_model_derives_workspace_editor_and_settings() {
+        let fixture = view_model_fixture();
+
         let view_model = AppViewModel::from_state(
-            &file_state,
-            &editor_tabs,
-            &tab_contents,
-            &ui_state,
+            &fixture.file_state,
+            &fixture.editor_tabs,
+            &fixture.tab_contents,
+            &fixture.ui_state,
             Some(Path::new("notes")),
         );
 
@@ -402,5 +420,66 @@ mod tests {
         assert_eq!(view_model.settings.theme, Theme::Dark);
         assert!(view_model.settings.sidebar_collapsed);
         assert_eq!(view_model.settings.sidebar_width, 320);
+    }
+
+    #[test]
+    fn workspace_view_model_ignores_editor_and_settings_changes() {
+        let mut fixture = view_model_fixture();
+        let before = WorkspaceViewModel::from_file_state(&fixture.file_state, None);
+
+        fixture
+            .editor_tabs
+            .mark_tab_saved("tab-a", "Saved".to_string());
+        fixture
+            .tab_contents
+            .update_tab_content("tab-a", "changed".to_string());
+        fixture.ui_state.settings.sidebar_width = 360;
+        fixture.ui_state.settings.view_mode = ViewMode::Preview;
+        fixture.ui_state.view_mode = ViewMode::Preview;
+
+        assert_eq!(
+            before,
+            WorkspaceViewModel::from_file_state(&fixture.file_state, None)
+        );
+    }
+
+    #[test]
+    fn editor_view_model_ignores_workspace_and_chrome_only_changes() {
+        let mut fixture = view_model_fixture();
+        let before = EditorViewModel::from_editor_state(
+            &fixture.editor_tabs,
+            &fixture.tab_contents,
+            &fixture.ui_state,
+        );
+
+        fixture.file_state.recent_files.clear();
+        fixture.file_state.tags.clear();
+        fixture.ui_state.settings.sidebar_collapsed = false;
+        fixture.ui_state.settings.sidebar_width = 360;
+
+        assert_eq!(
+            before,
+            EditorViewModel::from_editor_state(
+                &fixture.editor_tabs,
+                &fixture.tab_contents,
+                &fixture.ui_state,
+            )
+        );
+    }
+
+    #[test]
+    fn settings_view_model_ignores_workspace_and_editor_changes() {
+        let mut fixture = view_model_fixture();
+        let before = SettingsViewModel::from_ui_state(&fixture.ui_state);
+
+        fixture.file_state.recent_files.clear();
+        fixture
+            .editor_tabs
+            .mark_tab_saved("tab-a", "Saved".to_string());
+        fixture
+            .tab_contents
+            .update_tab_content("tab-a", "changed".to_string());
+
+        assert_eq!(before, SettingsViewModel::from_ui_state(&fixture.ui_state));
     }
 }
