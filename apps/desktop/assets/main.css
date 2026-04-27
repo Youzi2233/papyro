@@ -335,26 +335,66 @@ button { border: 0; cursor: pointer; background: transparent; }
 
 /* ── Sidebar ── */
 .mn-sidebar {
+    position: relative;
     display: flex;
     flex-direction: column;
     min-width: 240px;
     max-width: 380px;
     width: 260px;
     overflow: hidden;
-    border: 1px solid var(--mn-border);
-    border-radius: var(--mn-radius-lg);
-    background:
-        linear-gradient(180deg, var(--mn-surface-raised) 0%, var(--mn-surface) 42%, var(--mn-surface-sunken) 100%);
-    box-shadow: var(--mn-shadow-sm);
+    border: 0;
+    border-right: 1px solid var(--mn-divider);
+    border-radius: 0;
+    background: var(--mn-surface);
+    box-shadow: none;
     transition: width 0.2s ease, opacity 0.15s ease;
+    flex-shrink: 0;
+}
+
+.mn-sidebar.resizing,
+.mn-sidebar-resize-overlay {
+    cursor: col-resize;
+    user-select: none;
+}
+
+.mn-sidebar-resize-handle {
+    position: absolute;
+    top: 0;
+    right: -4px;
+    bottom: 0;
+    width: 8px;
+    cursor: col-resize;
+    z-index: 25;
+}
+
+.mn-sidebar-resize-handle::after {
+    content: "";
+    position: absolute;
+    top: 10px;
+    right: 3px;
+    bottom: 10px;
+    width: 2px;
+    border-radius: 999px;
+    background: transparent;
+    transition: background 0.12s;
+}
+
+.mn-sidebar-resize-handle:hover::after,
+.mn-sidebar.resizing .mn-sidebar-resize-handle::after {
+    background: var(--mn-accent);
+}
+
+.mn-sidebar-resize-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    background: transparent;
 }
 
 .mn-sidebar-header {
     padding: 14px 14px 12px;
-    border-bottom: 1px solid var(--mn-border);
-    background:
-        radial-gradient(circle at 18% 0%, var(--mn-accent-wash), transparent 46%),
-        linear-gradient(180deg, rgba(255,255,255,.22), transparent);
+    border-bottom: 1px solid var(--mn-divider);
+    background: transparent;
 }
 
 .mn-sidebar-workspace {
@@ -368,7 +408,7 @@ button { border: 0; cursor: pointer; background: transparent; }
     font-family: var(--mn-font-display);
     font-size: 16px;
     font-weight: 600;
-    letter-spacing: -0.02em;
+    letter-spacing: 0;
     color: var(--mn-ink);
     overflow: hidden;
     text-overflow: ellipsis;
@@ -396,7 +436,23 @@ button { border: 0; cursor: pointer; background: transparent; }
     justify-content: center;
     padding: 6px 8px;
     font-size: 12px;
-    border-radius: 999px;
+    border-radius: var(--mn-radius-sm);
+    background: transparent;
+    box-shadow: none;
+    color: var(--mn-ink-2);
+}
+
+.mn-sidebar-actions .mn-button:hover {
+    background: var(--mn-accent-wash);
+    box-shadow: none;
+    color: var(--mn-ink);
+}
+
+.mn-sidebar-actions .mn-button.primary {
+    background: var(--mn-ink);
+    border-color: var(--mn-ink);
+    color: var(--mn-ink-inverse);
+    box-shadow: none;
 }
 
 .mn-tree-sortbar {
@@ -405,9 +461,9 @@ button { border: 0; cursor: pointer; background: transparent; }
     gap: 3px;
     margin: 8px 10px 0;
     padding: 3px;
-    border: 1px solid var(--mn-border);
+    border: 1px solid var(--mn-divider);
     border-radius: var(--mn-radius-sm);
-    background: var(--mn-surface-raised);
+    background: transparent;
 }
 
 .mn-tree-sort-btn {
@@ -426,9 +482,9 @@ button { border: 0; cursor: pointer; background: transparent; }
 }
 
 .mn-tree-sort-btn.active {
-    background: var(--mn-surface);
+    background: var(--mn-accent-wash);
     color: var(--mn-accent);
-    box-shadow: var(--mn-shadow-xs);
+    box-shadow: none;
 }
 
 /* ── File tree ── */
@@ -462,7 +518,7 @@ button { border: 0; cursor: pointer; background: transparent; }
     gap: 7px;
     width: 100%;
     min-height: 31px;
-    border-radius: 11px;
+    border-radius: var(--mn-radius-sm);
     background: transparent;
     color: var(--mn-ink);
     cursor: pointer;
@@ -483,14 +539,14 @@ button { border: 0; cursor: pointer; background: transparent; }
 }
 
 .mn-tree-row.active {
-    background: var(--mn-surface-raised);
+    background: var(--mn-accent-wash);
     color: var(--mn-accent);
-    border-color: var(--mn-border);
-    box-shadow: inset 3px 0 0 var(--mn-accent), var(--mn-shadow-xs);
+    border-color: transparent;
+    box-shadow: inset 2px 0 0 var(--mn-accent);
 }
 
 .mn-tree-row.editing {
-    background: var(--mn-surface-raised);
+    background: var(--mn-surface);
     cursor: text;
     gap: 7px;
 }
@@ -502,7 +558,7 @@ button { border: 0; cursor: pointer; background: transparent; }
 .mn-tree-row.drop-target {
     background: var(--mn-accent-wash);
     border-color: var(--mn-accent);
-    box-shadow: inset 3px 0 0 var(--mn-accent), var(--mn-shadow-xs);
+    box-shadow: inset 2px 0 0 var(--mn-accent);
 }
 
 .mn-tree-caret {
@@ -517,7 +573,7 @@ button { border: 0; cursor: pointer; background: transparent; }
     flex-shrink: 0;
     width: 22px;
     height: 20px;
-    border-radius: 7px;
+    border-radius: 5px;
     font-size: 9px;
     font-weight: 600;
     display: grid;
@@ -617,9 +673,8 @@ button { border: 0; cursor: pointer; background: transparent; }
     display: flex;
     flex-direction: column;
     gap: 8px;
-    background:
-        linear-gradient(180deg, var(--mn-surface), var(--mn-surface-sunken));
-    box-shadow: 0 -8px 24px rgba(67, 45, 20, 0.05);
+    background: transparent;
+    box-shadow: none;
 }
 
 .mn-sidebar-ops-header,
