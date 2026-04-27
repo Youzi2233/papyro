@@ -1,6 +1,7 @@
 use crate::commands::AppCommands;
 use crate::perf::{perf_timer, trace_sidebar_toggle};
 use dioxus::prelude::*;
+use papyro_core::models::Theme;
 use papyro_core::UiState;
 
 pub(crate) fn toggle_sidebar(
@@ -34,5 +35,46 @@ pub(crate) fn toggle_sidebar(
         commands.save_workspace_settings.call(overrides);
     } else if let Some(settings) = settings {
         commands.save_settings.call(settings);
+    }
+}
+
+pub(crate) fn toggle_theme(ui_state: Signal<UiState>, commands: AppCommands) {
+    let (settings, workspace_overrides) = {
+        let state = ui_state.read();
+        let next_theme = next_theme(state.theme());
+        if state.workspace_overrides.theme.is_some() {
+            let mut overrides = state.workspace_overrides.clone();
+            overrides.theme = Some(next_theme);
+            (None, Some(overrides))
+        } else {
+            let mut settings = state.settings.clone();
+            settings.theme = next_theme;
+            (Some(settings), None)
+        }
+    };
+
+    if let Some(overrides) = workspace_overrides {
+        commands.save_workspace_settings.call(overrides);
+    } else if let Some(settings) = settings {
+        commands.save_settings.call(settings);
+    }
+}
+
+fn next_theme(theme: &Theme) -> Theme {
+    match theme {
+        Theme::Light | Theme::System => Theme::Dark,
+        Theme::Dark => Theme::Light,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn next_theme_toggles_between_light_and_dark() {
+        assert_eq!(next_theme(&Theme::System), Theme::Dark);
+        assert_eq!(next_theme(&Theme::Light), Theme::Dark);
+        assert_eq!(next_theme(&Theme::Dark), Theme::Light);
     }
 }

@@ -104,12 +104,7 @@ pub fn MobileLayout(status_message: Option<String>) -> Element {
                     button {
                         class: "mn-button",
                         onclick: move |_| {
-                            let mut settings = ui_state.read().settings.clone();
-                            settings.theme = match ui_state.read().theme() {
-                                Theme::Light | Theme::System => Theme::Dark,
-                                Theme::Dark => Theme::Light,
-                            };
-                            commands.save_settings.call(settings);
+                            crate::chrome::toggle_theme(ui_state, commands.clone());
                         },
                         if theme == Theme::Dark { "Light theme" } else { "Dark theme" }
                     }

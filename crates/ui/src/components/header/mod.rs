@@ -38,12 +38,7 @@ pub fn AppHeader(on_settings: EventHandler<()>) -> Element {
                     label: "Toggle theme",
                     icon: theme_icon,
                     on_click: move |_| {
-                        let mut settings = ui_state.read().settings.clone();
-                        settings.theme = match ui_state.read().theme() {
-                            Theme::Light | Theme::System => Theme::Dark,
-                            Theme::Dark => Theme::Light,
-                        };
-                        theme_commands.save_settings.call(settings);
+                        crate::chrome::toggle_theme(ui_state, theme_commands.clone());
                     },
                 }
                 IconButton {

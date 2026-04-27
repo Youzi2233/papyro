@@ -200,12 +200,7 @@ fn execute_command_action(
             ui_state.write().toggle_outline();
         }
         CommandPaletteActionKind::ToggleTheme => {
-            let mut settings = ui_state.read().settings.clone();
-            settings.theme = match ui_state.read().theme() {
-                Theme::Light | Theme::System => Theme::Dark,
-                Theme::Dark => Theme::Light,
-            };
-            commands.save_settings.call(settings);
+            crate::chrome::toggle_theme(ui_state, commands.clone());
         }
         CommandPaletteActionKind::OpenSettings => {
             let started_at = perf_timer();
