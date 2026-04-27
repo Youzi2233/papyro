@@ -8,19 +8,12 @@ pub fn AppHeader(on_settings: EventHandler<()>) -> Element {
     let app = use_app_context();
     let ui_state = app.ui_state;
     let commands = app.commands;
-    let settings = ui_state.read().settings.clone();
+    let settings_model = app.settings_model.read().clone();
     let sidebar_commands = commands.clone();
     let theme_commands = commands.clone();
 
-    let theme = ui_state.read().theme().clone();
-    let collapsed = settings.sidebar_collapsed;
-
-    let theme_icon = match theme {
-        Theme::Dark => "\u{2600}",
-        _ => "\u{263E}",
-    };
-
-    let sidebar_icon = if collapsed { "\u{2630}" } else { "\u{25E7}" };
+    let theme_icon = theme_icon(&settings_model.theme);
+    let sidebar_icon = sidebar_icon(settings_model.sidebar_collapsed);
 
     rsx! {
         header { class: "mn-header",
@@ -48,5 +41,38 @@ pub fn AppHeader(on_settings: EventHandler<()>) -> Element {
                 }
             }
         }
+    }
+}
+
+fn theme_icon(theme: &Theme) -> &'static str {
+    match theme {
+        Theme::Dark => "\u{2600}",
+        Theme::Light | Theme::System => "\u{263E}",
+    }
+}
+
+fn sidebar_icon(collapsed: bool) -> &'static str {
+    if collapsed {
+        "\u{2630}"
+    } else {
+        "\u{25E7}"
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn theme_icon_reflects_visible_toggle_target() {
+        assert_eq!(theme_icon(&Theme::Dark), "\u{2600}");
+        assert_eq!(theme_icon(&Theme::Light), "\u{263E}");
+        assert_eq!(theme_icon(&Theme::System), "\u{263E}");
+    }
+
+    #[test]
+    fn sidebar_icon_reflects_collapsed_state() {
+        assert_eq!(sidebar_icon(true), "\u{2630}");
+        assert_eq!(sidebar_icon(false), "\u{25E7}");
     }
 }
