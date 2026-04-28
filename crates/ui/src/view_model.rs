@@ -1,6 +1,4 @@
-use papyro_core::models::{
-    AppSettings, DocumentStats, FileNode, FileNodeKind, SaveStatus, Theme, ViewMode,
-};
+use papyro_core::models::{DocumentStats, FileNode, FileNodeKind, SaveStatus, Theme, ViewMode};
 use papyro_core::{EditorTabs, FileState, TabContentsMap, UiState};
 use std::path::{Path, PathBuf};
 
@@ -82,7 +80,6 @@ pub struct EditorSurfaceViewModel {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct SettingsViewModel {
-    pub settings: AppSettings,
     pub theme: Theme,
     pub sidebar_collapsed: bool,
     pub sidebar_width: u32,
@@ -203,7 +200,6 @@ impl EditorViewModel {
 impl SettingsViewModel {
     pub fn from_ui_state(ui_state: &UiState) -> Self {
         Self {
-            settings: ui_state.settings.clone(),
             theme: ui_state.theme().clone(),
             sidebar_collapsed: ui_state.sidebar_collapsed(),
             sidebar_width: ui_state.settings.sidebar_width,
@@ -237,7 +233,9 @@ fn count_notes(nodes: &[FileNode]) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use papyro_core::models::{EditorTab, NoteMeta, RecentFile, Tag, TrashedNote, Workspace};
+    use papyro_core::models::{
+        AppSettings, EditorTab, NoteMeta, RecentFile, Tag, TrashedNote, Workspace,
+    };
 
     fn note(path: &str) -> FileNode {
         FileNode {
@@ -545,7 +543,26 @@ mod tests {
         fixture
             .tab_contents
             .update_tab_content("tab-a", "changed".to_string());
+        fixture.ui_state.settings.font_size = 20;
+        fixture.ui_state.settings.line_height = 1.8;
+        fixture.ui_state.settings.auto_link_paste = false;
 
         assert_eq!(before, SettingsViewModel::from_ui_state(&fixture.ui_state));
+    }
+
+    #[test]
+    fn settings_view_model_tracks_only_chrome_settings() {
+        let mut fixture = view_model_fixture();
+        let before = SettingsViewModel::from_ui_state(&fixture.ui_state);
+
+        fixture.ui_state.settings.theme = Theme::Light;
+        fixture.ui_state.settings.sidebar_collapsed = false;
+        fixture.ui_state.settings.sidebar_width = 360;
+
+        let after = SettingsViewModel::from_ui_state(&fixture.ui_state);
+        assert_ne!(before, after);
+        assert_eq!(after.theme, Theme::Light);
+        assert!(!after.sidebar_collapsed);
+        assert_eq!(after.sidebar_width, 360);
     }
 }
