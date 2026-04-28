@@ -7,6 +7,7 @@
 如果你只是想启动项目，先看 [README.md](../README.md)。  
 如果你想看重构推进计划，继续看 [docs/refactoring-plan.md](refactoring-plan.md)。
 如果你想看模块 owner 和拆分优先级，继续看 [docs/module-ownership.md](module-ownership.md)。
+如果你想看进程、窗口、workspace、document 和 editor runtime 的边界，继续看 [docs/session-model.md](session-model.md)。
 
 ## 总览
 

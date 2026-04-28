@@ -284,19 +284,19 @@ Editor runtime lane
 
 ### 1.1 WindowSession 与 ProcessRuntime
 
-- [ ] 定义 `ProcessRuntime` 和 `WindowSession` 的边界文档。
-- [ ] 明确哪些状态进程共享：storage handle、settings metadata、effective note open mode、recent files、recent workspaces。
-- [ ] 明确哪些状态窗口独立：editor tabs、tab contents、active tab、chrome state、pending close/delete。
-- [ ] 为未来多窗口保留 `window_id` 或等价标识，不让 tab id 承担窗口身份。
-- [ ] 桌面启动参数和系统文件打开事件先进入 `apps/desktop`，再交给 `crates/app` use case。
+- [x] 定义 `ProcessRuntime` 和 `WindowSession` 的边界文档：见 [session-model.md](session-model.md)。
+- [x] 明确哪些状态进程共享：storage handle、settings metadata、effective note open mode、recent files、recent workspaces。
+- [x] 明确哪些状态窗口独立：editor tabs、tab contents、active tab、chrome state、pending close/delete。
+- [x] 为未来多窗口保留 `window_id` 或等价标识，不让 tab id 承担窗口身份。
+- [x] 桌面启动参数和系统文件打开事件的目标路由已定义为先进入 `apps/desktop`，再交给 `crates/app` use case；具体实现留在 Phase 5。
 
 ### 1.2 会话边界门控
 
-- [ ] 明确当前阶段只支持单主窗口 Tabs 语义，不在 Phase 1 引入 MultiWindow 行为。
-- [ ] 定义未来 `note_open_mode` 的前置条件：`WindowSession`、外部打开事件、dirty 冲突策略和窗口注册表。
-- [ ] 将当前 `RuntimeState` 映射到临时 `WindowSession` 概念，说明哪些字段未来要迁移。
-- [ ] 给 tab id、note id、workspace path、window id 的关系补边界说明，避免 tab id 承担窗口身份。
-- [ ] 把打开模式设置实现从 Phase 1 移到 Phase 5，避免架构门控和产品功能混在同一阶段。
+- [x] 明确当前阶段只支持单主窗口 Tabs 语义，不在 Phase 1 引入 MultiWindow 行为。
+- [x] 定义未来 `note_open_mode` 的前置条件：`WindowSession`、外部打开事件、dirty 冲突策略和窗口注册表。
+- [x] 将当前 `RuntimeState` 映射到临时 `WindowSession` 概念，说明哪些字段未来要迁移。
+- [x] 给 tab id、note id、workspace path、window id 的关系补边界说明，避免 tab id 承担窗口身份。
+- [x] 把打开模式设置实现从 Phase 1 移到 Phase 5，避免架构门控和产品功能混在同一阶段。
 
 ### 1.3 AppAction 与 use case 边界
 
