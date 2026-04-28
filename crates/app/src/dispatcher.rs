@@ -1,4 +1,5 @@
 use crate::actions::AppAction;
+use crate::assets::save_pasted_image_asset;
 use crate::effects;
 use crate::handlers::{file_ops, notes, search, tags, workspace};
 use crate::runtime::AppShell;
@@ -8,7 +9,7 @@ use dioxus::prelude::*;
 use papyro_core::models::{AppSettings, WorkspaceSettingsOverrides, WorkspaceTreeState};
 use papyro_core::{FileState, NoteStorage, UiState};
 use papyro_platform::PlatformApi;
-use papyro_ui::commands::{AppCommands, ContentChange, OpenMarkdownTarget};
+use papyro_ui::commands::{AppCommands, ContentChange, OpenMarkdownTarget, PasteImageRequest};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -109,6 +110,9 @@ impl AppDispatcher {
                     action.tab_id,
                     action.content,
                 );
+            }
+            AppAction::PasteImage(action) => {
+                paste_image(self.state, action.request);
             }
             AppAction::ActivateTab(action) => {
                 activate_tab(self.state, action.tab_id);
@@ -296,6 +300,7 @@ impl AppDispatcher {
         let open_markdown = self.clone();
         let search_workspace = self.clone();
         let content_changed = self.clone();
+        let paste_image = self.clone();
         let activate_tab = self.clone();
         let save_active_note = self.clone();
         let save_tab = self.clone();
@@ -340,6 +345,9 @@ impl AppDispatcher {
             }),
             content_changed: EventHandler::new(move |change: ContentChange| {
                 content_changed.dispatch(AppAction::content_changed(change.tab_id, change.content));
+            }),
+            paste_image: EventHandler::new(move |request| {
+                paste_image.dispatch(AppAction::paste_image(request));
             }),
             activate_tab: EventHandler::new(move |tab_id| {
                 activate_tab.dispatch(AppAction::activate_tab(tab_id));
@@ -418,6 +426,35 @@ fn activate_tab(mut state: RuntimeState, tab_id: String) {
     }
 }
 
+fn paste_image(mut state: RuntimeState, request: PasteImageRequest) {
+    let workspace = state.file_state.read().current_workspace.clone();
+    let tab = state.editor_tabs.read().tab_by_id(&request.tab_id).cloned();
+
+    let Some((workspace, tab)) = workspace.zip(tab) else {
+        state.status_message.set(Some(
+            "Open a workspace note before pasting images".to_string(),
+        ));
+        return;
+    };
+
+    let mut status_message = state.status_message;
+    let mut editor_runtime_commands = state.editor_runtime_commands;
+    spawn(async move {
+        match save_pasted_image_asset(&workspace, &tab.path, &request.mime_type, &request.data)
+            .await
+        {
+            Ok(saved) => {
+                editor_runtime_commands.with_mut(|commands| {
+                    commands.push_insert_markdown(request.tab_id.clone(), saved.markdown);
+                });
+            }
+            Err(error) => {
+                status_message.set(Some(error));
+            }
+        }
+    });
+}
+
 fn close_tab(shell: AppShell, mut state: RuntimeState, tab_id: String) {
     let perf_started_at = perf_enabled().then(std::time::Instant::now);
 
@@ -447,6 +484,9 @@ fn close_tab(shell: AppShell, mut state: RuntimeState, tab_id: String) {
 
     state.tab_contents.write().close_tab(&tab.id);
     state.pending_close_tab.set(None);
+    state
+        .editor_runtime_commands
+        .with_mut(|commands| commands.discard_for_tab(&tab.id));
 
     let closed_title = tab.title;
     state
@@ -650,6 +690,20 @@ mod tests {
             AppAction::ContentChanged(papyro_ui::commands::ContentChange {
                 tab_id: "tab-a".to_string(),
                 content: "body".to_string()
+            })
+        );
+        assert_eq!(
+            AppAction::paste_image(papyro_ui::commands::PasteImageRequest {
+                tab_id: "tab-a".to_string(),
+                mime_type: "image/png".to_string(),
+                data: "YWJj".to_string(),
+            }),
+            AppAction::PasteImage(crate::actions::PasteImage {
+                request: papyro_ui::commands::PasteImageRequest {
+                    tab_id: "tab-a".to_string(),
+                    mime_type: "image/png".to_string(),
+                    data: "YWJj".to_string(),
+                }
             })
         );
         assert_eq!(

@@ -5,12 +5,12 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::io::AsyncWriteExt;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(super) struct SavedEditorAsset {
+pub(crate) struct SavedEditorAsset {
     pub markdown: String,
     pub path: PathBuf,
 }
 
-pub(super) async fn save_pasted_image_asset(
+pub(crate) async fn save_pasted_image_asset(
     workspace: &Workspace,
     note_path: &Path,
     mime_type: &str,

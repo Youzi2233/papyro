@@ -1,7 +1,7 @@
 use papyro_core::models::{AppSettings, WorkspaceSettingsOverrides};
 use papyro_ui::commands::{
-    ContentChange, DeleteTagRequest, FileTarget, OpenMarkdownTarget, RenameTagRequest,
-    RestoreTrashedNoteTarget, SetTagColorRequest, UpsertTagRequest,
+    ContentChange, DeleteTagRequest, FileTarget, OpenMarkdownTarget, PasteImageRequest,
+    RenameTagRequest, RestoreTrashedNoteTarget, SetTagColorRequest, UpsertTagRequest,
 };
 use std::path::PathBuf;
 
@@ -15,6 +15,7 @@ pub enum AppAction {
     OpenMarkdown(OpenMarkdown),
     SearchWorkspace(SearchWorkspace),
     ContentChanged(ContentChange),
+    PasteImage(PasteImage),
     ActivateTab(ActivateTab),
     SaveActiveNote,
     SaveTab(SaveTab),
@@ -64,6 +65,11 @@ pub struct SearchWorkspace {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ActivateTab {
     pub tab_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PasteImage {
+    pub request: PasteImageRequest,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -163,6 +169,10 @@ impl AppAction {
 
     pub fn activate_tab(tab_id: String) -> Self {
         Self::ActivateTab(ActivateTab { tab_id })
+    }
+
+    pub fn paste_image(request: PasteImageRequest) -> Self {
+        Self::PasteImage(PasteImage { request })
     }
 
     pub fn save_tab(tab_id: String) -> Self {

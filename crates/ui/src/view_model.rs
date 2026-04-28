@@ -1,5 +1,5 @@
 use papyro_core::models::{
-    DocumentStats, EditorTab, FileNode, FileNodeKind, SaveStatus, Theme, ViewMode, Workspace,
+    DocumentStats, EditorTab, FileNode, FileNodeKind, SaveStatus, Theme, ViewMode,
 };
 use papyro_core::{EditorTabs, FileState, TabContentSnapshot, TabContentsMap, UiState};
 use std::path::{Path, PathBuf};
@@ -108,13 +108,6 @@ pub struct EditorHostItemViewModel {
     pub tab_id: String,
     pub is_active: bool,
     pub initial_content: EditorHostInitialContent,
-    pub paste_context: Option<EditorHostPasteContext>,
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct EditorHostPasteContext {
-    pub workspace: Workspace,
-    pub note_path: PathBuf,
 }
 
 #[derive(Debug, Clone)]
@@ -295,7 +288,6 @@ impl EditorSurfaceViewModel {
 
 impl EditorPaneViewModel {
     pub fn from_editor_state(
-        file_state: &FileState,
         editor_tabs: &EditorTabs,
         tab_contents: &TabContentsMap,
         pending_close_tab: Option<&str>,
@@ -315,9 +307,6 @@ impl EditorPaneViewModel {
                     tab_contents.snapshot_for_tab(&tab_id),
                 ),
                 is_active: Some(&tab_id) == active_tab_id.as_ref(),
-                paste_context: editor_tabs
-                    .tab_by_id(&tab_id)
-                    .and_then(|tab| editor_host_paste_context(file_state, tab)),
                 tab_id,
             })
             .collect();
@@ -351,19 +340,6 @@ impl EditorPaneViewModel {
             host_items,
         }
     }
-}
-
-fn editor_host_paste_context(
-    file_state: &FileState,
-    tab: &EditorTab,
-) -> Option<EditorHostPasteContext> {
-    let workspace = file_state.current_workspace.clone()?;
-    tab.path
-        .starts_with(&workspace.path)
-        .then_some(EditorHostPasteContext {
-            workspace,
-            note_path: tab.path.clone(),
-        })
 }
 
 fn next_active_tab_id_after_close(
@@ -769,12 +745,7 @@ mod tests {
         tab_contents.insert_tab("a".to_string(), "# A".to_string(), DocumentStats::default());
         tab_contents.insert_tab("b".to_string(), "# B".to_string(), DocumentStats::default());
 
-        let model = EditorPaneViewModel::from_editor_state(
-            &FileState::default(),
-            &editor_tabs,
-            &tab_contents,
-            None,
-        );
+        let model = EditorPaneViewModel::from_editor_state(&editor_tabs, &tab_contents, None);
 
         assert_eq!(model.active_tab_id.as_deref(), Some("a"));
         assert!(model.has_active_tab);
@@ -818,7 +789,6 @@ mod tests {
                     initial_content: EditorHostInitialContent {
                         content: Arc::from("# A"),
                     },
-                    paste_context: None,
                 },
                 EditorHostItemViewModel {
                     tab_id: "b".to_string(),
@@ -826,7 +796,6 @@ mod tests {
                     initial_content: EditorHostInitialContent {
                         content: Arc::from("# B"),
                     },
-                    paste_context: None,
                 },
             ]
         );
@@ -842,12 +811,7 @@ mod tests {
         }
         editor_tabs.set_active_tab("b");
 
-        let model = EditorPaneViewModel::from_editor_state(
-            &FileState::default(),
-            &editor_tabs,
-            &tab_contents,
-            None,
-        );
+        let model = EditorPaneViewModel::from_editor_state(&editor_tabs, &tab_contents, None);
 
         assert_eq!(
             model.open_tab_ids,
@@ -868,7 +832,6 @@ mod tests {
                     initial_content: EditorHostInitialContent {
                         content: Arc::from("# b"),
                     },
-                    paste_context: None,
                 },
                 EditorHostItemViewModel {
                     tab_id: "e".to_string(),
@@ -876,7 +839,6 @@ mod tests {
                     initial_content: EditorHostInitialContent {
                         content: Arc::from("# e"),
                     },
-                    paste_context: None,
                 },
                 EditorHostItemViewModel {
                     tab_id: "d".to_string(),
@@ -884,7 +846,6 @@ mod tests {
                     initial_content: EditorHostInitialContent {
                         content: Arc::from("# d"),
                     },
-                    paste_context: None,
                 },
             ]
         );
@@ -894,7 +855,6 @@ mod tests {
     fn editor_pane_view_model_ignores_settings_changes() {
         let mut fixture = view_model_fixture();
         let before = EditorPaneViewModel::from_editor_state(
-            &fixture.file_state,
             &fixture.editor_tabs,
             &fixture.tab_contents,
             None,
@@ -907,7 +867,6 @@ mod tests {
         assert_eq!(
             before,
             EditorPaneViewModel::from_editor_state(
-                &fixture.file_state,
                 &fixture.editor_tabs,
                 &fixture.tab_contents,
                 None
@@ -926,18 +885,8 @@ mod tests {
         let mut tab_contents = TabContentsMap::default();
         tab_contents.insert_tab("a".to_string(), "# A".to_string(), DocumentStats::default());
 
-        let before = EditorPaneViewModel::from_editor_state(
-            &FileState::default(),
-            &editor_tabs,
-            &tab_contents,
-            None,
-        );
-        let after = EditorPaneViewModel::from_editor_state(
-            &FileState::default(),
-            &editor_tabs,
-            &tab_contents,
-            Some("a"),
-        );
+        let before = EditorPaneViewModel::from_editor_state(&editor_tabs, &tab_contents, None);
+        let after = EditorPaneViewModel::from_editor_state(&editor_tabs, &tab_contents, Some("a"));
 
         assert!(!before.tab_items[0].should_retire_host_on_close);
         assert!(after.tab_items[0].should_retire_host_on_close);
@@ -950,61 +899,16 @@ mod tests {
 
         let mut before_contents = TabContentsMap::default();
         before_contents.insert_tab("a".to_string(), "# A".to_string(), DocumentStats::default());
-        let before = EditorPaneViewModel::from_editor_state(
-            &FileState::default(),
-            &editor_tabs,
-            &before_contents,
-            None,
-        );
+        let before = EditorPaneViewModel::from_editor_state(&editor_tabs, &before_contents, None);
 
         let mut after_contents = before_contents.clone();
         after_contents.update_tab_content("a", "# A changed".to_string());
-        let after = EditorPaneViewModel::from_editor_state(
-            &FileState::default(),
-            &editor_tabs,
-            &after_contents,
-            None,
-        );
+        let after = EditorPaneViewModel::from_editor_state(&editor_tabs, &after_contents, None);
 
         assert_eq!(before.host_items, after.host_items);
         assert_ne!(
             before.host_items[0].initial_content.content.as_ref(),
             after.host_items[0].initial_content.content.as_ref()
         );
-    }
-
-    #[test]
-    fn editor_pane_view_model_derives_host_paste_context_for_workspace_tabs() {
-        let fixture = view_model_fixture();
-
-        let model = EditorPaneViewModel::from_editor_state(
-            &fixture.file_state,
-            &fixture.editor_tabs,
-            &fixture.tab_contents,
-            None,
-        );
-
-        assert_eq!(
-            model.host_items[0].paste_context,
-            Some(EditorHostPasteContext {
-                workspace: fixture.file_state.current_workspace.clone().unwrap(),
-                note_path: PathBuf::from("workspace/a.md"),
-            })
-        );
-    }
-
-    #[test]
-    fn editor_pane_view_model_omits_paste_context_for_outside_tabs() {
-        let mut fixture = view_model_fixture();
-        fixture.editor_tabs.tabs[0].path = PathBuf::from("outside/a.md");
-
-        let model = EditorPaneViewModel::from_editor_state(
-            &fixture.file_state,
-            &fixture.editor_tabs,
-            &fixture.tab_contents,
-            None,
-        );
-
-        assert_eq!(model.host_items[0].paste_context, None);
     }
 }

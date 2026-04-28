@@ -1,4 +1,4 @@
-use crate::commands::AppCommands;
+use crate::commands::{AppCommands, EditorRuntimeCommandQueue};
 use crate::view_model::{
     EditorPaneViewModel, EditorSurfaceViewModel, EditorViewModel, WorkspaceViewModel,
 };
@@ -46,6 +46,7 @@ pub struct AppContext {
     pub status_message: Signal<Option<String>>,
     pub pending_close_tab: Signal<Option<String>>,
     pub pending_delete_path: Signal<Option<PathBuf>>,
+    pub editor_runtime_commands: Signal<EditorRuntimeCommandQueue>,
     pub commands: AppCommands,
     pub editor_services: EditorServices,
     pub workspace_model: Memo<WorkspaceViewModel>,

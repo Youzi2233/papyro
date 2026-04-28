@@ -11,6 +11,7 @@ desktop-shell = ["dep:rfd"]
 [dependencies]
 dioxus = { workspace = true }
 anyhow = { workspace = true }
+base64 = { workspace = true }
 flume = { workspace = true }
 rfd = { workspace = true, optional = true }
 tokio = { workspace = true }
@@ -20,3 +21,6 @@ papyro-ui = { path = "../ui" }
 papyro-editor = { path = "../editor" }
 papyro-storage = { path = "../storage" }
 papyro-platform = { path = "../platform" }
+
+[dev-dependencies]
+tempfile = { workspace = true }

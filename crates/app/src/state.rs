@@ -2,6 +2,7 @@ use dioxus::prelude::*;
 use papyro_core::{
     EditorTabs, FileState, TabContentsMap, UiState, WorkspaceBootstrap, WorkspaceSearchState,
 };
+use papyro_ui::commands::EditorRuntimeCommandQueue;
 use std::path::PathBuf;
 
 use crate::settings_persistence::SettingsPersistenceQueue;
@@ -18,6 +19,7 @@ pub(crate) struct RuntimeState {
     pub pending_close_tab: Signal<Option<String>>,
     pub pending_delete_path: Signal<Option<PathBuf>>,
     pub pending_empty_trash: Signal<bool>,
+    pub editor_runtime_commands: Signal<EditorRuntimeCommandQueue>,
     pub settings_persistence: Signal<SettingsPersistenceQueue>,
 }
 
@@ -44,6 +46,7 @@ pub(crate) fn use_runtime_state(bootstrap: WorkspaceBootstrap) -> RuntimeState {
         pending_close_tab: use_signal(|| None::<String>),
         pending_delete_path: use_signal(|| None::<PathBuf>),
         pending_empty_trash: use_signal(|| false),
+        editor_runtime_commands: use_signal(EditorRuntimeCommandQueue::default),
         settings_persistence: use_signal(SettingsPersistenceQueue::default),
     }
 }

@@ -1,4 +1,4 @@
-﻿use dioxus::prelude::*;
+use dioxus::prelude::*;
 use papyro_core::models::{AppSettings, WorkspaceSettingsOverrides};
 use std::path::PathBuf;
 
@@ -6,6 +6,70 @@ use std::path::PathBuf;
 pub struct ContentChange {
     pub tab_id: String,
     pub content: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PasteImageRequest {
+    pub tab_id: String,
+    pub mime_type: String,
+    pub data: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum EditorRuntimeCommand {
+    InsertMarkdown { tab_id: String, markdown: String },
+}
+
+impl EditorRuntimeCommand {
+    fn tab_id(&self) -> &str {
+        match self {
+            Self::InsertMarkdown { tab_id, .. } => tab_id,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct EditorRuntimeCommandQueue {
+    revision: u64,
+    pending: Vec<EditorRuntimeCommand>,
+}
+
+impl EditorRuntimeCommandQueue {
+    pub fn revision(&self) -> u64 {
+        self.revision
+    }
+
+    pub fn push_insert_markdown(&mut self, tab_id: String, markdown: String) {
+        self.revision = self.revision.saturating_add(1);
+        self.pending
+            .push(EditorRuntimeCommand::InsertMarkdown { tab_id, markdown });
+    }
+
+    pub fn has_pending_for_tab(&self, tab_id: &str) -> bool {
+        self.pending
+            .iter()
+            .any(|command| command.tab_id() == tab_id)
+    }
+
+    pub fn drain_for_tab(&mut self, tab_id: &str) -> Vec<EditorRuntimeCommand> {
+        let mut drained = Vec::new();
+        let mut pending = Vec::with_capacity(self.pending.len());
+
+        for command in self.pending.drain(..) {
+            if command.tab_id() == tab_id {
+                drained.push(command);
+            } else {
+                pending.push(command);
+            }
+        }
+
+        self.pending = pending;
+        drained
+    }
+
+    pub fn discard_for_tab(&mut self, tab_id: &str) {
+        self.pending.retain(|command| command.tab_id() != tab_id);
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -57,6 +121,7 @@ pub struct AppCommands {
     pub open_markdown: EventHandler<OpenMarkdownTarget>,
     pub search_workspace: EventHandler<String>,
     pub content_changed: EventHandler<ContentChange>,
+    pub paste_image: EventHandler<PasteImageRequest>,
     pub activate_tab: EventHandler<String>,
     pub save_active_note: EventHandler<()>,
     pub save_tab: EventHandler<String>,
@@ -76,4 +141,40 @@ pub struct AppCommands {
     pub export_html: EventHandler<()>,
     pub save_settings: EventHandler<AppSettings>,
     pub save_workspace_settings: EventHandler<WorkspaceSettingsOverrides>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn editor_runtime_command_queue_drains_only_target_tab() {
+        let mut queue = EditorRuntimeCommandQueue::default();
+        queue.push_insert_markdown("a".to_string(), "![a](a.png)".to_string());
+        queue.push_insert_markdown("b".to_string(), "![b](b.png)".to_string());
+
+        let drained = queue.drain_for_tab("a");
+
+        assert_eq!(
+            drained,
+            vec![EditorRuntimeCommand::InsertMarkdown {
+                tab_id: "a".to_string(),
+                markdown: "![a](a.png)".to_string(),
+            }]
+        );
+        assert!(!queue.has_pending_for_tab("a"));
+        assert!(queue.has_pending_for_tab("b"));
+    }
+
+    #[test]
+    fn editor_runtime_command_queue_discards_closed_tab_commands() {
+        let mut queue = EditorRuntimeCommandQueue::default();
+        queue.push_insert_markdown("a".to_string(), "![a](a.png)".to_string());
+        queue.push_insert_markdown("b".to_string(), "![b](b.png)".to_string());
+
+        queue.discard_for_tab("a");
+
+        assert!(!queue.has_pending_for_tab("a"));
+        assert!(queue.has_pending_for_tab("b"));
+    }
 }

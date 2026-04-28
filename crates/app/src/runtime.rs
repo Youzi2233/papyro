@@ -71,7 +71,6 @@ pub fn use_app_runtime(
     });
     let editor_pane_model = use_memo(move || {
         EditorPaneViewModel::from_editor_state(
-            &state.file_state.read(),
             &state.editor_tabs.read(),
             &state.tab_contents.read(),
             state.pending_close_tab.read().as_deref(),
@@ -91,6 +90,7 @@ pub fn use_app_runtime(
         status_message: state.status_message,
         pending_close_tab: state.pending_close_tab,
         pending_delete_path: state.pending_delete_path,
+        editor_runtime_commands: state.editor_runtime_commands,
         commands,
         editor_services: EditorServices {
             summarize_markdown: papyro_editor::parser::summarize_markdown,

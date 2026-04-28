@@ -1,12 +1,11 @@
-use super::assets::save_pasted_image_asset;
 use super::bridge::{
     send_editor_destroy, EditorBridge, EditorBridgeMap, EditorCommand, EditorEvent,
 };
 use super::fallback::{EditorRuntimeState, FallbackEditor};
-use crate::commands::ContentChange;
+use crate::commands::{ContentChange, EditorRuntimeCommand, PasteImageRequest};
 use crate::context::use_app_context;
 use crate::perf::{perf_timer, trace_editor_set_preferences, trace_editor_set_view_mode};
-use crate::view_model::{EditorHostInitialContent, EditorHostPasteContext};
+use crate::view_model::EditorHostInitialContent;
 use dioxus::prelude::*;
 use papyro_core::models::ViewMode;
 use uuid::Uuid;
@@ -22,13 +21,12 @@ pub(super) fn EditorHost(
     tab_id: String,
     is_visible: bool,
     initial_content: EditorHostInitialContent,
-    paste_context: Option<EditorHostPasteContext>,
     view_mode: ViewMode,
     auto_link_paste: bool,
 ) -> Element {
     let app = use_app_context();
-    let status_message = app.status_message;
     let commands = app.commands;
+    let mut editor_runtime_commands = app.editor_runtime_commands;
     let bridges = use_context::<EditorBridgeMap>();
     let container_id = format!("mn-editor-{tab_id}");
     let instance_id = use_signal(|| format!("host-{}", Uuid::new_v4()));
@@ -38,6 +36,7 @@ pub(super) fn EditorHost(
     let startup_view_mode = view_mode.clone();
     let state = runtime_state();
     let runtime_ready = state == EditorRuntimeState::Ready;
+    let runtime_command_revision = editor_runtime_commands.read().revision();
 
     use_effect(use_reactive(
         (&tab_id, &container_id),
@@ -49,10 +48,8 @@ pub(super) fn EditorHost(
             let mut bridges = bridges;
             let commands = commands.clone();
             let mut runtime_state = runtime_state;
-            let mut status_message = status_message;
             let command_cache = command_cache;
             let initial_content = initial_content.content.clone();
-            let paste_context = paste_context.clone();
             let initial_view_mode = startup_view_mode.clone();
             let tab_id = tab_id.clone();
             let container_id = container_id.clone();
@@ -213,36 +210,11 @@ pub(super) fn EditorHost(
                             mime_type,
                             data,
                         } => {
-                            let Some(paste_context) = paste_context.clone() else {
-                                status_message.set(Some(
-                                    "Open a workspace note before pasting images".to_string(),
-                                ));
-                                continue;
-                            };
-
-                            let Some(eval) =
-                                bridge_eval_for_instance(bridges, &tab_id, &instance_id)
-                            else {
-                                continue;
-                            };
-
-                            match save_pasted_image_asset(
-                                &paste_context.workspace,
-                                &paste_context.note_path,
-                                &mime_type,
-                                &data,
-                            )
-                            .await
-                            {
-                                Ok(saved) => {
-                                    let _ = eval.send(EditorCommand::InsertMarkdown {
-                                        markdown: saved.markdown,
-                                    });
-                                }
-                                Err(error) => {
-                                    status_message.set(Some(error));
-                                }
-                            }
+                            commands.paste_image.call(PasteImageRequest {
+                                tab_id,
+                                mime_type,
+                                data,
+                            });
                         }
                     }
                 }
@@ -272,6 +244,28 @@ pub(super) fn EditorHost(
 
             if let Some(bridge) = bridges.read().get(&tab_id) {
                 send_set_preferences(&bridge.eval, command_cache, &tab_id, auto_link_paste);
+            }
+        },
+    ));
+
+    use_effect(use_reactive(
+        (&tab_id, &runtime_ready, &runtime_command_revision),
+        move |(tab_id, runtime_ready, _revision)| {
+            if !runtime_ready || !editor_runtime_commands.peek().has_pending_for_tab(&tab_id) {
+                return;
+            }
+
+            let commands = editor_runtime_commands.with_mut(|queue| queue.drain_for_tab(&tab_id));
+            let Some(eval) = bridges.read().get(&tab_id).map(|bridge| bridge.eval) else {
+                return;
+            };
+
+            for command in commands {
+                match command {
+                    EditorRuntimeCommand::InsertMarkdown { markdown, .. } => {
+                        let _ = eval.send(EditorCommand::InsertMarkdown { markdown });
+                    }
+                }
             }
         },
     ));

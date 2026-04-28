@@ -1,4 +1,5 @@
 mod actions;
+mod assets;
 mod dispatcher;
 mod effects;
 mod export;

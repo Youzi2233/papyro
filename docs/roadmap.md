@@ -321,8 +321,8 @@ Editor runtime lane
 - [x] Tab 激活从 `EditorTabButton` 直接写 `EditorTabs` 改为走 `AppCommand` / `AppAction` / dispatcher。
 - [x] Tabbar 关闭按钮所需的 active / next-active / immediate-close 元数据改为由 `EditorPaneViewModel` 派生。
 - [x] `EditorHost` 启动内容改为由 `EditorHostItemViewModel` 提供，runtime 初始化不再直接读取 `TabContentsMap`。
-- [x] `EditorHost` 图片粘贴所需 workspace / note path 上下文改为由 `EditorHostItemViewModel` 提供。
-- [ ] 图片粘贴附件保存继续迁移为 app use case，UI runtime 只负责请求和插入返回的 Markdown。
+- [x] `EditorHost` 图片粘贴从 raw workspace/tab 读取改为提交 `PasteImage` app use case。
+- [x] 图片粘贴附件保存迁移为 app use case，UI runtime 只负责请求和插入返回的 Markdown。
 - [x] Sidebar、Header、StatusBar 不读取 document content 或 editor host 状态。
 - [x] StatusBar 改为消费 `EditorViewModel`，不再直接读取 `EditorTabs` 和 `TabContentsMap`。
 - [x] Header 改为消费窄 `theme` / `sidebar_collapsed` memo，展示逻辑不再直接读取 raw `UiState`。
