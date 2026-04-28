@@ -39,9 +39,9 @@ pub(super) fn EditorTabButton(tab: papyro_core::models::EditorTab, is_active: bo
     let commands = app.commands;
     let activate_tab_id = tab.id.clone();
     let close_tab_id = tab.id.clone();
-    let close_tab_id_for_mouse = close_tab_id.clone();
+    let close_tab_id_for_click = close_tab_id.clone();
     let close_tab_id_for_keyboard = close_tab_id.clone();
-    let commands_for_mouse = commands.clone();
+    let commands_for_click = commands.clone();
     let commands_for_keyboard = commands.clone();
     let should_retire_host =
         !tab.is_dirty || pending_close_tab.read().as_deref() == Some(tab.id.as_str());
@@ -74,13 +74,13 @@ pub(super) fn EditorTabButton(tab: papyro_core::models::EditorTab, is_active: bo
                 "data-close-tab-id": "{close_tab_id}",
                 "data-next-active-tab-id": "{next_active_tab_id}",
                 "data-immediate-close": if should_retire_host { "true" } else { "false" },
-                onmousedown: move |event| {
+                onclick: move |event| {
                     event.prevent_default();
                     event.stop_propagation();
                     request_tab_close(
-                        commands_for_mouse.clone(),
-                        close_tab_id_for_mouse.clone(),
-                        "mouse_down",
+                        commands_for_click.clone(),
+                        close_tab_id_for_click.clone(),
+                        "click",
                     );
                 },
                 onkeydown: move |event| {
