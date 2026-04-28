@@ -12,9 +12,10 @@ Rust sends commands to `window.papyroEditor.handleRustMessage(tabId, message)`.
 | --- | --- | --- | --- |
 | `SetContent` | `set_content` | `content: string` | Replace the editor document without echoing `content_changed`. |
 | `SetViewMode` | `set_view_mode` | `mode: ViewMode` | Switch the browser editor between source, hybrid, and preview-aware runtime behavior. |
+| `SetPreferences` | `set_preferences` | `auto_link_paste: bool` | Update editor-only preferences without resending document content. |
+| `InsertMarkdown` | `insert_markdown` | `markdown: string` | Insert generated Markdown at the current editor selection. |
 | `ApplyFormat` | `apply_format` | `kind: EditorFormat` | Apply Markdown formatting to the current selection. |
 | `Focus` | `focus` | none | Focus the active editor. |
-| `RefreshLayout` | `refresh_layout` | none | Request CodeMirror layout measurement. |
 | `Destroy` | `destroy` | `instance_id: string` | Detach the editor from the active tab registry only when the host instance still matches. |
 
 `EditorFormat` values are serialized as:
@@ -57,6 +58,7 @@ JavaScript sends events through the Dioxus channel.
 | `RuntimeError` | `runtime_error` | `tab_id: string`, `message: string` | Rust shows fallback UI and logs the error. |
 | `ContentChanged` | `content_changed` | `tab_id: string`, `content: string` | Rust updates tab content and schedules autosave. |
 | `SaveRequested` | `save_requested` | `tab_id: string` | Rust saves the requested tab. |
+| `PasteImageRequested` | `paste_image_requested` | `tab_id: string`, `mime_type: string`, `data: string` | Rust stores pasted image data and sends `InsertMarkdown` for the generated asset link. |
 
 Example:
 
@@ -71,3 +73,4 @@ Example:
 - `destroy` must include the host `instance_id`; JavaScript ignores stale destroy messages so delayed cleanup cannot detach a newer host for the same tab id.
 - `content_changed` is the only event that updates Rust document content.
 - `save_requested` asks Rust to save; JavaScript never writes files directly.
+- CodeMirror layout measurement is local to the JavaScript runtime. ResizeObserver should call the JS layout helper directly instead of round-tripping through Rust commands or events.

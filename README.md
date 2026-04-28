@@ -241,14 +241,13 @@ cargo run -p papyro-mobile
 
 ## 编辑器前端资源
 
-Edit 模式里的 CodeMirror 运行时来自 `js/src/editor.js`。这是唯一应该手动修改的源文件。
+Edit 模式里的 CodeMirror 运行时来自 `js/src/editor.js` 和 `js/src/editor-core.js`。日常只应该手动修改这两个源文件。
 
 修改编辑器 JS 后，在仓库根目录执行：
 
 ```bash
-cd js
-npm install
-npm run build
+npm --prefix js install
+npm --prefix js run build
 ```
 
 构建脚本会生成并同步这些文件：
@@ -275,8 +274,9 @@ cargo check -p papyro-ui
 2. [docs/roadmap.md](docs/roadmap.md)
 3. [docs/architecture.md](docs/architecture.md)
 4. [crates/app/src/runtime.rs](crates/app/src/runtime.rs)
-5. [crates/app/src/workspace_flow.rs](crates/app/src/workspace_flow.rs)
-6. [crates/core/src/lib.rs](crates/core/src/lib.rs)
+5. [crates/app/src/dispatcher.rs](crates/app/src/dispatcher.rs)
+6. [crates/app/src/workspace_flow](crates/app/src/workspace_flow)
+7. [crates/core/src/lib.rs](crates/core/src/lib.rs)
 
 这样先建立版本规划和架构全貌，再深入各层实现。
 
@@ -290,6 +290,7 @@ cargo check -p papyro-ui
 - mobile 不再通过源码路径复用 desktop handler
 - `core` 正在继续收紧边界
 - 根目录 `src/` 已经移除，desktop 宿主已迁入 `apps/desktop`
+- settings 持久化已进入后台队列，workspace flow 已拆成用例模块
 
 也就是说，现在已经比之前清晰很多，但还不是最终形态。
 
@@ -319,7 +320,8 @@ cargo test --workspace
 优先看：
 
 - [crates/app/src/runtime.rs](crates/app/src/runtime.rs)
-- [crates/app/src/workspace_flow.rs](crates/app/src/workspace_flow.rs)
+- [crates/app/src/dispatcher.rs](crates/app/src/dispatcher.rs)
+- [crates/app/src/workspace_flow](crates/app/src/workspace_flow)
 
 ### 看不懂核心边界
 

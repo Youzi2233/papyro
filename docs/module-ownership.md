@@ -4,13 +4,14 @@
 
 新增模块时，至少要在本文件或模块头部注释中说明 owner、职责范围和主要验证方式。
 
-## 最高拆分优先级
+## 当前收敛优先级
 
 | 模块 | Owner | 当前问题 | 下一步 |
 | --- | --- | --- | --- |
-| `crates/app/src/workspace_flow.rs` | `crates/app` use case flow | 文件过长，集中承载 workspace、文件、tab 状态编排 | 拆为 `workspace/create.rs`、`workspace/open.rs`、`workspace/save.rs`、`workspace/rename.rs`、`workspace/delete.rs` |
-| `crates/app/src/runtime.rs` | `crates/app` composition root | 同时承担 state 初始化、command 装配、watcher、export、settings | 迁出 `state.rs`、`actions.rs`、`dispatcher.rs`、`effects.rs`、`export.rs` |
-| `crates/ui/src/components/editor/mod.rs` | `crates/ui` editor surface | 同时承担 tabbar、toolbar、preview、host、bridge、fallback | 拆为 `pane.rs`、`tabbar.rs`、`toolbar.rs`、`preview.rs`、`host.rs`、`bridge.rs`、`fallback.rs`；autosave 迁入 `crates/app/src/effects.rs` |
+| `crates/app/src/dispatcher.rs` | `crates/app` action dispatcher | 仍是主要分发热点，settings、workspace、editor、export 等动作集中在同一文件 | 按 handler 领域继续下沉分发细节，保留 dispatcher 作为薄路由层 |
+| `crates/app/src/workspace_flow.rs` + `workspace_flow/*` | `crates/app` use case flow | 顶层 facade 已拆出 create/open/save/rename/delete/move/reload，但 support 和跨用例 helper 仍偏重 | 继续让 `support.rs` 只保留测试与共享 fixture，把业务 helper 移到对应用例模块 |
+| `crates/ui/src/context.rs` | `crates/ui` app boundary | `AppContext` 已有 `workspace_model`、`editor_model`、`editor_surface_model` 和窄 chrome memo，但仍暴露 raw signals | 逐步用 view model + action facade 替代组件直接读写 raw signal |
+| `crates/ui/src/components/editor/*` | `crates/ui` editor surface | editor surface 已拆成 pane/tabbar/host/bridge/preview/outline/fallback，活跃 host 数也已 bounded | 下一步关注 preview/outline 派生任务化，以及保留 selection/scroll 的 warm host 策略 |
 
 ## 当前模块 Owner
 

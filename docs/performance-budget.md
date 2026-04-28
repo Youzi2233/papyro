@@ -44,7 +44,6 @@ continue work after the interaction if the writing surface stays responsive.
 - `perf editor switch tab`
 - `perf editor view mode change`
 - `perf editor outline extract`
-- `perf editor command refresh_layout`
 - `perf editor command set_view_mode`
 - `perf editor command set_preferences`
 - `perf editor input change`
@@ -66,7 +65,7 @@ PAPYRO_PERF=1 cargo run -p papyro-desktop
 ```
 
 1. Open a 100KB, 1MB, and 5MB Markdown file.
-2. Switch between Source, Hybrid, and Preview from the editor toolbar.
+2. Switch between Source, Hybrid, and Preview from the editor tabbar view toggle.
 3. Switch between Source, Hybrid, and Preview from the command palette.
 4. Collapse and expand the sidebar from the header button.
 5. Collapse and expand the sidebar with `Ctrl+\`.
@@ -78,11 +77,11 @@ Mode changes should be checked as a chain:
 
 - `perf editor view mode change` records the UI action and trigger.
 - `perf editor command set_view_mode` records command sends to each editor host.
-- `perf editor command refresh_layout` records layout refresh pressure.
 
-Sidebar changes should only emit `perf chrome toggle sidebar` plus layout work for
-visible editor hosts. If one sidebar toggle sends repeated editor commands for hidden
-or inactive hosts, treat it as an architecture regression.
+Sidebar changes should only emit `perf chrome toggle sidebar` plus local JS layout
+measurement for visible editor hosts. Rust should not send layout refresh commands,
+and hidden or inactive hosts should not receive editor commands from a sidebar
+toggle.
 
 Chrome modal opens should emit `perf chrome open modal` once per user action. Repeated
 editor command traces after opening a modal are a signal that chrome state is leaking

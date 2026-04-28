@@ -759,7 +759,8 @@ TabContentsMap
 
 - `WorkspaceViewModel`
 - `EditorViewModel`
-- `SettingsViewModel`
+- `EditorSurfaceViewModel`
+- `SettingsViewModel`，目前主要作为纯派生模型和测试参照，运行时 context 更偏向使用窄 memo。
 
 这样做的目的不是多写一层，而是减少 UI 直接读取一堆 raw signal 的机会。
 
@@ -1142,7 +1143,6 @@ SetPreferences
 ApplyFormat
 InsertMarkdown
 Focus
-RefreshLayout
 Destroy
 ```
 
@@ -1174,7 +1174,6 @@ RuntimeError
 ContentChanged
 SaveRequested
 PasteImageRequested
-LayoutChanged
 ```
 
 例如输入时：
@@ -1192,6 +1191,7 @@ CodeMirror updateListener
 - JS 只能告诉 Rust“内容变了”或“请求保存”。
 - Rust 才是文档内容、保存状态、tab 状态的真相来源。
 - `set_content` 不应该回声触发 `content_changed`。
+- CodeMirror layout refresh 不再经过 Rust 事件或命令，由 JS runtime 的 `ResizeObserver` 本地处理。
 
 这些规则也写在 [docs/editor-protocol.md](editor-protocol.md)。
 

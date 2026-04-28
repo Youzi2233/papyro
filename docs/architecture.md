@@ -136,7 +136,12 @@ Mobile 宿主入口。
 当前关键文件：
 
 - `crates/app/src/runtime.rs`：共享 runtime 和 context 注入
-- `crates/app/src/workspace_flow.rs`：workspace 打开、刷新、创建、重命名、删除等应用流程
+- `crates/app/src/state.rs`：运行时 Dioxus signal 聚合
+- `crates/app/src/actions.rs`：UI command 转入应用层后的 action 类型
+- `crates/app/src/dispatcher.rs`：action 分发和 handler 路由
+- `crates/app/src/effects.rs`：autosave、watcher、退出前 flush 等副作用
+- `crates/app/src/settings_persistence.rs`：settings 后台持久化队列和合并策略
+- `crates/app/src/workspace_flow.rs` + `workspace_flow/*`：workspace 打开、刷新、创建、重命名、移动、删除、保存等应用流程
 - `crates/app/src/desktop.rs`：desktop app 组件入口和 desktop 启动 chrome 配置
 - `crates/app/src/mobile.rs`：mobile app 组件入口
 - `crates/app/src/handlers/*`：UI command 到 app flow 的连接层
@@ -168,7 +173,10 @@ Dioxus UI 层。
 - command 接口类型
 - 统一的 `AppContext` UI 入口
 
-当前 UI 仍在收敛中。组件已经开始通过 `AppContext` 读取应用状态和命令，但后续仍要继续减少 layout 组件对底层 signal 和 app flow 的直接感知。
+当前 UI 仍在收敛中。`AppContext` 已经提供 `workspace_model`、`editor_model`、
+`editor_surface_model`、`theme`、`sidebar_collapsed`、`sidebar_width` 等窄
+memo，组件应优先消费这些派生入口。raw signal 仍保留给尚未迁出的组件，但后续
+应继续减少 layout 和 leaf component 对底层 signal 的直接读写。
 
 ### `crates/storage`
 
@@ -255,20 +263,24 @@ User action
 - mobile 不再通过 `#[path]` 复用 desktop handler
 - 共享 runtime 已进入 `crates/app`
 - workspace 应用编排已从 `crates/core` 迁入 `crates/app`
+- `crates/app` 已拆出 state、actions、dispatcher、effects、export 和 settings persistence
+- workspace flow 已拆为 `workspace_flow/*` 用例模块
+- editor surface 已拆为 pane、tabbar、host、bridge、preview、outline、fallback 等模块
+- Rust/JS 编辑器协议已固化到 `crates/editor/src/protocol.rs`
+- editor layout refresh 已从 Rust/JS 协议中移除，改由 JS runtime 本地处理
 
 仍在推进：
 
 - 继续收紧 `core` 边界
 - 继续减少 UI layout 中的流程编排
 - 让 `crates/app` 的 public API 更适合未来跨端复用
-- 按 [module-ownership.md](module-ownership.md) 拆分高风险大文件
+- 按 [module-ownership.md](module-ownership.md) 继续收窄 raw signal 和 dispatcher 热点
 
 ## 目标架构
 
 详见 [roadmap.md](roadmap.md) 中的目标架构章节。核心演进方向：
 
-- `crates/app` 从集中式 runtime 拆分为 state / actions / dispatcher / effects
 - `AppContext` 收敛为更小的 view model + action facade，UI 不再直接操作原始 Signal
-- `crates/ui/components/editor/mod.rs` 拆分为 tabbar / toolbar / host / bridge 等独立模块，autosave 由 `crates/app/src/effects.rs` 管理
-- Rust/JS 编辑器协议固化到 `crates/editor`，不在 UI 内部私有定义
+- `crates/app` 继续把 dispatcher 变薄，把领域细节下沉到 handlers/effects/workspace flow
+- editor surface 继续把 preview/outline 派生任务化，并保持活跃 CodeMirror host 有上限
 - 未来按需新增 `search/`、`export/` crate

@@ -128,16 +128,33 @@ cargo run -p papyro-mobile
 crates/app/
 ├── Cargo.toml
 └── src/
+    ├── actions.rs
     ├── desktop.rs
+    ├── dispatcher.rs
+    ├── effects.rs
+    ├── export.rs
     ├── lib.rs
     ├── mobile.rs
     ├── runtime.rs
+    ├── settings_persistence.rs
+    ├── state.rs
     ├── workspace_flow.rs
-    └── handlers/
+    ├── handlers/
         ├── file_ops.rs
         ├── mod.rs
         ├── notes.rs
+        ├── search.rs
+        ├── tags.rs
         └── workspace.rs
+    └── workspace_flow/
+        ├── create.rs
+        ├── delete.rs
+        ├── move_path.rs
+        ├── open.rs
+        ├── reload.rs
+        ├── rename.rs
+        ├── save.rs
+        └── utils.rs
 ```
 
 职责：
@@ -146,6 +163,7 @@ crates/app/
 - Dioxus context 注入
 - command 组装
 - workspace flow
+- settings 后台持久化
 - watcher 协调
 - desktop/mobile 共享 app 入口
 
@@ -162,6 +180,7 @@ crates/core/
     ├── file_state.rs
     ├── lib.rs
     ├── models.rs
+    ├── search.rs
     ├── storage.rs
     └── ui_state.rs
 ```
@@ -249,6 +268,8 @@ crates/editor/
 ├── Cargo.toml
 └── src/
     ├── lib.rs
+    ├── performance.rs
+    ├── protocol.rs
     ├── parser/
     └── renderer/
 ```
@@ -257,7 +278,8 @@ crates/editor/
 
 - Markdown 统计
 - Markdown 渲染
-- 编辑器相关纯能力
+- 编辑器协议
+- 编辑器性能预算常量
 
 ## 依赖方向
 
