@@ -6,8 +6,9 @@ use super::preview::PreviewPane;
 use super::tabbar::EditorTabButton;
 use crate::components::primitives::{EmptyState, SegmentedControl, SegmentedControlOption};
 use crate::context::use_app_context;
+use crate::view_model::EditorSurfaceViewModel;
 use dioxus::prelude::*;
-use papyro_core::models::{AppSettings, EditorTab, ViewMode};
+use papyro_core::models::{EditorTab, ViewMode};
 use papyro_core::{EditorTabs, TabContentSnapshot, TabContentsMap};
 use std::collections::HashMap;
 use std::time::Instant;
@@ -38,11 +39,11 @@ struct EditorTypography {
 }
 
 impl EditorTypography {
-    fn from_settings(settings: &AppSettings) -> Self {
+    fn from_surface_model(model: &EditorSurfaceViewModel) -> Self {
         Self {
-            font_family: settings.font_family.clone(),
-            font_size: settings.font_size,
-            line_height: settings.line_height,
+            font_family: model.font_family.clone(),
+            font_size: model.font_size,
+            line_height: model.line_height,
         }
     }
 }
@@ -126,16 +127,11 @@ pub fn EditorPane() -> Element {
     let editor_services = app.editor_services;
     let ui_state = app.ui_state;
     let commands = app.commands;
-
-    let (view_mode, editor_typography, auto_link_paste, outline_visible) = {
-        let state = ui_state.read();
-        (
-            state.view_mode.clone(),
-            EditorTypography::from_settings(&state.settings),
-            state.settings.auto_link_paste,
-            state.outline_visible(),
-        )
-    };
+    let surface_model = app.editor_surface_model.read().clone();
+    let view_mode = surface_model.view_mode.clone();
+    let editor_typography = EditorTypography::from_surface_model(&surface_model);
+    let auto_link_paste = surface_model.auto_link_paste;
+    let outline_visible = surface_model.outline_visible;
     let editor_style = editor_style(&editor_typography);
     let bridges: EditorBridgeMap = use_context_provider(|| Signal::new(HashMap::new()));
     let _document_cache: DocumentDerivedCache =
@@ -436,16 +432,18 @@ mod tests {
         tab_contents.insert_tab("a".to_string(), "# A".to_string(), DocumentStats::default());
 
         let before = editor_pane_model(&editor_tabs, &tab_contents, &[]);
-        let settings = AppSettings {
+        let surface = EditorSurfaceViewModel {
+            view_mode: ViewMode::Source,
+            font_family: "\"Aptos\", sans-serif".to_string(),
             font_size: 18,
-            sidebar_width: 360,
-            sidebar_collapsed: true,
-            ..Default::default()
+            line_height: 1.7,
+            auto_link_paste: true,
+            outline_visible: false,
         };
-        let typography = EditorTypography::from_settings(&settings);
+        let typography = EditorTypography::from_surface_model(&surface);
 
         assert!(editor_style(&typography).contains("--mn-editor-font-size: 18px"));
-        assert!(!editor_style(&typography).contains("360"));
+        assert!(!editor_style(&typography).contains("sidebar"));
         assert_eq!(before, editor_pane_model(&editor_tabs, &tab_contents, &[]));
     }
 }

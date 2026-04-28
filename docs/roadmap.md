@@ -358,6 +358,7 @@ Editor runtime lane
 - [ ] 大 Vec / HashMap 避免作为宽 props 穿过多层组件。
 - [ ] 对稳定结构使用更小 view model 或 id list。
 - [x] `EditorPaneModel` 使用 `use_memo` 派生，避免 chrome/settings render 重建 tab/document snapshot。
+- [x] `EditorPane` 的 view mode、typography、auto-link、outline 输入改为消费 `EditorSurfaceViewModel`，theme/sidebar 变化不改变该模型输出。
 - [x] Quick Open 候选列表和查询过滤使用 `use_memo` 派生，避免输入时重复 flatten 文件树。
 - [ ] 避免在 render 中 clone 大内容、渲染 HTML、提取 outline。
 

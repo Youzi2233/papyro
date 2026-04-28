@@ -71,6 +71,16 @@ pub struct EditorViewModel {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub struct EditorSurfaceViewModel {
+    pub view_mode: ViewMode,
+    pub font_family: String,
+    pub font_size: u8,
+    pub line_height: f32,
+    pub auto_link_paste: bool,
+    pub outline_visible: bool,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct SettingsViewModel {
     pub settings: AppSettings,
     pub theme: Theme,
@@ -197,6 +207,19 @@ impl SettingsViewModel {
             theme: ui_state.theme().clone(),
             sidebar_collapsed: ui_state.sidebar_collapsed(),
             sidebar_width: ui_state.settings.sidebar_width,
+        }
+    }
+}
+
+impl EditorSurfaceViewModel {
+    pub fn from_ui_state(ui_state: &UiState) -> Self {
+        Self {
+            view_mode: ui_state.view_mode.clone(),
+            font_family: ui_state.settings.font_family.clone(),
+            font_size: ui_state.settings.font_size,
+            line_height: ui_state.settings.line_height,
+            auto_link_paste: ui_state.settings.auto_link_paste,
+            outline_visible: ui_state.outline_visible(),
         }
     }
 }
@@ -472,6 +495,42 @@ mod tests {
                 &fixture.ui_state,
             )
         );
+    }
+
+    #[test]
+    fn editor_surface_view_model_ignores_theme_and_sidebar_changes() {
+        let mut fixture = view_model_fixture();
+        let before = EditorSurfaceViewModel::from_ui_state(&fixture.ui_state);
+
+        fixture.ui_state.settings.theme = Theme::Light;
+        fixture.ui_state.settings.sidebar_collapsed = false;
+        fixture.ui_state.settings.sidebar_width = 360;
+
+        assert_eq!(
+            before,
+            EditorSurfaceViewModel::from_ui_state(&fixture.ui_state)
+        );
+    }
+
+    #[test]
+    fn editor_surface_view_model_tracks_editor_preferences() {
+        let mut fixture = view_model_fixture();
+        let before = EditorSurfaceViewModel::from_ui_state(&fixture.ui_state);
+
+        fixture.ui_state.view_mode = ViewMode::Preview;
+        fixture.ui_state.settings.view_mode = ViewMode::Preview;
+        fixture.ui_state.settings.font_size = 18;
+        fixture.ui_state.settings.line_height = 1.8;
+        fixture.ui_state.settings.auto_link_paste = !before.auto_link_paste;
+        fixture.ui_state.toggle_outline();
+
+        let after = EditorSurfaceViewModel::from_ui_state(&fixture.ui_state);
+        assert_ne!(before, after);
+        assert_eq!(after.view_mode, ViewMode::Preview);
+        assert_eq!(after.font_size, 18);
+        assert_eq!(after.line_height, 1.8);
+        assert_eq!(after.auto_link_paste, !before.auto_link_paste);
+        assert!(after.outline_visible);
     }
 
     #[test]
