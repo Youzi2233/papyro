@@ -134,6 +134,7 @@ pub fn EditorPane() -> Element {
                                         EditorHost {
                                             tab_id: host.tab_id.clone(),
                                             is_visible: host.is_active && view_mode.is_editable(),
+                                            initial_content: host.initial_content.clone(),
                                             view_mode: view_mode.clone(),
                                             auto_link_paste,
                                         }
@@ -169,6 +170,7 @@ pub fn EditorPane() -> Element {
                                 EditorHost {
                                     tab_id: host.tab_id.clone(),
                                     is_visible: false,
+                                    initial_content: host.initial_content.clone(),
                                     view_mode: view_mode.clone(),
                                     auto_link_paste,
                                 }

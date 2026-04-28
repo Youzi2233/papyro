@@ -3,6 +3,7 @@ use papyro_core::models::{
 };
 use papyro_core::{EditorTabs, FileState, TabContentSnapshot, TabContentsMap, UiState};
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 const WARM_EDITOR_HOST_LIMIT: usize = 2;
 
@@ -106,6 +107,41 @@ pub struct EditorTabItemViewModel {
 pub struct EditorHostItemViewModel {
     pub tab_id: String,
     pub is_active: bool,
+    pub initial_content: EditorHostInitialContent,
+}
+
+#[derive(Debug, Clone)]
+pub struct EditorHostInitialContent {
+    pub content: Arc<str>,
+}
+
+impl Default for EditorHostInitialContent {
+    fn default() -> Self {
+        Self {
+            content: Arc::from(""),
+        }
+    }
+}
+
+impl PartialEq for EditorHostInitialContent {
+    fn eq(&self, _other: &Self) -> bool {
+        // The content is a non-reactive host startup seed. Live edits flow
+        // from editor runtime events, so content changes must not invalidate
+        // the mounted host.
+        true
+    }
+}
+
+impl Eq for EditorHostInitialContent {}
+
+impl EditorHostInitialContent {
+    fn from_snapshot(snapshot: Option<TabContentSnapshot>) -> Self {
+        snapshot
+            .map(|snapshot| Self {
+                content: snapshot.content,
+            })
+            .unwrap_or_default()
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -267,6 +303,9 @@ impl EditorPaneViewModel {
         let host_items = tracked_host_ids
             .into_iter()
             .map(|tab_id| EditorHostItemViewModel {
+                initial_content: EditorHostInitialContent::from_snapshot(
+                    tab_contents.snapshot_for_tab(&tab_id),
+                ),
                 is_active: Some(&tab_id) == active_tab_id.as_ref(),
                 tab_id,
             })
@@ -747,10 +786,16 @@ mod tests {
                 EditorHostItemViewModel {
                     tab_id: "a".to_string(),
                     is_active: true,
+                    initial_content: EditorHostInitialContent {
+                        content: Arc::from("# A"),
+                    },
                 },
                 EditorHostItemViewModel {
                     tab_id: "b".to_string(),
                     is_active: false,
+                    initial_content: EditorHostInitialContent {
+                        content: Arc::from("# B"),
+                    },
                 },
             ]
         );
@@ -784,14 +829,23 @@ mod tests {
                 EditorHostItemViewModel {
                     tab_id: "b".to_string(),
                     is_active: true,
+                    initial_content: EditorHostInitialContent {
+                        content: Arc::from("# b"),
+                    },
                 },
                 EditorHostItemViewModel {
                     tab_id: "e".to_string(),
                     is_active: false,
+                    initial_content: EditorHostInitialContent {
+                        content: Arc::from("# e"),
+                    },
                 },
                 EditorHostItemViewModel {
                     tab_id: "d".to_string(),
                     is_active: false,
+                    initial_content: EditorHostInitialContent {
+                        content: Arc::from("# d"),
+                    },
                 },
             ]
         );
@@ -836,5 +890,25 @@ mod tests {
 
         assert!(!before.tab_items[0].should_retire_host_on_close);
         assert!(after.tab_items[0].should_retire_host_on_close);
+    }
+
+    #[test]
+    fn editor_host_initial_content_does_not_invalidate_host_item_identity() {
+        let mut editor_tabs = EditorTabs::default();
+        editor_tabs.open_tab(editor_tab("a"));
+
+        let mut before_contents = TabContentsMap::default();
+        before_contents.insert_tab("a".to_string(), "# A".to_string(), DocumentStats::default());
+        let before = EditorPaneViewModel::from_editor_state(&editor_tabs, &before_contents, None);
+
+        let mut after_contents = before_contents.clone();
+        after_contents.update_tab_content("a", "# A changed".to_string());
+        let after = EditorPaneViewModel::from_editor_state(&editor_tabs, &after_contents, None);
+
+        assert_eq!(before.host_items, after.host_items);
+        assert_ne!(
+            before.host_items[0].initial_content.content.as_ref(),
+            after.host_items[0].initial_content.content.as_ref()
+        );
     }
 }

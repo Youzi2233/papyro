@@ -320,7 +320,8 @@ Editor runtime lane
 - [x] `EditorPane` 的 active document / host_items 派生改为消费 `EditorPaneViewModel` memo，不再在组件内直接读取 `EditorTabs` / `TabContentsMap`。
 - [x] Tab 激活从 `EditorTabButton` 直接写 `EditorTabs` 改为走 `AppCommand` / `AppAction` / dispatcher。
 - [x] Tabbar 关闭按钮所需的 active / next-active / immediate-close 元数据改为由 `EditorPaneViewModel` 派生。
-- [ ] `EditorHost` 继续拆分：初始内容、保存状态和 visible host 输入走更窄 view model / action。
+- [x] `EditorHost` 启动内容改为由 `EditorHostItemViewModel` 提供，runtime 初始化不再直接读取 `TabContentsMap`。
+- [ ] `EditorHost` 图片粘贴上下文继续拆分：workspace、tab path 和保存状态输入走更窄 view model / action。
 - [x] Sidebar、Header、StatusBar 不读取 document content 或 editor host 状态。
 - [x] StatusBar 改为消费 `EditorViewModel`，不再直接读取 `EditorTabs` 和 `TabContentsMap`。
 - [x] Header 改为消费窄 `theme` / `sidebar_collapsed` memo，展示逻辑不再直接读取 raw `UiState`。

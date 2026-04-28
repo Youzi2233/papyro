@@ -6,6 +6,7 @@ use super::fallback::{EditorRuntimeState, FallbackEditor};
 use crate::commands::ContentChange;
 use crate::context::use_app_context;
 use crate::perf::{perf_timer, trace_editor_set_preferences, trace_editor_set_view_mode};
+use crate::view_model::EditorHostInitialContent;
 use dioxus::prelude::*;
 use papyro_core::models::ViewMode;
 use uuid::Uuid;
@@ -20,13 +21,13 @@ struct EditorCommandCache {
 pub(super) fn EditorHost(
     tab_id: String,
     is_visible: bool,
+    initial_content: EditorHostInitialContent,
     view_mode: ViewMode,
     auto_link_paste: bool,
 ) -> Element {
     let app = use_app_context();
     let file_state = app.file_state;
     let editor_tabs = app.editor_tabs;
-    let tab_contents = app.tab_contents;
     let status_message = app.status_message;
     let commands = app.commands;
     let bridges = use_context::<EditorBridgeMap>();
@@ -49,11 +50,11 @@ pub(super) fn EditorHost(
             let mut bridges = bridges;
             let file_state = file_state;
             let editor_tabs = editor_tabs;
-            let tab_contents = tab_contents;
             let commands = commands.clone();
             let mut runtime_state = runtime_state;
             let mut status_message = status_message;
             let command_cache = command_cache;
+            let initial_content = initial_content.content.clone();
             let initial_view_mode = startup_view_mode.clone();
             let tab_id = tab_id.clone();
             let container_id = container_id.clone();
@@ -65,12 +66,6 @@ pub(super) fn EditorHost(
                 }
 
                 runtime_state.set(EditorRuntimeState::Loading);
-
-                let initial_content = tab_contents
-                    .read()
-                    .content_for_tab(&tab_id)
-                    .unwrap_or_default()
-                    .to_string();
 
                 let script = format!(
                     r#"
@@ -150,7 +145,7 @@ pub(super) fn EditorHost(
                         serde_json::to_string(&container_id).unwrap_or_else(|_| "\"\"".to_string()),
                     instance_id_json =
                         serde_json::to_string(&instance_id).unwrap_or_else(|_| "\"\"".to_string()),
-                    initial_content_json = serde_json::to_string(&initial_content)
+                    initial_content_json = serde_json::to_string(initial_content.as_ref())
                         .unwrap_or_else(|_| "\"\"".to_string()),
                     initial_view_mode_json = serde_json::to_string(&initial_view_mode)
                         .unwrap_or_else(|_| "\"Hybrid\"".to_string()),
@@ -186,15 +181,9 @@ pub(super) fn EditorHost(
                     match event {
                         EditorEvent::RuntimeReady { tab_id } => {
                             runtime_state.set(EditorRuntimeState::Ready);
-                            let content = tab_contents
-                                .read()
-                                .content_for_tab(&tab_id)
-                                .unwrap_or_default()
-                                .to_string();
                             if let Some(eval) =
                                 bridge_eval_for_instance(bridges, &tab_id, &instance_id)
                             {
-                                let _ = eval.send(EditorCommand::SetContent { content });
                                 send_set_view_mode(
                                     &eval,
                                     command_cache,
