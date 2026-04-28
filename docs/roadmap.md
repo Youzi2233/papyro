@@ -378,6 +378,7 @@ Editor runtime lane
 
 - [x] preview/outline/stats 已有 revision cache 基础。
 - [x] Autosave 延时后的 Markdown stats 统计移到 blocking task，避免在 UI executor 上同步扫整篇文档。
+- [x] Workspace watcher 不再因内容级 `Modified` 事件重载文件树，避免内部保存触发 workspace lane 二次波。
 - [ ] 1MB 以上文件默认降低 preview 和 syntax highlight 压力。
 - [ ] 5MB 文件默认暂停 live preview，保证编辑优先。
 - [ ] outline 提取异步化并支持过期结果丢弃。

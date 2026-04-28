@@ -150,8 +150,8 @@ pub fn should_refresh_for_event(
 ) -> bool {
     match event {
         papyro_storage::fs::WatchEvent::Created(path)
-        | papyro_storage::fs::WatchEvent::Modified(path)
         | papyro_storage::fs::WatchEvent::Deleted(path) => path.starts_with(workspace_path),
+        papyro_storage::fs::WatchEvent::Modified(_) => false,
         papyro_storage::fs::WatchEvent::Renamed { from, to } => {
             from.starts_with(workspace_path) || to.starts_with(workspace_path)
         }
@@ -225,5 +225,23 @@ mod tests {
             ),
             None
         );
+    }
+
+    #[test]
+    fn workspace_refresh_ignores_content_only_modified_events() {
+        let workspace_path = Path::new("workspace");
+
+        assert!(!should_refresh_for_event(
+            &papyro_storage::fs::WatchEvent::Modified(PathBuf::from("workspace/notes/a.md")),
+            workspace_path,
+        ));
+        assert!(should_refresh_for_event(
+            &papyro_storage::fs::WatchEvent::Created(PathBuf::from("workspace/notes/a.md")),
+            workspace_path,
+        ));
+        assert!(should_refresh_for_event(
+            &papyro_storage::fs::WatchEvent::Deleted(PathBuf::from("workspace/notes/a.md")),
+            workspace_path,
+        ));
     }
 }
