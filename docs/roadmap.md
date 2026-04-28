@@ -383,6 +383,7 @@ Editor runtime lane
 
 - [ ] 侧栏折叠只影响 shell 布局和 visible host layout。
 - [x] 侧栏拖拽过程中使用本地 preview width，释放鼠标时才提交 settings。
+- [x] 移除桌面侧栏 width transition，避免一次宽度提交扩散成连续 layout refresh。
 - [x] sidebar/theme/view mode 的 settings 持久化移出 chrome 交互热路径，并通过后台队列合并重复保存。
 - [ ] 打开 Command Palette、Quick Open、Settings、Workspace Search 不触发 editor command storm。
 - [ ] Tab close 交互路径不等待 JS destroy。

@@ -347,7 +347,7 @@ button { border: 0; cursor: pointer; background: transparent; }
     border-radius: 0;
     background: var(--mn-surface);
     box-shadow: none;
-    transition: width 0.2s ease, opacity 0.15s ease;
+    transition: opacity 0.15s ease;
     flex-shrink: 0;
 }
 
