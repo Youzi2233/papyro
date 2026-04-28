@@ -43,20 +43,23 @@ fn status_bar_items(editor_model: &EditorViewModel) -> Vec<StatusBarItem> {
         return Vec::new();
     }
 
-    vec![
-        StatusBarItem {
+    let mut items = Vec::new();
+    if editor_model.active_stats_revision.is_some() {
+        items.push(StatusBarItem {
             label: format!("{} words", editor_model.active_stats.word_count),
             tone: StatusTone::Default,
-        },
-        StatusBarItem {
+        });
+        items.push(StatusBarItem {
             label: format!("{} chars", editor_model.active_stats.char_count),
             tone: StatusTone::Default,
-        },
-        StatusBarItem {
-            label: save_status_label(&editor_model.active_save_status).to_string(),
-            tone: save_status_tone(&editor_model.active_save_status),
-        },
-    ]
+        });
+    }
+    items.push(StatusBarItem {
+        label: save_status_label(&editor_model.active_save_status).to_string(),
+        tone: save_status_tone(&editor_model.active_save_status),
+    });
+
+    items
 }
 
 fn save_status_label(status: &SaveStatus) -> &'static str {
@@ -82,6 +85,14 @@ mod tests {
     use papyro_core::models::{DocumentStats, ViewMode};
 
     fn editor_model(has_active_tab: bool, save_status: SaveStatus) -> EditorViewModel {
+        editor_model_with_stats_revision(has_active_tab, save_status, has_active_tab.then_some(0))
+    }
+
+    fn editor_model_with_stats_revision(
+        has_active_tab: bool,
+        save_status: SaveStatus,
+        active_stats_revision: Option<u64>,
+    ) -> EditorViewModel {
         EditorViewModel {
             active_tab_id: has_active_tab.then(|| "tab-a".to_string()),
             active_title: has_active_tab.then(|| "Draft".to_string()),
@@ -94,6 +105,7 @@ mod tests {
                 char_count: 72,
                 ..Default::default()
             },
+            active_stats_revision,
             view_mode: ViewMode::Hybrid,
         }
     }
@@ -121,6 +133,21 @@ mod tests {
                     tone: StatusTone::Attention,
                 },
             ]
+        );
+    }
+
+    #[test]
+    fn status_bar_items_hide_stale_editor_stats() {
+        assert_eq!(
+            status_bar_items(&editor_model_with_stats_revision(
+                true,
+                SaveStatus::Dirty,
+                None,
+            )),
+            vec![StatusBarItem {
+                label: "Unsaved".to_string(),
+                tone: StatusTone::Attention,
+            }]
         );
     }
 }

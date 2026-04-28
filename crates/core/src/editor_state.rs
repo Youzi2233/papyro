@@ -15,8 +15,8 @@ pub struct TabContentsMap {
     pub tab_contents: HashMap<String, Arc<str>>,
     /// tab_id -> monotonic document revision for autosave staleness and derived caches
     pub tab_revisions: HashMap<String, u64>,
-    /// tab_id -> cached document stats (updated on content change, not on every render)
-    pub tab_stats: HashMap<String, DocumentStats>,
+    /// tab_id -> cached document stats for a specific content revision
+    pub tab_stats: HashMap<String, DocumentStatsSnapshot>,
 }
 
 #[derive(Debug, Clone)]
@@ -32,6 +32,13 @@ pub struct DocumentSnapshot {
     pub path: PathBuf,
     pub revision: u64,
     pub content: Arc<str>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DocumentStatsSnapshot {
+    pub tab_id: String,
+    pub revision: u64,
+    pub stats: DocumentStats,
 }
 
 impl PartialEq for TabContentSnapshot {
@@ -188,14 +195,27 @@ impl TabContentsMap {
     }
 
     pub fn active_stats(&self, active_tab_id: Option<&str>) -> DocumentStats {
-        active_tab_id
-            .and_then(|id| self.tab_stats.get(id))
-            .cloned()
+        self.active_stats_snapshot(active_tab_id)
+            .map(|snapshot| snapshot.stats)
             .unwrap_or_default()
     }
 
+    pub fn active_stats_snapshot(
+        &self,
+        active_tab_id: Option<&str>,
+    ) -> Option<DocumentStatsSnapshot> {
+        active_tab_id.and_then(|id| self.stats_snapshot_for_tab(id))
+    }
+
     pub fn insert_tab(&mut self, tab_id: String, content: String, stats: DocumentStats) {
-        self.tab_stats.insert(tab_id.clone(), stats);
+        self.tab_stats.insert(
+            tab_id.clone(),
+            DocumentStatsSnapshot {
+                tab_id: tab_id.clone(),
+                revision: 0,
+                stats,
+            },
+        );
         self.tab_contents.insert(tab_id.clone(), Arc::from(content));
         self.tab_revisions.insert(tab_id, 0);
     }
@@ -231,9 +251,19 @@ impl TabContentsMap {
         Some(current_revision)
     }
 
-    pub fn refresh_stats(&mut self, tab_id: &str, stats: DocumentStats) {
-        if self.tab_contents.contains_key(tab_id) {
-            self.tab_stats.insert(tab_id.to_string(), stats);
+    pub fn refresh_stats(&mut self, tab_id: &str, revision: u64, stats: DocumentStats) -> bool {
+        if self.should_auto_save_revision(tab_id, revision) {
+            self.tab_stats.insert(
+                tab_id.to_string(),
+                DocumentStatsSnapshot {
+                    tab_id: tab_id.to_string(),
+                    revision,
+                    stats,
+                },
+            );
+            true
+        } else {
+            false
         }
     }
 
@@ -256,12 +286,26 @@ impl TabContentsMap {
                 .insert(tab_id.to_string(), Arc::from(content));
             self.bump_revision(tab_id);
         }
-        self.tab_stats.insert(tab_id.to_string(), stats);
+        let revision = self.revision_for_tab(tab_id).unwrap_or_default();
+        self.tab_stats.insert(
+            tab_id.to_string(),
+            DocumentStatsSnapshot {
+                tab_id: tab_id.to_string(),
+                revision,
+                stats,
+            },
+        );
         true
     }
 
     pub fn revision_for_tab(&self, tab_id: &str) -> Option<u64> {
         self.tab_revisions.get(tab_id).copied()
+    }
+
+    pub fn stats_snapshot_for_tab(&self, tab_id: &str) -> Option<DocumentStatsSnapshot> {
+        self.tab_stats.get(tab_id).and_then(|snapshot| {
+            (self.revision_for_tab(tab_id) == Some(snapshot.revision)).then(|| snapshot.clone())
+        })
     }
 
     pub fn should_auto_save_revision(&self, tab_id: &str, revision: u64) -> bool {
@@ -394,9 +438,64 @@ mod tests {
         assert_eq!(contents.revision_for_tab("a"), Some(2));
         assert!(!contents.should_auto_save_revision("a", 1));
         assert_eq!(
-            contents.tab_stats.get("a").map(|stats| stats.char_count),
-            Some(5)
+            contents
+                .stats_snapshot_for_tab("a")
+                .map(|snapshot| (snapshot.revision, snapshot.stats.char_count)),
+            Some((2, 5))
         );
+    }
+
+    #[test]
+    fn refresh_stats_rejects_stale_revision() {
+        let mut contents = TabContentsMap::default();
+        contents.insert_tab("a".to_string(), "old".to_string(), DocumentStats::default());
+        contents.update_tab_content("a", "new".to_string());
+        contents.update_tab_content("a", "newer".to_string());
+
+        assert!(!contents.refresh_stats(
+            "a",
+            1,
+            DocumentStats {
+                char_count: 3,
+                ..DocumentStats::default()
+            },
+        ));
+        assert!(contents.active_stats_snapshot(Some("a")).is_none());
+
+        assert!(contents.refresh_stats(
+            "a",
+            2,
+            DocumentStats {
+                char_count: 5,
+                ..DocumentStats::default()
+            },
+        ));
+        assert_eq!(
+            contents
+                .active_stats_snapshot(Some("a"))
+                .map(|snapshot| (snapshot.revision, snapshot.stats.char_count)),
+            Some((2, 5))
+        );
+    }
+
+    #[test]
+    fn active_stats_hides_stale_snapshot_after_content_change() {
+        let mut contents = TabContentsMap::default();
+        contents.insert_tab(
+            "a".to_string(),
+            "old".to_string(),
+            DocumentStats {
+                char_count: 3,
+                ..DocumentStats::default()
+            },
+        );
+
+        assert_eq!(contents.active_stats(Some("a")).char_count, 3);
+
+        contents.update_tab_content("a", "new".to_string());
+
+        assert!(contents.active_stats_snapshot(Some("a")).is_none());
+        assert_eq!(contents.active_stats(Some("a")), DocumentStats::default());
     }
 
     #[test]
@@ -417,8 +516,10 @@ mod tests {
         assert_eq!(contents.revision_for_tab("a"), Some(0));
         assert_eq!(snapshot, contents.snapshot_for_tab("a").unwrap());
         assert_eq!(
-            contents.tab_stats.get("a").map(|stats| stats.char_count),
-            Some(3)
+            contents
+                .stats_snapshot_for_tab("a")
+                .map(|snapshot| (snapshot.revision, snapshot.stats.char_count)),
+            Some((0, 3))
         );
     }
 
@@ -431,19 +532,19 @@ mod tests {
         let cloned = contents.clone();
         assert_eq!(first, cloned.snapshot_for_tab("a").unwrap());
 
-        contents.refresh_stats(
+        assert!(contents.refresh_stats(
             "a",
+            0,
             DocumentStats {
                 word_count: 1,
                 ..DocumentStats::default()
             },
-        );
+        ));
         assert_eq!(first, contents.snapshot_for_tab("a").unwrap());
 
         contents.update_tab_content("a", "new".to_string());
         assert_ne!(first, contents.snapshot_for_tab("a").unwrap());
     }
-
     #[test]
     fn close_tabs_under_path_returns_closed_ids_and_updates_active_tab() {
         let mut tabs = EditorTabs::default();

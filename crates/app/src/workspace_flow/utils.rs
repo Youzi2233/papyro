@@ -67,8 +67,10 @@ pub(super) fn refresh_open_note_after_path_change(
                     );
                     if rewritten != content {
                         let stats = summarize_markdown(&rewritten);
-                        tab_contents.update_tab_content(&tab.id, rewritten);
-                        tab_contents.refresh_stats(&tab.id, stats);
+                        if let Some(revision) = tab_contents.update_tab_content(&tab.id, rewritten)
+                        {
+                            tab_contents.refresh_stats(&tab.id, revision, stats);
+                        }
                     }
                 }
             } else {

@@ -72,6 +72,7 @@ pub struct EditorViewModel {
     pub active_is_dirty: bool,
     pub active_save_status: SaveStatus,
     pub active_stats: DocumentStats,
+    pub active_stats_revision: Option<u64>,
     pub view_mode: ViewMode,
 }
 
@@ -249,6 +250,7 @@ impl EditorViewModel {
     ) -> Self {
         let active_tab = editor_tabs.active_tab();
         let active_tab_id = editor_tabs.active_tab_id.clone();
+        let active_stats_snapshot = tab_contents.active_stats_snapshot(active_tab_id.as_deref());
 
         Self {
             active_tab_id: active_tab_id.clone(),
@@ -259,7 +261,11 @@ impl EditorViewModel {
             active_save_status: active_tab
                 .map(|tab| tab.save_status.clone())
                 .unwrap_or_default(),
-            active_stats: tab_contents.active_stats(active_tab_id.as_deref()),
+            active_stats: active_stats_snapshot
+                .as_ref()
+                .map(|snapshot| snapshot.stats.clone())
+                .unwrap_or_default(),
+            active_stats_revision: active_stats_snapshot.map(|snapshot| snapshot.revision),
             view_mode: ui_state.view_mode.clone(),
         }
     }
@@ -627,6 +633,7 @@ mod tests {
         assert!(view_model.editor.active_is_dirty);
         assert_eq!(view_model.editor.active_save_status, SaveStatus::Dirty);
         assert_eq!(view_model.editor.active_stats.char_count, 5);
+        assert_eq!(view_model.editor.active_stats_revision, Some(0));
         assert_eq!(view_model.editor.view_mode, ViewMode::Source);
         assert_eq!(view_model.settings.theme, Theme::Dark);
         assert!(view_model.settings.sidebar_collapsed);
@@ -676,6 +683,40 @@ mod tests {
                 &fixture.ui_state,
             )
         );
+    }
+
+    #[test]
+    fn editor_view_model_hides_stale_stats_until_revision_refreshes() {
+        let mut fixture = view_model_fixture();
+        let revision = fixture
+            .tab_contents
+            .update_tab_content("tab-a", "changed".to_string())
+            .unwrap();
+
+        let stale = EditorViewModel::from_editor_state(
+            &fixture.editor_tabs,
+            &fixture.tab_contents,
+            &fixture.ui_state,
+        );
+        assert_eq!(stale.active_stats, DocumentStats::default());
+        assert_eq!(stale.active_stats_revision, None);
+
+        assert!(fixture.tab_contents.refresh_stats(
+            "tab-a",
+            revision,
+            DocumentStats {
+                char_count: 7,
+                ..DocumentStats::default()
+            },
+        ));
+        let refreshed = EditorViewModel::from_editor_state(
+            &fixture.editor_tabs,
+            &fixture.tab_contents,
+            &fixture.ui_state,
+        );
+
+        assert_eq!(refreshed.active_stats.char_count, 7);
+        assert_eq!(refreshed.active_stats_revision, Some(revision));
     }
 
     #[test]

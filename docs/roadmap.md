@@ -338,7 +338,7 @@ Editor runtime lane
 - [x] 定义 `DocumentSnapshot { tab_id, path, revision, content }` 作为派生数据边界。
 - [x] `revision` 定义为单调内容版本，避免保存或外部刷新后缓存误命中。
 - [x] preview HTML 和 outline 缓存键收敛为 `tab_id + revision`。
-- [ ] stats 输出携带 revision，并按 `tab_id + revision` 进行过期保护。
+- [x] stats 输出携带 revision，并按 `tab_id + revision` 进行过期保护。
 - [ ] search snippets 迁入文档派生管线或搜索索引管线，避免在 UI 结果渲染时生成。
 - [ ] 大文档 preview 和 outline 计算移出 render path。
 - [ ] 派生数据计算支持取消或丢弃过期 revision。

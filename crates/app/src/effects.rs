@@ -130,7 +130,7 @@ fn refresh_stats_if_current(
         state
             .tab_contents
             .write()
-            .refresh_stats(snapshot.tab_id(), stats);
+            .refresh_stats(snapshot.tab_id(), snapshot.revision, stats);
     }
 }
 
