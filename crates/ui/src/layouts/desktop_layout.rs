@@ -5,31 +5,20 @@ use crate::components::{
 };
 use crate::context::use_app_context;
 use crate::perf::{perf_timer, trace_chrome_open_modal};
+use crate::theme::ThemeDomEffect;
 use dioxus::prelude::*;
-use papyro_core::models::Theme;
 
 #[component]
 pub fn DesktopLayout() -> Element {
     let app = use_app_context();
     let ui_state = app.ui_state;
     let commands = app.commands;
-    let settings_model = app.settings_model.read().clone();
     let mut show_settings = use_signal(|| false);
     let mut show_quick_open = use_signal(|| false);
     let mut show_command_palette = use_signal(|| false);
     let mut show_search = use_signal(|| false);
 
-    let theme = settings_model.theme;
-    let sidebar_collapsed = settings_model.sidebar_collapsed;
-
-    use_effect(use_reactive((&theme,), move |(theme,)| {
-        let script = match theme {
-            Theme::Dark => "document.documentElement.setAttribute('data-theme','dark');",
-            Theme::Light => "document.documentElement.setAttribute('data-theme','light');",
-            Theme::System => "document.documentElement.removeAttribute('data-theme');",
-        };
-        document::eval(script);
-    }));
+    let sidebar_collapsed = (app.sidebar_collapsed)();
 
     // Global keyboard shortcuts that must work while CodeMirror has focus.
     // Registered via JS to ensure it fires even when CodeMirror has focus.
@@ -111,6 +100,7 @@ pub fn DesktopLayout() -> Element {
     rsx! {
         div {
             class: "mn-shell",
+            ThemeDomEffect {}
             AppHeader {
                 on_settings: move |_| {
                     let started_at = perf_timer();

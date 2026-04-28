@@ -8,12 +8,13 @@ pub fn AppHeader(on_settings: EventHandler<()>) -> Element {
     let app = use_app_context();
     let ui_state = app.ui_state;
     let commands = app.commands;
-    let settings_model = app.settings_model.read().clone();
     let sidebar_commands = commands.clone();
     let theme_commands = commands.clone();
 
-    let theme_icon = theme_icon(&settings_model.theme);
-    let sidebar_icon = sidebar_icon(settings_model.sidebar_collapsed);
+    let theme = (app.theme)();
+    let sidebar_collapsed = (app.sidebar_collapsed)();
+    let theme_icon = theme_icon(&theme);
+    let sidebar_icon = sidebar_icon(sidebar_collapsed);
 
     rsx! {
         header { class: "mn-header",

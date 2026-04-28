@@ -24,7 +24,6 @@ pub fn Sidebar() -> Element {
     let ui_state = app.ui_state;
     let commands = app.commands;
     let workspace_model = app.workspace_model.read().clone();
-    let settings_model = app.settings_model.read().clone();
     let resize_commands = commands.clone();
 
     let mut create_name = use_signal(String::new);
@@ -33,7 +32,7 @@ pub fn Sidebar() -> Element {
     let mut resize_drag = use_signal(|| None::<SidebarResizeDrag>);
     let mut resize_preview_width = use_signal(|| None::<u32>);
 
-    let configured_sidebar_width = settings_model.sidebar_width;
+    let configured_sidebar_width = (app.sidebar_width)();
     let sidebar_width = resize_preview_width().unwrap_or(configured_sidebar_width);
     let sidebar_class = if resize_drag().is_some() {
         "mn-sidebar resizing"

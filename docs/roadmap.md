@@ -355,7 +355,7 @@ Editor runtime lane
 ### 2.2 Dioxus render 收敛
 
 - [ ] 检查所有 `use_memo` 依赖，确保 chrome 更新不读 document content。
-- [ ] 拆分会导致大面积 rerender 的 props。
+- [x] 拆分会导致大面积 rerender 的 props。
 - [ ] 大 Vec / HashMap 避免作为宽 props 穿过多层组件。
 - [ ] 对稳定结构使用更小 view model 或 id list。
 - [x] `EditorPaneModel` 使用 `use_memo` 派生，避免 chrome/settings render 重建 tab/document snapshot。

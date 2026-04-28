@@ -1,10 +1,9 @@
 use crate::commands::AppCommands;
-use crate::view_model::{
-    EditorSurfaceViewModel, EditorViewModel, SettingsViewModel, WorkspaceViewModel,
-};
+use crate::view_model::{EditorSurfaceViewModel, EditorViewModel, WorkspaceViewModel};
 use dioxus::prelude::*;
 use papyro_core::{
-    models::DocumentStats, EditorTabs, FileState, TabContentsMap, UiState, WorkspaceSearchState,
+    models::{DocumentStats, Theme},
+    EditorTabs, FileState, TabContentsMap, UiState, WorkspaceSearchState,
 };
 use std::path::PathBuf;
 
@@ -50,7 +49,9 @@ pub struct AppContext {
     pub workspace_model: Memo<WorkspaceViewModel>,
     pub editor_model: Memo<EditorViewModel>,
     pub editor_surface_model: Memo<EditorSurfaceViewModel>,
-    pub settings_model: Memo<SettingsViewModel>,
+    pub theme: Memo<Theme>,
+    pub sidebar_collapsed: Memo<bool>,
+    pub sidebar_width: Memo<u32>,
 }
 
 pub fn use_app_context() -> AppContext {

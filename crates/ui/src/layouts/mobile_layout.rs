@@ -11,6 +11,7 @@ use crate::components::{
 };
 use crate::context::use_app_context;
 use crate::perf::{perf_timer, trace_chrome_open_modal};
+use crate::theme::ThemeDomEffect;
 
 #[component]
 pub fn MobileLayout() -> Element {
@@ -19,7 +20,6 @@ pub fn MobileLayout() -> Element {
     let file_state = app.file_state;
     let pending_delete_path = app.pending_delete_path;
     let commands = app.commands;
-    let settings_model = app.settings_model.read().clone();
     let open_workspace_commands = commands.clone();
     let browser_toggle_commands = commands.clone();
     let mut show_settings = use_signal(|| false);
@@ -29,8 +29,9 @@ pub fn MobileLayout() -> Element {
     let mut rename_name = use_signal(String::new);
     let mut tree_sort = use_signal(FileTreeSortMode::default);
 
-    let theme = settings_model.theme;
-    let browser_visible = !settings_model.sidebar_collapsed;
+    let theme = (app.theme)();
+    let sidebar_collapsed = (app.sidebar_collapsed)();
+    let browser_visible = !sidebar_collapsed;
     let workspace = file_state.read().current_workspace.clone();
     let selected_node = file_state.read().selected_node();
     let selected_is_dir = selected_node
@@ -44,17 +45,9 @@ pub fn MobileLayout() -> Element {
         .as_ref()
         .is_some_and(|node| pending_delete_path.read().as_deref() == Some(node.path.as_path()));
 
-    use_effect(use_reactive((&theme,), move |(theme,)| {
-        let script = match theme {
-            Theme::Dark => "document.documentElement.setAttribute('data-theme','dark');",
-            Theme::Light => "document.documentElement.setAttribute('data-theme','light');",
-            Theme::System => "document.documentElement.removeAttribute('data-theme');",
-        };
-        document::eval(script);
-    }));
-
     rsx! {
         div { class: "mn-shell mn-shell-mobile",
+            ThemeDomEffect {}
             AppHeader {
                 on_settings: move |_| {
                     let started_at = perf_timer();
@@ -68,7 +61,7 @@ pub fn MobileLayout() -> Element {
                         class: "mn-button primary",
                         onclick: move |_| {
                             commands.open_workspace.call(());
-                            if settings_model.sidebar_collapsed {
+                            if sidebar_collapsed {
                                 crate::chrome::toggle_sidebar(
                                     ui_state,
                                     open_workspace_commands.clone(),

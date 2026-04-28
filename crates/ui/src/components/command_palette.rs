@@ -53,7 +53,7 @@ pub fn CommandPaletteModal(on_close: EventHandler<()>, on_settings: EventHandler
     let commands = app.commands.clone();
     let workspace_model = app.workspace_model.read().clone();
     let editor_model = app.editor_model.read().clone();
-    let settings_model = app.settings_model.read().clone();
+    let theme = (app.theme)();
     let mut query = use_signal(String::new);
     let mut active_index = use_signal(|| 0usize);
 
@@ -64,7 +64,7 @@ pub fn CommandPaletteModal(on_close: EventHandler<()>, on_settings: EventHandler
         trashed_notes: &workspace_model.trashed_notes,
         has_active_tab: editor_model.has_active_tab,
         selected_note_name: selected_note_name(&workspace_model),
-        theme: settings_model.theme,
+        theme,
         view_mode: editor_model.view_mode,
         outline_visible: ui_state.read().outline_visible(),
     });
