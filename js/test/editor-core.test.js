@@ -13,7 +13,6 @@ import {
   handleMarkdownEnter,
   indentMarkdownListInView,
   insertMarkdownInView,
-  layoutChangedEvent,
   markdownLinkPasteChange,
   markdownBlockquoteEnterChange,
   markdownCodeFenceEnterChange,
@@ -124,15 +123,6 @@ test("next_layout_size only reports real nonzero size changes", () => {
   assert.deepEqual(nextLayoutSize({ width: 800, height: 600 }, { width: 801, height: 600 }), {
     width: 801,
     height: 600,
-  });
-});
-
-test("layout_changed_event matches the rust editor protocol", () => {
-  assert.deepEqual(layoutChangedEvent("tab-a", { width: 1280, height: 720 }), {
-    type: "layout_changed",
-    tab_id: "tab-a",
-    width: 1280,
-    height: 720,
   });
 });
 

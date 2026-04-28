@@ -87,16 +87,6 @@ pub(crate) fn trace_outline_extract(
     }
 }
 
-pub(crate) fn trace_editor_refresh_layout(tab_id: &str, started_at: Option<Instant>) {
-    if let Some(started_at) = started_at {
-        tracing::info!(
-            tab_id,
-            elapsed_ms = started_at.elapsed().as_millis(),
-            "perf editor command refresh_layout"
-        );
-    }
-}
-
 pub(crate) fn trace_editor_set_view_mode(
     tab_id: &str,
     mode: &ViewMode,

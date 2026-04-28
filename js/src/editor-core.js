@@ -850,15 +850,6 @@ export function nextLayoutSize(previousSize, rect) {
   return nextSize;
 }
 
-export function layoutChangedEvent(tabId, size) {
-  return {
-    type: "layout_changed",
-    tab_id: tabId,
-    width: size.width,
-    height: size.height,
-  };
-}
-
 export function setViewMode(entry, mode) {
   const normalized = normalizeViewMode(mode);
   entry.viewMode = normalized;
@@ -957,10 +948,6 @@ export function handleRustMessage(editorRegistry, tabId, message, options = {}) 
       entry.view.focus();
       refreshEditorLayout(entry.view);
       return "focused";
-    case "refresh_layout":
-      if (!entry) return "missing";
-      refreshEditorLayout(entry.view);
-      return "refreshed";
     case "destroy":
       if (entry?.instanceId && message.instance_id && entry.instanceId !== message.instance_id) {
         return "destroyed";

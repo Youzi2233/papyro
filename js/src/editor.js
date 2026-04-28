@@ -32,7 +32,6 @@ import {
   continueMarkdownListOnEnter,
   handleRustMessage as handleRustMessageCore,
   indentMarkdownListInView,
-  layoutChangedEvent,
   normalizeEditorPreferences,
   nextLayoutSize,
   parseMarkdownBlockquoteLine,
@@ -1256,7 +1255,7 @@ function attachLayoutObserver(tabId, container, dioxus) {
     }
 
     entry.layoutSize = nextSize;
-    dioxus.send(layoutChangedEvent(tabId, nextSize));
+    refreshEditorLayout(entry.view);
   };
 
   const measure = () => {

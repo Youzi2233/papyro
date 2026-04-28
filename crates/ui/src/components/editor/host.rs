@@ -5,10 +5,7 @@ use super::bridge::{
 use super::fallback::{EditorRuntimeState, FallbackEditor};
 use crate::commands::ContentChange;
 use crate::context::use_app_context;
-use crate::perf::{
-    perf_timer, trace_editor_refresh_layout, trace_editor_set_preferences,
-    trace_editor_set_view_mode,
-};
+use crate::perf::{perf_timer, trace_editor_set_preferences, trace_editor_set_view_mode};
 use dioxus::prelude::*;
 use papyro_core::models::ViewMode;
 use uuid::Uuid;
@@ -17,13 +14,6 @@ use uuid::Uuid;
 struct EditorCommandCache {
     view_mode: Option<ViewMode>,
     auto_link_paste: Option<bool>,
-    layout_size: Option<EditorLayoutSize>,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct EditorLayoutSize {
-    width: u32,
-    height: u32,
 }
 
 #[component]
@@ -45,14 +35,9 @@ pub(super) fn EditorHost(
     let instance_id_value = instance_id();
     let runtime_state = use_signal(|| EditorRuntimeState::Loading);
     let command_cache = use_signal(EditorCommandCache::default);
-    let mut latest_visibility = use_signal(|| is_visible);
     let startup_view_mode = view_mode.clone();
     let state = runtime_state();
     let runtime_ready = state == EditorRuntimeState::Ready;
-
-    use_effect(use_reactive((&is_visible,), move |(is_visible,)| {
-        latest_visibility.set(is_visible);
-    }));
 
     use_effect(use_reactive(
         (&tab_id, &container_id),
@@ -69,7 +54,6 @@ pub(super) fn EditorHost(
             let mut runtime_state = runtime_state;
             let mut status_message = status_message;
             let command_cache = command_cache;
-            let latest_visibility = latest_visibility;
             let initial_view_mode = startup_view_mode.clone();
             let tab_id = tab_id.clone();
             let container_id = container_id.clone();
@@ -180,7 +164,6 @@ pub(super) fn EditorHost(
                         instance_id: instance_id.clone(),
                     },
                 );
-                let mut runtime_is_ready = false;
 
                 loop {
                     let event = {
@@ -202,7 +185,6 @@ pub(super) fn EditorHost(
 
                     match event {
                         EditorEvent::RuntimeReady { tab_id } => {
-                            runtime_is_ready = true;
                             runtime_state.set(EditorRuntimeState::Ready);
                             let content = tab_contents
                                 .read()
@@ -270,30 +252,6 @@ pub(super) fn EditorHost(
                                 Err(error) => {
                                     status_message.set(Some(error));
                                 }
-                            }
-                        }
-                        EditorEvent::LayoutChanged {
-                            tab_id,
-                            width,
-                            height,
-                        } => {
-                            if !should_refresh_layout(
-                                command_cache,
-                                &tab_id,
-                                width,
-                                height,
-                                runtime_is_ready,
-                                latest_visibility(),
-                            ) {
-                                continue;
-                            }
-
-                            if let Some(eval) =
-                                bridge_eval_for_instance(bridges, &tab_id, &instance_id)
-                            {
-                                let started_at = perf_timer();
-                                let _ = eval.send(EditorCommand::RefreshLayout);
-                                trace_editor_refresh_layout(&tab_id, started_at);
                             }
                         }
                     }
@@ -418,43 +376,6 @@ fn bridge_instance_matches(current_instance_id: Option<&str>, requested_instance
     current_instance_id == Some(requested_instance_id)
 }
 
-fn should_refresh_layout(
-    mut command_cache: Signal<EditorCommandCache>,
-    tab_id: &str,
-    width: u32,
-    height: u32,
-    runtime_ready: bool,
-    is_visible: bool,
-) -> bool {
-    let changed = command_cache.with_mut(|cache| {
-        record_layout_size_change(cache, width, height, runtime_ready, is_visible)
-    });
-    if changed {
-        tracing::debug!(tab_id, width, height, "editor host layout changed");
-    }
-    changed
-}
-
-fn record_layout_size_change(
-    command_cache: &mut EditorCommandCache,
-    width: u32,
-    height: u32,
-    runtime_ready: bool,
-    is_visible: bool,
-) -> bool {
-    if !runtime_ready || !is_visible || width == 0 || height == 0 {
-        return false;
-    }
-
-    let next_size = EditorLayoutSize { width, height };
-    if command_cache.layout_size == Some(next_size) {
-        return false;
-    }
-
-    command_cache.layout_size = Some(next_size);
-    true
-}
-
 fn record_preferences_change(
     command_cache: &mut EditorCommandCache,
     auto_link_paste: bool,
@@ -470,23 +391,6 @@ fn record_preferences_change(
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn refresh_layout_requires_visible_nonzero_size_change() {
-        let mut cache = EditorCommandCache::default();
-
-        assert!(!record_layout_size_change(
-            &mut cache, 800, 600, false, true
-        ));
-        assert!(!record_layout_size_change(
-            &mut cache, 800, 600, true, false
-        ));
-        assert!(!record_layout_size_change(&mut cache, 0, 600, true, true));
-        assert!(!record_layout_size_change(&mut cache, 800, 0, true, true));
-        assert!(record_layout_size_change(&mut cache, 800, 600, true, true));
-        assert!(!record_layout_size_change(&mut cache, 800, 600, true, true));
-        assert!(record_layout_size_change(&mut cache, 820, 600, true, true));
-    }
 
     #[test]
     fn bridge_instance_contract_rejects_stale_cleanup() {
