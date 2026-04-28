@@ -2,6 +2,8 @@
 
 本文描述的是当前代码库的真实结构，不是长期愿景草图。
 
+如果你是第一次接触这个项目，建议先看更详细的新手版：[architecture-beginner-guide.md](architecture-beginner-guide.md)。
+
 如果你只是想启动项目，先看 [README.md](../README.md)。  
 如果你想看重构推进计划，继续看 [docs/refactoring-plan.md](refactoring-plan.md)。
 如果你想看模块 owner 和拆分优先级，继续看 [docs/module-ownership.md](module-ownership.md)。
