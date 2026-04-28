@@ -22,9 +22,11 @@ pub fn QuickOpenModal(on_close: EventHandler<()>) -> Element {
     let mut query = use_signal(String::new);
     let mut active_index = use_signal(|| 0usize);
 
-    let all_items = collect_quick_open_items(&file_state.read().file_tree);
+    let all_items = use_memo(move || collect_quick_open_items(&file_state.read().file_tree));
+    let filtered_items = use_memo(move || filter_quick_open_items(&all_items(), &query()));
     let query_value = query();
-    let filtered = filter_quick_open_items(&all_items, &query_value);
+    let all_items = all_items();
+    let filtered = filtered_items();
     let active = if filtered.is_empty() {
         0
     } else {
