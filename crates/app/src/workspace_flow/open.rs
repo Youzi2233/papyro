@@ -1,9 +1,9 @@
 use super::utils::current_workspace;
 use anyhow::{bail, Result};
-use papyro_core::models::DocumentStats;
+use papyro_core::models::{DocumentStats, RecentFile, Workspace};
 use papyro_core::storage::{NoteStorage, WorkspaceBootstrap};
 use papyro_core::{open_note, EditorTabs, FileState, TabContentsMap, UiState};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 pub(crate) fn open_markdown_from_storage<S>(
     storage: &dyn NoteStorage,
@@ -28,6 +28,51 @@ where
     Ok(())
 }
 
+pub(crate) fn open_markdown_target_from_storage<S>(
+    storage: &dyn NoteStorage,
+    file_state: &mut FileState,
+    editor_tabs: &mut EditorTabs,
+    tab_contents: &mut TabContentsMap,
+    path: PathBuf,
+    summarize: S,
+) -> Result<OpenMarkdownOutcome>
+where
+    S: FnOnce(&str) -> DocumentStats,
+{
+    let target_workspace = workspace_for_path(file_state, &path)?;
+    let already_loaded = file_state
+        .current_workspace
+        .as_ref()
+        .is_some_and(|workspace| workspace.path == target_workspace.path);
+
+    let mut ui_state = None;
+    let mut watch_path = None;
+
+    if !already_loaded {
+        ui_state = Some(apply_recent_workspace_bootstrap(
+            file_state,
+            editor_tabs,
+            tab_contents,
+            storage.bootstrap_from_workspace(&target_workspace.path),
+        )?);
+        watch_path = Some(target_workspace.path.clone());
+    }
+
+    open_markdown_from_storage(
+        storage,
+        file_state,
+        editor_tabs,
+        tab_contents,
+        path,
+        summarize,
+    )?;
+
+    Ok(OpenMarkdownOutcome {
+        ui_state,
+        watch_path,
+    })
+}
+
 pub(crate) fn open_note_from_storage<S>(
     storage: &dyn NoteStorage,
     file_state: &mut FileState,
@@ -49,49 +94,38 @@ where
     )
 }
 
-pub(crate) fn open_recent_file_from_storage<S>(
-    storage: &dyn NoteStorage,
-    file_state: &mut FileState,
-    editor_tabs: &mut EditorTabs,
-    tab_contents: &mut TabContentsMap,
-    workspace_path: PathBuf,
-    relative_path: PathBuf,
-    summarize: S,
-) -> Result<OpenRecentFileOutcome>
-where
-    S: FnOnce(&str) -> DocumentStats,
-{
-    let already_loaded = file_state
-        .current_workspace
-        .as_ref()
-        .is_some_and(|workspace| workspace.path == workspace_path);
-
-    let mut ui_state = None;
-
-    if !already_loaded {
-        ui_state = Some(apply_recent_workspace_bootstrap(
-            file_state,
-            editor_tabs,
-            tab_contents,
-            storage.bootstrap_from_workspace(&workspace_path),
-        )?);
-    }
-
-    open_markdown_from_storage(
-        storage,
-        file_state,
-        editor_tabs,
-        tab_contents,
-        workspace_path.join(relative_path),
-        summarize,
-    )?;
-
-    Ok(OpenRecentFileOutcome { ui_state })
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) struct OpenMarkdownOutcome {
+    pub ui_state: Option<UiState>,
+    pub watch_path: Option<PathBuf>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub(crate) struct OpenRecentFileOutcome {
-    pub ui_state: Option<UiState>,
+fn workspace_for_path(file_state: &FileState, path: &Path) -> Result<Workspace> {
+    let mut candidates = file_state.workspaces.clone();
+    candidates.extend(file_state.recent_files.iter().map(workspace_from_recent));
+
+    candidates
+        .into_iter()
+        .filter(|workspace| path.starts_with(&workspace.path))
+        .max_by_key(|workspace| workspace.path.components().count())
+        .or_else(|| {
+            file_state
+                .current_workspace
+                .clone()
+                .filter(|workspace| path.starts_with(&workspace.path))
+        })
+        .ok_or_else(|| anyhow::anyhow!("No workspace contains {}", path.display()))
+}
+
+fn workspace_from_recent(recent: &RecentFile) -> Workspace {
+    Workspace {
+        id: recent.workspace_id.clone(),
+        name: recent.workspace_name.clone(),
+        path: recent.workspace_path.clone(),
+        created_at: 0,
+        last_opened: None,
+        sort_order: 0,
+    }
 }
 
 fn apply_recent_workspace_bootstrap(

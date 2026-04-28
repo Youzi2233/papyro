@@ -15,12 +15,6 @@ pub struct FileTarget {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct RecentFileTarget {
-    pub workspace_path: PathBuf,
-    pub relative_path: PathBuf,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OpenMarkdownTarget {
     pub path: PathBuf,
 }
@@ -61,7 +55,6 @@ pub struct AppCommands {
     pub create_note: EventHandler<String>,
     pub create_folder: EventHandler<String>,
     pub open_markdown: EventHandler<OpenMarkdownTarget>,
-    pub open_recent_file: EventHandler<RecentFileTarget>,
     pub search_workspace: EventHandler<String>,
     pub content_changed: EventHandler<ContentChange>,
     pub save_active_note: EventHandler<()>,

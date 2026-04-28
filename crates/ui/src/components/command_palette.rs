@@ -1,4 +1,4 @@
-use crate::commands::{AppCommands, RecentFileTarget, RestoreTrashedNoteTarget};
+use crate::commands::{AppCommands, OpenMarkdownTarget, RestoreTrashedNoteTarget};
 use crate::components::primitives::{Modal, TextInput};
 use crate::context::use_app_context;
 use crate::perf::{perf_timer, trace_chrome_open_modal};
@@ -33,7 +33,7 @@ pub(crate) struct CommandPaletteAction {
 pub(crate) enum CommandPaletteActionKind {
     OpenWorkspace,
     OpenWorkspacePath(PathBuf),
-    OpenRecentFile(RecentFileTarget),
+    OpenMarkdown(OpenMarkdownTarget),
     RefreshWorkspace,
     SaveActiveNote,
     ToggleSidebar,
@@ -190,7 +190,7 @@ fn execute_command_action(
         CommandPaletteActionKind::OpenWorkspacePath(path) => {
             commands.open_workspace_path.call(path)
         }
-        CommandPaletteActionKind::OpenRecentFile(target) => commands.open_recent_file.call(target),
+        CommandPaletteActionKind::OpenMarkdown(target) => commands.open_markdown.call(target),
         CommandPaletteActionKind::RefreshWorkspace => commands.refresh_workspace.call(()),
         CommandPaletteActionKind::SaveActiveNote => commands.save_active_note.call(()),
         CommandPaletteActionKind::ToggleSidebar => {
@@ -292,9 +292,8 @@ pub(crate) fn command_palette_actions(
             &format!("Open {}", file.title),
             &format!("{} / {}", file.workspace_name, file.relative_path.display()),
             "REC",
-            CommandPaletteActionKind::OpenRecentFile(RecentFileTarget {
-                workspace_path: file.workspace_path.clone(),
-                relative_path: file.relative_path.clone(),
+            CommandPaletteActionKind::OpenMarkdown(OpenMarkdownTarget {
+                path: file.workspace_path.join(&file.relative_path),
             }),
         ));
     }
@@ -572,9 +571,8 @@ mod tests {
                 && action.group == "REC"
                 && matches!(
                     &action.kind,
-                    CommandPaletteActionKind::OpenRecentFile(target)
-                        if target.workspace_path == std::path::Path::new("work")
-                            && target.relative_path == std::path::Path::new("notes/meeting.md")
+                    CommandPaletteActionKind::OpenMarkdown(target)
+                        if target.path == std::path::Path::new("work/notes/meeting.md")
                 )
         }));
     }

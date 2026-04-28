@@ -9,7 +9,7 @@ use papyro_core::models::{AppSettings, WorkspaceSettingsOverrides, WorkspaceTree
 use papyro_core::{FileState, NoteStorage, UiState};
 use papyro_platform::PlatformApi;
 use papyro_ui::commands::{AppCommands, ContentChange};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 #[derive(Clone)]
@@ -92,24 +92,19 @@ impl AppDispatcher {
                 );
             }
             AppAction::OpenMarkdown(action) => {
-                notes::open_markdown(
-                    self.storage.clone(),
-                    self.state.file_state,
-                    self.state.editor_tabs,
-                    self.state.tab_contents,
-                    self.state.status_message,
-                    action.target,
-                );
-            }
-            AppAction::OpenRecentFile(action) => {
                 let storage = self.storage.clone();
                 let state = self.state;
                 spawn(async move {
-                    if !effects::flush_dirty_tabs(storage.clone(), state).await {
+                    let should_flush = {
+                        let file_state = state.file_state.read();
+                        open_markdown_requires_dirty_flush(&file_state, &action.target.path)
+                    };
+
+                    if should_flush && !effects::flush_dirty_tabs(storage.clone(), state).await {
                         return;
                     }
 
-                    notes::open_recent_file(storage, state, action.target).await;
+                    notes::open_markdown(storage, state, action.target).await;
                 });
             }
             AppAction::SearchWorkspace(action) => {
@@ -286,7 +281,6 @@ impl AppDispatcher {
         let create_note = self.clone();
         let create_folder = self.clone();
         let open_markdown = self.clone();
-        let open_recent_file = self.clone();
         let search_workspace = self.clone();
         let content_changed = self.clone();
         let save_active_note = self.clone();
@@ -326,9 +320,6 @@ impl AppDispatcher {
             }),
             open_markdown: EventHandler::new(move |target| {
                 open_markdown.dispatch(AppAction::open_markdown(target));
-            }),
-            open_recent_file: EventHandler::new(move |target| {
-                open_recent_file.dispatch(AppAction::open_recent_file(target));
             }),
             search_workspace: EventHandler::new(move |query| {
                 search_workspace.dispatch(AppAction::search_workspace(query));
@@ -549,13 +540,20 @@ fn toggle_expanded_path(
     }
 }
 
+fn open_markdown_requires_dirty_flush(file_state: &FileState, path: &Path) -> bool {
+    file_state
+        .current_workspace
+        .as_ref()
+        .is_none_or(|workspace| !path.starts_with(&workspace.path))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use papyro_core::models::{Theme, ViewMode, WorkspaceSettingsOverrides};
+    use papyro_core::models::{Theme, ViewMode, Workspace, WorkspaceSettingsOverrides};
     use papyro_ui::commands::{
-        DeleteTagRequest, OpenMarkdownTarget, RecentFileTarget, RenameTagRequest,
-        RestoreTrashedNoteTarget, SetTagColorRequest, UpsertTagRequest,
+        DeleteTagRequest, OpenMarkdownTarget, RenameTagRequest, RestoreTrashedNoteTarget,
+        SetTagColorRequest, UpsertTagRequest,
     };
 
     #[test]
@@ -585,18 +583,6 @@ mod tests {
             AppAction::OpenMarkdown(crate::actions::OpenMarkdown {
                 target: OpenMarkdownTarget {
                     path: std::path::PathBuf::from("workspace/notes/a.md"),
-                }
-            })
-        );
-        assert_eq!(
-            AppAction::open_recent_file(RecentFileTarget {
-                workspace_path: std::path::PathBuf::from("workspace"),
-                relative_path: std::path::PathBuf::from("notes/a.md"),
-            }),
-            AppAction::OpenRecentFile(crate::actions::OpenRecentFile {
-                target: RecentFileTarget {
-                    workspace_path: std::path::PathBuf::from("workspace"),
-                    relative_path: std::path::PathBuf::from("notes/a.md"),
                 }
             })
         );
@@ -748,5 +734,33 @@ mod tests {
         };
 
         assert_eq!(close_tab_intent(&tab, None), CloseTabIntent::CloseNow);
+    }
+
+    #[test]
+    fn open_markdown_flush_gate_only_triggers_outside_current_workspace() {
+        let state = FileState {
+            current_workspace: Some(Workspace {
+                id: "workspace".to_string(),
+                name: "Workspace".to_string(),
+                path: std::path::PathBuf::from("workspace"),
+                created_at: 0,
+                last_opened: None,
+                sort_order: 0,
+            }),
+            ..FileState::default()
+        };
+
+        assert!(!open_markdown_requires_dirty_flush(
+            &state,
+            std::path::Path::new("workspace/notes/a.md")
+        ));
+        assert!(open_markdown_requires_dirty_flush(
+            &state,
+            std::path::Path::new("archive/notes/a.md")
+        ));
+        assert!(open_markdown_requires_dirty_flush(
+            &FileState::default(),
+            std::path::Path::new("workspace/notes/a.md")
+        ));
     }
 }

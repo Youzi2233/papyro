@@ -1,133 +1,44 @@
 use dioxus::prelude::*;
-use papyro_core::{EditorTabs, FileState, NoteStorage, TabContentsMap, UiState};
+use papyro_core::{EditorTabs, FileState, NoteStorage, TabContentsMap};
 use papyro_editor::parser::summarize_markdown;
-use papyro_ui::commands::{OpenMarkdownTarget, RecentFileTarget};
+use papyro_ui::commands::OpenMarkdownTarget;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Instant;
 
 use crate::state::RuntimeState;
 use crate::workspace_flow::{
-    apply_save_failure, apply_save_success, begin_save_tab, open_markdown_from_storage,
-    open_recent_file_from_storage, write_save_snapshot,
+    apply_save_failure, apply_save_success, begin_save_tab, open_markdown_target_from_storage,
+    write_save_snapshot,
 };
 
-pub fn open_markdown(
-    storage: Arc<dyn NoteStorage>,
-    file_state: Signal<FileState>,
-    editor_tabs: Signal<EditorTabs>,
-    tab_contents: Signal<TabContentsMap>,
-    status_message: Signal<Option<String>>,
-    target: OpenMarkdownTarget,
-) {
-    open_note_path(
-        storage,
-        file_state,
-        editor_tabs,
-        tab_contents,
-        status_message,
-        target.path,
-    );
-}
-
-pub fn open_note_path(
-    storage: Arc<dyn NoteStorage>,
-    mut file_state: Signal<FileState>,
-    mut editor_tabs: Signal<EditorTabs>,
-    mut tab_contents: Signal<TabContentsMap>,
-    mut status_message: Signal<Option<String>>,
-    path: PathBuf,
-) {
-    let perf_started_at = perf_enabled().then(Instant::now);
-    let perf_path = path.clone();
-    let workspace = file_state.read().current_workspace.clone();
-    let Some(workspace) = workspace else {
-        status_message.set(Some("Open a workspace before opening notes".to_string()));
-        return;
-    };
-
-    file_state.write().select_path(path.clone());
-
-    let mut next_file_state = file_state.read().clone();
-    next_file_state.current_workspace = Some(workspace);
-    let mut next_editor_tabs = editor_tabs.read().clone();
-    let mut next_tab_contents = tab_contents.read().clone();
-
-    spawn(async move {
-        let result: Result<
-            Result<(FileState, EditorTabs, TabContentsMap), anyhow::Error>,
-            tokio::task::JoinError,
-        > = tokio::task::spawn_blocking(move || {
-            open_markdown_from_storage(
-                storage.as_ref(),
-                &mut next_file_state,
-                &mut next_editor_tabs,
-                &mut next_tab_contents,
-                path,
-                summarize_markdown,
-            )?;
-
-            Ok::<_, anyhow::Error>((next_file_state, next_editor_tabs, next_tab_contents))
-        })
-        .await;
-
-        match result {
-            Ok(Ok((next_file_state, next_editor_tabs, next_tab_contents))) => {
-                if let Some(started_at) = perf_started_at {
-                    let active_tab_id = next_editor_tabs.active_tab_id.as_deref();
-                    let bytes = next_tab_contents
-                        .active_content(active_tab_id)
-                        .map(str::len)
-                        .unwrap_or_default();
-                    tracing::info!(
-                        path = %perf_path.display(),
-                        bytes,
-                        elapsed_ms = started_at.elapsed().as_millis(),
-                        "perf editor open note"
-                    );
-                }
-                file_state.set(next_file_state);
-                editor_tabs.set(next_editor_tabs);
-                tab_contents.set(next_tab_contents);
-            }
-            Ok(Err(error)) => {
-                status_message.set(Some(format!("Open note failed: {error}")));
-            }
-            Err(error) => {
-                status_message.set(Some(format!("Open note failed: {error}")));
-            }
-        }
-    });
-}
-
-pub async fn open_recent_file(
+pub async fn open_markdown(
     storage: Arc<dyn NoteStorage>,
     mut state: RuntimeState,
-    target: RecentFileTarget,
+    target: OpenMarkdownTarget,
 ) {
     let perf_started_at = perf_enabled().then(Instant::now);
-    let perf_path = target.workspace_path.join(&target.relative_path);
-    let watch_path = target.workspace_path.clone();
+    let perf_path = target.path.clone();
     let mut next_file_state = state.file_state.read().clone();
     let mut next_editor_tabs = state.editor_tabs.read().clone();
     let mut next_tab_contents = state.tab_contents.read().clone();
 
     let result = tokio::task::spawn_blocking(move || {
-        let outcome = open_recent_file_from_storage(
+        let outcome = open_markdown_target_from_storage(
             storage.as_ref(),
             &mut next_file_state,
             &mut next_editor_tabs,
             &mut next_tab_contents,
-            target.workspace_path,
-            target.relative_path,
+            target.path,
             summarize_markdown,
         )?;
 
-        Ok::<_, anyhow::Error>(RecentFileStateUpdate {
+        Ok::<_, anyhow::Error>(OpenMarkdownStateUpdate {
             file_state: next_file_state,
             editor_tabs: next_editor_tabs,
             tab_contents: next_tab_contents,
             ui_state: outcome.ui_state,
+            watch_path: outcome.watch_path,
         })
     })
     .await;
@@ -145,7 +56,7 @@ pub async fn open_recent_file(
                     path = %perf_path.display(),
                     bytes,
                     elapsed_ms = started_at.elapsed().as_millis(),
-                    "perf editor open recent file"
+                    "perf editor open markdown"
                 );
             }
             state.file_state.set(next_state.file_state);
@@ -154,26 +65,29 @@ pub async fn open_recent_file(
             if let Some(next_ui_state) = next_state.ui_state {
                 state.ui_state.set(next_ui_state);
             }
-            state.workspace_watch_path.set(Some(watch_path));
+            if let Some(watch_path) = next_state.watch_path {
+                state.workspace_watch_path.set(Some(watch_path));
+            }
         }
         Ok(Err(error)) => {
             state
                 .status_message
-                .set(Some(format!("Open recent file failed: {error}")));
+                .set(Some(format!("Open Markdown failed: {error}")));
         }
         Err(error) => {
             state
                 .status_message
-                .set(Some(format!("Open recent file failed: {error}")));
+                .set(Some(format!("Open Markdown failed: {error}")));
         }
     }
 }
 
-struct RecentFileStateUpdate {
+struct OpenMarkdownStateUpdate {
     file_state: FileState,
-    editor_tabs: EditorTabs,
-    tab_contents: TabContentsMap,
-    ui_state: Option<UiState>,
+    editor_tabs: papyro_core::EditorTabs,
+    tab_contents: papyro_core::TabContentsMap,
+    ui_state: Option<papyro_core::UiState>,
+    watch_path: Option<PathBuf>,
 }
 
 fn perf_enabled() -> bool {

@@ -125,7 +125,7 @@ fn open_note_flow_reports_storage_failure() {
 }
 
 #[test]
-fn open_recent_file_flow_bootstraps_target_workspace_before_opening_note() {
+fn open_markdown_target_flow_bootstraps_target_workspace_before_opening_note() {
     let archive_workspace = Workspace {
         id: "archive".to_string(),
         name: "Archive".to_string(),
@@ -174,6 +174,15 @@ fn open_recent_file_flow_bootstraps_target_workspace_before_opening_note() {
         ..MockStorage::default()
     };
     let mut file_state = file_state_with_tree(Vec::new());
+    file_state.recent_files = vec![RecentFile {
+        note_id: "note-a".to_string(),
+        title: "Archive".to_string(),
+        relative_path: PathBuf::from("notes/a.md"),
+        workspace_id: archive_workspace.id.clone(),
+        workspace_name: archive_workspace.name.clone(),
+        workspace_path: archive_workspace.path.clone(),
+        opened_at: 1,
+    }];
     let mut editor_tabs = EditorTabs::default();
     editor_tabs.open_tab(tab("old-tab", "old-note", "workspace/old.md"));
     let mut tab_contents = TabContentsMap::default();
@@ -183,13 +192,12 @@ fn open_recent_file_flow_bootstraps_target_workspace_before_opening_note() {
         DocumentStats::default(),
     );
 
-    let outcome = open_recent_file_from_storage(
+    let outcome = open_markdown_target_from_storage(
         &storage,
         &mut file_state,
         &mut editor_tabs,
         &mut tab_contents,
-        archive_workspace.path.clone(),
-        PathBuf::from("notes/a.md"),
+        note_path.clone(),
         |content| DocumentStats {
             char_count: content.len(),
             ..DocumentStats::default()
@@ -212,6 +220,7 @@ fn open_recent_file_flow_bootstraps_target_workspace_before_opening_note() {
     assert_eq!(editor_tabs.active_tab_id.as_deref(), Some("tab-a"));
     assert_eq!(tab_contents.content_for_tab("tab-a"), Some("# Archive"));
     assert_eq!(tab_contents.content_for_tab("old-tab"), None);
+    assert_eq!(outcome.watch_path, Some(PathBuf::from("archive")));
     assert_eq!(ui_state.settings.theme, Theme::Dark);
     assert_eq!(ui_state.settings.font_size, 19);
     assert_eq!(ui_state.view_mode, ViewMode::Preview);

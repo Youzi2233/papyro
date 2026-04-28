@@ -302,7 +302,8 @@ Editor runtime lane
 
 - [x] `AppAction` 和 dispatcher 已存在。
 - [x] 当前 workspace 内的打开笔记入口收敛到 path-based `OpenMarkdown` use case。
-- [ ] Recent 和系统双击等跨 workspace / 外部入口继续收敛到 `OpenMarkdown` use case。
+- [x] Recent File 跨 workspace 打开收敛到 `OpenMarkdown` use case，并保留跨 workspace dirty flush / workspace bootstrap 语义。
+- [ ] 系统双击和启动参数等外部入口继续收敛到 `OpenMarkdown` use case。
 - [x] 文件树、Quick Open、Workspace Search 不直接各写一套 open flow。
 - [x] 移除 `OpenNote(FileNode)` app command/action 入口，避免 UI 继续绕过 path-based open。
 - [ ] `crates/app` 暴露面向桌面宿主的启动/打开请求，不让 `apps/desktop` 调 UI command。
