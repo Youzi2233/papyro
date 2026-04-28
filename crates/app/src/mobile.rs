@@ -32,11 +32,9 @@ pub fn MobileApp() -> Element {
         Arc::new(storage) as Arc<dyn NoteStorage>
     });
     let platform = use_hook(|| Arc::new(MobilePlatform) as Arc<dyn PlatformApi>);
-    let status_message = use_app_runtime(AppShell::Mobile, bootstrap, storage, platform);
+    use_app_runtime(AppShell::Mobile, bootstrap, storage, platform);
 
     rsx! {
-        papyro_ui::layouts::MobileLayout {
-            status_message: status_message(),
-        }
+        papyro_ui::layouts::MobileLayout {}
     }
 }

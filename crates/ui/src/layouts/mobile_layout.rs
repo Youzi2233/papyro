@@ -13,7 +13,7 @@ use crate::context::use_app_context;
 use crate::perf::{perf_timer, trace_chrome_open_modal};
 
 #[component]
-pub fn MobileLayout(status_message: Option<String>) -> Element {
+pub fn MobileLayout() -> Element {
     let app = use_app_context();
     let ui_state = app.ui_state;
     let file_state = app.file_state;
@@ -263,7 +263,7 @@ pub fn MobileLayout(status_message: Option<String>) -> Element {
                     EditorPane {}
                 }
             }
-            StatusBar { status_message }
+            StatusBar {}
             if *show_settings.read() {
                 SettingsModal { on_close: move |_| show_settings.set(false) }
             }

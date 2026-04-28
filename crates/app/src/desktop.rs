@@ -74,12 +74,10 @@ pub fn DesktopApp() -> Element {
             as Arc<dyn NoteStorage>
     });
     let platform = use_hook(|| Arc::new(DesktopPlatform) as Arc<dyn PlatformApi>);
-    let status_message = use_app_runtime(AppShell::Desktop, bootstrap, storage, platform);
+    use_app_runtime(AppShell::Desktop, bootstrap, storage, platform);
 
     rsx! {
-        papyro_ui::layouts::DesktopLayout {
-            status_message: status_message(),
-        }
+        papyro_ui::layouts::DesktopLayout {}
     }
 }
 

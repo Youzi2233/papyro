@@ -11,9 +11,10 @@ struct StatusBarItem {
 }
 
 #[component]
-pub fn StatusBar(status_message: Option<String>) -> Element {
+pub fn StatusBar() -> Element {
     let app = use_app_context();
     let editor_model = app.editor_model.read().clone();
+    let status_message = app.status_message.read().clone();
     let items = status_bar_items(&editor_model);
 
     rsx! {

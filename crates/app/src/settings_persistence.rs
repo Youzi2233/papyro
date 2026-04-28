@@ -136,12 +136,7 @@ fn spawn_settings_worker(
 
             let result = persist_job(storage.clone(), job).await;
             match result {
-                SettingsPersistenceResult::SavedGlobal => {
-                    status_message.set(Some("Saved global settings".to_string()));
-                }
-                SettingsPersistenceResult::SavedWorkspace { workspace_name } => {
-                    status_message.set(Some(format!("Saved settings for {workspace_name}")));
-                }
+                SettingsPersistenceResult::Saved => {}
                 SettingsPersistenceResult::Failed { scope, error } => {
                     status_message.set(Some(format!("Save {scope} settings failed: {error}")));
                     tracing::warn!(%scope, %error, "Failed to save settings");
@@ -156,8 +151,7 @@ fn spawn_settings_worker(
 }
 
 enum SettingsPersistenceResult {
-    SavedGlobal,
-    SavedWorkspace { workspace_name: String },
+    Saved,
     Failed { scope: &'static str, error: String },
 }
 
@@ -170,7 +164,7 @@ async fn persist_job(
             let result =
                 tokio::task::spawn_blocking(move || storage.save_settings(&settings)).await;
             match result {
-                Ok(Ok(())) => SettingsPersistenceResult::SavedGlobal,
+                Ok(Ok(())) => SettingsPersistenceResult::Saved,
                 Ok(Err(error)) => SettingsPersistenceResult::Failed {
                     scope: "global",
                     error: error.to_string(),
@@ -185,13 +179,12 @@ async fn persist_job(
             workspace,
             overrides,
         } => {
-            let workspace_name = workspace.name.clone();
             let result = tokio::task::spawn_blocking(move || {
                 storage.save_workspace_settings(&workspace, &overrides)
             })
             .await;
             match result {
-                Ok(Ok(())) => SettingsPersistenceResult::SavedWorkspace { workspace_name },
+                Ok(Ok(())) => SettingsPersistenceResult::Saved,
                 Ok(Err(error)) => SettingsPersistenceResult::Failed {
                     scope: "workspace",
                     error: error.to_string(),

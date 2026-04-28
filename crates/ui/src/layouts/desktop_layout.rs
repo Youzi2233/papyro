@@ -9,7 +9,7 @@ use dioxus::prelude::*;
 use papyro_core::models::Theme;
 
 #[component]
-pub fn DesktopLayout(status_message: Option<String>) -> Element {
+pub fn DesktopLayout() -> Element {
     let app = use_app_context();
     let ui_state = app.ui_state;
     let commands = app.commands;
@@ -124,7 +124,7 @@ pub fn DesktopLayout(status_message: Option<String>) -> Element {
                 }
                 EditorPane {}
             }
-            StatusBar { status_message }
+            StatusBar {}
             if *show_settings.read() {
                 SettingsModal { on_close: move |_| show_settings.set(false) }
             }
