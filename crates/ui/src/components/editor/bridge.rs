@@ -1,17 +1,9 @@
 use dioxus::document::Eval;
 use dioxus::prelude::*;
-use serde::Deserialize;
 use std::collections::HashMap;
 use std::time::Duration;
 
 pub(super) use papyro_editor::protocol::{EditorCommand, EditorEvent};
-
-#[derive(Debug, Clone, Deserialize)]
-pub(super) struct ClosePerfEvent {
-    pub tab_id: String,
-    pub phase: String,
-    pub elapsed_ms: f64,
-}
 
 #[derive(Clone)]
 pub(super) struct EditorBridge {

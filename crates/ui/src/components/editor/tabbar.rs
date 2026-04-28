@@ -1,4 +1,4 @@
-use super::bridge::{perf_enabled, ClosePerfEvent, RetiredEditorHosts};
+use super::bridge::{perf_enabled, RetiredEditorHosts};
 use crate::commands::AppCommands;
 use crate::context::use_app_context;
 use dioxus::prelude::*;
@@ -18,53 +18,6 @@ fn retire_host_for_close(retired_ids: &mut Vec<String>, close_tab_id: &str) {
     }
 }
 
-fn trace_close_ui_phases(tab_id: &str) {
-    if !perf_enabled() {
-        return;
-    }
-
-    let script = format!(
-        r#"
-            const tabId = {tab_id_json};
-            const startedAt = performance.now();
-            const send = (phase) => {{
-                dioxus.send({{
-                    tab_id: tabId,
-                    phase,
-                    elapsed_ms: performance.now() - startedAt,
-                }});
-            }};
-
-            send("eval_sync");
-            await Promise.resolve();
-            send("await_promise");
-            await new Promise((resolve) => setTimeout(resolve, 0));
-            send("timeout_0");
-            await new Promise((resolve) => {{
-                if (typeof requestAnimationFrame === "function") {{
-                    requestAnimationFrame(() => resolve());
-                }} else {{
-                    setTimeout(resolve, 0);
-                }}
-            }});
-            send("raf");
-        "#,
-        tab_id_json = serde_json::to_string(tab_id).unwrap_or_else(|_| "\"\"".to_string()),
-    );
-
-    let mut eval = document::eval(&script);
-    spawn(async move {
-        while let Ok(event) = eval.recv::<ClosePerfEvent>().await {
-            tracing::info!(
-                tab_id = %event.tab_id,
-                phase = %event.phase,
-                elapsed_ms = event.elapsed_ms,
-                "perf tab close js phase"
-            );
-        }
-    });
-}
-
 fn request_tab_close(
     mut retired_hosts: RetiredEditorHosts,
     commands: AppCommands,
@@ -73,7 +26,6 @@ fn request_tab_close(
     trigger: &'static str,
 ) {
     let perf_started_at = perf_enabled().then(Instant::now);
-    trace_close_ui_phases(&close_tab_id);
 
     // Both writes happen synchronously so Dioxus batches them into a single
     // render pass, eliminating the extra tick that caused the close stutter.
