@@ -1,7 +1,9 @@
 use papyro_core::models::{
     DocumentStats, EditorTab, FileNode, FileNodeKind, SaveStatus, Theme, ViewMode,
 };
-use papyro_core::{EditorTabs, FileState, TabContentSnapshot, TabContentsMap, UiState};
+use papyro_core::{
+    DocumentSnapshot, EditorTabs, FileState, TabContentSnapshot, TabContentsMap, UiState,
+};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -87,7 +89,7 @@ pub struct EditorSurfaceViewModel {
 pub struct EditorPaneViewModel {
     pub active_tab_id: Option<String>,
     pub has_active_tab: bool,
-    pub active_document: Option<TabContentSnapshot>,
+    pub active_document: Option<DocumentSnapshot>,
     pub tab_items: Vec<EditorTabItemViewModel>,
     pub open_tab_ids: Vec<String>,
     pub host_items: Vec<EditorHostItemViewModel>,
@@ -297,9 +299,9 @@ impl EditorPaneViewModel {
         let open_tab_ids: Vec<String> = editor_tabs.tabs.iter().map(|tab| tab.id.clone()).collect();
         let tracked_host_ids = bounded_host_ids(&open_tab_ids, active_tab_id.as_deref());
 
-        let active_document = active_tab_id
-            .as_deref()
-            .and_then(|id| tab_contents.snapshot_for_tab(id));
+        let active_document = editor_tabs
+            .active_tab()
+            .and_then(|tab| document_snapshot_for_tab(tab, tab_contents));
         let host_items = tracked_host_ids
             .into_iter()
             .map(|tab_id| EditorHostItemViewModel {
@@ -340,6 +342,19 @@ impl EditorPaneViewModel {
             host_items,
         }
     }
+}
+
+fn document_snapshot_for_tab(
+    tab: &EditorTab,
+    tab_contents: &TabContentsMap,
+) -> Option<DocumentSnapshot> {
+    let snapshot = tab_contents.snapshot_for_tab(&tab.id)?;
+    Some(DocumentSnapshot {
+        tab_id: snapshot.tab_id,
+        path: tab.path.clone(),
+        revision: snapshot.revision,
+        content: snapshot.content,
+    })
 }
 
 fn next_active_tab_id_after_close(

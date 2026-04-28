@@ -2,14 +2,14 @@
 use super::document_cache::DocumentDerivedCacheState;
 use super::document_cache::{DocumentCacheKey, DocumentDerivedCache};
 use dioxus::prelude::*;
-use papyro_core::TabContentSnapshot;
+use papyro_core::DocumentSnapshot;
 use papyro_editor::parser::{extract_outline, OutlineItem};
 use papyro_editor::performance::should_extract_outline;
 
 use crate::perf::{perf_timer, trace_outline_extract};
 
 #[component]
-pub(super) fn OutlinePane(active_document: Option<TabContentSnapshot>) -> Element {
+pub(super) fn OutlinePane(active_document: Option<DocumentSnapshot>) -> Element {
     let document_cache = use_context::<DocumentDerivedCache>();
     let mut outline_state = use_signal(|| None::<OutlineRenderState>);
     let effect_cache = document_cache.clone();
@@ -81,7 +81,7 @@ fn resolve_outline(
     Vec::new()
 }
 
-fn derive_outline(document: Option<&TabContentSnapshot>) -> Vec<OutlineItem> {
+fn derive_outline(document: Option<&DocumentSnapshot>) -> Vec<OutlineItem> {
     let tab_id = document.map(|document| document.tab_id.as_str());
     let content = document
         .map(|document| document.content.as_ref())
@@ -109,9 +109,10 @@ mod tests {
     use super::*;
     use std::sync::Arc;
 
-    fn snapshot(tab_id: &str, revision: u64, content: &str) -> TabContentSnapshot {
-        TabContentSnapshot {
+    fn snapshot(tab_id: &str, revision: u64, content: &str) -> DocumentSnapshot {
+        DocumentSnapshot {
             tab_id: tab_id.to_string(),
+            path: std::path::PathBuf::from(format!("{tab_id}.md")),
             revision,
             content: Arc::from(content),
         }

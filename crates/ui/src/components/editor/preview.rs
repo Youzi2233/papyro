@@ -4,13 +4,13 @@ use super::document_cache::DocumentDerivedCacheState;
 use super::document_cache::{CachedPreview, DocumentCacheKey, DocumentDerivedCache};
 use crate::context::EditorServices;
 use dioxus::prelude::*;
-use papyro_core::TabContentSnapshot;
+use papyro_core::DocumentSnapshot;
 use papyro_editor::performance::PreviewPolicy;
 use std::time::Instant;
 
 #[component]
 pub(super) fn PreviewPane(
-    active_document: Option<TabContentSnapshot>,
+    active_document: Option<DocumentSnapshot>,
     editor_services: EditorServices,
 ) -> Element {
     let document_cache = use_context::<DocumentDerivedCache>();
@@ -80,7 +80,7 @@ fn resolve_preview(
     document_cache: &DocumentDerivedCache,
     key: Option<&DocumentCacheKey>,
     state: Option<&PreviewRenderState>,
-    document: Option<&TabContentSnapshot>,
+    document: Option<&DocumentSnapshot>,
 ) -> CachedPreview {
     if let Some(preview) = key.and_then(|key| document_cache.borrow().preview(key)) {
         return preview;
@@ -94,7 +94,7 @@ fn resolve_preview(
 }
 
 fn render_preview(
-    document: Option<&TabContentSnapshot>,
+    document: Option<&DocumentSnapshot>,
     editor_services: EditorServices,
 ) -> CachedPreview {
     let started_at = perf_enabled().then(Instant::now);
@@ -121,7 +121,7 @@ fn render_preview(
     CachedPreview { html, policy }
 }
 
-fn preview_placeholder(document: Option<&TabContentSnapshot>) -> CachedPreview {
+fn preview_placeholder(document: Option<&DocumentSnapshot>) -> CachedPreview {
     let byte_len = document
         .map(|document| document.content.len())
         .unwrap_or_default();
@@ -146,9 +146,10 @@ mod tests {
     use super::*;
     use std::sync::Arc;
 
-    fn snapshot(tab_id: &str, revision: u64, content: &str) -> TabContentSnapshot {
-        TabContentSnapshot {
+    fn snapshot(tab_id: &str, revision: u64, content: &str) -> DocumentSnapshot {
+        DocumentSnapshot {
             tab_id: tab_id.to_string(),
+            path: std::path::PathBuf::from(format!("{tab_id}.md")),
             revision,
             content: Arc::from(content),
         }

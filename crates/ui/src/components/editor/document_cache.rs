@@ -1,4 +1,4 @@
-use papyro_core::TabContentSnapshot;
+use papyro_core::DocumentSnapshot;
 use papyro_editor::parser::OutlineItem;
 use papyro_editor::performance::PreviewPolicy;
 use std::cell::RefCell;
@@ -52,7 +52,7 @@ impl DocumentDerivedCacheState {
 }
 
 impl DocumentCacheKey {
-    pub(super) fn from_snapshot(document: &TabContentSnapshot) -> Self {
+    pub(super) fn from_snapshot(document: &DocumentSnapshot) -> Self {
         Self {
             tab_id: document.tab_id.clone(),
             revision: document.revision,
@@ -74,16 +74,30 @@ fn insert_bounded<T>(map: &mut HashMap<DocumentCacheKey, T>, key: DocumentCacheK
 #[cfg(test)]
 mod tests {
     use super::*;
-    use papyro_core::{models::DocumentStats, TabContentsMap};
+    use papyro_core::{models::DocumentStats, TabContentSnapshot, TabContentsMap};
+    use std::path::PathBuf;
+
+    fn document_snapshot(snapshot: TabContentSnapshot) -> DocumentSnapshot {
+        DocumentSnapshot {
+            tab_id: snapshot.tab_id,
+            path: PathBuf::from("a.md"),
+            revision: snapshot.revision,
+            content: snapshot.content,
+        }
+    }
 
     #[test]
     fn cache_key_changes_when_content_handle_changes() {
         let mut contents = TabContentsMap::default();
         contents.insert_tab("a".to_string(), "old".to_string(), DocumentStats::default());
-        let first = DocumentCacheKey::from_snapshot(&contents.snapshot_for_tab("a").unwrap());
+        let first = DocumentCacheKey::from_snapshot(&document_snapshot(
+            contents.snapshot_for_tab("a").unwrap(),
+        ));
 
         contents.update_tab_content("a", "new".to_string());
-        let next = DocumentCacheKey::from_snapshot(&contents.snapshot_for_tab("a").unwrap());
+        let next = DocumentCacheKey::from_snapshot(&document_snapshot(
+            contents.snapshot_for_tab("a").unwrap(),
+        ));
 
         assert_ne!(first, next);
     }
@@ -93,9 +107,13 @@ mod tests {
         let mut contents = TabContentsMap::default();
         contents.insert_tab("a".to_string(), "old".to_string(), DocumentStats::default());
 
-        let first = DocumentCacheKey::from_snapshot(&contents.snapshot_for_tab("a").unwrap());
+        let first = DocumentCacheKey::from_snapshot(&document_snapshot(
+            contents.snapshot_for_tab("a").unwrap(),
+        ));
         let cloned = contents.clone();
-        let next = DocumentCacheKey::from_snapshot(&cloned.snapshot_for_tab("a").unwrap());
+        let next = DocumentCacheKey::from_snapshot(&document_snapshot(
+            cloned.snapshot_for_tab("a").unwrap(),
+        ));
 
         assert_eq!(first, next);
     }

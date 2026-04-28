@@ -335,7 +335,7 @@ Editor runtime lane
 
 ### 1.5 Document Pipeline
 
-- [ ] 定义 `DocumentSnapshot { tab_id, path, revision, content }` 作为派生数据边界。
+- [x] 定义 `DocumentSnapshot { tab_id, path, revision, content }` 作为派生数据边界。
 - [ ] preview HTML、outline、stats、search snippets 统一按 `tab_id + revision` 缓存。
 - [ ] 大文档 preview 和 outline 计算移出 render path。
 - [ ] 派生数据计算支持取消或丢弃过期 revision。

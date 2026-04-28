@@ -1,5 +1,6 @@
 use crate::models::{DocumentStats, EditorTab, SaveStatus};
 use std::collections::HashMap;
+use std::path::PathBuf;
 use std::sync::Arc;
 
 #[derive(Debug, Clone, PartialEq, Default)]
@@ -25,6 +26,14 @@ pub struct TabContentSnapshot {
     pub content: Arc<str>,
 }
 
+#[derive(Debug, Clone)]
+pub struct DocumentSnapshot {
+    pub tab_id: String,
+    pub path: PathBuf,
+    pub revision: u64,
+    pub content: Arc<str>,
+}
+
 impl PartialEq for TabContentSnapshot {
     fn eq(&self, other: &Self) -> bool {
         self.tab_id == other.tab_id
@@ -34,6 +43,17 @@ impl PartialEq for TabContentSnapshot {
 }
 
 impl Eq for TabContentSnapshot {}
+
+impl PartialEq for DocumentSnapshot {
+    fn eq(&self, other: &Self) -> bool {
+        self.tab_id == other.tab_id
+            && self.path == other.path
+            && self.revision == other.revision
+            && Arc::ptr_eq(&self.content, &other.content)
+    }
+}
+
+impl Eq for DocumentSnapshot {}
 
 impl EditorTabs {
     pub fn active_tab(&self) -> Option<&EditorTab> {
