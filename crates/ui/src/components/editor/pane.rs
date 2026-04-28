@@ -8,28 +8,9 @@ use crate::components::primitives::{EmptyState, SegmentedControl, SegmentedContr
 use crate::context::use_app_context;
 use crate::view_model::EditorSurfaceViewModel;
 use dioxus::prelude::*;
-use papyro_core::models::{EditorTab, ViewMode};
-use papyro_core::{EditorTabs, TabContentSnapshot, TabContentsMap};
+use papyro_core::models::ViewMode;
 use std::collections::HashMap;
 use std::time::Instant;
-
-const WARM_EDITOR_HOST_LIMIT: usize = 2;
-
-#[derive(Debug, Clone, PartialEq)]
-struct EditorPaneModel {
-    active_tab: Option<EditorTab>,
-    active_tab_id: Option<String>,
-    active_document: Option<TabContentSnapshot>,
-    tabs: Vec<EditorTab>,
-    open_tab_ids: Vec<String>,
-    host_items: Vec<EditorHostItem>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-struct EditorHostItem {
-    tab_id: String,
-    is_active: bool,
-}
 
 #[derive(Debug, Clone, PartialEq)]
 struct EditorTypography {
@@ -48,55 +29,6 @@ impl EditorTypography {
     }
 }
 
-fn editor_pane_model(editor_tabs: &EditorTabs, tab_contents: &TabContentsMap) -> EditorPaneModel {
-    let active_tab = editor_tabs.active_tab().cloned();
-    let active_tab_id = editor_tabs.active_tab_id.clone();
-    let tabs = editor_tabs.tabs.clone();
-    let open_tab_ids: Vec<String> = editor_tabs.tabs.iter().map(|tab| tab.id.clone()).collect();
-    let tracked_host_ids = bounded_host_ids(&open_tab_ids, active_tab_id.as_deref());
-
-    let active_document = active_tab_id
-        .as_deref()
-        .and_then(|id| tab_contents.snapshot_for_tab(id));
-    let host_items = tracked_host_ids
-        .into_iter()
-        .map(|tab_id| EditorHostItem {
-            is_active: Some(&tab_id) == active_tab_id.as_ref(),
-            tab_id,
-        })
-        .collect();
-
-    EditorPaneModel {
-        active_tab,
-        active_tab_id,
-        active_document,
-        tabs,
-        open_tab_ids,
-        host_items,
-    }
-}
-
-fn bounded_host_ids(open_tab_ids: &[String], active_tab_id: Option<&str>) -> Vec<String> {
-    let mut ids = Vec::new();
-    if let Some(active_tab_id) = active_tab_id {
-        if open_tab_ids.iter().any(|id| id == active_tab_id) {
-            ids.push(active_tab_id.to_string());
-        }
-    }
-
-    for tab_id in open_tab_ids.iter().rev() {
-        if Some(tab_id.as_str()) == active_tab_id || ids.iter().any(|id| id == tab_id) {
-            continue;
-        }
-        ids.push(tab_id.clone());
-        if ids.len() >= WARM_EDITOR_HOST_LIMIT + usize::from(active_tab_id.is_some()) {
-            break;
-        }
-    }
-
-    ids
-}
-
 fn editor_style(typography: &EditorTypography) -> String {
     format!(
         "--mn-editor-font: {}; --mn-editor-font-size: {}px; --mn-editor-line-height: {}; --mn-markdown-body-size: {}px; --mn-markdown-line-height: {};",
@@ -112,11 +44,10 @@ fn editor_style(typography: &EditorTypography) -> String {
 pub fn EditorPane() -> Element {
     let perf_started_at = perf_enabled().then(Instant::now);
     let app = use_app_context();
-    let editor_tabs = app.editor_tabs;
-    let tab_contents = app.tab_contents;
     let editor_services = app.editor_services;
     let ui_state = app.ui_state;
     let commands = app.commands;
+    let pane_model = app.editor_pane_model;
     let surface_model = app.editor_surface_model.read().clone();
     let view_mode = surface_model.view_mode.clone();
     let editor_typography = EditorTypography::from_surface_model(&surface_model);
@@ -126,7 +57,6 @@ pub fn EditorPane() -> Element {
     let bridges: EditorBridgeMap = use_context_provider(|| Signal::new(HashMap::new()));
     let _document_cache: DocumentDerivedCache =
         use_context_provider(DocumentDerivedCacheState::shared);
-    let pane_model = use_memo(move || editor_pane_model(&editor_tabs.read(), &tab_contents.read()));
     let pane = pane_model();
 
     use_effect(use_reactive((&pane.host_items,), move |(ids,)| {
@@ -296,109 +226,9 @@ fn view_mode_from_value(value: &str) -> Option<ViewMode> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use papyro_core::models::{DocumentStats, SaveStatus};
-    use std::path::PathBuf;
-
-    fn tab(id: &str) -> EditorTab {
-        EditorTab {
-            id: id.to_string(),
-            note_id: format!("note-{id}"),
-            title: format!("Note {id}"),
-            path: PathBuf::from(format!("{id}.md")),
-            is_dirty: false,
-            save_status: SaveStatus::Saved,
-        }
-    }
 
     #[test]
-    fn editor_pane_model_tracks_active_document_and_bounded_hosts() {
-        let mut editor_tabs = EditorTabs::default();
-        editor_tabs.open_tab(tab("a"));
-        editor_tabs.open_tab(tab("b"));
-        editor_tabs.set_active_tab("a");
-
-        let mut tab_contents = TabContentsMap::default();
-        tab_contents.insert_tab("a".to_string(), "# A".to_string(), DocumentStats::default());
-        tab_contents.insert_tab("b".to_string(), "# B".to_string(), DocumentStats::default());
-
-        let model = editor_pane_model(&editor_tabs, &tab_contents);
-
-        assert_eq!(model.active_tab_id.as_deref(), Some("a"));
-        assert_eq!(
-            model.active_document.as_ref().map(|document| {
-                (
-                    document.tab_id.as_str(),
-                    document.revision,
-                    document.content.as_ref(),
-                )
-            }),
-            Some(("a", 0, "# A"))
-        );
-        assert_eq!(
-            model.host_items,
-            vec![
-                EditorHostItem {
-                    tab_id: "a".to_string(),
-                    is_active: true,
-                },
-                EditorHostItem {
-                    tab_id: "b".to_string(),
-                    is_active: false,
-                },
-            ]
-        );
-    }
-
-    #[test]
-    fn editor_pane_model_bounds_live_hosts_independent_of_open_tab_count() {
-        let mut editor_tabs = EditorTabs::default();
-        let mut tab_contents = TabContentsMap::default();
-        for id in ["a", "b", "c", "d", "e"] {
-            editor_tabs.open_tab(tab(id));
-            tab_contents.insert_tab(id.to_string(), format!("# {id}"), DocumentStats::default());
-        }
-        editor_tabs.set_active_tab("b");
-
-        let model = editor_pane_model(&editor_tabs, &tab_contents);
-
-        assert_eq!(
-            model.open_tab_ids,
-            vec![
-                "a".to_string(),
-                "b".to_string(),
-                "c".to_string(),
-                "d".to_string(),
-                "e".to_string(),
-            ]
-        );
-        assert_eq!(
-            model.host_items,
-            vec![
-                EditorHostItem {
-                    tab_id: "b".to_string(),
-                    is_active: true,
-                },
-                EditorHostItem {
-                    tab_id: "e".to_string(),
-                    is_active: false,
-                },
-                EditorHostItem {
-                    tab_id: "d".to_string(),
-                    is_active: false,
-                },
-            ]
-        );
-    }
-
-    #[test]
-    fn editor_pane_model_is_stable_across_settings_changes() {
-        let mut editor_tabs = EditorTabs::default();
-        editor_tabs.open_tab(tab("a"));
-
-        let mut tab_contents = TabContentsMap::default();
-        tab_contents.insert_tab("a".to_string(), "# A".to_string(), DocumentStats::default());
-
-        let before = editor_pane_model(&editor_tabs, &tab_contents);
+    fn editor_style_uses_typography_only() {
         let surface = EditorSurfaceViewModel {
             view_mode: ViewMode::Source,
             font_family: "\"Aptos\", sans-serif".to_string(),
@@ -411,6 +241,5 @@ mod tests {
 
         assert!(editor_style(&typography).contains("--mn-editor-font-size: 18px"));
         assert!(!editor_style(&typography).contains("sidebar"));
-        assert_eq!(before, editor_pane_model(&editor_tabs, &tab_contents));
     }
 }

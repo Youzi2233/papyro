@@ -317,7 +317,8 @@ Editor runtime lane
 - [x] 将 runtime state 文档化为 WorkspaceState、ChromeState、DocumentState、EditorRuntimeState。
 - [ ] UI 组件优先读取 view model，不直接读多个 raw signal 拼业务判断。
 - [x] `DesktopLayout` 只能感知 shell/chrome 需要的数据。
-- [ ] `EditorPane` 只接收 active editor surface 所需数据。
+- [x] `EditorPane` 的 active document / host_items 派生改为消费 `EditorPaneViewModel` memo，不再在组件内直接读取 `EditorTabs` / `TabContentsMap`。
+- [ ] `EditorPane` / Tabbar 继续拆分：tab 激活、关闭确认、host pool 输入分别走更窄 view model / action。
 - [x] Sidebar、Header、StatusBar 不读取 document content 或 editor host 状态。
 - [x] StatusBar 改为消费 `EditorViewModel`，不再直接读取 `EditorTabs` 和 `TabContentsMap`。
 - [x] Header 改为消费窄 `theme` / `sidebar_collapsed` memo，展示逻辑不再直接读取 raw `UiState`。
@@ -371,7 +372,7 @@ Editor runtime lane
 - [x] 拆分会导致大面积 rerender 的 props。
 - [ ] 大 Vec / HashMap 避免作为宽 props 穿过多层组件。
 - [ ] 对稳定结构使用更小 view model 或 id list。
-- [x] `EditorPaneModel` 使用 `use_memo` 派生，避免 chrome/settings render 重建 tab/document snapshot。
+- [x] `EditorPaneViewModel` 由 runtime `use_memo` 派生并通过 context 提供，避免 chrome/settings render 重建 tab/document snapshot。
 - [x] `EditorPane` 的 view mode、typography、auto-link、outline 输入改为消费 `EditorSurfaceViewModel`，theme/sidebar 变化不改变该模型输出。
 - [x] `SettingsViewModel` 仅暴露 chrome 展示字段，不再携带完整 `AppSettings` 宽 payload。
 - [x] UI context 将 theme、sidebar collapsed、sidebar width 拆为窄 memo，避免一个 chrome 字段变化唤醒无关组件。

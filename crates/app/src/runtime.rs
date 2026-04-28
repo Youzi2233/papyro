@@ -4,7 +4,9 @@ use dioxus::prelude::*;
 use papyro_core::{NoteStorage, WorkspaceBootstrap};
 use papyro_platform::PlatformApi;
 use papyro_ui::context::{AppContext, EditorServices};
-use papyro_ui::view_model::{EditorSurfaceViewModel, EditorViewModel, WorkspaceViewModel};
+use papyro_ui::view_model::{
+    EditorPaneViewModel, EditorSurfaceViewModel, EditorViewModel, WorkspaceViewModel,
+};
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -67,6 +69,12 @@ pub fn use_app_runtime(
             &state.ui_state.read(),
         )
     });
+    let editor_pane_model = use_memo(move || {
+        EditorPaneViewModel::from_editor_state(
+            &state.editor_tabs.read(),
+            &state.tab_contents.read(),
+        )
+    });
     let editor_surface_model =
         use_memo(move || EditorSurfaceViewModel::from_ui_state(&state.ui_state.read()));
     let theme = use_memo(move || state.ui_state.read().theme().clone());
@@ -90,6 +98,7 @@ pub fn use_app_runtime(
         },
         workspace_model,
         editor_model,
+        editor_pane_model,
         editor_surface_model,
         theme,
         sidebar_collapsed,

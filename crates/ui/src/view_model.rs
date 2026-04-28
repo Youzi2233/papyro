@@ -1,6 +1,10 @@
-use papyro_core::models::{DocumentStats, FileNode, FileNodeKind, SaveStatus, Theme, ViewMode};
-use papyro_core::{EditorTabs, FileState, TabContentsMap, UiState};
+use papyro_core::models::{
+    DocumentStats, EditorTab, FileNode, FileNodeKind, SaveStatus, Theme, ViewMode,
+};
+use papyro_core::{EditorTabs, FileState, TabContentSnapshot, TabContentsMap, UiState};
 use std::path::{Path, PathBuf};
+
+const WARM_EDITOR_HOST_LIMIT: usize = 2;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct AppViewModel {
@@ -76,6 +80,22 @@ pub struct EditorSurfaceViewModel {
     pub line_height: f32,
     pub auto_link_paste: bool,
     pub outline_visible: bool,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct EditorPaneViewModel {
+    pub active_tab: Option<EditorTab>,
+    pub active_tab_id: Option<String>,
+    pub active_document: Option<TabContentSnapshot>,
+    pub tabs: Vec<EditorTab>,
+    pub open_tab_ids: Vec<String>,
+    pub host_items: Vec<EditorHostItemViewModel>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct EditorHostItemViewModel {
+    pub tab_id: String,
+    pub is_active: bool,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -220,6 +240,57 @@ impl EditorSurfaceViewModel {
     }
 }
 
+impl EditorPaneViewModel {
+    pub fn from_editor_state(editor_tabs: &EditorTabs, tab_contents: &TabContentsMap) -> Self {
+        let active_tab = editor_tabs.active_tab().cloned();
+        let active_tab_id = editor_tabs.active_tab_id.clone();
+        let tabs = editor_tabs.tabs.clone();
+        let open_tab_ids: Vec<String> = editor_tabs.tabs.iter().map(|tab| tab.id.clone()).collect();
+        let tracked_host_ids = bounded_host_ids(&open_tab_ids, active_tab_id.as_deref());
+
+        let active_document = active_tab_id
+            .as_deref()
+            .and_then(|id| tab_contents.snapshot_for_tab(id));
+        let host_items = tracked_host_ids
+            .into_iter()
+            .map(|tab_id| EditorHostItemViewModel {
+                is_active: Some(&tab_id) == active_tab_id.as_ref(),
+                tab_id,
+            })
+            .collect();
+
+        Self {
+            active_tab,
+            active_tab_id,
+            active_document,
+            tabs,
+            open_tab_ids,
+            host_items,
+        }
+    }
+}
+
+fn bounded_host_ids(open_tab_ids: &[String], active_tab_id: Option<&str>) -> Vec<String> {
+    let mut ids = Vec::new();
+    if let Some(active_tab_id) = active_tab_id {
+        if open_tab_ids.iter().any(|id| id == active_tab_id) {
+            ids.push(active_tab_id.to_string());
+        }
+    }
+
+    for tab_id in open_tab_ids.iter().rev() {
+        if Some(tab_id.as_str()) == active_tab_id || ids.iter().any(|id| id == tab_id) {
+            continue;
+        }
+        ids.push(tab_id.clone());
+        if ids.len() >= WARM_EDITOR_HOST_LIMIT + usize::from(active_tab_id.is_some()) {
+            break;
+        }
+    }
+
+    ids
+}
+
 fn count_notes(nodes: &[FileNode]) -> usize {
     nodes
         .iter()
@@ -233,9 +304,7 @@ fn count_notes(nodes: &[FileNode]) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use papyro_core::models::{
-        AppSettings, EditorTab, NoteMeta, RecentFile, Tag, TrashedNote, Workspace,
-    };
+    use papyro_core::models::{AppSettings, NoteMeta, RecentFile, Tag, TrashedNote, Workspace};
 
     fn note(path: &str) -> FileNode {
         FileNode {
@@ -245,6 +314,17 @@ mod tests {
             created_at: 0,
             updated_at: 0,
             kind: FileNodeKind::Note { note_id: None },
+        }
+    }
+
+    fn editor_tab(id: &str) -> EditorTab {
+        EditorTab {
+            id: id.to_string(),
+            note_id: format!("note-{id}"),
+            title: format!("Note {id}"),
+            path: PathBuf::from(format!("{id}.md")),
+            is_dirty: false,
+            save_status: SaveStatus::Saved,
         }
     }
 
@@ -564,5 +644,101 @@ mod tests {
         assert_eq!(after.theme, Theme::Light);
         assert!(!after.sidebar_collapsed);
         assert_eq!(after.sidebar_width, 360);
+    }
+
+    #[test]
+    fn editor_pane_view_model_tracks_active_document_and_bounded_hosts() {
+        let mut editor_tabs = EditorTabs::default();
+        editor_tabs.open_tab(editor_tab("a"));
+        editor_tabs.open_tab(editor_tab("b"));
+        editor_tabs.set_active_tab("a");
+
+        let mut tab_contents = TabContentsMap::default();
+        tab_contents.insert_tab("a".to_string(), "# A".to_string(), DocumentStats::default());
+        tab_contents.insert_tab("b".to_string(), "# B".to_string(), DocumentStats::default());
+
+        let model = EditorPaneViewModel::from_editor_state(&editor_tabs, &tab_contents);
+
+        assert_eq!(model.active_tab_id.as_deref(), Some("a"));
+        assert_eq!(
+            model.active_document.as_ref().map(|document| {
+                (
+                    document.tab_id.as_str(),
+                    document.revision,
+                    document.content.as_ref(),
+                )
+            }),
+            Some(("a", 0, "# A"))
+        );
+        assert_eq!(
+            model.host_items,
+            vec![
+                EditorHostItemViewModel {
+                    tab_id: "a".to_string(),
+                    is_active: true,
+                },
+                EditorHostItemViewModel {
+                    tab_id: "b".to_string(),
+                    is_active: false,
+                },
+            ]
+        );
+    }
+
+    #[test]
+    fn editor_pane_view_model_bounds_live_hosts_independent_of_open_tab_count() {
+        let mut editor_tabs = EditorTabs::default();
+        let mut tab_contents = TabContentsMap::default();
+        for id in ["a", "b", "c", "d", "e"] {
+            editor_tabs.open_tab(editor_tab(id));
+            tab_contents.insert_tab(id.to_string(), format!("# {id}"), DocumentStats::default());
+        }
+        editor_tabs.set_active_tab("b");
+
+        let model = EditorPaneViewModel::from_editor_state(&editor_tabs, &tab_contents);
+
+        assert_eq!(
+            model.open_tab_ids,
+            vec![
+                "a".to_string(),
+                "b".to_string(),
+                "c".to_string(),
+                "d".to_string(),
+                "e".to_string(),
+            ]
+        );
+        assert_eq!(
+            model.host_items,
+            vec![
+                EditorHostItemViewModel {
+                    tab_id: "b".to_string(),
+                    is_active: true,
+                },
+                EditorHostItemViewModel {
+                    tab_id: "e".to_string(),
+                    is_active: false,
+                },
+                EditorHostItemViewModel {
+                    tab_id: "d".to_string(),
+                    is_active: false,
+                },
+            ]
+        );
+    }
+
+    #[test]
+    fn editor_pane_view_model_ignores_settings_changes() {
+        let mut fixture = view_model_fixture();
+        let before =
+            EditorPaneViewModel::from_editor_state(&fixture.editor_tabs, &fixture.tab_contents);
+
+        fixture.ui_state.settings.sidebar_width = 360;
+        fixture.ui_state.settings.view_mode = ViewMode::Preview;
+        fixture.ui_state.view_mode = ViewMode::Preview;
+
+        assert_eq!(
+            before,
+            EditorPaneViewModel::from_editor_state(&fixture.editor_tabs, &fixture.tab_contents)
+        );
     }
 }
