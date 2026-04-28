@@ -3,7 +3,9 @@ use dioxus::prelude::*;
 use papyro_core::models::{AppSettings, Theme};
 use papyro_core::NoteStorage;
 use papyro_platform::{DesktopPlatform, PlatformApi};
+use std::ffi::OsString;
 use std::fmt::Display;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -12,9 +14,47 @@ pub struct DesktopStartupChrome {
     pub custom_head: String,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct DesktopStartupOpenRequest {
+    pub markdown_paths: Vec<PathBuf>,
+}
+
+impl DesktopStartupOpenRequest {
+    pub fn is_empty(&self) -> bool {
+        self.markdown_paths.is_empty()
+    }
+}
+
 pub fn desktop_startup_chrome(favicon: impl Display, main_css: &str) -> DesktopStartupChrome {
     let settings = load_startup_settings();
     build_startup_chrome(&settings, &favicon.to_string(), main_css)
+}
+
+pub fn desktop_startup_open_request_from_env() -> DesktopStartupOpenRequest {
+    desktop_startup_open_request_from_args(std::env::args_os())
+}
+
+pub fn desktop_startup_open_request_from_args<I, S>(args: I) -> DesktopStartupOpenRequest
+where
+    I: IntoIterator<Item = S>,
+    S: Into<OsString>,
+{
+    let markdown_paths = args
+        .into_iter()
+        .skip(1)
+        .map(|arg| PathBuf::from(arg.into()))
+        .filter(|path| is_markdown_path(path))
+        .collect();
+
+    DesktopStartupOpenRequest { markdown_paths }
+}
+
+fn is_markdown_path(path: &Path) -> bool {
+    path.extension()
+        .and_then(|extension| extension.to_str())
+        .is_some_and(|extension| {
+            extension.eq_ignore_ascii_case("md") || extension.eq_ignore_ascii_case("markdown")
+        })
 }
 
 fn load_startup_settings() -> AppSettings {
@@ -114,5 +154,30 @@ mod tests {
         assert_eq!(chrome.background_color, (22, 19, 14, 255));
         assert!(!chrome.custom_head.contains("setAttribute('data-theme'"));
         assert!(chrome.custom_head.contains("prefers-color-scheme:dark"));
+    }
+
+    #[test]
+    fn desktop_startup_open_request_filters_markdown_args() {
+        let request = desktop_startup_open_request_from_args([
+            OsString::from("papyro.exe"),
+            OsString::from("notes/a.md"),
+            OsString::from("notes/b.MARKDOWN"),
+            OsString::from("notes/image.png"),
+        ]);
+
+        assert_eq!(
+            request.markdown_paths,
+            vec![
+                PathBuf::from("notes/a.md"),
+                PathBuf::from("notes/b.MARKDOWN")
+            ]
+        );
+    }
+
+    #[test]
+    fn desktop_startup_open_request_skips_binary_without_args() {
+        let request = desktop_startup_open_request_from_args([OsString::from("papyro.exe")]);
+
+        assert!(request.is_empty());
     }
 }

@@ -306,7 +306,8 @@ Editor runtime lane
 - [ ] 系统双击和启动参数等外部入口继续收敛到 `OpenMarkdown` use case。
 - [x] 文件树、Quick Open、Workspace Search 不直接各写一套 open flow。
 - [x] 移除 `OpenNote(FileNode)` app command/action 入口，避免 UI 继续绕过 path-based open。
-- [ ] `crates/app` 暴露面向桌面宿主的启动/打开请求，不让 `apps/desktop` 调 UI command。
+- [x] `crates/app` 暴露面向桌面宿主的启动/打开请求解析 API，不让 `apps/desktop` 调 UI command。
+- [ ] 启动/系统外部打开请求注入 runtime，并复用 `OpenMarkdown` use case。
 - [ ] 为每个 use case 明确输入、输出、失败状态、状态更新范围。
 
 ### 1.4 State Domain 切分

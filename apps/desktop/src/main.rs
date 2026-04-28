@@ -20,6 +20,14 @@ fn main() {
         tracing::warn!(%error, "failed to sync desktop editor runtime asset");
     }
 
+    let startup_open_request = papyro_app::desktop::desktop_startup_open_request_from_env();
+    if !startup_open_request.is_empty() {
+        tracing::info!(
+            markdown_paths = startup_open_request.markdown_paths.len(),
+            "desktop startup markdown open request parsed"
+        );
+    }
+
     let mut chrome = papyro_app::desktop::desktop_startup_chrome(FAVICON, MAIN_CSS);
     chrome
         .custom_head
