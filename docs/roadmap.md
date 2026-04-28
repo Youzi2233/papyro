@@ -377,6 +377,7 @@ Editor runtime lane
 ### 2.4 文档派生性能
 
 - [x] preview/outline/stats 已有 revision cache 基础。
+- [x] Autosave 延时后的 Markdown stats 统计移到 blocking task，避免在 UI executor 上同步扫整篇文档。
 - [ ] 1MB 以上文件默认降低 preview 和 syntax highlight 压力。
 - [ ] 5MB 文件默认暂停 live preview，保证编辑优先。
 - [ ] outline 提取异步化并支持过期结果丢弃。

@@ -1,10 +1,10 @@
-use crate::handlers::{notes, workspace};
+use crate::handlers::workspace;
 use crate::state::RuntimeState;
 use crate::workspace_flow::{
     apply_save_failure, apply_save_success, begin_save_tab, write_save_snapshot, SaveTabSnapshot,
 };
 use dioxus::prelude::*;
-use papyro_core::NoteStorage;
+use papyro_core::{models::DocumentStats, NoteStorage, RecentFile, SavedNote};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
@@ -60,24 +60,78 @@ pub(crate) fn record_content_change(
             return;
         }
 
-        let content = state
-            .tab_contents
-            .read()
-            .content_for_tab(&tab_id)
-            .unwrap_or_default()
-            .to_string();
-        let stats = papyro_editor::parser::summarize_markdown(&content);
-        state.tab_contents.write().refresh_stats(&tab_id, stats);
+        let Some(snapshot) = begin_autosave_snapshot(state, &tab_id) else {
+            return;
+        };
 
-        notes::save_tab_by_id(
-            storage,
-            state.file_state,
-            state.editor_tabs,
-            state.tab_contents,
-            state.status_message,
-            &tab_id,
-        );
+        let snapshot_for_work = snapshot.clone();
+        let storage_for_work = storage.clone();
+        let result = tokio::task::spawn_blocking(move || {
+            let stats = papyro_editor::parser::summarize_markdown(&snapshot_for_work.content);
+            let save = write_save_snapshot(storage_for_work.as_ref(), &snapshot_for_work);
+            AutoSaveWorkResult { stats, save }
+        })
+        .await;
+
+        match result {
+            Ok(result) => apply_autosave_work_result(state, &snapshot, result),
+            Err(error) => {
+                apply_flush_failure(state, &snapshot);
+                state
+                    .status_message
+                    .set(Some(format!("Save failed: {error}")));
+            }
+        }
     });
+}
+
+struct AutoSaveWorkResult {
+    stats: DocumentStats,
+    save: anyhow::Result<(SavedNote, Vec<RecentFile>)>,
+}
+
+fn begin_autosave_snapshot(mut state: RuntimeState, tab_id: &str) -> Option<SaveTabSnapshot> {
+    let file_state = state.file_state.read().clone();
+    let tab_contents = state.tab_contents.read();
+    let mut editor_tabs = state.editor_tabs.write();
+    begin_save_tab(&file_state, &mut editor_tabs, &tab_contents, tab_id).ok()
+}
+
+fn apply_autosave_work_result(
+    mut state: RuntimeState,
+    snapshot: &SaveTabSnapshot,
+    result: AutoSaveWorkResult,
+) {
+    refresh_stats_if_current(state, snapshot, result.stats);
+
+    match result.save {
+        Ok((saved_note, recent_files)) => {
+            apply_flush_success(state, snapshot, saved_note, recent_files);
+        }
+        Err(error) => {
+            apply_flush_failure(state, snapshot);
+            state
+                .status_message
+                .set(Some(format!("Save failed: {error}")));
+        }
+    }
+}
+
+fn refresh_stats_if_current(
+    mut state: RuntimeState,
+    snapshot: &SaveTabSnapshot,
+    stats: DocumentStats,
+) {
+    if state
+        .tab_contents
+        .read()
+        .should_auto_save_revision(snapshot.tab_id(), snapshot.revision)
+    {
+        state
+            .tab_contents
+            .write()
+            .refresh_stats(snapshot.tab_id(), stats);
+    }
 }
 
 pub(crate) async fn flush_dirty_tabs(
