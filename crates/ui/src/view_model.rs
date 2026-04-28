@@ -20,6 +20,7 @@ pub struct WorkspaceViewModel {
     pub trashed_notes: Vec<TrashedNoteListItem>,
     pub tags: Vec<TagListItem>,
     pub selected_name: Option<String>,
+    pub selected_path: Option<PathBuf>,
     pub has_selection: bool,
     pub selected_is_directory: bool,
     pub selected_delete_pending: bool,
@@ -152,6 +153,7 @@ impl WorkspaceViewModel {
                 })
                 .collect(),
             selected_name: selected_node.as_ref().map(|node| node.name.clone()),
+            selected_path: selected_node.as_ref().map(|node| node.path.clone()),
             has_selection: selected_node.is_some(),
             selected_is_directory: selected_node
                 .as_ref()
@@ -411,6 +413,10 @@ mod tests {
         );
         assert_eq!(view_model.workspace.note_count, 2);
         assert_eq!(view_model.workspace.recent_count, 1);
+        assert_eq!(
+            view_model.workspace.selected_path,
+            Some(PathBuf::from("notes"))
+        );
         assert!(view_model.workspace.selected_is_directory);
         assert!(view_model.workspace.selected_delete_pending);
         assert_eq!(view_model.editor.active_title.as_deref(), Some("A"));

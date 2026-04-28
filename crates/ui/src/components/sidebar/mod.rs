@@ -21,10 +21,9 @@ struct SidebarResizeDrag {
 #[component]
 pub fn Sidebar() -> Element {
     let app = use_app_context();
-    let file_state = app.file_state;
     let ui_state = app.ui_state;
-    let pending_delete_path = app.pending_delete_path;
     let commands = app.commands;
+    let workspace_model = app.workspace_model.read().clone();
     let settings_model = app.settings_model.read().clone();
     let resize_commands = commands.clone();
 
@@ -34,7 +33,6 @@ pub fn Sidebar() -> Element {
     let mut resize_drag = use_signal(|| None::<SidebarResizeDrag>);
     let mut resize_preview_width = use_signal(|| None::<u32>);
 
-    let workspace = file_state.read().current_workspace.clone();
     let configured_sidebar_width = settings_model.sidebar_width;
     let sidebar_width = resize_preview_width().unwrap_or(configured_sidebar_width);
     let sidebar_class = if resize_drag().is_some() {
@@ -42,21 +40,14 @@ pub fn Sidebar() -> Element {
     } else {
         "mn-sidebar"
     };
-    let selected_node = file_state.read().selected_node();
-    let has_selection = selected_node.is_some();
-    let selected_is_dir = selected_node.as_ref().is_some_and(|node| {
-        matches!(
-            node.kind,
-            papyro_core::models::FileNodeKind::Directory { .. }
-        )
-    });
-    let selected_target = selected_node.as_ref().map(|node| FileTarget {
-        path: node.path.clone(),
-        name: node.name.clone(),
-    });
-    let selected_delete_pending = selected_node
-        .as_ref()
-        .is_some_and(|node| pending_delete_path.read().as_deref() == Some(node.path.as_path()));
+    let has_workspace = workspace_model.name.is_some();
+    let selected_target = workspace_model
+        .selected_path
+        .clone()
+        .map(|path| FileTarget {
+            path,
+            name: workspace_model.selected_name.clone().unwrap_or_default(),
+        });
 
     rsx! {
         aside {
@@ -67,9 +58,9 @@ pub fn Sidebar() -> Element {
             div { class: "mn-sidebar-header",
                 div { class: "mn-sidebar-workspace",
                     div {
-                        if let Some(ws) = &workspace {
-                            p { class: "mn-sidebar-workspace-name", "{ws.name}" }
-                            p { class: "mn-sidebar-workspace-path", "{ws.path.display()}" }
+                        if let (Some(name), Some(path)) = (&workspace_model.name, &workspace_model.path) {
+                            p { class: "mn-sidebar-workspace-name", "{name}" }
+                            p { class: "mn-sidebar-workspace-path", "{path.display()}" }
                         } else {
                             p { class: "mn-sidebar-workspace-name", "No workspace" }
                             p { class: "mn-sidebar-workspace-path", "Open a folder to start" }
@@ -91,7 +82,7 @@ pub fn Sidebar() -> Element {
                         onclick: move |_| commands.refresh_workspace.call(()),
                         "Refresh"
                     }
-                    if workspace.is_none() {
+                    if !has_workspace {
                         button {
                             class: "mn-button primary",
                             onclick: move |_| commands.open_workspace.call(()),
@@ -153,10 +144,10 @@ pub fn Sidebar() -> Element {
             FileTree { sort_mode: tree_sort() }
 
             // ── Context-sensitive ops for selected item ──
-            if has_selection {
+            if workspace_model.has_selection {
                 div { class: "mn-sidebar-ops",
                     div { class: "mn-sidebar-ops-header",
-                        if selected_is_dir {
+                        if workspace_model.selected_is_directory {
                             span { "Folder" }
                         } else {
                             span { "Note" }
@@ -172,14 +163,14 @@ pub fn Sidebar() -> Element {
                             }
                             button {
                                 class: "mn-button danger",
-                                title: if selected_delete_pending { "Confirm delete" } else { "Delete selected" },
+                                title: if workspace_model.selected_delete_pending { "Confirm delete" } else { "Delete selected" },
                                 onclick: move |_| commands.delete_selected.call(()),
-                                if selected_delete_pending { "Confirm" } else { "Delete" }
+                                if workspace_model.selected_delete_pending { "Confirm" } else { "Delete" }
                             }
                         }
                     }
 
-                    if selected_is_dir {
+                    if workspace_model.selected_is_directory {
                         button {
                             class: "mn-button",
                             style: "width:100%; justify-content:center",
