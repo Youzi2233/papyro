@@ -310,7 +310,7 @@ Editor runtime lane
 - [x] `crates/app` 暴露面向桌面宿主的启动/打开请求解析 API，不让 `apps/desktop` 调 UI command。
 - [x] 启动参数打开请求注入 runtime，并复用 `OpenMarkdown` use case。
 - [ ] 已运行实例的系统外部打开请求注入 runtime，并复用 `OpenMarkdown` use case。
-- [ ] 为每个 use case 明确输入、输出、失败状态、状态更新范围。
+- [x] 为每个 use case 明确输入、输出、失败状态、状态更新范围。
 
 ### 1.4 State Domain 切分
 
