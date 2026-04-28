@@ -12,7 +12,6 @@ pub(super) struct EditorBridge {
 }
 
 pub(super) type EditorBridgeMap = Signal<HashMap<String, EditorBridge>>;
-pub(super) type RetiredEditorHosts = Signal<Vec<String>>;
 
 const EDITOR_DESTROY_IDLE_DELAY: Duration = Duration::from_millis(80);
 

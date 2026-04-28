@@ -1,39 +1,11 @@
-use super::bridge::{perf_enabled, RetiredEditorHosts};
+use super::bridge::perf_enabled;
 use crate::commands::AppCommands;
 use crate::context::use_app_context;
 use dioxus::prelude::*;
 use std::time::Instant;
 
-const MAX_RETIRED_HOSTS: usize = 2;
-
-fn retire_host_for_close(retired_ids: &mut Vec<String>, close_tab_id: &str) {
-    if retired_ids.iter().any(|id| id == close_tab_id) {
-        return;
-    }
-
-    retired_ids.push(close_tab_id.to_string());
-    let overflow = retired_ids.len().saturating_sub(MAX_RETIRED_HOSTS);
-    if overflow > 0 {
-        retired_ids.drain(0..overflow);
-    }
-}
-
-fn request_tab_close(
-    mut retired_hosts: RetiredEditorHosts,
-    commands: AppCommands,
-    close_tab_id: String,
-    should_retire_host: bool,
-    trigger: &'static str,
-) {
+fn request_tab_close(commands: AppCommands, close_tab_id: String, trigger: &'static str) {
     let perf_started_at = perf_enabled().then(Instant::now);
-
-    // Both writes happen synchronously so Dioxus batches them into a single
-    // render pass, eliminating the extra tick that caused the close stutter.
-    if should_retire_host {
-        retired_hosts.with_mut(|ids| {
-            retire_host_for_close(ids, &close_tab_id);
-        });
-    }
 
     commands.close_tab.call(close_tab_id.clone());
 
@@ -44,22 +16,6 @@ fn request_tab_close(
             elapsed_ms = started_at.elapsed().as_millis(),
             "perf tab close trigger"
         );
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn retired_hosts_are_unique_and_bounded() {
-        let mut retired = vec!["a".to_string(), "b".to_string()];
-
-        retire_host_for_close(&mut retired, "b");
-        assert_eq!(retired, vec!["a".to_string(), "b".to_string()]);
-
-        retire_host_for_close(&mut retired, "c");
-        assert_eq!(retired, vec!["b".to_string(), "c".to_string()]);
     }
 }
 
@@ -81,7 +37,6 @@ pub(super) fn EditorTabButton(tab: papyro_core::models::EditorTab, is_active: bo
     let editor_tabs = app.editor_tabs;
     let pending_close_tab = app.pending_close_tab;
     let commands = app.commands;
-    let retired_hosts = use_context::<RetiredEditorHosts>();
     let activate_tab_id = tab.id.clone();
     let close_tab_id = tab.id.clone();
     let close_tab_id_for_mouse = close_tab_id.clone();
@@ -123,10 +78,8 @@ pub(super) fn EditorTabButton(tab: papyro_core::models::EditorTab, is_active: bo
                     event.prevent_default();
                     event.stop_propagation();
                     request_tab_close(
-                        retired_hosts,
                         commands_for_mouse.clone(),
                         close_tab_id_for_mouse.clone(),
-                        should_retire_host,
                         "mouse_down",
                     );
                 },
@@ -139,10 +92,8 @@ pub(super) fn EditorTabButton(tab: papyro_core::models::EditorTab, is_active: bo
                     event.prevent_default();
                     event.stop_propagation();
                     request_tab_close(
-                        retired_hosts,
                         commands_for_keyboard.clone(),
                         close_tab_id_for_keyboard.clone(),
-                        should_retire_host,
                         "keyboard",
                     );
                 },

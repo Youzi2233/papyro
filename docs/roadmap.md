@@ -367,7 +367,7 @@ Editor runtime lane
 
 ### 2.3 Editor host 性能
 
-- [x] 已有 bounded retired host 和 stale destroy 防护。
+- [x] 已有 stale destroy 防护，关闭 tab 不再通过 retired host 中间态保留旧 host。
 - [x] 重新评估是否所有 open tab 都需要保留 host。
 - [x] 明确 active host、warm host、hidden host 的数量上限。
 - [ ] 非活动 tab 的 selection、scroll、undo 状态保存策略文档化。
@@ -392,7 +392,7 @@ Editor runtime lane
 - [x] sidebar/theme/view mode 的 settings 持久化移出 chrome 交互热路径，并通过后台队列合并重复保存。
 - [ ] 打开 Command Palette、Quick Open、Settings、Workspace Search 不触发 editor command storm。
 - [x] dirty tab 第一次关闭只进入确认态，不在 close 热路径触发保存流程。
-- [ ] Tab close 交互路径不等待 JS destroy。
+- [x] Tab close 交互路径不等待 JS destroy，且不再同步写入 retired host 状态。
 - [ ] 切换 theme/settings 只更新必要 CSS variables 和 active host preferences。
 
 验收标准：

@@ -1,4 +1,4 @@
-use super::bridge::{perf_enabled, send_editor_destroy_batch, EditorBridgeMap, RetiredEditorHosts};
+use super::bridge::{perf_enabled, send_editor_destroy_batch, EditorBridgeMap};
 use super::document_cache::{DocumentDerivedCache, DocumentDerivedCacheState};
 use super::host::EditorHost;
 use super::outline::OutlinePane;
@@ -48,22 +48,12 @@ impl EditorTypography {
     }
 }
 
-fn editor_pane_model(
-    editor_tabs: &EditorTabs,
-    tab_contents: &TabContentsMap,
-    retired_host_ids: &[String],
-) -> EditorPaneModel {
+fn editor_pane_model(editor_tabs: &EditorTabs, tab_contents: &TabContentsMap) -> EditorPaneModel {
     let active_tab = editor_tabs.active_tab().cloned();
     let active_tab_id = editor_tabs.active_tab_id.clone();
     let tabs = editor_tabs.tabs.clone();
     let open_tab_ids: Vec<String> = editor_tabs.tabs.iter().map(|tab| tab.id.clone()).collect();
-    let mut tracked_host_ids = bounded_host_ids(&open_tab_ids, active_tab_id.as_deref());
-
-    for retired_id in retired_host_ids {
-        if !tracked_host_ids.iter().any(|id| id == retired_id) {
-            tracked_host_ids.push(retired_id.clone());
-        }
-    }
+    let tracked_host_ids = bounded_host_ids(&open_tab_ids, active_tab_id.as_deref());
 
     let active_document = active_tab_id
         .as_deref()
@@ -136,53 +126,38 @@ pub fn EditorPane() -> Element {
     let bridges: EditorBridgeMap = use_context_provider(|| Signal::new(HashMap::new()));
     let _document_cache: DocumentDerivedCache =
         use_context_provider(DocumentDerivedCacheState::shared);
-    let mut retired_hosts: RetiredEditorHosts = use_context_provider(|| Signal::new(Vec::new()));
-    let pane_model = use_memo(move || {
-        let retired_host_ids = retired_hosts.read().clone();
-        editor_pane_model(&editor_tabs.read(), &tab_contents.read(), &retired_host_ids)
-    });
+    let pane_model = use_memo(move || editor_pane_model(&editor_tabs.read(), &tab_contents.read()));
     let pane = pane_model();
 
-    use_effect(use_reactive(
-        (&pane.host_items, &pane.open_tab_ids),
-        move |(ids, open_ids)| {
-            let perf_started_at = perf_enabled().then(Instant::now);
-            let valid: std::collections::HashSet<String> =
-                ids.into_iter().map(|item| item.tab_id).collect();
-            let stale: Vec<String> = bridges
-                .peek()
-                .keys()
-                .filter(|key| !valid.contains(key.as_str()))
-                .cloned()
-                .collect();
+    use_effect(use_reactive((&pane.host_items,), move |(ids,)| {
+        let perf_started_at = perf_enabled().then(Instant::now);
+        let valid: std::collections::HashSet<String> =
+            ids.into_iter().map(|item| item.tab_id).collect();
+        let stale: Vec<String> = bridges
+            .peek()
+            .keys()
+            .filter(|key| !valid.contains(key.as_str()))
+            .cloned()
+            .collect();
 
-            if stale.is_empty() {
-                // Even when no bridges are stale, drain retired hosts whose
-                // tabs no longer exist so the list doesn't grow forever.
-                let open: std::collections::HashSet<String> = open_ids.into_iter().collect();
-                retired_hosts.with_mut(|ids| ids.retain(|id| open.contains(id)));
-                return;
-            }
+        if stale.is_empty() {
+            return;
+        }
 
-            let retired_bridges = {
-                let mut bridges = bridges;
-                let mut map = bridges.write();
-                stale.iter().filter_map(|id| map.remove(id)).collect()
-            };
-            send_editor_destroy_batch(retired_bridges);
+        let retired_bridges = {
+            let mut bridges = bridges;
+            let mut map = bridges.write();
+            stale.iter().filter_map(|id| map.remove(id)).collect()
+        };
+        send_editor_destroy_batch(retired_bridges);
 
-            // Drain retired entries whose bridges have just been destroyed.
-            let destroyed: std::collections::HashSet<&String> = stale.iter().collect();
-            retired_hosts.with_mut(|ids| ids.retain(|id| !destroyed.contains(id)));
-
-            if let Some(started_at) = perf_started_at {
-                tracing::info!(
-                    elapsed_ms = started_at.elapsed().as_millis(),
-                    "perf editor stale bridge cleanup"
-                );
-            }
-        },
-    ));
+        if let Some(started_at) = perf_started_at {
+            tracing::info!(
+                elapsed_ms = started_at.elapsed().as_millis(),
+                "perf editor stale bridge cleanup"
+            );
+        }
+    }));
 
     if let Some(started_at) = perf_started_at {
         tracing::info!(
@@ -336,7 +311,7 @@ mod tests {
     }
 
     #[test]
-    fn editor_pane_model_tracks_active_document_and_retired_hosts() {
+    fn editor_pane_model_tracks_active_document_and_bounded_hosts() {
         let mut editor_tabs = EditorTabs::default();
         editor_tabs.open_tab(tab("a"));
         editor_tabs.open_tab(tab("b"));
@@ -346,7 +321,7 @@ mod tests {
         tab_contents.insert_tab("a".to_string(), "# A".to_string(), DocumentStats::default());
         tab_contents.insert_tab("b".to_string(), "# B".to_string(), DocumentStats::default());
 
-        let model = editor_pane_model(&editor_tabs, &tab_contents, &["closed".to_string()]);
+        let model = editor_pane_model(&editor_tabs, &tab_contents);
 
         assert_eq!(model.active_tab_id.as_deref(), Some("a"));
         assert_eq!(
@@ -370,10 +345,6 @@ mod tests {
                     tab_id: "b".to_string(),
                     is_active: false,
                 },
-                EditorHostItem {
-                    tab_id: "closed".to_string(),
-                    is_active: false,
-                },
             ]
         );
     }
@@ -388,7 +359,7 @@ mod tests {
         }
         editor_tabs.set_active_tab("b");
 
-        let model = editor_pane_model(&editor_tabs, &tab_contents, &["closed".to_string()]);
+        let model = editor_pane_model(&editor_tabs, &tab_contents);
 
         assert_eq!(
             model.open_tab_ids,
@@ -415,10 +386,6 @@ mod tests {
                     tab_id: "d".to_string(),
                     is_active: false,
                 },
-                EditorHostItem {
-                    tab_id: "closed".to_string(),
-                    is_active: false,
-                },
             ]
         );
     }
@@ -431,7 +398,7 @@ mod tests {
         let mut tab_contents = TabContentsMap::default();
         tab_contents.insert_tab("a".to_string(), "# A".to_string(), DocumentStats::default());
 
-        let before = editor_pane_model(&editor_tabs, &tab_contents, &[]);
+        let before = editor_pane_model(&editor_tabs, &tab_contents);
         let surface = EditorSurfaceViewModel {
             view_mode: ViewMode::Source,
             font_family: "\"Aptos\", sans-serif".to_string(),
@@ -444,6 +411,6 @@ mod tests {
 
         assert!(editor_style(&typography).contains("--mn-editor-font-size: 18px"));
         assert!(!editor_style(&typography).contains("sidebar"));
-        assert_eq!(before, editor_pane_model(&editor_tabs, &tab_contents, &[]));
+        assert_eq!(before, editor_pane_model(&editor_tabs, &tab_contents));
     }
 }
