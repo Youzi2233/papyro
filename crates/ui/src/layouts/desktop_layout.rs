@@ -13,14 +13,14 @@ pub fn DesktopLayout(status_message: Option<String>) -> Element {
     let app = use_app_context();
     let ui_state = app.ui_state;
     let commands = app.commands;
+    let settings_model = app.settings_model.read().clone();
     let mut show_settings = use_signal(|| false);
     let mut show_quick_open = use_signal(|| false);
     let mut show_command_palette = use_signal(|| false);
     let mut show_search = use_signal(|| false);
-    let settings = ui_state.read().settings.clone();
 
-    let theme = ui_state.read().theme().clone();
-    let sidebar_collapsed = settings.sidebar_collapsed;
+    let theme = settings_model.theme;
+    let sidebar_collapsed = settings_model.sidebar_collapsed;
 
     use_effect(use_reactive((&theme,), move |(theme,)| {
         let script = match theme {
