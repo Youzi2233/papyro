@@ -1,8 +1,5 @@
 use base64::{engine::general_purpose::STANDARD, Engine as _};
-use papyro_core::{
-    models::{EditorTab, Workspace},
-    workspace_assets_dir,
-};
+use papyro_core::{models::Workspace, workspace_assets_dir};
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::io::AsyncWriteExt;
@@ -15,11 +12,11 @@ pub(super) struct SavedEditorAsset {
 
 pub(super) async fn save_pasted_image_asset(
     workspace: &Workspace,
-    tab: &EditorTab,
+    note_path: &Path,
     mime_type: &str,
     data: &str,
 ) -> Result<SavedEditorAsset, String> {
-    if !tab.path.starts_with(&workspace.path) {
+    if !note_path.starts_with(&workspace.path) {
         return Err("active note is outside the current workspace".to_string());
     }
 
@@ -41,7 +38,7 @@ pub(super) async fn save_pasted_image_asset(
         .await
         .map_err(|error| format!("failed to write pasted image: {error}"))?;
 
-    let link = markdown_asset_link(workspace, &tab.path, &path);
+    let link = markdown_asset_link(workspace, note_path, &path);
 
     Ok(SavedEditorAsset {
         markdown: format!("![image]({link})"),
@@ -138,7 +135,6 @@ fn markdown_path(path: &Path) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use papyro_core::models::SaveStatus;
 
     fn workspace(root: &Path) -> Workspace {
         Workspace {
@@ -151,25 +147,14 @@ mod tests {
         }
     }
 
-    fn tab(root: &Path) -> EditorTab {
-        EditorTab {
-            id: "tab-a".to_string(),
-            note_id: "note-a".to_string(),
-            title: "Note".to_string(),
-            path: root.join("note.md"),
-            is_dirty: false,
-            save_status: SaveStatus::Saved,
-        }
-    }
-
     #[tokio::test]
     async fn save_pasted_image_asset_writes_workspace_asset() {
         let temp = tempfile::tempdir().expect("tempdir");
         let root = temp.path();
         let workspace = workspace(root);
-        let tab = tab(root);
+        let note_path = root.join("note.md");
 
-        let saved = save_pasted_image_asset(&workspace, &tab, "image/png", "YWJj")
+        let saved = save_pasted_image_asset(&workspace, &note_path, "image/png", "YWJj")
             .await
             .expect("saved image");
 
@@ -219,9 +204,9 @@ mod tests {
         let temp = tempfile::tempdir().expect("tempdir");
         let root = temp.path();
         let workspace = workspace(root);
-        let tab = tab(root);
+        let note_path = root.join("note.md");
 
-        let error = save_pasted_image_asset(&workspace, &tab, "text/plain", "YWJj")
+        let error = save_pasted_image_asset(&workspace, &note_path, "text/plain", "YWJj")
             .await
             .expect_err("unsupported");
 

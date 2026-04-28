@@ -6,7 +6,7 @@ use super::fallback::{EditorRuntimeState, FallbackEditor};
 use crate::commands::ContentChange;
 use crate::context::use_app_context;
 use crate::perf::{perf_timer, trace_editor_set_preferences, trace_editor_set_view_mode};
-use crate::view_model::EditorHostInitialContent;
+use crate::view_model::{EditorHostInitialContent, EditorHostPasteContext};
 use dioxus::prelude::*;
 use papyro_core::models::ViewMode;
 use uuid::Uuid;
@@ -22,12 +22,11 @@ pub(super) fn EditorHost(
     tab_id: String,
     is_visible: bool,
     initial_content: EditorHostInitialContent,
+    paste_context: Option<EditorHostPasteContext>,
     view_mode: ViewMode,
     auto_link_paste: bool,
 ) -> Element {
     let app = use_app_context();
-    let file_state = app.file_state;
-    let editor_tabs = app.editor_tabs;
     let status_message = app.status_message;
     let commands = app.commands;
     let bridges = use_context::<EditorBridgeMap>();
@@ -48,13 +47,12 @@ pub(super) fn EditorHost(
             }
 
             let mut bridges = bridges;
-            let file_state = file_state;
-            let editor_tabs = editor_tabs;
             let commands = commands.clone();
             let mut runtime_state = runtime_state;
             let mut status_message = status_message;
             let command_cache = command_cache;
             let initial_content = initial_content.content.clone();
+            let paste_context = paste_context.clone();
             let initial_view_mode = startup_view_mode.clone();
             let tab_id = tab_id.clone();
             let container_id = container_id.clone();
@@ -215,10 +213,7 @@ pub(super) fn EditorHost(
                             mime_type,
                             data,
                         } => {
-                            let workspace = file_state.read().current_workspace.clone();
-                            let tab = editor_tabs.read().tab_by_id(&tab_id).cloned();
-
-                            let Some((workspace, tab)) = workspace.zip(tab) else {
+                            let Some(paste_context) = paste_context.clone() else {
                                 status_message.set(Some(
                                     "Open a workspace note before pasting images".to_string(),
                                 ));
@@ -231,7 +226,13 @@ pub(super) fn EditorHost(
                                 continue;
                             };
 
-                            match save_pasted_image_asset(&workspace, &tab, &mime_type, &data).await
+                            match save_pasted_image_asset(
+                                &paste_context.workspace,
+                                &paste_context.note_path,
+                                &mime_type,
+                                &data,
+                            )
+                            .await
                             {
                                 Ok(saved) => {
                                     let _ = eval.send(EditorCommand::InsertMarkdown {

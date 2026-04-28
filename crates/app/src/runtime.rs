@@ -71,6 +71,7 @@ pub fn use_app_runtime(
     });
     let editor_pane_model = use_memo(move || {
         EditorPaneViewModel::from_editor_state(
+            &state.file_state.read(),
             &state.editor_tabs.read(),
             &state.tab_contents.read(),
             state.pending_close_tab.read().as_deref(),
