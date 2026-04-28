@@ -54,6 +54,17 @@ pub(crate) fn set_view_mode(
     trace_view_mode_change(trigger, &previous_mode, &next_mode, started_at);
 }
 
+pub(crate) fn set_sidebar_width(ui_state: Signal<UiState>, commands: AppCommands, width: u32) {
+    let target = {
+        let state = ui_state.read();
+        sidebar_width_target(&state, width)
+    };
+
+    if let Some(target) = target {
+        call_settings_target(commands, target);
+    }
+}
+
 fn call_settings_target(commands: AppCommands, target: SettingsSaveTarget) {
     match target {
         SettingsSaveTarget::Global(settings) => commands.save_settings.call(settings),
@@ -73,6 +84,22 @@ fn sidebar_toggle_target(state: &UiState) -> (bool, SettingsSaveTarget) {
         let mut settings = state.global_settings.clone();
         settings.sidebar_collapsed = collapsed;
         (collapsed, SettingsSaveTarget::Global(settings))
+    }
+}
+
+fn sidebar_width_target(state: &UiState, width: u32) -> Option<SettingsSaveTarget> {
+    if state.settings.sidebar_width == width {
+        return None;
+    }
+
+    if state.workspace_overrides.sidebar_width.is_some() {
+        let mut overrides = state.workspace_overrides.clone();
+        overrides.sidebar_width = Some(width);
+        Some(SettingsSaveTarget::Workspace(overrides))
+    } else {
+        let mut settings = state.global_settings.clone();
+        settings.sidebar_width = width;
+        Some(SettingsSaveTarget::Global(settings))
     }
 }
 
@@ -170,6 +197,18 @@ mod tests {
                 ..AppSettings::default()
             })
         );
+
+        assert_eq!(
+            sidebar_width_target(&state, 320),
+            Some(SettingsSaveTarget::Global(AppSettings {
+                theme: Theme::Light,
+                font_size: 14,
+                sidebar_collapsed: false,
+                sidebar_width: 320,
+                view_mode: ViewMode::Hybrid,
+                ..AppSettings::default()
+            }))
+        );
     }
 
     #[test]
@@ -184,6 +223,7 @@ mod tests {
             WorkspaceSettingsOverrides {
                 theme: Some(Theme::Dark),
                 sidebar_collapsed: Some(false),
+                sidebar_width: Some(300),
                 view_mode: Some(ViewMode::Source),
                 ..WorkspaceSettingsOverrides::default()
             },
@@ -215,5 +255,23 @@ mod tests {
                 ..
             })
         ));
+
+        assert!(matches!(
+            sidebar_width_target(&state, 340),
+            Some(SettingsSaveTarget::Workspace(WorkspaceSettingsOverrides {
+                sidebar_width: Some(340),
+                ..
+            }))
+        ));
+    }
+
+    #[test]
+    fn sidebar_width_target_skips_unchanged_width() {
+        let state = UiState::from_settings(AppSettings {
+            sidebar_width: 320,
+            ..AppSettings::default()
+        });
+
+        assert_eq!(sidebar_width_target(&state, 320), None);
     }
 }

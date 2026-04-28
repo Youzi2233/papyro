@@ -213,7 +213,7 @@ pub fn Sidebar() -> Element {
                         event.prevent_default();
                         let width = sidebar_width_from_drag(drag, event.client_coordinates().x);
                         resize_preview_width.set(Some(width));
-                        persist_sidebar_width(ui_state, resize_commands.clone(), width);
+                        crate::chrome::set_sidebar_width(ui_state, resize_commands.clone(), width);
                         trace_sidebar_resize(drag.start_width, width, drag.started_at);
                         resize_drag.set(None);
                         resize_preview_width.set(None);
@@ -232,32 +232,6 @@ fn clamp_sidebar_width(width: f64) -> u32 {
     width
         .round()
         .clamp(SIDEBAR_MIN_WIDTH as f64, SIDEBAR_MAX_WIDTH as f64) as u32
-}
-
-fn persist_sidebar_width(
-    mut ui_state: Signal<papyro_core::UiState>,
-    commands: crate::commands::AppCommands,
-    width: u32,
-) {
-    let (settings, workspace_overrides) = {
-        let mut state = ui_state.write();
-        state.settings.sidebar_width = width;
-
-        if state.workspace_overrides.sidebar_width.is_some() {
-            state.workspace_overrides.sidebar_width = Some(width);
-            (None, Some(state.workspace_overrides.clone()))
-        } else {
-            let mut settings = state.settings.clone();
-            settings.sidebar_width = width;
-            (Some(settings), None)
-        }
-    };
-
-    if let Some(overrides) = workspace_overrides {
-        commands.save_workspace_settings.call(overrides);
-    } else if let Some(settings) = settings {
-        commands.save_settings.call(settings);
-    }
 }
 
 #[cfg(test)]
