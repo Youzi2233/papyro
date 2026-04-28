@@ -12,6 +12,8 @@ use papyro_core::{EditorTabs, TabContentSnapshot, TabContentsMap};
 use std::collections::HashMap;
 use std::time::Instant;
 
+const WARM_EDITOR_HOST_LIMIT: usize = 2;
+
 #[derive(Debug, Clone, PartialEq)]
 struct EditorPaneModel {
     active_tab: Option<EditorTab>,
@@ -54,7 +56,7 @@ fn editor_pane_model(
     let active_tab_id = editor_tabs.active_tab_id.clone();
     let tabs = editor_tabs.tabs.clone();
     let open_tab_ids: Vec<String> = editor_tabs.tabs.iter().map(|tab| tab.id.clone()).collect();
-    let mut tracked_host_ids = open_tab_ids.clone();
+    let mut tracked_host_ids = bounded_host_ids(&open_tab_ids, active_tab_id.as_deref());
 
     for retired_id in retired_host_ids {
         if !tracked_host_ids.iter().any(|id| id == retired_id) {
@@ -81,6 +83,27 @@ fn editor_pane_model(
         open_tab_ids,
         host_items,
     }
+}
+
+fn bounded_host_ids(open_tab_ids: &[String], active_tab_id: Option<&str>) -> Vec<String> {
+    let mut ids = Vec::new();
+    if let Some(active_tab_id) = active_tab_id {
+        if open_tab_ids.iter().any(|id| id == active_tab_id) {
+            ids.push(active_tab_id.to_string());
+        }
+    }
+
+    for tab_id in open_tab_ids.iter().rev() {
+        if Some(tab_id.as_str()) == active_tab_id || ids.iter().any(|id| id == tab_id) {
+            continue;
+        }
+        ids.push(tab_id.clone());
+        if ids.len() >= WARM_EDITOR_HOST_LIMIT + usize::from(active_tab_id.is_some()) {
+            break;
+        }
+    }
+
+    ids
 }
 
 fn editor_style(typography: &EditorTypography) -> String {
@@ -349,6 +372,51 @@ mod tests {
                 },
                 EditorHostItem {
                     tab_id: "b".to_string(),
+                    is_active: false,
+                },
+                EditorHostItem {
+                    tab_id: "closed".to_string(),
+                    is_active: false,
+                },
+            ]
+        );
+    }
+
+    #[test]
+    fn editor_pane_model_bounds_live_hosts_independent_of_open_tab_count() {
+        let mut editor_tabs = EditorTabs::default();
+        let mut tab_contents = TabContentsMap::default();
+        for id in ["a", "b", "c", "d", "e"] {
+            editor_tabs.open_tab(tab(id));
+            tab_contents.insert_tab(id.to_string(), format!("# {id}"), DocumentStats::default());
+        }
+        editor_tabs.set_active_tab("b");
+
+        let model = editor_pane_model(&editor_tabs, &tab_contents, &["closed".to_string()]);
+
+        assert_eq!(
+            model.open_tab_ids,
+            vec![
+                "a".to_string(),
+                "b".to_string(),
+                "c".to_string(),
+                "d".to_string(),
+                "e".to_string(),
+            ]
+        );
+        assert_eq!(
+            model.host_items,
+            vec![
+                EditorHostItem {
+                    tab_id: "b".to_string(),
+                    is_active: true,
+                },
+                EditorHostItem {
+                    tab_id: "e".to_string(),
+                    is_active: false,
+                },
+                EditorHostItem {
+                    tab_id: "d".to_string(),
                     is_active: false,
                 },
                 EditorHostItem {
