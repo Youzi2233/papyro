@@ -387,6 +387,7 @@ Editor runtime lane
 - [x] 移除桌面侧栏 width transition，避免一次宽度提交扩散成连续 layout refresh。
 - [x] sidebar/theme/view mode 的 settings 持久化移出 chrome 交互热路径，并通过后台队列合并重复保存。
 - [ ] 打开 Command Palette、Quick Open、Settings、Workspace Search 不触发 editor command storm。
+- [x] dirty tab 第一次关闭只进入确认态，不在 close 热路径触发保存流程。
 - [ ] Tab close 交互路径不等待 JS destroy。
 - [ ] 切换 theme/settings 只更新必要 CSS variables 和 active host preferences。
 

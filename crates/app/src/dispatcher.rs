@@ -150,7 +150,7 @@ impl AppDispatcher {
                 );
             }
             AppAction::CloseTab(action) => {
-                close_tab(self.shell, self.storage.clone(), self.state, action.tab_id);
+                close_tab(self.shell, self.state, action.tab_id);
             }
             AppAction::RenameSelected(action) => {
                 file_ops::rename_selected(
@@ -398,12 +398,7 @@ fn perf_enabled() -> bool {
     std::env::var_os("PAPYRO_PERF").is_some()
 }
 
-fn close_tab(
-    shell: AppShell,
-    storage: Arc<dyn NoteStorage>,
-    mut state: RuntimeState,
-    tab_id: String,
-) {
+fn close_tab(shell: AppShell, mut state: RuntimeState, tab_id: String) {
     let perf_started_at = perf_enabled().then(std::time::Instant::now);
 
     let tab = state
@@ -415,15 +410,9 @@ fn close_tab(
         .cloned();
     let Some(tab) = tab else { return };
 
-    if tab.is_dirty && state.pending_close_tab.read().as_deref() != Some(&tab_id) {
-        notes::save_tab_by_id(
-            storage,
-            state.file_state,
-            state.editor_tabs,
-            state.tab_contents,
-            state.status_message,
-            &tab_id,
-        );
+    if close_tab_intent(&tab, state.pending_close_tab.read().as_deref())
+        == CloseTabIntent::ConfirmDirty
+    {
         state.pending_close_tab.set(Some(tab_id));
         state
             .status_message
@@ -450,6 +439,20 @@ fn close_tab(
             elapsed_ms = started_at.elapsed().as_millis(),
             "perf runtime close_tab handler"
         );
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum CloseTabIntent {
+    ConfirmDirty,
+    CloseNow,
+}
+
+fn close_tab_intent(tab: &papyro_core::models::EditorTab, pending: Option<&str>) -> CloseTabIntent {
+    if tab.is_dirty && pending != Some(tab.id.as_str()) {
+        CloseTabIntent::ConfirmDirty
+    } else {
+        CloseTabIntent::CloseNow
     }
 }
 
@@ -699,5 +702,41 @@ mod tests {
                 }
             })
         );
+    }
+
+    #[test]
+    fn dirty_tab_close_requires_confirmation_without_saving() {
+        let tab = papyro_core::models::EditorTab {
+            id: "tab-a".to_string(),
+            note_id: "note-a".to_string(),
+            title: "A".to_string(),
+            path: std::path::PathBuf::from("a.md"),
+            is_dirty: true,
+            save_status: papyro_core::models::SaveStatus::Dirty,
+        };
+
+        assert_eq!(close_tab_intent(&tab, None), CloseTabIntent::ConfirmDirty);
+        assert_eq!(
+            close_tab_intent(&tab, Some("tab-a")),
+            CloseTabIntent::CloseNow
+        );
+        assert_eq!(
+            close_tab_intent(&tab, Some("tab-b")),
+            CloseTabIntent::ConfirmDirty
+        );
+    }
+
+    #[test]
+    fn clean_tab_close_does_not_require_confirmation() {
+        let tab = papyro_core::models::EditorTab {
+            id: "tab-a".to_string(),
+            note_id: "note-a".to_string(),
+            title: "A".to_string(),
+            path: std::path::PathBuf::from("a.md"),
+            is_dirty: false,
+            save_status: papyro_core::models::SaveStatus::Saved,
+        };
+
+        assert_eq!(close_tab_intent(&tab, None), CloseTabIntent::CloseNow);
     }
 }
