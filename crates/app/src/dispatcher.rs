@@ -2,6 +2,7 @@ use crate::actions::AppAction;
 use crate::effects;
 use crate::handlers::{file_ops, notes, search, tags, workspace};
 use crate::runtime::AppShell;
+use crate::settings_persistence::{enqueue_global_settings_save, enqueue_workspace_settings_save};
 use crate::state::RuntimeState;
 use dioxus::prelude::*;
 use papyro_core::models::{AppSettings, WorkspaceSettingsOverrides, WorkspaceTreeState};
@@ -261,6 +262,7 @@ impl AppDispatcher {
                     self.storage.clone(),
                     self.state.ui_state,
                     self.state.status_message,
+                    self.state.settings_persistence,
                     action.settings,
                 );
             }
@@ -270,6 +272,7 @@ impl AppDispatcher {
                     self.state.file_state,
                     self.state.ui_state,
                     self.state.status_message,
+                    self.state.settings_persistence,
                     action.overrides,
                 );
             }
@@ -475,27 +478,12 @@ fn export_html(shell: AppShell, mut state: RuntimeState) {
 fn apply_settings(
     storage: Arc<dyn NoteStorage>,
     mut ui_state: Signal<UiState>,
-    mut status_message: Signal<Option<String>>,
+    status_message: Signal<Option<String>>,
+    settings_persistence: Signal<crate::settings_persistence::SettingsPersistenceQueue>,
     settings: AppSettings,
 ) {
     ui_state.write().apply_global_settings(settings.clone());
-
-    spawn(async move {
-        let result = tokio::task::spawn_blocking(move || storage.save_settings(&settings)).await;
-        match result {
-            Ok(Ok(())) => {
-                status_message.set(Some("Saved global settings".to_string()));
-            }
-            Ok(Err(error)) => {
-                status_message.set(Some(format!("Save settings failed: {error}")));
-                tracing::warn!("Failed to save settings: {error}");
-            }
-            Err(error) => {
-                status_message.set(Some(format!("Save settings failed: {error}")));
-                tracing::warn!("Settings save task failed: {error}");
-            }
-        }
-    });
+    enqueue_global_settings_save(storage, settings_persistence, status_message, settings);
 }
 
 fn apply_workspace_settings(
@@ -503,6 +491,7 @@ fn apply_workspace_settings(
     file_state: Signal<FileState>,
     mut ui_state: Signal<UiState>,
     mut status_message: Signal<Option<String>>,
+    settings_persistence: Signal<crate::settings_persistence::SettingsPersistenceQueue>,
     overrides: WorkspaceSettingsOverrides,
 ) {
     let workspace = file_state.read().current_workspace.clone();
@@ -516,28 +505,13 @@ fn apply_workspace_settings(
     ui_state
         .write()
         .apply_workspace_overrides(overrides.clone());
-
-    spawn(async move {
-        let workspace_name = workspace.name.clone();
-        let result = tokio::task::spawn_blocking(move || {
-            storage.save_workspace_settings(&workspace, &overrides)
-        })
-        .await;
-
-        match result {
-            Ok(Ok(())) => {
-                status_message.set(Some(format!("Saved settings for {workspace_name}")));
-            }
-            Ok(Err(error)) => {
-                status_message.set(Some(format!("Save workspace settings failed: {error}")));
-                tracing::warn!("Failed to save workspace settings: {error}");
-            }
-            Err(error) => {
-                status_message.set(Some(format!("Save workspace settings failed: {error}")));
-                tracing::warn!("Workspace settings save task failed: {error}");
-            }
-        }
-    });
+    enqueue_workspace_settings_save(
+        storage,
+        settings_persistence,
+        status_message,
+        workspace,
+        overrides,
+    );
 }
 
 fn toggle_expanded_path(

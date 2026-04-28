@@ -4,6 +4,7 @@ mod effects;
 mod export;
 mod handlers;
 mod runtime;
+mod settings_persistence;
 mod state;
 mod workspace_flow;
 
