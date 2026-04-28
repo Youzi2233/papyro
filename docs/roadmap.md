@@ -318,7 +318,8 @@ Editor runtime lane
 - [ ] UI 组件优先读取 view model，不直接读多个 raw signal 拼业务判断。
 - [x] `DesktopLayout` 只能感知 shell/chrome 需要的数据。
 - [x] `EditorPane` 的 active document / host_items 派生改为消费 `EditorPaneViewModel` memo，不再在组件内直接读取 `EditorTabs` / `TabContentsMap`。
-- [ ] `EditorPane` / Tabbar 继续拆分：tab 激活、关闭确认、host pool 输入分别走更窄 view model / action。
+- [x] Tab 激活从 `EditorTabButton` 直接写 `EditorTabs` 改为走 `AppCommand` / `AppAction` / dispatcher。
+- [ ] `EditorPane` / Tabbar 继续拆分：关闭确认、host pool 输入分别走更窄 view model / action。
 - [x] Sidebar、Header、StatusBar 不读取 document content 或 editor host 状态。
 - [x] StatusBar 改为消费 `EditorViewModel`，不再直接读取 `EditorTabs` 和 `TabContentsMap`。
 - [x] Header 改为消费窄 `theme` / `sidebar_collapsed` memo，展示逻辑不再直接读取 raw `UiState`。

@@ -110,6 +110,9 @@ impl AppDispatcher {
                     action.content,
                 );
             }
+            AppAction::ActivateTab(action) => {
+                activate_tab(self.state, action.tab_id);
+            }
             AppAction::SaveActiveNote => {
                 notes::save_active_note(
                     self.storage.clone(),
@@ -293,6 +296,7 @@ impl AppDispatcher {
         let open_markdown = self.clone();
         let search_workspace = self.clone();
         let content_changed = self.clone();
+        let activate_tab = self.clone();
         let save_active_note = self.clone();
         let save_tab = self.clone();
         let close_tab = self.clone();
@@ -336,6 +340,9 @@ impl AppDispatcher {
             }),
             content_changed: EventHandler::new(move |change: ContentChange| {
                 content_changed.dispatch(AppAction::content_changed(change.tab_id, change.content));
+            }),
+            activate_tab: EventHandler::new(move |tab_id| {
+                activate_tab.dispatch(AppAction::activate_tab(tab_id));
             }),
             save_active_note: EventHandler::new(move |_| {
                 save_active_note.dispatch(AppAction::SaveActiveNote);
@@ -397,6 +404,18 @@ impl AppDispatcher {
 
 fn perf_enabled() -> bool {
     std::env::var_os("PAPYRO_PERF").is_some()
+}
+
+fn activate_tab(mut state: RuntimeState, tab_id: String) {
+    let perf_started_at = perf_enabled().then(std::time::Instant::now);
+    state.editor_tabs.write().set_active_tab(&tab_id);
+    if let Some(started_at) = perf_started_at {
+        tracing::info!(
+            tab_id,
+            elapsed_ms = started_at.elapsed().as_millis(),
+            "perf editor switch tab"
+        );
+    }
 }
 
 fn close_tab(shell: AppShell, mut state: RuntimeState, tab_id: String) {
@@ -631,6 +650,12 @@ mod tests {
             AppAction::ContentChanged(papyro_ui::commands::ContentChange {
                 tab_id: "tab-a".to_string(),
                 content: "body".to_string()
+            })
+        );
+        assert_eq!(
+            AppAction::activate_tab("tab-a".to_string()),
+            AppAction::ActivateTab(crate::actions::ActivateTab {
+                tab_id: "tab-a".to_string()
             })
         );
         assert_eq!(

@@ -15,6 +15,7 @@ pub enum AppAction {
     OpenMarkdown(OpenMarkdown),
     SearchWorkspace(SearchWorkspace),
     ContentChanged(ContentChange),
+    ActivateTab(ActivateTab),
     SaveActiveNote,
     SaveTab(SaveTab),
     CloseTab(CloseTab),
@@ -58,6 +59,11 @@ pub struct OpenMarkdown {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SearchWorkspace {
     pub query: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ActivateTab {
+    pub tab_id: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -153,6 +159,10 @@ impl AppAction {
 
     pub fn content_changed(tab_id: String, content: String) -> Self {
         Self::ContentChanged(ContentChange { tab_id, content })
+    }
+
+    pub fn activate_tab(tab_id: String) -> Self {
+        Self::ActivateTab(ActivateTab { tab_id })
     }
 
     pub fn save_tab(tab_id: String) -> Self {

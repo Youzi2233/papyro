@@ -19,18 +19,6 @@ fn request_tab_close(commands: AppCommands, close_tab_id: String, trigger: &'sta
     }
 }
 
-fn activate_tab(mut editor_tabs: Signal<papyro_core::EditorTabs>, tab_id: &str) {
-    let perf_started_at = perf_enabled().then(Instant::now);
-    editor_tabs.write().set_active_tab(tab_id);
-    if let Some(started_at) = perf_started_at {
-        tracing::info!(
-            tab_id,
-            elapsed_ms = started_at.elapsed().as_millis(),
-            "perf editor switch tab"
-        );
-    }
-}
-
 #[component]
 pub(super) fn EditorTabButton(tab: papyro_core::models::EditorTab, is_active: bool) -> Element {
     let app = use_app_context();
@@ -64,7 +52,7 @@ pub(super) fn EditorTabButton(tab: papyro_core::models::EditorTab, is_active: bo
             class: if is_active { "mn-tab active" } else { "mn-tab" },
             button {
                 class: "mn-tab-title",
-                onclick: move |_| activate_tab(editor_tabs, &activate_tab_id),
+                onclick: move |_| commands.activate_tab.call(activate_tab_id.clone()),
                 "{tab.title}"
                 if tab.is_dirty { span { class: "mn-dirty", "*" } }
             }

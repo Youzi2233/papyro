@@ -57,6 +57,7 @@ pub struct AppCommands {
     pub open_markdown: EventHandler<OpenMarkdownTarget>,
     pub search_workspace: EventHandler<String>,
     pub content_changed: EventHandler<ContentChange>,
+    pub activate_tab: EventHandler<String>,
     pub save_active_note: EventHandler<()>,
     pub save_tab: EventHandler<String>,
     pub close_tab: EventHandler<String>,
