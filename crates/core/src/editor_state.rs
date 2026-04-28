@@ -13,7 +13,7 @@ pub struct EditorTabs {
 pub struct TabContentsMap {
     /// tab_id -> markdown content
     pub tab_contents: HashMap<String, Arc<str>>,
-    /// tab_id -> local edit revision for debounce-based autosave
+    /// tab_id -> monotonic document revision for autosave staleness and derived caches
     pub tab_revisions: HashMap<String, u64>,
     /// tab_id -> cached document stats (updated on content change, not on every render)
     pub tab_stats: HashMap<String, DocumentStats>,
@@ -225,9 +225,7 @@ impl TabContentsMap {
             return None;
         }
 
-        let revision = self.tab_revisions.entry(tab_id.to_string()).or_insert(0);
-        *revision += 1;
-        let current_revision = *revision;
+        let current_revision = self.bump_revision(tab_id);
         self.tab_contents
             .insert(tab_id.to_string(), Arc::from(content));
         Some(current_revision)
@@ -249,10 +247,16 @@ impl TabContentsMap {
             return false;
         }
 
-        self.tab_contents
-            .insert(tab_id.to_string(), Arc::from(content));
+        let content_changed = self
+            .tab_contents
+            .get(tab_id)
+            .is_some_and(|existing| existing.as_ref() != content);
+        if content_changed {
+            self.tab_contents
+                .insert(tab_id.to_string(), Arc::from(content));
+            self.bump_revision(tab_id);
+        }
         self.tab_stats.insert(tab_id.to_string(), stats);
-        self.tab_revisions.insert(tab_id.to_string(), 0);
         true
     }
 
@@ -262,6 +266,12 @@ impl TabContentsMap {
 
     pub fn should_auto_save_revision(&self, tab_id: &str, revision: u64) -> bool {
         self.tab_revisions.get(tab_id).copied() == Some(revision)
+    }
+
+    fn bump_revision(&mut self, tab_id: &str) -> u64 {
+        let revision = self.tab_revisions.entry(tab_id.to_string()).or_insert(0);
+        *revision += 1;
+        *revision
     }
 }
 
@@ -366,7 +376,7 @@ mod tests {
     }
 
     #[test]
-    fn replace_saved_content_refreshes_content_stats_and_revision() {
+    fn replace_saved_content_refreshes_content_stats_and_advances_revision() {
         let mut contents = TabContentsMap::default();
         contents.insert_tab("a".to_string(), "old".to_string(), DocumentStats::default());
         contents.update_tab_content("a", "dirty".to_string());
@@ -381,10 +391,34 @@ mod tests {
         ));
 
         assert_eq!(contents.content_for_tab("a"), Some("saved"));
-        assert_eq!(contents.revision_for_tab("a"), Some(0));
+        assert_eq!(contents.revision_for_tab("a"), Some(2));
+        assert!(!contents.should_auto_save_revision("a", 1));
         assert_eq!(
             contents.tab_stats.get("a").map(|stats| stats.char_count),
             Some(5)
+        );
+    }
+
+    #[test]
+    fn replace_saved_content_keeps_revision_for_unchanged_content() {
+        let mut contents = TabContentsMap::default();
+        contents.insert_tab("a".to_string(), "old".to_string(), DocumentStats::default());
+        let snapshot = contents.snapshot_for_tab("a").unwrap();
+
+        assert!(contents.replace_saved_content(
+            "a",
+            "old".to_string(),
+            DocumentStats {
+                char_count: 3,
+                ..DocumentStats::default()
+            },
+        ));
+
+        assert_eq!(contents.revision_for_tab("a"), Some(0));
+        assert_eq!(snapshot, contents.snapshot_for_tab("a").unwrap());
+        assert_eq!(
+            contents.tab_stats.get("a").map(|stats| stats.char_count),
+            Some(3)
         );
     }
 

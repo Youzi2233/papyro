@@ -19,8 +19,6 @@ pub(super) struct DocumentDerivedCacheState {
 pub(super) struct DocumentCacheKey {
     tab_id: String,
     revision: u64,
-    content_ptr: usize,
-    content_len: usize,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -56,8 +54,6 @@ impl DocumentCacheKey {
         Self {
             tab_id: document.tab_id.clone(),
             revision: document.revision,
-            content_ptr: document.content.as_ptr() as usize,
-            content_len: document.content.len(),
         }
     }
 }
@@ -76,6 +72,7 @@ mod tests {
     use super::*;
     use papyro_core::{models::DocumentStats, TabContentSnapshot, TabContentsMap};
     use std::path::PathBuf;
+    use std::sync::Arc;
 
     fn document_snapshot(snapshot: TabContentSnapshot) -> DocumentSnapshot {
         DocumentSnapshot {
@@ -87,7 +84,7 @@ mod tests {
     }
 
     #[test]
-    fn cache_key_changes_when_content_handle_changes() {
+    fn cache_key_tracks_document_revision() {
         let mut contents = TabContentsMap::default();
         contents.insert_tab("a".to_string(), "old".to_string(), DocumentStats::default());
         let first = DocumentCacheKey::from_snapshot(&document_snapshot(
@@ -95,6 +92,43 @@ mod tests {
         ));
 
         contents.update_tab_content("a", "new".to_string());
+        let next = DocumentCacheKey::from_snapshot(&document_snapshot(
+            contents.snapshot_for_tab("a").unwrap(),
+        ));
+
+        assert_ne!(first, next);
+    }
+
+    #[test]
+    fn cache_key_ignores_content_handle_when_revision_matches() {
+        let first = DocumentSnapshot {
+            tab_id: "a".to_string(),
+            path: PathBuf::from("a.md"),
+            revision: 1,
+            content: Arc::from("one"),
+        };
+        let next = DocumentSnapshot {
+            tab_id: "a".to_string(),
+            path: PathBuf::from("a.md"),
+            revision: 1,
+            content: Arc::from("two"),
+        };
+
+        assert_eq!(
+            DocumentCacheKey::from_snapshot(&first),
+            DocumentCacheKey::from_snapshot(&next)
+        );
+    }
+
+    #[test]
+    fn cache_key_changes_when_saved_content_replace_advances_revision() {
+        let mut contents = TabContentsMap::default();
+        contents.insert_tab("a".to_string(), "old".to_string(), DocumentStats::default());
+        let first = DocumentCacheKey::from_snapshot(&document_snapshot(
+            contents.snapshot_for_tab("a").unwrap(),
+        ));
+
+        assert!(contents.replace_saved_content("a", "saved".to_string(), DocumentStats::default()));
         let next = DocumentCacheKey::from_snapshot(&document_snapshot(
             contents.snapshot_for_tab("a").unwrap(),
         ));

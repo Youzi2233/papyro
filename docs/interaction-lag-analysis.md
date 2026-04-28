@@ -331,6 +331,12 @@ DocumentSnapshot(tab_id, path, revision, content)
 -> UI 读取 cache 或 placeholder
 ```
 
+当前实现已将 `revision` 收敛为单调内容版本，而不是保存后会重置的 dirty 计数。
+因此 preview HTML 和 outline 可以安全地按 `tab_id + revision` 命中缓存。
+stats 仍保存在 `TabContentsMap` 的 `tab_stats` 中，后续需要让 stats 结果显式携带
+revision；search snippet 当前来自 workspace search 结果，后续应迁入搜索索引或文档
+派生管线，而不是在 UI 渲染路径临时生成。
+
 ## 解决方案
 
 ### Phase A：移除交互路径 IO
