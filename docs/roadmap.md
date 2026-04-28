@@ -354,7 +354,7 @@ Editor runtime lane
 
 ### 2.2 Dioxus render 收敛
 
-- [ ] 检查所有 `use_memo` 依赖，确保 chrome 更新不读 document content。
+- [x] 检查所有 `use_memo` 依赖，确保 chrome 更新不读 document content。
 - [x] 拆分会导致大面积 rerender 的 props。
 - [ ] 大 Vec / HashMap 避免作为宽 props 穿过多层组件。
 - [ ] 对稳定结构使用更小 view model 或 id list。
@@ -371,16 +371,16 @@ Editor runtime lane
 - [x] 重新评估是否所有 open tab 都需要保留 host。
 - [x] 明确 active host、warm host、hidden host 的数量上限。
 - [ ] 非活动 tab 的 selection、scroll、undo 状态保存策略文档化。
-- [ ] 关闭 tab 的 heavy cleanup 保持 idle 或批处理。
-- [ ] 模式切换只向 active/visible host 发送必要命令。
+- [x] 关闭 tab 的 heavy cleanup 保持 idle 或批处理。
+- [x] 模式切换只向 active/visible host 发送必要命令。
 
 ### 2.4 文档派生性能
 
 - [x] preview/outline/stats 已有 revision cache 基础。
 - [x] Autosave 延时后的 Markdown stats 统计移到 blocking task，避免在 UI executor 上同步扫整篇文档。
 - [x] Workspace watcher 不再因内容级 `Modified` 事件重载文件树，避免内部保存触发 workspace lane 二次波。
-- [ ] 1MB 以上文件默认降低 preview 和 syntax highlight 压力。
-- [ ] 5MB 文件默认暂停 live preview，保证编辑优先。
+- [x] 1MB 以上文件默认降低 preview 和 syntax highlight 压力。
+- [x] 5MB 文件默认暂停 live preview，保证编辑优先。
 - [ ] outline 提取异步化并支持过期结果丢弃。
 - [ ] preview HTML 渲染失败或超时显示轻量占位。
 - [ ] 搜索 snippet 生成不阻塞编辑器输入。
@@ -394,6 +394,7 @@ Editor runtime lane
 - [ ] 打开 Command Palette、Quick Open、Settings、Workspace Search 不触发 editor command storm。
 - [x] dirty tab 第一次关闭只进入确认态，不在 close 热路径触发保存流程。
 - [x] Tab close 交互路径不等待 JS destroy，且不再同步写入 retired host 状态。
+- [x] Tab close 鼠标路径等待完整 click，避免 pointer up 前移除 tab。
 - [ ] 切换 theme/settings 只更新必要 CSS variables 和 active host preferences。
 
 验收标准：
