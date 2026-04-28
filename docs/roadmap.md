@@ -311,6 +311,7 @@ Editor runtime lane
 - [x] Header 改为消费 `SettingsViewModel`，展示逻辑不再直接读取 raw `UiState`。
 - [x] DesktopLayout 的主题和侧栏展示状态改为消费 `SettingsViewModel`。
 - [x] MobileLayout 的主题和浏览器展示状态改为消费 `SettingsViewModel`。
+- [x] Sidebar 展示宽度改为消费 `SettingsViewModel`，resize 提交仍通过受控 helper 写入。
 - [x] sidebar/theme/view mode 等 chrome 动作统一走 `crates/ui/src/chrome.rs` helper，不在入口组件里重复写 settings mutation。
 - [ ] 为 view model 派生函数补充“无关状态变化不改变输出”的测试。
 

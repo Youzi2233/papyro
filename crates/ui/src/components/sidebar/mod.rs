@@ -25,6 +25,7 @@ pub fn Sidebar() -> Element {
     let ui_state = app.ui_state;
     let pending_delete_path = app.pending_delete_path;
     let commands = app.commands;
+    let settings_model = app.settings_model.read().clone();
     let resize_commands = commands.clone();
 
     let mut create_name = use_signal(String::new);
@@ -34,7 +35,7 @@ pub fn Sidebar() -> Element {
     let mut resize_preview_width = use_signal(|| None::<u32>);
 
     let workspace = file_state.read().current_workspace.clone();
-    let configured_sidebar_width = ui_state.read().settings.sidebar_width;
+    let configured_sidebar_width = settings_model.sidebar_width;
     let sidebar_width = resize_preview_width().unwrap_or(configured_sidebar_width);
     let sidebar_class = if resize_drag().is_some() {
         "mn-sidebar resizing"
