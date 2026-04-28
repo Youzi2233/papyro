@@ -1,7 +1,7 @@
-use papyro_core::models::{AppSettings, FileNode, WorkspaceSettingsOverrides};
+use papyro_core::models::{AppSettings, WorkspaceSettingsOverrides};
 use papyro_ui::commands::{
-    ContentChange, DeleteTagRequest, FileTarget, RecentFileTarget, RenameTagRequest,
-    RestoreTrashedNoteTarget, SetTagColorRequest, UpsertTagRequest,
+    ContentChange, DeleteTagRequest, FileTarget, OpenMarkdownTarget, RecentFileTarget,
+    RenameTagRequest, RestoreTrashedNoteTarget, SetTagColorRequest, UpsertTagRequest,
 };
 use std::path::PathBuf;
 
@@ -12,7 +12,7 @@ pub enum AppAction {
     RefreshWorkspace,
     CreateNote(CreateNote),
     CreateFolder(CreateFolder),
-    OpenNote(OpenNote),
+    OpenMarkdown(OpenMarkdown),
     OpenRecentFile(OpenRecentFile),
     SearchWorkspace(SearchWorkspace),
     ContentChanged(ContentChange),
@@ -51,9 +51,9 @@ pub struct OpenWorkspacePath {
     pub path: PathBuf,
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct OpenNote {
-    pub node: FileNode,
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OpenMarkdown {
+    pub target: OpenMarkdownTarget,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -149,8 +149,8 @@ impl AppAction {
         Self::OpenWorkspacePath(OpenWorkspacePath { path })
     }
 
-    pub fn open_note(node: FileNode) -> Self {
-        Self::OpenNote(OpenNote { node })
+    pub fn open_markdown(target: OpenMarkdownTarget) -> Self {
+        Self::OpenMarkdown(OpenMarkdown { target })
     }
 
     pub fn open_recent_file(target: RecentFileTarget) -> Self {

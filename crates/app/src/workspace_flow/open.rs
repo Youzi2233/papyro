@@ -5,7 +5,7 @@ use papyro_core::storage::{NoteStorage, WorkspaceBootstrap};
 use papyro_core::{open_note, EditorTabs, FileState, TabContentsMap, UiState};
 use std::path::PathBuf;
 
-pub(crate) fn open_note_from_storage<S>(
+pub(crate) fn open_markdown_from_storage<S>(
     storage: &dyn NoteStorage,
     file_state: &mut FileState,
     editor_tabs: &mut EditorTabs,
@@ -26,6 +26,27 @@ where
     file_state.select_path(selected_path);
 
     Ok(())
+}
+
+pub(crate) fn open_note_from_storage<S>(
+    storage: &dyn NoteStorage,
+    file_state: &mut FileState,
+    editor_tabs: &mut EditorTabs,
+    tab_contents: &mut TabContentsMap,
+    path: PathBuf,
+    summarize: S,
+) -> Result<()>
+where
+    S: FnOnce(&str) -> DocumentStats,
+{
+    open_markdown_from_storage(
+        storage,
+        file_state,
+        editor_tabs,
+        tab_contents,
+        path,
+        summarize,
+    )
 }
 
 pub(crate) fn open_recent_file_from_storage<S>(
@@ -56,7 +77,7 @@ where
         )?);
     }
 
-    open_note_from_storage(
+    open_markdown_from_storage(
         storage,
         file_state,
         editor_tabs,

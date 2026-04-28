@@ -58,6 +58,53 @@ fn open_note_flow_uses_storage_and_updates_state() {
 }
 
 #[test]
+fn open_markdown_flow_uses_path_target_and_updates_state() {
+    let note_path = PathBuf::from("workspace/notes/path-target.md");
+    let opened_note = OpenedNote {
+        tab: tab("tab-path", "note-path", "workspace/notes/path-target.md"),
+        content: "# Path Target".to_string(),
+        recent_files: vec![recent_file("note-path", "notes/path-target.md")],
+    };
+    let storage = MockStorage {
+        opened_notes: HashMap::from([(note_path.clone(), opened_note)]),
+        ..MockStorage::default()
+    };
+    let mut file_state = file_state_with_tree(vec![note_node(
+        "workspace/notes/path-target.md",
+        "note-path",
+    )]);
+    let mut editor_tabs = EditorTabs::default();
+    let mut tab_contents = TabContentsMap::default();
+
+    open_markdown_from_storage(
+        &storage,
+        &mut file_state,
+        &mut editor_tabs,
+        &mut tab_contents,
+        note_path.clone(),
+        |content| DocumentStats {
+            word_count: content.split_whitespace().count(),
+            ..DocumentStats::default()
+        },
+    )
+    .unwrap();
+
+    assert_eq!(file_state.selected_path, Some(note_path));
+    assert_eq!(editor_tabs.active_tab_id.as_deref(), Some("tab-path"));
+    assert_eq!(
+        tab_contents.content_for_tab("tab-path"),
+        Some("# Path Target")
+    );
+    assert_eq!(
+        tab_contents.active_stats(editor_tabs.active_tab_id.as_deref()),
+        DocumentStats {
+            word_count: 3,
+            ..DocumentStats::default()
+        }
+    );
+}
+
+#[test]
 fn open_note_flow_reports_storage_failure() {
     let storage = MockStorage::default();
     let mut file_state = file_state_with_tree(Vec::new());

@@ -1,4 +1,4 @@
-use crate::commands::AppCommands;
+use crate::commands::{AppCommands, OpenMarkdownTarget};
 use crate::components::primitives::{Modal, TextInput};
 use crate::context::use_app_context;
 use dioxus::prelude::*;
@@ -139,7 +139,9 @@ fn open_quick_item(
     item: QuickOpenItem,
 ) {
     file_state.write().select_path(item.node.path.clone());
-    commands.open_note.call(item.node);
+    commands.open_markdown.call(OpenMarkdownTarget {
+        path: item.node.path,
+    });
     on_close.call(());
 }
 

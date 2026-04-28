@@ -301,9 +301,10 @@ Editor runtime lane
 ### 1.3 AppAction 与 use case 边界
 
 - [x] `AppAction` 和 dispatcher 已存在。
-- [ ] 所有打开笔记入口收敛到 path-based `OpenMarkdown` use case。
-- [ ] 文件树、Quick Open、Search、Recent、系统双击都不直接各写一套 open flow。
-- [ ] `OpenNote(FileNode)` 作为兼容入口时，也应转成 path-based open。
+- [x] 当前 workspace 内的打开笔记入口收敛到 path-based `OpenMarkdown` use case。
+- [ ] Recent 和系统双击等跨 workspace / 外部入口继续收敛到 `OpenMarkdown` use case。
+- [x] 文件树、Quick Open、Workspace Search 不直接各写一套 open flow。
+- [x] 移除 `OpenNote(FileNode)` app command/action 入口，避免 UI 继续绕过 path-based open。
 - [ ] `crates/app` 暴露面向桌面宿主的启动/打开请求，不让 `apps/desktop` 调 UI command。
 - [ ] 为每个 use case 明确输入、输出、失败状态、状态更新范围。
 

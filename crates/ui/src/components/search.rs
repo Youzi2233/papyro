@@ -1,4 +1,4 @@
-use crate::commands::AppCommands;
+use crate::commands::{AppCommands, OpenMarkdownTarget};
 use crate::components::primitives::{Modal, TextInput};
 use crate::context::use_app_context;
 use dioxus::prelude::*;
@@ -191,7 +191,9 @@ fn open_search_result(
         .node_for_path(&result.path)
         .unwrap_or_else(|| fallback_note_node(&result));
     file_state.write().select_path(node.path.clone());
-    commands.open_note.call(node);
+    commands
+        .open_markdown
+        .call(OpenMarkdownTarget { path: node.path });
     on_close.call(());
 }
 

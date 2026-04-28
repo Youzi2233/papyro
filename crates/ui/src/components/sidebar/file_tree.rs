@@ -1,4 +1,4 @@
-use crate::commands::{AppCommands, FileTarget};
+use crate::commands::{AppCommands, FileTarget, OpenMarkdownTarget};
 use crate::components::primitives::{Menu, MenuItem, MenuSeparator};
 use crate::context::use_app_context;
 use dioxus::prelude::*;
@@ -85,7 +85,9 @@ pub fn FileTree(sort_mode: FileTreeSortMode) -> Element {
                     FileTreeKeyboardAction::OpenNote(node) => {
                         event.prevent_default();
                         file_state.write().select_path(node.path.clone());
-                        commands.open_note.call(node);
+                        commands.open_markdown.call(OpenMarkdownTarget {
+                            path: node.path,
+                        });
                     }
                     FileTreeKeyboardAction::Rename(node) => {
                         event.prevent_default();
@@ -344,7 +346,9 @@ fn FileTreeNode(
                         "aria-selected": "{is_selected}",
                         onclick: move |_| {
                             file_state.write().select_path(open_node.path.clone());
-                            open_commands.open_note.call(open_node.clone());
+                            open_commands.open_markdown.call(OpenMarkdownTarget {
+                                path: open_node.path.clone(),
+                            });
                         },
                         oncontextmenu: move |event| {
                             event.prevent_default();
@@ -543,7 +547,9 @@ fn FileTreeContextMenuView(
                     danger: false,
                     on_select: move |_| {
                         file_state.write().select_path(open_node.path.clone());
-                        commands.open_note.call(open_node.clone());
+                        commands.open_markdown.call(OpenMarkdownTarget {
+                            path: open_node.path.clone(),
+                        });
                         on_close.call(());
                     },
                 }

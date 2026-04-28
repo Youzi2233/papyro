@@ -91,14 +91,14 @@ impl AppDispatcher {
                     action.name,
                 );
             }
-            AppAction::OpenNote(action) => {
-                notes::open_note(
+            AppAction::OpenMarkdown(action) => {
+                notes::open_markdown(
                     self.storage.clone(),
                     self.state.file_state,
                     self.state.editor_tabs,
                     self.state.tab_contents,
                     self.state.status_message,
-                    action.node,
+                    action.target,
                 );
             }
             AppAction::OpenRecentFile(action) => {
@@ -285,7 +285,7 @@ impl AppDispatcher {
         let refresh_workspace = self.clone();
         let create_note = self.clone();
         let create_folder = self.clone();
-        let open_note = self.clone();
+        let open_markdown = self.clone();
         let open_recent_file = self.clone();
         let search_workspace = self.clone();
         let content_changed = self.clone();
@@ -324,8 +324,8 @@ impl AppDispatcher {
             create_folder: EventHandler::new(move |name| {
                 create_folder.dispatch(AppAction::create_folder(name));
             }),
-            open_note: EventHandler::new(move |node| {
-                open_note.dispatch(AppAction::open_note(node));
+            open_markdown: EventHandler::new(move |target| {
+                open_markdown.dispatch(AppAction::open_markdown(target));
             }),
             open_recent_file: EventHandler::new(move |target| {
                 open_recent_file.dispatch(AppAction::open_recent_file(target));
@@ -554,8 +554,8 @@ mod tests {
     use super::*;
     use papyro_core::models::{Theme, ViewMode, WorkspaceSettingsOverrides};
     use papyro_ui::commands::{
-        DeleteTagRequest, RecentFileTarget, RenameTagRequest, RestoreTrashedNoteTarget,
-        SetTagColorRequest, UpsertTagRequest,
+        DeleteTagRequest, OpenMarkdownTarget, RecentFileTarget, RenameTagRequest,
+        RestoreTrashedNoteTarget, SetTagColorRequest, UpsertTagRequest,
     };
 
     #[test]
@@ -576,6 +576,16 @@ mod tests {
             AppAction::open_workspace_path(std::path::PathBuf::from("workspace")),
             AppAction::OpenWorkspacePath(crate::actions::OpenWorkspacePath {
                 path: std::path::PathBuf::from("workspace")
+            })
+        );
+        assert_eq!(
+            AppAction::open_markdown(OpenMarkdownTarget {
+                path: std::path::PathBuf::from("workspace/notes/a.md"),
+            }),
+            AppAction::OpenMarkdown(crate::actions::OpenMarkdown {
+                target: OpenMarkdownTarget {
+                    path: std::path::PathBuf::from("workspace/notes/a.md"),
+                }
             })
         );
         assert_eq!(

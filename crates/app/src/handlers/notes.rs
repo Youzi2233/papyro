@@ -1,25 +1,24 @@
 use dioxus::prelude::*;
-use papyro_core::models::FileNode;
 use papyro_core::{EditorTabs, FileState, NoteStorage, TabContentsMap, UiState};
 use papyro_editor::parser::summarize_markdown;
-use papyro_ui::commands::RecentFileTarget;
+use papyro_ui::commands::{OpenMarkdownTarget, RecentFileTarget};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Instant;
 
 use crate::state::RuntimeState;
 use crate::workspace_flow::{
-    apply_save_failure, apply_save_success, begin_save_tab, open_note_from_storage,
+    apply_save_failure, apply_save_success, begin_save_tab, open_markdown_from_storage,
     open_recent_file_from_storage, write_save_snapshot,
 };
 
-pub fn open_note(
+pub fn open_markdown(
     storage: Arc<dyn NoteStorage>,
     file_state: Signal<FileState>,
     editor_tabs: Signal<EditorTabs>,
     tab_contents: Signal<TabContentsMap>,
     status_message: Signal<Option<String>>,
-    node: FileNode,
+    target: OpenMarkdownTarget,
 ) {
     open_note_path(
         storage,
@@ -27,7 +26,7 @@ pub fn open_note(
         editor_tabs,
         tab_contents,
         status_message,
-        node.path,
+        target.path,
     );
 }
 
@@ -59,7 +58,7 @@ pub fn open_note_path(
             Result<(FileState, EditorTabs, TabContentsMap), anyhow::Error>,
             tokio::task::JoinError,
         > = tokio::task::spawn_blocking(move || {
-            open_note_from_storage(
+            open_markdown_from_storage(
                 storage.as_ref(),
                 &mut next_file_state,
                 &mut next_editor_tabs,

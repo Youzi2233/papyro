@@ -1,5 +1,5 @@
 ﻿use dioxus::prelude::*;
-use papyro_core::models::{AppSettings, FileNode, WorkspaceSettingsOverrides};
+use papyro_core::models::{AppSettings, WorkspaceSettingsOverrides};
 use std::path::PathBuf;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -18,6 +18,11 @@ pub struct FileTarget {
 pub struct RecentFileTarget {
     pub workspace_path: PathBuf,
     pub relative_path: PathBuf,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OpenMarkdownTarget {
+    pub path: PathBuf,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -55,7 +60,7 @@ pub struct AppCommands {
     pub refresh_workspace: EventHandler<()>,
     pub create_note: EventHandler<String>,
     pub create_folder: EventHandler<String>,
-    pub open_note: EventHandler<FileNode>,
+    pub open_markdown: EventHandler<OpenMarkdownTarget>,
     pub open_recent_file: EventHandler<RecentFileTarget>,
     pub search_workspace: EventHandler<String>,
     pub content_changed: EventHandler<ContentChange>,
