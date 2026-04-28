@@ -100,13 +100,12 @@ pub fn EditorPane() -> Element {
 
     rsx! {
         main { class: "mn-editor", style: "{editor_style}",
-            if pane.active_tab.is_some() {
+            if pane.has_active_tab {
                 div { class: "mn-tabbar",
-                    for item in pane.tabs.iter().cloned() {
+                    for item in pane.tab_items.iter().cloned() {
                         EditorTabButton {
                             key: "{item.id}",
-                            is_active: Some(&item.id) == pane.active_tab_id.as_ref(),
-                            tab: item,
+                            item,
                         }
                     }
                     div { class: "mn-tabbar-spacer" }

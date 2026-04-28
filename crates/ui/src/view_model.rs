@@ -84,12 +84,22 @@ pub struct EditorSurfaceViewModel {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct EditorPaneViewModel {
-    pub active_tab: Option<EditorTab>,
     pub active_tab_id: Option<String>,
+    pub has_active_tab: bool,
     pub active_document: Option<TabContentSnapshot>,
-    pub tabs: Vec<EditorTab>,
+    pub tab_items: Vec<EditorTabItemViewModel>,
     pub open_tab_ids: Vec<String>,
     pub host_items: Vec<EditorHostItemViewModel>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct EditorTabItemViewModel {
+    pub id: String,
+    pub title: String,
+    pub is_dirty: bool,
+    pub is_active: bool,
+    pub next_active_tab_id: String,
+    pub should_retire_host_on_close: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -241,10 +251,13 @@ impl EditorSurfaceViewModel {
 }
 
 impl EditorPaneViewModel {
-    pub fn from_editor_state(editor_tabs: &EditorTabs, tab_contents: &TabContentsMap) -> Self {
-        let active_tab = editor_tabs.active_tab().cloned();
+    pub fn from_editor_state(
+        editor_tabs: &EditorTabs,
+        tab_contents: &TabContentsMap,
+        pending_close_tab: Option<&str>,
+    ) -> Self {
         let active_tab_id = editor_tabs.active_tab_id.clone();
-        let tabs = editor_tabs.tabs.clone();
+        let has_active_tab = editor_tabs.active_tab().is_some();
         let open_tab_ids: Vec<String> = editor_tabs.tabs.iter().map(|tab| tab.id.clone()).collect();
         let tracked_host_ids = bounded_host_ids(&open_tab_ids, active_tab_id.as_deref());
 
@@ -258,16 +271,52 @@ impl EditorPaneViewModel {
                 tab_id,
             })
             .collect();
+        let tab_items = editor_tabs
+            .tabs
+            .iter()
+            .map(|tab| {
+                let is_active = Some(tab.id.as_str()) == active_tab_id.as_deref();
+                EditorTabItemViewModel {
+                    id: tab.id.clone(),
+                    title: tab.title.clone(),
+                    is_dirty: tab.is_dirty,
+                    is_active,
+                    next_active_tab_id: next_active_tab_id_after_close(
+                        &editor_tabs.tabs,
+                        active_tab_id.as_deref(),
+                        &tab.id,
+                    ),
+                    should_retire_host_on_close: !tab.is_dirty
+                        || pending_close_tab == Some(tab.id.as_str()),
+                }
+            })
+            .collect();
 
         Self {
-            active_tab,
             active_tab_id,
+            has_active_tab,
             active_document,
-            tabs,
+            tab_items,
             open_tab_ids,
             host_items,
         }
     }
+}
+
+fn next_active_tab_id_after_close(
+    tabs: &[EditorTab],
+    active_tab_id: Option<&str>,
+    closing_tab_id: &str,
+) -> String {
+    if active_tab_id == Some(closing_tab_id) {
+        return tabs
+            .iter()
+            .rfind(|candidate| candidate.id != closing_tab_id)
+            .map(|candidate| candidate.id.clone())
+            .unwrap_or_default();
+    }
+
+    active_tab_id.unwrap_or_default().to_string()
 }
 
 fn bounded_host_ids(open_tab_ids: &[String], active_tab_id: Option<&str>) -> Vec<String> {
@@ -657,9 +706,31 @@ mod tests {
         tab_contents.insert_tab("a".to_string(), "# A".to_string(), DocumentStats::default());
         tab_contents.insert_tab("b".to_string(), "# B".to_string(), DocumentStats::default());
 
-        let model = EditorPaneViewModel::from_editor_state(&editor_tabs, &tab_contents);
+        let model = EditorPaneViewModel::from_editor_state(&editor_tabs, &tab_contents, None);
 
         assert_eq!(model.active_tab_id.as_deref(), Some("a"));
+        assert!(model.has_active_tab);
+        assert_eq!(
+            model.tab_items,
+            vec![
+                EditorTabItemViewModel {
+                    id: "a".to_string(),
+                    title: "Note a".to_string(),
+                    is_dirty: false,
+                    is_active: true,
+                    next_active_tab_id: "b".to_string(),
+                    should_retire_host_on_close: true,
+                },
+                EditorTabItemViewModel {
+                    id: "b".to_string(),
+                    title: "Note b".to_string(),
+                    is_dirty: false,
+                    is_active: false,
+                    next_active_tab_id: "a".to_string(),
+                    should_retire_host_on_close: true,
+                },
+            ]
+        );
         assert_eq!(
             model.active_document.as_ref().map(|document| {
                 (
@@ -695,7 +766,7 @@ mod tests {
         }
         editor_tabs.set_active_tab("b");
 
-        let model = EditorPaneViewModel::from_editor_state(&editor_tabs, &tab_contents);
+        let model = EditorPaneViewModel::from_editor_state(&editor_tabs, &tab_contents, None);
 
         assert_eq!(
             model.open_tab_ids,
@@ -729,8 +800,11 @@ mod tests {
     #[test]
     fn editor_pane_view_model_ignores_settings_changes() {
         let mut fixture = view_model_fixture();
-        let before =
-            EditorPaneViewModel::from_editor_state(&fixture.editor_tabs, &fixture.tab_contents);
+        let before = EditorPaneViewModel::from_editor_state(
+            &fixture.editor_tabs,
+            &fixture.tab_contents,
+            None,
+        );
 
         fixture.ui_state.settings.sidebar_width = 360;
         fixture.ui_state.settings.view_mode = ViewMode::Preview;
@@ -738,7 +812,29 @@ mod tests {
 
         assert_eq!(
             before,
-            EditorPaneViewModel::from_editor_state(&fixture.editor_tabs, &fixture.tab_contents)
+            EditorPaneViewModel::from_editor_state(
+                &fixture.editor_tabs,
+                &fixture.tab_contents,
+                None
+            )
         );
+    }
+
+    #[test]
+    fn editor_pane_view_model_marks_pending_dirty_close_as_immediate() {
+        let mut editor_tabs = EditorTabs::default();
+        let mut dirty_tab = editor_tab("a");
+        dirty_tab.is_dirty = true;
+        dirty_tab.save_status = SaveStatus::Dirty;
+        editor_tabs.open_tab(dirty_tab);
+
+        let mut tab_contents = TabContentsMap::default();
+        tab_contents.insert_tab("a".to_string(), "# A".to_string(), DocumentStats::default());
+
+        let before = EditorPaneViewModel::from_editor_state(&editor_tabs, &tab_contents, None);
+        let after = EditorPaneViewModel::from_editor_state(&editor_tabs, &tab_contents, Some("a"));
+
+        assert!(!before.tab_items[0].should_retire_host_on_close);
+        assert!(after.tab_items[0].should_retire_host_on_close);
     }
 }

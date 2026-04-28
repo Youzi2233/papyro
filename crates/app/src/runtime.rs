@@ -73,6 +73,7 @@ pub fn use_app_runtime(
         EditorPaneViewModel::from_editor_state(
             &state.editor_tabs.read(),
             &state.tab_contents.read(),
+            state.pending_close_tab.read().as_deref(),
         )
     });
     let editor_surface_model =
