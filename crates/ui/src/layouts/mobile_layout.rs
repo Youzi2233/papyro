@@ -19,6 +19,7 @@ pub fn MobileLayout(status_message: Option<String>) -> Element {
     let file_state = app.file_state;
     let pending_delete_path = app.pending_delete_path;
     let commands = app.commands;
+    let settings_model = app.settings_model.read().clone();
     let open_workspace_commands = commands.clone();
     let browser_toggle_commands = commands.clone();
     let mut show_settings = use_signal(|| false);
@@ -28,8 +29,8 @@ pub fn MobileLayout(status_message: Option<String>) -> Element {
     let mut rename_name = use_signal(String::new);
     let mut tree_sort = use_signal(FileTreeSortMode::default);
 
-    let theme = ui_state.read().theme().clone();
-    let browser_visible = !ui_state.read().sidebar_collapsed();
+    let theme = settings_model.theme;
+    let browser_visible = !settings_model.sidebar_collapsed;
     let workspace = file_state.read().current_workspace.clone();
     let selected_node = file_state.read().selected_node();
     let selected_is_dir = selected_node
@@ -67,7 +68,7 @@ pub fn MobileLayout(status_message: Option<String>) -> Element {
                         class: "mn-button primary",
                         onclick: move |_| {
                             commands.open_workspace.call(());
-                            if ui_state.read().sidebar_collapsed() {
+                            if settings_model.sidebar_collapsed {
                                 crate::chrome::toggle_sidebar(
                                     ui_state,
                                     open_workspace_commands.clone(),
