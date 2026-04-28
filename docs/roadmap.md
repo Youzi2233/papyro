@@ -314,7 +314,7 @@ Editor runtime lane
 
 ### 1.4 State Domain 切分
 
-- [ ] 将 runtime state 文档化为 WorkspaceState、ChromeState、DocumentState、EditorRuntimeState。
+- [x] 将 runtime state 文档化为 WorkspaceState、ChromeState、DocumentState、EditorRuntimeState。
 - [ ] UI 组件优先读取 view model，不直接读多个 raw signal 拼业务判断。
 - [x] `DesktopLayout` 只能感知 shell/chrome 需要的数据。
 - [ ] `EditorPane` 只接收 active editor surface 所需数据。

@@ -12,6 +12,8 @@
 
 ## State Domains
 
+更细的字段归属和迁移顺序见 [runtime-state-domains.md](runtime-state-domains.md)。
+
 | Domain | Current signals | Scope |
 | --- | --- | --- |
 | Workspace | `file_state`, `workspace_search`, `workspace_watch_path` | workspace 列表、当前 workspace、file tree、recent files、tags、trash、search 结果和 watcher root。 |

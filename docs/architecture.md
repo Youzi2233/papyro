@@ -9,6 +9,7 @@
 如果你想看模块 owner 和拆分优先级，继续看 [docs/module-ownership.md](module-ownership.md)。
 如果你想看进程、窗口、workspace、document 和 editor runtime 的边界，继续看 [docs/session-model.md](session-model.md)。
 如果你想看 `crates/app` use case 的输入、输出和状态更新范围，继续看 [docs/use-case-contracts.md](use-case-contracts.md)。
+如果你想看 runtime signal 的状态域拆分目标，继续看 [docs/runtime-state-domains.md](runtime-state-domains.md)。
 
 ## 总览
 
