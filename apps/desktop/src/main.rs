@@ -47,6 +47,7 @@ fn main() {
         .with_always_on_top(false);
 
     dioxus::LaunchBuilder::new()
+        .with_context(startup_open_request)
         .with_cfg(
             Config::new()
                 .with_window(window)

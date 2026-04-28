@@ -39,6 +39,7 @@ pub(crate) fn open_markdown_target_from_storage<S>(
 where
     S: FnOnce(&str) -> DocumentStats,
 {
+    ensure_markdown_path(&path)?;
     let target_workspace = workspace_for_path(file_state, &path)?;
     let already_loaded = file_state
         .current_workspace
@@ -114,6 +115,7 @@ fn workspace_for_path(file_state: &FileState, path: &Path) -> Result<Workspace> 
                 .clone()
                 .filter(|workspace| path.starts_with(&workspace.path))
         })
+        .or_else(|| workspace_from_external_markdown_path(path))
         .ok_or_else(|| anyhow::anyhow!("No workspace contains {}", path.display()))
 }
 
@@ -125,6 +127,42 @@ fn workspace_from_recent(recent: &RecentFile) -> Workspace {
         created_at: 0,
         last_opened: None,
         sort_order: 0,
+    }
+}
+
+fn workspace_from_external_markdown_path(path: &Path) -> Option<Workspace> {
+    if !is_markdown_path(path) {
+        return None;
+    }
+
+    let workspace_path = path.parent()?.to_path_buf();
+    Some(Workspace {
+        id: format!("external:{}", workspace_path.display()),
+        name: workspace_path
+            .file_name()
+            .and_then(|name| name.to_str())
+            .unwrap_or("Workspace")
+            .to_string(),
+        path: workspace_path,
+        created_at: 0,
+        last_opened: None,
+        sort_order: 0,
+    })
+}
+
+fn is_markdown_path(path: &Path) -> bool {
+    path.extension()
+        .and_then(|extension| extension.to_str())
+        .is_some_and(|extension| {
+            extension.eq_ignore_ascii_case("md") || extension.eq_ignore_ascii_case("markdown")
+        })
+}
+
+fn ensure_markdown_path(path: &Path) -> Result<()> {
+    if is_markdown_path(path) {
+        Ok(())
+    } else {
+        bail!("Only Markdown files can be opened: {}", path.display())
     }
 }
 

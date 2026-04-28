@@ -8,7 +8,7 @@ use dioxus::prelude::*;
 use papyro_core::models::{AppSettings, WorkspaceSettingsOverrides, WorkspaceTreeState};
 use papyro_core::{FileState, NoteStorage, UiState};
 use papyro_platform::PlatformApi;
-use papyro_ui::commands::{AppCommands, ContentChange};
+use papyro_ui::commands::{AppCommands, ContentChange, OpenMarkdownTarget};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -92,20 +92,7 @@ impl AppDispatcher {
                 );
             }
             AppAction::OpenMarkdown(action) => {
-                let storage = self.storage.clone();
-                let state = self.state;
-                spawn(async move {
-                    let should_flush = {
-                        let file_state = state.file_state.read();
-                        open_markdown_requires_dirty_flush(&file_state, &action.target.path)
-                    };
-
-                    if should_flush && !effects::flush_dirty_tabs(storage.clone(), state).await {
-                        return;
-                    }
-
-                    notes::open_markdown(storage, state, action.target).await;
-                });
+                self.dispatch_open_markdown(action.target);
             }
             AppAction::SearchWorkspace(action) => {
                 search::search_workspace(
@@ -272,6 +259,29 @@ impl AppDispatcher {
                 );
             }
         }
+    }
+
+    fn dispatch_open_markdown(&self, target: OpenMarkdownTarget) {
+        let storage = self.storage.clone();
+        let state = self.state;
+        spawn(async move {
+            run_open_markdown(storage, state, target).await;
+        });
+    }
+
+    pub(crate) fn dispatch_startup_markdown_paths(&self, markdown_paths: Vec<PathBuf>) {
+        let targets = open_markdown_targets_from_paths(markdown_paths);
+        if targets.is_empty() {
+            return;
+        }
+
+        let storage = self.storage.clone();
+        let state = self.state;
+        spawn(async move {
+            for target in targets {
+                run_open_markdown(storage.clone(), state, target).await;
+            }
+        });
     }
 
     pub fn commands(&self) -> AppCommands {
@@ -540,6 +550,30 @@ fn toggle_expanded_path(
     }
 }
 
+async fn run_open_markdown(
+    storage: Arc<dyn NoteStorage>,
+    state: RuntimeState,
+    target: OpenMarkdownTarget,
+) {
+    let should_flush = {
+        let file_state = state.file_state.read();
+        open_markdown_requires_dirty_flush(&file_state, &target.path)
+    };
+
+    if should_flush && !effects::flush_dirty_tabs(storage.clone(), state).await {
+        return;
+    }
+
+    notes::open_markdown(storage, state, target).await;
+}
+
+fn open_markdown_targets_from_paths(markdown_paths: Vec<PathBuf>) -> Vec<OpenMarkdownTarget> {
+    markdown_paths
+        .into_iter()
+        .map(|path| OpenMarkdownTarget { path })
+        .collect()
+}
+
 fn open_markdown_requires_dirty_flush(file_state: &FileState, path: &Path) -> bool {
     file_state
         .current_workspace
@@ -697,6 +731,24 @@ mod tests {
                     note_id: "note-a".to_string(),
                 }
             })
+        );
+    }
+
+    #[test]
+    fn startup_markdown_paths_map_to_open_markdown_targets() {
+        assert_eq!(
+            open_markdown_targets_from_paths(vec![
+                std::path::PathBuf::from("workspace/a.md"),
+                std::path::PathBuf::from("workspace/b.markdown"),
+            ]),
+            vec![
+                OpenMarkdownTarget {
+                    path: std::path::PathBuf::from("workspace/a.md"),
+                },
+                OpenMarkdownTarget {
+                    path: std::path::PathBuf::from("workspace/b.markdown"),
+                },
+            ]
         );
     }
 

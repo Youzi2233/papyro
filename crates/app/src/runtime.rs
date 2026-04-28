@@ -5,6 +5,7 @@ use papyro_core::{NoteStorage, WorkspaceBootstrap};
 use papyro_platform::PlatformApi;
 use papyro_ui::context::{AppContext, EditorServices};
 use papyro_ui::view_model::{EditorSurfaceViewModel, EditorViewModel, WorkspaceViewModel};
+use std::path::PathBuf;
 use std::sync::Arc;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -45,11 +46,13 @@ pub fn use_app_runtime(
     bootstrap: WorkspaceBootstrap,
     storage: Arc<dyn NoteStorage>,
     platform: Arc<dyn PlatformApi>,
+    startup_markdown_paths: Vec<PathBuf>,
 ) -> Signal<Option<String>> {
     let state = use_runtime_state(bootstrap);
     let watch_storage = storage.clone();
     let flush_storage = storage.clone();
     let dispatcher = AppDispatcher::new(shell, state, storage, platform);
+    use_startup_markdown_paths(dispatcher.clone(), startup_markdown_paths);
     let commands = dispatcher.commands();
     let workspace_model = use_memo(move || {
         WorkspaceViewModel::from_file_state(
@@ -97,6 +100,13 @@ pub fn use_app_runtime(
     crate::effects::use_flush_on_drop(state, flush_storage);
 
     state.status_message
+}
+
+fn use_startup_markdown_paths(dispatcher: AppDispatcher, startup_markdown_paths: Vec<PathBuf>) {
+    let startup_markdown_paths = use_hook(|| startup_markdown_paths);
+    use_effect(move || {
+        dispatcher.dispatch_startup_markdown_paths(startup_markdown_paths.clone());
+    });
 }
 
 #[cfg(test)]

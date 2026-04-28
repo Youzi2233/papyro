@@ -227,6 +227,92 @@ fn open_markdown_target_flow_bootstraps_target_workspace_before_opening_note() {
 }
 
 #[test]
+fn open_markdown_target_flow_bootstraps_external_file_parent_workspace() {
+    let note_path = PathBuf::from("external/loose.md");
+    let external_workspace = Workspace {
+        id: "external-workspace".to_string(),
+        name: "external".to_string(),
+        path: PathBuf::from("external"),
+        created_at: 0,
+        last_opened: Some(1),
+        sort_order: 0,
+    };
+    let opened_note = OpenedNote {
+        tab: tab("tab-loose", "note-loose", "external/loose.md"),
+        content: "# Loose".to_string(),
+        recent_files: vec![RecentFile {
+            note_id: "note-loose".to_string(),
+            title: "Loose".to_string(),
+            relative_path: PathBuf::from("loose.md"),
+            workspace_id: external_workspace.id.clone(),
+            workspace_name: external_workspace.name.clone(),
+            workspace_path: external_workspace.path.clone(),
+            opened_at: 1,
+        }],
+    };
+    let storage = MockStorage {
+        opened_notes: HashMap::from([(note_path.clone(), opened_note)]),
+        bootstrap_result: Some(WorkspaceBootstrap {
+            file_state: FileState {
+                workspaces: vec![workspace(), external_workspace.clone()],
+                current_workspace: Some(external_workspace.clone()),
+                ..FileState::default()
+            },
+            status_message: "Loaded external workspace".to_string(),
+            ..WorkspaceBootstrap::default()
+        }),
+        ..MockStorage::default()
+    };
+    let mut file_state = file_state_with_tree(Vec::new());
+    let mut editor_tabs = EditorTabs::default();
+    let mut tab_contents = TabContentsMap::default();
+
+    let outcome = open_markdown_target_from_storage(
+        &storage,
+        &mut file_state,
+        &mut editor_tabs,
+        &mut tab_contents,
+        note_path.clone(),
+        |_| DocumentStats::default(),
+    )
+    .unwrap();
+
+    assert_eq!(
+        file_state
+            .current_workspace
+            .as_ref()
+            .map(|workspace| workspace.path.clone()),
+        Some(PathBuf::from("external"))
+    );
+    assert_eq!(file_state.selected_path, Some(note_path));
+    assert_eq!(editor_tabs.active_tab_id.as_deref(), Some("tab-loose"));
+    assert_eq!(tab_contents.content_for_tab("tab-loose"), Some("# Loose"));
+    assert_eq!(outcome.watch_path, Some(PathBuf::from("external")));
+}
+
+#[test]
+fn open_markdown_target_flow_rejects_non_markdown_paths() {
+    let storage = MockStorage::default();
+    let mut file_state = file_state_with_tree(Vec::new());
+    let mut editor_tabs = EditorTabs::default();
+    let mut tab_contents = TabContentsMap::default();
+
+    let error = open_markdown_target_from_storage(
+        &storage,
+        &mut file_state,
+        &mut editor_tabs,
+        &mut tab_contents,
+        PathBuf::from("workspace/image.png"),
+        |_| DocumentStats::default(),
+    )
+    .unwrap_err();
+
+    assert!(error.to_string().contains("Only Markdown files"));
+    assert!(editor_tabs.tabs.is_empty());
+    assert_eq!(file_state.selected_path, None);
+}
+
+#[test]
 fn save_tab_flow_marks_tab_clean_and_refreshes_recent_files() {
     let storage = MockStorage {
         save_result: Some(SavedNote {

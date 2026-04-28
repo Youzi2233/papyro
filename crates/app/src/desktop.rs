@@ -1,7 +1,7 @@
 use crate::runtime::{use_app_runtime, AppShell};
 use dioxus::prelude::*;
 use papyro_core::models::{AppSettings, Theme};
-use papyro_core::NoteStorage;
+use papyro_core::{NoteStorage, WorkspaceBootstrap};
 use papyro_platform::{DesktopPlatform, PlatformApi};
 use std::ffi::OsString;
 use std::fmt::Display;
@@ -44,6 +44,7 @@ where
         .skip(1)
         .map(|arg| PathBuf::from(arg.into()))
         .filter(|path| is_markdown_path(path))
+        .map(|path| absolutize_startup_path(&path))
         .collect();
 
     DesktopStartupOpenRequest { markdown_paths }
@@ -108,13 +109,21 @@ font-family:"SF Pro Text",-apple-system,BlinkMacSystemFont,"Segoe UI Variable","
 
 #[component]
 pub fn DesktopApp() -> Element {
-    let bootstrap = papyro_storage::bootstrap_from_env_or_current_dir();
+    let startup_open_request =
+        use_hook(|| try_consume_context::<DesktopStartupOpenRequest>().unwrap_or_default());
+    let bootstrap = use_hook(|| desktop_bootstrap(&startup_open_request));
     let storage = use_hook(|| {
         Arc::new(papyro_storage::SqliteStorage::shared().expect("default storage is initialized"))
             as Arc<dyn NoteStorage>
     });
     let platform = use_hook(|| Arc::new(DesktopPlatform) as Arc<dyn PlatformApi>);
-    use_app_runtime(AppShell::Desktop, bootstrap, storage, platform);
+    use_app_runtime(
+        AppShell::Desktop,
+        bootstrap,
+        storage,
+        platform,
+        startup_open_request.markdown_paths.clone(),
+    );
 
     rsx! {
         papyro_ui::layouts::DesktopLayout {}
@@ -158,6 +167,7 @@ mod tests {
 
     #[test]
     fn desktop_startup_open_request_filters_markdown_args() {
+        let current_dir = std::env::current_dir().unwrap();
         let request = desktop_startup_open_request_from_args([
             OsString::from("papyro.exe"),
             OsString::from("notes/a.md"),
@@ -168,8 +178,8 @@ mod tests {
         assert_eq!(
             request.markdown_paths,
             vec![
-                PathBuf::from("notes/a.md"),
-                PathBuf::from("notes/b.MARKDOWN")
+                current_dir.join("notes/a.md"),
+                current_dir.join("notes/b.MARKDOWN")
             ]
         );
     }
@@ -180,4 +190,119 @@ mod tests {
 
         assert!(request.is_empty());
     }
+
+    #[test]
+    fn startup_workspace_path_uses_first_markdown_parent() {
+        let current_dir = std::env::current_dir().unwrap();
+        let request = DesktopStartupOpenRequest {
+            markdown_paths: vec![
+                current_dir.join("workspace/notes/a.md"),
+                current_dir.join("other/b.md"),
+            ],
+        };
+
+        assert_eq!(
+            startup_workspace_path(&request, &[], None),
+            Some(current_dir.join("workspace/notes"))
+        );
+    }
+
+    #[test]
+    fn startup_workspace_path_skips_empty_request() {
+        assert_eq!(
+            startup_workspace_path(&DesktopStartupOpenRequest::default(), &[], None),
+            None
+        );
+    }
+
+    #[test]
+    fn startup_workspace_path_prefers_known_workspace() {
+        let current_dir = std::env::current_dir().unwrap();
+        let workspace_path = current_dir.join("workspace");
+        let request = DesktopStartupOpenRequest {
+            markdown_paths: vec![workspace_path.join("notes/a.md")],
+        };
+        let workspace = papyro_core::models::Workspace {
+            id: "workspace".to_string(),
+            name: "Workspace".to_string(),
+            path: workspace_path.clone(),
+            created_at: 0,
+            last_opened: Some(1),
+            sort_order: 0,
+        };
+
+        assert_eq!(
+            startup_workspace_path(&request, &[workspace], None),
+            Some(workspace_path)
+        );
+    }
+
+    #[test]
+    fn startup_workspace_path_uses_default_workspace_before_parent() {
+        let current_dir = std::env::current_dir().unwrap();
+        let default_workspace = current_dir.join("workspace");
+        let request = DesktopStartupOpenRequest {
+            markdown_paths: vec![default_workspace.join("notes/a.md")],
+        };
+
+        assert_eq!(
+            startup_workspace_path(&request, &[], Some(&default_workspace)),
+            Some(default_workspace)
+        );
+    }
+}
+
+fn desktop_bootstrap(startup_open_request: &DesktopStartupOpenRequest) -> WorkspaceBootstrap {
+    let recent_workspaces = papyro_storage::list_recent_workspaces(10).unwrap_or_else(|error| {
+        tracing::warn!(%error, "failed to resolve recent workspaces for startup markdown path");
+        Vec::new()
+    });
+    let default_workspace_path = desktop_default_workspace_path();
+
+    match startup_workspace_path(
+        startup_open_request,
+        &recent_workspaces,
+        default_workspace_path.as_deref(),
+    ) {
+        Some(workspace_path) => papyro_storage::bootstrap_from_workspace(&workspace_path),
+        None => papyro_storage::bootstrap_from_env_or_current_dir(),
+    }
+}
+
+fn startup_workspace_path(
+    startup_open_request: &DesktopStartupOpenRequest,
+    recent_workspaces: &[papyro_core::models::Workspace],
+    default_workspace_path: Option<&Path>,
+) -> Option<PathBuf> {
+    let startup_path = startup_open_request.markdown_paths.first()?;
+    let startup_path = absolutize_startup_path(startup_path);
+
+    recent_workspaces
+        .iter()
+        .filter(|workspace| startup_path.starts_with(&workspace.path))
+        .max_by_key(|workspace| workspace.path.components().count())
+        .map(|workspace| workspace.path.clone())
+        .or_else(|| {
+            default_workspace_path
+                .filter(|workspace_path| startup_path.starts_with(workspace_path))
+                .map(Path::to_path_buf)
+        })
+        .or_else(|| startup_path.parent().map(Path::to_path_buf))
+        .filter(|path| !path.as_os_str().is_empty())
+}
+
+fn desktop_default_workspace_path() -> Option<PathBuf> {
+    std::env::var_os("PAPYRO_WORKSPACE")
+        .map(PathBuf::from)
+        .or_else(|| std::env::current_dir().ok())
+}
+
+fn absolutize_startup_path(path: &Path) -> PathBuf {
+    if path.is_absolute() {
+        return path.to_path_buf();
+    }
+
+    std::env::current_dir()
+        .map(|current_dir| current_dir.join(path))
+        .unwrap_or_else(|_| path.to_path_buf())
 }
