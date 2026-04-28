@@ -478,14 +478,24 @@ fn apply_settings(
     mut status_message: Signal<Option<String>>,
     settings: AppSettings,
 ) {
-    if let Err(error) = storage.save_settings(&settings) {
-        status_message.set(Some(format!("Save settings failed: {error}")));
-        tracing::warn!("Failed to save settings: {error}");
-        return;
-    }
+    ui_state.write().apply_global_settings(settings.clone());
 
-    ui_state.write().apply_global_settings(settings);
-    status_message.set(Some("Saved global settings".to_string()));
+    spawn(async move {
+        let result = tokio::task::spawn_blocking(move || storage.save_settings(&settings)).await;
+        match result {
+            Ok(Ok(())) => {
+                status_message.set(Some("Saved global settings".to_string()));
+            }
+            Ok(Err(error)) => {
+                status_message.set(Some(format!("Save settings failed: {error}")));
+                tracing::warn!("Failed to save settings: {error}");
+            }
+            Err(error) => {
+                status_message.set(Some(format!("Save settings failed: {error}")));
+                tracing::warn!("Settings save task failed: {error}");
+            }
+        }
+    });
 }
 
 fn apply_workspace_settings(
@@ -503,14 +513,31 @@ fn apply_workspace_settings(
         return;
     };
 
-    if let Err(error) = storage.save_workspace_settings(&workspace, &overrides) {
-        status_message.set(Some(format!("Save workspace settings failed: {error}")));
-        tracing::warn!("Failed to save workspace settings: {error}");
-        return;
-    }
+    ui_state
+        .write()
+        .apply_workspace_overrides(overrides.clone());
 
-    ui_state.write().apply_workspace_overrides(overrides);
-    status_message.set(Some(format!("Saved settings for {}", workspace.name)));
+    spawn(async move {
+        let workspace_name = workspace.name.clone();
+        let result = tokio::task::spawn_blocking(move || {
+            storage.save_workspace_settings(&workspace, &overrides)
+        })
+        .await;
+
+        match result {
+            Ok(Ok(())) => {
+                status_message.set(Some(format!("Saved settings for {workspace_name}")));
+            }
+            Ok(Err(error)) => {
+                status_message.set(Some(format!("Save workspace settings failed: {error}")));
+                tracing::warn!("Failed to save workspace settings: {error}");
+            }
+            Err(error) => {
+                status_message.set(Some(format!("Save workspace settings failed: {error}")));
+                tracing::warn!("Workspace settings save task failed: {error}");
+            }
+        }
+    });
 }
 
 fn toggle_expanded_path(
