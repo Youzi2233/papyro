@@ -6,7 +6,8 @@ use std::path::Path;
 
 pub type DbPool = Pool<SqliteConnectionManager>;
 
-const MIGRATION_SQL: &str = include_str!("migrations/V1__init.sql");
+const MIGRATION_SQL_FILES: &[(&str, &str)] =
+    &[("V1__init.sql", include_str!("migrations/V1__init.sql"))];
 
 pub fn create_pool(db_path: &Path) -> Result<DbPool> {
     if let Some(parent) = db_path.parent() {
@@ -21,7 +22,12 @@ pub fn create_pool(db_path: &Path) -> Result<DbPool> {
 
 fn run_migrations(pool: &DbPool) -> Result<()> {
     let mut conn = pool.get()?;
-    let migrations = Migrations::new(vec![M::up(MIGRATION_SQL)]);
+    let migrations = Migrations::new(
+        MIGRATION_SQL_FILES
+            .iter()
+            .map(|(_, sql)| M::up(sql))
+            .collect(),
+    );
     migrations.to_latest(&mut conn)?;
     Ok(())
 }
@@ -101,6 +107,35 @@ mod tests {
                 row.get(0)
             })?;
         assert_eq!(label, "keep");
+
+        Ok(())
+    }
+
+    #[test]
+    fn migration_registry_matches_sql_files() -> Result<()> {
+        let migrations_dir = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("src")
+            .join("db")
+            .join("migrations");
+        let mut migration_files = std::fs::read_dir(migrations_dir)?
+            .map(|entry| entry.map(|entry| entry.file_name().to_string_lossy().to_string()))
+            .collect::<std::io::Result<Vec<_>>>()?;
+        migration_files.retain(|name| name.ends_with(".sql"));
+        migration_files.sort();
+
+        let registered_files = MIGRATION_SQL_FILES
+            .iter()
+            .map(|(name, _)| name.to_string())
+            .collect::<Vec<_>>();
+        assert_eq!(registered_files, migration_files);
+
+        for (index, name) in registered_files.iter().enumerate() {
+            let expected_prefix = format!("V{}__", index + 1);
+            assert!(
+                name.starts_with(&expected_prefix),
+                "migration {name} must use contiguous version prefix {expected_prefix}"
+            );
+        }
 
         Ok(())
     }
