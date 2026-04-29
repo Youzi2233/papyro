@@ -1,4 +1,5 @@
 mod app_data;
+mod reveal;
 
 pub mod desktop;
 pub mod mobile;

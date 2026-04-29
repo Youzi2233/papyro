@@ -1,4 +1,4 @@
-use crate::{app_data::ensure_app_data_dir, traits::PlatformApi};
+use crate::{app_data::ensure_app_data_dir, reveal::reveal_path, traits::PlatformApi};
 use anyhow::Result;
 use async_trait::async_trait;
 use std::path::{Path, PathBuf};
@@ -44,8 +44,7 @@ impl PlatformApi for DesktopPlatform {
     }
 
     fn open_in_explorer(&self, path: &Path) -> Result<()> {
-        open::that(path)?;
-        Ok(())
+        reveal_path(path)
     }
 
     fn get_app_data_dir(&self) -> Result<PathBuf> {
