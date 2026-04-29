@@ -1,3 +1,7 @@
+use crate::open_requests::{
+    markdown_open_request_channel, markdown_open_request_from_paths, MarkdownOpenRequest,
+    MarkdownOpenRequestReceiver, MarkdownOpenRequestSender,
+};
 use crate::runtime::{use_app_runtime, AppShell};
 use dioxus::prelude::*;
 use papyro_core::models::{AppSettings, Theme};
@@ -25,6 +29,24 @@ impl DesktopStartupOpenRequest {
     }
 }
 
+impl From<MarkdownOpenRequest> for DesktopStartupOpenRequest {
+    fn from(request: MarkdownOpenRequest) -> Self {
+        Self {
+            markdown_paths: request.markdown_paths,
+        }
+    }
+}
+
+pub type DesktopExternalOpenRequestSender = MarkdownOpenRequestSender;
+pub type DesktopExternalOpenRequestReceiver = MarkdownOpenRequestReceiver;
+
+pub fn desktop_external_open_request_channel() -> (
+    DesktopExternalOpenRequestSender,
+    DesktopExternalOpenRequestReceiver,
+) {
+    markdown_open_request_channel()
+}
+
 pub fn desktop_startup_chrome(favicon: impl Display, main_css: &str) -> DesktopStartupChrome {
     let settings = load_startup_settings();
     build_startup_chrome(&settings, &favicon.to_string(), main_css)
@@ -39,23 +61,12 @@ where
     I: IntoIterator<Item = S>,
     S: Into<OsString>,
 {
-    let markdown_paths = args
-        .into_iter()
-        .skip(1)
-        .map(|arg| PathBuf::from(arg.into()))
-        .filter(|path| is_markdown_path(path))
-        .map(|path| absolutize_startup_path(&path))
-        .collect();
-
-    DesktopStartupOpenRequest { markdown_paths }
-}
-
-fn is_markdown_path(path: &Path) -> bool {
-    path.extension()
-        .and_then(|extension| extension.to_str())
-        .is_some_and(|extension| {
-            extension.eq_ignore_ascii_case("md") || extension.eq_ignore_ascii_case("markdown")
-        })
+    markdown_open_request_from_paths(
+        args.into_iter()
+            .skip(1)
+            .map(|arg| PathBuf::from(arg.into())),
+    )
+    .into()
 }
 
 fn load_startup_settings() -> AppSettings {
@@ -111,6 +122,8 @@ font-family:"SF Pro Text",-apple-system,BlinkMacSystemFont,"Segoe UI Variable","
 pub fn DesktopApp() -> Element {
     let startup_open_request =
         use_hook(|| try_consume_context::<DesktopStartupOpenRequest>().unwrap_or_default());
+    let external_open_requests =
+        use_hook(|| try_consume_context::<DesktopExternalOpenRequestReceiver>());
     let bootstrap = use_hook(|| desktop_bootstrap(&startup_open_request));
     let storage = use_hook(|| {
         Arc::new(papyro_storage::SqliteStorage::shared().expect("default storage is initialized"))
@@ -123,6 +136,7 @@ pub fn DesktopApp() -> Element {
         storage,
         platform,
         startup_open_request.markdown_paths.clone(),
+        external_open_requests,
     );
 
     rsx! {

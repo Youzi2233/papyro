@@ -1,4 +1,5 @@
 use dioxus::desktop::tao::dpi::LogicalSize;
+use dioxus::desktop::tao::event::Event;
 use dioxus::desktop::{Config, WindowBuilder};
 use dioxus::prelude::*;
 use std::io;
@@ -21,6 +22,8 @@ fn main() {
     }
 
     let startup_open_request = papyro_app::desktop::desktop_startup_open_request_from_env();
+    let (external_open_sender, external_open_receiver) =
+        papyro_app::desktop::desktop_external_open_request_channel();
     if !startup_open_request.is_empty() {
         tracing::info!(
             markdown_paths = startup_open_request.markdown_paths.len(),
@@ -48,12 +51,26 @@ fn main() {
 
     dioxus::LaunchBuilder::new()
         .with_context(startup_open_request)
+        .with_context(external_open_receiver)
         .with_cfg(
             Config::new()
                 .with_window(window)
                 .with_background_color(chrome.background_color)
                 .with_custom_head(chrome.custom_head)
-                .with_custom_event_handler(|event, _| {
+                .with_custom_event_handler(move |event, _| {
+                    if let Event::Opened { urls } = event {
+                        let markdown_paths = urls
+                            .iter()
+                            .filter_map(|url| url.to_file_path().ok())
+                            .collect::<Vec<_>>();
+                        if external_open_sender.send_paths(markdown_paths) {
+                            tracing::info!(
+                                url_count = urls.len(),
+                                "desktop external open request queued"
+                            );
+                        }
+                    }
+
                     if !perf_enabled() {
                         return;
                     }

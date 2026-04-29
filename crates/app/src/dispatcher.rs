@@ -2,6 +2,7 @@ use crate::actions::AppAction;
 use crate::assets::save_pasted_image_asset;
 use crate::effects;
 use crate::handlers::{file_ops, notes, search, tags, workspace};
+use crate::open_requests::MarkdownOpenRequest;
 use crate::perf::{
     perf_timer, tab_revision_and_bytes, trace_app_dispatch, trace_chrome_toggle_sidebar,
     trace_chrome_toggle_theme, trace_editor_switch_tab, trace_editor_view_mode_change,
@@ -342,6 +343,14 @@ impl AppDispatcher {
     }
 
     pub(crate) fn dispatch_startup_markdown_paths(&self, markdown_paths: Vec<PathBuf>) {
+        self.dispatch_markdown_paths(markdown_paths);
+    }
+
+    pub(crate) fn dispatch_external_markdown_request(&self, request: MarkdownOpenRequest) {
+        self.dispatch_markdown_paths(request.markdown_paths);
+    }
+
+    fn dispatch_markdown_paths(&self, markdown_paths: Vec<PathBuf>) {
         let targets = open_markdown_targets_from_paths(markdown_paths);
         if targets.is_empty() {
             return;

@@ -1,4 +1,5 @@
 use crate::dispatcher::AppDispatcher;
+use crate::open_requests::MarkdownOpenRequestReceiver;
 use crate::state::use_runtime_state;
 use dioxus::prelude::*;
 use papyro_core::{NoteStorage, WorkspaceBootstrap};
@@ -51,12 +52,14 @@ pub fn use_app_runtime(
     storage: Arc<dyn NoteStorage>,
     platform: Arc<dyn PlatformApi>,
     startup_markdown_paths: Vec<PathBuf>,
+    external_open_requests: Option<MarkdownOpenRequestReceiver>,
 ) -> Signal<Option<String>> {
     let state = use_runtime_state(bootstrap);
     let watch_storage = storage.clone();
     let flush_storage = storage.clone();
     let dispatcher = AppDispatcher::new(shell, state, storage, platform);
     use_startup_markdown_paths(dispatcher.clone(), startup_markdown_paths);
+    use_external_markdown_open_requests(dispatcher.clone(), external_open_requests);
     let commands = dispatcher.commands();
     let workspace_model = use_memo(move || {
         WorkspaceViewModel::from_file_state(
@@ -150,6 +153,24 @@ fn use_startup_markdown_paths(dispatcher: AppDispatcher, startup_markdown_paths:
     let startup_markdown_paths = use_hook(|| startup_markdown_paths);
     use_effect(move || {
         dispatcher.dispatch_startup_markdown_paths(startup_markdown_paths.clone());
+    });
+}
+
+fn use_external_markdown_open_requests(
+    dispatcher: AppDispatcher,
+    external_open_requests: Option<MarkdownOpenRequestReceiver>,
+) {
+    let external_open_requests = use_hook(|| external_open_requests);
+    use_effect(move || {
+        let Some(external_open_requests) = external_open_requests.clone() else {
+            return;
+        };
+        let dispatcher = dispatcher.clone();
+        spawn(async move {
+            while let Ok(request) = external_open_requests.recv().await {
+                dispatcher.dispatch_external_markdown_request(request);
+            }
+        });
     });
 }
 

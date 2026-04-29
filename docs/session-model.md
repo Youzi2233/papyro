@@ -223,6 +223,7 @@ OpenMarkdownTarget { path }
 - Recent File。
 - 系统双击 `.md` / `.markdown`。
 - 启动参数中的 Markdown 路径。
+- 已运行实例收到的系统打开事件或后续单实例转发请求。
 
 当前阶段规则：
 
@@ -251,6 +252,7 @@ OpenMarkdownTarget { path }
 
 - 当前只支持单主窗口 Tabs 语义。
 - `apps/desktop` 只解析启动参数和系统文件打开事件，不直接调用 UI command。
+- 已运行实例外部打开事件先进入 app-level request channel，再由 runtime 复用 `OpenMarkdown`。
 - `apps/desktop` 必须把打开请求交给 `crates/app`。
 - `crates/app` 负责把路径请求转成 use case。
 - `crates/ui` 只发 command，不拥有 storage 或 platform 业务真相。
@@ -265,4 +267,5 @@ OpenMarkdownTarget { path }
 3. 将 `OpenNote(FileNode)` 兼容入口转成 path-based open。
 4. 让文件树、Quick Open、Search 和 Recent File 共用 `OpenMarkdownTarget`。
 5. 让 `apps/desktop` 解析启动参数，并提交 app-level open request。
-6. 在完成保存冲突和 window registry 后，再引入 MultiWindow 行为。
+6. 让已运行实例外部打开事件通过 request channel 注入 runtime，并复用 `OpenMarkdownTarget`。
+7. 在完成保存冲突和 window registry 后，再引入 MultiWindow 行为。
