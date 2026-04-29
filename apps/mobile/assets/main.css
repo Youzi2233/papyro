@@ -1,18 +1,20 @@
 :root {
     color-scheme: light;
-    --mn-bg: #f5f0e8;
-    --mn-panel: #fffaf2;
-    --mn-panel-strong: #27251f;
-    --mn-border: #ded1bd;
-    --mn-border-strong: #bda98d;
-    --mn-text: #25211a;
-    --mn-muted: #766b5b;
-    --mn-accent: #b24b2f;
-    --mn-accent-dark: #873321;
+    --mn-bg: #f7f7f4;
+    --mn-panel: #ffffff;
+    --mn-panel-strong: #191a17;
+    --mn-border: #ddddda;
+    --mn-border-strong: #b8bdb4;
+    --mn-text: #191a17;
+    --mn-muted: #6b7168;
+    --mn-accent: #2f6f6c;
+    --mn-accent-dark: #245c59;
+    --mn-accent-dim: rgba(47, 111, 108, 0.12);
+    --mn-accent-wash: rgba(47, 111, 108, 0.07);
     --mn-green: #46664a;
-    --mn-shadow: 0 22px 70px rgba(66, 45, 20, 0.16);
-    --mn-ring-focus: 0 0 0 3px rgba(178, 75, 47, 0.16);
-    --mn-ring-focus-inset: inset 0 0 0 2px rgba(178, 75, 47, 0.22);
+    --mn-shadow: 0 18px 48px rgba(23, 26, 22, 0.1);
+    --mn-ring-focus: 0 0 0 3px rgba(47, 111, 108, 0.16);
+    --mn-ring-focus-inset: inset 0 0 0 2px rgba(47, 111, 108, 0.22);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text", "Segoe UI", Aptos, "PingFang SC", "Microsoft YaHei UI", system-ui, sans-serif;
 }
 
@@ -29,9 +31,7 @@ body,
 }
 
 body {
-    background:
-        radial-gradient(circle at 12% 8%, rgba(178, 75, 47, 0.16), transparent 30%),
-        linear-gradient(135deg, #f7efe2 0%, #efe1cb 52%, #dfceb2 100%);
+    background: var(--mn-bg);
     color: var(--mn-text);
 }
 
@@ -58,9 +58,9 @@ button {
     align-items: center;
     gap: 20px;
     padding: 14px 22px;
-    border-bottom: 1px solid rgba(37, 33, 26, 0.12);
+    border-bottom: 1px solid rgba(25, 26, 23, 0.1);
     backdrop-filter: blur(18px);
-    background: rgba(255, 250, 242, 0.74);
+    background: rgba(255, 255, 255, 0.82);
 }
 
 .mn-brand {
@@ -76,7 +76,7 @@ button {
     height: 40px;
     border-radius: 14px;
     background: var(--mn-panel-strong);
-    color: #fff7ea;
+    color: var(--mn-panel);
     font-weight: 800;
 }
 
@@ -111,7 +111,7 @@ small {
 .mn-button {
     border: 1px solid var(--mn-border);
     border-radius: 999px;
-    background: rgba(255, 250, 242, 0.74);
+    background: rgba(255, 255, 255, 0.86);
     color: var(--mn-text);
     padding: 8px 13px;
     font-size: 13px;
@@ -137,7 +137,7 @@ small {
     height: 40px;
     border: 1px solid var(--mn-border);
     border-radius: 999px;
-    background: rgba(255, 250, 242, 0.82);
+    background: rgba(255, 255, 255, 0.9);
     color: var(--mn-text);
     cursor: pointer;
 }
@@ -145,11 +145,11 @@ small {
 .mn-button.primary {
     background: var(--mn-accent);
     border-color: var(--mn-accent);
-    color: #fff7ea;
+    color: var(--mn-panel);
 }
 
 .mn-button.danger {
-    border-color: rgba(178, 75, 47, 0.35);
+    border-color: rgba(47, 111, 108, 0.28);
     color: var(--mn-accent-dark);
 }
 
@@ -187,7 +187,7 @@ small {
     overflow: hidden;
     border: 1px solid var(--mn-border);
     border-radius: 24px;
-    background: rgba(255, 250, 242, 0.86);
+    background: rgba(255, 255, 255, 0.9);
     box-shadow: var(--mn-shadow);
 }
 
@@ -218,7 +218,7 @@ small {
 }
 
 .mn-file-tree:focus-visible {
-    box-shadow: inset 0 0 0 2px rgba(178, 75, 47, 0.16);
+    box-shadow: var(--mn-ring-focus-inset);
 }
 
 .mn-sidebar-actions,
@@ -240,7 +240,7 @@ small {
     padding: 4px;
     border: 1px solid var(--mn-border);
     border-radius: 14px;
-    background: rgba(255, 250, 242, 0.78);
+    background: rgba(255, 255, 255, 0.78);
 }
 
 .mn-tree-sort-btn {
@@ -254,9 +254,9 @@ small {
 }
 
 .mn-tree-sort-btn.active {
-    background: #fffdf8;
+    background: var(--mn-panel);
     color: var(--mn-accent-dark);
-    box-shadow: 0 1px 8px rgba(68, 54, 42, 0.08);
+    box-shadow: 0 1px 8px rgba(23, 26, 22, 0.08);
 }
 
 .mn-tree-row {
@@ -274,7 +274,7 @@ small {
 
 .mn-tree-row:hover,
 .mn-tree-row.active {
-    background: rgba(178, 75, 47, 0.11);
+    background: var(--mn-accent-wash);
 }
 
 .mn-tree-row.editing {
@@ -287,7 +287,7 @@ small {
 }
 
 .mn-tree-row.drop-target {
-    background: rgba(178, 75, 47, 0.16);
+    background: var(--mn-accent-dim);
     box-shadow: inset 3px 0 0 var(--mn-accent);
 }
 
@@ -304,7 +304,7 @@ small {
 .mn-tree-icon {
     min-width: 26px;
     border-radius: 8px;
-    background: rgba(70, 102, 74, 0.13);
+    background: rgba(47, 111, 108, 0.12);
     color: var(--mn-green);
     padding: 3px 5px;
     font-size: 10px;
@@ -326,11 +326,11 @@ small {
     border: 1px solid var(--mn-accent);
     border-radius: 7px;
     outline: 0;
-    background: #fffdf8;
+    background: var(--mn-panel);
     color: var(--mn-text);
     padding: 3px 8px;
     font-size: 13px;
-    box-shadow: 0 0 0 3px rgba(178, 75, 47, 0.1);
+    box-shadow: var(--mn-ring-focus);
 }
 
 .mn-tree-context-dismiss {
@@ -370,7 +370,7 @@ small {
 .mn-tree-context-menu button:hover,
 .mn-tree-context-menu button:focus-visible {
     outline: 0;
-    background: rgba(178, 75, 47, 0.11);
+    background: var(--mn-accent-wash);
     color: var(--mn-accent-dark);
     box-shadow: var(--mn-ring-focus-inset);
 }
@@ -413,14 +413,14 @@ small {
     border: 1px solid var(--mn-border);
     border-radius: 14px;
     outline: 0;
-    background: #fffdf8;
+    background: var(--mn-panel);
     color: var(--mn-text);
     padding: 10px 12px;
 }
 
 .mn-input:focus {
     border-color: var(--mn-border-strong);
-    box-shadow: 0 0 0 3px rgba(178, 75, 47, 0.1);
+    box-shadow: var(--mn-ring-focus);
 }
 
 .mn-editor {
@@ -431,7 +431,7 @@ small {
     overflow: hidden;
     border: 1px solid var(--mn-border);
     border-radius: 28px;
-    background: rgba(255, 250, 242, 0.9);
+    background: rgba(255, 255, 255, 0.9);
     box-shadow: var(--mn-shadow);
 }
 
@@ -456,7 +456,7 @@ small {
 
 .mn-tab.active {
     background: var(--mn-panel-strong);
-    color: #fff7ea;
+    color: var(--mn-panel);
 }
 
 .mn-tab-save-status {
@@ -485,12 +485,12 @@ small {
 
 .mn-tab-save-status.failed {
     background: #c74a43;
-    color: #fff7ea;
+    color: var(--mn-panel);
 }
 
 .mn-tab-save-status.conflict {
     background: #9f6a3a;
-    color: #fff7ea;
+    color: var(--mn-panel);
 }
 
 .mn-document {
@@ -531,7 +531,7 @@ small {
     overflow-y: auto;
     border: 1px solid var(--mn-border);
     border-radius: 18px;
-    background: #fffdf8;
+    background: var(--mn-panel);
     padding: 22px;
     color: var(--mn-text);
     line-height: 1.7;
@@ -541,7 +541,7 @@ small {
     margin-bottom: 12px;
     border: 1px solid var(--mn-border);
     border-radius: 12px;
-    background: rgba(255, 250, 242, 0.82);
+    background: rgba(255, 255, 255, 0.86);
     color: var(--mn-muted);
     padding: 10px 12px;
     font-size: 12px;
@@ -607,9 +607,9 @@ small {
     border: 0;
     outline: 0;
     border-radius: 20px;
-    background: #fffdf8;
+    background: var(--mn-panel);
     color: var(--mn-text);
-    box-shadow: inset 0 0 0 1px rgba(189, 169, 141, 0.42);
+    box-shadow: inset 0 0 0 1px rgba(184, 189, 180, 0.42);
     padding: 28px;
     font-family: ui-monospace, "SFMono-Regular", "SF Mono", "Cascadia Code", "JetBrains Mono", Consolas, "Liberation Mono", Menlo, monospace;
     font-size: 16px;
@@ -627,9 +627,7 @@ small {
     max-width: 680px;
     border: 1px solid var(--mn-border);
     border-radius: 34px;
-    background:
-        linear-gradient(135deg, rgba(178, 75, 47, 0.12), transparent 42%),
-        #fffdf8;
+    background: var(--mn-panel);
     padding: clamp(28px, 7vw, 76px);
 }
 
@@ -666,7 +664,7 @@ small {
     min-height: 0;
     border: 1px solid var(--mn-border);
     border-radius: 24px;
-    background: rgba(255, 250, 242, 0.9);
+    background: rgba(255, 255, 255, 0.9);
     box-shadow: var(--mn-shadow);
     overflow: hidden;
 }
@@ -681,7 +679,7 @@ small {
 }
 
 .mn-mobile-browser-header {
-    border-bottom: 1px solid rgba(37, 33, 26, 0.08);
+    border-bottom: 1px solid rgba(25, 26, 23, 0.08);
 }
 
 .mn-mobile-browser-title,
@@ -724,8 +722,8 @@ small {
     justify-content: space-between;
     gap: 12px;
     padding: 10px 14px;
-    border-top: 1px solid rgba(37, 33, 26, 0.12);
-    background: rgba(255, 250, 242, 0.82);
+    border-top: 1px solid rgba(25, 26, 23, 0.1);
+    background: rgba(255, 255, 255, 0.86);
     color: var(--mn-muted);
     font-size: 12px;
 }
@@ -758,7 +756,7 @@ small {
     display: grid;
     place-items: center;
     padding: 16px;
-    background: rgba(26, 20, 14, 0.26);
+    background: rgba(18, 20, 17, 0.3);
     z-index: 40;
 }
 
@@ -768,7 +766,7 @@ small {
     overflow: auto;
     border: 1px solid var(--mn-border);
     border-radius: 28px;
-    background: #fffdf8;
+    background: var(--mn-panel);
     box-shadow: var(--mn-shadow);
 }
 
@@ -782,11 +780,11 @@ small {
 }
 
 .mn-modal-header {
-    border-bottom: 1px solid rgba(37, 33, 26, 0.08);
+    border-bottom: 1px solid rgba(25, 26, 23, 0.08);
 }
 
 .mn-modal-footer {
-    border-top: 1px solid rgba(37, 33, 26, 0.08);
+    border-top: 1px solid rgba(25, 26, 23, 0.08);
 }
 
 .mn-modal-title {
@@ -799,7 +797,7 @@ small {
     width: 38px;
     height: 38px;
     border-radius: 999px;
-    background: rgba(178, 75, 47, 0.08);
+    background: var(--mn-accent-wash);
     color: var(--mn-accent-dark);
     cursor: pointer;
 }
