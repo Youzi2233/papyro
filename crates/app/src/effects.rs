@@ -208,6 +208,21 @@ pub(crate) fn use_flush_on_drop(state: RuntimeState, storage: Arc<dyn NoteStorag
     });
 }
 
+#[cfg(feature = "desktop-shell")]
+pub(crate) fn use_desktop_close_flush(state: RuntimeState, storage: Arc<dyn NoteStorage>) {
+    use dioxus::desktop::tao::event::{Event, WindowEvent};
+
+    dioxus::desktop::use_wry_event_handler(move |event, _| {
+        if let Event::WindowEvent {
+            event: WindowEvent::CloseRequested,
+            ..
+        } = event
+        {
+            flush_dirty_tabs_blocking(storage.as_ref(), state);
+        }
+    });
+}
+
 fn dirty_tab_ids(state: RuntimeState) -> Vec<String> {
     state
         .editor_tabs

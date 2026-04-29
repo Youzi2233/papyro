@@ -6,7 +6,7 @@ edition.workspace = true
 
 [features]
 default = []
-desktop-shell = ["dep:rfd"]
+desktop-shell = ["dep:rfd", "dioxus/desktop"]
 
 [dependencies]
 dioxus = { workspace = true }

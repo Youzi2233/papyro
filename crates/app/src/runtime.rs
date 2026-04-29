@@ -57,6 +57,8 @@ pub fn use_app_runtime(
     let state = use_runtime_state(bootstrap);
     let watch_storage = storage.clone();
     let flush_storage = storage.clone();
+    #[cfg(feature = "desktop-shell")]
+    let close_flush_storage = storage.clone();
     let dispatcher = AppDispatcher::new(shell, state, storage, platform);
     use_startup_markdown_paths(dispatcher.clone(), startup_markdown_paths);
     use_external_markdown_open_requests(dispatcher.clone(), external_open_requests);
@@ -144,6 +146,8 @@ pub fn use_app_runtime(
     });
 
     crate::effects::use_workspace_watcher(state, watch_storage);
+    #[cfg(feature = "desktop-shell")]
+    crate::effects::use_desktop_close_flush(state, close_flush_storage);
     crate::effects::use_flush_on_drop(state, flush_storage);
 
     state.status_message
