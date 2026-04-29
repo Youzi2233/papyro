@@ -3,6 +3,8 @@ use dioxus::prelude::*;
 use std::collections::HashMap;
 use std::time::Duration;
 
+use crate::perf::trace_editor_host_destroy;
+
 pub(super) use papyro_editor::protocol::{EditorCommand, EditorEvent};
 
 #[derive(Clone)]
@@ -26,6 +28,11 @@ pub(super) fn send_editor_destroy_batch(bridges: Vec<EditorBridge>) {
 
     spawn(async move {
         tokio::time::sleep(EDITOR_DESTROY_IDLE_DELAY).await;
+        let instance_ids: Vec<String> = bridges
+            .iter()
+            .map(|bridge| bridge.instance_id.clone())
+            .collect();
+        trace_editor_host_destroy(&instance_ids);
         for bridge in bridges {
             let _ = bridge.eval.send(EditorCommand::Destroy {
                 instance_id: bridge.instance_id,

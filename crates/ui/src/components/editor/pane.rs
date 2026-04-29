@@ -6,7 +6,8 @@ use super::preview::PreviewPane;
 use super::tabbar::EditorTabButton;
 use crate::components::primitives::{EmptyState, SegmentedControl, SegmentedControlOption};
 use crate::context::use_app_context;
-use crate::view_model::EditorSurfaceViewModel;
+use crate::perf::{perf_timer, trace_editor_host_lifecycle};
+use crate::view_model::{EditorHostItemViewModel, EditorSurfaceViewModel};
 use dioxus::prelude::*;
 use papyro_core::models::ViewMode;
 use std::collections::HashMap;
@@ -57,12 +58,29 @@ pub fn EditorPane() -> Element {
     let bridges: EditorBridgeMap = use_context_provider(|| Signal::new(HashMap::new()));
     let _document_cache: DocumentDerivedCache =
         use_context_provider(DocumentDerivedCacheState::shared);
+    let mut host_lifecycle_state = use_signal(HashMap::<String, bool>::new);
     let pane = pane_model();
 
-    use_effect(use_reactive((&pane.host_items,), move |(ids,)| {
+    use_effect(use_reactive((&pane.host_items,), move |(host_items,)| {
         let perf_started_at = perf_enabled().then(Instant::now);
+        let host_lifecycle_started_at = perf_timer();
+        let lifecycle_change =
+            host_lifecycle_change(&host_lifecycle_state.peek(), host_items.as_slice());
+        if lifecycle_change.has_changes() {
+            trace_editor_host_lifecycle(
+                lifecycle_change.active_tab_id.as_deref(),
+                lifecycle_change.host_count,
+                &lifecycle_change.created,
+                &lifecycle_change.restored,
+                &lifecycle_change.hidden,
+                &lifecycle_change.retired,
+                host_lifecycle_started_at,
+            );
+        }
+        host_lifecycle_state.set(host_lifecycle_map(host_items.as_slice()));
+
         let valid: std::collections::HashSet<String> =
-            ids.into_iter().map(|item| item.tab_id).collect();
+            host_items.into_iter().map(|item| item.tab_id).collect();
         let stale: Vec<String> = bridges
             .peek()
             .keys()
@@ -183,6 +201,68 @@ pub fn EditorPane() -> Element {
     }
 }
 
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+struct HostLifecycleChange {
+    active_tab_id: Option<String>,
+    host_count: usize,
+    created: Vec<String>,
+    restored: Vec<String>,
+    hidden: Vec<String>,
+    retired: Vec<String>,
+}
+
+impl HostLifecycleChange {
+    fn has_changes(&self) -> bool {
+        !self.created.is_empty()
+            || !self.restored.is_empty()
+            || !self.hidden.is_empty()
+            || !self.retired.is_empty()
+    }
+}
+
+fn host_lifecycle_change(
+    previous: &HashMap<String, bool>,
+    current: &[EditorHostItemViewModel],
+) -> HostLifecycleChange {
+    let current_map = host_lifecycle_map(current);
+    let mut change = HostLifecycleChange {
+        active_tab_id: current
+            .iter()
+            .find(|host| host.is_active)
+            .map(|host| host.tab_id.clone()),
+        host_count: current.len(),
+        ..HostLifecycleChange::default()
+    };
+
+    for host in current {
+        match previous.get(&host.tab_id) {
+            None => change.created.push(host.tab_id.clone()),
+            Some(was_active) if *was_active && !host.is_active => {
+                change.hidden.push(host.tab_id.clone());
+            }
+            Some(was_active) if !*was_active && host.is_active => {
+                change.restored.push(host.tab_id.clone());
+            }
+            Some(_) => {}
+        }
+    }
+
+    for tab_id in previous.keys() {
+        if !current_map.contains_key(tab_id) {
+            change.retired.push(tab_id.clone());
+        }
+    }
+
+    change
+}
+
+fn host_lifecycle_map(current: &[EditorHostItemViewModel]) -> HashMap<String, bool> {
+    current
+        .iter()
+        .map(|host| (host.tab_id.clone(), host.is_active))
+        .collect()
+}
+
 #[component]
 fn ViewToggle(view_mode: ViewMode, on_change: EventHandler<ViewMode>) -> Element {
     let selected = view_mode_value(&view_mode).to_string();
@@ -228,6 +308,14 @@ fn view_mode_from_value(value: &str) -> Option<ViewMode> {
 mod tests {
     use super::*;
 
+    fn host_item(tab_id: &str, is_active: bool) -> EditorHostItemViewModel {
+        EditorHostItemViewModel {
+            tab_id: tab_id.to_string(),
+            is_active,
+            initial_content: Default::default(),
+        }
+    }
+
     #[test]
     fn editor_style_uses_typography_only() {
         let surface = EditorSurfaceViewModel {
@@ -242,5 +330,39 @@ mod tests {
 
         assert!(editor_style(&typography).contains("--mn-editor-font-size: 18px"));
         assert!(!editor_style(&typography).contains("sidebar"));
+    }
+
+    #[test]
+    fn host_lifecycle_change_tracks_create_hide_restore_and_retire() {
+        let previous = HashMap::from([
+            ("a".to_string(), true),
+            ("b".to_string(), false),
+            ("old".to_string(), false),
+        ]);
+        let current = vec![
+            host_item("b", true),
+            host_item("a", false),
+            host_item("c", false),
+        ];
+
+        let change = host_lifecycle_change(&previous, &current);
+
+        assert_eq!(change.active_tab_id.as_deref(), Some("b"));
+        assert_eq!(change.host_count, 3);
+        assert_eq!(change.created, vec!["c".to_string()]);
+        assert_eq!(change.restored, vec!["b".to_string()]);
+        assert_eq!(change.hidden, vec!["a".to_string()]);
+        assert_eq!(change.retired, vec!["old".to_string()]);
+        assert!(change.has_changes());
+    }
+
+    #[test]
+    fn host_lifecycle_change_is_empty_for_stable_pool() {
+        let previous = HashMap::from([("a".to_string(), true), ("b".to_string(), false)]);
+        let current = vec![host_item("a", true), host_item("b", false)];
+
+        let change = host_lifecycle_change(&previous, &current);
+
+        assert!(!change.has_changes());
     }
 }

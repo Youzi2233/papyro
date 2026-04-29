@@ -117,6 +117,43 @@ pub(crate) fn trace_editor_set_preferences(
     }
 }
 
+pub(crate) fn trace_editor_host_lifecycle(
+    active_tab_id: Option<&str>,
+    host_count: usize,
+    created: &[String],
+    restored: &[String],
+    hidden: &[String],
+    retired: &[String],
+    started_at: Option<Instant>,
+) {
+    if let Some(started_at) = started_at {
+        tracing::info!(
+            active_tab_id,
+            host_count,
+            created_count = created.len(),
+            restored_count = restored.len(),
+            hidden_count = hidden.len(),
+            retired_count = retired.len(),
+            created = ?created,
+            restored = ?restored,
+            hidden = ?hidden,
+            retired = ?retired,
+            elapsed_ms = started_at.elapsed().as_millis(),
+            "perf editor host lifecycle"
+        );
+    }
+}
+
+pub(crate) fn trace_editor_host_destroy(instance_ids: &[String]) {
+    if perf_enabled() {
+        tracing::info!(
+            destroy_count = instance_ids.len(),
+            instance_ids = ?instance_ids,
+            "perf editor host destroy"
+        );
+    }
+}
+
 fn view_mode_name(mode: &ViewMode) -> &'static str {
     match mode {
         ViewMode::Source => "source",

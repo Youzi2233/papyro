@@ -353,7 +353,7 @@ Editor runtime lane
 - [ ] Rust 仍是文档内容、保存状态、tab 状态、workspace 状态的真相来源。
 - [x] `SetViewMode`、`SetPreferences` 必须去重。
 - [x] editor layout refresh 不再经过 Rust command 往返，由 JS runtime 本地处理。
-- [ ] host 创建、销毁、隐藏、恢复都有可观测 trace 和 contract test。
+- [x] host 创建、销毁、隐藏、恢复都有可观测 trace 和 contract test。
 
 验收标准：
 
