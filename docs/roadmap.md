@@ -580,7 +580,7 @@ Hybrid mode 应该满足：
 - [ ] 在列表中回车、缩进、退格符合用户预期。
 - [ ] 代码块中输入不触发错误 decoration。
 - [ ] 表格编辑至少不破坏文本结构，后续再增强表格 UI。
-- [ ] Source / Hybrid / Preview 切换保持滚动位置和阅读宽度。
+- [x] Source / Hybrid / Preview 切换保持滚动位置和阅读宽度。
 
 验收标准：
 

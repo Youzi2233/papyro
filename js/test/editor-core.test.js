@@ -16,6 +16,7 @@ import {
   hybridDecorationPolicies,
   indentMarkdownListInView,
   insertMarkdownInView,
+  latestModeScrollSnapshot,
   markdownLinkPasteChange,
   markdownBlockquoteEnterChange,
   markdownCodeFenceEnterChange,
@@ -24,6 +25,7 @@ import {
   markdownDecorationTier,
   markdownListEnterChange,
   markdownShortcutSpaceChange,
+  modeSupportsEditorScroll,
   normalizeBlockHints,
   normalizeEditorPreferences,
   nextLayoutSize,
@@ -40,7 +42,10 @@ import {
   parseMarkdownTaskLine,
   pasteMarkdownLinkInView,
   recycleEditor,
+  readScrollSnapshot,
   requestSaveForView,
+  restoreScrollSnapshot,
+  saveModeScrollSnapshot,
   shouldUseFullDocumentHybridScan,
   viewIsComposing,
 } from "../src/editor-core.js";
@@ -98,6 +103,24 @@ function fakeView(initialDoc = "", selection = { from: 0, to: 0 }, onDispatch = 
   };
 
   return view;
+}
+
+function fakeScroller({
+  scrollTop = 0,
+  scrollLeft = 0,
+  scrollHeight = 1000,
+  clientHeight = 100,
+  scrollWidth = 800,
+  clientWidth = 400,
+} = {}) {
+  return {
+    scrollTop,
+    scrollLeft,
+    scrollHeight,
+    clientHeight,
+    scrollWidth,
+    clientWidth,
+  };
 }
 
 function attach(registry, view, tabId, initialContent = "", instanceId = "") {
@@ -933,6 +956,58 @@ test("set_view_mode ignores duplicate runtime commands", () => {
     "mode_unchanged",
   );
   assert.equal(layoutRefreshes, 1);
+});
+
+test("scroll snapshots restore by relative document position", () => {
+  const source = fakeScroller({
+    scrollTop: 250,
+    scrollLeft: 80,
+    scrollHeight: 1100,
+    clientHeight: 100,
+    scrollWidth: 1000,
+    clientWidth: 200,
+  });
+  const snapshot = readScrollSnapshot(source);
+
+  assert.equal(snapshot.topRatio, 0.25);
+  assert.equal(snapshot.leftRatio, 0.1);
+
+  const target = fakeScroller({
+    scrollTop: 0,
+    scrollLeft: 0,
+    scrollHeight: 2200,
+    clientHeight: 200,
+    scrollWidth: 1800,
+    clientWidth: 200,
+  });
+
+  assert.equal(restoreScrollSnapshot(target, snapshot), true);
+  assert.equal(target.scrollTop, 500);
+  assert.equal(target.scrollLeft, 160);
+});
+
+test("mode scroll snapshots share latest position across view modes", () => {
+  const store = new Map();
+
+  assert.equal(modeSupportsEditorScroll("source"), true);
+  assert.equal(modeSupportsEditorScroll("Hybrid"), true);
+  assert.equal(modeSupportsEditorScroll("preview"), false);
+
+  saveModeScrollSnapshot(
+    store,
+    "tab-a",
+    "source",
+    readScrollSnapshot(fakeScroller({ scrollTop: 200, scrollHeight: 900, clientHeight: 100 })),
+  );
+  assert.equal(latestModeScrollSnapshot(store, "tab-a").top, 200);
+
+  saveModeScrollSnapshot(
+    store,
+    "tab-a",
+    "preview",
+    readScrollSnapshot(fakeScroller({ scrollTop: 420, scrollHeight: 1500, clientHeight: 100 })),
+  );
+  assert.equal(latestModeScrollSnapshot(store, "tab-a").top, 420);
 });
 
 test("set_preferences stores editor preferences on entry", () => {

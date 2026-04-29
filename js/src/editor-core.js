@@ -1024,6 +1024,114 @@ export function nextLayoutSize(previousSize, rect) {
   return nextSize;
 }
 
+function finiteNumber(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function clampNumber(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function clampRatio(value) {
+  return clampNumber(value, 0, 1);
+}
+
+export function modeSupportsEditorScroll(mode) {
+  const normalized = normalizeViewMode(mode);
+  return normalized === "source" || normalized === "hybrid";
+}
+
+export function normalizeScrollSnapshot(snapshot) {
+  if (!snapshot) return null;
+
+  const scrollHeight = Math.max(0, finiteNumber(snapshot.scrollHeight) ?? 0);
+  const clientHeight = Math.max(0, finiteNumber(snapshot.clientHeight) ?? 0);
+  const scrollWidth = Math.max(0, finiteNumber(snapshot.scrollWidth) ?? 0);
+  const clientWidth = Math.max(0, finiteNumber(snapshot.clientWidth) ?? 0);
+  const maxTop = Math.max(0, scrollHeight - clientHeight);
+  const maxLeft = Math.max(0, scrollWidth - clientWidth);
+  const top = clampNumber(finiteNumber(snapshot.top) ?? 0, 0, maxTop);
+  const left = clampNumber(finiteNumber(snapshot.left) ?? 0, 0, maxLeft);
+  const topRatio =
+    maxTop > 0
+      ? top / maxTop
+      : clampRatio(finiteNumber(snapshot.topRatio) ?? 0);
+  const leftRatio =
+    maxLeft > 0
+      ? left / maxLeft
+      : clampRatio(finiteNumber(snapshot.leftRatio) ?? 0);
+
+  return {
+    top,
+    left,
+    topRatio,
+    leftRatio,
+    scrollHeight,
+    clientHeight,
+    scrollWidth,
+    clientWidth,
+  };
+}
+
+export function readScrollSnapshot(scroller) {
+  if (!scroller) return null;
+  return normalizeScrollSnapshot({
+    top: scroller.scrollTop,
+    left: scroller.scrollLeft,
+    scrollHeight: scroller.scrollHeight,
+    clientHeight: scroller.clientHeight,
+    scrollWidth: scroller.scrollWidth,
+    clientWidth: scroller.clientWidth,
+  });
+}
+
+export function restoreScrollSnapshot(scroller, snapshot) {
+  if (!scroller) return false;
+
+  const normalized = normalizeScrollSnapshot(snapshot);
+  if (!normalized) return false;
+
+  const scrollHeight = Math.max(0, finiteNumber(scroller.scrollHeight) ?? 0);
+  const clientHeight = Math.max(0, finiteNumber(scroller.clientHeight) ?? 0);
+  const scrollWidth = Math.max(0, finiteNumber(scroller.scrollWidth) ?? 0);
+  const clientWidth = Math.max(0, finiteNumber(scroller.clientWidth) ?? 0);
+  const maxTop = Math.max(0, scrollHeight - clientHeight);
+  const maxLeft = Math.max(0, scrollWidth - clientWidth);
+
+  scroller.scrollTop = clampNumber(normalized.topRatio * maxTop, 0, maxTop);
+  scroller.scrollLeft = clampNumber(normalized.leftRatio * maxLeft, 0, maxLeft);
+  return true;
+}
+
+export function saveModeScrollSnapshot(store, tabId, mode, snapshot) {
+  if (!(store instanceof Map)) return null;
+  if (typeof tabId !== "string" || tabId.length === 0) return null;
+
+  const normalized = normalizeScrollSnapshot(snapshot);
+  if (!normalized) return null;
+
+  const normalizedMode = normalizeViewMode(mode);
+  const record = store.get(tabId) ?? {
+    latestMode: normalizedMode,
+    modes: {},
+  };
+
+  record.latestMode = normalizedMode;
+  record.modes[normalizedMode] = normalized;
+  store.set(tabId, record);
+  return normalized;
+}
+
+export function latestModeScrollSnapshot(store, tabId) {
+  if (!(store instanceof Map)) return null;
+  if (typeof tabId !== "string" || tabId.length === 0) return null;
+
+  const record = store.get(tabId);
+  if (!record) return null;
+  return record.modes?.[record.latestMode] ?? null;
+}
+
 export function setViewMode(entry, mode) {
   const normalized = normalizeViewMode(mode);
   if (

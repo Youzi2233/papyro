@@ -33,7 +33,9 @@ import {
   handleRustMessage as handleRustMessageCore,
   hybridDecorationLevel,
   indentMarkdownListInView,
+  latestModeScrollSnapshot,
   markdownDecorationTier,
+  modeSupportsEditorScroll,
   normalizeEditorPreferences,
   nextLayoutSize,
   parseMarkdownBlockquoteLine,
@@ -46,8 +48,11 @@ import {
   parseMarkdownTaskLine,
   openReplacePanelInView,
   pasteMarkdownLinkInView,
+  readScrollSnapshot,
   recycleEditor as recycleEditorCore,
   requestSaveForView,
+  restoreScrollSnapshot,
+  saveModeScrollSnapshot,
   shouldUseFullDocumentHybridScan,
   blockHintsEqual,
   setBlockHints as setBlockHintsCore,
@@ -58,6 +63,8 @@ import {
 
 // tabId → { view, dioxus, suppressChange }
 const editorRegistry = new Map();
+const modeScrollSnapshots = new Map();
+const previewScrollListeners = new WeakMap();
 
 function isVisibleElement(element) {
   if (!(element instanceof HTMLElement)) return false;
@@ -1463,6 +1470,91 @@ function disconnectLayoutObserver(entry) {
   entry.layoutSize = null;
 }
 
+function viewTabId(entry) {
+  return entry?.view?.dom?.dataset?.tabId ?? "";
+}
+
+function editorScroller(entry) {
+  return entry?.view?.scrollDOM ?? entry?.view?.dom?.querySelector?.(".cm-scroller") ?? null;
+}
+
+function saveEditorScrollSnapshot(entry, mode = entry?.viewMode) {
+  if (!modeSupportsEditorScroll(mode)) return null;
+
+  return saveModeScrollSnapshot(
+    modeScrollSnapshots,
+    viewTabId(entry),
+    mode,
+    readScrollSnapshot(editorScroller(entry)),
+  );
+}
+
+function scheduleScrollRestore(scroller, snapshot, afterRestore = () => {}) {
+  if (!scroller || !snapshot) return false;
+
+  const restore = () => {
+    restoreScrollSnapshot(scroller, snapshot);
+    afterRestore();
+  };
+
+  queueMicrotask(restore);
+  if (typeof requestAnimationFrame === "function") {
+    requestAnimationFrame(restore);
+  } else {
+    setTimeout(restore, 0);
+  }
+  return true;
+}
+
+function restoreEditorScrollSnapshot(entry) {
+  if (!modeSupportsEditorScroll(entry?.viewMode)) return false;
+
+  return scheduleScrollRestore(
+    editorScroller(entry),
+    latestModeScrollSnapshot(modeScrollSnapshots, viewTabId(entry)),
+  );
+}
+
+function attachPreviewScroll(tabId, scroller) {
+  if (!(scroller instanceof HTMLElement)) return false;
+
+  const previous = previewScrollListeners.get(scroller);
+  if (previous?.tabId === tabId) {
+    scheduleScrollRestore(
+      scroller,
+      latestModeScrollSnapshot(modeScrollSnapshots, tabId),
+      () => saveModeScrollSnapshot(
+        modeScrollSnapshots,
+        tabId,
+        "preview",
+        readScrollSnapshot(scroller),
+      ),
+    );
+    return true;
+  }
+  if (previous) {
+    scroller.removeEventListener("scroll", previous.onScroll);
+  }
+
+  const save = () => {
+    saveModeScrollSnapshot(
+      modeScrollSnapshots,
+      tabId,
+      "preview",
+      readScrollSnapshot(scroller),
+    );
+  };
+  const onScroll = () => save();
+  scroller.addEventListener("scroll", onScroll, { passive: true });
+  previewScrollListeners.set(scroller, { tabId, onScroll });
+
+  const snapshot = latestModeScrollSnapshot(modeScrollSnapshots, tabId);
+  if (!scheduleScrollRestore(scroller, snapshot, save)) {
+    save();
+  }
+  return true;
+}
+
 function attachLayoutObserver(tabId, container, dioxus) {
   const entry = editorRegistry.get(tabId);
   if (!entry || !("ResizeObserver" in window)) return;
@@ -1515,10 +1607,14 @@ function attachLayoutObserver(tabId, container, dioxus) {
 }
 
 function setEditorViewMode(entry, mode) {
+  const previousMode = entry.viewMode;
+  saveEditorScrollSnapshot(entry, previousMode);
+
   const normalized = setViewModeCore(entry, mode);
   entry.view?.dispatch({
     effects: setViewModeEffect.of(normalized),
   });
+  restoreEditorScrollSnapshot(entry);
   return normalized;
 }
 
@@ -1634,6 +1730,7 @@ function releaseEditor(tabId) {
 function recycleEditor(tabId) {
   const entry = editorRegistry.get(tabId);
   if (entry) {
+    saveEditorScrollSnapshot(entry);
     disconnectLayoutObserver(entry);
   }
   recycleEditorCore(editorRegistry, tabId);
@@ -1662,4 +1759,6 @@ window.papyroEditor = {
       attachLayoutObserver(tabId, container, dioxus);
     }
   },
+
+  attachPreviewScroll,
 };

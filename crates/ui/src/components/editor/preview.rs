@@ -103,6 +103,29 @@ pub(super) fn PreviewPane(
     );
 
     let notice = preview_notice(&rendered_preview);
+    let preview_scroll_key = active_document.as_ref().map(|document| {
+        (
+            document.tab_id.clone(),
+            document.revision,
+            rendered_preview.status,
+        )
+    });
+    let preview_tab_id = active_document
+        .as_ref()
+        .map(|document| document.tab_id.clone())
+        .unwrap_or_default();
+    let preview_revision = active_document
+        .as_ref()
+        .map(|document| document.revision)
+        .unwrap_or_default();
+
+    use_effect(use_reactive((&preview_scroll_key,), move |(key,)| {
+        let Some((tab_id, revision, _status)) = key else {
+            return;
+        };
+
+        document::eval(&attach_preview_scroll_script(&tab_id, revision));
+    }));
 
     rsx! {
         div { class: "mn-preview-shell",
@@ -110,19 +133,55 @@ pub(super) fn PreviewPane(
                 div { class: "mn-preview-notice", "{message}" }
             }
             if rendered_preview.policy.live_preview_enabled {
-                div { class: "mn-preview-scroll",
+                div {
+                    class: "mn-preview-scroll",
+                    "data-tab-id": "{preview_tab_id}",
+                    "data-revision": "{preview_revision}",
                     article {
                         class: "mn-preview",
                         dangerous_inner_html: "{rendered_preview.html}",
                     }
                 }
             } else {
-                div { class: "mn-preview-scroll mn-preview-paused",
+                div {
+                    class: "mn-preview-scroll mn-preview-paused",
+                    "data-tab-id": "{preview_tab_id}",
+                    "data-revision": "{preview_revision}",
                     "Live preview is paused for this large document."
                 }
             }
         }
     }
+}
+
+fn attach_preview_scroll_script(tab_id: &str, revision: u64) -> String {
+    let tab_id_json = serde_json::to_string(tab_id).unwrap_or_else(|_| "\"\"".to_string());
+    let revision_json = serde_json::to_string(&revision).unwrap_or_else(|_| "0".to_string());
+
+    format!(
+        r#"
+        const tabId = {tab_id_json};
+        const revision = String({revision_json});
+        const attach = () => {{
+            const scroller = Array
+                .from(document.querySelectorAll(".mn-preview-scroll[data-tab-id]"))
+                .find((element) =>
+                    element.dataset.tabId === tabId &&
+                    element.dataset.revision === revision
+                );
+
+            if (scroller && window.papyroEditor?.attachPreviewScroll) {{
+                window.papyroEditor.attachPreviewScroll(tabId, scroller);
+            }}
+        }};
+
+        if (typeof requestAnimationFrame === "function") {{
+            requestAnimationFrame(attach);
+        }} else {{
+            setTimeout(attach, 0);
+        }}
+        "#,
+    )
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -385,5 +444,15 @@ mod tests {
         assert!(PREVIEW_LINK_BRIDGE_SCRIPT.contains(".mn-preview a[href]"));
         assert!(PREVIEW_LINK_BRIDGE_SCRIPT.contains("event.preventDefault()"));
         assert!(PREVIEW_LINK_BRIDGE_SCRIPT.contains("dioxus.send"));
+    }
+
+    #[test]
+    fn preview_scroll_script_attaches_active_tab_scroller() {
+        let script = attach_preview_scroll_script("tab-a", 42);
+
+        assert!(script.contains(".mn-preview-scroll[data-tab-id]"));
+        assert!(script.contains("element.dataset.tabId === tabId"));
+        assert!(script.contains("element.dataset.revision === revision"));
+        assert!(script.contains("window.papyroEditor.attachPreviewScroll"));
     }
 }
