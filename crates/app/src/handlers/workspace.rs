@@ -130,9 +130,9 @@ pub fn external_tab_event_message(
 ) -> Option<String> {
     let tab = editor_tabs.tabs.iter().find(|tab| match event {
         papyro_storage::fs::WatchEvent::Deleted(path) => tab.path.starts_with(path),
+        papyro_storage::fs::WatchEvent::Modified(path) => tab.path == *path && tab.is_dirty,
         papyro_storage::fs::WatchEvent::Renamed { from, .. } => tab.path.starts_with(from),
-        papyro_storage::fs::WatchEvent::Created(_)
-        | papyro_storage::fs::WatchEvent::Modified(_) => false,
+        papyro_storage::fs::WatchEvent::Created(_) => false,
     })?;
 
     match event {
@@ -140,13 +140,16 @@ pub fn external_tab_event_message(
             "{} was removed outside Papyro. The open tab was kept so you can review or save it.",
             tab.title
         )),
+        papyro_storage::fs::WatchEvent::Modified(_) => Some(format!(
+            "{} changed outside Papyro while it has unsaved edits. Save may overwrite the external version.",
+            tab.title
+        )),
         papyro_storage::fs::WatchEvent::Renamed { to, .. } => Some(format!(
             "{} was moved outside Papyro to {}. Reopen it from the file tree to continue tracking the new path.",
             tab.title,
             to.display()
         )),
-        papyro_storage::fs::WatchEvent::Created(_)
-        | papyro_storage::fs::WatchEvent::Modified(_) => None,
+        papyro_storage::fs::WatchEvent::Created(_) => None,
     }
 }
 
@@ -158,13 +161,12 @@ pub fn summarize_watch_events(
     let mut summary = WatchEventBatchSummary::default();
 
     for event in events {
-        if !should_refresh_for_event(event, workspace_path) {
-            continue;
-        }
-
-        summary.should_refresh = true;
         if summary.external_message.is_none() {
             summary.external_message = external_tab_event_message(event, editor_tabs);
+        }
+
+        if should_refresh_for_event(event, workspace_path) {
+            summary.should_refresh = true;
         }
     }
 
@@ -239,6 +241,44 @@ mod tests {
     }
 
     #[test]
+    fn external_tab_event_message_reports_dirty_modified_open_file() {
+        let mut dirty_tab = tab("Draft", "workspace/notes/draft.md");
+        dirty_tab.is_dirty = true;
+        dirty_tab.save_status = SaveStatus::Dirty;
+        let editor_tabs = EditorTabs {
+            tabs: vec![dirty_tab],
+            active_tab_id: Some("draft".to_string()),
+        };
+
+        let message = external_tab_event_message(
+            &papyro_storage::fs::WatchEvent::Modified(PathBuf::from("workspace/notes/draft.md")),
+            &editor_tabs,
+        )
+        .unwrap();
+
+        assert!(message.contains("Draft changed outside Papyro"));
+        assert!(message.contains("unsaved edits"));
+    }
+
+    #[test]
+    fn external_tab_event_message_ignores_clean_modified_open_file() {
+        let editor_tabs = EditorTabs {
+            tabs: vec![tab("Draft", "workspace/notes/draft.md")],
+            active_tab_id: Some("draft".to_string()),
+        };
+
+        assert_eq!(
+            external_tab_event_message(
+                &papyro_storage::fs::WatchEvent::Modified(PathBuf::from(
+                    "workspace/notes/draft.md"
+                )),
+                &editor_tabs,
+            ),
+            None
+        );
+    }
+
+    #[test]
     fn external_tab_event_message_ignores_unopened_changes() {
         let editor_tabs = EditorTabs {
             tabs: vec![tab("Draft", "workspace/notes/draft.md")],
@@ -307,5 +347,27 @@ mod tests {
         let summary = summarize_watch_events(&events, Path::new("workspace"), &editor_tabs);
 
         assert_eq!(summary, WatchEventBatchSummary::default());
+    }
+
+    #[test]
+    fn summarize_watch_events_reports_dirty_modified_without_refresh() {
+        let mut dirty_tab = tab("Draft", "workspace/notes/draft.md");
+        dirty_tab.is_dirty = true;
+        dirty_tab.save_status = SaveStatus::Dirty;
+        let editor_tabs = EditorTabs {
+            tabs: vec![dirty_tab],
+            active_tab_id: Some("draft".to_string()),
+        };
+        let events = vec![papyro_storage::fs::WatchEvent::Modified(PathBuf::from(
+            "workspace/notes/draft.md",
+        ))];
+
+        let summary = summarize_watch_events(&events, Path::new("workspace"), &editor_tabs);
+
+        assert!(!summary.should_refresh);
+        assert_eq!(
+            summary.external_message.as_deref(),
+            Some("Draft changed outside Papyro while it has unsaved edits. Save may overwrite the external version.")
+        );
     }
 }

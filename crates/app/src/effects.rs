@@ -279,17 +279,19 @@ pub(crate) fn use_workspace_watcher(state: RuntimeState, storage: Arc<dyn NoteSt
                 let editor_tabs_snapshot = editor_tabs.read().clone();
                 let summary =
                     workspace::summarize_watch_events(&events, &path, &editor_tabs_snapshot);
-                if !summary.should_refresh {
+                if !summary.should_refresh && summary.external_message.is_none() {
                     continue;
                 }
 
-                workspace::reload_workspace_tree_async(
-                    &mut file_state,
-                    &mut status_message,
-                    &path,
-                    storage.clone(),
-                )
-                .await;
+                if summary.should_refresh {
+                    workspace::reload_workspace_tree_async(
+                        &mut file_state,
+                        &mut status_message,
+                        &path,
+                        storage.clone(),
+                    )
+                    .await;
+                }
                 if let Some(message) = summary.external_message {
                     status_message.set(Some(message));
                 }
