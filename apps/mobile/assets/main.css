@@ -442,8 +442,33 @@ small {
     color: #fff7ea;
 }
 
-.mn-dirty {
+.mn-tab-save-status {
+    display: inline-grid;
+    place-items: center;
+    width: 14px;
+    height: 14px;
+    margin-left: 4px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.mn-tab-save-status.dirty {
     color: #f0ba5f;
+    font-size: 15px;
+    transform: translateY(2px);
+}
+
+.mn-tab-save-status.saving {
+    border: 1px solid #f0ba5f;
+    color: #f0ba5f;
+    font-size: 8px;
+}
+
+.mn-tab-save-status.failed {
+    background: #c74a43;
+    color: #fff7ea;
 }
 
 .mn-document {

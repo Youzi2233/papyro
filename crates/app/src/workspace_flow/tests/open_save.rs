@@ -313,6 +313,73 @@ fn open_markdown_target_flow_rejects_non_markdown_paths() {
 }
 
 #[test]
+fn open_markdown_target_failure_preserves_existing_tabs() {
+    let archive_workspace = Workspace {
+        id: "archive".to_string(),
+        name: "Archive".to_string(),
+        path: PathBuf::from("archive"),
+        created_at: 0,
+        last_opened: Some(1),
+        sort_order: 0,
+    };
+    let note_path = PathBuf::from("archive/notes/missing.md");
+    let storage = MockStorage {
+        bootstrap_result: Some(WorkspaceBootstrap {
+            file_state: FileState {
+                workspaces: vec![workspace(), archive_workspace.clone()],
+                current_workspace: Some(archive_workspace.clone()),
+                ..FileState::default()
+            },
+            status_message: "Loaded archive".to_string(),
+            ..WorkspaceBootstrap::default()
+        }),
+        ..MockStorage::default()
+    };
+    let mut file_state = file_state_with_tree(vec![note_node("workspace/old.md", "old-note")]);
+    file_state.workspaces = vec![workspace(), archive_workspace.clone()];
+    file_state.select_path(PathBuf::from("workspace/old.md"));
+    file_state.recent_files = vec![recent_file("old-note", "old.md")];
+    let mut editor_tabs = EditorTabs::default();
+    editor_tabs.open_tab(tab("old-tab", "old-note", "workspace/old.md"));
+    let mut tab_contents = TabContentsMap::default();
+    tab_contents.insert_tab(
+        "old-tab".to_string(),
+        "old content".to_string(),
+        DocumentStats::default(),
+    );
+
+    let error = open_markdown_target_from_storage(
+        &storage,
+        &mut file_state,
+        &mut editor_tabs,
+        &mut tab_contents,
+        note_path,
+        |_| DocumentStats::default(),
+    )
+    .unwrap_err();
+
+    assert!(error.to_string().contains("Missing opened note"));
+    assert_eq!(
+        file_state
+            .current_workspace
+            .as_ref()
+            .map(|workspace| workspace.path.clone()),
+        Some(PathBuf::from("workspace"))
+    );
+    assert_eq!(
+        file_state.selected_path,
+        Some(PathBuf::from("workspace/old.md"))
+    );
+    assert_eq!(
+        file_state.recent_files,
+        vec![recent_file("old-note", "old.md")]
+    );
+    assert_eq!(editor_tabs.active_tab_id.as_deref(), Some("old-tab"));
+    assert_eq!(editor_tabs.tabs.len(), 1);
+    assert_eq!(tab_contents.content_for_tab("old-tab"), Some("old content"));
+}
+
+#[test]
 fn save_tab_flow_marks_tab_clean_and_refreshes_recent_files() {
     let storage = MockStorage {
         save_result: Some(SavedNote {

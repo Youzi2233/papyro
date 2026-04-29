@@ -362,6 +362,24 @@ mod tests {
     }
 
     #[test]
+    fn open_tab_activates_existing_note_without_duplicate() {
+        let mut tabs = EditorTabs::default();
+        let first = tab("a");
+        let duplicate = EditorTab {
+            id: "b".to_string(),
+            title: "Duplicate".to_string(),
+            path: PathBuf::from("duplicate.md"),
+            ..first.clone()
+        };
+
+        assert_eq!(tabs.open_tab(first).as_deref(), Some("a"));
+        assert_eq!(tabs.open_tab(duplicate), None);
+
+        assert_eq!(tabs.tabs.len(), 1);
+        assert_eq!(tabs.active_tab_id.as_deref(), Some("a"));
+    }
+
+    #[test]
     fn content_revision_tracks_dirty_autosave_state() {
         let mut tabs = EditorTabs::default();
         let mut contents = TabContentsMap::default();

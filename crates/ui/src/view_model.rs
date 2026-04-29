@@ -169,6 +169,7 @@ pub struct EditorTabItemViewModel {
     pub id: String,
     pub title: String,
     pub is_dirty: bool,
+    pub save_status: SaveStatus,
     pub is_active: bool,
     pub next_active_tab_id: String,
     pub should_retire_host_on_close: bool,
@@ -507,6 +508,7 @@ impl EditorPaneViewModel {
                     id: tab.id.clone(),
                     title: tab.title.clone(),
                     is_dirty: tab.is_dirty,
+                    save_status: tab.save_status.clone(),
                     is_active,
                     next_active_tab_id: next_active_tab_id_after_close(
                         &editor_tabs.tabs,
@@ -1206,6 +1208,7 @@ mod tests {
                     id: "a".to_string(),
                     title: "Note a".to_string(),
                     is_dirty: false,
+                    save_status: SaveStatus::Saved,
                     is_active: true,
                     next_active_tab_id: "b".to_string(),
                     should_retire_host_on_close: true,
@@ -1214,6 +1217,7 @@ mod tests {
                     id: "b".to_string(),
                     title: "Note b".to_string(),
                     is_dirty: false,
+                    save_status: SaveStatus::Saved,
                     is_active: false,
                     next_active_tab_id: "a".to_string(),
                     should_retire_host_on_close: true,
@@ -1338,6 +1342,7 @@ mod tests {
         let before = EditorPaneViewModel::from_editor_state(&editor_tabs, &tab_contents, None);
         let after = EditorPaneViewModel::from_editor_state(&editor_tabs, &tab_contents, Some("a"));
 
+        assert_eq!(before.tab_items[0].save_status, SaveStatus::Dirty);
         assert!(!before.tab_items[0].should_retire_host_on_close);
         assert!(after.tab_items[0].should_retire_host_on_close);
     }

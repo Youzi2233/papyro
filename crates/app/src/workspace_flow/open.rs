@@ -1,7 +1,7 @@
 use super::utils::current_workspace;
 use anyhow::{bail, Result};
 use papyro_core::models::{DocumentStats, RecentFile, Workspace};
-use papyro_core::storage::{NoteStorage, WorkspaceBootstrap};
+use papyro_core::storage::{NoteStorage, OpenedNote, WorkspaceBootstrap};
 use papyro_core::{open_note, EditorTabs, FileState, TabContentsMap, UiState};
 use std::path::{Path, PathBuf};
 
@@ -17,13 +17,8 @@ where
     S: FnOnce(&str) -> DocumentStats,
 {
     let workspace = current_workspace(file_state)?;
-    let opened_note = storage.open_note(&workspace, &path)?;
-    let selected_path = opened_note.tab.path.clone();
-    let stats = summarize(&opened_note.content);
-
-    open_note(editor_tabs, tab_contents, opened_note.clone(), stats);
-    file_state.recent_files = opened_note.recent_files;
-    file_state.select_path(selected_path);
+    let (opened_note, stats) = load_opened_markdown(storage, &workspace, &path, summarize)?;
+    apply_opened_markdown(file_state, editor_tabs, tab_contents, opened_note, stats);
 
     Ok(())
 }
@@ -46,32 +41,59 @@ where
         .as_ref()
         .is_some_and(|workspace| workspace.path == target_workspace.path);
 
-    let mut ui_state = None;
-    let mut watch_path = None;
+    let pending_bootstrap = if already_loaded {
+        None
+    } else {
+        Some(storage.bootstrap_from_workspace(&target_workspace.path))
+    };
+    let open_workspace = pending_bootstrap
+        .as_ref()
+        .map(|bootstrap| workspace_from_bootstrap(bootstrap, &target_workspace))
+        .transpose()?
+        .unwrap_or_else(|| target_workspace.clone());
+    let (opened_note, stats) = load_opened_markdown(storage, &open_workspace, &path, summarize)?;
+    let watch_path = pending_bootstrap
+        .as_ref()
+        .map(|_| open_workspace.path.clone());
+    let ui_state = pending_bootstrap
+        .map(|bootstrap| {
+            apply_recent_workspace_bootstrap(file_state, editor_tabs, tab_contents, bootstrap)
+        })
+        .transpose()?;
 
-    if !already_loaded {
-        ui_state = Some(apply_recent_workspace_bootstrap(
-            file_state,
-            editor_tabs,
-            tab_contents,
-            storage.bootstrap_from_workspace(&target_workspace.path),
-        )?);
-        watch_path = Some(target_workspace.path.clone());
-    }
-
-    open_markdown_from_storage(
-        storage,
-        file_state,
-        editor_tabs,
-        tab_contents,
-        path,
-        summarize,
-    )?;
+    apply_opened_markdown(file_state, editor_tabs, tab_contents, opened_note, stats);
 
     Ok(OpenMarkdownOutcome {
         ui_state,
         watch_path,
     })
+}
+
+fn load_opened_markdown<S>(
+    storage: &dyn NoteStorage,
+    workspace: &Workspace,
+    path: &Path,
+    summarize: S,
+) -> Result<(OpenedNote, DocumentStats)>
+where
+    S: FnOnce(&str) -> DocumentStats,
+{
+    let opened_note = storage.open_note(workspace, path)?;
+    let stats = summarize(&opened_note.content);
+    Ok((opened_note, stats))
+}
+
+fn apply_opened_markdown(
+    file_state: &mut FileState,
+    editor_tabs: &mut EditorTabs,
+    tab_contents: &mut TabContentsMap,
+    opened_note: OpenedNote,
+    stats: DocumentStats,
+) {
+    let recent_files = opened_note.recent_files.clone();
+    let selected_path = open_note(editor_tabs, tab_contents, opened_note, stats);
+    file_state.recent_files = recent_files;
+    file_state.select_path(selected_path);
 }
 
 pub(crate) fn open_note_from_storage<S>(
@@ -185,4 +207,19 @@ fn apply_recent_workspace_bootstrap(
     *tab_contents = TabContentsMap::default();
 
     Ok(ui_state)
+}
+
+fn workspace_from_bootstrap(
+    bootstrap: &WorkspaceBootstrap,
+    fallback: &Workspace,
+) -> Result<Workspace> {
+    if let Some(error) = &bootstrap.error_message {
+        bail!("{} ({error})", bootstrap.status_message);
+    }
+
+    Ok(bootstrap
+        .file_state
+        .current_workspace
+        .clone()
+        .unwrap_or_else(|| fallback.clone()))
 }

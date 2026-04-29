@@ -774,6 +774,8 @@ button { border: 0; cursor: pointer; background: transparent; }
 }
 
 .mn-tab-title {
+    display: inline-flex;
+    align-items: center;
     padding: 4px 0;
     font-size: 12px;
     font-weight: 500;
@@ -802,11 +804,34 @@ button { border: 0; cursor: pointer; background: transparent; }
     color: var(--mn-accent);
 }
 
-.mn-dirty {
+.mn-tab-save-status {
+    display: inline-grid;
+    place-items: center;
+    width: 14px;
+    height: 14px;
+    margin-left: 4px;
+    border-radius: 999px;
+    flex: 0 0 auto;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.mn-tab-save-status.dirty {
     color: var(--mn-accent);
-    font-size: 18px;
-    line-height: 0;
-    margin: 0 0 0 4px;
+    font-size: 15px;
+    transform: translateY(2px);
+}
+
+.mn-tab-save-status.saving {
+    border: 1px solid var(--mn-accent);
+    color: var(--mn-accent);
+    font-size: 8px;
+}
+
+.mn-tab-save-status.failed {
+    background: #b45151;
+    color: #fff;
 }
 
 .mn-segmented-control,
