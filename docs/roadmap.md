@@ -236,7 +236,7 @@ Editor runtime lane
 所有高风险改动必须检查这些 trace：
 
 - `perf editor pane render prep`
-- `perf editor open note`
+- `perf editor open markdown`
 - `perf editor switch tab`
 - `perf editor view mode change`
 - `perf editor outline extract`
@@ -244,9 +244,14 @@ Editor runtime lane
 - `perf editor command set_preferences`
 - `perf editor input change`
 - `perf editor preview render`
+- `perf editor host lifecycle`
+- `perf editor host destroy`
+- `perf editor stale bridge cleanup`
 - `perf chrome toggle sidebar`
 - `perf chrome resize sidebar`
+- `perf chrome toggle theme`
 - `perf chrome open modal`
+- `perf workspace search`
 - `perf tab close trigger`
 - `perf runtime close_tab handler`
 
