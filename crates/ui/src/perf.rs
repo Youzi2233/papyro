@@ -396,3 +396,60 @@ pub(crate) fn trace_tab_close_trigger(
         );
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::{path::PathBuf, sync::Arc};
+
+    fn document_snapshot() -> DocumentSnapshot {
+        DocumentSnapshot {
+            tab_id: "tab-a".to_string(),
+            path: PathBuf::from("workspace/note.md"),
+            revision: 7,
+            content: Arc::<str>::from("hello"),
+        }
+    }
+
+    #[test]
+    fn chrome_trace_context_uses_smoke_checker_defaults() {
+        let ctx = TraceContext::chrome("click", "chrome.sidebar");
+
+        assert_eq!(ctx.interaction_path, "chrome.sidebar");
+        assert_eq!(ctx.trigger_reason, "click");
+        assert_eq!(ctx.tab_id(), "none");
+        assert_eq!(ctx.revision(), -1);
+        assert_eq!(ctx.view_mode(), "none");
+        assert_eq!(ctx.content_bytes(), -1);
+    }
+
+    #[test]
+    fn document_trace_context_uses_snapshot_fields() {
+        let document = document_snapshot();
+        let ctx = TraceContext::document(
+            &document,
+            Some(&ViewMode::Preview),
+            "component_render",
+            "editor.render",
+        );
+
+        assert_eq!(ctx.interaction_path, "editor.render");
+        assert_eq!(ctx.trigger_reason, "component_render");
+        assert_eq!(ctx.tab_id(), "tab-a");
+        assert_eq!(ctx.revision(), 7);
+        assert_eq!(ctx.view_mode(), "preview");
+        assert_eq!(ctx.content_bytes(), 5);
+    }
+
+    #[test]
+    fn derived_trace_context_keeps_document_size_without_view_mode() {
+        let ctx = TraceContext::derived(Some("tab-a"), Some(3), 1024, "size_gate");
+
+        assert_eq!(ctx.interaction_path, "document.derived");
+        assert_eq!(ctx.trigger_reason, "size_gate");
+        assert_eq!(ctx.tab_id(), "tab-a");
+        assert_eq!(ctx.revision(), 3);
+        assert_eq!(ctx.view_mode(), "none");
+        assert_eq!(ctx.content_bytes(), 1024);
+    }
+}
