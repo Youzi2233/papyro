@@ -130,6 +130,12 @@
     --mn-font-body:       var(--mn-font-sans);
     --mn-font-heading:    var(--mn-font-display);
     --mn-font-code:       var(--mn-font-mono);
+    --mn-document-font:   var(--mn-editor-font, var(--mn-font-body));
+    --mn-document-heading-font: var(--mn-font-heading);
+    --mn-document-code-font: var(--mn-font-code);
+    --mn-document-body-size: var(--mn-editor-font-size, 16px);
+    --mn-document-line-height: var(--mn-editor-line-height, 1.75);
+    --mn-document-heading-line: 1.18;
     --mn-type-dot:        8px;
     --mn-type-tiny:       9px;
     --mn-type-label:      10px;
@@ -155,12 +161,12 @@
     --mn-weight-semibold: 600;
     --mn-weight-strong:   650;
     --mn-weight-bold:     700;
-    --mn-markdown-font:              var(--mn-editor-font, var(--mn-font-body));
-    --mn-markdown-heading-font:      var(--mn-font-heading);
-    --mn-markdown-mono-font:         var(--mn-font-code);
-    --mn-markdown-body-size:         var(--mn-editor-font-size, 16px);
-    --mn-markdown-line-height:       var(--mn-editor-line-height, 1.75);
-    --mn-markdown-heading-line:      1.18;
+    --mn-markdown-font:              var(--mn-document-font);
+    --mn-markdown-heading-font:      var(--mn-document-heading-font);
+    --mn-markdown-mono-font:         var(--mn-document-code-font);
+    --mn-markdown-body-size:         var(--mn-document-body-size);
+    --mn-markdown-line-height:       var(--mn-document-line-height);
+    --mn-markdown-heading-line:      var(--mn-document-heading-line);
     --mn-markdown-h1-size:           2.05em;
     --mn-markdown-h2-size:           1.55em;
     --mn-markdown-h3-size:           1.25em;
@@ -178,9 +184,23 @@
     --mn-markdown-inline-code-pad:   .1em .42em;
     --mn-markdown-code-block-pad-x:  22px;
     --mn-markdown-code-block-pad-y:  18px;
+    --mn-markdown-code-block-size:   var(--mn-type-code);
+    --mn-markdown-code-block-line:   var(--mn-line-reader);
+    --mn-markdown-front-matter-pad-x: 12px;
+    --mn-markdown-front-matter-pad-y: .45em;
+    --mn-markdown-table-line-pad-x:  14px;
+    --mn-markdown-table-line-pad-y:  .55em;
     --mn-markdown-table-cell-pad:    8px 14px;
     --mn-markdown-table-head-pad:    9px 14px;
     --mn-markdown-image-radius:      var(--mn-radius-sm);
+    --mn-markdown-image-max-height:  260px;
+    --mn-markdown-inline-math-font:  Georgia, "Times New Roman", serif;
+    --mn-markdown-inline-math-pad:   0 2px;
+    --mn-markdown-task-box-size:     14px;
+    --mn-markdown-footnote-indent:   1.4em;
+    --mn-markdown-link-underline-offset: 3px;
+    --mn-markdown-hr-height:         1px;
+    --mn-markdown-hr-margin:         .9em 0;
 
     font-family: var(--mn-font-ui);
     font-size: var(--mn-type-ui);
@@ -1198,9 +1218,9 @@ button { border: 0; cursor: pointer; background: transparent; }
     background: transparent;
     color: var(--mn-editor-ink);
     padding: var(--mn-document-pad-top) var(--mn-document-pad-x) var(--mn-document-pad-bottom);
-    font-family: var(--mn-editor-font, var(--mn-font-code));
-    font-size: var(--mn-editor-font-size, 15px);
-    line-height: var(--mn-editor-line-height, 1.75);
+    font-family: var(--mn-document-font);
+    font-size: var(--mn-document-body-size);
+    line-height: var(--mn-document-line-height);
     caret-color: var(--mn-accent);
 }
 
@@ -1321,7 +1341,7 @@ button { border: 0; cursor: pointer; background: transparent; }
     color: var(--mn-accent);
     text-decoration: underline;
     text-decoration-thickness: 1px;
-    text-underline-offset: 3px;
+    text-underline-offset: var(--mn-markdown-link-underline-offset);
     transition: color 0.14s;
 }
 .mn-preview a:hover { color: var(--mn-accent-strong); }
@@ -1344,8 +1364,8 @@ button { border: 0; cursor: pointer; background: transparent; }
     margin: 0 0 1.1em;
     overflow-x: auto;
     padding: var(--mn-markdown-code-block-pad-y) var(--mn-markdown-code-block-pad-x) !important;
-    font-size: var(--mn-type-code);
-    line-height: var(--mn-line-reader);
+    font-size: var(--mn-markdown-code-block-size);
+    line-height: var(--mn-markdown-code-block-line);
     box-shadow: none;
     border: var(--mn-border-subtle);
     background: var(--mn-markdown-code-block-bg);
