@@ -304,14 +304,13 @@ fn send_set_view_mode(
     tab_id: &str,
     mode: ViewMode,
 ) {
-    let already_sent = { command_cache.read().view_mode.as_ref() == Some(&mode) };
-    if already_sent {
+    let changed = command_cache.with_mut(|cache| record_view_mode_change(cache, mode.clone()));
+    if !changed {
         return;
     }
 
     let started_at = perf_timer();
     let _ = eval.send(EditorCommand::SetViewMode { mode: mode.clone() });
-    command_cache.with_mut(|cache| cache.view_mode = Some(mode.clone()));
     trace_editor_set_view_mode(tab_id, &mode, started_at);
 }
 
@@ -372,6 +371,15 @@ fn record_preferences_change(
     true
 }
 
+fn record_view_mode_change(command_cache: &mut EditorCommandCache, mode: ViewMode) -> bool {
+    if command_cache.view_mode.as_ref() == Some(&mode) {
+        return false;
+    }
+
+    command_cache.view_mode = Some(mode);
+    true
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -391,5 +399,15 @@ mod tests {
         assert!(!record_preferences_change(&mut cache, true));
         assert!(record_preferences_change(&mut cache, false));
         assert!(!record_preferences_change(&mut cache, false));
+    }
+
+    #[test]
+    fn view_mode_change_is_idempotent() {
+        let mut cache = EditorCommandCache::default();
+
+        assert!(record_view_mode_change(&mut cache, ViewMode::Hybrid));
+        assert!(!record_view_mode_change(&mut cache, ViewMode::Hybrid));
+        assert!(record_view_mode_change(&mut cache, ViewMode::Preview));
+        assert!(!record_view_mode_change(&mut cache, ViewMode::Preview));
     }
 }

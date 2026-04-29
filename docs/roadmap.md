@@ -544,11 +544,17 @@ Hybrid mode 应该满足：
 
 ### 4.4 CodeMirror Integration
 
-- [ ] Hybrid 专用 command schema 固化到 `crates/editor` protocol，不在 JS runtime 私有扩展。
-- [ ] Hybrid 如需新增 JS -> Rust event，必须先固化 schema 并补协议测试。
-- [ ] Content update 支持 suppress echo，避免 Rust 更新再触发 JS 回流。
-- [ ] View mode、preferences 都做 idempotent；layout refresh 保持 JS runtime 内部本地化。
-- [ ] Runtime error 必须回退到 fallback editor，而不是让页面空白。
+- [x] Hybrid 专用 command schema 固化到 `crates/editor` protocol，不在 JS runtime 私有扩展。
+- [x] Hybrid 如需新增 JS -> Rust event，必须先固化 schema 并补协议测试。
+- [x] Content update 支持 suppress echo，避免 Rust 更新再触发 JS 回流。
+- [x] View mode、preferences 都做 idempotent；layout refresh 保持 JS runtime 内部本地化。
+- [x] Runtime error 必须回退到 fallback editor，而不是让页面空白。
+
+验收证据：
+
+- `crates/editor/src/protocol.rs` 定义 Rust/JS command 与 event schema。
+- `js/test/editor-core.test.js` 覆盖 content suppress、重复 view mode / preferences 短路、stale destroy。
+- `crates/ui/src/components/editor/host.rs` 在 `RuntimeError` 时进入 `FallbackEditor`。
 
 ### 4.5 Typora-like 验收场景
 

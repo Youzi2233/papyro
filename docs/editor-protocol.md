@@ -85,8 +85,12 @@ Example:
 ## Contract Rules
 
 - `set_content` must not emit `content_changed`.
+- `set_view_mode` and `set_preferences` are idempotent in Rust and JavaScript.
+  Duplicate runtime commands may return `"mode_unchanged"` or `"preferences_unchanged"`
+  and must not trigger layout refresh or preference writes.
 - Commands for a missing tab may return `"missing"` in JavaScript and should not throw.
 - `destroy` must include the host `instance_id`; JavaScript ignores stale destroy messages so delayed cleanup cannot detach a newer host for the same tab id.
 - `content_changed` is the only event that updates Rust document content.
 - `save_requested` asks Rust to save; JavaScript never writes files directly.
+- `runtime_error` moves the Rust host into fallback UI instead of leaving the editor surface blank.
 - CodeMirror layout measurement is local to the JavaScript runtime. ResizeObserver should call the JS layout helper directly instead of round-tripping through Rust commands or events.

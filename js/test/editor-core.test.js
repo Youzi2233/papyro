@@ -743,6 +743,40 @@ test("set_view_mode stores mode on entry and editor dom", () => {
   assert.equal(view.dom.dataset.viewMode, "preview");
 });
 
+test("set_view_mode ignores duplicate runtime commands", () => {
+  const registry = new Map();
+  const view = fakeView("body");
+  let layoutRefreshes = 0;
+
+  attachViewToTab({
+    editorRegistry: registry,
+    view,
+    tabId: "tab-a",
+    container: fakeContainer(),
+    initialContent: "body",
+    viewMode: "Hybrid",
+    refreshEditorLayout: () => {
+      layoutRefreshes += 1;
+    },
+  });
+
+  assert.equal(layoutRefreshes, 1);
+  assert.equal(
+    handleRustMessage(
+      registry,
+      "tab-a",
+      { type: "set_view_mode", mode: "Hybrid" },
+      {
+        refreshEditorLayout: () => {
+          layoutRefreshes += 1;
+        },
+      },
+    ),
+    "mode_unchanged",
+  );
+  assert.equal(layoutRefreshes, 1);
+});
+
 test("set_preferences stores editor preferences on entry", () => {
   const registry = new Map();
   const view = fakeView("body");
@@ -758,6 +792,37 @@ test("set_preferences stores editor preferences on entry", () => {
   assert.deepEqual(registry.get("tab-a").preferences, {
     autoLinkPaste: false,
   });
+});
+
+test("set_preferences ignores duplicate runtime commands", () => {
+  const registry = new Map();
+  const view = fakeView("body");
+  let preferenceWrites = 0;
+
+  attach(registry, view, "tab-a", "body");
+
+  assert.equal(
+    handleRustMessage(registry, "tab-a", {
+      type: "set_preferences",
+      auto_link_paste: false,
+    }),
+    "preferences_updated",
+  );
+  assert.equal(
+    handleRustMessage(
+      registry,
+      "tab-a",
+      { type: "set_preferences", auto_link_paste: false },
+      {
+        setEditorPreferences: (entry, preferences) => {
+          preferenceWrites += 1;
+          entry.preferences = normalizeEditorPreferences(preferences);
+        },
+      },
+    ),
+    "preferences_unchanged",
+  );
+  assert.equal(preferenceWrites, 0);
 });
 
 test("insert_markdown message inserts markdown into editor", () => {

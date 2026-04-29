@@ -41,11 +41,29 @@ export function normalizeEditorPreferences(preferences = {}) {
   };
 }
 
-export function setEditorPreferences(entry, preferences) {
-  entry.preferences = {
-    ...normalizeEditorPreferences(entry.preferences),
+export function nextEditorPreferences(currentPreferences, preferences) {
+  return {
+    ...normalizeEditorPreferences(currentPreferences),
     ...normalizeEditorPreferences(preferences),
   };
+}
+
+export function editorPreferencesEqual(left, right) {
+  const normalizedLeft = normalizeEditorPreferences(left);
+  const normalizedRight = normalizeEditorPreferences(right);
+  return normalizedLeft.autoLinkPaste === normalizedRight.autoLinkPaste;
+}
+
+export function setEditorPreferences(entry, preferences) {
+  const nextPreferences = nextEditorPreferences(entry.preferences, preferences);
+  if (
+    entry.preferences &&
+    editorPreferencesEqual(entry.preferences, nextPreferences)
+  ) {
+    return entry.preferences;
+  }
+
+  entry.preferences = nextPreferences;
   return entry.preferences;
 }
 
@@ -852,6 +870,13 @@ export function nextLayoutSize(previousSize, rect) {
 
 export function setViewMode(entry, mode) {
   const normalized = normalizeViewMode(mode);
+  if (
+    entry.viewMode === normalized &&
+    entry.view?.dom?.dataset?.viewMode === normalized
+  ) {
+    return normalized;
+  }
+
   entry.viewMode = normalized;
   if (entry.view?.dom?.dataset) {
     entry.view.dom.dataset.viewMode = normalized;
@@ -934,13 +959,30 @@ export function handleRustMessage(editorRegistry, tabId, message, options = {}) 
       if (!entry) return "missing";
       insertMarkdownInView(entry.view, message.markdown);
       return "markdown_inserted";
-    case "set_view_mode":
+    case "set_view_mode": {
       if (!entry) return "missing";
+      const nextMode = normalizeViewMode(message.mode);
+      if (
+        entry.viewMode === nextMode &&
+        entry.view?.dom?.dataset?.viewMode === nextMode
+      ) {
+        return "mode_unchanged";
+      }
       setMode(entry, message.mode);
       refreshEditorLayout(entry.view);
       return "mode_updated";
+    }
     case "set_preferences":
       if (!entry) return "missing";
+      if (
+        entry.preferences &&
+        editorPreferencesEqual(
+          entry.preferences,
+          nextEditorPreferences(entry.preferences, message),
+        )
+      ) {
+        return "preferences_unchanged";
+      }
       setPreferences(entry, message);
       return "preferences_updated";
     case "focus":
