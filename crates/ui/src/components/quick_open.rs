@@ -1,3 +1,4 @@
+use crate::action_labels::open_note_label;
 use crate::commands::{AppCommands, OpenMarkdownTarget};
 use crate::components::primitives::{Modal, TextInput};
 use crate::context::use_app_context;
@@ -103,10 +104,12 @@ fn QuickOpenRow(
     on_close: EventHandler<()>,
 ) -> Element {
     let item_for_click = item.clone();
+    let open_label = open_note_label(&item.title);
 
     rsx! {
         button {
             class: if is_active { "mn-command-row active" } else { "mn-command-row" },
+            "aria-label": "{open_label}",
             onclick: move |_| {
                 open_quick_item(commands.clone(), on_close, item_for_click.clone());
             },

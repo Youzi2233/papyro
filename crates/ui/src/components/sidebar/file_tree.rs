@@ -1,3 +1,4 @@
+use crate::action_labels::{delete_action_label, open_note_label};
 use crate::commands::{AppCommands, FileTarget, OpenMarkdownTarget};
 use crate::components::primitives::{Menu, MenuItem, MenuSeparator};
 use crate::context::use_app_context;
@@ -296,6 +297,7 @@ fn FileTreeNode(
             let node_title = node.name.trim_end_matches(".md").to_string();
             let open_node = node.clone();
             let open_commands = commands.clone();
+            let open_label = open_note_label(&node_title);
             let menu_node = node.clone();
             let menu_path = node_path.clone();
             let drag_node = node.clone();
@@ -349,6 +351,7 @@ fn FileTreeNode(
                         style: "padding-left: {indent + 18}px",
                         role: "treeitem",
                         draggable: true,
+                        "aria-label": "{open_label}",
                         "aria-selected": "{is_selected}",
                         onclick: move |_| {
                             open_commands.select_path.call(open_node.path.clone());
@@ -544,7 +547,7 @@ fn FileTreeContextMenuView(
         .read()
         .as_deref()
         .is_some_and(|path| path == menu.node.path.as_path());
-    let delete_label = delete_menu_label(delete_pending);
+    let delete_label = delete_action_label(delete_pending);
 
     rsx! {
         Menu {
@@ -616,14 +619,6 @@ fn FileTreeContextMenuView(
                 },
             }
         }
-    }
-}
-
-fn delete_menu_label(is_pending: bool) -> &'static str {
-    if is_pending {
-        "Confirm delete"
-    } else {
-        "Delete"
     }
 }
 
@@ -1155,11 +1150,5 @@ mod tests {
             context_menu_style(ContextMenuPosition { x: 42.4, y: 99.7 }),
             "left: min(42px, calc(100vw - 188px)); top: min(100px, calc(100vh - 220px));"
         );
-    }
-
-    #[test]
-    fn delete_menu_label_reflects_confirmation_state() {
-        assert_eq!(delete_menu_label(false), "Delete");
-        assert_eq!(delete_menu_label(true), "Confirm delete");
     }
 }

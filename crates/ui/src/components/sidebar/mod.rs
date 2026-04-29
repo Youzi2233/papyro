@@ -1,5 +1,6 @@
 pub mod file_tree;
 
+use crate::action_labels::{delete_action_label, delete_action_title};
 use crate::commands::FileTarget;
 use crate::context::use_app_context;
 use crate::perf::{perf_timer, trace_sidebar_resize};
@@ -175,9 +176,9 @@ pub fn Sidebar(on_search: EventHandler<()>) -> Element {
                             }
                             button {
                                 class: "mn-button danger",
-                                title: if sidebar_model.selected_delete_pending { "Confirm delete" } else { "Delete selected" },
+                                title: delete_action_title(sidebar_model.selected_delete_pending),
                                 onclick: move |_| commands.delete_selected.call(()),
-                                if sidebar_model.selected_delete_pending { "Confirm" } else { "Delete" }
+                                "{delete_action_label(sidebar_model.selected_delete_pending)}"
                             }
                         }
                     }

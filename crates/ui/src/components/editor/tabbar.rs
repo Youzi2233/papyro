@@ -1,4 +1,5 @@
 use super::bridge::perf_enabled;
+use crate::action_labels::open_note_label;
 use crate::commands::AppCommands;
 use crate::context::use_app_context;
 use crate::perf::trace_tab_close_trigger;
@@ -82,7 +83,7 @@ pub(super) fn EditorTabButton(item: EditorTabItemViewModel) -> Element {
         .as_ref()
         .map(|indicator| indicator.marker)
         .unwrap_or_default();
-    let open_label = format!("Open {}", item.title);
+    let open_label = open_note_label(&item.title);
     let close_label = tab_close_label(&item.title);
 
     rsx! {

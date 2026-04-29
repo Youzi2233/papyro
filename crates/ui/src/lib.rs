@@ -1,3 +1,4 @@
+mod action_labels;
 mod chrome;
 pub mod commands;
 pub mod components;

@@ -1,6 +1,7 @@
 use dioxus::prelude::*;
 use papyro_core::models::Theme;
 
+use crate::action_labels::{delete_action_label, delete_action_title};
 use crate::commands::FileTarget;
 use crate::components::{
     editor::EditorPane,
@@ -178,9 +179,9 @@ pub fn MobileLayout() -> Element {
                                     }
                                     button {
                                         class: "mn-button danger",
-                                        title: if selected_delete_pending { "Confirm delete" } else { "Delete selected" },
+                                        title: delete_action_title(selected_delete_pending),
                                         onclick: move |_| commands.delete_selected.call(()),
-                                        if selected_delete_pending { "Confirm delete" } else { "Delete" }
+                                        "{delete_action_label(selected_delete_pending)}"
                                     }
                                     if let Some(target) = selected_target.clone() {
                                         button {

@@ -1,3 +1,4 @@
+use crate::action_labels::open_note_label;
 use crate::commands::{AppCommands, OpenMarkdownTarget};
 use crate::components::primitives::{Modal, TextInput};
 use crate::context::use_app_context;
@@ -109,6 +110,7 @@ fn SearchResultRow(
 ) -> Element {
     let path_for_click = result.path.clone();
     let preview = result.preview.clone();
+    let open_label = open_note_label(&result.title);
     let badge = preview
         .as_ref()
         .map(|result_match| field_label(result_match.field))
@@ -117,6 +119,7 @@ fn SearchResultRow(
     rsx! {
         button {
             class: if is_active { "mn-command-row mn-search-row active" } else { "mn-command-row mn-search-row" },
+            "aria-label": "{open_label}",
             onclick: move |_| {
                 open_search_result(
                     commands.clone(),
