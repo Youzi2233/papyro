@@ -182,11 +182,16 @@
     --mn-markdown-block-gap:         1.05em;
     --mn-markdown-list-indent:       1.7em;
     --mn-markdown-list-item-gap:     .3em;
+    --mn-markdown-list-marker-width: 1.4em;
+    --mn-markdown-list-marker-gap:   .45em;
     --mn-markdown-quote-border:      2px;
     --mn-markdown-quote-pad-x:       1.1em;
     --mn-markdown-quote-pad-y:       .5em;
+    --mn-markdown-quote-bg:          transparent;
+    --mn-markdown-quote-color:       var(--mn-ink-2);
     --mn-markdown-code-bg:           var(--mn-surface-sunken);
     --mn-markdown-code-block-bg:     var(--mn-surface-sunken);
+    --mn-markdown-code-color:        var(--mn-accent-strong);
     --mn-markdown-code-radius:       var(--mn-radius-sm);
     --mn-markdown-inline-code-pad:   .1em .42em;
     --mn-markdown-code-block-pad-x:  22px;
@@ -195,12 +200,17 @@
     --mn-markdown-code-block-line:   var(--mn-line-reader);
     --mn-markdown-front-matter-pad-x: 12px;
     --mn-markdown-front-matter-pad-y: .45em;
+    --mn-markdown-table-bg:          var(--mn-surface-sunken);
+    --mn-markdown-table-head-bg:     var(--mn-surface-sunken);
+    --mn-markdown-table-border:      var(--mn-border-default);
     --mn-markdown-table-line-pad-x:  14px;
     --mn-markdown-table-line-pad-y:  .55em;
     --mn-markdown-table-cell-pad:    8px 14px;
     --mn-markdown-table-head-pad:    9px 14px;
     --mn-markdown-image-radius:      var(--mn-radius-sm);
     --mn-markdown-image-max-height:  260px;
+    --mn-markdown-image-border:      var(--mn-border-default);
+    --mn-markdown-image-bg:          var(--mn-surface);
     --mn-markdown-inline-math-font:  Georgia, "Times New Roman", serif;
     --mn-markdown-inline-math-pad:   0 2px;
     --mn-markdown-task-box-size:     14px;
@@ -1443,9 +1453,9 @@ button.mn-sidebar-nav-item:disabled {
 .mn-preview blockquote {
     border-left: var(--mn-markdown-quote-border) solid var(--mn-border-strong);
     padding: var(--mn-markdown-quote-pad-y) var(--mn-markdown-quote-pad-x);
-    margin: 0 0 1.1em;
-    color: var(--mn-ink-2);
-    background: transparent;
+    margin: 0 0 var(--mn-markdown-block-gap);
+    color: var(--mn-markdown-quote-color);
+    background: var(--mn-markdown-quote-bg);
     border-radius: 0;
     font-style: italic;
 }
@@ -1472,7 +1482,7 @@ button.mn-sidebar-nav-item:disabled {
     border: var(--mn-border-subtle);
     border-radius: var(--mn-radius-xs);
     padding: var(--mn-markdown-inline-code-pad);
-    color: var(--mn-accent-strong);
+    color: var(--mn-markdown-code-color);
 }
 
 /* preview: code blocks from syntect */
@@ -1480,7 +1490,7 @@ button.mn-sidebar-nav-item:disabled {
 .mn-preview .mn-code-block > pre {
     font-family: var(--mn-markdown-mono-font);
     border-radius: var(--mn-markdown-code-radius);
-    margin: 0 0 1.1em;
+    margin: 0 0 var(--mn-markdown-block-gap);
     overflow-x: auto;
     padding: var(--mn-markdown-code-block-pad-y) var(--mn-markdown-code-block-pad-x) !important;
     font-size: var(--mn-markdown-code-block-size);
@@ -1499,7 +1509,7 @@ button.mn-sidebar-nav-item:disabled {
 
 .mn-code-block {
     position: relative;
-    margin: 0 0 1.1em;
+    margin: 0 0 var(--mn-markdown-block-gap);
 }
 
 .mn-code-block[data-lang]::before {
@@ -1526,11 +1536,11 @@ button.mn-sidebar-nav-item:disabled {
 }
 
 .mn-preview th {
-    background: var(--mn-surface-sunken);
+    background: var(--mn-markdown-table-head-bg);
     font-weight: var(--mn-weight-bold);
     text-align: left;
     padding: var(--mn-markdown-table-head-pad);
-    border: var(--mn-border-default);
+    border: var(--mn-markdown-table-border);
     font-size: .88em;
     text-transform: uppercase;
     letter-spacing: var(--mn-letter-normal);
@@ -1539,11 +1549,11 @@ button.mn-sidebar-nav-item:disabled {
 
 .mn-preview td {
     padding: var(--mn-markdown-table-cell-pad);
-    border: var(--mn-border-default);
+    border: var(--mn-markdown-table-border);
     vertical-align: top;
 }
 
-.mn-preview tr:nth-child(even) td { background: var(--mn-surface-sunken); }
+.mn-preview tr:nth-child(even) td { background: var(--mn-markdown-table-bg); }
 
 /* preview: task lists */
 .mn-preview input[type="checkbox"] {
@@ -1574,7 +1584,14 @@ button.mn-sidebar-nav-item:disabled {
 /* preview: images */
 .mn-preview img {
     max-width: 100%;
+    max-height: var(--mn-markdown-image-max-height);
     border-radius: var(--mn-markdown-image-radius);
+    border: var(--mn-markdown-image-border);
+    background: var(--mn-markdown-image-bg);
+}
+
+.mn-preview p > img:only-child {
+    display: block;
 }
 
 /* ── Empty editor ── */
