@@ -114,8 +114,8 @@ export function applyFormatToView(view, kind) {
   return true;
 }
 
-function viewIsComposing(view) {
-  return Boolean(view.composing);
+export function viewIsComposing(view) {
+  return Boolean(view.composing || view.compositionStarted);
 }
 
 export function pasteMarkdownLinkInView(view, pastedText, preferences) {

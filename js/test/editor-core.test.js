@@ -36,6 +36,7 @@ import {
   pasteMarkdownLinkInView,
   recycleEditor,
   requestSaveForView,
+  viewIsComposing,
 } from "../src/editor-core.js";
 
 function fakeContainer() {
@@ -804,6 +805,12 @@ test("tab recycle detaches old tab and prevents stale content routing", () => {
   );
   assert.equal(view.state.doc.toString(), "B");
   assert.equal(recycleCalls, 1);
+});
+
+test("view_is_composing covers active and starting composition", () => {
+  assert.equal(viewIsComposing({ composing: false, compositionStarted: false }), false);
+  assert.equal(viewIsComposing({ composing: true, compositionStarted: false }), true);
+  assert.equal(viewIsComposing({ composing: false, compositionStarted: true }), true);
 });
 
 test("recycle_editor clears routed dataset and channel state", () => {

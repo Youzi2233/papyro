@@ -116,6 +116,11 @@
     --mn-active-line:        rgba(47, 111, 108, 0.055);
     --mn-active-line-gutter: rgba(47, 111, 108, 0.09);
     --mn-selection:          rgba(47, 111, 108, 0.18);
+    --mn-caret:              var(--mn-accent);
+    --mn-caret-halo:         rgba(47, 111, 108, 0.18);
+    --mn-caret-composing:    var(--mn-warning);
+    --mn-composition-halo:   rgba(159, 106, 58, 0.18);
+    --mn-composition-line:   rgba(159, 106, 58, 0.08);
 
     /* Document rhythm shared by Source, Hybrid, and Preview */
     --mn-document-measure:      860px;
@@ -262,6 +267,11 @@
     --mn-active-line:        rgba(112, 170, 165, 0.08);
     --mn-active-line-gutter: rgba(112, 170, 165, 0.13);
     --mn-selection:          rgba(112, 170, 165, 0.28);
+    --mn-caret:              var(--mn-accent);
+    --mn-caret-halo:         rgba(112, 170, 165, 0.22);
+    --mn-caret-composing:    var(--mn-warning);
+    --mn-composition-halo:   rgba(211, 154, 96, 0.22);
+    --mn-composition-line:   rgba(211, 154, 96, 0.11);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -306,6 +316,11 @@
         --mn-active-line:        rgba(112, 170, 165, 0.08);
         --mn-active-line-gutter: rgba(112, 170, 165, 0.13);
         --mn-selection:          rgba(112, 170, 165, 0.28);
+        --mn-caret:              var(--mn-accent);
+        --mn-caret-halo:         rgba(112, 170, 165, 0.22);
+        --mn-caret-composing:    var(--mn-warning);
+        --mn-composition-halo:   rgba(211, 154, 96, 0.22);
+        --mn-composition-line:   rgba(211, 154, 96, 0.11);
     }
 }
 

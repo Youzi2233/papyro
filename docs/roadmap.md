@@ -488,9 +488,9 @@ Editor runtime lane
 
 ### 3.4 编辑区体验
 
-- [ ] 建立统一文档纸面：舒适阅读宽度、稳定 padding、稳定行高。
-- [ ] Source、Hybrid、Preview 使用同一套文档尺度。
-- [ ] 光标、selection、composition 状态清晰可见。
+- [x] 建立统一文档纸面：舒适阅读宽度、稳定 padding、稳定行高。
+- [x] Source、Hybrid、Preview 使用同一套文档尺度。
+- [x] 光标、selection、composition 状态清晰可见。
 - [ ] 图片、表格、代码块、引用、列表在三种模式中节奏一致。
 - [ ] 编辑区空状态直接引导打开或创建笔记，不展示大段说明文字。
 

@@ -48,6 +48,7 @@ import {
   requestSaveForView,
   setEditorPreferences as setEditorPreferencesCore,
   setViewMode as setViewModeCore,
+  viewIsComposing,
 } from "./editor-core.js";
 
 // tabId → { view, dioxus, suppressChange }
@@ -110,6 +111,7 @@ function placeCursorAtDrop(view, event) {
 }
 
 const setViewModeEffect = StateEffect.define();
+const EDITOR_COMPOSITION_CLASS = "cm-composition-active";
 const viewModeField = StateField.define({
   create() {
     return "hybrid";
@@ -158,6 +160,17 @@ const editorTheme = EditorView.theme({
   ".cm-cursor, .cm-dropCursor": {
     borderLeftColor: "var(--mn-accent, #b24b2f)",
     borderLeftWidth: "2px",
+  },
+  "&.cm-focused .cm-cursor, &.cm-focused .cm-dropCursor": {
+    borderLeftColor: "var(--mn-caret, var(--mn-accent, #b24b2f))",
+    boxShadow: "0 0 0 1px var(--mn-caret-halo, transparent)",
+  },
+  "&.cm-composition-active .cm-cursor, &.cm-composition-active .cm-dropCursor": {
+    borderLeftColor: "var(--mn-caret-composing, var(--mn-warning, #9f6a3a))",
+    boxShadow: "0 0 0 2px var(--mn-composition-halo, rgba(159, 106, 58, .18))",
+  },
+  "&.cm-composition-active .cm-activeLine": {
+    backgroundColor: "var(--mn-composition-line, rgba(159, 106, 58, .10))",
   },
   ".cm-selectionBackground, &.cm-focused .cm-selectionBackground, ::selection": {
     backgroundColor: "var(--mn-selection, rgba(178,75,47,.15))",
@@ -1052,6 +1065,31 @@ const hybridHeadingPlugin = ViewPlugin.fromClass(
   },
 );
 
+function syncCompositionClass(view, active = viewIsComposing(view)) {
+  view.dom.classList.toggle(EDITOR_COMPOSITION_CLASS, active);
+}
+
+const compositionClassPlugin = ViewPlugin.fromClass(
+  class {
+    constructor(view) {
+      this.view = view;
+      this.active = viewIsComposing(view);
+      syncCompositionClass(view, this.active);
+    }
+
+    update(update) {
+      const next = viewIsComposing(update.view);
+      if (next === this.active) return;
+      this.active = next;
+      syncCompositionClass(update.view, next);
+    }
+
+    destroy() {
+      this.view.dom.classList.remove(EDITOR_COMPOSITION_CLASS);
+    }
+  },
+);
+
 /* Extensions read the current tab id from `view.dom.dataset.tabId` instead of
  * closure-capturing it. That lets a single view be recycled across tabs
  * without rebuilding all its extensions — the hot path for pool reuse. */
@@ -1130,6 +1168,7 @@ function buildExtensions() {
     keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap]),
     routedSaveKeymap,
     hybridHeadingPlugin,
+    compositionClassPlugin,
     EditorView.lineWrapping,
     editorTheme,
     EditorView.updateListener.of((update) => {
