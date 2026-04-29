@@ -191,6 +191,78 @@ pub(crate) fn apply_clean_open_tab_refresh(
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub(crate) struct ConflictReloadSnapshot {
+    pub tab_id: String,
+    pub path: PathBuf,
+    pub revision: u64,
+}
+
+pub(crate) fn begin_conflict_reload_tab(
+    editor_tabs: &EditorTabs,
+    tab_contents: &TabContentsMap,
+    tab_id: &str,
+) -> Option<ConflictReloadSnapshot> {
+    let tab = editor_tabs.tab_by_id(tab_id)?;
+    if tab.save_status != SaveStatus::Conflict {
+        return None;
+    }
+
+    Some(ConflictReloadSnapshot {
+        tab_id: tab.id.clone(),
+        path: tab.path.clone(),
+        revision: tab_contents.revision_for_tab(&tab.id)?,
+    })
+}
+
+pub(crate) fn read_conflict_reload_from_storage<S>(
+    storage: &dyn NoteStorage,
+    file_state: &FileState,
+    path: &Path,
+    summarize: S,
+) -> Result<(OpenedNote, DocumentStats)>
+where
+    S: FnOnce(&str) -> DocumentStats,
+{
+    let workspace = current_workspace(file_state)?;
+    load_opened_markdown(storage, &workspace, path, summarize)
+}
+
+pub(crate) fn apply_conflict_reload(
+    file_state: &mut FileState,
+    editor_tabs: &mut EditorTabs,
+    tab_contents: &mut TabContentsMap,
+    snapshot: &ConflictReloadSnapshot,
+    opened_note: OpenedNote,
+    stats: DocumentStats,
+) -> bool {
+    let Some(tab) = editor_tabs.tab_by_id(&snapshot.tab_id) else {
+        return false;
+    };
+    if tab.path != snapshot.path
+        || tab.save_status != SaveStatus::Conflict
+        || opened_note.tab.path != snapshot.path
+        || tab_contents.revision_for_tab(&snapshot.tab_id) != Some(snapshot.revision)
+    {
+        return false;
+    }
+
+    let title = opened_note.tab.title.clone();
+    let disk_content_hash = opened_note.tab.disk_content_hash;
+    let selected_path = opened_note.tab.path.clone();
+    let recent_files = opened_note.recent_files.clone();
+    let content = opened_note.content;
+
+    if !tab_contents.replace_saved_content(&snapshot.tab_id, content, stats) {
+        return false;
+    }
+
+    editor_tabs.mark_tab_saved(&snapshot.tab_id, title, disk_content_hash);
+    file_state.recent_files = recent_files;
+    file_state.select_path(selected_path);
+    true
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub(crate) struct OpenMarkdownOutcome {
     pub ui_state: Option<UiState>,
     pub watch_path: Option<PathBuf>,

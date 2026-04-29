@@ -36,6 +36,7 @@ pub(crate) enum CommandPaletteActionKind {
     OpenMarkdown(OpenMarkdownTarget),
     RefreshWorkspace,
     SaveActiveNote,
+    ReloadConflictedActiveNote,
     OverwriteActiveNote,
     ToggleSidebar,
     ToggleOutline,
@@ -190,6 +191,9 @@ fn execute_command_action(
         CommandPaletteActionKind::OpenMarkdown(target) => commands.open_markdown.call(target),
         CommandPaletteActionKind::RefreshWorkspace => commands.refresh_workspace.call(()),
         CommandPaletteActionKind::SaveActiveNote => commands.save_active_note.call(()),
+        CommandPaletteActionKind::ReloadConflictedActiveNote => {
+            commands.reload_conflicted_active_note.call(())
+        }
         CommandPaletteActionKind::OverwriteActiveNote => commands.overwrite_active_note.call(()),
         CommandPaletteActionKind::ToggleSidebar => {
             crate::chrome::toggle_sidebar(commands.clone(), "command_palette");
@@ -339,6 +343,12 @@ pub(crate) fn command_palette_actions(
         ));
         if input.active_save_status == SaveStatus::Conflict {
             actions.push(action(
+                "Reload conflicted note",
+                "Discard editor content and load the disk version",
+                "FILE",
+                CommandPaletteActionKind::ReloadConflictedActiveNote,
+            ));
+            actions.push(action(
                 "Overwrite conflicted note",
                 "Replace the disk version with editor content",
                 "FILE",
@@ -485,17 +495,27 @@ mod tests {
         assert!(titles.contains(&"Open workspace"));
         assert!(!titles.contains(&"Refresh workspace"));
         assert!(!titles.contains(&"Save active note"));
+        assert!(!titles.contains(&"Reload conflicted note"));
         assert!(!titles.contains(&"Overwrite conflicted note"));
     }
 
     #[test]
-    fn command_palette_actions_include_conflict_overwrite() {
+    fn command_palette_actions_include_conflict_resolution() {
         let actions = command_palette_actions(CommandPaletteActionInput {
             has_active_tab: true,
             active_save_status: SaveStatus::Conflict,
             ..test_input()
         });
 
+        assert!(actions.iter().any(|action| {
+            action.title == "Reload conflicted note"
+                && action.detail == "Discard editor content and load the disk version"
+                && action.group == "FILE"
+                && matches!(
+                    action.kind,
+                    CommandPaletteActionKind::ReloadConflictedActiveNote
+                )
+        }));
         assert!(actions.iter().any(|action| {
             action.title == "Overwrite conflicted note"
                 && action.detail == "Replace the disk version with editor content"

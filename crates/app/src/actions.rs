@@ -19,6 +19,7 @@ pub enum AppAction {
     PasteImage(PasteImage),
     ActivateTab(ActivateTab),
     SaveActiveNote,
+    ReloadConflictedActiveNote,
     OverwriteActiveNote,
     SaveTab(SaveTab),
     CloseTab(CloseTab),
@@ -174,6 +175,7 @@ impl AppAction {
             Self::PasteImage(_) => "paste_image",
             Self::ActivateTab(_) => "activate_tab",
             Self::SaveActiveNote => "save_active_note",
+            Self::ReloadConflictedActiveNote => "reload_conflicted_active_note",
             Self::OverwriteActiveNote => "overwrite_active_note",
             Self::SaveTab(_) => "save_tab",
             Self::CloseTab(_) => "close_tab",
@@ -221,7 +223,10 @@ impl AppAction {
             Self::ContentChanged(_) => "editor.input",
             Self::PasteImage(_) => "editor.paste_image",
             Self::ActivateTab(_) => "editor.tab_switch",
-            Self::SaveActiveNote | Self::OverwriteActiveNote | Self::SaveTab(_) => "editor.save",
+            Self::SaveActiveNote
+            | Self::ReloadConflictedActiveNote
+            | Self::OverwriteActiveNote
+            | Self::SaveTab(_) => "editor.save",
             Self::CloseTab(_) => "editor.tab_close",
             Self::ToggleOutline => "chrome.outline",
             Self::ToggleSidebar(_) | Self::SetSidebarWidth(_) => "chrome.sidebar",

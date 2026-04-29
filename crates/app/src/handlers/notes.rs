@@ -8,8 +8,9 @@ use std::sync::Arc;
 use crate::perf::{perf_timer, trace_editor_open_markdown};
 use crate::state::RuntimeState;
 use crate::workspace_flow::{
-    apply_save_error, apply_save_failure, apply_save_success, begin_conflict_overwrite_tab,
-    begin_save_tab, open_markdown_target_from_storage, write_overwrite_snapshot,
+    apply_conflict_reload, apply_save_error, apply_save_failure, apply_save_success,
+    begin_conflict_overwrite_tab, begin_conflict_reload_tab, begin_save_tab,
+    open_markdown_target_from_storage, read_conflict_reload_from_storage, write_overwrite_snapshot,
     write_save_snapshot,
 };
 
@@ -131,6 +132,28 @@ pub fn overwrite_active_note(
     };
 
     overwrite_tab_by_id(
+        storage,
+        file_state,
+        editor_tabs,
+        tab_contents,
+        status_message,
+        &active_tab_id,
+    );
+}
+
+pub fn reload_conflicted_active_note(
+    storage: Arc<dyn NoteStorage>,
+    file_state: Signal<FileState>,
+    editor_tabs: Signal<EditorTabs>,
+    tab_contents: Signal<TabContentsMap>,
+    status_message: Signal<Option<String>>,
+) {
+    let active_tab_id = editor_tabs.read().active_tab_id.clone();
+    let Some(active_tab_id) = active_tab_id else {
+        return;
+    };
+
+    reload_conflicted_tab_by_id(
         storage,
         file_state,
         editor_tabs,
@@ -274,6 +297,63 @@ pub fn overwrite_tab_by_id(
                 let mut editor_tabs = editor_tabs.write();
                 apply_save_failure(&mut editor_tabs, &tab_contents, &snapshot);
                 status_message.set(Some(format!("Overwrite failed: {error}")));
+            }
+        }
+    });
+}
+
+pub fn reload_conflicted_tab_by_id(
+    storage: Arc<dyn NoteStorage>,
+    mut file_state: Signal<FileState>,
+    mut editor_tabs: Signal<EditorTabs>,
+    mut tab_contents: Signal<TabContentsMap>,
+    mut status_message: Signal<Option<String>>,
+    tab_id: &str,
+) {
+    let snapshot = {
+        let editor_tabs = editor_tabs.read();
+        let tab_contents = tab_contents.read();
+        begin_conflict_reload_tab(&editor_tabs, &tab_contents, tab_id)
+    };
+    let Some(snapshot) = snapshot else {
+        return;
+    };
+
+    let file_state_snapshot = file_state.read().clone();
+    spawn(async move {
+        let path_for_io = snapshot.path.clone();
+        let result = tokio::task::spawn_blocking(move || {
+            read_conflict_reload_from_storage(
+                storage.as_ref(),
+                &file_state_snapshot,
+                &path_for_io,
+                papyro_editor::parser::summarize_markdown,
+            )
+        })
+        .await;
+
+        match result {
+            Ok(Ok((opened_note, stats))) => {
+                let reloaded_title = opened_note.tab.title.clone();
+                let mut file_state = file_state.write();
+                let mut editor_tabs = editor_tabs.write();
+                let mut tab_contents = tab_contents.write();
+                if apply_conflict_reload(
+                    &mut file_state,
+                    &mut editor_tabs,
+                    &mut tab_contents,
+                    &snapshot,
+                    opened_note,
+                    stats,
+                ) {
+                    status_message.set(Some(format!("Reloaded {reloaded_title} from disk")));
+                }
+            }
+            Ok(Err(error)) => {
+                status_message.set(Some(format!("Reload from disk failed: {error}")));
+            }
+            Err(error) => {
+                status_message.set(Some(format!("Reload from disk failed: {error}")));
             }
         }
     });

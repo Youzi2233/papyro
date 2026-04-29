@@ -139,6 +139,17 @@ impl AppDispatcher {
                 let mut pending_close_tab = self.state.pending_close_tab;
                 pending_close_tab.set(None);
             }
+            AppAction::ReloadConflictedActiveNote => {
+                notes::reload_conflicted_active_note(
+                    self.storage.clone(),
+                    self.state.file_state,
+                    self.state.editor_tabs,
+                    self.state.tab_contents,
+                    self.state.status_message,
+                );
+                let mut pending_close_tab = self.state.pending_close_tab;
+                pending_close_tab.set(None);
+            }
             AppAction::OverwriteActiveNote => {
                 notes::overwrite_active_note(
                     self.storage.clone(),
@@ -345,6 +356,7 @@ impl AppDispatcher {
         let paste_image = self.clone();
         let activate_tab = self.clone();
         let save_active_note = self.clone();
+        let reload_conflicted_active_note = self.clone();
         let overwrite_active_note = self.clone();
         let save_tab = self.clone();
         let close_tab = self.clone();
@@ -403,6 +415,9 @@ impl AppDispatcher {
             }),
             save_active_note: EventHandler::new(move |_| {
                 save_active_note.dispatch(AppAction::SaveActiveNote);
+            }),
+            reload_conflicted_active_note: EventHandler::new(move |_| {
+                reload_conflicted_active_note.dispatch(AppAction::ReloadConflictedActiveNote);
             }),
             overwrite_active_note: EventHandler::new(move |_| {
                 overwrite_active_note.dispatch(AppAction::OverwriteActiveNote);

@@ -210,6 +210,119 @@ fn clean_open_tab_refresh_does_not_overwrite_new_dirty_content() {
 }
 
 #[test]
+fn conflict_reload_replaces_local_content_from_storage() {
+    let note_path = PathBuf::from("workspace/notes/a.md");
+    let opened_note = OpenedNote {
+        tab: tab("tab-a", "note-a", "workspace/notes/a.md"),
+        content: "# Disk\n\nexternal".to_string(),
+        recent_files: vec![recent_file("note-a", "notes/a.md")],
+    };
+    let storage = MockStorage {
+        opened_notes: HashMap::from([(note_path.clone(), opened_note)]),
+        ..MockStorage::default()
+    };
+    let mut file_state = file_state_with_tree(vec![note_node("workspace/notes/a.md", "note-a")]);
+    let mut editor_tabs = EditorTabs::default();
+    let mut local_tab = tab("tab-a", "note-a", "workspace/notes/a.md");
+    local_tab.is_dirty = true;
+    local_tab.save_status = SaveStatus::Conflict;
+    local_tab.disk_content_hash = Some(7);
+    editor_tabs.open_tab(local_tab);
+    let mut tab_contents = TabContentsMap::default();
+    tab_contents.insert_tab(
+        "tab-a".to_string(),
+        "# Local\n\nmine".to_string(),
+        DocumentStats::default(),
+    );
+    tab_contents.update_tab_content("tab-a", "# Local\n\nedited".to_string());
+
+    let snapshot =
+        begin_conflict_reload_tab(&editor_tabs, &tab_contents, "tab-a").expect("can reload");
+    let (opened_note, stats) =
+        read_conflict_reload_from_storage(&storage, &file_state, &note_path, |content| {
+            DocumentStats {
+                char_count: content.len(),
+                ..DocumentStats::default()
+            }
+        })
+        .expect("reload loads");
+
+    assert!(apply_conflict_reload(
+        &mut file_state,
+        &mut editor_tabs,
+        &mut tab_contents,
+        &snapshot,
+        opened_note,
+        stats,
+    ));
+
+    assert_eq!(
+        tab_contents.content_for_tab("tab-a"),
+        Some("# Disk\n\nexternal")
+    );
+    assert_eq!(
+        tab_contents
+            .stats_snapshot_for_tab("tab-a")
+            .map(|stats| stats.stats.char_count),
+        Some("# Disk\n\nexternal".len())
+    );
+    assert_eq!(
+        editor_tabs.tab_by_id("tab-a").map(|tab| (
+            tab.is_dirty,
+            tab.save_status.clone(),
+            tab.title.clone()
+        )),
+        Some((false, SaveStatus::Saved, "tab-a".to_string()))
+    );
+    assert_eq!(file_state.selected_path, Some(note_path));
+    assert_eq!(
+        file_state.recent_files,
+        vec![recent_file("note-a", "notes/a.md")]
+    );
+}
+
+#[test]
+fn conflict_reload_does_not_overwrite_newer_local_input() {
+    let mut file_state = file_state_with_tree(vec![note_node("workspace/notes/a.md", "note-a")]);
+    let mut editor_tabs = EditorTabs::default();
+    let mut local_tab = tab("tab-a", "note-a", "workspace/notes/a.md");
+    local_tab.is_dirty = true;
+    local_tab.save_status = SaveStatus::Conflict;
+    editor_tabs.open_tab(local_tab);
+    let mut tab_contents = TabContentsMap::default();
+    tab_contents.insert_tab(
+        "tab-a".to_string(),
+        "# Local".to_string(),
+        DocumentStats::default(),
+    );
+    let snapshot =
+        begin_conflict_reload_tab(&editor_tabs, &tab_contents, "tab-a").expect("can reload");
+    tab_contents.update_tab_content("tab-a", "# Local newer".to_string());
+    let opened_note = OpenedNote {
+        tab: tab("tab-a", "note-a", "workspace/notes/a.md"),
+        content: "# Disk".to_string(),
+        recent_files: vec![recent_file("note-a", "notes/a.md")],
+    };
+
+    assert!(!apply_conflict_reload(
+        &mut file_state,
+        &mut editor_tabs,
+        &mut tab_contents,
+        &snapshot,
+        opened_note,
+        DocumentStats::default(),
+    ));
+
+    assert_eq!(tab_contents.content_for_tab("tab-a"), Some("# Local newer"));
+    assert_eq!(
+        editor_tabs
+            .tab_by_id("tab-a")
+            .map(|tab| (tab.is_dirty, tab.save_status.clone())),
+        Some((true, SaveStatus::Conflict))
+    );
+}
+
+#[test]
 fn open_note_flow_reports_storage_failure() {
     let storage = MockStorage::default();
     let mut file_state = file_state_with_tree(Vec::new());
