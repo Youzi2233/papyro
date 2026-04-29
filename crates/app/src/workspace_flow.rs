@@ -2,6 +2,7 @@ mod create;
 mod delete;
 mod move_path;
 mod open;
+mod recovery;
 mod reload;
 mod rename;
 mod save;
@@ -22,6 +23,7 @@ pub(crate) use open::{
 };
 #[cfg(test)]
 pub(crate) use open::{open_markdown_from_storage, open_note_from_storage};
+pub(crate) use recovery::restore_recovery_draft_in_state;
 pub(crate) use reload::{
     apply_workspace_bootstrap, reload_workspace_or_bootstrap, WorkspaceReloadOutcome,
 };

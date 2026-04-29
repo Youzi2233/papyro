@@ -43,6 +43,7 @@ pub async fn open_markdown(
             tab_contents: next_tab_contents,
             ui_state: outcome.ui_state,
             watch_path: outcome.watch_path,
+            recovery_drafts: outcome.recovery_drafts,
         })
     })
     .await;
@@ -77,6 +78,9 @@ pub async fn open_markdown(
             if let Some(watch_path) = next_state.watch_path {
                 state.workspace_watch_path.set(Some(watch_path));
             }
+            if let Some(recovery_drafts) = next_state.recovery_drafts {
+                state.recovery_drafts.set(recovery_drafts);
+            }
         }
         Ok(Err(error)) => {
             state
@@ -97,6 +101,7 @@ struct OpenMarkdownStateUpdate {
     tab_contents: papyro_core::TabContentsMap,
     ui_state: Option<papyro_core::UiState>,
     watch_path: Option<PathBuf>,
+    recovery_drafts: Option<Vec<papyro_core::models::RecoveryDraft>>,
 }
 
 pub fn save_active_note(

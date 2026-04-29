@@ -1,7 +1,7 @@
 use crate::actions::AppAction;
 use crate::assets::save_pasted_image_asset;
 use crate::effects;
-use crate::handlers::{file_ops, notes, search, tags, workspace};
+use crate::handlers::{file_ops, notes, recovery, search, tags, workspace};
 use crate::open_requests::MarkdownOpenRequest;
 use crate::perf::{
     perf_timer, tab_revision_and_bytes, trace_app_dispatch, trace_chrome_toggle_sidebar,
@@ -186,6 +186,26 @@ impl AppDispatcher {
             }
             AppAction::CloseTab(action) => {
                 close_tab(self.shell, self.state, action.tab_id);
+            }
+            AppAction::RestoreRecoveryDraft(action) => {
+                recovery::restore_recovery_draft(
+                    self.storage.clone(),
+                    self.state.file_state,
+                    self.state.editor_tabs,
+                    self.state.tab_contents,
+                    self.state.recovery_drafts,
+                    self.state.status_message,
+                    action.note_id,
+                );
+            }
+            AppAction::DiscardRecoveryDraft(action) => {
+                recovery::discard_recovery_draft(
+                    self.storage.clone(),
+                    self.state.file_state,
+                    self.state.recovery_drafts,
+                    self.state.status_message,
+                    action.note_id,
+                );
             }
             AppAction::ToggleOutline => {
                 let mut ui_state = self.state.ui_state;
@@ -389,6 +409,8 @@ impl AppDispatcher {
         let save_conflicted_active_note_as = self.clone();
         let save_tab = self.clone();
         let close_tab = self.clone();
+        let restore_recovery_draft = self.clone();
+        let discard_recovery_draft = self.clone();
         let toggle_outline = self.clone();
         let toggle_sidebar = self.clone();
         let toggle_theme = self.clone();
@@ -460,6 +482,12 @@ impl AppDispatcher {
             }),
             close_tab: EventHandler::new(move |tab_id| {
                 close_tab.dispatch(AppAction::close_tab(tab_id));
+            }),
+            restore_recovery_draft: EventHandler::new(move |note_id| {
+                restore_recovery_draft.dispatch(AppAction::restore_recovery_draft(note_id));
+            }),
+            discard_recovery_draft: EventHandler::new(move |note_id| {
+                discard_recovery_draft.dispatch(AppAction::discard_recovery_draft(note_id));
             }),
             toggle_outline: EventHandler::new(move |_| {
                 toggle_outline.dispatch(AppAction::ToggleOutline);

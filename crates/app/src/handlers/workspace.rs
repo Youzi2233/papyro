@@ -56,6 +56,7 @@ pub async fn open_workspace_path(
             state.tab_contents.set(applied.tab_contents);
             state.ui_state.set(applied.ui_state);
             state.workspace_search.write().clear();
+            state.recovery_drafts.set(applied.recovery_drafts);
             state.status_message.set(Some(applied.status_message));
             state.workspace_watch_path.set(Some(path));
         }

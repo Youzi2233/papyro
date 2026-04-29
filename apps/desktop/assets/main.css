@@ -298,6 +298,18 @@ button { border: 0; cursor: pointer; background: transparent; }
     border-color: var(--mn-accent-strong);
 }
 
+.mn-button.danger {
+    border-color: var(--mn-accent-dim);
+    color: var(--mn-accent);
+}
+
+.mn-button.danger:hover,
+.mn-button.danger.active {
+    background: var(--mn-accent-dim);
+    border-color: var(--mn-accent-dim);
+    color: var(--mn-accent-strong);
+}
+
 .mn-button:disabled {
     opacity: 0.4;
     cursor: not-allowed;

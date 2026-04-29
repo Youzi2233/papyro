@@ -1,6 +1,6 @@
 use papyro_core::models::{
-    AppSettings, DocumentStats, EditorTab, FileNode, FileNodeKind, SaveStatus, Theme, ViewMode,
-    WorkspaceSettingsOverrides,
+    AppSettings, DocumentStats, EditorTab, FileNode, FileNodeKind, RecoveryDraft, SaveStatus,
+    Theme, ViewMode, WorkspaceSettingsOverrides,
 };
 use papyro_core::{
     DocumentSnapshot, EditorTabs, FileState, SearchField, SearchHighlight, SearchMatch,
@@ -81,6 +81,20 @@ pub struct WorkspaceSearchViewModel {
     pub results: Vec<SearchResultRowViewModel>,
     pub is_loading: bool,
     pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct RecoveryDraftsViewModel {
+    pub drafts: Vec<RecoveryDraftItemViewModel>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RecoveryDraftItemViewModel {
+    pub note_id: String,
+    pub title: String,
+    pub relative_path_label: String,
+    pub preview: String,
+    pub updated_at: i64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -460,6 +474,35 @@ impl SettingsViewModel {
             sidebar_width: ui_state.settings.sidebar_width,
         }
     }
+}
+
+impl RecoveryDraftsViewModel {
+    pub fn from_drafts(drafts: &[RecoveryDraft]) -> Self {
+        let mut drafts = drafts
+            .iter()
+            .map(|draft| RecoveryDraftItemViewModel {
+                note_id: draft.note_id.clone(),
+                title: draft.title.clone(),
+                relative_path_label: draft.relative_path.display().to_string(),
+                preview: recovery_preview(&draft.content),
+                updated_at: draft.updated_at,
+            })
+            .collect::<Vec<_>>();
+        drafts.sort_by(|left, right| right.updated_at.cmp(&left.updated_at));
+        Self { drafts }
+    }
+
+    pub fn has_drafts(&self) -> bool {
+        !self.drafts.is_empty()
+    }
+}
+
+fn recovery_preview(content: &str) -> String {
+    content
+        .lines()
+        .find(|line| !line.trim().is_empty())
+        .map(|line| line.trim().chars().take(96).collect())
+        .unwrap_or_else(|| "Empty draft".to_string())
 }
 
 impl EditorSurfaceViewModel {
@@ -1127,6 +1170,37 @@ mod tests {
         fixture.ui_state.settings.auto_link_paste = false;
 
         assert_eq!(before, SettingsViewModel::from_ui_state(&fixture.ui_state));
+    }
+
+    #[test]
+    fn recovery_drafts_view_model_sorts_and_previews_drafts() {
+        let drafts = vec![
+            RecoveryDraft {
+                workspace_id: "workspace".to_string(),
+                note_id: "old".to_string(),
+                relative_path: PathBuf::from("notes/old.md"),
+                title: "Old".to_string(),
+                content: "\n\n# Old draft".to_string(),
+                revision: 1,
+                updated_at: 10,
+            },
+            RecoveryDraft {
+                workspace_id: "workspace".to_string(),
+                note_id: "new".to_string(),
+                relative_path: PathBuf::from("notes/new.md"),
+                title: "New".to_string(),
+                content: "# New draft\n\nBody".to_string(),
+                revision: 2,
+                updated_at: 20,
+            },
+        ];
+
+        let model = RecoveryDraftsViewModel::from_drafts(&drafts);
+
+        assert!(model.has_drafts());
+        assert_eq!(model.drafts[0].note_id, "new");
+        assert_eq!(model.drafts[0].preview, "# New draft");
+        assert_eq!(model.drafts[1].preview, "# Old draft");
     }
 
     #[test]

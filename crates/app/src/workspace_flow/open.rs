@@ -55,6 +55,9 @@ where
     let watch_path = pending_bootstrap
         .as_ref()
         .map(|_| open_workspace.path.clone());
+    let recovery_drafts = pending_bootstrap
+        .as_ref()
+        .map(|bootstrap| bootstrap.recovery_drafts.clone());
     let ui_state = pending_bootstrap
         .map(|bootstrap| {
             apply_recent_workspace_bootstrap(file_state, editor_tabs, tab_contents, bootstrap)
@@ -66,6 +69,7 @@ where
     Ok(OpenMarkdownOutcome {
         ui_state,
         watch_path,
+        recovery_drafts,
     })
 }
 
@@ -266,6 +270,7 @@ pub(crate) fn apply_conflict_reload(
 pub(crate) struct OpenMarkdownOutcome {
     pub ui_state: Option<UiState>,
     pub watch_path: Option<PathBuf>,
+    pub recovery_drafts: Option<Vec<papyro_core::models::RecoveryDraft>>,
 }
 
 fn workspace_for_path(file_state: &FileState, path: &Path) -> Result<Workspace> {

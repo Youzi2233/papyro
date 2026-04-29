@@ -157,6 +157,8 @@ pub struct AppCommands {
     pub save_conflicted_active_note_as: EventHandler<()>,
     pub save_tab: EventHandler<String>,
     pub close_tab: EventHandler<String>,
+    pub restore_recovery_draft: EventHandler<String>,
+    pub discard_recovery_draft: EventHandler<String>,
     pub toggle_outline: EventHandler<()>,
     pub toggle_sidebar: EventHandler<ChromeTrigger>,
     pub toggle_theme: EventHandler<()>,

@@ -7,8 +7,8 @@ use papyro_platform::PlatformApi;
 use papyro_ui::context::{AppContext, EditorRuntimeCommandPort, EditorServices};
 use papyro_ui::view_model::{
     EditorPaneViewModel, EditorSurfaceViewModel, EditorViewModel, FileTreeViewModel,
-    QuickOpenItemViewModel, SettingsFormViewModel, SettingsWorkspaceViewModel, SidebarViewModel,
-    WorkspaceSearchViewModel, WorkspaceViewModel,
+    QuickOpenItemViewModel, RecoveryDraftsViewModel, SettingsFormViewModel,
+    SettingsWorkspaceViewModel, SidebarViewModel, WorkspaceSearchViewModel, WorkspaceViewModel,
 };
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -90,6 +90,8 @@ pub fn use_app_runtime(
     let workspace_search_model = use_memo(move || {
         WorkspaceSearchViewModel::from_search_state(&state.workspace_search.read())
     });
+    let recovery_model =
+        use_memo(move || RecoveryDraftsViewModel::from_drafts(&state.recovery_drafts.read()));
     let editor_model = use_memo(move || {
         EditorViewModel::from_editor_state(
             &state.editor_tabs.read(),
@@ -117,6 +119,7 @@ pub fn use_app_runtime(
         tab_contents: state.tab_contents,
         ui_state: state.ui_state,
         workspace_search: state.workspace_search,
+        recovery_drafts: state.recovery_drafts,
         status_message: state.status_message,
         pending_close_tab: state.pending_close_tab,
         pending_delete_path: state.pending_delete_path,
@@ -135,6 +138,7 @@ pub fn use_app_runtime(
         file_tree_model,
         quick_open_items,
         workspace_search_model,
+        recovery_model,
         editor_model,
         editor_pane_model,
         editor_surface_model,

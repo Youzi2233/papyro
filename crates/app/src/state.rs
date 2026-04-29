@@ -1,6 +1,7 @@
 use dioxus::prelude::*;
 use papyro_core::{
-    EditorTabs, FileState, TabContentsMap, UiState, WorkspaceBootstrap, WorkspaceSearchState,
+    models::RecoveryDraft, EditorTabs, FileState, TabContentsMap, UiState, WorkspaceBootstrap,
+    WorkspaceSearchState,
 };
 use papyro_ui::commands::EditorRuntimeCommandQueue;
 use std::path::PathBuf;
@@ -14,6 +15,7 @@ pub(crate) struct RuntimeState {
     pub tab_contents: Signal<TabContentsMap>,
     pub ui_state: Signal<UiState>,
     pub workspace_search: Signal<WorkspaceSearchState>,
+    pub recovery_drafts: Signal<Vec<RecoveryDraft>>,
     pub status_message: Signal<Option<String>>,
     pub workspace_watch_path: Signal<Option<PathBuf>>,
     pub pending_close_tab: Signal<Option<String>>,
@@ -29,6 +31,7 @@ pub(crate) fn use_runtime_state(bootstrap: WorkspaceBootstrap) -> RuntimeState {
     let initial_workspace_overrides = bootstrap.workspace_settings;
     let initial_status_message = bootstrap.status_message;
     let initial_workspace_root = bootstrap.workspace_root;
+    let initial_recovery_drafts = bootstrap.recovery_drafts;
 
     RuntimeState {
         file_state: use_signal(|| initial_file_state),
@@ -41,6 +44,7 @@ pub(crate) fn use_runtime_state(bootstrap: WorkspaceBootstrap) -> RuntimeState {
             )
         }),
         workspace_search: use_signal(WorkspaceSearchState::default),
+        recovery_drafts: use_signal(|| initial_recovery_drafts),
         status_message: use_signal(|| Some(initial_status_message)),
         workspace_watch_path: use_signal(|| initial_workspace_root),
         pending_close_tab: use_signal(|| None::<String>),

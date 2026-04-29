@@ -1,5 +1,6 @@
 use super::utils::{current_workspace, tree_contains_path};
 use anyhow::Result;
+use papyro_core::models::RecoveryDraft;
 use papyro_core::storage::{NoteStorage, WorkspaceBootstrap};
 use papyro_core::{EditorTabs, FileState, TabContentsMap, UiState};
 use std::path::Path;
@@ -11,6 +12,7 @@ pub(crate) struct AppliedBootstrap {
     pub tab_contents: TabContentsMap,
     pub ui_state: UiState,
     pub status_message: String,
+    pub recovery_drafts: Vec<RecoveryDraft>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -57,6 +59,7 @@ pub(crate) fn apply_workspace_bootstrap(bootstrap: WorkspaceBootstrap) -> Applie
             bootstrap.workspace_settings,
         ),
         status_message: detail,
+        recovery_drafts: bootstrap.recovery_drafts,
     }
 }
 

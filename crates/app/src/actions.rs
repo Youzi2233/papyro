@@ -24,6 +24,8 @@ pub enum AppAction {
     SaveConflictedActiveNoteAs,
     SaveTab(SaveTab),
     CloseTab(CloseTab),
+    RestoreRecoveryDraft(RecoveryDraftAction),
+    DiscardRecoveryDraft(RecoveryDraftAction),
     ToggleOutline,
     ToggleSidebar(ChromeTrigger),
     ToggleTheme,
@@ -91,6 +93,11 @@ pub struct SaveTab {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CloseTab {
     pub tab_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RecoveryDraftAction {
+    pub note_id: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -187,6 +194,8 @@ impl AppAction {
             Self::SaveConflictedActiveNoteAs => "save_conflicted_active_note_as",
             Self::SaveTab(_) => "save_tab",
             Self::CloseTab(_) => "close_tab",
+            Self::RestoreRecoveryDraft(_) => "restore_recovery_draft",
+            Self::DiscardRecoveryDraft(_) => "discard_recovery_draft",
             Self::ToggleOutline => "toggle_outline",
             Self::ToggleSidebar(_) => "toggle_sidebar",
             Self::ToggleTheme => "toggle_theme",
@@ -238,6 +247,7 @@ impl AppAction {
             | Self::SaveConflictedActiveNoteAs
             | Self::SaveTab(_) => "editor.save",
             Self::CloseTab(_) => "editor.tab_close",
+            Self::RestoreRecoveryDraft(_) | Self::DiscardRecoveryDraft(_) => "editor.recovery",
             Self::ToggleOutline => "chrome.outline",
             Self::ToggleSidebar(_) | Self::SetSidebarWidth(_) => "chrome.sidebar",
             Self::ToggleTheme => "chrome.theme",
@@ -301,6 +311,14 @@ impl AppAction {
 
     pub fn close_tab(tab_id: String) -> Self {
         Self::CloseTab(CloseTab { tab_id })
+    }
+
+    pub fn restore_recovery_draft(note_id: String) -> Self {
+        Self::RestoreRecoveryDraft(RecoveryDraftAction { note_id })
+    }
+
+    pub fn discard_recovery_draft(note_id: String) -> Self {
+        Self::DiscardRecoveryDraft(RecoveryDraftAction { note_id })
     }
 
     pub fn toggle_sidebar(trigger: ChromeTrigger) -> Self {

@@ -3,6 +3,7 @@ pub mod editor;
 pub mod header;
 pub mod primitives;
 pub mod quick_open;
+pub mod recovery;
 pub mod search;
 pub mod settings;
 pub mod sidebar;

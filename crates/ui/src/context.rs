@@ -1,11 +1,12 @@
 use crate::commands::{AppCommands, EditorRuntimeCommand, EditorRuntimeCommandQueue};
 use crate::view_model::{
     EditorPaneViewModel, EditorSurfaceViewModel, EditorViewModel, FileTreeViewModel,
-    QuickOpenItemViewModel, SettingsFormViewModel, SettingsWorkspaceViewModel, SidebarViewModel,
-    WorkspaceSearchViewModel, WorkspaceViewModel,
+    QuickOpenItemViewModel, RecoveryDraftsViewModel, SettingsFormViewModel,
+    SettingsWorkspaceViewModel, SidebarViewModel, WorkspaceSearchViewModel, WorkspaceViewModel,
 };
 use dioxus::prelude::*;
 use papyro_core::{
+    models::RecoveryDraft,
     models::{DocumentStats, Theme},
     EditorTabs, FileState, TabContentsMap, UiState, WorkspaceSearchState,
 };
@@ -74,6 +75,7 @@ pub struct AppContext {
     pub tab_contents: Signal<TabContentsMap>,
     pub ui_state: Signal<UiState>,
     pub workspace_search: Signal<WorkspaceSearchState>,
+    pub recovery_drafts: Signal<Vec<RecoveryDraft>>,
     pub status_message: Signal<Option<String>>,
     pub pending_close_tab: Signal<Option<String>>,
     pub pending_delete_path: Signal<Option<PathBuf>>,
@@ -87,6 +89,7 @@ pub struct AppContext {
     pub file_tree_model: Memo<FileTreeViewModel>,
     pub quick_open_items: Memo<Vec<QuickOpenItemViewModel>>,
     pub workspace_search_model: Memo<WorkspaceSearchViewModel>,
+    pub recovery_model: Memo<RecoveryDraftsViewModel>,
     pub editor_model: Memo<EditorViewModel>,
     pub editor_pane_model: Memo<EditorPaneViewModel>,
     pub editor_surface_model: Memo<EditorSurfaceViewModel>,
