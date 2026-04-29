@@ -134,6 +134,7 @@ const blockHintsField = StateField.define({
     for (const effect of transaction.effects) {
       if (effect.is(setBlockHintsEffect)) return effect.value;
     }
+    if (transaction.docChanged) return null;
     return hints;
   },
 });
@@ -513,6 +514,58 @@ function rangeBlockForLine(blocks, lineNumber) {
   return blocks.find(
     (block) => lineNumber >= block.fromLine && lineNumber <= block.toLine,
   );
+}
+
+function usableBlockHints(hints) {
+  return Boolean(
+    hints &&
+    hints.fallback?.type !== "source_only" &&
+    Array.isArray(hints.blocks),
+  );
+}
+
+function sourceOnlyBlockHints(hints) {
+  return hints?.fallback?.type === "source_only";
+}
+
+function blockHintRange(block) {
+  const fromLine = Number(block?.start_line);
+  const toLine = Number(block?.end_line);
+  if (!Number.isSafeInteger(fromLine) || !Number.isSafeInteger(toLine)) return null;
+  if (fromLine < 1 || toLine < fromLine) return null;
+
+  return {
+    fromLine,
+    toLine,
+    kind: block.kind ?? { type: "paragraph" },
+  };
+}
+
+function blockHintRanges(hints) {
+  if (!usableBlockHints(hints)) return [];
+
+  return hints.blocks
+    .map(blockHintRange)
+    .filter(Boolean);
+}
+
+function hintRangesByKind(hintRanges, kind) {
+  return hintRanges.filter((block) => block.kind?.type === kind);
+}
+
+function codeBlocksFromHints(hintRanges) {
+  return hintRangesByKind(hintRanges, "fenced_code").map((block) => ({
+    fromLine: block.fromLine,
+    toLine: block.toLine,
+    info: block.kind?.language ?? "",
+  }));
+}
+
+function tableBlocksFromHints(hintRanges) {
+  return hintRangesByKind(hintRanges, "table").map((block) => ({
+    fromLine: block.fromLine,
+    toLine: block.toLine,
+  }));
 }
 
 function frontMatterContainsLine(block, lineNumber) {
@@ -926,12 +979,61 @@ function addTableDecorations(decorations, line, block) {
   decorations.push(Decoration.line({ class: classes }).range(line.from));
 }
 
+function deriveHybridBlockContext(state) {
+  const hints = state.field(blockHintsField, false);
+  if (sourceOnlyBlockHints(hints)) {
+    return {
+      hintRanges: [],
+      usesBlockHints: true,
+      codeBlocks: [],
+      frontMatterBlock: null,
+      mathBlocks: [],
+      tableBlocks: [],
+    };
+  }
+
+  const hintRanges = blockHintRanges(hints);
+  const usesBlockHints = hintRanges.length > 0;
+  const lines = documentLineTexts(state.doc);
+
+  return {
+    hintRanges,
+    usesBlockHints,
+    codeBlocks: usesBlockHints
+      ? codeBlocksFromHints(hintRanges)
+      : collectMarkdownCodeBlocks(lines),
+    frontMatterBlock: collectMarkdownFrontMatterBlock(lines),
+    mathBlocks: collectMarkdownMathBlocks(lines),
+    tableBlocks: usesBlockHints
+      ? tableBlocksFromHints(hintRanges)
+      : collectMarkdownTableBlocks(lines),
+  };
+}
+
+function headingDecorationFromHint(blockHint, lineText) {
+  if (blockHint?.kind?.type !== "heading") return null;
+
+  const heading = parseMarkdownHeadingLine(lineText);
+  if (!heading) return null;
+
+  return {
+    ...heading,
+    level: blockHint.kind.level ?? heading.level,
+  };
+}
+
+function headingDecorationForLine(context, line) {
+  const hint = rangeBlockForLine(context.hintRanges, line.number);
+  if (context.usesBlockHints) {
+    return headingDecorationFromHint(hint, line.text);
+  }
+
+  return parseMarkdownHeadingLine(line.text);
+}
+
 function buildHybridMarkdownDecorations(
   view,
-  codeBlocks,
-  frontMatterBlock,
-  mathBlocks,
-  tableBlocks,
+  context,
 ) {
   if (view.state.field(viewModeField, false) !== "hybrid") {
     return Decoration.none;
@@ -949,18 +1051,18 @@ function buildHybridMarkdownDecorations(
       if (line.number === lastLineNumber) continue;
       lastLineNumber = line.number;
 
-      if (frontMatterContainsLine(frontMatterBlock, line.number)) {
+      if (frontMatterContainsLine(context.frontMatterBlock, line.number)) {
         if (!selectionTouchesLineRange(
           view.state,
-          frontMatterBlock.fromLine,
-          frontMatterBlock.toLine,
+          context.frontMatterBlock.fromLine,
+          context.frontMatterBlock.toLine,
         )) {
-          addFrontMatterDecorations(decorations, line, frontMatterBlock);
+          addFrontMatterDecorations(decorations, line, context.frontMatterBlock);
         }
         continue;
       }
 
-      const codeBlock = rangeBlockForLine(codeBlocks, line.number);
+      const codeBlock = rangeBlockForLine(context.codeBlocks, line.number);
       if (codeBlock) {
         if (!selectionTouchesLineRange(
           view.state,
@@ -972,7 +1074,7 @@ function buildHybridMarkdownDecorations(
         continue;
       }
 
-      const mathBlock = rangeBlockForLine(mathBlocks, line.number);
+      const mathBlock = rangeBlockForLine(context.mathBlocks, line.number);
       if (mathBlock) {
         if (!selectionTouchesLineRange(
           view.state,
@@ -985,7 +1087,7 @@ function buildHybridMarkdownDecorations(
         continue;
       }
 
-      const tableBlock = rangeBlockForLine(tableBlocks, line.number);
+      const tableBlock = rangeBlockForLine(context.tableBlocks, line.number);
       if (tableBlock) {
         if (!selectionTouchesLineRange(
           view.state,
@@ -999,7 +1101,7 @@ function buildHybridMarkdownDecorations(
 
       if (selectionTouchesLine(view.state, line)) continue;
 
-      const heading = parseMarkdownHeadingLine(line.text);
+      const heading = headingDecorationForLine(context, line);
       if (!heading) {
         if (addHorizontalRuleDecorations(decorations, line)) continue;
         if (addFootnoteDefinitionDecorations(decorations, line)) continue;
@@ -1035,43 +1137,37 @@ function viewModeChanged(update) {
   );
 }
 
+function blockHintsChanged(update) {
+  return update.transactions.some((transaction) =>
+    transaction.effects.some((effect) => effect.is(setBlockHintsEffect)),
+  );
+}
+
 const hybridHeadingPlugin = ViewPlugin.fromClass(
   class {
     constructor(view) {
-      const lines = documentLineTexts(view.state.doc);
-      this.codeBlocks = collectMarkdownCodeBlocks(lines);
-      this.frontMatterBlock = collectMarkdownFrontMatterBlock(lines);
-      this.mathBlocks = collectMarkdownMathBlocks(lines);
-      this.tableBlocks = collectMarkdownTableBlocks(lines);
+      this.blockContext = deriveHybridBlockContext(view.state);
       this.decorations = buildHybridMarkdownDecorations(
         view,
-        this.codeBlocks,
-        this.frontMatterBlock,
-        this.mathBlocks,
-        this.tableBlocks,
+        this.blockContext,
       );
     }
 
     update(update) {
-      if (update.docChanged) {
-        const lines = documentLineTexts(update.state.doc);
-        this.codeBlocks = collectMarkdownCodeBlocks(lines);
-        this.frontMatterBlock = collectMarkdownFrontMatterBlock(lines);
-        this.mathBlocks = collectMarkdownMathBlocks(lines);
-        this.tableBlocks = collectMarkdownTableBlocks(lines);
+      const hintsChanged = blockHintsChanged(update);
+      if (update.docChanged || hintsChanged) {
+        this.blockContext = deriveHybridBlockContext(update.state);
       }
       if (
         update.docChanged ||
         update.selectionSet ||
         update.viewportChanged ||
-        viewModeChanged(update)
+        viewModeChanged(update) ||
+        hintsChanged
       ) {
         this.decorations = buildHybridMarkdownDecorations(
           update.view,
-          this.codeBlocks,
-          this.frontMatterBlock,
-          this.mathBlocks,
-          this.tableBlocks,
+          this.blockContext,
         );
       }
     }
