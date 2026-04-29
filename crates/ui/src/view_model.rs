@@ -33,6 +33,23 @@ pub struct WorkspaceViewModel {
     pub recent_count: usize,
 }
 
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct SidebarViewModel {
+    pub name: Option<String>,
+    pub path: Option<PathBuf>,
+    pub selected_name: Option<String>,
+    pub selected_path: Option<PathBuf>,
+    pub has_selection: bool,
+    pub selected_is_directory: bool,
+    pub selected_delete_pending: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct SettingsWorkspaceViewModel {
+    pub has_workspace: bool,
+    pub tags: Vec<TagListItem>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RecentFileListItem {
     pub title: String,
@@ -238,6 +255,49 @@ impl WorkspaceViewModel {
                 .is_some_and(|path| Some(path) == pending_delete_path),
             note_count: count_notes(&file_state.file_tree),
             recent_count: file_state.recent_files.len(),
+        }
+    }
+}
+
+impl SidebarViewModel {
+    pub fn from_file_state(file_state: &FileState, pending_delete_path: Option<&Path>) -> Self {
+        let selected_node = file_state.selected_node();
+        let selected_path = selected_node.as_ref().map(|node| node.path.as_path());
+
+        Self {
+            name: file_state
+                .current_workspace
+                .as_ref()
+                .map(|workspace| workspace.name.clone()),
+            path: file_state
+                .current_workspace
+                .as_ref()
+                .map(|workspace| workspace.path.clone()),
+            selected_name: selected_node.as_ref().map(|node| node.name.clone()),
+            selected_path: selected_node.as_ref().map(|node| node.path.clone()),
+            has_selection: selected_node.is_some(),
+            selected_is_directory: selected_node
+                .as_ref()
+                .is_some_and(|node| matches!(node.kind, FileNodeKind::Directory { .. })),
+            selected_delete_pending: selected_path
+                .is_some_and(|path| Some(path) == pending_delete_path),
+        }
+    }
+}
+
+impl SettingsWorkspaceViewModel {
+    pub fn from_file_state(file_state: &FileState) -> Self {
+        Self {
+            has_workspace: file_state.current_workspace.is_some(),
+            tags: file_state
+                .tags
+                .iter()
+                .map(|tag| TagListItem {
+                    id: tag.id.clone(),
+                    name: tag.name.clone(),
+                    color: tag.color.clone(),
+                })
+                .collect(),
         }
     }
 }
@@ -658,6 +718,44 @@ mod tests {
         assert_eq!(
             before,
             WorkspaceViewModel::from_file_state(&fixture.file_state, None)
+        );
+    }
+
+    #[test]
+    fn sidebar_view_model_ignores_workspace_lists() {
+        let mut fixture = view_model_fixture();
+        let before = SidebarViewModel::from_file_state(&fixture.file_state, None);
+
+        fixture.file_state.recent_files.clear();
+        fixture.file_state.trashed_notes.clear();
+        fixture.file_state.tags.clear();
+
+        assert_eq!(
+            before,
+            SidebarViewModel::from_file_state(&fixture.file_state, None)
+        );
+    }
+
+    #[test]
+    fn settings_workspace_view_model_tracks_tags_and_workspace_presence() {
+        let fixture = view_model_fixture();
+        let model = SettingsWorkspaceViewModel::from_file_state(&fixture.file_state);
+
+        assert!(model.has_workspace);
+        assert_eq!(
+            model.tags,
+            vec![
+                TagListItem {
+                    id: "rust".to_string(),
+                    name: "Rust".to_string(),
+                    color: "#DEA584".to_string(),
+                },
+                TagListItem {
+                    id: "search".to_string(),
+                    name: "Search".to_string(),
+                    color: "#2563EB".to_string(),
+                },
+            ]
         );
     }
 

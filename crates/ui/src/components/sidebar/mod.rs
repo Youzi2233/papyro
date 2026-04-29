@@ -23,7 +23,7 @@ pub fn Sidebar() -> Element {
     let app = use_app_context();
     let ui_state = app.ui_state;
     let commands = app.commands;
-    let workspace_model = app.workspace_model.read().clone();
+    let sidebar_model = app.sidebar_model.read().clone();
     let resize_commands = commands.clone();
 
     let mut create_name = use_signal(String::new);
@@ -39,14 +39,11 @@ pub fn Sidebar() -> Element {
     } else {
         "mn-sidebar"
     };
-    let has_workspace = workspace_model.name.is_some();
-    let selected_target = workspace_model
-        .selected_path
-        .clone()
-        .map(|path| FileTarget {
-            path,
-            name: workspace_model.selected_name.clone().unwrap_or_default(),
-        });
+    let has_workspace = sidebar_model.name.is_some();
+    let selected_target = sidebar_model.selected_path.clone().map(|path| FileTarget {
+        path,
+        name: sidebar_model.selected_name.clone().unwrap_or_default(),
+    });
 
     rsx! {
         aside {
@@ -57,7 +54,7 @@ pub fn Sidebar() -> Element {
             div { class: "mn-sidebar-header",
                 div { class: "mn-sidebar-workspace",
                     div {
-                        if let (Some(name), Some(path)) = (&workspace_model.name, &workspace_model.path) {
+                        if let (Some(name), Some(path)) = (&sidebar_model.name, &sidebar_model.path) {
                             p { class: "mn-sidebar-workspace-name", "{name}" }
                             p { class: "mn-sidebar-workspace-path", "{path.display()}" }
                         } else {
@@ -143,10 +140,10 @@ pub fn Sidebar() -> Element {
             FileTree { sort_mode: tree_sort() }
 
             // ── Context-sensitive ops for selected item ──
-            if workspace_model.has_selection {
+            if sidebar_model.has_selection {
                 div { class: "mn-sidebar-ops",
                     div { class: "mn-sidebar-ops-header",
-                        if workspace_model.selected_is_directory {
+                        if sidebar_model.selected_is_directory {
                             span { "Folder" }
                         } else {
                             span { "Note" }
@@ -162,14 +159,14 @@ pub fn Sidebar() -> Element {
                             }
                             button {
                                 class: "mn-button danger",
-                                title: if workspace_model.selected_delete_pending { "Confirm delete" } else { "Delete selected" },
+                                title: if sidebar_model.selected_delete_pending { "Confirm delete" } else { "Delete selected" },
                                 onclick: move |_| commands.delete_selected.call(()),
-                                if workspace_model.selected_delete_pending { "Confirm" } else { "Delete" }
+                                if sidebar_model.selected_delete_pending { "Confirm" } else { "Delete" }
                             }
                         }
                     }
 
-                    if workspace_model.selected_is_directory {
+                    if sidebar_model.selected_is_directory {
                         button {
                             class: "mn-button",
                             style: "width:100%; justify-content:center",

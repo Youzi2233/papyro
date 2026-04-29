@@ -5,7 +5,8 @@ use papyro_core::{NoteStorage, WorkspaceBootstrap};
 use papyro_platform::PlatformApi;
 use papyro_ui::context::{AppContext, EditorServices};
 use papyro_ui::view_model::{
-    EditorPaneViewModel, EditorSurfaceViewModel, EditorViewModel, WorkspaceViewModel,
+    EditorPaneViewModel, EditorSurfaceViewModel, EditorViewModel, SettingsWorkspaceViewModel,
+    SidebarViewModel, WorkspaceViewModel,
 };
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -62,6 +63,14 @@ pub fn use_app_runtime(
             state.pending_delete_path.read().as_deref(),
         )
     });
+    let sidebar_model = use_memo(move || {
+        SidebarViewModel::from_file_state(
+            &state.file_state.read(),
+            state.pending_delete_path.read().as_deref(),
+        )
+    });
+    let settings_workspace_model =
+        use_memo(move || SettingsWorkspaceViewModel::from_file_state(&state.file_state.read()));
     let editor_model = use_memo(move || {
         EditorViewModel::from_editor_state(
             &state.editor_tabs.read(),
@@ -99,6 +108,8 @@ pub fn use_app_runtime(
                 papyro_editor::renderer::render_markdown_html_with_highlighting,
         },
         workspace_model,
+        sidebar_model,
+        settings_workspace_model,
         editor_model,
         editor_pane_model,
         editor_surface_model,
