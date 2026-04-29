@@ -1090,6 +1090,9 @@ function buildHybridMarkdownDecorations(
   if (view.state.field(viewModeField, false) !== "hybrid") {
     return Decoration.none;
   }
+  if (viewIsComposing(view)) {
+    return Decoration.none;
+  }
 
   const decorations = [];
   const emittedMathBlocks = new Set();
@@ -1213,6 +1216,7 @@ const hybridHeadingPlugin = ViewPlugin.fromClass(
   class {
     constructor(view) {
       this.blockContext = deriveHybridBlockContext(view.state);
+      this.composing = viewIsComposing(view);
       this.decorations = buildHybridMarkdownDecorations(
         view,
         this.blockContext,
@@ -1221,6 +1225,10 @@ const hybridHeadingPlugin = ViewPlugin.fromClass(
 
     update(update) {
       const hintsChanged = blockHintsChanged(update);
+      const nextComposing = viewIsComposing(update.view);
+      const composingChanged = nextComposing !== this.composing;
+      this.composing = nextComposing;
+
       if (update.docChanged || hintsChanged) {
         this.blockContext = deriveHybridBlockContext(update.state);
       }
@@ -1229,6 +1237,7 @@ const hybridHeadingPlugin = ViewPlugin.fromClass(
         update.selectionSet ||
         update.viewportChanged ||
         viewModeChanged(update) ||
+        composingChanged ||
         hintsChanged
       ) {
         this.decorations = buildHybridMarkdownDecorations(
