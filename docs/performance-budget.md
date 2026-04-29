@@ -27,6 +27,7 @@ The 5MB preview budget is for the degradation path, not full HTML rendering.
 | Tab switch | 80ms | The active editor host should become usable without rebuilding hidden hosts. |
 | Tab close | 80ms | UI close trigger; heavy cleanup should run after the interaction path. |
 | Input frame | 16ms | Preview, outline, and stats must not block keystroke handling. |
+| Workspace search | 500ms | Search over the 1000-note smoke workspace should stay off the UI thread and return the first 50 results. |
 
 Treat these as interaction budgets, not full async completion budgets. A command may
 continue work after the interaction if the writing surface stays responsive.
@@ -56,6 +57,7 @@ continue work after the interaction if the writing surface stays responsive.
 - `perf chrome resize sidebar`
 - `perf chrome toggle theme`
 - `perf chrome open modal`
+- `perf workspace search`
 - `perf tab close trigger`
 - `perf runtime close_tab handler`
 
@@ -122,7 +124,8 @@ not silently rot.
 5. Collapse and expand the sidebar with `Ctrl+\`.
 6. Resize the sidebar and release the drag handle.
 7. Open Settings, Quick Open, Command Palette, and Workspace Search.
-8. Close the active tab after editing content.
+8. Search a 1000-note workspace for a common term from Workspace Search.
+9. Close the active tab after editing content.
 
 Mode changes should be checked as a chain:
 

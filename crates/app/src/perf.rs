@@ -192,6 +192,30 @@ pub(crate) fn trace_chrome_toggle_theme(from: &Theme, to: &Theme, started_at: Op
     }
 }
 
+pub(crate) fn trace_workspace_search(
+    query: &str,
+    limit: usize,
+    result_count: Option<usize>,
+    started_at: Option<Instant>,
+) {
+    if let Some(started_at) = started_at {
+        tracing::info!(
+            window_id = DEFAULT_WINDOW_ID,
+            interaction_path = "workspace.search",
+            tab_id = trace_tab_id(None),
+            revision = trace_revision(None),
+            view_mode = "none",
+            content_bytes = trace_content_bytes(None),
+            trigger_reason = "search_use_case",
+            query_bytes = query.len(),
+            limit,
+            result_count = trace_result_count(result_count),
+            elapsed_ms = started_at.elapsed().as_millis(),
+            "perf workspace search"
+        );
+    }
+}
+
 pub(crate) fn trace_editor_view_mode_change(
     trigger: &str,
     from: &ViewMode,
@@ -235,6 +259,10 @@ fn trace_content_bytes(content_bytes: Option<usize>) -> i64 {
     content_bytes.map(|bytes| bytes as i64).unwrap_or(-1)
 }
 
+fn trace_result_count(result_count: Option<usize>) -> i64 {
+    result_count.map(|count| count as i64).unwrap_or(-1)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -271,6 +299,8 @@ mod tests {
         assert_eq!(trace_revision(None), -1);
         assert_eq!(trace_content_bytes(Some(1024)), 1024);
         assert_eq!(trace_content_bytes(None), -1);
+        assert_eq!(trace_result_count(Some(50)), 50);
+        assert_eq!(trace_result_count(None), -1);
     }
 
     #[test]

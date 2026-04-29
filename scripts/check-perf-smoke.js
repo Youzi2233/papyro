@@ -20,6 +20,7 @@ const TRACE_NAMES = [
   "perf chrome resize sidebar",
   "perf chrome toggle theme",
   "perf chrome open modal",
+  "perf workspace search",
   "perf tab close trigger",
   "perf runtime close_tab handler",
 ];
@@ -37,6 +38,7 @@ const REQUIRED_SMOKE_TRACES = [
   "perf chrome resize sidebar",
   "perf chrome toggle theme",
   "perf chrome open modal",
+  "perf workspace search",
   "perf tab close trigger",
   "perf runtime close_tab handler",
 ];
@@ -63,6 +65,7 @@ const STATIC_BUDGETS_MS = new Map([
   ["perf chrome resize sidebar", 50],
   ["perf chrome toggle theme", 50],
   ["perf chrome open modal", 50],
+  ["perf workspace search", 500],
   ["perf tab close trigger", 80],
   ["perf runtime close_tab handler", 80],
 ]);
@@ -340,6 +343,12 @@ function runSelfTest() {
     "took 801ms, budget 800ms",
   );
   assertSelfTestError(
+    validateRecords(parseRecords(selfTestSearchOverBudgetLog()), {
+      requireSmokeTraces: false,
+    }),
+    "took 501ms, budget 500ms",
+  );
+  assertSelfTestError(
     validateRecords(parseRecords(selfTestLargeLivePreviewLog()), {
       requireSmokeTraces: false,
     }),
@@ -396,6 +405,7 @@ function selfTestLog() {
     `INFO papyro_ui::perf: window_id="main" interaction_path="chrome.sidebar" tab_id="none" revision=-1 view_mode="none" content_bytes=-1 trigger_reason="drag_commit" start_width=280 end_width=320 delta_px=40 elapsed_ms=4 perf chrome resize sidebar`,
     `INFO papyro_ui::perf: window_id="main" interaction_path="chrome.theme" tab_id="none" revision=-1 view_mode="none" content_bytes=-1 trigger_reason="toggle_theme" from="light" to="dark" elapsed_ms=3 perf chrome toggle theme`,
     `INFO papyro_ui::perf: window_id="main" interaction_path="chrome.modal" tab_id="none" revision=-1 view_mode="none" content_bytes=-1 trigger_reason="shortcut" modal="settings" elapsed_ms=2 perf chrome open modal`,
+    `INFO papyro_app::perf: window_id="main" interaction_path="workspace.search" tab_id="none" revision=-1 view_mode="none" content_bytes=-1 trigger_reason="search_use_case" query_bytes=7 limit=50 result_count=12 elapsed_ms=250 perf workspace search`,
     `INFO papyro_ui::perf: ${baseFields} elapsed_ms=2 perf tab close trigger`,
     `INFO papyro_app::perf: ${baseFields} close_intent="clean" closed=true elapsed_ms=12 perf runtime close_tab handler`,
   ].join("\n");
@@ -411,6 +421,10 @@ function selfTestOverBudgetLog() {
 
 function selfTestSizedOpenOverBudgetLog() {
   return `INFO papyro_app::perf: window_id="main" interaction_path="editor.test" tab_id="tab-1mb" revision=1 view_mode="hybrid" content_bytes=1048576 trigger_reason="self_test" path="target/perf-fixtures/papyro-1mb.md" elapsed_ms=801 perf editor open markdown`;
+}
+
+function selfTestSearchOverBudgetLog() {
+  return `INFO papyro_app::perf: window_id="main" interaction_path="workspace.search" tab_id="none" revision=-1 view_mode="none" content_bytes=-1 trigger_reason="search_use_case" query_bytes=7 limit=50 result_count=12 elapsed_ms=501 perf workspace search`;
 }
 
 function selfTestLargeLivePreviewLog() {

@@ -1,3 +1,4 @@
+use crate::perf::{perf_timer, trace_workspace_search};
 use dioxus::prelude::*;
 use papyro_core::{FileState, NoteStorage, WorkspaceSearchQuery, WorkspaceSearchState};
 use std::sync::Arc;
@@ -25,13 +26,20 @@ pub fn search_workspace(
         return;
     };
 
+    let started_at = perf_timer();
     spawn(async move {
         let search_query = query.clone();
         let parsed_query = WorkspaceSearchQuery::from_input(&search_query, WORKSPACE_SEARCH_LIMIT);
+        let limit = parsed_query.limit;
         let result = tokio::task::spawn_blocking(move || {
             storage.search_workspace_with_query(&workspace, &parsed_query)
         })
         .await;
+        let result_count = match &result {
+            Ok(Ok(results)) => Some(results.len()),
+            _ => None,
+        };
+        trace_workspace_search(&search_query, limit, result_count, started_at);
 
         match result {
             Ok(Ok(results)) => {
