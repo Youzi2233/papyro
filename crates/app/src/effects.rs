@@ -1,6 +1,7 @@
 use crate::handlers::workspace;
 use crate::perf::{perf_timer, trace_editor_input_change};
 use crate::state::RuntimeState;
+use crate::status_messages::{save_failure_message, SaveFailureContext};
 use crate::workspace_flow::{
     apply_clean_open_tab_refresh, apply_save_error, apply_save_failure, apply_save_success,
     begin_clean_open_tab_refresh, begin_save_tab, read_clean_open_tab_refresh_from_storage,
@@ -115,9 +116,10 @@ fn apply_autosave_work_result(
         }
         Err(error) => {
             apply_flush_error(state, snapshot, &error);
-            state
-                .status_message
-                .set(Some(format!("Save failed: {error}")));
+            state.status_message.set(Some(save_failure_message(
+                SaveFailureContext::Normal,
+                &error,
+            )));
         }
     }
 }
@@ -252,8 +254,9 @@ pub(crate) async fn flush_dirty_tabs(
             }
             Ok(Err(error)) => {
                 apply_flush_error(state, &snapshot, &error);
-                state.status_message.set(Some(format!(
-                    "Save failed before switching workspace: {error}"
+                state.status_message.set(Some(save_failure_message(
+                    SaveFailureContext::WorkspaceSwitch,
+                    &error,
                 )));
             }
             Err(error) => {
@@ -285,9 +288,10 @@ pub(crate) fn flush_dirty_tabs_blocking(
             }
             Err(error) => {
                 apply_flush_error(state, &snapshot, &error);
-                state
-                    .status_message
-                    .set(Some(format!("Save failed before shutdown: {error}")));
+                state.status_message.set(Some(save_failure_message(
+                    SaveFailureContext::Shutdown,
+                    &error,
+                )));
             }
         }
     }

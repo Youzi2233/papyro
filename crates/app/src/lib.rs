@@ -9,6 +9,7 @@ mod perf;
 mod runtime;
 mod settings_persistence;
 mod state;
+mod status_messages;
 mod workspace_flow;
 
 pub mod desktop;

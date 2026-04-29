@@ -8,6 +8,7 @@ use std::sync::Arc;
 
 use crate::perf::{perf_timer, trace_editor_open_markdown};
 use crate::state::RuntimeState;
+use crate::status_messages::{save_failure_message, SaveFailureContext};
 use crate::workspace_flow::{
     apply_conflict_reload, apply_save_as_success, apply_save_error, apply_save_failure,
     apply_save_success, begin_conflict_overwrite_tab, begin_conflict_reload_tab,
@@ -282,7 +283,10 @@ pub fn save_tab_by_id(
                 let tab_contents = tab_contents.read();
                 let mut editor_tabs = editor_tabs.write();
                 apply_save_error(&mut editor_tabs, &tab_contents, &snapshot, &error);
-                status_message.set(Some(format!("Save failed: {error}")));
+                status_message.set(Some(save_failure_message(
+                    SaveFailureContext::Normal,
+                    &error,
+                )));
             }
             Err(error) => {
                 let tab_contents = tab_contents.read();
