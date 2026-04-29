@@ -544,8 +544,8 @@ Hybrid mode 应该满足：
 
 ### 4.2 Block Model
 
-- [ ] 在 `crates/editor` 中定义 Markdown block 分析边界，避免 JS runtime 私有解析所有业务语义。
-- [ ] 每个 block 有稳定范围、类型、revision 关联和降级策略。
+- [x] 在 `crates/editor` 中定义 Markdown block 分析边界，避免 JS runtime 私有解析所有业务语义。
+- [x] 每个 block 有稳定范围、类型、revision 关联和降级策略。
 - [ ] JS decoration 只消费必要的 block hints，不成为文档真相来源。
 - [ ] 当前块、邻近块、远端块使用不同 decoration 等级。
 - [ ] 大文档中只对 viewport 附近 block 做重 decoration。
