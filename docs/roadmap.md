@@ -340,8 +340,10 @@ Editor runtime lane
 - [x] preview HTML 和 outline 缓存键收敛为 `tab_id + revision`。
 - [x] stats 输出携带 revision，并按 `tab_id + revision` 进行过期保护。
 - [x] search snippets 由 storage search index 管线产出，UI 只消费 `SearchMatch.snippet`。
-- [ ] 大文档 preview 和 outline 计算移出 render path。
-- [ ] 派生数据计算支持取消或丢弃过期 revision。
+- [x] outline 提取移出 render/effect 同步路径，并通过 `spawn_blocking` 回填缓存。
+- [x] outline 派生结果按 `tab_id + revision` 丢弃过期结果。
+- [ ] preview HTML 渲染移出 render path，并提供失败/超时占位。
+- [ ] preview 派生结果支持丢弃过期 revision。
 - [ ] 派生数据失败只影响对应面板，不阻塞编辑。
 
 ### 1.6 Editor Runtime Boundary
@@ -403,7 +405,7 @@ Editor runtime lane
 - [x] Workspace watcher 不再因内容级 `Modified` 事件重载文件树，避免内部保存触发 workspace lane 二次波。
 - [x] 1MB 以上文件默认降低 preview 和 syntax highlight 压力。
 - [x] 5MB 文件默认暂停 live preview，保证编辑优先。
-- [ ] outline 提取异步化并支持过期结果丢弃。
+- [x] outline 提取异步化并支持过期结果丢弃。
 - [ ] preview HTML 渲染失败或超时显示轻量占位。
 - [x] 搜索 snippet 生成在 workspace search 的 `spawn_blocking` 路径中完成，不阻塞编辑器输入。
 
