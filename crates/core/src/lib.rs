@@ -29,4 +29,7 @@ pub use session::DEFAULT_WINDOW_ID;
 pub use storage::{
     DeletePreview, NoteStorage, OpenedNote, SavedNote, WorkspaceBootstrap, WorkspaceSnapshot,
 };
-pub use ui_state::UiState;
+pub use ui_state::{
+    next_theme, settings_target_theme, sidebar_toggle_target, sidebar_width_target,
+    theme_toggle_target, view_mode_target, ChromeSettingsTarget, UiState,
+};

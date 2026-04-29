@@ -334,6 +334,7 @@ Editor runtime lane
 - [x] MobileLayout 的主题和浏览器展示状态改为消费窄 memo。
 - [x] MobileLayout 的 workspace 和选中项展示改为消费 `SidebarViewModel`，不再直接读取 raw `FileState` / `pending_delete_path`。
 - [x] Sidebar 展示宽度改为消费 `sidebar_width` memo，resize 提交统一走 `crates/ui/src/chrome.rs` helper。
+- [x] chrome 设置目标推导迁移到 `crates/core::ui_state`，UI helper 不再持有全局 / workspace 设置覆盖规则。
 - [x] Command Palette 的 outline 展示状态改为消费窄 `outline_visible` memo，不再为标签文案读取完整 `UiState`。
 - [x] Command Palette 的 outline 开关改为走 `AppCommand` / `AppAction` / dispatcher，不再直接写 raw `UiState`。
 - [x] Sidebar workspace 和选中项展示数据改为消费 `WorkspaceViewModel`。
