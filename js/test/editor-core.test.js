@@ -368,6 +368,12 @@ test("parse_markdown_inline_spans skips empty spans", () => {
   assert.deepEqual(parseMarkdownInlineSpans("**** __  __"), []);
 });
 
+test("parse_markdown_inline_spans falls back on malformed decorations", () => {
+  assert.deepEqual(parseMarkdownInlineSpans("Broken **strong and [link](url"), []);
+  assert.deepEqual(parseMarkdownInlineSpans("Unclosed `code and $math"), []);
+  assert.deepEqual(parseMarkdownInlineSpans("Image ![alt](missing close"), []);
+});
+
 test("set_content updates content without echoing content_changed", () => {
   const registry = new Map();
   const sent = [];
