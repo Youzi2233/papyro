@@ -13,6 +13,7 @@ pub(crate) struct CommandPaletteActionInput<'a> {
     pub recent_workspaces: &'a [crate::view_model::WorkspaceListItem],
     pub recent_files: &'a [crate::view_model::RecentFileListItem],
     pub trashed_notes: &'a [crate::view_model::TrashedNoteListItem],
+    pub active_tab_id: Option<&'a str>,
     pub has_active_tab: bool,
     pub active_save_status: SaveStatus,
     pub selected_note_name: Option<&'a str>,
@@ -39,6 +40,7 @@ pub(crate) enum CommandPaletteActionKind {
     ReloadConflictedActiveNote,
     OverwriteActiveNote,
     SaveConflictedActiveNoteAs,
+    CloseActiveTab(String),
     ToggleSidebar,
     ToggleOutline,
     ToggleTheme,
@@ -68,6 +70,7 @@ pub fn CommandPaletteModal(
         recent_workspaces: &workspace_model.recent_workspaces,
         recent_files: &workspace_model.recent_files,
         trashed_notes: &workspace_model.trashed_notes,
+        active_tab_id: editor_model.active_tab_id.as_deref(),
         has_active_tab: editor_model.has_active_tab,
         active_save_status: editor_model.active_save_status.clone(),
         selected_note_name: selected_note_name(&workspace_model),
@@ -207,6 +210,7 @@ fn execute_command_action(
         CommandPaletteActionKind::SaveConflictedActiveNoteAs => {
             commands.save_conflicted_active_note_as.call(())
         }
+        CommandPaletteActionKind::CloseActiveTab(tab_id) => commands.close_tab.call(tab_id),
         CommandPaletteActionKind::ToggleSidebar => {
             crate::chrome::toggle_sidebar(commands.clone(), "command_palette");
         }
@@ -333,6 +337,14 @@ pub(crate) fn command_palette_actions(
             "FILE",
             CommandPaletteActionKind::SaveActiveNote,
         ));
+        if let Some(tab_id) = input.active_tab_id {
+            actions.push(action(
+                "Close active note",
+                "Close the current tab",
+                "FILE",
+                CommandPaletteActionKind::CloseActiveTab(tab_id.to_string()),
+            ));
+        }
         if input.active_save_status == SaveStatus::Conflict {
             actions.push(action(
                 "Reload conflicted note",
@@ -453,6 +465,7 @@ mod tests {
             recent_workspaces: &[],
             recent_files: &[],
             trashed_notes: &[],
+            active_tab_id: None,
             has_active_tab: false,
             active_save_status: SaveStatus::Saved,
             selected_note_name: None,
@@ -466,6 +479,7 @@ mod tests {
     fn command_palette_actions_reflect_workspace_and_tab_state() {
         let actions = command_palette_actions(CommandPaletteActionInput {
             has_active_tab: true,
+            active_tab_id: Some("tab-draft"),
             selected_note_name: Some("Draft.md"),
             theme: Theme::Dark,
             ..test_input()
@@ -478,6 +492,7 @@ mod tests {
         assert!(titles.contains(&"Switch workspace"));
         assert!(titles.contains(&"Refresh workspace"));
         assert!(titles.contains(&"Save active note"));
+        assert!(titles.contains(&"Close active note"));
         assert!(titles.contains(&"Show outline"));
         assert!(titles.contains(&"Favorite selected note"));
         assert!(titles.contains(&"Unfavorite selected note"));
@@ -511,6 +526,7 @@ mod tests {
     fn command_palette_actions_include_conflict_resolution() {
         let actions = command_palette_actions(CommandPaletteActionInput {
             has_active_tab: true,
+            active_tab_id: Some("tab-a"),
             active_save_status: SaveStatus::Conflict,
             ..test_input()
         });
@@ -537,6 +553,25 @@ mod tests {
                 && matches!(
                     action.kind,
                     CommandPaletteActionKind::SaveConflictedActiveNoteAs
+                )
+        }));
+    }
+
+    #[test]
+    fn command_palette_actions_include_close_active_tab() {
+        let actions = command_palette_actions(CommandPaletteActionInput {
+            has_active_tab: true,
+            active_tab_id: Some("tab-a"),
+            ..test_input()
+        });
+
+        assert!(actions.iter().any(|action| {
+            action.title == "Close active note"
+                && action.detail == "Close the current tab"
+                && action.group == "FILE"
+                && matches!(
+                    &action.kind,
+                    CommandPaletteActionKind::CloseActiveTab(tab_id) if tab_id == "tab-a"
                 )
         }));
     }
