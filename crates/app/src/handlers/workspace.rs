@@ -9,6 +9,12 @@ use crate::workspace_flow::{
     apply_workspace_bootstrap, reload_workspace_or_bootstrap, WorkspaceReloadOutcome,
 };
 
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct WatchEventBatchSummary {
+    pub should_refresh: bool,
+    pub external_message: Option<String>,
+}
+
 pub async fn open_workspace(
     platform: Arc<dyn PlatformApi>,
     storage: Arc<dyn NoteStorage>,
@@ -144,6 +150,27 @@ pub fn external_tab_event_message(
     }
 }
 
+pub fn summarize_watch_events(
+    events: &[papyro_storage::fs::WatchEvent],
+    workspace_path: &Path,
+    editor_tabs: &EditorTabs,
+) -> WatchEventBatchSummary {
+    let mut summary = WatchEventBatchSummary::default();
+
+    for event in events {
+        if !should_refresh_for_event(event, workspace_path) {
+            continue;
+        }
+
+        summary.should_refresh = true;
+        if summary.external_message.is_none() {
+            summary.external_message = external_tab_event_message(event, editor_tabs);
+        }
+    }
+
+    summary
+}
+
 pub fn should_refresh_for_event(
     event: &papyro_storage::fs::WatchEvent,
     workspace_path: &Path,
@@ -243,5 +270,42 @@ mod tests {
             &papyro_storage::fs::WatchEvent::Deleted(PathBuf::from("workspace/notes/a.md")),
             workspace_path,
         ));
+    }
+
+    #[test]
+    fn summarize_watch_events_merges_refresh_and_open_tab_messages() {
+        let editor_tabs = EditorTabs {
+            tabs: vec![tab("Draft", "workspace/notes/draft.md")],
+            active_tab_id: Some("draft".to_string()),
+        };
+        let events = vec![
+            papyro_storage::fs::WatchEvent::Modified(PathBuf::from("workspace/notes/draft.md")),
+            papyro_storage::fs::WatchEvent::Created(PathBuf::from("workspace/notes/new.md")),
+            papyro_storage::fs::WatchEvent::Deleted(PathBuf::from("workspace/notes/draft.md")),
+        ];
+
+        let summary = summarize_watch_events(&events, Path::new("workspace"), &editor_tabs);
+
+        assert!(summary.should_refresh);
+        assert_eq!(
+            summary.external_message.as_deref(),
+            Some("Draft was removed outside Papyro. The open tab was kept so you can review or save it.")
+        );
+    }
+
+    #[test]
+    fn summarize_watch_events_ignores_non_refresh_batches() {
+        let editor_tabs = EditorTabs {
+            tabs: vec![tab("Draft", "workspace/notes/draft.md")],
+            active_tab_id: Some("draft".to_string()),
+        };
+        let events = vec![
+            papyro_storage::fs::WatchEvent::Modified(PathBuf::from("workspace/notes/draft.md")),
+            papyro_storage::fs::WatchEvent::Created(PathBuf::from("other/new.md")),
+        ];
+
+        let summary = summarize_watch_events(&events, Path::new("workspace"), &editor_tabs);
+
+        assert_eq!(summary, WatchEventBatchSummary::default());
     }
 }

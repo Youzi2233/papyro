@@ -270,13 +270,19 @@ pub(crate) fn use_workspace_watcher(state: RuntimeState, storage: Arc<dyn NoteSt
                 return;
             };
 
-            while let Ok(event) = rx.recv_async().await {
-                if !workspace::should_refresh_for_event(&event, &path) {
+            while let Ok(first_event) = rx.recv_async().await {
+                let mut events = vec![first_event];
+                while let Ok(event) = rx.try_recv() {
+                    events.push(event);
+                }
+
+                let editor_tabs_snapshot = editor_tabs.read().clone();
+                let summary =
+                    workspace::summarize_watch_events(&events, &path, &editor_tabs_snapshot);
+                if !summary.should_refresh {
                     continue;
                 }
-                let external_message =
-                    workspace::external_tab_event_message(&event, &editor_tabs.read());
-                while rx.try_recv().is_ok() {}
+
                 workspace::reload_workspace_tree_async(
                     &mut file_state,
                     &mut status_message,
@@ -284,7 +290,7 @@ pub(crate) fn use_workspace_watcher(state: RuntimeState, storage: Arc<dyn NoteSt
                     storage.clone(),
                 )
                 .await;
-                if let Some(message) = external_message {
+                if let Some(message) = summary.external_message {
                     status_message.set(Some(message));
                 }
             }
