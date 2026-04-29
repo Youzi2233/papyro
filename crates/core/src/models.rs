@@ -74,6 +74,7 @@ pub enum SaveStatus {
     Saved,
     Dirty,
     Saving,
+    Conflict,
     Failed,
 }
 

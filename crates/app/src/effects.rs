@@ -288,13 +288,22 @@ pub(crate) fn use_workspace_watcher(state: RuntimeState, storage: Arc<dyn NoteSt
                     workspace::summarize_watch_events(&events, &path, &editor_tabs_snapshot);
                 let clean_refresh_paths =
                     workspace::clean_modified_open_tab_paths(&events, &path, &editor_tabs_snapshot);
+                let dirty_conflict_tab_ids =
+                    workspace::dirty_modified_open_tab_ids(&events, &path, &editor_tabs_snapshot);
                 if !summary.should_refresh
                     && summary.external_message.is_none()
                     && clean_refresh_paths.is_empty()
+                    && dirty_conflict_tab_ids.is_empty()
                 {
                     continue;
                 }
 
+                if !dirty_conflict_tab_ids.is_empty() {
+                    let mut editor_tabs = editor_tabs.write();
+                    for tab_id in dirty_conflict_tab_ids {
+                        editor_tabs.mark_tab_conflict(&tab_id);
+                    }
+                }
                 if summary.should_refresh {
                     workspace::reload_workspace_tree_async(
                         &mut file_state,

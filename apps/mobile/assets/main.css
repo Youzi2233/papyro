@@ -471,6 +471,11 @@ small {
     color: #fff7ea;
 }
 
+.mn-tab-save-status.conflict {
+    background: #9f6a3a;
+    color: #fff7ea;
+}
+
 .mn-document {
     display: flex;
     flex: 1;

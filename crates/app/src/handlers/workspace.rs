@@ -141,7 +141,7 @@ pub fn external_tab_event_message(
             tab.title
         )),
         papyro_storage::fs::WatchEvent::Modified(_) => Some(format!(
-            "{} changed outside Papyro while it has unsaved edits. Save may overwrite the external version.",
+            "{} changed outside Papyro while it has unsaved edits. Manual save may overwrite the external version.",
             tab.title
         )),
         papyro_storage::fs::WatchEvent::Renamed { to, .. } => Some(format!(
@@ -199,6 +199,31 @@ pub fn clean_modified_open_tab_paths(
     }
 
     paths
+}
+
+pub fn dirty_modified_open_tab_ids(
+    events: &[papyro_storage::fs::WatchEvent],
+    workspace_path: &Path,
+    editor_tabs: &EditorTabs,
+) -> Vec<String> {
+    let mut tab_ids = Vec::new();
+
+    for event in events {
+        let papyro_storage::fs::WatchEvent::Modified(path) = event else {
+            continue;
+        };
+        if !path.starts_with(workspace_path) {
+            continue;
+        }
+
+        for tab in &editor_tabs.tabs {
+            if tab.path == *path && tab.is_dirty && !tab_ids.contains(&tab.id) {
+                tab_ids.push(tab.id.clone());
+            }
+        }
+    }
+
+    tab_ids
 }
 
 pub fn should_refresh_for_event(
@@ -395,7 +420,7 @@ mod tests {
         assert!(!summary.should_refresh);
         assert_eq!(
             summary.external_message.as_deref(),
-            Some("Draft changed outside Papyro while it has unsaved edits. Save may overwrite the external version.")
+            Some("Draft changed outside Papyro while it has unsaved edits. Manual save may overwrite the external version.")
         );
     }
 
@@ -436,6 +461,27 @@ mod tests {
 
         assert!(
             clean_modified_open_tab_paths(&events, Path::new("workspace"), &editor_tabs).is_empty()
+        );
+    }
+
+    #[test]
+    fn dirty_modified_open_tab_ids_collects_dirty_tabs() {
+        let mut dirty_tab = tab("Draft", "workspace/notes/draft.md");
+        dirty_tab.is_dirty = true;
+        dirty_tab.save_status = SaveStatus::Dirty;
+        let editor_tabs = EditorTabs {
+            tabs: vec![dirty_tab, tab("Clean", "workspace/notes/clean.md")],
+            active_tab_id: Some("draft".to_string()),
+        };
+        let events = vec![
+            papyro_storage::fs::WatchEvent::Modified(PathBuf::from("workspace/notes/draft.md")),
+            papyro_storage::fs::WatchEvent::Modified(PathBuf::from("workspace/notes/draft.md")),
+            papyro_storage::fs::WatchEvent::Modified(PathBuf::from("workspace/notes/clean.md")),
+        ];
+
+        assert_eq!(
+            dirty_modified_open_tab_ids(&events, Path::new("workspace"), &editor_tabs),
+            vec!["draft".to_string()]
         );
     }
 }

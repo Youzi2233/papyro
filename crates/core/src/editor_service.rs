@@ -1,4 +1,5 @@
 use crate::models::DocumentStats;
+use crate::models::SaveStatus;
 use crate::storage::{OpenedNote, SavedNote};
 use crate::{EditorTabs, TabContentsMap};
 use std::path::{Path, PathBuf};
@@ -38,7 +39,8 @@ pub fn should_auto_save(
     tab_id: &str,
     revision: u64,
 ) -> bool {
-    tabs.tab_by_id(tab_id).is_some_and(|tab| tab.is_dirty)
+    tabs.tab_by_id(tab_id)
+        .is_some_and(|tab| tab.is_dirty && tab.save_status == SaveStatus::Dirty)
         && contents.should_auto_save_revision(tab_id, revision)
 }
 
@@ -184,5 +186,30 @@ mod tests {
         assert!(contents.content_for_tab("a").is_none());
         assert!(contents.content_for_tab("b").is_none());
         assert!(contents.content_for_tab("c").is_some());
+    }
+
+    #[test]
+    fn conflicted_tab_is_dirty_but_not_auto_saved() {
+        let mut tabs = EditorTabs::default();
+        let mut contents = TabContentsMap::default();
+        tabs.open_tab(tab("a", "notes/a.md"));
+        contents.insert_tab("a".to_string(), "# A".to_string(), DocumentStats::default());
+
+        let revision = change_tab_content(&mut tabs, &mut contents, "a", "# Local".to_string())
+            .expect("content changes");
+        assert!(should_auto_save(&tabs, &contents, "a", revision));
+
+        assert!(tabs.mark_tab_conflict("a"));
+        assert!(!should_auto_save(&tabs, &contents, "a", revision));
+
+        let next_revision =
+            change_tab_content(&mut tabs, &mut contents, "a", "# Local edit".to_string())
+                .expect("content changes again");
+
+        assert_eq!(
+            tabs.tab_by_id("a").map(|tab| tab.save_status.clone()),
+            Some(SaveStatus::Conflict)
+        );
+        assert!(!should_auto_save(&tabs, &contents, "a", next_revision));
     }
 }

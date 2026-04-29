@@ -911,6 +911,11 @@ button { border: 0; cursor: pointer; background: transparent; }
     color: #fff;
 }
 
+.mn-tab-save-status.conflict {
+    background: #9f6a3a;
+    color: #fff;
+}
+
 .mn-segmented-control,
 .mn-view-toggle {
     display: inline-flex;

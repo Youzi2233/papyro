@@ -37,6 +37,11 @@ fn tab_save_status_indicator(
             label: "Save failed",
             marker: "!",
         }),
+        SaveStatus::Conflict => Some(TabSaveStatusIndicator {
+            class_name: "conflict",
+            label: "File changed outside Papyro",
+            marker: "!",
+        }),
         SaveStatus::Dirty => Some(TabSaveStatusIndicator {
             class_name: "dirty",
             label: "Unsaved changes",
@@ -136,6 +141,7 @@ fn save_status_attr(save_status: &SaveStatus) -> &'static str {
         SaveStatus::Saved => "saved",
         SaveStatus::Dirty => "dirty",
         SaveStatus::Saving => "saving",
+        SaveStatus::Conflict => "conflict",
         SaveStatus::Failed => "failed",
     }
 }
@@ -168,6 +174,14 @@ mod tests {
             Some(TabSaveStatusIndicator {
                 class_name: "failed",
                 label: "Save failed",
+                marker: "!",
+            })
+        );
+        assert_eq!(
+            tab_save_status_indicator(&SaveStatus::Conflict, true),
+            Some(TabSaveStatusIndicator {
+                class_name: "conflict",
+                label: "File changed outside Papyro",
                 marker: "!",
             })
         );

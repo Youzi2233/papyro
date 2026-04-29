@@ -65,6 +65,7 @@ fn status_bar_items(editor_model: &EditorViewModel) -> Vec<StatusBarItem> {
 fn save_status_label(status: &SaveStatus) -> &'static str {
     match status {
         SaveStatus::Saving => "Saving",
+        SaveStatus::Conflict => "Conflict",
         SaveStatus::Failed => "Save failed",
         SaveStatus::Dirty => "Unsaved",
         SaveStatus::Saved => "Saved",
@@ -74,7 +75,7 @@ fn save_status_label(status: &SaveStatus) -> &'static str {
 fn save_status_tone(status: &SaveStatus) -> StatusTone {
     match status {
         SaveStatus::Saving => StatusTone::Saving,
-        SaveStatus::Failed | SaveStatus::Dirty => StatusTone::Attention,
+        SaveStatus::Conflict | SaveStatus::Failed | SaveStatus::Dirty => StatusTone::Attention,
         SaveStatus::Saved => StatusTone::Default,
     }
 }
@@ -98,7 +99,7 @@ mod tests {
             active_title: has_active_tab.then(|| "Draft".to_string()),
             has_active_tab,
             tab_count: usize::from(has_active_tab),
-            active_is_dirty: save_status == SaveStatus::Dirty,
+            active_is_dirty: matches!(save_status, SaveStatus::Dirty | SaveStatus::Conflict),
             active_save_status: save_status,
             active_stats: DocumentStats {
                 word_count: 12,
@@ -146,6 +147,21 @@ mod tests {
             )),
             vec![StatusBarItem {
                 label: "Unsaved".to_string(),
+                tone: StatusTone::Attention,
+            }]
+        );
+    }
+
+    #[test]
+    fn status_bar_items_show_conflict_state() {
+        assert_eq!(
+            status_bar_items(&editor_model_with_stats_revision(
+                true,
+                SaveStatus::Conflict,
+                None,
+            )),
+            vec![StatusBarItem {
+                label: "Conflict".to_string(),
                 tone: StatusTone::Attention,
             }]
         );

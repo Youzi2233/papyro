@@ -105,7 +105,9 @@ impl EditorTabs {
     pub fn mark_tab_dirty(&mut self, tab_id: &str) -> bool {
         if let Some(tab) = self.tabs.iter_mut().find(|tab| tab.id == tab_id) {
             tab.is_dirty = true;
-            tab.save_status = SaveStatus::Dirty;
+            if tab.save_status != SaveStatus::Conflict {
+                tab.save_status = SaveStatus::Dirty;
+            }
             true
         } else {
             false
@@ -133,6 +135,16 @@ impl EditorTabs {
         if let Some(tab) = self.tabs.iter_mut().find(|tab| tab.id == tab_id) {
             tab.is_dirty = true;
             tab.save_status = SaveStatus::Failed;
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn mark_tab_conflict(&mut self, tab_id: &str) -> bool {
+        if let Some(tab) = self.tabs.iter_mut().find(|tab| tab.id == tab_id) {
+            tab.is_dirty = true;
+            tab.save_status = SaveStatus::Conflict;
             true
         } else {
             false
