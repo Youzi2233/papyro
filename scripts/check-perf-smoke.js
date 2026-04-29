@@ -334,6 +334,12 @@ function runSelfTest() {
     "took 99ms, budget 50ms",
   );
   assertSelfTestError(
+    validateRecords(parseRecords(selfTestSizedOpenOverBudgetLog()), {
+      requireSmokeTraces: false,
+    }),
+    "took 801ms, budget 800ms",
+  );
+  assertSelfTestError(
     validateRecords(parseRecords(selfTestLargeLivePreviewLog()), {
       requireSmokeTraces: false,
     }),
@@ -364,16 +370,28 @@ function assertSelfTestError(result, expectedMessage) {
 function selfTestLog() {
   const baseFields =
     'window_id="main" interaction_path="editor.test" tab_id="tab-a" revision=1 view_mode="hybrid" content_bytes=102400 trigger_reason="self_test"';
+  const oneMbFields =
+    'window_id="main" interaction_path="editor.test" tab_id="tab-1mb" revision=1 view_mode="hybrid" content_bytes=1048576 trigger_reason="self_test"';
+  const fiveMbFields =
+    'window_id="main" interaction_path="editor.test" tab_id="tab-5mb" revision=1 view_mode="hybrid" content_bytes=5242880 trigger_reason="self_test"';
 
   return [
     `INFO papyro_app::perf: ${baseFields} action="open_markdown" elapsed_ms=1 perf app dispatch action`,
     `INFO papyro_ui::perf: ${baseFields} tab_count=2 host_count=1 elapsed_ms=2 perf editor pane render prep`,
     `INFO papyro_app::perf: ${baseFields} path="target/perf-fixtures/papyro-100kb.md" elapsed_ms=120 perf editor open markdown`,
+    `INFO papyro_app::perf: ${oneMbFields} path="target/perf-fixtures/papyro-1mb.md" elapsed_ms=800 perf editor open markdown`,
+    `INFO papyro_app::perf: ${fiveMbFields} path="target/perf-fixtures/papyro-5mb.md" elapsed_ms=2500 perf editor open markdown`,
     `INFO papyro_app::perf: ${baseFields} elapsed_ms=20 perf editor switch tab`,
+    `INFO papyro_app::perf: ${oneMbFields} elapsed_ms=150 perf editor switch tab`,
+    `INFO papyro_app::perf: ${fiveMbFields} elapsed_ms=300 perf editor switch tab`,
     `INFO papyro_ui::perf: ${baseFields} from="source" to="hybrid" elapsed_ms=10 perf editor view mode change`,
     `INFO papyro_ui::perf: ${baseFields} mode="hybrid" elapsed_ms=8 perf editor command set_view_mode`,
     `INFO papyro_app::perf: ${baseFields} changed=true elapsed_ms=5 perf editor input change`,
+    `INFO papyro_app::perf: ${oneMbFields} changed=true elapsed_ms=32 perf editor input change`,
+    `INFO papyro_app::perf: ${fiveMbFields} changed=true elapsed_ms=50 perf editor input change`,
     `INFO papyro_ui::perf: ${baseFields} code_highlighting=false live_preview=true elapsed_ms=120 perf editor preview render`,
+    `INFO papyro_ui::perf: ${oneMbFields} code_highlighting=false live_preview=true elapsed_ms=1000 perf editor preview render`,
+    `INFO papyro_ui::perf: ${fiveMbFields} code_highlighting=false live_preview=false elapsed_ms=150 perf editor preview render`,
     `INFO papyro_ui::perf: window_id="main" interaction_path="chrome.sidebar" tab_id="none" revision=-1 view_mode="none" content_bytes=-1 trigger_reason="click" collapsed=true elapsed_ms=3 perf chrome toggle sidebar`,
     `INFO papyro_ui::perf: window_id="main" interaction_path="chrome.sidebar" tab_id="none" revision=-1 view_mode="none" content_bytes=-1 trigger_reason="drag_commit" start_width=280 end_width=320 delta_px=40 elapsed_ms=4 perf chrome resize sidebar`,
     `INFO papyro_ui::perf: window_id="main" interaction_path="chrome.theme" tab_id="none" revision=-1 view_mode="none" content_bytes=-1 trigger_reason="toggle_theme" from="light" to="dark" elapsed_ms=3 perf chrome toggle theme`,
@@ -389,6 +407,10 @@ function selfTestMissingFieldLog() {
 
 function selfTestOverBudgetLog() {
   return `INFO papyro_app::perf: window_id="main" interaction_path="editor.test" tab_id="tab-a" revision=1 view_mode="hybrid" content_bytes=102400 trigger_reason="self_test" action="open_markdown" elapsed_ms=99 perf app dispatch action`;
+}
+
+function selfTestSizedOpenOverBudgetLog() {
+  return `INFO papyro_app::perf: window_id="main" interaction_path="editor.test" tab_id="tab-1mb" revision=1 view_mode="hybrid" content_bytes=1048576 trigger_reason="self_test" path="target/perf-fixtures/papyro-1mb.md" elapsed_ms=801 perf editor open markdown`;
 }
 
 function selfTestLargeLivePreviewLog() {
