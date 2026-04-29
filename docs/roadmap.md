@@ -382,6 +382,7 @@ Editor runtime lane
 - [ ] 大 Vec / HashMap 避免作为宽 props 穿过多层组件。
 - [x] 对稳定结构使用更小 view model 或 id list。
 - [x] Sidebar / Settings 改为消费窄 workspace view model，不再读取 recent files、trash、tags 等完整 `WorkspaceViewModel` payload。
+- [x] Quick Open 候选项只携带 path/title/display path，不再把完整 `FileNode` 克隆进行 props。
 - [x] `EditorPaneViewModel` 由 runtime `use_memo` 派生并通过 context 提供，避免 chrome/settings render 重建 tab/document snapshot。
 - [x] `EditorPane` 的 view mode、typography、auto-link、outline 输入改为消费 `EditorSurfaceViewModel`，theme/sidebar 变化不改变该模型输出。
 - [x] `SettingsViewModel` 仅暴露 chrome 展示字段，不再携带完整 `AppSettings` 宽 payload。

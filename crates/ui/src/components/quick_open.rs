@@ -4,14 +4,15 @@ use crate::context::use_app_context;
 use dioxus::prelude::*;
 use papyro_core::models::{FileNode, FileNodeKind};
 use papyro_core::FileState;
+use std::path::PathBuf;
 
 const QUICK_OPEN_LIMIT: usize = 24;
 
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct QuickOpenItem {
-    pub node: FileNode,
+    pub path: PathBuf,
     pub title: String,
-    pub path: String,
+    pub path_label: String,
 }
 
 #[component]
@@ -125,7 +126,7 @@ fn QuickOpenRow(
             },
             span { class: "mn-command-row-main",
                 span { class: "mn-command-title", "{item.title}" }
-                span { class: "mn-command-path", "{item.path}" }
+                span { class: "mn-command-path", "{item.path_label}" }
             }
             span { class: "mn-command-kind", "MD" }
         }
@@ -138,17 +139,17 @@ fn open_quick_item(
     on_close: EventHandler<()>,
     item: QuickOpenItem,
 ) {
-    file_state.write().select_path(item.node.path.clone());
-    commands.open_markdown.call(OpenMarkdownTarget {
-        path: item.node.path,
-    });
+    file_state.write().select_path(item.path.clone());
+    commands
+        .open_markdown
+        .call(OpenMarkdownTarget { path: item.path });
     on_close.call(());
 }
 
 pub(crate) fn collect_quick_open_items(nodes: &[FileNode]) -> Vec<QuickOpenItem> {
     let mut items = Vec::new();
     collect_quick_open_items_into(nodes, &mut items);
-    items.sort_by(|left, right| left.path.cmp(&right.path));
+    items.sort_by(|left, right| left.path_label.cmp(&right.path_label));
     items
 }
 
@@ -159,9 +160,9 @@ fn collect_quick_open_items_into(nodes: &[FileNode], items: &mut Vec<QuickOpenIt
                 collect_quick_open_items_into(children, items);
             }
             FileNodeKind::Note { .. } => items.push(QuickOpenItem {
-                node: node.clone(),
+                path: node.path.clone(),
                 title: node.name.trim_end_matches(".md").to_string(),
-                path: node.relative_path.to_string_lossy().replace('\\', "/"),
+                path_label: node.relative_path.to_string_lossy().replace('\\', "/"),
             }),
         }
     }
@@ -180,7 +181,7 @@ pub(crate) fn filter_quick_open_items(items: &[QuickOpenItem], query: &str) -> V
                 return true;
             }
 
-            let haystack = format!("{} {}", item.title, item.path).to_lowercase();
+            let haystack = format!("{} {}", item.title, item.path_label).to_lowercase();
             tokens.iter().all(|token| haystack.contains(token))
         })
         .take(QUICK_OPEN_LIMIT)
@@ -231,7 +232,7 @@ mod tests {
         assert_eq!(
             items
                 .iter()
-                .map(|item| item.path.as_str())
+                .map(|item| item.path_label.as_str())
                 .collect::<Vec<_>>(),
             vec!["journal/ideas.md", "journal/today.md", "root.md"]
         );
