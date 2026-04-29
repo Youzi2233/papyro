@@ -1040,6 +1040,15 @@ test("markdown_decoration_tier separates current near and remote blocks", () => 
   assert.equal(markdownDecorationTier([], 1, 1), "remote");
 });
 
+test("markdown_decoration_tier treats cross block selections as current", () => {
+  const selections = [{ fromLine: 5, toLine: 12 }];
+
+  assert.equal(markdownDecorationTier(selections, 1, 4), "near");
+  assert.equal(markdownDecorationTier(selections, 4, 6), "current");
+  assert.equal(markdownDecorationTier(selections, 8, 15), "current");
+  assert.equal(markdownDecorationTier(selections, 13, 14), "near");
+});
+
 test("should_use_full_document_hybrid_scan caps large documents", () => {
   assert.equal(shouldUseFullDocumentHybridScan(64 * 1024), true);
   assert.equal(shouldUseFullDocumentHybridScan(64 * 1024 + 1), false);

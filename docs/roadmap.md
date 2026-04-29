@@ -555,7 +555,7 @@ Hybrid mode 应该满足：
 - [x] Heading、emphasis、link、image、task、code、quote、table 分层实现。
 - [x] 每类 decoration 定义开启条件、关闭条件、性能预算和 fallback。
 - [x] IME composition 期间暂停可能干扰输入的 decoration command。
-- [ ] selection 跨 block 时不强行重排或隐藏源语法。
+- [x] selection 跨 block 时不强行重排或隐藏源语法。
 - [ ] 失焦块的渲染不能改变文档实际内容。
 
 ### 4.4 CodeMirror Integration
