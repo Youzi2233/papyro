@@ -11,6 +11,9 @@ import {
   formatSelectionChange,
   handleRustMessage,
   handleMarkdownEnter,
+  hybridDecorationLevel,
+  hybridDecorationPolicy,
+  hybridDecorationPolicies,
   indentMarkdownListInView,
   insertMarkdownInView,
   markdownLinkPasteChange,
@@ -1041,6 +1044,32 @@ test("should_use_full_document_hybrid_scan caps large documents", () => {
   assert.equal(shouldUseFullDocumentHybridScan(64 * 1024), true);
   assert.equal(shouldUseFullDocumentHybridScan(64 * 1024 + 1), false);
   assert.equal(shouldUseFullDocumentHybridScan(Number.NaN), false);
+});
+
+test("hybrid_decoration_policies cover required markdown kinds", () => {
+  for (const kind of [
+    "heading",
+    "emphasis",
+    "link",
+    "image",
+    "task",
+    "list",
+    "code",
+    "math",
+    "quote",
+    "rule",
+    "table",
+    "footnote",
+  ]) {
+    assert.ok(hybridDecorationPolicies[kind], `${kind} policy missing`);
+    assert.equal(hybridDecorationPolicy(kind).fallback, "source");
+    assert.ok(hybridDecorationPolicy(kind).budget);
+  }
+
+  assert.equal(hybridDecorationLevel("heading", "remote"), "structure");
+  assert.equal(hybridDecorationLevel("code", "near"), "full");
+  assert.equal(hybridDecorationLevel("image", "remote"), "source");
+  assert.equal(hybridDecorationLevel("unknown", "near"), "full");
 });
 
 test("insert_markdown message inserts markdown into editor", () => {

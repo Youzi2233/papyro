@@ -147,6 +147,82 @@ export function shouldUseFullDocumentHybridScan(docLength, maxLength = 64 * 1024
   return length >= 0 && length <= max;
 }
 
+export const hybridDecorationPolicies = Object.freeze({
+  heading: {
+    budget: "visible_line",
+    fallback: "source",
+    levels: { current: "source", near: "full", remote: "structure" },
+  },
+  emphasis: {
+    budget: "near_visible_line",
+    fallback: "source",
+    levels: { current: "source", near: "full", remote: "source" },
+  },
+  link: {
+    budget: "near_visible_line",
+    fallback: "source",
+    levels: { current: "source", near: "full", remote: "source" },
+  },
+  image: {
+    budget: "near_visible_line",
+    fallback: "source",
+    levels: { current: "source", near: "widget", remote: "source" },
+  },
+  task: {
+    budget: "near_visible_line",
+    fallback: "source",
+    levels: { current: "source", near: "widget", remote: "source" },
+  },
+  list: {
+    budget: "near_visible_line",
+    fallback: "source",
+    levels: { current: "source", near: "full", remote: "source" },
+  },
+  code: {
+    budget: "visible_block",
+    fallback: "source",
+    levels: { current: "source", near: "full", remote: "structure" },
+  },
+  math: {
+    budget: "near_visible_block",
+    fallback: "source",
+    levels: { current: "source", near: "full", remote: "source" },
+  },
+  quote: {
+    budget: "near_visible_line",
+    fallback: "source",
+    levels: { current: "source", near: "full", remote: "source" },
+  },
+  rule: {
+    budget: "near_visible_line",
+    fallback: "source",
+    levels: { current: "source", near: "full", remote: "source" },
+  },
+  table: {
+    budget: "visible_block",
+    fallback: "source",
+    levels: { current: "source", near: "structure", remote: "structure" },
+  },
+  footnote: {
+    budget: "near_visible_line",
+    fallback: "source",
+    levels: { current: "source", near: "full", remote: "source" },
+  },
+});
+
+export function hybridDecorationPolicy(kind) {
+  return hybridDecorationPolicies[kind] ?? {
+    budget: "near_visible_line",
+    fallback: "source",
+    levels: { current: "source", near: "full", remote: "source" },
+  };
+}
+
+export function hybridDecorationLevel(kind, tier) {
+  const policy = hybridDecorationPolicy(kind);
+  return policy.levels?.[tier] ?? policy.fallback;
+}
+
 export function isPlainUrl(text) {
   return /^https?:\/\/[^\s<>()]+$/i.test(text.trim());
 }

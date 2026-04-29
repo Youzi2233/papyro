@@ -31,6 +31,7 @@ import {
   completeMarkdownShortcutOnSpace,
   continueMarkdownListOnEnter,
   handleRustMessage as handleRustMessageCore,
+  hybridDecorationLevel,
   indentMarkdownListInView,
   markdownDecorationTier,
   normalizeEditorPreferences,
@@ -932,6 +933,9 @@ class MathBlockWidget extends WidgetType {
 }
 
 function addCodeBlockDecorations(decorations, line, block, tier) {
+  const level = hybridDecorationLevel("code", tier);
+  if (level === "source") return;
+
   const isStart = line.number === block.fromLine;
   const isEnd = line.number === block.toLine;
   const classes = [
@@ -941,7 +945,7 @@ function addCodeBlockDecorations(decorations, line, block, tier) {
   ].filter(Boolean).join(" ");
 
   decorations.push(Decoration.line({ class: classes }).range(line.from));
-  if (tier === "near" && (isStart || isEnd)) {
+  if (level === "full" && (isStart || isEnd)) {
     decorations.push(
       Decoration.replace({
         widget: new CodeFenceWidget(isStart ? block.info : ""),
@@ -1057,6 +1061,9 @@ function headingDecorationForLine(context, line) {
 }
 
 function addHeadingDecorations(decorations, line, heading, tier) {
+  const level = hybridDecorationLevel("heading", tier);
+  if (level === "source") return;
+
   const markerTo = line.from + heading.markerLength;
   decorations.push(
     Decoration.line({
@@ -1064,7 +1071,7 @@ function addHeadingDecorations(decorations, line, heading, tier) {
     }).range(line.from),
   );
 
-  if (tier !== "near") {
+  if (level !== "full") {
     return;
   }
 
@@ -1128,7 +1135,10 @@ function buildHybridMarkdownDecorations(
           mathBlock.fromLine,
           mathBlock.toLine,
         );
-        if (tier === "near" && !emittedMathBlocks.has(mathBlock.fromLine)) {
+        if (
+          hybridDecorationLevel("math", tier) === "full" &&
+          !emittedMathBlocks.has(mathBlock.fromLine)
+        ) {
           emittedMathBlocks.add(mathBlock.fromLine);
           addMathBlockDecorations(decorations, view.state, mathBlock);
         }
@@ -1142,7 +1152,7 @@ function buildHybridMarkdownDecorations(
           tableBlock.fromLine,
           tableBlock.toLine,
         );
-        if (tier !== "current") {
+        if (hybridDecorationLevel("table", tier) !== "source") {
           addTableDecorations(decorations, line, tableBlock);
         }
         continue;
@@ -1153,13 +1163,28 @@ function buildHybridMarkdownDecorations(
 
       const heading = headingDecorationForLine(context, line);
       if (!heading) {
-        if (tier === "near") {
+        if (hybridDecorationLevel("rule", tier) === "full") {
           if (addHorizontalRuleDecorations(decorations, line)) continue;
+        }
+        if (hybridDecorationLevel("footnote", tier) === "full") {
           if (addFootnoteDefinitionDecorations(decorations, line)) continue;
+        }
+        if (hybridDecorationLevel("quote", tier) === "full") {
           addBlockquoteDecorations(decorations, line);
+        }
+        if (hybridDecorationLevel("task", tier) === "widget") {
           addTaskDecorations(decorations, line);
+        }
+        if (hybridDecorationLevel("list", tier) === "full") {
           addListDecorations(decorations, line);
+        }
+        if (hybridDecorationLevel("image", tier) === "widget") {
           addImageDecorations(decorations, line);
+        }
+        if (
+          hybridDecorationLevel("emphasis", tier) === "full" ||
+          hybridDecorationLevel("link", tier) === "full"
+        ) {
           addInlineDecorations(decorations, line);
         }
         continue;
