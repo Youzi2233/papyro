@@ -153,8 +153,11 @@ pub fn EditorPane() -> Element {
                                             tab_id: host.tab_id.clone(),
                                             is_visible: host.is_active && view_mode.is_editable(),
                                             initial_content: host.initial_content.clone(),
-                                            view_mode: view_mode.clone(),
-                                            auto_link_paste,
+                                            view_mode: host_runtime_view_mode(host.is_active, &view_mode),
+                                            auto_link_paste: host_runtime_auto_link_paste(
+                                                host.is_active,
+                                                auto_link_paste,
+                                            ),
                                         }
                                     }
                                 }
@@ -189,8 +192,11 @@ pub fn EditorPane() -> Element {
                                     tab_id: host.tab_id.clone(),
                                     is_visible: false,
                                     initial_content: host.initial_content.clone(),
-                                    view_mode: view_mode.clone(),
-                                    auto_link_paste,
+                                    view_mode: host_runtime_view_mode(false, &view_mode),
+                                    auto_link_paste: host_runtime_auto_link_paste(
+                                        false,
+                                        auto_link_paste,
+                                    ),
                                 }
                             }
                         }
@@ -261,6 +267,18 @@ fn host_lifecycle_map(current: &[EditorHostItemViewModel]) -> HashMap<String, bo
         .iter()
         .map(|host| (host.tab_id.clone(), host.is_active))
         .collect()
+}
+
+fn host_runtime_view_mode(is_active: bool, view_mode: &ViewMode) -> ViewMode {
+    if is_active {
+        view_mode.clone()
+    } else {
+        ViewMode::Source
+    }
+}
+
+fn host_runtime_auto_link_paste(is_active: bool, auto_link_paste: bool) -> bool {
+    is_active && auto_link_paste
 }
 
 #[component]
@@ -364,5 +382,24 @@ mod tests {
         let change = host_lifecycle_change(&previous, &current);
 
         assert!(!change.has_changes());
+    }
+
+    #[test]
+    fn hidden_host_runtime_inputs_ignore_editor_preferences() {
+        assert_eq!(
+            host_runtime_view_mode(false, &ViewMode::Preview),
+            ViewMode::Source
+        );
+        assert!(!host_runtime_auto_link_paste(false, true));
+    }
+
+    #[test]
+    fn active_host_runtime_inputs_track_editor_preferences() {
+        assert_eq!(
+            host_runtime_view_mode(true, &ViewMode::Preview),
+            ViewMode::Preview
+        );
+        assert!(host_runtime_auto_link_paste(true, true));
+        assert!(!host_runtime_auto_link_paste(true, false));
     }
 }

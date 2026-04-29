@@ -419,7 +419,7 @@ Editor runtime lane
 - [x] dirty tab 第一次关闭只进入确认态，不在 close 热路径触发保存流程。
 - [x] Tab close 交互路径不等待 JS destroy，且不再同步写入 retired host 状态。
 - [x] Tab close 鼠标路径等待完整 click，避免 pointer up 前移除 tab。
-- [ ] 切换 theme/settings 只更新必要 CSS variables 和 active host preferences。
+- [x] 切换 theme/settings 只更新必要 CSS variables 和 active host preferences。
 
 验收标准：
 
