@@ -130,6 +130,61 @@ pub fn DesktopApp() -> Element {
     }
 }
 
+fn desktop_bootstrap(startup_open_request: &DesktopStartupOpenRequest) -> WorkspaceBootstrap {
+    let recent_workspaces = papyro_storage::list_recent_workspaces(10).unwrap_or_else(|error| {
+        tracing::warn!(%error, "failed to resolve recent workspaces for startup markdown path");
+        Vec::new()
+    });
+    let default_workspace_path = desktop_default_workspace_path();
+
+    match startup_workspace_path(
+        startup_open_request,
+        &recent_workspaces,
+        default_workspace_path.as_deref(),
+    ) {
+        Some(workspace_path) => papyro_storage::bootstrap_from_workspace(&workspace_path),
+        None => papyro_storage::bootstrap_from_env_or_current_dir(),
+    }
+}
+
+fn startup_workspace_path(
+    startup_open_request: &DesktopStartupOpenRequest,
+    recent_workspaces: &[papyro_core::models::Workspace],
+    default_workspace_path: Option<&Path>,
+) -> Option<PathBuf> {
+    let startup_path = startup_open_request.markdown_paths.first()?;
+    let startup_path = absolutize_startup_path(startup_path);
+
+    recent_workspaces
+        .iter()
+        .filter(|workspace| startup_path.starts_with(&workspace.path))
+        .max_by_key(|workspace| workspace.path.components().count())
+        .map(|workspace| workspace.path.clone())
+        .or_else(|| {
+            default_workspace_path
+                .filter(|workspace_path| startup_path.starts_with(workspace_path))
+                .map(Path::to_path_buf)
+        })
+        .or_else(|| startup_path.parent().map(Path::to_path_buf))
+        .filter(|path| !path.as_os_str().is_empty())
+}
+
+fn desktop_default_workspace_path() -> Option<PathBuf> {
+    std::env::var_os("PAPYRO_WORKSPACE")
+        .map(PathBuf::from)
+        .or_else(|| std::env::current_dir().ok())
+}
+
+fn absolutize_startup_path(path: &Path) -> PathBuf {
+    if path.is_absolute() {
+        return path.to_path_buf();
+    }
+
+    std::env::current_dir()
+        .map(|current_dir| current_dir.join(path))
+        .unwrap_or_else(|_| path.to_path_buf())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -250,59 +305,4 @@ mod tests {
             Some(default_workspace)
         );
     }
-}
-
-fn desktop_bootstrap(startup_open_request: &DesktopStartupOpenRequest) -> WorkspaceBootstrap {
-    let recent_workspaces = papyro_storage::list_recent_workspaces(10).unwrap_or_else(|error| {
-        tracing::warn!(%error, "failed to resolve recent workspaces for startup markdown path");
-        Vec::new()
-    });
-    let default_workspace_path = desktop_default_workspace_path();
-
-    match startup_workspace_path(
-        startup_open_request,
-        &recent_workspaces,
-        default_workspace_path.as_deref(),
-    ) {
-        Some(workspace_path) => papyro_storage::bootstrap_from_workspace(&workspace_path),
-        None => papyro_storage::bootstrap_from_env_or_current_dir(),
-    }
-}
-
-fn startup_workspace_path(
-    startup_open_request: &DesktopStartupOpenRequest,
-    recent_workspaces: &[papyro_core::models::Workspace],
-    default_workspace_path: Option<&Path>,
-) -> Option<PathBuf> {
-    let startup_path = startup_open_request.markdown_paths.first()?;
-    let startup_path = absolutize_startup_path(startup_path);
-
-    recent_workspaces
-        .iter()
-        .filter(|workspace| startup_path.starts_with(&workspace.path))
-        .max_by_key(|workspace| workspace.path.components().count())
-        .map(|workspace| workspace.path.clone())
-        .or_else(|| {
-            default_workspace_path
-                .filter(|workspace_path| startup_path.starts_with(workspace_path))
-                .map(Path::to_path_buf)
-        })
-        .or_else(|| startup_path.parent().map(Path::to_path_buf))
-        .filter(|path| !path.as_os_str().is_empty())
-}
-
-fn desktop_default_workspace_path() -> Option<PathBuf> {
-    std::env::var_os("PAPYRO_WORKSPACE")
-        .map(PathBuf::from)
-        .or_else(|| std::env::current_dir().ok())
-}
-
-fn absolutize_startup_path(path: &Path) -> PathBuf {
-    if path.is_absolute() {
-        return path.to_path_buf();
-    }
-
-    std::env::current_dir()
-        .map(|current_dir| current_dir.join(path))
-        .unwrap_or_else(|_| path.to_path_buf())
 }

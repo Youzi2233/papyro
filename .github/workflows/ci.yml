@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  quality:
+    name: Quality Gates
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Linux desktop dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgtk-3-dev \
+            libwebkit2gtk-4.1-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: js/package-lock.json
+
+      - name: Install JS dependencies
+        run: npm ci --prefix js
+
+      - name: Rust format
+        run: cargo fmt --check
+
+      - name: Rust check
+        run: cargo check --workspace --all-features
+
+      - name: Rust clippy
+        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+
+      - name: Rust tests
+        run: cargo test --workspace
+
+      - name: Workspace dependency direction
+        run: node scripts/check-workspace-deps.js
+
+      - name: File line report
+        run: node scripts/report-file-lines.js
+
+      - name: Editor JS build
+        run: npm --prefix js run build
+
+      - name: Editor JS tests
+        run: npm --prefix js test
+
+      - name: Editor bundle consistency
+        run: |
+          cmp assets/editor.js apps/desktop/assets/editor.js
+          cmp assets/editor.js apps/mobile/assets/editor.js
