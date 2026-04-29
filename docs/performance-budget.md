@@ -94,6 +94,7 @@ The fixture script writes deterministic Markdown files to `target/perf-fixtures/
 - `papyro-100kb.md`
 - `papyro-1mb.md`
 - `papyro-5mb.md`
+- `workspace-search-1000/`
 
 Capture the trace output and validate it with the smoke checker:
 
@@ -124,7 +125,9 @@ not silently rot.
 5. Collapse and expand the sidebar with `Ctrl+\`.
 6. Resize the sidebar and release the drag handle.
 7. Open Settings, Quick Open, Command Palette, and Workspace Search.
-8. Search a 1000-note workspace for a common term from Workspace Search.
+8. Open `target/perf-fixtures/workspace-search-1000/` as a workspace, then search
+   for `papyro-search-target` from Workspace Search. The target term appears in
+   the final 50 notes so the scan exercises the full 1000-file workspace.
 9. Close the active tab after editing content.
 
 Mode changes should be checked as a chain:

@@ -2,8 +2,10 @@
 import {
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -16,6 +18,12 @@ const fixtures = [
   { name: "papyro-1mb.md", bytes: 1024 * 1024 },
   { name: "papyro-5mb.md", bytes: 5 * 1024 * 1024 },
 ];
+const searchWorkspaceFixture = {
+  dirName: "workspace-search-1000",
+  noteCount: 1000,
+  targetStartIndex: 951,
+  query: "papyro-search-target",
+};
 
 const seedBlocks = [
   ({ index }) => `## Section ${index}
@@ -73,7 +81,7 @@ function printUsage() {
   node scripts/generate-perf-fixtures.js --self-test
 
 Writes deterministic 100KB, 1MB, and 5MB Markdown files for manual
-performance smoke testing.`);
+performance smoke testing, plus a 1000-note workspace search fixture.`);
 }
 
 function makeFixture(targetBytes) {
@@ -133,11 +141,70 @@ function writeFixtures(outputDir) {
     console.log(`${fixture.name}: ${byteLength(content)} bytes`);
   }
 
+  writeSearchWorkspaceFixture(outputDir);
   console.log(`Wrote fixtures to ${outputDir}`);
+}
+
+function writeSearchWorkspaceFixture(outputDir) {
+  const workspaceDir = join(outputDir, searchWorkspaceFixture.dirName);
+  rmSync(workspaceDir, { recursive: true, force: true });
+  mkdirSync(workspaceDir, { recursive: true });
+
+  for (let index = 1; index <= searchWorkspaceFixture.noteCount; index += 1) {
+    const batch = Math.ceil(index / 100);
+    const batchDir = join(workspaceDir, `batch-${String(batch).padStart(2, "0")}`);
+    mkdirSync(batchDir, { recursive: true });
+
+    const noteName = `${String(index).padStart(4, "0")}-search-fixture.md`;
+    writeFileSync(join(batchDir, noteName), makeSearchWorkspaceNote(index), "utf8");
+  }
+
+  console.log(
+    `${searchWorkspaceFixture.dirName}: ${searchWorkspaceFixture.noteCount} notes, query "${searchWorkspaceFixture.query}"`,
+  );
+}
+
+function makeSearchWorkspaceNote(index) {
+  const paddedIndex = String(index).padStart(4, "0");
+  const hasTarget = index >= searchWorkspaceFixture.targetStartIndex;
+  const targetParagraph = hasTarget
+    ? `The searchable marker ${searchWorkspaceFixture.query} appears near the end of the workspace.`
+    : "This note intentionally omits the late-search marker.";
+
+  return `---
+tags: [perf-fixture, batch-${Math.ceil(index / 100)}]
+---
+# Search Fixture Note ${paddedIndex}
+
+This deterministic note helps Papyro exercise workspace search across many
+small Markdown files without depending on private user data.
+
+${targetParagraph}
+
+- Note index: ${paddedIndex}
+- Search limit expectation: first 50 matching notes
+`;
 }
 
 function readFixtureBytes(outputDir, fixture) {
   return readFileSync(join(outputDir, fixture.name));
+}
+
+function listMarkdownFiles(dir) {
+  const entries = readdirSync(dir)
+    .map((entry) => join(dir, entry))
+    .sort();
+  const files = [];
+
+  for (const entry of entries) {
+    if (statSync(entry).isDirectory()) {
+      files.push(...listMarkdownFiles(entry));
+    } else if (entry.endsWith(".md")) {
+      files.push(entry);
+    }
+  }
+
+  return files;
 }
 
 function runSelfTest() {
@@ -159,6 +226,32 @@ function runSelfTest() {
         `${fixture.name} should match deterministic fixture content`,
       );
     }
+
+    const searchWorkspaceDir = join(outputDir, searchWorkspaceFixture.dirName);
+    const searchNotes = listMarkdownFiles(searchWorkspaceDir);
+    assert(
+      searchNotes.length === searchWorkspaceFixture.noteCount,
+      `${searchWorkspaceFixture.dirName} should contain ${searchWorkspaceFixture.noteCount} notes`,
+    );
+
+    const firstNote = readFileSync(searchNotes[0], "utf8");
+    const firstTargetNote = readFileSync(
+      searchNotes[searchWorkspaceFixture.targetStartIndex - 1],
+      "utf8",
+    );
+    const lastNote = readFileSync(searchNotes[searchNotes.length - 1], "utf8");
+    assert(
+      !firstNote.includes(searchWorkspaceFixture.query),
+      "early search notes should not contain the target query",
+    );
+    assert(
+      firstTargetNote.includes(searchWorkspaceFixture.query),
+      "target notes should begin at the expected index",
+    );
+    assert(
+      lastNote.includes(searchWorkspaceFixture.query),
+      "last search note should contain the target query",
+    );
 
     console.log("Performance fixture generator self-test passed.");
   } finally {
