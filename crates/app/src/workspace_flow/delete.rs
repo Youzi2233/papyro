@@ -2,7 +2,9 @@ use super::reload::reload_current_workspace_tree;
 use super::utils::current_workspace;
 use anyhow::{anyhow, Result};
 use papyro_core::storage::NoteStorage;
-use papyro_core::{close_tabs_under_path, EditorTabs, FileState, TabContentsMap};
+use papyro_core::{
+    close_tabs_under_path, EditorTabs, EmptyTrashOutcome, FileState, TabContentsMap,
+};
 use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -47,10 +49,13 @@ pub(crate) fn restore_trashed_note(
     Ok(restored_path)
 }
 
-pub(crate) fn empty_trash(storage: &dyn NoteStorage, file_state: &mut FileState) -> Result<usize> {
+pub(crate) fn empty_trash(
+    storage: &dyn NoteStorage,
+    file_state: &mut FileState,
+) -> Result<EmptyTrashOutcome> {
     let workspace = current_workspace(file_state)?;
-    let count = storage.empty_trash(&workspace)?;
+    let outcome = storage.empty_trash(&workspace)?;
     reload_current_workspace_tree(storage, file_state)?;
     file_state.trashed_notes.clear();
-    Ok(count)
+    Ok(outcome)
 }

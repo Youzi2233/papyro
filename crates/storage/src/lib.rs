@@ -4,7 +4,7 @@ pub mod index;
 
 pub use db::{create_pool, DbPool};
 pub use papyro_core::{
-    DeletePreview, OpenedNote, SavedNote, WorkspaceBootstrap, WorkspaceSnapshot,
+    DeletePreview, EmptyTrashOutcome, OpenedNote, SavedNote, WorkspaceBootstrap, WorkspaceSnapshot,
 };
 
 use anyhow::{anyhow, Result};
@@ -377,7 +377,9 @@ impl SqliteStorage {
         Ok(restore_path)
     }
 
-    pub fn empty_trash(&self, workspace: &Workspace) -> Result<usize> {
+    pub fn empty_trash(&self, workspace: &Workspace) -> Result<EmptyTrashOutcome> {
+        let trashed_notes = self.list_trashed_notes(workspace)?;
+        let orphaned_assets = orphaned_assets_after_empty_trash(workspace, &trashed_notes)?;
         let trash_root = workspace.path.join(WORKSPACE_TRASH_DIR_NAME);
         if trash_root.is_dir() {
             std::fs::remove_dir_all(&trash_root)?;
@@ -385,7 +387,13 @@ impl SqliteStorage {
             std::fs::remove_file(&trash_root)?;
         }
 
-        db::notes::delete_trashed_notes(&self.pool, &workspace.id)
+        let deleted_note_count = db::notes::delete_trashed_notes(&self.pool, &workspace.id)?;
+        let deleted_asset_count = delete_existing_asset_files(&orphaned_assets);
+
+        Ok(EmptyTrashOutcome {
+            deleted_note_count,
+            deleted_asset_count,
+        })
     }
 
     pub fn initialize_workspace(&self, root: &Path) -> Result<WorkspaceSnapshot> {
@@ -554,7 +562,7 @@ impl NoteStorage for SqliteStorage {
         SqliteStorage::restore_trashed_note(self, workspace, note_id)
     }
 
-    fn empty_trash(&self, workspace: &Workspace) -> Result<usize> {
+    fn empty_trash(&self, workspace: &Workspace) -> Result<EmptyTrashOutcome> {
         SqliteStorage::empty_trash(self, workspace)
     }
 
@@ -801,7 +809,7 @@ pub fn reload_workspace_tree(
     SqliteStorage::shared()?.reload_workspace_tree(workspace)
 }
 
-pub fn empty_trash(workspace: &Workspace) -> Result<usize> {
+pub fn empty_trash(workspace: &Workspace) -> Result<EmptyTrashOutcome> {
     SqliteStorage::shared()?.empty_trash(workspace)
 }
 
@@ -1177,6 +1185,84 @@ fn orphaned_assets_after_delete(workspace: &Workspace, delete_path: &Path) -> Re
     Ok(deleting_assets)
 }
 
+fn orphaned_assets_after_empty_trash(
+    workspace: &Workspace,
+    trashed_notes: &[TrashedNote],
+) -> Result<Vec<PathBuf>> {
+    let assets_dir = workspace_assets_dir(workspace);
+    let mut deleting_assets = Vec::new();
+
+    for trashed in trashed_notes {
+        let note_path = trashed_note_path(workspace, trashed);
+        if !note_path.is_file() {
+            continue;
+        }
+
+        let content = fs::read_note(&note_path)?;
+        let original_note_path = workspace.path.join(&trashed.note.relative_path);
+        collect_existing_assets(
+            workspace,
+            &assets_dir,
+            &original_note_path,
+            &content,
+            &mut deleting_assets,
+        );
+    }
+
+    if deleting_assets.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let mut retained_assets = Vec::new();
+    for note_path in live_workspace_notes(workspace) {
+        let content = fs::read_note(&note_path)?;
+        collect_existing_assets(
+            workspace,
+            &assets_dir,
+            &note_path,
+            &content,
+            &mut retained_assets,
+        );
+    }
+
+    deleting_assets.retain(|asset| !retained_assets.contains(asset));
+    deleting_assets.sort();
+    deleting_assets.dedup();
+    Ok(deleting_assets)
+}
+
+fn trashed_note_path(workspace: &Workspace, trashed: &TrashedNote) -> PathBuf {
+    workspace
+        .path
+        .join(WORKSPACE_TRASH_DIR_NAME)
+        .join(trashed.trashed_at.to_string())
+        .join(&trashed.note.relative_path)
+}
+
+fn delete_existing_asset_files(paths: &[PathBuf]) -> usize {
+    let mut deleted_count = 0;
+
+    for path in paths {
+        if !path.exists() {
+            continue;
+        }
+        if path.is_file() {
+            match std::fs::remove_file(path) {
+                Ok(()) => deleted_count += 1,
+                Err(error) => {
+                    tracing::warn!(
+                        path = %path.display(),
+                        %error,
+                        "failed to delete orphaned asset"
+                    );
+                }
+            }
+        }
+    }
+
+    deleted_count
+}
+
 fn collect_existing_assets(
     workspace: &Workspace,
     assets_dir: &Path,
@@ -1208,13 +1294,27 @@ fn markdown_files_under(path: &Path) -> Vec<PathBuf> {
 }
 
 fn remaining_workspace_notes(workspace: &Workspace, delete_path: &Path) -> Vec<PathBuf> {
+    live_workspace_notes(workspace)
+        .into_iter()
+        .filter(|note_path| !same_or_descendant(note_path, delete_path))
+        .collect()
+}
+
+fn live_workspace_notes(workspace: &Workspace) -> Vec<PathBuf> {
+    let trash_root = workspace.path.join(WORKSPACE_TRASH_DIR_NAME);
+    let assets_dir = workspace_assets_dir(workspace);
+
     walkdir::WalkDir::new(&workspace.path)
         .into_iter()
-        .filter_entry(|entry| entry.path() != delete_path)
+        .filter_entry(|entry| entry.path() != trash_root && entry.path() != assets_dir)
         .filter_map(Result::ok)
         .filter(|entry| entry.file_type().is_file() && is_markdown(entry.path()))
         .map(|entry| entry.path().to_path_buf())
         .collect()
+}
+
+fn same_or_descendant(path: &Path, root: &Path) -> bool {
+    path == root || path.starts_with(root)
 }
 
 fn is_markdown(path: &Path) -> bool {
@@ -1531,9 +1631,10 @@ mod tests {
         storage.open_note(&workspace, &deleted_path)?;
         storage.trash_path(&workspace, &deleted_path)?;
 
-        let deleted_count = storage.empty_trash(&workspace)?;
+        let outcome = storage.empty_trash(&workspace)?;
 
-        assert_eq!(deleted_count, 1);
+        assert_eq!(outcome.deleted_note_count, 1);
+        assert_eq!(outcome.deleted_asset_count, 0);
         assert!(!workspace_root.join(WORKSPACE_TRASH_DIR_NAME).exists());
         assert!(storage.list_trashed_notes(&workspace)?.is_empty());
         assert!(db::notes::get_note(&storage.pool, &deleted_id)?.is_none());
@@ -1553,6 +1654,39 @@ mod tests {
         )?;
         assert_eq!(deleted_rows, 0);
         assert_eq!(deleted_recent_rows, 0);
+
+        Ok(())
+    }
+
+    #[test]
+    fn empty_trash_removes_only_assets_referenced_by_trashed_notes() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let workspace_root = create_workspace(&temp)?;
+        let notes_dir = workspace_root.join("notes");
+        let assets_dir = workspace_root.join("assets");
+        std::fs::create_dir_all(&notes_dir)?;
+        std::fs::create_dir_all(&assets_dir)?;
+        std::fs::write(assets_dir.join("orphan.png"), b"orphan")?;
+        std::fs::write(assets_dir.join("shared.png"), b"shared")?;
+        let deleted_path = notes_dir.join("deleted.md");
+        let kept_path = notes_dir.join("keep.md");
+        std::fs::write(
+            &deleted_path,
+            "![orphan](../assets/orphan.png)\n![shared](../assets/shared.png)",
+        )?;
+        std::fs::write(&kept_path, "![shared](../assets/shared.png)")?;
+        let storage = test_storage(&temp)?;
+        let workspace = storage.initialize_workspace(&workspace_root)?.workspace;
+
+        storage.trash_path(&workspace, &deleted_path)?;
+
+        let outcome = storage.empty_trash(&workspace)?;
+
+        assert_eq!(outcome.deleted_note_count, 1);
+        assert_eq!(outcome.deleted_asset_count, 1);
+        assert!(!assets_dir.join("orphan.png").exists());
+        assert!(assets_dir.join("shared.png").exists());
+        assert!(kept_path.exists());
 
         Ok(())
     }

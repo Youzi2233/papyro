@@ -334,9 +334,10 @@ fn empty_trash_clears_trashed_notes_and_refreshes_tree() {
         vec![note_node("workspace/notes/keep.md", "note-keep")],
     )]);
 
-    let emptied_count = empty_trash(&storage, &mut file_state).expect("empty trash succeeds");
+    let outcome = empty_trash(&storage, &mut file_state).expect("empty trash succeeds");
 
-    assert_eq!(emptied_count, 1);
+    assert_eq!(outcome.deleted_note_count, 1);
+    assert_eq!(outcome.deleted_asset_count, 0);
     assert!(storage.trashed_notes.lock().unwrap().is_empty());
     assert!(file_state.trashed_notes.is_empty());
     assert!(file_state.file_tree.is_empty());

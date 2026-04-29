@@ -350,18 +350,27 @@ pub fn empty_workspace_trash(
     let mut next_file_state = file_state.read().clone();
 
     spawn(async move {
-        let result: BlockingResult<(usize, FileState)> = tokio::task::spawn_blocking(move || {
-            let emptied_count = empty_trash(storage.as_ref(), &mut next_file_state)?;
-            Ok::<_, anyhow::Error>((emptied_count, next_file_state))
-        })
-        .await;
+        let result: BlockingResult<(papyro_core::EmptyTrashOutcome, FileState)> =
+            tokio::task::spawn_blocking(move || {
+                let outcome = empty_trash(storage.as_ref(), &mut next_file_state)?;
+                Ok::<_, anyhow::Error>((outcome, next_file_state))
+            })
+            .await;
 
         match result {
-            Ok(Ok((emptied_count, next_file_state))) => {
+            Ok(Ok((outcome, next_file_state))) => {
                 file_state.set(next_file_state);
-                status_message.set(Some(format!(
-                    "Emptied trash and permanently deleted {emptied_count} note(s)"
-                )));
+                let mut message = format!(
+                    "Emptied trash and permanently deleted {} note(s)",
+                    outcome.deleted_note_count
+                );
+                if outcome.deleted_asset_count > 0 {
+                    message.push_str(&format!(
+                        " and cleaned {} attachment(s)",
+                        outcome.deleted_asset_count
+                    ));
+                }
+                status_message.set(Some(message));
             }
             Ok(Err(error)) => {
                 status_message.set(Some(format!("Empty trash failed: {error}")));

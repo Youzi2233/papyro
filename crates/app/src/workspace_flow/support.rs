@@ -4,7 +4,8 @@ use papyro_core::models::{
     Workspace, WorkspaceSettingsOverrides, WorkspaceTreeState,
 };
 use papyro_core::storage::{
-    DeletePreview, NoteStorage, OpenedNote, SavedNote, WorkspaceBootstrap, WorkspaceSnapshot,
+    DeletePreview, EmptyTrashOutcome, NoteStorage, OpenedNote, SavedNote, WorkspaceBootstrap,
+    WorkspaceSnapshot,
 };
 use papyro_core::{FileState, SearchResult};
 use std::collections::HashMap;
@@ -107,11 +108,14 @@ impl NoteStorage for MockStorage {
         Ok(PathBuf::from("workspace").join(trashed.note.relative_path))
     }
 
-    fn empty_trash(&self, _workspace: &Workspace) -> Result<usize> {
+    fn empty_trash(&self, _workspace: &Workspace) -> Result<EmptyTrashOutcome> {
         let mut trashed_notes = self.trashed_notes.lock().unwrap();
         let count = trashed_notes.len();
         trashed_notes.clear();
-        Ok(count)
+        Ok(EmptyTrashOutcome {
+            deleted_note_count: count,
+            deleted_asset_count: 0,
+        })
     }
 
     fn preview_delete_path(&self, _workspace: &Workspace, _path: &Path) -> Result<DeletePreview> {
