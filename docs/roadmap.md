@@ -626,7 +626,7 @@ Tabs 模式适合一个窗口内管理多篇笔记，是默认工作方式。
 - [x] 打开另一个 workspace 的文件前，先 flush dirty tabs 或给出保护提示。
 - [x] 打开失败不清空已有 tab。
 - [x] tabbar 表达 title、dirty、saving、failed 状态，不承担大工具栏职责。
-- [ ] recent files 记录系统双击和外部打开。
+- [x] recent files 记录系统双击和外部打开。
 
 验收证据：
 
@@ -634,6 +634,7 @@ Tabs 模式适合一个窗口内管理多篇笔记，是默认工作方式。
 - `EditorTabs::open_tab` 对相同 note id 只激活已有 tab，不创建重复 tab。
 - `dispatcher::run_open_markdown` 对当前 workspace 外路径先进入 dirty flush gate。
 - tabbar 从 `EditorTabItemViewModel.save_status` 渲染 dirty、saving、failed 指示。
+- 系统启动参数、已运行实例外部请求和 UI 打开都归一到 `OpenMarkdownTarget { path }`；`open_markdown_target_flow_bootstraps_external_file_parent_workspace` 覆盖外部文件打开后 recent files 更新。
 
 ### 5.4 MultiWindow 模式门控
 

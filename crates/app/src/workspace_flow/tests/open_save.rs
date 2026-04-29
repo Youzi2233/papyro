@@ -505,6 +505,16 @@ fn open_markdown_target_flow_bootstraps_external_file_parent_workspace() {
     assert_eq!(file_state.selected_path, Some(note_path));
     assert_eq!(editor_tabs.active_tab_id.as_deref(), Some("tab-loose"));
     assert_eq!(tab_contents.content_for_tab("tab-loose"), Some("# Loose"));
+    assert_eq!(file_state.recent_files.len(), 1);
+    assert_eq!(file_state.recent_files[0].note_id, "note-loose");
+    assert_eq!(
+        file_state.recent_files[0].relative_path,
+        PathBuf::from("loose.md")
+    );
+    assert_eq!(
+        file_state.recent_files[0].workspace_path,
+        PathBuf::from("external")
+    );
     assert_eq!(outcome.watch_path, Some(PathBuf::from("external")));
 }
 
