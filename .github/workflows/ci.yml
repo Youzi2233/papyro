@@ -6,6 +6,9 @@ on:
       - main
   pull_request:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   quality:
     name: Quality Gates
@@ -22,6 +25,7 @@ jobs:
             libgtk-3-dev \
             libwebkit2gtk-4.1-dev \
             libayatana-appindicator3-dev \
+            libxdo-dev \
             librsvg2-dev
 
       - name: Setup Rust
