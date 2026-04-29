@@ -187,7 +187,19 @@ impl AppDispatcher {
             AppAction::CloseTab(action) => {
                 close_tab(self.shell, self.state, action.tab_id);
             }
+            AppAction::CompareRecoveryDraft(action) => {
+                recovery::compare_recovery_draft(
+                    self.storage.clone(),
+                    self.state.file_state,
+                    self.state.recovery_drafts,
+                    self.state.recovery_comparison,
+                    self.state.status_message,
+                    action.note_id,
+                );
+            }
             AppAction::RestoreRecoveryDraft(action) => {
+                let mut recovery_comparison = self.state.recovery_comparison;
+                recovery_comparison.set(None);
                 recovery::restore_recovery_draft(
                     self.storage.clone(),
                     self.state.file_state,
@@ -199,6 +211,8 @@ impl AppDispatcher {
                 );
             }
             AppAction::DiscardRecoveryDraft(action) => {
+                let mut recovery_comparison = self.state.recovery_comparison;
+                recovery_comparison.set(None);
                 recovery::discard_recovery_draft(
                     self.storage.clone(),
                     self.state.file_state,
@@ -206,6 +220,10 @@ impl AppDispatcher {
                     self.state.status_message,
                     action.note_id,
                 );
+            }
+            AppAction::CloseRecoveryComparison => {
+                let mut recovery_comparison = self.state.recovery_comparison;
+                recovery_comparison.set(None);
             }
             AppAction::ToggleOutline => {
                 let mut ui_state = self.state.ui_state;
@@ -409,8 +427,10 @@ impl AppDispatcher {
         let save_conflicted_active_note_as = self.clone();
         let save_tab = self.clone();
         let close_tab = self.clone();
+        let compare_recovery_draft = self.clone();
         let restore_recovery_draft = self.clone();
         let discard_recovery_draft = self.clone();
+        let close_recovery_comparison = self.clone();
         let toggle_outline = self.clone();
         let toggle_sidebar = self.clone();
         let toggle_theme = self.clone();
@@ -483,11 +503,17 @@ impl AppDispatcher {
             close_tab: EventHandler::new(move |tab_id| {
                 close_tab.dispatch(AppAction::close_tab(tab_id));
             }),
+            compare_recovery_draft: EventHandler::new(move |note_id| {
+                compare_recovery_draft.dispatch(AppAction::compare_recovery_draft(note_id));
+            }),
             restore_recovery_draft: EventHandler::new(move |note_id| {
                 restore_recovery_draft.dispatch(AppAction::restore_recovery_draft(note_id));
             }),
             discard_recovery_draft: EventHandler::new(move |note_id| {
                 discard_recovery_draft.dispatch(AppAction::discard_recovery_draft(note_id));
+            }),
+            close_recovery_comparison: EventHandler::new(move |_| {
+                close_recovery_comparison.dispatch(AppAction::CloseRecoveryComparison);
             }),
             toggle_outline: EventHandler::new(move |_| {
                 toggle_outline.dispatch(AppAction::ToggleOutline);
@@ -1005,6 +1031,20 @@ mod tests {
         assert_eq!(
             AppAction::close_tab("tab-a".to_string()).trace_interaction_path(),
             "editor.tab_close"
+        );
+        assert_eq!(
+            AppAction::compare_recovery_draft("note-a".to_string()),
+            AppAction::CompareRecoveryDraft(crate::actions::RecoveryDraftAction {
+                note_id: "note-a".to_string()
+            })
+        );
+        assert_eq!(
+            AppAction::compare_recovery_draft("note-a".to_string()).trace_interaction_path(),
+            "editor.recovery"
+        );
+        assert_eq!(
+            AppAction::CloseRecoveryComparison.trace_name(),
+            "close_recovery_comparison"
         );
         assert_eq!(AppAction::ToggleOutline.trace_name(), "toggle_outline");
         assert_eq!(

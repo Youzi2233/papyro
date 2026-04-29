@@ -49,6 +49,13 @@ impl NoteStorage for MockStorage {
             .ok_or_else(|| anyhow!("Missing opened note for {}", path.display()))
     }
 
+    fn read_note_content(&self, _workspace: &Workspace, path: &Path) -> Result<String> {
+        self.opened_notes
+            .get(path)
+            .map(|note| note.content.clone())
+            .ok_or_else(|| anyhow!("Missing note content for {}", path.display()))
+    }
+
     fn save_note(
         &self,
         _workspace: &Workspace,

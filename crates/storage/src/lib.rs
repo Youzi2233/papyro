@@ -272,6 +272,10 @@ impl SqliteStorage {
         })
     }
 
+    pub fn read_note_content(&self, _workspace: &Workspace, path: &Path) -> Result<String> {
+        fs::read_note(path)
+    }
+
     pub fn save_note(
         &self,
         workspace: &Workspace,
@@ -612,6 +616,10 @@ impl SqliteStorage {
 impl NoteStorage for SqliteStorage {
     fn open_note(&self, workspace: &Workspace, path: &Path) -> Result<OpenedNote> {
         SqliteStorage::open_note(self, workspace, path)
+    }
+
+    fn read_note_content(&self, workspace: &Workspace, path: &Path) -> Result<String> {
+        SqliteStorage::read_note_content(self, workspace, path)
     }
 
     fn save_note(

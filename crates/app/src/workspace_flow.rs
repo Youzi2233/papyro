@@ -23,7 +23,7 @@ pub(crate) use open::{
 };
 #[cfg(test)]
 pub(crate) use open::{open_markdown_from_storage, open_note_from_storage};
-pub(crate) use recovery::restore_recovery_draft_in_state;
+pub(crate) use recovery::{compare_recovery_draft_in_storage, restore_recovery_draft_in_state};
 pub(crate) use reload::{
     apply_workspace_bootstrap, reload_workspace_or_bootstrap, WorkspaceReloadOutcome,
 };

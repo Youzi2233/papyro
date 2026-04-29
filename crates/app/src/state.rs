@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 use papyro_core::{
-    models::RecoveryDraft, EditorTabs, FileState, TabContentsMap, UiState, WorkspaceBootstrap,
-    WorkspaceSearchState,
+    models::{RecoveryDraft, RecoveryDraftComparison},
+    EditorTabs, FileState, TabContentsMap, UiState, WorkspaceBootstrap, WorkspaceSearchState,
 };
 use papyro_ui::commands::EditorRuntimeCommandQueue;
 use std::path::PathBuf;
@@ -16,6 +16,7 @@ pub(crate) struct RuntimeState {
     pub ui_state: Signal<UiState>,
     pub workspace_search: Signal<WorkspaceSearchState>,
     pub recovery_drafts: Signal<Vec<RecoveryDraft>>,
+    pub recovery_comparison: Signal<Option<RecoveryDraftComparison>>,
     pub status_message: Signal<Option<String>>,
     pub workspace_watch_path: Signal<Option<PathBuf>>,
     pub pending_close_tab: Signal<Option<String>>,
@@ -45,6 +46,7 @@ pub(crate) fn use_runtime_state(bootstrap: WorkspaceBootstrap) -> RuntimeState {
         }),
         workspace_search: use_signal(WorkspaceSearchState::default),
         recovery_drafts: use_signal(|| initial_recovery_drafts),
+        recovery_comparison: use_signal(|| None::<RecoveryDraftComparison>),
         status_message: use_signal(|| Some(initial_status_message)),
         workspace_watch_path: use_signal(|| initial_workspace_root),
         pending_close_tab: use_signal(|| None::<String>),

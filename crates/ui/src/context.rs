@@ -6,8 +6,8 @@ use crate::view_model::{
 };
 use dioxus::prelude::*;
 use papyro_core::{
-    models::RecoveryDraft,
     models::{DocumentStats, Theme},
+    models::{RecoveryDraft, RecoveryDraftComparison},
     EditorTabs, FileState, TabContentsMap, UiState, WorkspaceSearchState,
 };
 use std::path::PathBuf;
@@ -76,6 +76,7 @@ pub struct AppContext {
     pub ui_state: Signal<UiState>,
     pub workspace_search: Signal<WorkspaceSearchState>,
     pub recovery_drafts: Signal<Vec<RecoveryDraft>>,
+    pub recovery_comparison: Signal<Option<RecoveryDraftComparison>>,
     pub status_message: Signal<Option<String>>,
     pub pending_close_tab: Signal<Option<String>>,
     pub pending_delete_path: Signal<Option<PathBuf>>,

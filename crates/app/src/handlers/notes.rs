@@ -80,6 +80,7 @@ pub async fn open_markdown(
             }
             if let Some(recovery_drafts) = next_state.recovery_drafts {
                 state.recovery_drafts.set(recovery_drafts);
+                state.recovery_comparison.set(None);
             }
         }
         Ok(Err(error)) => {

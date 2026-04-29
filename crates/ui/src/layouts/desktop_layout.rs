@@ -1,7 +1,13 @@
 use crate::components::{
-    command_palette::CommandPaletteModal, editor::EditorPane, header::AppHeader,
-    quick_open::QuickOpenModal, recovery::RecoveryDraftsModal, search::SearchModal,
-    settings::SettingsModal, sidebar::Sidebar, status_bar::StatusBar,
+    command_palette::CommandPaletteModal,
+    editor::EditorPane,
+    header::AppHeader,
+    quick_open::QuickOpenModal,
+    recovery::{RecoveryDraftCompareModal, RecoveryDraftsModal},
+    search::SearchModal,
+    settings::SettingsModal,
+    sidebar::Sidebar,
+    status_bar::StatusBar,
 };
 use crate::context::use_app_context;
 use crate::perf::{perf_timer, trace_chrome_open_modal};
@@ -153,6 +159,7 @@ fn DesktopModalLayer(
 ) -> Element {
     let app = use_app_context();
     let recovery_model = app.recovery_model.read().clone();
+    let has_recovery_comparison = app.recovery_comparison.read().is_some();
     let mut show_recovery = use_signal(|| true);
     let reset_recovery_model = app.recovery_model;
     use_effect(move || {
@@ -164,6 +171,9 @@ fn DesktopModalLayer(
     rsx! {
         if show_recovery() && recovery_model.has_drafts() {
             RecoveryDraftsModal { on_close: move |_| show_recovery.set(false) }
+        }
+        if has_recovery_comparison {
+            RecoveryDraftCompareModal {}
         }
         if *show_settings.read() {
             SettingsModal { on_close: move |_| show_settings.set(false) }

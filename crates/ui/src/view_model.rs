@@ -1,6 +1,6 @@
 use papyro_core::models::{
-    AppSettings, DocumentStats, EditorTab, FileNode, FileNodeKind, RecoveryDraft, SaveStatus,
-    Theme, ViewMode, WorkspaceSettingsOverrides,
+    AppSettings, DocumentStats, EditorTab, FileNode, FileNodeKind, RecoveryDraft,
+    RecoveryDraftComparison, SaveStatus, Theme, ViewMode, WorkspaceSettingsOverrides,
 };
 use papyro_core::{
     DocumentSnapshot, EditorTabs, FileState, SearchField, SearchHighlight, SearchMatch,
@@ -95,6 +95,19 @@ pub struct RecoveryDraftItemViewModel {
     pub relative_path_label: String,
     pub preview: String,
     pub updated_at: i64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RecoveryDraftComparisonViewModel {
+    pub note_id: String,
+    pub title: String,
+    pub relative_path_label: String,
+    pub draft_content: String,
+    pub disk_content: String,
+    pub disk_error: Option<String>,
+    pub is_identical: bool,
+    pub draft_line_count: usize,
+    pub disk_line_count: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -497,12 +510,36 @@ impl RecoveryDraftsViewModel {
     }
 }
 
+impl RecoveryDraftComparisonViewModel {
+    pub fn from_comparison(comparison: &RecoveryDraftComparison) -> Self {
+        let disk_content = comparison.disk_content.clone().unwrap_or_default();
+        Self {
+            note_id: comparison.note_id.clone(),
+            title: comparison.title.clone(),
+            relative_path_label: comparison.relative_path.display().to_string(),
+            draft_line_count: visible_line_count(&comparison.draft_content),
+            disk_line_count: visible_line_count(&disk_content),
+            is_identical: comparison
+                .disk_content
+                .as_ref()
+                .is_some_and(|disk_content| disk_content == &comparison.draft_content),
+            draft_content: comparison.draft_content.clone(),
+            disk_content,
+            disk_error: comparison.disk_error.clone(),
+        }
+    }
+}
+
 fn recovery_preview(content: &str) -> String {
     content
         .lines()
         .find(|line| !line.trim().is_empty())
         .map(|line| line.trim().chars().take(96).collect())
         .unwrap_or_else(|| "Empty draft".to_string())
+}
+
+fn visible_line_count(content: &str) -> usize {
+    content.lines().count().max(1)
 }
 
 impl EditorSurfaceViewModel {
@@ -1201,6 +1238,27 @@ mod tests {
         assert_eq!(model.drafts[0].note_id, "new");
         assert_eq!(model.drafts[0].preview, "# New draft");
         assert_eq!(model.drafts[1].preview, "# Old draft");
+    }
+
+    #[test]
+    fn recovery_draft_comparison_view_model_reports_disk_state() {
+        let comparison = RecoveryDraftComparison {
+            note_id: "note-a".to_string(),
+            title: "A".to_string(),
+            relative_path: PathBuf::from("notes/a.md"),
+            draft_content: "# A\n\nRecovered".to_string(),
+            disk_content: Some("# A".to_string()),
+            disk_error: None,
+        };
+
+        let model = RecoveryDraftComparisonViewModel::from_comparison(&comparison);
+
+        assert_eq!(model.note_id, "note-a");
+        assert_eq!(model.relative_path_label, "notes/a.md");
+        assert_eq!(model.draft_line_count, 3);
+        assert_eq!(model.disk_line_count, 1);
+        assert!(!model.is_identical);
+        assert_eq!(model.disk_content, "# A");
     }
 
     #[test]

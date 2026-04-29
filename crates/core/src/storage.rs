@@ -72,6 +72,7 @@ pub struct WorkspaceBootstrap {
 
 pub trait NoteStorage: Send + Sync {
     fn open_note(&self, workspace: &Workspace, path: &Path) -> Result<OpenedNote>;
+    fn read_note_content(&self, workspace: &Workspace, path: &Path) -> Result<String>;
     fn save_note(&self, workspace: &Workspace, tab: &EditorTab, content: &str)
         -> Result<SavedNote>;
     fn overwrite_note(

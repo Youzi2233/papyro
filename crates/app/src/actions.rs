@@ -24,8 +24,10 @@ pub enum AppAction {
     SaveConflictedActiveNoteAs,
     SaveTab(SaveTab),
     CloseTab(CloseTab),
+    CompareRecoveryDraft(RecoveryDraftAction),
     RestoreRecoveryDraft(RecoveryDraftAction),
     DiscardRecoveryDraft(RecoveryDraftAction),
+    CloseRecoveryComparison,
     ToggleOutline,
     ToggleSidebar(ChromeTrigger),
     ToggleTheme,
@@ -194,8 +196,10 @@ impl AppAction {
             Self::SaveConflictedActiveNoteAs => "save_conflicted_active_note_as",
             Self::SaveTab(_) => "save_tab",
             Self::CloseTab(_) => "close_tab",
+            Self::CompareRecoveryDraft(_) => "compare_recovery_draft",
             Self::RestoreRecoveryDraft(_) => "restore_recovery_draft",
             Self::DiscardRecoveryDraft(_) => "discard_recovery_draft",
+            Self::CloseRecoveryComparison => "close_recovery_comparison",
             Self::ToggleOutline => "toggle_outline",
             Self::ToggleSidebar(_) => "toggle_sidebar",
             Self::ToggleTheme => "toggle_theme",
@@ -247,7 +251,10 @@ impl AppAction {
             | Self::SaveConflictedActiveNoteAs
             | Self::SaveTab(_) => "editor.save",
             Self::CloseTab(_) => "editor.tab_close",
-            Self::RestoreRecoveryDraft(_) | Self::DiscardRecoveryDraft(_) => "editor.recovery",
+            Self::CompareRecoveryDraft(_)
+            | Self::RestoreRecoveryDraft(_)
+            | Self::DiscardRecoveryDraft(_)
+            | Self::CloseRecoveryComparison => "editor.recovery",
             Self::ToggleOutline => "chrome.outline",
             Self::ToggleSidebar(_) | Self::SetSidebarWidth(_) => "chrome.sidebar",
             Self::ToggleTheme => "chrome.theme",
@@ -311,6 +318,10 @@ impl AppAction {
 
     pub fn close_tab(tab_id: String) -> Self {
         Self::CloseTab(CloseTab { tab_id })
+    }
+
+    pub fn compare_recovery_draft(note_id: String) -> Self {
+        Self::CompareRecoveryDraft(RecoveryDraftAction { note_id })
     }
 
     pub fn restore_recovery_draft(note_id: String) -> Self {

@@ -19,6 +19,49 @@ fn draft(note_id: &str, relative_path: &str, title: &str, content: &str) -> Reco
 }
 
 #[test]
+fn compare_recovery_draft_reads_disk_content_without_restoring() {
+    let note_path = PathBuf::from("workspace/notes/a.md");
+    let opened_note = OpenedNote {
+        tab: tab("tab-a", "note-a", "workspace/notes/a.md"),
+        content: "# Disk".to_string(),
+        recent_files: Vec::new(),
+    };
+    let storage = MockStorage {
+        opened_notes: HashMap::from([(note_path, opened_note)]),
+        ..MockStorage::default()
+    };
+    let file_state = file_state_with_tree(vec![note_node("workspace/notes/a.md", "note-a")]);
+    let recovery_drafts = vec![draft("note-a", "notes/a.md", "A", "# Draft")];
+
+    let comparison =
+        compare_recovery_draft_in_storage(&storage, &file_state, &recovery_drafts, "note-a")
+            .unwrap();
+
+    assert_eq!(comparison.title, "A");
+    assert_eq!(comparison.draft_content, "# Draft");
+    assert_eq!(comparison.disk_content.as_deref(), Some("# Disk"));
+    assert_eq!(comparison.disk_error, None);
+}
+
+#[test]
+fn compare_recovery_draft_keeps_draft_when_disk_content_is_missing() {
+    let storage = MockStorage::default();
+    let file_state = file_state_with_tree(vec![note_node("workspace/notes/a.md", "note-a")]);
+    let recovery_drafts = vec![draft("note-a", "notes/a.md", "A", "# Draft")];
+
+    let comparison =
+        compare_recovery_draft_in_storage(&storage, &file_state, &recovery_drafts, "note-a")
+            .unwrap();
+
+    assert_eq!(comparison.disk_content, None);
+    assert!(comparison
+        .disk_error
+        .as_deref()
+        .is_some_and(|error| error.contains("Missing note content")));
+    assert_eq!(comparison.draft_content, "# Draft");
+}
+
+#[test]
 fn restore_recovery_draft_opens_note_and_marks_tab_dirty() {
     let note_path = PathBuf::from("workspace/notes/a.md");
     let opened_note = OpenedNote {

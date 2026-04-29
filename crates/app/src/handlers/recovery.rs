@@ -1,11 +1,56 @@
 use dioxus::prelude::*;
-use papyro_core::models::RecoveryDraft;
+use papyro_core::models::{RecoveryDraft, RecoveryDraftComparison};
 use papyro_core::{EditorTabs, FileState, NoteStorage, TabContentsMap};
 use std::sync::Arc;
 
-use crate::workspace_flow::restore_recovery_draft_in_state;
+use crate::workspace_flow::{compare_recovery_draft_in_storage, restore_recovery_draft_in_state};
 
 type BlockingResult<T> = Result<Result<T, anyhow::Error>, tokio::task::JoinError>;
+
+pub fn compare_recovery_draft(
+    storage: Arc<dyn NoteStorage>,
+    file_state: Signal<FileState>,
+    recovery_drafts: Signal<Vec<RecoveryDraft>>,
+    mut recovery_comparison: Signal<Option<RecoveryDraftComparison>>,
+    mut status_message: Signal<Option<String>>,
+    note_id: String,
+) {
+    let file_state = file_state.read().clone();
+    let recovery_drafts = recovery_drafts.read().clone();
+
+    spawn(async move {
+        let result = tokio::task::spawn_blocking(move || {
+            compare_recovery_draft_in_storage(
+                storage.as_ref(),
+                &file_state,
+                &recovery_drafts,
+                &note_id,
+            )
+        })
+        .await;
+
+        match result {
+            Ok(Ok(comparison)) => {
+                let has_disk_error = comparison.disk_error.is_some();
+                let title = comparison.title.clone();
+                recovery_comparison.set(Some(comparison));
+                if has_disk_error {
+                    status_message.set(Some(format!(
+                        "Loaded recovery comparison for {title}; disk content is unavailable."
+                    )));
+                } else {
+                    status_message.set(Some(format!("Loaded recovery comparison for {title}")));
+                }
+            }
+            Ok(Err(error)) => {
+                status_message.set(Some(format!("Compare recovery draft failed: {error}")));
+            }
+            Err(error) => {
+                status_message.set(Some(format!("Compare recovery draft failed: {error}")));
+            }
+        }
+    });
+}
 
 pub fn restore_recovery_draft(
     storage: Arc<dyn NoteStorage>,

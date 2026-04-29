@@ -101,6 +101,16 @@ pub struct RecoveryDraft {
     pub updated_at: i64,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct RecoveryDraftComparison {
+    pub note_id: String,
+    pub title: String,
+    pub relative_path: PathBuf,
+    pub draft_content: String,
+    pub disk_content: Option<String>,
+    pub disk_error: Option<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct AppSettings {
     pub theme: Theme,

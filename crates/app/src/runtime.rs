@@ -120,6 +120,7 @@ pub fn use_app_runtime(
         ui_state: state.ui_state,
         workspace_search: state.workspace_search,
         recovery_drafts: state.recovery_drafts,
+        recovery_comparison: state.recovery_comparison,
         status_message: state.status_message,
         pending_close_tab: state.pending_close_tab,
         pending_delete_path: state.pending_delete_path,
