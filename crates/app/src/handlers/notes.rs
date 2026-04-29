@@ -1,6 +1,7 @@
 use dioxus::prelude::*;
 use papyro_core::{EditorTabs, FileState, NoteStorage, TabContentsMap};
 use papyro_editor::parser::summarize_markdown;
+use papyro_platform::PlatformApi;
 use papyro_ui::commands::OpenMarkdownTarget;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -8,9 +9,10 @@ use std::sync::Arc;
 use crate::perf::{perf_timer, trace_editor_open_markdown};
 use crate::state::RuntimeState;
 use crate::workspace_flow::{
-    apply_conflict_reload, apply_save_error, apply_save_failure, apply_save_success,
-    begin_conflict_overwrite_tab, begin_conflict_reload_tab, begin_save_tab,
-    open_markdown_target_from_storage, read_conflict_reload_from_storage, write_overwrite_snapshot,
+    apply_conflict_reload, apply_save_as_success, apply_save_error, apply_save_failure,
+    apply_save_success, begin_conflict_overwrite_tab, begin_conflict_reload_tab,
+    begin_conflict_save_as_tab, begin_save_tab, open_markdown_target_from_storage,
+    read_conflict_reload_from_storage, write_overwrite_snapshot, write_save_as_snapshot,
     write_save_snapshot,
 };
 
@@ -161,6 +163,61 @@ pub fn reload_conflicted_active_note(
         status_message,
         &active_tab_id,
     );
+}
+
+pub fn save_conflicted_active_note_as(
+    platform: Arc<dyn PlatformApi>,
+    storage: Arc<dyn NoteStorage>,
+    file_state: Signal<FileState>,
+    editor_tabs: Signal<EditorTabs>,
+    tab_contents: Signal<TabContentsMap>,
+    mut status_message: Signal<Option<String>>,
+) {
+    let active_tab = editor_tabs.read().active_tab().cloned();
+    let Some(active_tab) = active_tab else {
+        return;
+    };
+    if active_tab.save_status != papyro_core::models::SaveStatus::Conflict {
+        return;
+    }
+
+    let default_name = active_tab
+        .path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or("Untitled.md")
+        .to_string();
+    let directory = active_tab.path.parent().map(|path| path.to_path_buf());
+    let tab_id = active_tab.id.clone();
+
+    spawn(async move {
+        match platform
+            .pick_save_file(
+                &[("Markdown", &["md", "markdown"])],
+                &default_name,
+                directory,
+            )
+            .await
+        {
+            Ok(Some(target_path)) => {
+                save_conflicted_tab_as_path(
+                    storage,
+                    file_state,
+                    editor_tabs,
+                    tab_contents,
+                    status_message,
+                    tab_id,
+                    target_path,
+                );
+            }
+            Ok(None) => {
+                status_message.set(Some("Save as cancelled".to_string()));
+            }
+            Err(error) => {
+                status_message.set(Some(format!("Save as failed: {error}")));
+            }
+        }
+    });
 }
 
 pub fn save_tab_by_id(
@@ -354,6 +411,79 @@ pub fn reload_conflicted_tab_by_id(
             }
             Err(error) => {
                 status_message.set(Some(format!("Reload from disk failed: {error}")));
+            }
+        }
+    });
+}
+
+fn save_conflicted_tab_as_path(
+    storage: Arc<dyn NoteStorage>,
+    mut file_state: Signal<FileState>,
+    mut editor_tabs: Signal<EditorTabs>,
+    tab_contents: Signal<TabContentsMap>,
+    mut status_message: Signal<Option<String>>,
+    tab_id: String,
+    target_path: PathBuf,
+) {
+    let snapshot = {
+        let file_state = file_state.read().clone();
+        let mut editor_tabs = editor_tabs.write();
+        let tab_contents = tab_contents.read();
+        begin_conflict_save_as_tab(
+            &file_state,
+            &mut editor_tabs,
+            &tab_contents,
+            &tab_id,
+            target_path,
+        )
+    };
+
+    let snapshot = match snapshot {
+        Ok(snapshot) => snapshot,
+        Err(error) => {
+            status_message.set(Some(format!("Save as failed: {error}")));
+            return;
+        }
+    };
+
+    spawn(async move {
+        let snapshot_for_io = snapshot.clone();
+        let result: Result<
+            Result<(papyro_core::SavedAsNote, Vec<papyro_core::RecentFile>), anyhow::Error>,
+            tokio::task::JoinError,
+        > = tokio::task::spawn_blocking(move || {
+            write_save_as_snapshot(storage.as_ref(), &snapshot_for_io)
+        })
+        .await;
+
+        match result {
+            Ok(Ok((saved_note, recent_files))) => {
+                let saved_title = saved_note.title.clone();
+                let tab_contents = tab_contents.read();
+                let mut file_state = file_state.write();
+                let mut editor_tabs = editor_tabs.write();
+                if apply_save_as_success(
+                    &mut file_state,
+                    &mut editor_tabs,
+                    &tab_contents,
+                    &snapshot,
+                    saved_note,
+                    recent_files,
+                ) {
+                    status_message.set(Some(format!("Saved {saved_title} as new note")));
+                }
+            }
+            Ok(Err(error)) => {
+                let tab_contents = tab_contents.read();
+                let mut editor_tabs = editor_tabs.write();
+                apply_save_failure(&mut editor_tabs, &tab_contents, &snapshot.save);
+                status_message.set(Some(format!("Save as failed: {error}")));
+            }
+            Err(error) => {
+                let tab_contents = tab_contents.read();
+                let mut editor_tabs = editor_tabs.write();
+                apply_save_failure(&mut editor_tabs, &tab_contents, &snapshot.save);
+                status_message.set(Some(format!("Save as failed: {error}")));
             }
         }
     });

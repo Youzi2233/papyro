@@ -154,6 +154,7 @@ pub struct AppCommands {
     pub save_active_note: EventHandler<()>,
     pub reload_conflicted_active_note: EventHandler<()>,
     pub overwrite_active_note: EventHandler<()>,
+    pub save_conflicted_active_note_as: EventHandler<()>,
     pub save_tab: EventHandler<String>,
     pub close_tab: EventHandler<String>,
     pub toggle_outline: EventHandler<()>,

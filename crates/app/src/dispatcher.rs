@@ -161,6 +161,18 @@ impl AppDispatcher {
                 let mut pending_close_tab = self.state.pending_close_tab;
                 pending_close_tab.set(None);
             }
+            AppAction::SaveConflictedActiveNoteAs => {
+                notes::save_conflicted_active_note_as(
+                    self.platform.clone(),
+                    self.storage.clone(),
+                    self.state.file_state,
+                    self.state.editor_tabs,
+                    self.state.tab_contents,
+                    self.state.status_message,
+                );
+                let mut pending_close_tab = self.state.pending_close_tab;
+                pending_close_tab.set(None);
+            }
             AppAction::SaveTab(action) => {
                 notes::save_tab_by_id(
                     self.storage.clone(),
@@ -358,6 +370,7 @@ impl AppDispatcher {
         let save_active_note = self.clone();
         let reload_conflicted_active_note = self.clone();
         let overwrite_active_note = self.clone();
+        let save_conflicted_active_note_as = self.clone();
         let save_tab = self.clone();
         let close_tab = self.clone();
         let toggle_outline = self.clone();
@@ -421,6 +434,9 @@ impl AppDispatcher {
             }),
             overwrite_active_note: EventHandler::new(move |_| {
                 overwrite_active_note.dispatch(AppAction::OverwriteActiveNote);
+            }),
+            save_conflicted_active_note_as: EventHandler::new(move |_| {
+                save_conflicted_active_note_as.dispatch(AppAction::SaveConflictedActiveNoteAs);
             }),
             save_tab: EventHandler::new(move |tab_id| {
                 save_tab.dispatch(AppAction::save_tab(tab_id));

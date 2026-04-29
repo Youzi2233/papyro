@@ -4,8 +4,8 @@ use papyro_core::models::{
     Workspace, WorkspaceSettingsOverrides, WorkspaceTreeState,
 };
 use papyro_core::storage::{
-    DeletePreview, EmptyTrashOutcome, NoteStorage, OpenedNote, SavedNote, WorkspaceBootstrap,
-    WorkspaceSnapshot,
+    DeletePreview, EmptyTrashOutcome, NoteStorage, OpenedNote, SavedAsNote, SavedNote,
+    WorkspaceBootstrap, WorkspaceSnapshot,
 };
 use papyro_core::{FileState, SearchResult};
 use std::collections::HashMap;
@@ -16,6 +16,7 @@ use std::sync::Mutex;
 pub(super) struct MockStorage {
     pub opened_notes: HashMap<PathBuf, OpenedNote>,
     pub save_result: Option<SavedNote>,
+    pub save_as_result: Option<SavedAsNote>,
     pub save_conflict: bool,
     pub recent_files: Vec<RecentFile>,
     pub tags: Mutex<Vec<Tag>>,
@@ -32,6 +33,7 @@ pub(super) struct MockStorage {
     pub deleted_extra_paths: Mutex<Vec<PathBuf>>,
     pub saved_payloads: Mutex<Vec<(String, String)>>,
     pub overwritten_payloads: Mutex<Vec<(String, String)>>,
+    pub saved_as_payloads: Mutex<Vec<(String, PathBuf, String)>>,
     pub saved_tree_states: Mutex<Vec<(String, WorkspaceTreeState)>>,
     pub created_note_requests: Mutex<Vec<(PathBuf, String)>>,
     pub created_folder_requests: Mutex<Vec<(PathBuf, String)>>,
@@ -81,6 +83,23 @@ impl NoteStorage for MockStorage {
         self.save_result
             .clone()
             .ok_or_else(|| anyhow!("Missing save result"))
+    }
+
+    fn save_note_as(
+        &self,
+        _workspace: &Workspace,
+        tab: &EditorTab,
+        content: &str,
+        target_path: &Path,
+    ) -> Result<SavedAsNote> {
+        self.saved_as_payloads.lock().unwrap().push((
+            tab.id.clone(),
+            target_path.to_path_buf(),
+            content.to_string(),
+        ));
+        self.save_as_result
+            .clone()
+            .ok_or_else(|| anyhow!("Missing save as result"))
     }
 
     fn create_note(&self, parent: &Path, name: &str) -> Result<PathBuf> {

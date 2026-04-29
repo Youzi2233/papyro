@@ -4,7 +4,7 @@ use papyro_core::models::{
     AppSettings, DocumentStats, RecentFile, SaveStatus, Theme, ViewMode, Workspace,
     WorkspaceSettingsOverrides,
 };
-use papyro_core::storage::{OpenedNote, SavedNote, WorkspaceBootstrap};
+use papyro_core::storage::{OpenedNote, SavedAsNote, SavedNote, WorkspaceBootstrap};
 use papyro_core::{EditorTabs, FileState, TabContentsMap};
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -825,6 +825,128 @@ fn overwrite_tab_flow_requires_conflict_state() {
             .map(|tab| (tab.is_dirty, tab.save_status.clone())),
         Some((true, SaveStatus::Dirty))
     );
+}
+
+#[test]
+fn save_as_tab_flow_rebinds_conflicted_tab_to_target_path() {
+    let target_path = PathBuf::from("workspace/notes/copy.md");
+    let storage = MockStorage {
+        save_as_result: Some(SavedAsNote {
+            tab_id: "tab-a".to_string(),
+            note_id: "note-copy".to_string(),
+            title: "Copy".to_string(),
+            path: target_path.clone(),
+            disk_content_hash: Some(101),
+        }),
+        recent_files: vec![recent_file("note-copy", "notes/copy.md")],
+        ..MockStorage::default()
+    };
+    let mut file_state = file_state_with_tree(vec![note_node("workspace/notes/a.md", "note-a")]);
+    let mut editor_tabs = EditorTabs::default();
+    let mut tab = tab("tab-a", "note-a", "workspace/notes/a.md");
+    tab.is_dirty = true;
+    tab.save_status = SaveStatus::Conflict;
+    tab.disk_content_hash = Some(7);
+    editor_tabs.open_tab(tab);
+    let mut tab_contents = TabContentsMap::default();
+    tab_contents.insert_tab(
+        "tab-a".to_string(),
+        "# Copy\n\nbody".to_string(),
+        DocumentStats::default(),
+    );
+    tab_contents.update_tab_content("tab-a", "# Copy\n\nlocal".to_string());
+
+    save_as_tab_to_storage(
+        &storage,
+        &mut file_state,
+        &mut editor_tabs,
+        &tab_contents,
+        "tab-a",
+        target_path.clone(),
+    )
+    .unwrap();
+
+    assert_eq!(
+        storage.saved_as_payloads.lock().unwrap().clone(),
+        vec![(
+            "tab-a".to_string(),
+            target_path.clone(),
+            "# Copy\n\nlocal".to_string()
+        )]
+    );
+    assert_eq!(
+        editor_tabs.tab_by_id("tab-a").map(|tab| (
+            tab.note_id.clone(),
+            tab.path.clone(),
+            tab.is_dirty,
+            tab.save_status.clone(),
+            tab.title.clone(),
+            tab.disk_content_hash,
+        )),
+        Some((
+            "note-copy".to_string(),
+            target_path.clone(),
+            false,
+            SaveStatus::Saved,
+            "Copy".to_string(),
+            Some(101)
+        ))
+    );
+    assert_eq!(file_state.selected_path, Some(target_path));
+    assert_eq!(
+        file_state.recent_files,
+        vec![recent_file("note-copy", "notes/copy.md")]
+    );
+}
+
+#[test]
+fn save_as_tab_flow_rejects_non_conflict_and_invalid_targets() {
+    let mut file_state = file_state_with_tree(vec![note_node("workspace/notes/a.md", "note-a")]);
+    let storage = MockStorage {
+        save_as_result: Some(SavedAsNote {
+            tab_id: "tab-a".to_string(),
+            note_id: "note-copy".to_string(),
+            title: "Copy".to_string(),
+            path: PathBuf::from("workspace/notes/copy.md"),
+            disk_content_hash: Some(101),
+        }),
+        ..MockStorage::default()
+    };
+    let mut editor_tabs = EditorTabs::default();
+    let mut tab = tab("tab-a", "note-a", "workspace/notes/a.md");
+    tab.is_dirty = true;
+    tab.save_status = SaveStatus::Dirty;
+    editor_tabs.open_tab(tab);
+    let mut tab_contents = TabContentsMap::default();
+    tab_contents.insert_tab(
+        "tab-a".to_string(),
+        "# Copy".to_string(),
+        DocumentStats::default(),
+    );
+
+    let error = save_as_tab_to_storage(
+        &storage,
+        &mut file_state,
+        &mut editor_tabs,
+        &tab_contents,
+        "tab-a",
+        PathBuf::from("workspace/notes/copy.md"),
+    )
+    .unwrap_err();
+    assert!(error.to_string().contains("not in a save conflict"));
+
+    editor_tabs.mark_tab_conflict("tab-a");
+    let error = save_as_tab_to_storage(
+        &storage,
+        &mut file_state,
+        &mut editor_tabs,
+        &tab_contents,
+        "tab-a",
+        PathBuf::from("outside/copy.md"),
+    )
+    .unwrap_err();
+    assert!(error.to_string().contains("inside the current workspace"));
+    assert!(storage.saved_as_payloads.lock().unwrap().is_empty());
 }
 
 #[test]

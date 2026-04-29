@@ -4,7 +4,8 @@ pub mod index;
 
 pub use db::{create_pool, DbPool};
 pub use papyro_core::{
-    DeletePreview, EmptyTrashOutcome, OpenedNote, SavedNote, WorkspaceBootstrap, WorkspaceSnapshot,
+    DeletePreview, EmptyTrashOutcome, OpenedNote, SavedAsNote, SavedNote, WorkspaceBootstrap,
+    WorkspaceSnapshot,
 };
 
 use anyhow::{anyhow, Result};
@@ -267,6 +268,27 @@ impl SqliteStorage {
         content: &str,
     ) -> Result<SavedNote> {
         self.write_saved_note(workspace, tab, content)
+    }
+
+    pub fn save_note_as(
+        &self,
+        workspace: &Workspace,
+        tab: &EditorTab,
+        content: &str,
+        target_path: &Path,
+    ) -> Result<SavedAsNote> {
+        fs::write_note(target_path, content)?;
+        let note_meta = upsert_note_meta_for_path(&self.pool, workspace, target_path, content)?;
+        let opened_at = Utc::now().timestamp_millis();
+        db::recent::record_open(&self.pool, &note_meta.id, opened_at)?;
+
+        Ok(SavedAsNote {
+            tab_id: tab.id.clone(),
+            note_id: note_meta.id,
+            title: note_meta.title,
+            path: target_path.to_path_buf(),
+            disk_content_hash: Some(content_hash(content)),
+        })
     }
 
     fn write_saved_note(
@@ -576,6 +598,16 @@ impl NoteStorage for SqliteStorage {
         SqliteStorage::overwrite_note(self, workspace, tab, content)
     }
 
+    fn save_note_as(
+        &self,
+        workspace: &Workspace,
+        tab: &EditorTab,
+        content: &str,
+        target_path: &Path,
+    ) -> Result<SavedAsNote> {
+        SqliteStorage::save_note_as(self, workspace, tab, content, target_path)
+    }
+
     fn create_note(&self, parent: &Path, name: &str) -> Result<PathBuf> {
         fs::create_note(parent, name)
     }
@@ -824,6 +856,15 @@ pub fn save_note(workspace: &Workspace, tab: &EditorTab, content: &str) -> Resul
 
 pub fn overwrite_note(workspace: &Workspace, tab: &EditorTab, content: &str) -> Result<SavedNote> {
     SqliteStorage::shared()?.overwrite_note(workspace, tab, content)
+}
+
+pub fn save_note_as(
+    workspace: &Workspace,
+    tab: &EditorTab,
+    content: &str,
+    target_path: &Path,
+) -> Result<SavedAsNote> {
+    SqliteStorage::shared()?.save_note_as(workspace, tab, content, target_path)
 }
 
 pub fn initialize_workspace(root: &Path) -> Result<WorkspaceSnapshot> {
@@ -1996,6 +2037,35 @@ mod tests {
         assert_eq!(saved.title, "Local");
         assert_ne!(saved.disk_content_hash, opened.tab.disk_content_hash);
         assert_eq!(std::fs::read_to_string(&note_path)?, "# Local\n\nkept");
+
+        Ok(())
+    }
+
+    #[test]
+    fn save_note_as_writes_target_and_rebinds_note_metadata() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let workspace_root = create_workspace(&temp)?;
+        let note_path = workspace_root.join("draft.md");
+        let target_path = workspace_root.join("copy.md");
+        std::fs::write(&note_path, "# Draft\n\nold")?;
+
+        let storage = test_storage(&temp)?;
+        let workspace = storage.initialize_workspace(&workspace_root)?.workspace;
+        let opened = storage.open_note(&workspace, &note_path)?;
+
+        let saved =
+            storage.save_note_as(&workspace, &opened.tab, "# Copy\n\nlocal", &target_path)?;
+
+        assert_eq!(saved.tab_id, opened.tab.id);
+        assert_ne!(saved.note_id, opened.tab.note_id);
+        assert_eq!(saved.title, "Copy");
+        assert_eq!(saved.path, target_path);
+        assert_eq!(std::fs::read_to_string(&note_path)?, "# Draft\n\nold");
+        assert_eq!(std::fs::read_to_string(&target_path)?, "# Copy\n\nlocal");
+
+        let meta = db::notes::get_note(&storage.pool, &saved.note_id)?
+            .expect("saved-as note metadata exists");
+        assert_eq!(meta.relative_path, PathBuf::from("copy.md"));
 
         Ok(())
     }

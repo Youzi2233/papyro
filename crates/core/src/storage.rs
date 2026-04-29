@@ -31,6 +31,15 @@ pub struct SavedNote {
     pub disk_content_hash: Option<u64>,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct SavedAsNote {
+    pub tab_id: String,
+    pub note_id: String,
+    pub title: String,
+    pub path: PathBuf,
+    pub disk_content_hash: Option<u64>,
+}
+
 #[derive(Debug, thiserror::Error)]
 #[error("Save conflict: {path} changed on disk since it was opened")]
 pub struct SaveConflict {
@@ -70,6 +79,13 @@ pub trait NoteStorage: Send + Sync {
         tab: &EditorTab,
         content: &str,
     ) -> Result<SavedNote>;
+    fn save_note_as(
+        &self,
+        workspace: &Workspace,
+        tab: &EditorTab,
+        content: &str,
+        target_path: &Path,
+    ) -> Result<SavedAsNote>;
     fn create_note(&self, parent: &Path, name: &str) -> Result<PathBuf>;
     fn create_folder(&self, parent: &Path, name: &str) -> Result<PathBuf>;
     fn delete_path(&self, path: &Path) -> Result<()>;

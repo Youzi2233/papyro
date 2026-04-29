@@ -38,6 +38,7 @@ pub(crate) enum CommandPaletteActionKind {
     SaveActiveNote,
     ReloadConflictedActiveNote,
     OverwriteActiveNote,
+    SaveConflictedActiveNoteAs,
     ToggleSidebar,
     ToggleOutline,
     ToggleTheme,
@@ -195,6 +196,9 @@ fn execute_command_action(
             commands.reload_conflicted_active_note.call(())
         }
         CommandPaletteActionKind::OverwriteActiveNote => commands.overwrite_active_note.call(()),
+        CommandPaletteActionKind::SaveConflictedActiveNoteAs => {
+            commands.save_conflicted_active_note_as.call(())
+        }
         CommandPaletteActionKind::ToggleSidebar => {
             crate::chrome::toggle_sidebar(commands.clone(), "command_palette");
         }
@@ -354,6 +358,12 @@ pub(crate) fn command_palette_actions(
                 "FILE",
                 CommandPaletteActionKind::OverwriteActiveNote,
             ));
+            actions.push(action(
+                "Save conflicted note as...",
+                "Write editor content to another workspace Markdown file",
+                "FILE",
+                CommandPaletteActionKind::SaveConflictedActiveNoteAs,
+            ));
         }
     }
 
@@ -497,6 +507,7 @@ mod tests {
         assert!(!titles.contains(&"Save active note"));
         assert!(!titles.contains(&"Reload conflicted note"));
         assert!(!titles.contains(&"Overwrite conflicted note"));
+        assert!(!titles.contains(&"Save conflicted note as..."));
     }
 
     #[test]
@@ -521,6 +532,15 @@ mod tests {
                 && action.detail == "Replace the disk version with editor content"
                 && action.group == "FILE"
                 && matches!(action.kind, CommandPaletteActionKind::OverwriteActiveNote)
+        }));
+        assert!(actions.iter().any(|action| {
+            action.title == "Save conflicted note as..."
+                && action.detail == "Write editor content to another workspace Markdown file"
+                && action.group == "FILE"
+                && matches!(
+                    action.kind,
+                    CommandPaletteActionKind::SaveConflictedActiveNoteAs
+                )
         }));
     }
 

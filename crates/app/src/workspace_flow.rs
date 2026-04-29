@@ -27,9 +27,10 @@ pub(crate) use reload::{
 };
 pub(crate) use rename::rename_selected_path;
 pub(crate) use save::{
-    apply_save_error, apply_save_failure, apply_save_success, begin_conflict_overwrite_tab,
-    begin_save_tab, write_overwrite_snapshot, write_save_snapshot, SaveTabSnapshot,
+    apply_save_as_success, apply_save_error, apply_save_failure, apply_save_success,
+    begin_conflict_overwrite_tab, begin_conflict_save_as_tab, begin_save_tab,
+    write_overwrite_snapshot, write_save_as_snapshot, write_save_snapshot, SaveTabSnapshot,
 };
 #[cfg(test)]
-pub(crate) use save::{overwrite_tab_to_storage, save_tab_to_storage};
+pub(crate) use save::{overwrite_tab_to_storage, save_as_tab_to_storage, save_tab_to_storage};
 pub(crate) use utils::normalized_name;

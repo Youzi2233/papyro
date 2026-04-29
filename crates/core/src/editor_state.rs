@@ -132,6 +132,27 @@ impl EditorTabs {
         }
     }
 
+    pub fn mark_tab_saved_as(
+        &mut self,
+        tab_id: &str,
+        note_id: String,
+        title: String,
+        path: PathBuf,
+        disk_content_hash: Option<u64>,
+    ) -> bool {
+        if let Some(tab) = self.tabs.iter_mut().find(|tab| tab.id == tab_id) {
+            tab.note_id = note_id;
+            tab.path = path;
+            tab.is_dirty = false;
+            tab.save_status = SaveStatus::Saved;
+            tab.title = title;
+            tab.disk_content_hash = disk_content_hash;
+            true
+        } else {
+            false
+        }
+    }
+
     pub fn mark_tab_save_failed(&mut self, tab_id: &str) -> bool {
         if let Some(tab) = self.tabs.iter_mut().find(|tab| tab.id == tab_id) {
             tab.is_dirty = true;

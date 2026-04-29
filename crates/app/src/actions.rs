@@ -21,6 +21,7 @@ pub enum AppAction {
     SaveActiveNote,
     ReloadConflictedActiveNote,
     OverwriteActiveNote,
+    SaveConflictedActiveNoteAs,
     SaveTab(SaveTab),
     CloseTab(CloseTab),
     ToggleOutline,
@@ -177,6 +178,7 @@ impl AppAction {
             Self::SaveActiveNote => "save_active_note",
             Self::ReloadConflictedActiveNote => "reload_conflicted_active_note",
             Self::OverwriteActiveNote => "overwrite_active_note",
+            Self::SaveConflictedActiveNoteAs => "save_conflicted_active_note_as",
             Self::SaveTab(_) => "save_tab",
             Self::CloseTab(_) => "close_tab",
             Self::ToggleOutline => "toggle_outline",
@@ -226,6 +228,7 @@ impl AppAction {
             Self::SaveActiveNote
             | Self::ReloadConflictedActiveNote
             | Self::OverwriteActiveNote
+            | Self::SaveConflictedActiveNoteAs
             | Self::SaveTab(_) => "editor.save",
             Self::CloseTab(_) => "editor.tab_close",
             Self::ToggleOutline => "chrome.outline",

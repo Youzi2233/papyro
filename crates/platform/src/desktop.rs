@@ -24,6 +24,25 @@ impl PlatformApi for DesktopPlatform {
         Ok(handle.map(|h| h.path().to_owned()))
     }
 
+    async fn pick_save_file(
+        &self,
+        filters: &[(&str, &[&str])],
+        default_name: &str,
+        directory: Option<PathBuf>,
+    ) -> Result<Option<PathBuf>> {
+        let mut dialog = rfd::AsyncFileDialog::new()
+            .set_title("另存为")
+            .set_file_name(default_name);
+        if let Some(directory) = directory {
+            dialog = dialog.set_directory(directory);
+        }
+        for (name, exts) in filters {
+            dialog = dialog.add_filter(*name, exts);
+        }
+        let handle = dialog.save_file().await;
+        Ok(handle.map(|h| h.path().to_owned()))
+    }
+
     fn open_in_explorer(&self, path: &Path) -> Result<()> {
         open::that(path)?;
         Ok(())

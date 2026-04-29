@@ -27,8 +27,8 @@ pub use search::{
 };
 pub use session::DEFAULT_WINDOW_ID;
 pub use storage::{
-    DeletePreview, EmptyTrashOutcome, NoteStorage, OpenedNote, SaveConflict, SavedNote,
-    WorkspaceBootstrap, WorkspaceSnapshot,
+    DeletePreview, EmptyTrashOutcome, NoteStorage, OpenedNote, SaveConflict, SavedAsNote,
+    SavedNote, WorkspaceBootstrap, WorkspaceSnapshot,
 };
 pub use ui_state::{
     next_theme, settings_target_theme, sidebar_toggle_target, sidebar_width_target,
