@@ -831,6 +831,28 @@ test("markdown input commands yield during IME composition", () => {
   assert.equal(backspace.state.doc.toString(), "- item");
 });
 
+test("markdown input commands yield while IME composition is starting", () => {
+  const space = fakeView("#", { from: 1, to: 1 });
+  space.compositionStarted = true;
+  assert.equal(completeMarkdownShortcutOnSpace(space), false);
+  assert.equal(space.state.doc.toString(), "#");
+
+  const enter = fakeView("- 中文", { from: 4, to: 4 });
+  enter.compositionStarted = true;
+  assert.equal(handleMarkdownEnter(enter), false);
+  assert.equal(enter.state.doc.toString(), "- 中文");
+
+  const indent = fakeView("- 中文", { from: 0, to: 0 });
+  indent.compositionStarted = true;
+  assert.equal(indentMarkdownListInView(indent, "indent"), false);
+  assert.equal(indent.state.doc.toString(), "- 中文");
+
+  const backspace = fakeView("- 中文", { from: 2, to: 2 });
+  backspace.compositionStarted = true;
+  assert.equal(handleMarkdownBackspace(backspace), false);
+  assert.equal(backspace.state.doc.toString(), "- 中文");
+});
+
 test("markdown_list_indent_change indents selected list lines", () => {
   assert.deepEqual(markdownListIndentChange("- one\ntext\n1. two", 0, 17, "indent"), {
     changes: [
