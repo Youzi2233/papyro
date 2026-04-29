@@ -66,27 +66,31 @@ pub fn DesktopLayout() -> Element {
         let shortcut_commands = commands.clone();
         spawn(async move {
             while let Ok(message) = eval.recv::<String>().await {
-                match message.as_str() {
-                    "quick_open" => {
+                let Some(action) = desktop_shortcut_action(&message) else {
+                    continue;
+                };
+                match action {
+                    DesktopShortcutAction::QuickOpen => {
                         let started_at = perf_timer();
                         show_quick_open.set(true);
                         trace_chrome_open_modal("quick_open", "shortcut", started_at);
                     }
-                    "command_palette" => {
+                    DesktopShortcutAction::CommandPalette => {
                         let started_at = perf_timer();
                         show_command_palette.set(true);
                         trace_chrome_open_modal("command_palette", "shortcut", started_at);
                     }
-                    "workspace_search" => {
+                    DesktopShortcutAction::WorkspaceSearch => {
                         let started_at = perf_timer();
                         show_search.set(true);
                         trace_chrome_open_modal("workspace_search", "shortcut", started_at);
                     }
-                    "save_active_note" => shortcut_commands.save_active_note.call(()),
-                    "toggle_sidebar" => {
+                    DesktopShortcutAction::SaveActiveNote => {
+                        shortcut_commands.save_active_note.call(())
+                    }
+                    DesktopShortcutAction::ToggleSidebar => {
                         crate::chrome::toggle_sidebar(shortcut_commands.clone(), "shortcut");
                     }
-                    _ => {}
                 }
             }
         });
@@ -120,6 +124,26 @@ pub fn DesktopLayout() -> Element {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum DesktopShortcutAction {
+    QuickOpen,
+    CommandPalette,
+    WorkspaceSearch,
+    SaveActiveNote,
+    ToggleSidebar,
+}
+
+fn desktop_shortcut_action(message: &str) -> Option<DesktopShortcutAction> {
+    match message {
+        "quick_open" => Some(DesktopShortcutAction::QuickOpen),
+        "command_palette" => Some(DesktopShortcutAction::CommandPalette),
+        "workspace_search" => Some(DesktopShortcutAction::WorkspaceSearch),
+        "save_active_note" => Some(DesktopShortcutAction::SaveActiveNote),
+        "toggle_sidebar" => Some(DesktopShortcutAction::ToggleSidebar),
+        _ => None,
+    }
+}
+
 #[component]
 fn DesktopModalLayer(
     mut show_settings: Signal<bool>,
@@ -143,5 +167,35 @@ fn DesktopModalLayer(
         if *show_search.read() {
             SearchModal { on_close: move |_| show_search.set(false) }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn desktop_shortcut_messages_route_to_ui_actions() {
+        assert_eq!(
+            desktop_shortcut_action("quick_open"),
+            Some(DesktopShortcutAction::QuickOpen)
+        );
+        assert_eq!(
+            desktop_shortcut_action("command_palette"),
+            Some(DesktopShortcutAction::CommandPalette)
+        );
+        assert_eq!(
+            desktop_shortcut_action("workspace_search"),
+            Some(DesktopShortcutAction::WorkspaceSearch)
+        );
+        assert_eq!(
+            desktop_shortcut_action("save_active_note"),
+            Some(DesktopShortcutAction::SaveActiveNote)
+        );
+        assert_eq!(
+            desktop_shortcut_action("toggle_sidebar"),
+            Some(DesktopShortcutAction::ToggleSidebar)
+        );
+        assert_eq!(desktop_shortcut_action("unknown"), None);
     }
 }
