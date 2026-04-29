@@ -99,6 +99,7 @@
 - selection、scroll、undo restoration metadata。
 
 当前实现里，`EditorTabs` 保存 tab metadata，`TabContentsMap` 保存 content、revision 和 stats。未来的 path-based open use case 应输出或更新一个 `DocumentSession`。
+非活动 tab 的 selection、scroll 和 undo 保存边界见 [editor-runtime-cache-policy.md](editor-runtime-cache-policy.md)。
 
 ### `EditorRuntimeSession`
 
@@ -123,6 +124,7 @@
 - document content 的业务真相。
 
 JavaScript runtime 只能处理浏览器编辑能力，例如 input、selection、IME、scroll、decoration、format command。Rust 仍是 document content、save state、tab state 和 workspace state 的真相来源。
+当 host 退出 warm pool 时，未来只能把轻量 viewport metadata 回传给 Rust，不能把 document content 或保存状态转移给 JS runtime。
 
 ## 共享与独立状态
 

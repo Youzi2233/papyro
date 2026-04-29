@@ -11,7 +11,7 @@
 | `crates/app/src/dispatcher.rs` | `crates/app` action dispatcher | 仍是主要分发热点，settings、workspace、editor、export 等动作集中在同一文件 | 按 handler 领域继续下沉分发细节，保留 dispatcher 作为薄路由层 |
 | `crates/app/src/workspace_flow.rs` + `workspace_flow/*` | `crates/app` use case flow | 顶层 facade 已拆出 create/open/save/rename/delete/move/reload，但 support 和跨用例 helper 仍偏重 | 继续让 `support.rs` 只保留测试与共享 fixture，把业务 helper 移到对应用例模块 |
 | `crates/ui/src/context.rs` | `crates/ui` app boundary | `AppContext` 已有 `workspace_model`、`editor_model`、`editor_surface_model` 和窄 chrome memo，但仍暴露 raw signals | 逐步用 view model + action facade 替代组件直接读写 raw signal |
-| `crates/ui/src/components/editor/*` | `crates/ui` editor surface | editor surface 已拆成 pane/tabbar/host/bridge/preview/outline/fallback，活跃 host 数也已 bounded | 下一步关注 preview/outline 派生任务化，以及保留 selection/scroll 的 warm host 策略 |
+| `crates/ui/src/components/editor/*` | `crates/ui` editor surface | editor surface 已拆成 pane/tabbar/host/bridge/preview/outline/fallback，活跃 host 数已 bounded，preview/outline 派生已任务化，非活动 host 恢复策略见 [editor-runtime-cache-policy.md](editor-runtime-cache-policy.md) | 下一步按 protocol 增量实现 selection/scroll metadata 恢复，并继续治理 tabbar 长列表成本 |
 
 ## 当前模块 Owner
 

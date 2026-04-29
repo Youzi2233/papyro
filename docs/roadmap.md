@@ -394,7 +394,7 @@ Editor runtime lane
 - [x] 已有 stale destroy 防护，关闭 tab 不再通过 retired host 中间态保留旧 host。
 - [x] 重新评估是否所有 open tab 都需要保留 host。
 - [x] 明确 active host、warm host、hidden host 的数量上限。
-- [ ] 非活动 tab 的 selection、scroll、undo 状态保存策略文档化。
+- [x] 非活动 tab 的 selection、scroll、undo 状态保存策略文档化：见 [editor-runtime-cache-policy.md](editor-runtime-cache-policy.md)。
 - [x] 关闭 tab 的 heavy cleanup 保持 idle 或批处理。
 - [x] 模式切换只向 active/visible host 发送必要命令。
 
