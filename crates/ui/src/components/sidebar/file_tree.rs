@@ -539,6 +539,12 @@ fn FileTreeContextMenuView(
     let rename_node = menu.node.clone();
     let toggle_path = menu.node.path.clone();
     let reveal_target = menu.file_target();
+    let delete_pending = app
+        .pending_delete_path
+        .read()
+        .as_deref()
+        .is_some_and(|path| path == menu.node.path.as_path());
+    let delete_label = delete_menu_label(delete_pending);
 
     rsx! {
         Menu {
@@ -602,7 +608,7 @@ fn FileTreeContextMenuView(
             }
             MenuSeparator {}
             MenuItem {
-                label: "Delete",
+                label: delete_label,
                 danger: true,
                 on_select: move |_| {
                     commands.delete_selected.call(());
@@ -610,6 +616,14 @@ fn FileTreeContextMenuView(
                 },
             }
         }
+    }
+}
+
+fn delete_menu_label(is_pending: bool) -> &'static str {
+    if is_pending {
+        "Confirm delete"
+    } else {
+        "Delete"
     }
 }
 
@@ -1141,5 +1155,11 @@ mod tests {
             context_menu_style(ContextMenuPosition { x: 42.4, y: 99.7 }),
             "left: min(42px, calc(100vw - 188px)); top: min(100px, calc(100vh - 220px));"
         );
+    }
+
+    #[test]
+    fn delete_menu_label_reflects_confirmation_state() {
+        assert_eq!(delete_menu_label(false), "Delete");
+        assert_eq!(delete_menu_label(true), "Confirm delete");
     }
 }
