@@ -301,6 +301,7 @@ pub fn TextInput(
         input {
             class: "{class_name}",
             r#type: "text",
+            "aria-label": "{placeholder}",
             autofocus,
             placeholder: "{placeholder}",
             value: "{value}",
