@@ -102,6 +102,44 @@ export function setBlockHints(entry, hints) {
   return entry.blockHints;
 }
 
+export function markdownDecorationTier(
+  selectionLineRanges,
+  fromLine,
+  toLine,
+  nearDistance = 2,
+) {
+  if (!Number.isSafeInteger(fromLine) || !Number.isSafeInteger(toLine)) {
+    return "remote";
+  }
+  if (fromLine < 1 || toLine < fromLine) return "remote";
+
+  let nearestDistance = Number.POSITIVE_INFINITY;
+  for (const range of selectionLineRanges ?? []) {
+    const selectionFrom = Number(range?.fromLine);
+    const selectionTo = Number(range?.toLine);
+    if (
+      !Number.isSafeInteger(selectionFrom) ||
+      !Number.isSafeInteger(selectionTo) ||
+      selectionFrom < 1 ||
+      selectionTo < selectionFrom
+    ) {
+      continue;
+    }
+
+    if (selectionFrom <= toLine && selectionTo >= fromLine) {
+      return "current";
+    }
+
+    const distance =
+      selectionTo < fromLine
+        ? fromLine - selectionTo
+        : selectionFrom - toLine;
+    nearestDistance = Math.min(nearestDistance, distance);
+  }
+
+  return nearestDistance <= nearDistance ? "near" : "remote";
+}
+
 export function isPlainUrl(text) {
   return /^https?:\/\/[^\s<>()]+$/i.test(text.trim());
 }

@@ -18,6 +18,7 @@ import {
   markdownCodeFenceEnterChange,
   markdownEnterChange,
   markdownListIndentChange,
+  markdownDecorationTier,
   markdownListEnterChange,
   markdownShortcutSpaceChange,
   normalizeBlockHints,
@@ -1019,6 +1020,20 @@ test("set_block_hints stores revisioned runtime hints", () => {
     }),
     "block_hints_unchanged",
   );
+});
+
+test("markdown_decoration_tier separates current near and remote blocks", () => {
+  const selections = [
+    { fromLine: 10, toLine: 12 },
+    { fromLine: 30, toLine: 30 },
+  ];
+
+  assert.equal(markdownDecorationTier(selections, 11, 11), "current");
+  assert.equal(markdownDecorationTier(selections, 13, 13), "near");
+  assert.equal(markdownDecorationTier(selections, 27, 27), "remote");
+  assert.equal(markdownDecorationTier(selections, 28, 29), "near");
+  assert.equal(markdownDecorationTier(selections, 40, 40), "remote");
+  assert.equal(markdownDecorationTier([], 1, 1), "remote");
 });
 
 test("insert_markdown message inserts markdown into editor", () => {

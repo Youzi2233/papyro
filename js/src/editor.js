@@ -32,6 +32,7 @@ import {
   continueMarkdownListOnEnter,
   handleRustMessage as handleRustMessageCore,
   indentMarkdownListInView,
+  markdownDecorationTier,
   normalizeEditorPreferences,
   nextLayoutSize,
   parseMarkdownBlockquoteLine,
@@ -115,6 +116,7 @@ function placeCursorAtDrop(view, event) {
 const setViewModeEffect = StateEffect.define();
 const setBlockHintsEffect = StateEffect.define();
 const EDITOR_COMPOSITION_CLASS = "cm-composition-active";
+const HYBRID_NEAR_BLOCK_DISTANCE = 2;
 const viewModeField = StateField.define({
   create() {
     return "hybrid";
@@ -486,20 +488,28 @@ const markdownHighlightStyle = HighlightStyle.define([
   { tag: t.definition(t.variableName), color: "var(--mn-ink)" },
 ]);
 
-function selectionTouchesLine(state, line) {
-  return state.selection.ranges.some((range) => {
+function selectionLineRanges(state) {
+  return state.selection.ranges.map((range) => {
     const fromLine = state.doc.lineAt(range.from);
     const toLine = state.doc.lineAt(range.to);
-    return line.number >= fromLine.number && line.number <= toLine.number;
+    return {
+      fromLine: fromLine.number,
+      toLine: toLine.number,
+    };
   });
 }
 
-function selectionTouchesLineRange(state, fromLineNumber, toLineNumber) {
-  return state.selection.ranges.some((range) => {
-    const fromLine = state.doc.lineAt(range.from);
-    const toLine = state.doc.lineAt(range.to);
-    return fromLine.number <= toLineNumber && toLine.number >= fromLineNumber;
-  });
+function decorationTierForRange(state, fromLine, toLine) {
+  return markdownDecorationTier(
+    selectionLineRanges(state),
+    fromLine,
+    toLine,
+    HYBRID_NEAR_BLOCK_DISTANCE,
+  );
+}
+
+function decorationTierForLine(state, line) {
+  return decorationTierForRange(state, line.number, line.number);
 }
 
 function documentLineTexts(doc) {
@@ -920,7 +930,7 @@ class MathBlockWidget extends WidgetType {
   }
 }
 
-function addCodeBlockDecorations(decorations, line, block) {
+function addCodeBlockDecorations(decorations, line, block, tier) {
   const isStart = line.number === block.fromLine;
   const isEnd = line.number === block.toLine;
   const classes = [
@@ -930,7 +940,7 @@ function addCodeBlockDecorations(decorations, line, block) {
   ].filter(Boolean).join(" ");
 
   decorations.push(Decoration.line({ class: classes }).range(line.from));
-  if (isStart || isEnd) {
+  if (tier === "near" && (isStart || isEnd)) {
     decorations.push(
       Decoration.replace({
         widget: new CodeFenceWidget(isStart ? block.info : ""),
@@ -1031,6 +1041,26 @@ function headingDecorationForLine(context, line) {
   return parseMarkdownHeadingLine(line.text);
 }
 
+function addHeadingDecorations(decorations, line, heading, tier) {
+  const markerTo = line.from + heading.markerLength;
+  decorations.push(
+    Decoration.line({
+      class: `cm-hybrid-heading-line cm-hybrid-heading-line-${heading.level}`,
+    }).range(line.from),
+  );
+
+  if (tier !== "near") {
+    return;
+  }
+
+  decorations.push(Decoration.replace({}).range(line.from, markerTo));
+  decorations.push(
+    Decoration.mark({
+      class: `cm-hybrid-heading cm-hybrid-heading-${heading.level}`,
+    }).range(markerTo, line.to),
+  );
+}
+
 function buildHybridMarkdownDecorations(
   view,
   context,
@@ -1052,11 +1082,12 @@ function buildHybridMarkdownDecorations(
       lastLineNumber = line.number;
 
       if (frontMatterContainsLine(context.frontMatterBlock, line.number)) {
-        if (!selectionTouchesLineRange(
+        const tier = decorationTierForRange(
           view.state,
           context.frontMatterBlock.fromLine,
           context.frontMatterBlock.toLine,
-        )) {
+        );
+        if (tier === "near") {
           addFrontMatterDecorations(decorations, line, context.frontMatterBlock);
         }
         continue;
@@ -1064,23 +1095,25 @@ function buildHybridMarkdownDecorations(
 
       const codeBlock = rangeBlockForLine(context.codeBlocks, line.number);
       if (codeBlock) {
-        if (!selectionTouchesLineRange(
+        const tier = decorationTierForRange(
           view.state,
           codeBlock.fromLine,
           codeBlock.toLine,
-        )) {
-          addCodeBlockDecorations(decorations, line, codeBlock);
+        );
+        if (tier !== "current") {
+          addCodeBlockDecorations(decorations, line, codeBlock, tier);
         }
         continue;
       }
 
       const mathBlock = rangeBlockForLine(context.mathBlocks, line.number);
       if (mathBlock) {
-        if (!selectionTouchesLineRange(
+        const tier = decorationTierForRange(
           view.state,
           mathBlock.fromLine,
           mathBlock.toLine,
-        ) && !emittedMathBlocks.has(mathBlock.fromLine)) {
+        );
+        if (tier === "near" && !emittedMathBlocks.has(mathBlock.fromLine)) {
           emittedMathBlocks.add(mathBlock.fromLine);
           addMathBlockDecorations(decorations, view.state, mathBlock);
         }
@@ -1089,42 +1122,35 @@ function buildHybridMarkdownDecorations(
 
       const tableBlock = rangeBlockForLine(context.tableBlocks, line.number);
       if (tableBlock) {
-        if (!selectionTouchesLineRange(
+        const tier = decorationTierForRange(
           view.state,
           tableBlock.fromLine,
           tableBlock.toLine,
-        )) {
+        );
+        if (tier !== "current") {
           addTableDecorations(decorations, line, tableBlock);
         }
         continue;
       }
 
-      if (selectionTouchesLine(view.state, line)) continue;
+      const tier = decorationTierForLine(view.state, line);
+      if (tier === "current") continue;
 
       const heading = headingDecorationForLine(context, line);
       if (!heading) {
-        if (addHorizontalRuleDecorations(decorations, line)) continue;
-        if (addFootnoteDefinitionDecorations(decorations, line)) continue;
-        addBlockquoteDecorations(decorations, line);
-        addTaskDecorations(decorations, line);
-        addListDecorations(decorations, line);
-        addImageDecorations(decorations, line);
-        addInlineDecorations(decorations, line);
+        if (tier === "near") {
+          if (addHorizontalRuleDecorations(decorations, line)) continue;
+          if (addFootnoteDefinitionDecorations(decorations, line)) continue;
+          addBlockquoteDecorations(decorations, line);
+          addTaskDecorations(decorations, line);
+          addListDecorations(decorations, line);
+          addImageDecorations(decorations, line);
+          addInlineDecorations(decorations, line);
+        }
         continue;
       }
 
-      const markerTo = line.from + heading.markerLength;
-      decorations.push(
-        Decoration.line({
-          class: `cm-hybrid-heading-line cm-hybrid-heading-line-${heading.level}`,
-        }).range(line.from),
-      );
-      decorations.push(Decoration.replace({}).range(line.from, markerTo));
-      decorations.push(
-        Decoration.mark({
-          class: `cm-hybrid-heading cm-hybrid-heading-${heading.level}`,
-        }).range(markerTo, line.to),
-      );
+      addHeadingDecorations(decorations, line, heading, tier);
     }
   }
 
