@@ -91,6 +91,12 @@ jobs:
       - name: File line report self-test
         run: node scripts/report-file-lines.js --self-test
 
+      - name: UI accessibility check
+        run: node scripts/check-ui-a11y.js
+
+      - name: UI accessibility check self-test
+        run: node scripts/check-ui-a11y.js --self-test
+
       - name: Performance fixture generator self-test
         run: node scripts/generate-perf-fixtures.js --self-test
 

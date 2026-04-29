@@ -22,6 +22,12 @@ node scripts/report-file-lines.js
 echo "=== file line report self-test ==="
 node scripts/report-file-lines.js --self-test
 
+echo "=== UI accessibility check ==="
+node scripts/check-ui-a11y.js
+
+echo "=== UI accessibility check self-test ==="
+node scripts/check-ui-a11y.js --self-test
+
 echo "=== performance fixture generator self-test ==="
 node scripts/generate-perf-fixtures.js --self-test
 
