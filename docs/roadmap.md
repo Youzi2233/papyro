@@ -324,6 +324,7 @@ Editor runtime lane
 - [x] `EditorHost` 图片粘贴从 raw workspace/tab 读取改为提交 `PasteImage` app use case。
 - [x] 图片粘贴附件保存迁移为 app use case，UI runtime 只负责请求和插入返回的 Markdown。
 - [x] Quick Open / Workspace Search 打开笔记不再直接写 `FileState::select_path`，选中项更新统一由 `OpenMarkdown` use case 负责。
+- [x] Quick Open 候选列表改为消费 `QuickOpenItemViewModel` memo，不在 modal render 中直接读取并 flatten raw `FileState`。
 - [x] Sidebar、Header、StatusBar 不读取 document content 或 editor host 状态。
 - [x] StatusBar 改为消费 `EditorViewModel`，不再直接读取 `EditorTabs` 和 `TabContentsMap`。
 - [x] Header 改为消费窄 `theme` / `sidebar_collapsed` memo，展示逻辑不再直接读取 raw `UiState`。

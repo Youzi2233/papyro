@@ -50,6 +50,13 @@ pub struct SettingsWorkspaceViewModel {
     pub tags: Vec<TagListItem>,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct QuickOpenItemViewModel {
+    pub path: PathBuf,
+    pub title: String,
+    pub path_label: String,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RecentFileListItem {
     pub title: String,
@@ -302,6 +309,15 @@ impl SettingsWorkspaceViewModel {
     }
 }
 
+impl QuickOpenItemViewModel {
+    pub fn from_file_state(file_state: &FileState) -> Vec<Self> {
+        let mut items = Vec::new();
+        collect_quick_open_items_into(&file_state.file_tree, &mut items);
+        items.sort_by(|left, right| left.path_label.cmp(&right.path_label));
+        items
+    }
+}
+
 impl EditorViewModel {
     pub fn from_editor_state(
         editor_tabs: &EditorTabs,
@@ -470,6 +486,21 @@ fn count_notes(nodes: &[FileNode]) -> usize {
         .sum()
 }
 
+fn collect_quick_open_items_into(nodes: &[FileNode], items: &mut Vec<QuickOpenItemViewModel>) {
+    for node in nodes {
+        match &node.kind {
+            FileNodeKind::Directory { children } => {
+                collect_quick_open_items_into(children, items);
+            }
+            FileNodeKind::Note { .. } => items.push(QuickOpenItemViewModel {
+                path: node.path.clone(),
+                title: node.name.trim_end_matches(".md").to_string(),
+                path_label: node.relative_path.to_string_lossy().replace('\\', "/"),
+            }),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -480,6 +511,17 @@ mod tests {
             name: path.to_string(),
             path: PathBuf::from(path),
             relative_path: PathBuf::from(path),
+            created_at: 0,
+            updated_at: 0,
+            kind: FileNodeKind::Note { note_id: None },
+        }
+    }
+
+    fn note_with_relative_path(name: &str, path: &str, relative_path: &str) -> FileNode {
+        FileNode {
+            name: name.to_string(),
+            path: PathBuf::from(path),
+            relative_path: PathBuf::from(relative_path),
             created_at: 0,
             updated_at: 0,
             kind: FileNodeKind::Note { note_id: None },
@@ -757,6 +799,46 @@ mod tests {
                 },
             ]
         );
+    }
+
+    #[test]
+    fn quick_open_items_flatten_nested_notes() {
+        let mut fixture = view_model_fixture();
+        fixture.file_state.file_tree = vec![
+            FileNode {
+                name: "journal".to_string(),
+                path: PathBuf::from("workspace/journal"),
+                relative_path: PathBuf::from("journal"),
+                created_at: 0,
+                updated_at: 0,
+                kind: FileNodeKind::Directory {
+                    children: vec![
+                        note_with_relative_path(
+                            "today.md",
+                            "workspace/journal/today.md",
+                            "journal/today.md",
+                        ),
+                        note_with_relative_path(
+                            "ideas.md",
+                            "workspace/journal/ideas.md",
+                            "journal/ideas.md",
+                        ),
+                    ],
+                },
+            },
+            note_with_relative_path("root.md", "workspace/root.md", "root.md"),
+        ];
+
+        let items = QuickOpenItemViewModel::from_file_state(&fixture.file_state);
+
+        assert_eq!(
+            items
+                .iter()
+                .map(|item| item.path_label.as_str())
+                .collect::<Vec<_>>(),
+            vec!["journal/ideas.md", "journal/today.md", "root.md"]
+        );
+        assert_eq!(items[0].title, "ideas");
     }
 
     #[test]

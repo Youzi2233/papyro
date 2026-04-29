@@ -1,32 +1,22 @@
 use crate::commands::{AppCommands, OpenMarkdownTarget};
 use crate::components::primitives::{Modal, TextInput};
 use crate::context::use_app_context;
+use crate::view_model::QuickOpenItemViewModel;
 use dioxus::prelude::*;
-use papyro_core::models::{FileNode, FileNodeKind};
-use std::path::PathBuf;
 
 const QUICK_OPEN_LIMIT: usize = 24;
-
-#[derive(Debug, Clone, PartialEq)]
-pub(crate) struct QuickOpenItem {
-    pub path: PathBuf,
-    pub title: String,
-    pub path_label: String,
-}
 
 #[component]
 pub fn QuickOpenModal(on_close: EventHandler<()>) -> Element {
     let app = use_app_context();
-    let file_state = app.file_state;
+    let quick_open_items = app.quick_open_items;
     let commands = app.commands.clone();
     let mut query = use_signal(String::new);
     let mut active_index = use_signal(|| 0usize);
 
-    let all_items = use_memo(move || collect_quick_open_items(&file_state.read().file_tree));
-    let filtered_items = use_memo(move || filter_quick_open_items(&all_items(), &query()));
     let query_value = query();
-    let all_items = all_items();
-    let filtered = filtered_items();
+    let all_items = quick_open_items.read().clone();
+    let filtered = filter_quick_open_items(&all_items, &query_value);
     let active = if filtered.is_empty() {
         0
     } else {
@@ -107,7 +97,7 @@ pub fn QuickOpenModal(on_close: EventHandler<()>) -> Element {
 
 #[component]
 fn QuickOpenRow(
-    item: QuickOpenItem,
+    item: QuickOpenItemViewModel,
     is_active: bool,
     commands: AppCommands,
     on_close: EventHandler<()>,
@@ -129,36 +119,21 @@ fn QuickOpenRow(
     }
 }
 
-fn open_quick_item(commands: AppCommands, on_close: EventHandler<()>, item: QuickOpenItem) {
+fn open_quick_item(
+    commands: AppCommands,
+    on_close: EventHandler<()>,
+    item: QuickOpenItemViewModel,
+) {
     commands
         .open_markdown
         .call(OpenMarkdownTarget { path: item.path });
     on_close.call(());
 }
 
-pub(crate) fn collect_quick_open_items(nodes: &[FileNode]) -> Vec<QuickOpenItem> {
-    let mut items = Vec::new();
-    collect_quick_open_items_into(nodes, &mut items);
-    items.sort_by(|left, right| left.path_label.cmp(&right.path_label));
-    items
-}
-
-fn collect_quick_open_items_into(nodes: &[FileNode], items: &mut Vec<QuickOpenItem>) {
-    for node in nodes {
-        match &node.kind {
-            FileNodeKind::Directory { children } => {
-                collect_quick_open_items_into(children, items);
-            }
-            FileNodeKind::Note { .. } => items.push(QuickOpenItem {
-                path: node.path.clone(),
-                title: node.name.trim_end_matches(".md").to_string(),
-                path_label: node.relative_path.to_string_lossy().replace('\\', "/"),
-            }),
-        }
-    }
-}
-
-pub(crate) fn filter_quick_open_items(items: &[QuickOpenItem], query: &str) -> Vec<QuickOpenItem> {
+pub(crate) fn filter_quick_open_items(
+    items: &[QuickOpenItemViewModel],
+    query: &str,
+) -> Vec<QuickOpenItemViewModel> {
     let tokens = query
         .split_whitespace()
         .map(str::to_lowercase)
@@ -184,57 +159,20 @@ mod tests {
     use super::*;
     use std::path::PathBuf;
 
-    fn note(name: &str, relative_path: &str) -> FileNode {
-        FileNode {
-            name: name.to_string(),
-            path: PathBuf::from(format!("workspace/{relative_path}")),
-            relative_path: PathBuf::from(relative_path),
-            created_at: 0,
-            updated_at: 0,
-            kind: FileNodeKind::Note { note_id: None },
-        }
-    }
-
-    fn directory(name: &str, children: Vec<FileNode>) -> FileNode {
-        FileNode {
-            name: name.to_string(),
-            path: PathBuf::from(format!("workspace/{name}")),
-            relative_path: PathBuf::from(name),
-            created_at: 0,
-            updated_at: 0,
-            kind: FileNodeKind::Directory { children },
-        }
-    }
-
-    #[test]
-    fn quick_open_items_flatten_nested_notes() {
-        let items = collect_quick_open_items(&[
-            directory(
-                "journal",
-                vec![
-                    note("today.md", "journal/today.md"),
-                    note("ideas.md", "journal/ideas.md"),
-                ],
-            ),
-            note("root.md", "root.md"),
-        ]);
-
-        assert_eq!(
-            items
-                .iter()
-                .map(|item| item.path_label.as_str())
-                .collect::<Vec<_>>(),
-            vec!["journal/ideas.md", "journal/today.md", "root.md"]
-        );
-        assert_eq!(items[0].title, "ideas");
-    }
-
     #[test]
     fn quick_open_filter_matches_title_and_path_tokens() {
-        let items = collect_quick_open_items(&[
-            note("today.md", "journal/today.md"),
-            note("release-plan.md", "work/release-plan.md"),
-        ]);
+        let items = vec![
+            QuickOpenItemViewModel {
+                path: PathBuf::from("workspace/journal/today.md"),
+                title: "today".to_string(),
+                path_label: "journal/today.md".to_string(),
+            },
+            QuickOpenItemViewModel {
+                path: PathBuf::from("workspace/work/release-plan.md"),
+                title: "release-plan".to_string(),
+                path_label: "work/release-plan.md".to_string(),
+            },
+        ];
 
         assert_eq!(
             filter_quick_open_items(&items, "work plan")
