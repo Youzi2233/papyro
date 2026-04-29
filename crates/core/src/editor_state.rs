@@ -415,6 +415,24 @@ mod tests {
     }
 
     #[test]
+    fn closing_active_tab_falls_back_to_last_open_tab() {
+        let mut tabs = EditorTabs::default();
+        tabs.open_tab(tab("a"));
+        tabs.open_tab(tab("b"));
+        tabs.open_tab(tab("c"));
+        tabs.set_active_tab("b");
+
+        assert!(tabs.close_tab("b"));
+        assert_eq!(tabs.active_tab_id.as_deref(), Some("c"));
+
+        assert!(tabs.close_tab("a"));
+        assert_eq!(tabs.active_tab_id.as_deref(), Some("c"));
+
+        assert!(!tabs.close_tab("missing"));
+        assert_eq!(tabs.active_tab_id.as_deref(), Some("c"));
+    }
+
+    #[test]
     fn content_revision_tracks_dirty_autosave_state() {
         let mut tabs = EditorTabs::default();
         let mut contents = TabContentsMap::default();
