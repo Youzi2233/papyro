@@ -392,6 +392,27 @@ test("set_content updates content without echoing content_changed", () => {
   assert.deepEqual(sent, []);
 });
 
+test("set_content skips dispatch when content is unchanged", () => {
+  const registry = new Map();
+  let dispatches = 0;
+  const view = fakeView("same", { from: 0, to: 0 }, () => {
+    dispatches += 1;
+  });
+
+  attach(registry, view, "tab-a", "same");
+
+  assert.equal(
+    handleRustMessage(registry, "tab-a", {
+      type: "set_content",
+      content: "same",
+    }),
+    "updated",
+  );
+  assert.equal(view.state.doc.toString(), "same");
+  assert.equal(dispatches, 0);
+  assert.equal(registry.get("tab-a").suppressChange, false);
+});
+
 test("rust message handling ignores missing tabs and unknown messages", () => {
   const registry = new Map();
   const view = fakeView("body");
