@@ -497,6 +497,29 @@ test("apply_format inserts fallback text for empty selection", () => {
   assert.deepEqual(view.state.selection.main, { from: 1, to: 10 });
 });
 
+test("apply_format rust message routes through the format adapter", () => {
+  const registry = new Map();
+  const view = fakeView("word", { from: 0, to: 4 });
+  let formatted = null;
+
+  attach(registry, view, "tab-a", "word");
+
+  const result = handleRustMessage(
+    registry,
+    "tab-a",
+    { type: "apply_format", kind: "bold" },
+    {
+      applyFormat: (targetView, kind) => {
+        formatted = { targetView, kind };
+        return true;
+      },
+    },
+  );
+
+  assert.equal(result, "formatted");
+  assert.deepEqual(formatted, { targetView: view, kind: "bold" });
+});
+
 test("format_selection_change supports image and code shortcuts", () => {
   assert.deepEqual(formatSelectionChange("name", 0, 4, "image"), {
     changes: { from: 0, to: 4, insert: "![name](assets/image.png)" },
