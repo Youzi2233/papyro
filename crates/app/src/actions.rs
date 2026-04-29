@@ -42,6 +42,7 @@ pub enum AppAction {
     SelectPath(SelectPath),
     ToggleExpandedPath(ToggleExpandedPath),
     RevealInExplorer(RevealInExplorer),
+    OpenExternalUrl(OpenExternalUrl),
     ExportHtml,
     SaveSettings(SaveSettings),
     SaveWorkspaceSettings(SaveWorkspaceSettings),
@@ -152,6 +153,11 @@ pub struct RevealInExplorer {
     pub target: FileTarget,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OpenExternalUrl {
+    pub url: String,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct SaveSettings {
     pub settings: AppSettings,
@@ -199,6 +205,7 @@ impl AppAction {
             Self::SelectPath(_) => "select_path",
             Self::ToggleExpandedPath(_) => "toggle_expanded_path",
             Self::RevealInExplorer(_) => "reveal_in_explorer",
+            Self::OpenExternalUrl(_) => "open_external_url",
             Self::ExportHtml => "export_html",
             Self::SaveSettings(_) => "save_settings",
             Self::SaveWorkspaceSettings(_) => "save_workspace_settings",
@@ -239,6 +246,7 @@ impl AppAction {
                 "workspace.tags"
             }
             Self::RevealInExplorer(_) => "platform.reveal",
+            Self::OpenExternalUrl(_) => "platform.external_link",
             Self::ExportHtml => "platform.export",
             Self::SaveSettings(_) | Self::SaveWorkspaceSettings(_) => "chrome.settings",
         }
@@ -353,6 +361,10 @@ impl AppAction {
 
     pub fn reveal_in_explorer(target: FileTarget) -> Self {
         Self::RevealInExplorer(RevealInExplorer { target })
+    }
+
+    pub fn open_external_url(url: String) -> Self {
+        Self::OpenExternalUrl(OpenExternalUrl { url })
     }
 
     pub fn save_settings(settings: AppSettings) -> Self {

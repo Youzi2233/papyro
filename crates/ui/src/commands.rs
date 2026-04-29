@@ -175,6 +175,7 @@ pub struct AppCommands {
     pub select_path: EventHandler<PathBuf>,
     pub toggle_expanded_path: EventHandler<PathBuf>,
     pub reveal_in_explorer: EventHandler<FileTarget>,
+    pub open_external_url: EventHandler<String>,
     pub export_html: EventHandler<()>,
     pub save_settings: EventHandler<AppSettings>,
     pub save_workspace_settings: EventHandler<WorkspaceSettingsOverrides>,

@@ -3,6 +3,7 @@ use super::document_cache::DocumentDerivedCacheState;
 use super::document_cache::{
     CachedPreview, CachedPreviewStatus, DocumentCacheKey, DocumentDerivedCache,
 };
+use crate::commands::AppCommands;
 use crate::context::EditorServices;
 use crate::perf::{perf_timer, trace_preview_render};
 use dioxus::prelude::*;
@@ -12,6 +13,36 @@ use std::sync::Arc;
 use std::time::Duration;
 
 const PREVIEW_RENDER_TIMEOUT: Duration = Duration::from_secs(2);
+const PREVIEW_LINK_BRIDGE_SCRIPT: &str = r#"
+    const handler = (event) => {
+        const target = event.target;
+        const element = target instanceof Element ? target : target?.parentElement;
+        if (!element) return;
+        const anchor = element.closest(".mn-preview a[href]");
+        if (!anchor) return;
+
+        event.preventDefault();
+        event.stopPropagation();
+        dioxus.send(anchor.getAttribute("href") || "");
+    };
+    document.addEventListener("click", handler, true);
+    await new Promise(() => {});
+"#;
+
+#[component]
+pub(super) fn PreviewLinkBridge(commands: AppCommands) -> Element {
+    use_effect(move || {
+        let mut eval = document::eval(PREVIEW_LINK_BRIDGE_SCRIPT);
+        let commands = commands.clone();
+        spawn(async move {
+            while let Ok(url) = eval.recv::<String>().await {
+                commands.open_external_url.call(url);
+            }
+        });
+    });
+
+    rsx! {}
+}
 
 #[component]
 pub(super) fn PreviewPane(
@@ -347,5 +378,12 @@ mod tests {
             Some("Preview could not be rendered.")
         );
         assert_eq!(failed.policy.byte_len, document.content.len());
+    }
+
+    #[test]
+    fn preview_link_bridge_intercepts_preview_anchor_clicks() {
+        assert!(PREVIEW_LINK_BRIDGE_SCRIPT.contains(".mn-preview a[href]"));
+        assert!(PREVIEW_LINK_BRIDGE_SCRIPT.contains("event.preventDefault()"));
+        assert!(PREVIEW_LINK_BRIDGE_SCRIPT.contains("dioxus.send"));
     }
 }

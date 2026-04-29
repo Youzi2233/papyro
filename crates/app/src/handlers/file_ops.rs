@@ -472,6 +472,17 @@ pub fn reveal_in_explorer(
     }
 }
 
+pub fn open_external_url(
+    platform: Arc<dyn PlatformApi>,
+    mut status_message: Signal<Option<String>>,
+    url: String,
+) {
+    match platform.open_external_url(&url) {
+        Ok(()) => status_message.set(Some("Opened external link".to_string())),
+        Err(error) => status_message.set(Some(format!("Open link failed: {error}"))),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

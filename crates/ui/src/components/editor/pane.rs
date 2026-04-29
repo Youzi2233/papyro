@@ -2,7 +2,7 @@ use super::bridge::{send_editor_destroy_batch, EditorBridgeMap};
 use super::document_cache::{DocumentDerivedCache, DocumentDerivedCacheState};
 use super::host::EditorHost;
 use super::outline::OutlinePane;
-use super::preview::PreviewPane;
+use super::preview::{PreviewLinkBridge, PreviewPane};
 use super::tabbar::EditorTabButton;
 use crate::components::primitives::{EmptyState, SegmentedControl, SegmentedControlOption};
 use crate::context::use_app_context;
@@ -113,6 +113,9 @@ pub fn EditorPane() -> Element {
 
     rsx! {
         main { class: "mn-editor", style: "{editor_style}",
+            PreviewLinkBridge {
+                commands: commands.clone(),
+            }
             if pane.has_active_tab {
                 div { class: "mn-tabbar",
                     for item in pane.tab_items.iter().cloned() {

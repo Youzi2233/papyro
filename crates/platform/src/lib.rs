@@ -1,5 +1,6 @@
 mod app_data;
 mod dialog;
+mod external;
 mod reveal;
 
 pub mod desktop;

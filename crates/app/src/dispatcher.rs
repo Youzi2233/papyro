@@ -309,6 +309,13 @@ impl AppDispatcher {
                     action.target,
                 );
             }
+            AppAction::OpenExternalUrl(action) => {
+                file_ops::open_external_url(
+                    self.platform.clone(),
+                    self.state.status_message,
+                    action.url,
+                );
+            }
             AppAction::ExportHtml => {
                 export_html(self.shell, self.state);
             }
@@ -400,6 +407,7 @@ impl AppDispatcher {
         let select_path = self.clone();
         let toggle_expanded_path = self.clone();
         let reveal_in_explorer = self.clone();
+        let open_external_url = self.clone();
         let export_html = self.clone();
         let save_settings = self.clone();
         let save_workspace_settings = self.clone();
@@ -506,6 +514,9 @@ impl AppDispatcher {
             }),
             reveal_in_explorer: EventHandler::new(move |target| {
                 reveal_in_explorer.dispatch(AppAction::reveal_in_explorer(target));
+            }),
+            open_external_url: EventHandler::new(move |url| {
+                open_external_url.dispatch(AppAction::open_external_url(url));
             }),
             export_html: EventHandler::new(move |_| {
                 export_html.dispatch(AppAction::ExportHtml);
@@ -1052,6 +1063,17 @@ mod tests {
                     note_id: "note-a".to_string(),
                 }
             })
+        );
+        assert_eq!(
+            AppAction::open_external_url("https://example.test".to_string()),
+            AppAction::OpenExternalUrl(crate::actions::OpenExternalUrl {
+                url: "https://example.test".to_string(),
+            })
+        );
+        assert_eq!(
+            AppAction::open_external_url("https://example.test".to_string())
+                .trace_interaction_path(),
+            "platform.external_link"
         );
     }
 

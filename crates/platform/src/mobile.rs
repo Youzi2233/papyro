@@ -1,4 +1,7 @@
-use crate::{app_data::ensure_app_data_dir, dialog, reveal::reveal_path, traits::PlatformApi};
+use crate::{
+    app_data::ensure_app_data_dir, dialog, external::open_external_url, reveal::reveal_path,
+    traits::PlatformApi,
+};
 use anyhow::Result;
 use async_trait::async_trait;
 use std::path::{Path, PathBuf};
@@ -26,6 +29,10 @@ impl PlatformApi for MobilePlatform {
 
     fn open_in_explorer(&self, path: &Path) -> Result<()> {
         reveal_path(path)
+    }
+
+    fn open_external_url(&self, url: &str) -> Result<()> {
+        open_external_url(url)
     }
 
     fn get_app_data_dir(&self) -> Result<PathBuf> {

@@ -13,5 +13,6 @@ pub trait PlatformApi: Send + Sync {
         directory: Option<PathBuf>,
     ) -> Result<Option<PathBuf>>;
     fn open_in_explorer(&self, path: &Path) -> Result<()>;
+    fn open_external_url(&self, url: &str) -> Result<()>;
     fn get_app_data_dir(&self) -> Result<PathBuf>;
 }
