@@ -91,6 +91,9 @@ jobs:
       - name: File line report self-test
         run: node scripts/report-file-lines.js --self-test
 
+      - name: Performance fixture generator self-test
+        run: node scripts/generate-perf-fixtures.js --self-test
+
       - name: Performance smoke checker self-test
         run: node scripts/check-perf-smoke.js --self-test
 

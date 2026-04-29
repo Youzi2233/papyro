@@ -111,8 +111,9 @@ node scripts/check-perf-smoke.js target/perf-smoke.log
 The checker fails when required smoke traces are missing, shared trace context is
 missing, an interaction exceeds its budget, or a large document still uses live
 preview instead of the degraded preview path. CI runs
-`node scripts/check-perf-smoke.js --self-test` so the checker itself does not
-silently rot.
+`node scripts/generate-perf-fixtures.js --self-test` and
+`node scripts/check-perf-smoke.js --self-test` so the fixtures and checker do
+not silently rot.
 
 1. Open a 100KB, 1MB, and 5MB Markdown file.
 2. Switch between Source, Hybrid, and Preview from the editor tabbar view toggle.

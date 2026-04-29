@@ -22,6 +22,9 @@ node scripts/report-file-lines.js
 echo "=== file line report self-test ==="
 node scripts/report-file-lines.js --self-test
 
+echo "=== performance fixture generator self-test ==="
+node scripts/generate-perf-fixtures.js --self-test
+
 echo "=== performance smoke checker self-test ==="
 node scripts/check-perf-smoke.js --self-test
 

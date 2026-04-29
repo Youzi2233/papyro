@@ -158,6 +158,7 @@ cargo test --workspace
 node scripts/check-workspace-deps.js
 node scripts/report-file-lines.js
 node scripts/report-file-lines.js --self-test
+node scripts/generate-perf-fixtures.js --self-test
 node scripts/check-perf-smoke.js --self-test
 npm --prefix js run build
 npm --prefix js test
