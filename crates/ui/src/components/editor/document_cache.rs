@@ -25,6 +25,14 @@ pub(super) struct DocumentCacheKey {
 pub(super) struct CachedPreview {
     pub html: String,
     pub policy: PreviewPolicy,
+    pub status: CachedPreviewStatus,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum CachedPreviewStatus {
+    Pending,
+    Ready,
+    Failed,
 }
 
 impl DocumentDerivedCacheState {
