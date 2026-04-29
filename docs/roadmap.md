@@ -333,6 +333,7 @@ Editor runtime lane
 - [x] DesktopLayout 只消费 sidebar 展示状态，主题 DOM 副作用下沉到 `ThemeDomEffect`。
 - [x] MobileLayout 的主题和浏览器展示状态改为消费窄 memo。
 - [x] MobileLayout 的 workspace 和选中项展示改为消费 `SidebarViewModel`，不再直接读取 raw `FileState` / `pending_delete_path`。
+- [x] SettingsModal 的表单初始值和 scope 切换改为消费 `SettingsFormViewModel`，不再直接读取 raw `UiState`。
 - [x] Sidebar 展示宽度改为消费 `sidebar_width` memo，resize 提交统一走 `crates/ui/src/chrome.rs` helper。
 - [x] chrome 设置目标推导迁移到 `crates/core::ui_state`，UI helper 不再持有全局 / workspace 设置覆盖规则。
 - [x] sidebar/theme/view mode/sidebar width 等 chrome 设置动作改为走 `AppAction` / dispatcher，UI helper 只保留事件入口适配。

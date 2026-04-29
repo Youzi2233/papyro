@@ -6,10 +6,9 @@ use crate::components::primitives::{
     Slider, Toggle,
 };
 use crate::context::use_app_context;
-use crate::view_model::TagListItem;
+use crate::view_model::{SettingsFormViewModel, TagListItem};
 use dioxus::prelude::*;
 use papyro_core::models::{AppSettings, Theme, WorkspaceSettingsOverrides};
-use papyro_core::UiState;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum SettingsScope {
@@ -20,19 +19,19 @@ enum SettingsScope {
 #[component]
 pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
     let app = use_app_context();
-    let ui_state = app.ui_state;
     let commands = app.commands.clone();
+    let settings_form_model = app.settings_form_model;
+    let settings_form = settings_form_model.read().clone();
     let settings_workspace = app.settings_workspace_model.read().clone();
-    let has_workspace = settings_workspace.has_workspace;
-    let ui_snapshot = ui_state.read().clone();
+    let has_workspace = settings_form.has_workspace;
     let initial_scope = if has_workspace
-        && ui_snapshot.workspace_overrides != WorkspaceSettingsOverrides::default()
+        && settings_form.workspace_overrides != WorkspaceSettingsOverrides::default()
     {
         SettingsScope::Workspace
     } else {
         SettingsScope::Global
     };
-    let settings = settings_for_scope(&ui_snapshot, initial_scope);
+    let settings = settings_for_scope(&settings_form, initial_scope);
 
     let mut save_scope = use_signal(|| initial_scope);
     let mut font_family = use_signal(|| settings.font_family.clone());
@@ -42,6 +41,8 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
     let mut auto_save_ms = use_signal(|| settings.auto_save_delay_ms);
     let mut theme = use_signal(|| settings.theme.clone());
     let save_commands = commands.clone();
+    let save_settings_form_model = settings_form_model;
+    let scope_settings_form_model = settings_form_model;
     let tag_commands = commands.clone();
     let scope_options = if has_workspace {
         vec![
@@ -67,8 +68,8 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
     ];
 
     let save = move |_| {
-        let state = ui_state.read();
-        let base = settings_for_scope(&state, save_scope());
+        let settings_form = save_settings_form_model.read();
+        let base = settings_for_scope(&settings_form, save_scope());
         let new_settings = form_settings(
             &base,
             theme.read().clone(),
@@ -81,7 +82,7 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
 
         if save_scope() == SettingsScope::Workspace {
             let overrides = WorkspaceSettingsOverrides::from_settings_delta(
-                &state.global_settings,
+                &settings_form.global_settings,
                 &new_settings,
             );
             save_commands.save_workspace_settings.call(overrides);
@@ -121,8 +122,8 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
                                             return;
                                         }
 
-                                        let state = ui_state.read();
-                                        let next_settings = settings_for_scope(&state, next_scope);
+                                        let settings_form = scope_settings_form_model.read();
+                                        let next_settings = settings_for_scope(&settings_form, next_scope);
                                         set_form_values(
                                             &next_settings,
                                             font_family,
@@ -460,10 +461,10 @@ fn TagEditorRow(tag: TagListItem, has_workspace: bool, commands: AppCommands) ->
 
 const DEFAULT_TAG_COLOR: &str = "#6B7280";
 
-fn settings_for_scope(ui_state: &UiState, scope: SettingsScope) -> AppSettings {
+fn settings_for_scope(model: &SettingsFormViewModel, scope: SettingsScope) -> AppSettings {
     match scope {
-        SettingsScope::Global => ui_state.global_settings.clone(),
-        SettingsScope::Workspace => ui_state.settings.clone(),
+        SettingsScope::Global => model.global_settings.clone(),
+        SettingsScope::Workspace => model.workspace_settings.clone(),
     }
 }
 

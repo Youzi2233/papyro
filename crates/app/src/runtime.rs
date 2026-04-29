@@ -6,7 +6,8 @@ use papyro_platform::PlatformApi;
 use papyro_ui::context::{AppContext, EditorServices};
 use papyro_ui::view_model::{
     EditorPaneViewModel, EditorSurfaceViewModel, EditorViewModel, QuickOpenItemViewModel,
-    SettingsWorkspaceViewModel, SidebarViewModel, WorkspaceSearchViewModel, WorkspaceViewModel,
+    SettingsFormViewModel, SettingsWorkspaceViewModel, SidebarViewModel, WorkspaceSearchViewModel,
+    WorkspaceViewModel,
 };
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -71,6 +72,12 @@ pub fn use_app_runtime(
     });
     let settings_workspace_model =
         use_memo(move || SettingsWorkspaceViewModel::from_file_state(&state.file_state.read()));
+    let settings_form_model = use_memo(move || {
+        SettingsFormViewModel::from_ui_state(
+            &state.ui_state.read(),
+            state.file_state.read().current_workspace.is_some(),
+        )
+    });
     let quick_open_items =
         use_memo(move || QuickOpenItemViewModel::from_file_state(&state.file_state.read()));
     let workspace_search_model = use_memo(move || {
@@ -117,6 +124,7 @@ pub fn use_app_runtime(
         workspace_model,
         sidebar_model,
         settings_workspace_model,
+        settings_form_model,
         quick_open_items,
         workspace_search_model,
         editor_model,

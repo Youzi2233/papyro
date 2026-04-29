@@ -1,5 +1,6 @@
 use papyro_core::models::{
-    DocumentStats, EditorTab, FileNode, FileNodeKind, SaveStatus, Theme, ViewMode,
+    AppSettings, DocumentStats, EditorTab, FileNode, FileNodeKind, SaveStatus, Theme, ViewMode,
+    WorkspaceSettingsOverrides,
 };
 use papyro_core::{
     DocumentSnapshot, EditorTabs, FileState, SearchField, SearchHighlight, SearchMatch,
@@ -49,6 +50,14 @@ pub struct SidebarViewModel {
 pub struct SettingsWorkspaceViewModel {
     pub has_workspace: bool,
     pub tags: Vec<TagListItem>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct SettingsFormViewModel {
+    pub has_workspace: bool,
+    pub global_settings: AppSettings,
+    pub workspace_settings: AppSettings,
+    pub workspace_overrides: WorkspaceSettingsOverrides,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -332,6 +341,17 @@ impl SettingsWorkspaceViewModel {
                     color: tag.color.clone(),
                 })
                 .collect(),
+        }
+    }
+}
+
+impl SettingsFormViewModel {
+    pub fn from_ui_state(ui_state: &UiState, has_workspace: bool) -> Self {
+        Self {
+            has_workspace,
+            global_settings: ui_state.global_settings.clone(),
+            workspace_settings: ui_state.settings.clone(),
+            workspace_overrides: ui_state.workspace_overrides.clone(),
         }
     }
 }
@@ -1101,6 +1121,33 @@ mod tests {
         assert_eq!(after.theme, Theme::Light);
         assert!(!after.sidebar_collapsed);
         assert_eq!(after.sidebar_width, 360);
+    }
+
+    #[test]
+    fn settings_form_view_model_exposes_scope_inputs() {
+        let mut fixture = view_model_fixture();
+        fixture.ui_state = UiState::from_settings_with_overrides(
+            AppSettings {
+                theme: Theme::Light,
+                font_size: 14,
+                sidebar_collapsed: false,
+                ..AppSettings::default()
+            },
+            WorkspaceSettingsOverrides {
+                theme: Some(Theme::Dark),
+                font_size: Some(18),
+                ..WorkspaceSettingsOverrides::default()
+            },
+        );
+
+        let model = SettingsFormViewModel::from_ui_state(&fixture.ui_state, true);
+
+        assert!(model.has_workspace);
+        assert_eq!(model.global_settings.theme, Theme::Light);
+        assert_eq!(model.global_settings.font_size, 14);
+        assert_eq!(model.workspace_settings.theme, Theme::Dark);
+        assert_eq!(model.workspace_settings.font_size, 18);
+        assert_eq!(model.workspace_overrides.theme, Some(Theme::Dark));
     }
 
     #[test]
