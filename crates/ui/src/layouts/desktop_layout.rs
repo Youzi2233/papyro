@@ -14,6 +14,7 @@ use crate::context::use_app_context;
 use crate::perf::{perf_timer, trace_chrome_open_modal};
 use crate::theme::ThemeDomEffect;
 use dioxus::prelude::*;
+use papyro_core::models::ViewMode;
 
 #[component]
 pub fn DesktopLayout() -> Element {
@@ -59,6 +60,24 @@ pub fn DesktopLayout() -> Element {
                     dioxus.send("save_active_note");
                     return;
                 }
+                if (mod && e.altKey && !e.shiftKey && e.code === 'Digit1') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dioxus.send("view_mode_source");
+                    return;
+                }
+                if (mod && e.altKey && !e.shiftKey && e.code === 'Digit2') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dioxus.send("view_mode_hybrid");
+                    return;
+                }
+                if (mod && e.altKey && !e.shiftKey && e.code === 'Digit3') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dioxus.send("view_mode_preview");
+                    return;
+                }
                 if (e.ctrlKey && e.key === '\\' && !e.shiftKey && !e.altKey) {
                     e.preventDefault();
                     e.stopPropagation();
@@ -98,6 +117,9 @@ pub fn DesktopLayout() -> Element {
                     }
                     DesktopShortcutAction::ToggleSidebar => {
                         crate::chrome::toggle_sidebar(shortcut_commands.clone(), "shortcut");
+                    }
+                    DesktopShortcutAction::SetViewMode(mode) => {
+                        crate::chrome::set_view_mode(shortcut_commands.clone(), mode, "shortcut");
                     }
                 }
             }
@@ -139,13 +161,14 @@ pub fn DesktopLayout() -> Element {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 enum DesktopShortcutAction {
     QuickOpen,
     CommandPalette,
     WorkspaceSearch,
     SaveActiveNote,
     ToggleSidebar,
+    SetViewMode(ViewMode),
 }
 
 fn desktop_shortcut_action(message: &str) -> Option<DesktopShortcutAction> {
@@ -155,6 +178,9 @@ fn desktop_shortcut_action(message: &str) -> Option<DesktopShortcutAction> {
         "workspace_search" => Some(DesktopShortcutAction::WorkspaceSearch),
         "save_active_note" => Some(DesktopShortcutAction::SaveActiveNote),
         "toggle_sidebar" => Some(DesktopShortcutAction::ToggleSidebar),
+        "view_mode_source" => Some(DesktopShortcutAction::SetViewMode(ViewMode::Source)),
+        "view_mode_hybrid" => Some(DesktopShortcutAction::SetViewMode(ViewMode::Hybrid)),
+        "view_mode_preview" => Some(DesktopShortcutAction::SetViewMode(ViewMode::Preview)),
         _ => None,
     }
 }
@@ -232,6 +258,18 @@ mod tests {
         assert_eq!(
             desktop_shortcut_action("toggle_sidebar"),
             Some(DesktopShortcutAction::ToggleSidebar)
+        );
+        assert_eq!(
+            desktop_shortcut_action("view_mode_source"),
+            Some(DesktopShortcutAction::SetViewMode(ViewMode::Source))
+        );
+        assert_eq!(
+            desktop_shortcut_action("view_mode_hybrid"),
+            Some(DesktopShortcutAction::SetViewMode(ViewMode::Hybrid))
+        );
+        assert_eq!(
+            desktop_shortcut_action("view_mode_preview"),
+            Some(DesktopShortcutAction::SetViewMode(ViewMode::Preview))
         );
         assert_eq!(desktop_shortcut_action("unknown"), None);
     }
