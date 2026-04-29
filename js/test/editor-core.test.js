@@ -758,6 +758,36 @@ test("markdown shortcut view commands dispatch completions", () => {
   assert.equal(fence.state.doc.toString(), "```\n\n```");
 });
 
+test("heading shortcut keeps the edited heading line in source tier", () => {
+  const view = fakeView("#", { from: 1, to: 1 });
+
+  assert.equal(completeMarkdownShortcutOnSpace(view), true);
+  assert.equal(view.state.doc.toString(), "# ");
+
+  const tier = markdownDecorationTier([{ fromLine: 1, toLine: 1 }], 1, 1);
+  assert.equal(tier, "current");
+  assert.equal(hybridDecorationLevel("heading", tier), "source");
+});
+
+test("current code and table blocks keep source editing tier", () => {
+  const currentCodeTier = markdownDecorationTier(
+    [{ fromLine: 2, toLine: 2 }],
+    1,
+    3,
+  );
+  const currentTableTier = markdownDecorationTier(
+    [{ fromLine: 5, toLine: 5 }],
+    4,
+    6,
+  );
+
+  assert.equal(currentCodeTier, "current");
+  assert.equal(currentTableTier, "current");
+  assert.equal(hybridDecorationLevel("code", currentCodeTier), "source");
+  assert.equal(hybridDecorationLevel("table", currentTableTier), "source");
+  assert.equal(hybridDecorationLevel("table", "near"), "structure");
+});
+
 test("markdown input commands yield during IME composition", () => {
   const space = fakeView("#", { from: 1, to: 1 });
   space.composing = true;
