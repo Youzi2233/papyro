@@ -93,6 +93,27 @@ The fixture script writes deterministic Markdown files to `target/perf-fixtures/
 - `papyro-1mb.md`
 - `papyro-5mb.md`
 
+Capture the trace output and validate it with the smoke checker:
+
+```bash
+PAPYRO_PERF=1 cargo run -p papyro-desktop 2>&1 | tee target/perf-smoke.log
+node scripts/check-perf-smoke.js target/perf-smoke.log
+```
+
+On PowerShell:
+
+```powershell
+$env:PAPYRO_PERF = "1"
+cargo run -p papyro-desktop 2>&1 | Tee-Object target/perf-smoke.log
+node scripts/check-perf-smoke.js target/perf-smoke.log
+```
+
+The checker fails when required smoke traces are missing, shared trace context is
+missing, an interaction exceeds its budget, or a large document still uses live
+preview instead of the degraded preview path. CI runs
+`node scripts/check-perf-smoke.js --self-test` so the checker itself does not
+silently rot.
+
 1. Open a 100KB, 1MB, and 5MB Markdown file.
 2. Switch between Source, Hybrid, and Preview from the editor tabbar view toggle.
 3. Switch between Source, Hybrid, and Preview from the command palette.
