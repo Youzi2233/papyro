@@ -50,10 +50,12 @@
     --mn-shadow-lg:       0 4px 14px rgba(23, 26, 22, .12), 0 28px 64px rgba(23, 26, 22, .14);
     --mn-shadow-modal:    0 10px 36px rgba(18, 20, 17, 0.12);
     --mn-shadow-hairline: 0 0 0 1px var(--mn-divider);
+    --mn-shadow-accent-inset: inset 0 1px 0 rgba(255, 255, 255, .18);
     --mn-ring-focus:      0 0 0 3px var(--mn-accent-dim);
     --mn-ring-focus-sm:   0 0 0 2px var(--mn-accent-dim);
     --mn-ring-focus-inset: inset 0 0 0 2px var(--mn-accent-dim);
     --mn-active-rail:     inset 2px 0 0 var(--mn-accent);
+    --mn-overlay-backdrop: rgba(18, 20, 17, 0.38);
 
     /* Radii */
     --mn-radius-xxs:      3px;
@@ -420,7 +422,7 @@ button { border: 0; cursor: pointer; background: transparent; }
     background: var(--mn-accent);
     border-color: var(--mn-accent);
     color: var(--mn-accent-ink);
-    box-shadow: var(--mn-shadow-sm), inset 0 1px 0 rgba(255,255,255,.18);
+    box-shadow: var(--mn-shadow-sm), var(--mn-shadow-accent-inset);
 }
 
 .mn-button.primary:hover {
@@ -1493,7 +1495,7 @@ button { border: 0; cursor: pointer; background: transparent; }
 .mn-modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(18, 20, 17, 0.38);
+    background: var(--mn-overlay-backdrop);
     backdrop-filter: blur(3px);
     display: flex;
     align-items: center;

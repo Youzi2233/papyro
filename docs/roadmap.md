@@ -471,7 +471,7 @@ Editor runtime lane
 - [x] 重建 spacing token：shell、sidebar、tabbar、modal、editor paper、menu。
 - [x] 重建 radius、border、shadow token，避免各组件随意硬编码。
 - [x] 将 editor typography、Hybrid decoration、Preview typography 共用同一套文档 token。
-- [ ] CSS 中减少硬编码颜色和一次性 class。
+- [x] CSS 中减少硬编码颜色和一次性 class。
 
 ### 3.3 桌面 Shell
 
@@ -519,6 +519,7 @@ Editor runtime lane
 - `assets/main.css` 和 `apps/desktop/assets/main.css` 已补齐 shell/sidebar/tabbar/modal/menu/status spacing token，关键容器不再直接硬编码结构间距。
 - `assets/main.css` 和 `apps/desktop/assets/main.css` 已补齐 radius/border/shadow/focus ring token，常见边框、圆角、焦点环和 modal 阴影通过 token 收敛。
 - `js/src/editor.js` 的 CodeMirror Source/Hybrid theme 和 CSS Preview/fallback 共用 document / markdown token，编辑、Hybrid 装饰和 Preview 排版从同一组变量取值。
+- `assets/main.css` 和 `apps/desktop/assets/main.css` 的组件区域不再直接写裸色值，剩余颜色集中在 token 定义或 JS 运行时兜底。
 - 打开应用第一眼是文档，不是工具集合。
 - UI 不再像临时 demo 或组件展示页。
 - 用户可以连续写作 30 分钟，不被视觉噪音和布局跳动打扰。
