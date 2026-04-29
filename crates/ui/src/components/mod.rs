@@ -8,3 +8,4 @@ pub mod search;
 pub mod settings;
 pub mod sidebar;
 pub mod status_bar;
+pub mod trash;

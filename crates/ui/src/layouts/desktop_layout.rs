@@ -8,6 +8,7 @@ use crate::components::{
     settings::SettingsModal,
     sidebar::Sidebar,
     status_bar::StatusBar,
+    trash::TrashModal,
 };
 use crate::context::use_app_context;
 use crate::perf::{perf_timer, trace_chrome_open_modal};
@@ -22,6 +23,7 @@ pub fn DesktopLayout() -> Element {
     let mut show_quick_open = use_signal(|| false);
     let mut show_command_palette = use_signal(|| false);
     let mut show_search = use_signal(|| false);
+    let show_trash = use_signal(|| false);
 
     let sidebar_collapsed = (app.sidebar_collapsed)();
 
@@ -131,6 +133,7 @@ pub fn DesktopLayout() -> Element {
                 show_quick_open,
                 show_command_palette,
                 show_search,
+                show_trash,
             }
         }
     }
@@ -162,6 +165,7 @@ fn DesktopModalLayer(
     mut show_quick_open: Signal<bool>,
     mut show_command_palette: Signal<bool>,
     mut show_search: Signal<bool>,
+    mut show_trash: Signal<bool>,
 ) -> Element {
     let app = use_app_context();
     let recovery_model = app.recovery_model.read().clone();
@@ -191,10 +195,14 @@ fn DesktopModalLayer(
             CommandPaletteModal {
                 on_close: move |_| show_command_palette.set(false),
                 on_settings: move |_| show_settings.set(true),
+                on_trash: move |_| show_trash.set(true),
             }
         }
         if *show_search.read() {
             SearchModal { on_close: move |_| show_search.set(false) }
+        }
+        if *show_trash.read() {
+            TrashModal { on_close: move |_| show_trash.set(false) }
         }
     }
 }

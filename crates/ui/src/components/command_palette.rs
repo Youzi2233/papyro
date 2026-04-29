@@ -1,4 +1,4 @@
-use crate::commands::{AppCommands, OpenMarkdownTarget, RestoreTrashedNoteTarget};
+use crate::commands::{AppCommands, OpenMarkdownTarget};
 use crate::components::primitives::{Modal, TextInput};
 use crate::context::use_app_context;
 use crate::perf::{perf_timer, trace_chrome_open_modal};
@@ -43,14 +43,17 @@ pub(crate) enum CommandPaletteActionKind {
     ToggleOutline,
     ToggleTheme,
     OpenSettings,
+    OpenTrash,
     SetViewMode(ViewMode),
     SetSelectedFavorite(bool),
-    RestoreTrashedNote(RestoreTrashedNoteTarget),
-    EmptyTrash,
 }
 
 #[component]
-pub fn CommandPaletteModal(on_close: EventHandler<()>, on_settings: EventHandler<()>) -> Element {
+pub fn CommandPaletteModal(
+    on_close: EventHandler<()>,
+    on_settings: EventHandler<()>,
+    on_trash: EventHandler<()>,
+) -> Element {
     let app = use_app_context();
     let commands = app.commands.clone();
     let workspace_model = app.workspace_model.read().clone();
@@ -119,6 +122,7 @@ pub fn CommandPaletteModal(on_close: EventHandler<()>, on_settings: EventHandler
                                         execute_command_action(
                                             commands_for_keys.clone(),
                                             on_settings,
+                                            on_trash,
                                             on_close,
                                             action.kind,
                                         );
@@ -139,6 +143,7 @@ pub fn CommandPaletteModal(on_close: EventHandler<()>, on_settings: EventHandler
                                 is_active: index == active,
                                 commands: commands.clone(),
                                 on_settings,
+                                on_trash,
                                 on_close,
                             }
                         }
@@ -154,6 +159,7 @@ fn CommandPaletteRow(
     is_active: bool,
     commands: AppCommands,
     on_settings: EventHandler<()>,
+    on_trash: EventHandler<()>,
     on_close: EventHandler<()>,
 ) -> Element {
     let kind = action.kind.clone();
@@ -165,6 +171,7 @@ fn CommandPaletteRow(
                 execute_command_action(
                     commands.clone(),
                     on_settings,
+                    on_trash,
                     on_close,
                     kind.clone(),
                 );
@@ -181,6 +188,7 @@ fn CommandPaletteRow(
 fn execute_command_action(
     commands: AppCommands,
     on_settings: EventHandler<()>,
+    on_trash: EventHandler<()>,
     on_close: EventHandler<()>,
     kind: CommandPaletteActionKind,
 ) {
@@ -213,17 +221,16 @@ fn execute_command_action(
             on_settings.call(());
             trace_chrome_open_modal("settings", "command_palette", started_at);
         }
+        CommandPaletteActionKind::OpenTrash => {
+            let started_at = perf_timer();
+            on_trash.call(());
+            trace_chrome_open_modal("trash", "command_palette", started_at);
+        }
         CommandPaletteActionKind::SetViewMode(mode) => {
             crate::chrome::set_view_mode(commands.clone(), mode, "command_palette");
         }
         CommandPaletteActionKind::SetSelectedFavorite(favorite) => {
             commands.set_selected_favorite.call(favorite);
-        }
-        CommandPaletteActionKind::RestoreTrashedNote(target) => {
-            commands.restore_trashed_note.call(target);
-        }
-        CommandPaletteActionKind::EmptyTrash => {
-            commands.empty_trash.call(());
         }
     }
 
@@ -305,31 +312,12 @@ pub(crate) fn command_palette_actions(
     }
 
     if input.has_workspace {
-        for trashed in input.trashed_notes {
-            actions.push(action(
-                &format!("Restore {}", trashed.title),
-                &trashed.relative_path.display().to_string(),
-                "TRASH",
-                CommandPaletteActionKind::RestoreTrashedNote(RestoreTrashedNoteTarget {
-                    note_id: trashed.note_id.clone(),
-                }),
-            ));
-        }
-
-        if !input.trashed_notes.is_empty() {
-            actions.push(action(
-                "Empty trash",
-                &format!(
-                    "Permanently delete {} trashed note(s)",
-                    input.trashed_notes.len()
-                ),
-                "TRASH",
-                CommandPaletteActionKind::EmptyTrash,
-            ));
-        }
-    }
-
-    if input.has_workspace {
+        actions.push(action(
+            "Open trash",
+            &trash_action_detail(input.trashed_notes.len()),
+            "APP",
+            CommandPaletteActionKind::OpenTrash,
+        ));
         actions.push(action(
             "Refresh workspace",
             "Reload the file tree",
@@ -422,6 +410,14 @@ fn selected_note_name(workspace: &crate::view_model::WorkspaceViewModel) -> Opti
     }
 }
 
+fn trash_action_detail(count: usize) -> String {
+    match count {
+        0 => "No deleted notes".to_string(),
+        1 => "Review 1 deleted note".to_string(),
+        count => format!("Review {count} deleted notes"),
+    }
+}
+
 pub(crate) fn filter_command_palette_actions(
     actions: &[CommandPaletteAction],
     query: &str,
@@ -504,6 +500,7 @@ mod tests {
 
         assert!(titles.contains(&"Open workspace"));
         assert!(!titles.contains(&"Refresh workspace"));
+        assert!(!titles.contains(&"Open trash"));
         assert!(!titles.contains(&"Save active note"));
         assert!(!titles.contains(&"Reload conflicted note"));
         assert!(!titles.contains(&"Overwrite conflicted note"));
@@ -642,7 +639,7 @@ mod tests {
     }
 
     #[test]
-    fn command_palette_actions_include_trashed_notes() {
+    fn command_palette_actions_include_trash_entry() {
         let trashed_notes = [crate::view_model::TrashedNoteListItem {
             note_id: "note-a".to_string(),
             title: "Deleted draft".to_string(),
@@ -655,21 +652,22 @@ mod tests {
         });
 
         assert!(actions.iter().any(|action| {
-            action.title == "Restore Deleted draft"
-                && action.detail == "notes/deleted.md"
-                && action.group == "TRASH"
-                && matches!(
-                    &action.kind,
-                    CommandPaletteActionKind::RestoreTrashedNote(target)
-                        if target.note_id == "note-a"
-                )
+            action.title == "Open trash"
+                && action.detail == "Review 1 deleted note"
+                && action.group == "APP"
+                && matches!(action.kind, CommandPaletteActionKind::OpenTrash)
         }));
-        assert!(actions.iter().any(|action| {
-            action.title == "Empty trash"
-                && action.detail == "Permanently delete 1 trashed note(s)"
-                && action.group == "TRASH"
-                && matches!(action.kind, CommandPaletteActionKind::EmptyTrash)
-        }));
+        assert!(!actions
+            .iter()
+            .any(|action| action.title == "Restore Deleted draft"));
+        assert!(!actions.iter().any(|action| action.title == "Empty trash"));
+    }
+
+    #[test]
+    fn trash_action_detail_names_empty_singular_and_plural_states() {
+        assert_eq!(trash_action_detail(0), "No deleted notes");
+        assert_eq!(trash_action_detail(1), "Review 1 deleted note");
+        assert_eq!(trash_action_detail(4), "Review 4 deleted notes");
     }
 
     #[test]

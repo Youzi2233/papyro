@@ -475,8 +475,8 @@ Editor runtime lane
 
 ### 3.3 桌面 Shell
 
-- [ ] 重新定义默认桌面布局：左侧文件区、顶部轻量 chrome、中央文档。
-- [ ] 默认减少常驻控件，低频功能进入命令面板、右键菜单或按需面板。
+- [x] 重新定义默认桌面布局：左侧文件区、顶部轻量 chrome、中央文档。
+- [x] 默认减少常驻控件，低频功能进入命令面板、右键菜单或按需面板。
 - [x] Tabbar 只表达打开文档和 dirty/save 状态，不承担大工具栏职责。
 - [x] Outline toggle 从 tabbar 常驻控件降级到命令面板入口。
 - [x] Format toolbar 从 tabbar 常驻控件移除，避免顶部区域抢占写作注意力。
@@ -484,7 +484,7 @@ Editor runtime lane
 - [x] Status bar 只放必要状态，不做信息垃圾桶。
 - [x] Source/Hybrid/Preview 模式切换从 tabbar 常驻分段控件降级到命令面板入口。
 - [x] Sidebar 支持清晰的 workspace、文件树、搜索入口，但不抢主编辑区。
-- [ ] 设置、标签管理、回收站以 modal/panel 形式按需打开。
+- [x] 设置、标签管理、回收站以 modal/panel 形式按需打开。
 
 ### 3.4 编辑区体验
 
