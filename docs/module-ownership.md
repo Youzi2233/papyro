@@ -25,6 +25,7 @@
 | `crates/editor` | Markdown parsing, rendering and editor protocol | parser/renderer tests，future protocol tests |
 | `crates/storage` | SQLite, filesystem and watcher adapters | storage integration tests |
 | `crates/platform` | desktop/mobile platform capability adapters | adapter tests and platform smoke checks |
+| `crates/platform/src/app_data.rs` | `crates/platform` app data path helper | `cargo test -p papyro-platform app_data` |
 
 ## 新增模块要求
 

@@ -1,4 +1,4 @@
-use crate::traits::PlatformApi;
+use crate::{app_data::ensure_app_data_dir, traits::PlatformApi};
 use anyhow::Result;
 use async_trait::async_trait;
 use std::path::{Path, PathBuf};
@@ -49,10 +49,6 @@ impl PlatformApi for DesktopPlatform {
     }
 
     fn get_app_data_dir(&self) -> Result<PathBuf> {
-        let dir = dirs::data_local_dir()
-            .unwrap_or_else(|| PathBuf::from("."))
-            .join("papyro");
-        std::fs::create_dir_all(&dir)?;
-        Ok(dir)
+        ensure_app_data_dir(dirs::data_local_dir())
     }
 }

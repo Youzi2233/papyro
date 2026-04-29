@@ -1,3 +1,5 @@
+mod app_data;
+
 pub mod desktop;
 pub mod mobile;
 pub mod traits;
