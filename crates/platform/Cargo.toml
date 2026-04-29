@@ -12,3 +12,6 @@ async-trait = { workspace = true }
 rfd = { workspace = true }
 open = { workspace = true }
 dirs = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }
