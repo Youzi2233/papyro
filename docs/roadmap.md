@@ -623,7 +623,7 @@ pub struct OpenMarkdownTarget {
 - [x] 桌面宿主通过 `crates/app` 启动请求注入路径，不直接调用 UI command。
 - [x] 在 `workspace_flow/open.rs` 增加 path-based open use case。
 - [x] 统一文件树、Quick Open、Workspace Search、Recent File 和启动参数的打开行为。
-- [ ] 统一已运行实例系统外部打开事件的打开行为。
+- [x] 统一已运行实例系统外部打开事件的打开行为。
 - [x] 打开流程先解析路径和 workspace，第一阶段总是落到当前窗口 Tabs。
 - [x] 非 Markdown 文件给出清晰错误，不改变当前 tab 或窗口。
 
