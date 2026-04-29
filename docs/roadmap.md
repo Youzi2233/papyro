@@ -335,6 +335,7 @@ Editor runtime lane
 - [x] Command Palette 的 outline 展示状态改为消费窄 `outline_visible` memo，不再为标签文案读取完整 `UiState`。
 - [x] Command Palette 的 outline 开关改为走 `AppCommand` / `AppAction` / dispatcher，不再直接写 raw `UiState`。
 - [x] Sidebar workspace 和选中项展示数据改为消费 `WorkspaceViewModel`。
+- [x] FileTree 的选择路径写入改为走 `AppCommand` / `AppAction` / dispatcher，不再直接写 raw `FileState`。
 - [x] sidebar toggle/resize/theme/view mode 等 chrome 动作统一走 `crates/ui/src/chrome.rs` helper，不在入口组件里重复写 settings mutation。
 - [x] 为 view model 派生函数补充“无关状态变化不改变输出”的测试。
 

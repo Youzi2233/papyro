@@ -237,6 +237,10 @@ impl AppDispatcher {
                     self.state.pending_delete_path,
                 );
             }
+            AppAction::SelectPath(action) => {
+                let mut file_state = self.state.file_state;
+                file_state.write().select_path(action.path);
+            }
             AppAction::ToggleExpandedPath(action) => {
                 toggle_expanded_path(
                     self.storage.clone(),
@@ -325,6 +329,7 @@ impl AppDispatcher {
         let set_tag_color = self.clone();
         let delete_tag = self.clone();
         let delete_selected = self.clone();
+        let select_path = self.clone();
         let toggle_expanded_path = self.clone();
         let reveal_in_explorer = self.clone();
         let export_html = self.clone();
@@ -403,6 +408,9 @@ impl AppDispatcher {
             }),
             delete_selected: EventHandler::new(move |_| {
                 delete_selected.dispatch(AppAction::DeleteSelected);
+            }),
+            select_path: EventHandler::new(move |path| {
+                select_path.dispatch(AppAction::select_path(path));
             }),
             toggle_expanded_path: EventHandler::new(move |path| {
                 toggle_expanded_path.dispatch(AppAction::toggle_expanded_path(path));
@@ -773,6 +781,17 @@ mod tests {
             AppAction::MoveSelectedTo(crate::actions::MoveSelectedTo {
                 target_dir: std::path::PathBuf::from("workspace/archive")
             })
+        );
+        assert_eq!(
+            AppAction::select_path(std::path::PathBuf::from("workspace/notes/a.md")),
+            AppAction::SelectPath(crate::actions::SelectPath {
+                path: std::path::PathBuf::from("workspace/notes/a.md")
+            })
+        );
+        assert_eq!(
+            AppAction::select_path(std::path::PathBuf::from("workspace/notes/a.md"))
+                .trace_interaction_path(),
+            "workspace.selection"
         );
         assert_eq!(
             AppAction::set_selected_favorite(true),

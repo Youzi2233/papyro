@@ -3,7 +3,6 @@ use crate::components::primitives::{Menu, MenuItem, MenuSeparator};
 use crate::context::use_app_context;
 use dioxus::prelude::*;
 use papyro_core::models::{FileNode, FileNodeKind};
-use papyro_core::FileState;
 use std::cmp::Ordering;
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
@@ -33,8 +32,10 @@ impl FileTreeSortMode {
 #[component]
 pub fn FileTree(sort_mode: FileTreeSortMode) -> Element {
     let app = use_app_context();
-    let mut file_state = app.file_state;
+    let file_state = app.file_state;
     let commands = app.commands;
+    let keyboard_commands = commands.clone();
+    let context_rename_commands = commands.clone();
 
     let nodes = file_state.read().file_tree.clone();
     let expanded_paths = file_state.read().expanded_paths.clone();
@@ -76,22 +77,22 @@ pub fn FileTree(sort_mode: FileTreeSortMode) -> Element {
                     FileTreeKeyboardAction::None => {}
                     FileTreeKeyboardAction::Select(path) => {
                         event.prevent_default();
-                        file_state.write().select_path(path);
+                        keyboard_commands.select_path.call(path);
                     }
                     FileTreeKeyboardAction::ToggleDirectory(path) => {
                         event.prevent_default();
-                        commands.toggle_expanded_path.call(path);
+                        keyboard_commands.toggle_expanded_path.call(path);
                     }
                     FileTreeKeyboardAction::OpenNote(node) => {
                         event.prevent_default();
-                        file_state.write().select_path(node.path.clone());
-                        commands.open_markdown.call(OpenMarkdownTarget {
+                        keyboard_commands.select_path.call(node.path.clone());
+                        keyboard_commands.open_markdown.call(OpenMarkdownTarget {
                             path: node.path,
                         });
                     }
                     FileTreeKeyboardAction::Rename(node) => {
                         event.prevent_default();
-                        begin_inline_rename(file_state, rename_draft, node);
+                        begin_inline_rename(keyboard_commands.clone(), rename_draft, node);
                     }
                 }
             },
@@ -126,7 +127,7 @@ pub fn FileTree(sort_mode: FileTreeSortMode) -> Element {
                     on_close: move |_| context_menu.set(None),
                     on_rename_start: move |node| {
                         context_menu.set(None);
-                        begin_inline_rename(file_state, rename_draft, node);
+                        begin_inline_rename(context_rename_commands.clone(), rename_draft, node);
                     },
                 }
             }
@@ -144,7 +145,7 @@ fn FileTreeNode(
     on_context_menu: EventHandler<FileTreeContextMenu>,
 ) -> Element {
     let app = use_app_context();
-    let mut file_state = app.file_state;
+    let file_state = app.file_state;
     let commands = app.commands;
     let mut rename_draft_for_change = rename_draft;
     let rename_draft_for_commit = rename_draft;
@@ -204,14 +205,14 @@ fn FileTreeNode(
                                 }
                             },
                             onblur: move |_| {
-                                commit_inline_rename(file_state, rename_draft_for_commit, rename_commands.clone());
+                                commit_inline_rename(rename_draft_for_commit, rename_commands.clone());
                             },
                             onkeydown: move |event| {
                                 event.stop_propagation();
                                 match event.key() {
                                     Key::Enter => {
                                         event.prevent_default();
-                                        commit_inline_rename(file_state, rename_draft, commands.clone());
+                                        commit_inline_rename(rename_draft, commands.clone());
                                     }
                                     Key::Escape => {
                                         event.prevent_default();
@@ -242,12 +243,12 @@ fn FileTreeNode(
                         oncontextmenu: move |event| {
                             event.prevent_default();
                             event.stop_propagation();
-                            file_state.write().select_path(menu_path.clone());
+                            commands.select_path.call(menu_path.clone());
                             on_context_menu.call(FileTreeContextMenu::from_event(&menu_node, &event));
                         },
                         ondragstart: move |event| {
                             event.stop_propagation();
-                            file_state.write().select_path(drag_node.path.clone());
+                            commands.select_path.call(drag_node.path.clone());
                             drag_source.set(Some(FileTreeDragSource::from_node(&drag_node)));
                         },
                         ondragend: move |_| {
@@ -272,7 +273,7 @@ fn FileTreeNode(
                             event.stop_propagation();
                             if let Some(source) = drag_source() {
                                 if can_drop_on_directory(&source, &drop_path_drop) {
-                                    file_state.write().select_path(source.path.clone());
+                                    commands.select_path.call(source.path.clone());
                                     drop_commands.move_selected_to.call(drop_path_drop.clone());
                                 }
                             }
@@ -313,14 +314,14 @@ fn FileTreeNode(
                                 }
                             },
                             onblur: move |_| {
-                                commit_inline_rename(file_state, rename_draft_for_commit, rename_commands.clone());
+                                commit_inline_rename(rename_draft_for_commit, rename_commands.clone());
                             },
                             onkeydown: move |event| {
                                 event.stop_propagation();
                                 match event.key() {
                                     Key::Enter => {
                                         event.prevent_default();
-                                        commit_inline_rename(file_state, rename_draft, commands.clone());
+                                        commit_inline_rename(rename_draft, commands.clone());
                                     }
                                     Key::Escape => {
                                         event.prevent_default();
@@ -345,7 +346,7 @@ fn FileTreeNode(
                         draggable: true,
                         "aria-selected": "{is_selected}",
                         onclick: move |_| {
-                            file_state.write().select_path(open_node.path.clone());
+                            open_commands.select_path.call(open_node.path.clone());
                             open_commands.open_markdown.call(OpenMarkdownTarget {
                                 path: open_node.path.clone(),
                             });
@@ -353,12 +354,12 @@ fn FileTreeNode(
                         oncontextmenu: move |event| {
                             event.prevent_default();
                             event.stop_propagation();
-                            file_state.write().select_path(menu_path.clone());
+                            commands.select_path.call(menu_path.clone());
                             on_context_menu.call(FileTreeContextMenu::from_event(&menu_node, &event));
                         },
                         ondragstart: move |event| {
                             event.stop_propagation();
-                            file_state.write().select_path(drag_node.path.clone());
+                            commands.select_path.call(drag_node.path.clone());
                             drag_source.set(Some(FileTreeDragSource::from_node(&drag_node)));
                         },
                         ondragend: move |_| {
@@ -451,16 +452,15 @@ fn file_tree_row_class(
 }
 
 fn begin_inline_rename(
-    mut file_state: Signal<FileState>,
+    commands: AppCommands,
     mut rename_draft: Signal<Option<FileTreeRenameDraft>>,
     node: FileNode,
 ) {
-    file_state.write().select_path(node.path.clone());
+    commands.select_path.call(node.path.clone());
     rename_draft.set(Some(FileTreeRenameDraft::from_node(&node)));
 }
 
 fn commit_inline_rename(
-    mut file_state: Signal<FileState>,
     mut rename_draft: Signal<Option<FileTreeRenameDraft>>,
     commands: AppCommands,
 ) {
@@ -469,7 +469,7 @@ fn commit_inline_rename(
     };
 
     if let Some(name) = draft.commit_name() {
-        file_state.write().select_path(draft.path.clone());
+        commands.select_path.call(draft.path.clone());
         commands.rename_selected.call(name);
     }
 
@@ -528,7 +528,6 @@ fn FileTreeContextMenuView(
 ) -> Element {
     let app = use_app_context();
     let commands = app.commands;
-    let mut file_state = app.file_state;
     let style = context_menu_style(menu.position);
     let is_directory = menu.is_directory();
     let open_node = menu.node.clone();
@@ -546,7 +545,7 @@ fn FileTreeContextMenuView(
                     label: "Open",
                     danger: false,
                     on_select: move |_| {
-                        file_state.write().select_path(open_node.path.clone());
+                        commands.select_path.call(open_node.path.clone());
                         commands.open_markdown.call(OpenMarkdownTarget {
                             path: open_node.path.clone(),
                         });
