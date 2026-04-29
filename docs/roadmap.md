@@ -269,8 +269,8 @@ Editor runtime lane
 - [x] editor 组件已拆分为 pane / host / bridge / preview / outline / tabbar 等模块。
 - [x] preview/outline/stats 已有 revision cache 基础。
 - [x] editor host lifecycle 已有 instance id、stale destroy 防护和 contract test 基础。
-- [ ] 把性能预算变成 PR 必填项，而不是只存在文档里。
-- [ ] 把 UI/UX 验收纳入 Phase 任务，不允许“代码能跑但体验很差”算完成。
+- [x] 把性能预算变成 PR 必填项，而不是只存在文档里。
+- [x] 把 UI/UX 验收纳入 Phase 任务，不允许“代码能跑但体验很差”算完成。
 
 验收标准：
 
