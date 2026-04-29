@@ -57,8 +57,14 @@ pub fn EditorPane() -> Element {
     let editor_services = app.editor_services;
     let commands = app.commands;
     let pane_model = app.editor_pane_model;
+    let workspace_model = app.workspace_model;
     let surface_model = app.editor_surface_model.read().clone();
     let view_mode = surface_model.view_mode.clone();
+    let workspace_path = if view_mode == ViewMode::Preview {
+        workspace_model().path
+    } else {
+        None
+    };
     let editor_typography = EditorTypography::from_surface_model(&surface_model);
     let auto_link_paste = surface_model.auto_link_paste;
     let outline_visible = surface_model.outline_visible;
@@ -221,6 +227,7 @@ pub fn EditorPane() -> Element {
                         if view_mode == ViewMode::Preview {
                             PreviewPane {
                                 active_document: pane.active_document.clone(),
+                                workspace_path: workspace_path.clone(),
                                 editor_services,
                             }
                         }

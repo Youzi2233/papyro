@@ -9,6 +9,7 @@ use crate::perf::{perf_timer, trace_preview_render};
 use dioxus::prelude::*;
 use papyro_core::DocumentSnapshot;
 use papyro_editor::performance::PreviewPolicy;
+use std::path::{Component, Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -47,6 +48,7 @@ pub(super) fn PreviewLinkBridge(commands: AppCommands) -> Element {
 #[component]
 pub(super) fn PreviewPane(
     active_document: Option<DocumentSnapshot>,
+    workspace_path: Option<PathBuf>,
     editor_services: EditorServices,
 ) -> Element {
     let document_cache = use_context::<DocumentDerivedCache>();
@@ -54,43 +56,51 @@ pub(super) fn PreviewPane(
     let effect_cache = document_cache.clone();
     let services = editor_services;
 
-    use_effect(use_reactive((&active_document,), move |(document,)| {
-        let Some(document) = document else {
-            preview_state.set(None);
-            return;
-        };
-        let key = DocumentCacheKey::from_snapshot(&document);
+    use_effect(use_reactive(
+        (&active_document, &workspace_path),
+        move |(document, workspace_path)| {
+            let Some(document) = document else {
+                preview_state.set(None);
+                return;
+            };
+            let key = DocumentCacheKey::from_snapshot(&document);
 
-        if let Some(preview) = effect_cache.borrow().preview(&key) {
-            preview_state.set(Some(PreviewRenderState {
-                key: Some(key),
-                preview,
-            }));
-            return;
-        }
-
-        let input = PreviewRenderInput::from_document(key.clone(), &document, services);
-        preview_state.set(Some(PreviewRenderState {
-            key: Some(key.clone()),
-            preview: preview_pending(&document),
-        }));
-
-        let mut preview_state = preview_state;
-        let effect_cache = effect_cache.clone();
-        spawn(async move {
-            let result = render_preview_async(input).await;
-            if !preview_result_matches_current(preview_state.peek().as_ref(), &key) {
+            if let Some(preview) = effect_cache.borrow().preview(&key) {
+                preview_state.set(Some(PreviewRenderState {
+                    key: Some(key),
+                    preview,
+                }));
                 return;
             }
 
-            if result.preview.status == CachedPreviewStatus::Ready {
-                effect_cache
-                    .borrow_mut()
-                    .insert_preview(key.clone(), result.preview.clone());
-            }
-            preview_state.set(Some(result));
-        });
-    }));
+            let input = PreviewRenderInput::from_document(
+                key.clone(),
+                &document,
+                workspace_path.clone(),
+                services,
+            );
+            preview_state.set(Some(PreviewRenderState {
+                key: Some(key.clone()),
+                preview: preview_pending(&document),
+            }));
+
+            let mut preview_state = preview_state;
+            let effect_cache = effect_cache.clone();
+            spawn(async move {
+                let result = render_preview_async(input).await;
+                if !preview_result_matches_current(preview_state.peek().as_ref(), &key) {
+                    return;
+                }
+
+                if result.preview.status == CachedPreviewStatus::Ready {
+                    effect_cache
+                        .borrow_mut()
+                        .insert_preview(key.clone(), result.preview.clone());
+                }
+                preview_state.set(Some(result));
+            });
+        },
+    ));
 
     let key = active_document
         .as_ref()
@@ -195,6 +205,8 @@ struct PreviewRenderInput {
     tab_id: String,
     revision: u64,
     content: Arc<str>,
+    note_path: PathBuf,
+    workspace_path: Option<PathBuf>,
     render_html_with_highlighting: fn(&str, bool) -> String,
 }
 
@@ -202,6 +214,7 @@ impl PreviewRenderInput {
     fn from_document(
         key: DocumentCacheKey,
         document: &DocumentSnapshot,
+        workspace_path: Option<PathBuf>,
         editor_services: EditorServices,
     ) -> Self {
         Self {
@@ -209,6 +222,8 @@ impl PreviewRenderInput {
             tab_id: document.tab_id.clone(),
             revision: document.revision,
             content: document.content.clone(),
+            note_path: document.path.clone(),
+            workspace_path,
             render_html_with_highlighting: editor_services.render_markdown_html_with_highlighting,
         }
     }
@@ -224,6 +239,8 @@ async fn render_preview_async(input: PreviewRenderInput) -> PreviewRenderState {
                 input.tab_id.as_str(),
                 input.revision,
                 input.content.as_ref(),
+                input.note_path.as_path(),
+                input.workspace_path.as_deref(),
                 input.render_html_with_highlighting,
             )
         }),
@@ -273,12 +290,20 @@ fn render_preview_for_content(
     tab_id: &str,
     revision: u64,
     content: &str,
+    note_path: &Path,
+    workspace_path: Option<&Path>,
     render_html_with_highlighting: fn(&str, bool) -> String,
 ) -> CachedPreview {
     let started_at = perf_timer();
     let policy = PreviewPolicy::for_len(content.len());
     let html = if policy.live_preview_enabled {
-        render_html_with_highlighting(content, policy.code_highlighting_enabled)
+        render_preview_html(
+            content,
+            policy.code_highlighting_enabled,
+            note_path,
+            workspace_path,
+            render_html_with_highlighting,
+        )
     } else {
         String::new()
     };
@@ -297,6 +322,111 @@ fn render_preview_for_content(
         policy,
         status: CachedPreviewStatus::Ready,
     }
+}
+
+fn render_preview_html(
+    content: &str,
+    highlight_code: bool,
+    note_path: &Path,
+    workspace_path: Option<&Path>,
+    render_html_with_highlighting: fn(&str, bool) -> String,
+) -> String {
+    let Some(workspace_path) = workspace_path else {
+        return render_html_with_highlighting(content, highlight_code);
+    };
+
+    papyro_editor::renderer::render_markdown_html_with_image_resolver(
+        content,
+        highlight_code,
+        Some(&|url| local_preview_image_url(url, workspace_path, note_path)),
+    )
+}
+
+fn local_preview_image_url(url: &str, workspace_path: &Path, note_path: &Path) -> Option<String> {
+    let target = url.trim();
+    if !is_rewritable_relative_url(target) {
+        return None;
+    }
+
+    let (path_part, _suffix) = split_url_path_suffix(target);
+    if path_part.is_empty() {
+        return None;
+    }
+
+    let workspace_path = normalize_lexical(workspace_path);
+    let note_dir = note_path.parent().unwrap_or_else(|| Path::new(""));
+    let target_path = normalize_lexical(&note_dir.join(path_part));
+    if !target_path.starts_with(&workspace_path) {
+        return None;
+    }
+
+    Some(file_url(&target_path))
+}
+
+fn split_url_path_suffix(target: &str) -> (&str, &str) {
+    let suffix_start = target
+        .char_indices()
+        .find(|(_, character)| matches!(character, '?' | '#'))
+        .map(|(index, _)| index)
+        .unwrap_or(target.len());
+
+    (&target[..suffix_start], &target[suffix_start..])
+}
+
+fn is_rewritable_relative_url(target: &str) -> bool {
+    if target.is_empty() || target.starts_with('/') || target.starts_with('#') {
+        return false;
+    }
+
+    let first_segment_end = target
+        .char_indices()
+        .find(|(_, character)| matches!(character, '/' | '\\' | '?' | '#'))
+        .map(|(index, _)| index)
+        .unwrap_or(target.len());
+
+    !target[..first_segment_end].contains(':')
+}
+
+fn normalize_lexical(path: &Path) -> PathBuf {
+    let mut normalized = PathBuf::new();
+
+    for component in path.components() {
+        match component {
+            Component::CurDir => {}
+            Component::ParentDir => {
+                normalized.pop();
+            }
+            other => normalized.push(other.as_os_str()),
+        }
+    }
+
+    normalized
+}
+
+fn file_url(path: &Path) -> String {
+    let mut normalized = path.to_string_lossy().replace('\\', "/");
+    if cfg!(windows) && !normalized.starts_with('/') {
+        normalized = format!("/{normalized}");
+    }
+
+    format!("file://{}", encode_file_url_path(&normalized))
+}
+
+fn encode_file_url_path(path: &str) -> String {
+    let mut encoded = String::with_capacity(path.len());
+    for character in path.chars() {
+        match character {
+            ' ' => encoded.push_str("%20"),
+            '"' => encoded.push_str("%22"),
+            '#' => encoded.push_str("%23"),
+            '%' => encoded.push_str("%25"),
+            '?' => encoded.push_str("%3F"),
+            '<' => encoded.push_str("%3C"),
+            '>' => encoded.push_str("%3E"),
+            _ => encoded.push(character),
+        }
+    }
+    encoded
 }
 
 fn preview_placeholder(document: Option<&DocumentSnapshot>) -> CachedPreview {
@@ -419,10 +549,51 @@ mod tests {
             format!("<p>{markdown}:{highlight_code}</p>")
         }
 
-        let preview = render_preview_for_content("a", 1, "hello", render);
+        let preview =
+            render_preview_for_content("a", 1, "hello", Path::new("note.md"), None, render);
 
         assert_eq!(preview.html, "<p>hello:true</p>");
         assert_eq!(preview.status, CachedPreviewStatus::Ready);
+    }
+
+    #[test]
+    fn local_preview_image_url_resolves_workspace_relative_image() {
+        let workspace = PathBuf::from("/workspace");
+        let note_path = workspace.join("notes/daily/note.md");
+        let url = local_preview_image_url("../../assets/pasted image.png", &workspace, &note_path)
+            .expect("local image url");
+
+        assert!(url.starts_with("file://"));
+        assert!(url.contains("/workspace/assets/pasted%20image.png"));
+        assert_eq!(
+            local_preview_image_url("../../../outside.png", &workspace, &note_path),
+            None
+        );
+        assert_eq!(
+            local_preview_image_url("https://example.test/a.png", &workspace, &note_path),
+            None
+        );
+    }
+
+    #[test]
+    fn render_preview_for_content_rewrites_local_image_sources() {
+        fn render(markdown: &str, _highlight_code: bool) -> String {
+            format!("<p>{markdown}</p>")
+        }
+
+        let workspace = PathBuf::from("/workspace");
+        let note_path = workspace.join("notes/note.md");
+        let preview = render_preview_for_content(
+            "a",
+            1,
+            "![image](../assets/pasted.png)",
+            &note_path,
+            Some(workspace.as_path()),
+            render,
+        );
+
+        assert!(preview.html.contains(r#"<img src="file://"#));
+        assert!(preview.html.contains("/workspace/assets/pasted.png"));
     }
 
     #[test]

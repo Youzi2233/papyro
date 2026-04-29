@@ -8,6 +8,8 @@ thread_local! {
     static THEME_SET: ThemeSet = ThemeSet::load_defaults();
 }
 
+type ImageUrlResolver<'a> = &'a dyn Fn(&str) -> Option<String>;
+
 pub fn render_markdown_html(markdown: &str) -> String {
     render_markdown_html_with_highlighting(
         markdown,
@@ -16,6 +18,14 @@ pub fn render_markdown_html(markdown: &str) -> String {
 }
 
 pub fn render_markdown_html_with_highlighting(markdown: &str, highlight_code: bool) -> String {
+    render_markdown_html_with_image_resolver(markdown, highlight_code, None)
+}
+
+pub fn render_markdown_html_with_image_resolver(
+    markdown: &str,
+    highlight_code: bool,
+    image_url_resolver: Option<ImageUrlResolver<'_>>,
+) -> String {
     let mut options = Options::empty();
     options.insert(Options::ENABLE_TABLES);
     options.insert(Options::ENABLE_TASKLISTS);
@@ -23,7 +33,7 @@ pub fn render_markdown_html_with_highlighting(markdown: &str, highlight_code: bo
     options.insert(Options::ENABLE_HEADING_ATTRIBUTES);
 
     let parser = Parser::new_ext(markdown, options);
-    let sanitized = sanitize_events(parser);
+    let sanitized = sanitize_events(parser, image_url_resolver);
     let highlighted = if highlight_code {
         highlight_code_blocks(sanitized)
     } else {
@@ -35,7 +45,10 @@ pub fn render_markdown_html_with_highlighting(markdown: &str, highlight_code: bo
     output
 }
 
-fn sanitize_events<'a>(events: impl IntoIterator<Item = Event<'a>>) -> Vec<Event<'a>> {
+fn sanitize_events<'a>(
+    events: impl IntoIterator<Item = Event<'a>>,
+    image_url_resolver: Option<ImageUrlResolver<'_>>,
+) -> Vec<Event<'a>> {
     let mut sanitized = Vec::new();
 
     for event in events {
@@ -59,7 +72,7 @@ fn sanitize_events<'a>(events: impl IntoIterator<Item = Event<'a>>) -> Vec<Event
                 id,
             }) => sanitized.push(Event::Start(Tag::Image {
                 link_type,
-                dest_url: sanitize_url(&dest_url),
+                dest_url: sanitize_image_url(&dest_url, image_url_resolver),
                 title,
                 id,
             })),
@@ -136,6 +149,21 @@ fn render_code_block(code: &str, lang: Option<&str>) -> String {
 }
 
 fn sanitize_url<'a>(url: &str) -> CowStr<'a> {
+    sanitize_url_with_extra_schemes(url, &[])
+}
+
+fn sanitize_image_url<'a>(
+    url: &str,
+    image_url_resolver: Option<ImageUrlResolver<'_>>,
+) -> CowStr<'a> {
+    if let Some(resolved) = image_url_resolver.and_then(|resolve| resolve(url)) {
+        return sanitize_url_with_extra_schemes(&resolved, &["file"]);
+    }
+
+    sanitize_url(url)
+}
+
+fn sanitize_url_with_extra_schemes<'a>(url: &str, extra_schemes: &[&str]) -> CowStr<'a> {
     let trimmed = url.trim();
     if trimmed.is_empty() {
         return CowStr::from(String::new());
@@ -151,7 +179,8 @@ fn sanitize_url<'a>(url: &str) -> CowStr<'a> {
         let valid_scheme = scheme.chars().all(|character| {
             character.is_ascii_alphanumeric() || matches!(character, '+' | '-' | '.')
         });
-        if valid_scheme && !matches!(scheme, "http" | "https" | "mailto") {
+        let extra_allowed = extra_schemes.contains(&scheme);
+        if valid_scheme && !matches!(scheme, "http" | "https" | "mailto") && !extra_allowed {
             return CowStr::from(String::new());
         }
     }
@@ -198,6 +227,28 @@ mod tests {
         assert!(html.contains(r#"src="""#));
         assert!(html.contains(r#"href="https://example.test""#));
         assert!(html.contains(r#"href="notes/a.md""#));
+    }
+
+    #[test]
+    fn render_markdown_html_rewrites_resolved_local_image_urls() {
+        let html = render_markdown_html_with_image_resolver(
+            "![local](assets/a.png) ![remote](https://example.test/a.png)",
+            false,
+            Some(&|url| {
+                (url == "assets/a.png").then(|| "file:///workspace/assets/a.png".to_string())
+            }),
+        );
+
+        assert!(html.contains(r#"src="file:///workspace/assets/a.png""#));
+        assert!(html.contains(r#"src="https://example.test/a.png""#));
+    }
+
+    #[test]
+    fn render_markdown_html_rejects_raw_file_image_urls() {
+        let html = render_markdown_html("![local](file:///workspace/assets/a.png)");
+
+        assert!(html.contains(r#"src="""#));
+        assert!(!html.contains("file:///workspace"));
     }
 
     #[test]
