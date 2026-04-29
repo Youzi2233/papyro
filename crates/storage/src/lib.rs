@@ -2,6 +2,8 @@ pub mod db;
 pub mod fs;
 pub mod index;
 mod recovery;
+#[cfg(test)]
+mod settings_tests;
 
 pub use db::{create_pool, DbPool};
 pub use papyro_core::{
