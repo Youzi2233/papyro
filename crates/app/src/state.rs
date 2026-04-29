@@ -1,7 +1,8 @@
 use dioxus::prelude::*;
 use papyro_core::{
     models::{RecoveryDraft, RecoveryDraftComparison},
-    EditorTabs, FileState, TabContentsMap, UiState, WorkspaceBootstrap, WorkspaceSearchState,
+    EditorTabs, FileState, ProcessRuntimeSession, TabContentsMap, UiState, WorkspaceBootstrap,
+    WorkspaceSearchState,
 };
 use papyro_ui::commands::EditorRuntimeCommandQueue;
 use std::path::PathBuf;
@@ -11,6 +12,7 @@ use crate::settings_persistence::SettingsPersistenceQueue;
 #[derive(Clone, Copy)]
 pub(crate) struct RuntimeState {
     pub file_state: Signal<FileState>,
+    pub process_runtime: Signal<ProcessRuntimeSession>,
     pub editor_tabs: Signal<EditorTabs>,
     pub tab_contents: Signal<TabContentsMap>,
     pub ui_state: Signal<UiState>,
@@ -30,12 +32,14 @@ pub(crate) fn use_runtime_state(bootstrap: WorkspaceBootstrap) -> RuntimeState {
     let initial_file_state = bootstrap.file_state;
     let initial_global_settings = bootstrap.global_settings;
     let initial_workspace_overrides = bootstrap.workspace_settings;
+    let initial_process_runtime = ProcessRuntimeSession::tabs_only(&initial_global_settings);
     let initial_status_message = bootstrap.status_message;
     let initial_workspace_root = bootstrap.workspace_root;
     let initial_recovery_drafts = bootstrap.recovery_drafts;
 
     RuntimeState {
         file_state: use_signal(|| initial_file_state),
+        process_runtime: use_signal(|| initial_process_runtime),
         editor_tabs: use_signal(EditorTabs::default),
         tab_contents: use_signal(TabContentsMap::default),
         ui_state: use_signal(|| {

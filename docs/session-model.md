@@ -261,7 +261,7 @@ OpenMarkdownTarget { path }
 
 `note_open_mode` 是进程级 effective mode，不属于 Phase 1 实现范围。
 
-当前 `AppSettings.note_open_mode` 已保留持久化字段，默认值是 `Tabs`。它是软件级全局设置，不属于 `WorkspaceSettingsOverrides`，workspace scope 不能覆盖它。当前 runtime 仍按单主窗口 Tabs 语义执行，直到 `ProcessRuntime` 显式读取 effective mode 并完成 MultiWindow 路由。
+当前 `AppSettings.note_open_mode` 已保留持久化字段，默认值是 `Tabs`。它是软件级全局设置，不属于 `WorkspaceSettingsOverrides`，workspace scope 不能覆盖它。`ProcessRuntimeSession` 会记录 configured mode 和 effective mode；在多窗口窗口体可用前，当前 runtime 会把 effective mode 明确钉在 `Tabs`，继续按单主窗口 Tabs 语义执行。
 
 启用 MultiWindow 前必须完成：
 

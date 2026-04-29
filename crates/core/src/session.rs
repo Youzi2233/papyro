@@ -1,3 +1,4 @@
+use crate::models::{AppSettings, NoteOpenMode};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
@@ -86,6 +87,38 @@ pub enum WindowRouteTarget {
     CurrentWindow(WindowSessionId),
     ExistingDocumentWindow(WindowSessionId),
     NewDocumentWindow,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProcessRuntimeSession {
+    pub configured_note_open_mode: NoteOpenMode,
+    pub effective_note_open_mode: NoteOpenMode,
+    pub window_registry: WindowSessionRegistry,
+}
+
+impl ProcessRuntimeSession {
+    pub fn tabs_only(settings: &AppSettings) -> Self {
+        Self {
+            configured_note_open_mode: settings.note_open_mode.clone(),
+            effective_note_open_mode: NoteOpenMode::Tabs,
+            window_registry: WindowSessionRegistry::default(),
+        }
+    }
+
+    pub fn with_multi_window_available(settings: &AppSettings) -> Self {
+        Self {
+            configured_note_open_mode: settings.note_open_mode.clone(),
+            effective_note_open_mode: settings.note_open_mode.clone(),
+            window_registry: WindowSessionRegistry::default(),
+        }
+    }
+
+    pub fn route_markdown_open(&self, path: &Path) -> WindowRouteTarget {
+        match self.effective_note_open_mode {
+            NoteOpenMode::Tabs => self.window_registry.route_tabs_open(),
+            NoteOpenMode::MultiWindow => self.window_registry.route_multi_window_open(path),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -234,6 +267,43 @@ mod tests {
         assert_eq!(
             registry.route_multi_window_open(Path::new("workspace/notes/a.md")),
             WindowRouteTarget::NewDocumentWindow
+        );
+    }
+
+    #[test]
+    fn process_runtime_tabs_only_preserves_configured_mode_but_effective_tabs() {
+        let settings = AppSettings {
+            note_open_mode: NoteOpenMode::MultiWindow,
+            ..AppSettings::default()
+        };
+
+        let runtime = ProcessRuntimeSession::tabs_only(&settings);
+
+        assert_eq!(runtime.configured_note_open_mode, NoteOpenMode::MultiWindow);
+        assert_eq!(runtime.effective_note_open_mode, NoteOpenMode::Tabs);
+        assert_eq!(
+            runtime.route_markdown_open(Path::new("workspace/notes/a.md")),
+            WindowRouteTarget::CurrentWindow(WindowSessionId::main())
+        );
+    }
+
+    #[test]
+    fn process_runtime_routes_multi_window_when_available() {
+        let settings = AppSettings {
+            note_open_mode: NoteOpenMode::MultiWindow,
+            ..AppSettings::default()
+        };
+        let note_path = PathBuf::from("workspace/notes/a.md");
+        let document_window = WindowSessionId::from("doc-a");
+        let mut runtime = ProcessRuntimeSession::with_multi_window_available(&settings);
+        runtime.window_registry.register(
+            RegisteredWindowSession::new(document_window.clone())
+                .with_document_path(note_path.clone()),
+        );
+
+        assert_eq!(
+            runtime.route_markdown_open(&note_path),
+            WindowRouteTarget::ExistingDocumentWindow(document_window)
         );
     }
 }

@@ -15,7 +15,7 @@ use dioxus::prelude::*;
 use papyro_core::models::{AppSettings, WorkspaceSettingsOverrides, WorkspaceTreeState};
 use papyro_core::{
     settings_target_theme, sidebar_toggle_target, sidebar_width_target, theme_toggle_target,
-    view_mode_target, ChromeSettingsTarget, FileState, NoteStorage, UiState,
+    view_mode_target, ChromeSettingsTarget, FileState, NoteStorage, UiState, WindowRouteTarget,
 };
 use papyro_platform::PlatformApi;
 use papyro_ui::commands::{
@@ -875,6 +875,25 @@ async fn run_open_markdown(
     state: RuntimeState,
     target: OpenMarkdownTarget,
 ) {
+    let route_target = {
+        let process_runtime = state.process_runtime.read();
+        process_runtime.route_markdown_open(&target.path)
+    };
+    match route_target {
+        WindowRouteTarget::CurrentWindow(_) => {}
+        WindowRouteTarget::ExistingDocumentWindow(window_id) => {
+            tracing::warn!(
+                window_id = window_id.as_str(),
+                "multi-window document focus route is not implemented; falling back to current tabs"
+            );
+        }
+        WindowRouteTarget::NewDocumentWindow => {
+            tracing::warn!(
+                "multi-window document creation route is not implemented; falling back to current tabs"
+            );
+        }
+    }
+
     let should_flush = {
         let file_state = state.file_state.read();
         open_markdown_requires_dirty_flush(&file_state, &target.path)
