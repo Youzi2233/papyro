@@ -520,6 +520,7 @@ fn form_settings(
         show_word_count: base.show_word_count,
         sidebar_width: base.sidebar_width,
         sidebar_collapsed: base.sidebar_collapsed,
+        note_open_mode: base.note_open_mode.clone(),
         view_mode: base.view_mode.clone(),
     }
 }

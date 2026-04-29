@@ -117,6 +117,8 @@ pub struct AppSettings {
     pub font_family: String,
     pub font_size: u8,
     pub line_height: f32,
+    #[serde(default)]
+    pub note_open_mode: NoteOpenMode,
     #[serde(default = "default_auto_link_paste")]
     pub auto_link_paste: bool,
     pub auto_save_delay_ms: u64,
@@ -167,6 +169,7 @@ impl Default for AppSettings {
                     .to_string(),
             font_size: 16,
             line_height: 1.6,
+            note_open_mode: NoteOpenMode::Tabs,
             auto_link_paste: true,
             auto_save_delay_ms: 500,
             show_word_count: true,
@@ -190,6 +193,7 @@ impl AppSettings {
                 .unwrap_or_else(|| self.font_family.clone()),
             font_size: overrides.font_size.unwrap_or(self.font_size),
             line_height: overrides.line_height.unwrap_or(self.line_height),
+            note_open_mode: self.note_open_mode.clone(),
             auto_link_paste: overrides.auto_link_paste.unwrap_or(self.auto_link_paste),
             auto_save_delay_ms: overrides
                 .auto_save_delay_ms
@@ -273,6 +277,22 @@ impl ViewMode {
             Self::Source => "source",
             Self::Hybrid => "hybrid",
             Self::Preview => "preview",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
+pub enum NoteOpenMode {
+    #[default]
+    Tabs,
+    MultiWindow,
+}
+
+impl NoteOpenMode {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Tabs => "tabs",
+            Self::MultiWindow => "multi_window",
         }
     }
 }
@@ -363,6 +383,34 @@ mod tests {
         assert_eq!(ViewMode::Source.as_str(), "source");
         assert_eq!(ViewMode::Hybrid.as_str(), "hybrid");
         assert_eq!(ViewMode::Preview.as_str(), "preview");
+    }
+
+    #[test]
+    fn note_open_mode_defaults_to_tabs_for_existing_settings() {
+        let mut serialized = serde_json::to_value(AppSettings::default()).unwrap();
+        serialized.as_object_mut().unwrap().remove("note_open_mode");
+
+        let settings: AppSettings = serde_json::from_value(serialized).unwrap();
+
+        assert_eq!(settings.note_open_mode, NoteOpenMode::Tabs);
+    }
+
+    #[test]
+    fn workspace_overrides_do_not_change_process_level_note_open_mode() {
+        let global = AppSettings {
+            note_open_mode: NoteOpenMode::MultiWindow,
+            font_size: 16,
+            ..AppSettings::default()
+        };
+        let overrides = WorkspaceSettingsOverrides {
+            font_size: Some(20),
+            ..WorkspaceSettingsOverrides::default()
+        };
+
+        let effective = global.with_workspace_overrides(&overrides);
+
+        assert_eq!(effective.note_open_mode, NoteOpenMode::MultiWindow);
+        assert_eq!(effective.font_size, 20);
     }
 
     #[test]

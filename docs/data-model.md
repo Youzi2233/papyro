@@ -153,15 +153,19 @@ pub struct Tag {
 pub struct AppSettings {
     pub theme: Theme,
     pub font_family: String,
-    pub font_size: u8,          // 单位: px，范围 12-32
-    pub line_height: f32,       // 1.2 ~ 2.0
-    pub editor_width: EditorWidth,
-    pub auto_save: AutoSave,
-    pub spell_check: bool,
+    pub font_size: u8,
+    pub line_height: f32,
+    #[serde(default)]
+    pub note_open_mode: NoteOpenMode,
+    #[serde(default = "default_auto_link_paste")]
+    pub auto_link_paste: bool,
+    pub auto_save_delay_ms: u64,
     pub show_word_count: bool,
-    pub default_workspace: Option<String>,
-    pub tab_size: u8,           // 2 or 4
-    pub indent_with_tabs: bool,
+    pub sidebar_width: u32,
+    #[serde(default)]
+    pub sidebar_collapsed: bool,
+    #[serde(default)]
+    pub view_mode: ViewMode,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -173,18 +177,18 @@ pub enum Theme {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub enum EditorWidth {
-    Normal,     // ~800px
+pub enum ViewMode {
     #[default]
-    Wide,       // ~1000px
-    Full,       // 100%
+    Hybrid,
+    Source,
+    Preview,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum AutoSave {
-    Off,
-    Delay(u16),     // 延迟 N 毫秒后保存（默认 500ms）
-    OnFocusLost,    // 失去焦点时保存
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub enum NoteOpenMode {
+    #[default]
+    Tabs,
+    MultiWindow,
 }
 ```
 
