@@ -43,6 +43,7 @@
 # 验证
 
 - [ ] `cargo fmt --check`
+- [ ] `bash scripts/check.sh` / `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/check.ps1`
 - [ ] `cargo check --workspace --all-features`
 - [ ] `cargo clippy --workspace --all-targets --all-features -- -D warnings`
 - [ ] `cargo test --workspace`

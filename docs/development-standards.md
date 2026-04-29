@@ -142,10 +142,14 @@ PR 合入前必须满足：
 
 ## 标准检查命令
 
-完整检查以 `scripts/check.sh` 为准：
+完整检查以 `scripts/check.sh` 或 `scripts/check.ps1` 为准：
 
 ```bash
 bash scripts/check.sh
+```
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/check.ps1
 ```
 
 等价命令如下：
@@ -172,7 +176,7 @@ diff assets/editor.js apps/mobile/assets/editor.js
 
 `node scripts/report-file-lines.js` 不只是报告文件体量，也会检查非生成文件的单文件行数预算。默认预算是 2500 行，可用 `PAPYRO_FILE_LINE_LIMIT` 临时调整；`PAPYRO_LINE_REPORT_TOP` 可调整输出的最大文件数量。
 
-在 Windows 环境缺少 Bash 或 `diff` 时，可运行等价 PowerShell 命令，并在 PR 中写明替代方式。
+在 Windows 环境缺少 Bash 或 `diff` 时，优先运行 `scripts/check.ps1`。
 
 ## 文档维护
 
