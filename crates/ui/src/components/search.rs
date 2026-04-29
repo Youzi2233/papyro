@@ -2,14 +2,55 @@ use crate::commands::{AppCommands, OpenMarkdownTarget};
 use crate::components::primitives::{Modal, TextInput};
 use crate::context::use_app_context;
 use dioxus::prelude::*;
-use papyro_core::{
-    FileNode, FileNodeKind, FileState, SearchField, SearchHighlight, SearchMatch, SearchResult,
-};
+use papyro_core::{FileState, SearchField, SearchHighlight, SearchMatch, SearchResult};
+use std::path::PathBuf;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct HighlightSegment {
     pub text: String,
     pub is_match: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct SearchResultRowModel {
+    title: String,
+    path: PathBuf,
+    relative_path_label: String,
+    title_highlights: Vec<SearchHighlight>,
+    path_highlights: Vec<SearchHighlight>,
+    preview: Option<SearchPreviewModel>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct SearchPreviewModel {
+    field: SearchField,
+    line: Option<usize>,
+    snippet: String,
+    highlights: Vec<SearchHighlight>,
+}
+
+impl SearchResultRowModel {
+    fn from_result(result: &SearchResult) -> Self {
+        Self {
+            title: result.title.clone(),
+            path: result.path.clone(),
+            relative_path_label: result.relative_path.to_string_lossy().replace('\\', "/"),
+            title_highlights: highlights_for_field(&result.matches, SearchField::Title),
+            path_highlights: highlights_for_field(&result.matches, SearchField::Path),
+            preview: preview_match(&result.matches).map(SearchPreviewModel::from_match),
+        }
+    }
+}
+
+impl SearchPreviewModel {
+    fn from_match(result_match: SearchMatch) -> Self {
+        Self {
+            field: result_match.field,
+            line: result_match.line,
+            snippet: result_match.snippet,
+            highlights: result_match.highlights,
+        }
+    }
 }
 
 #[component]
@@ -22,7 +63,11 @@ pub fn SearchModal(on_close: EventHandler<()>) -> Element {
 
     let state = workspace_search.read().clone();
     let query_value = state.query.clone();
-    let results = state.results.clone();
+    let results = state
+        .results
+        .iter()
+        .map(SearchResultRowModel::from_result)
+        .collect::<Vec<_>>();
     let active = if results.is_empty() {
         0
     } else {
@@ -74,7 +119,7 @@ pub fn SearchModal(on_close: EventHandler<()>) -> Element {
                                             file_state,
                                             commands_for_keys.clone(),
                                             on_close,
-                                            result,
+                                            result.path,
                                         );
                                     }
                                 }
@@ -106,17 +151,14 @@ pub fn SearchModal(on_close: EventHandler<()>) -> Element {
 
 #[component]
 fn SearchResultRow(
-    result: SearchResult,
+    result: SearchResultRowModel,
     is_active: bool,
     file_state: Signal<FileState>,
     commands: AppCommands,
     on_close: EventHandler<()>,
 ) -> Element {
-    let result_for_click = result.clone();
-    let relative_path = result.relative_path.to_string_lossy().replace('\\', "/");
-    let title_highlights = highlights_for_field(&result.matches, SearchField::Title);
-    let path_highlights = highlights_for_field(&result.matches, SearchField::Path);
-    let preview = preview_match(&result.matches);
+    let path_for_click = result.path.clone();
+    let preview = result.preview.clone();
     let badge = preview
         .as_ref()
         .map(|result_match| field_label(result_match.field))
@@ -130,20 +172,20 @@ fn SearchResultRow(
                     file_state,
                     commands.clone(),
                     on_close,
-                    result_for_click.clone(),
+                    path_for_click.clone(),
                 );
             },
             span { class: "mn-command-row-main",
                 span { class: "mn-command-title",
                     HighlightedText {
                         text: result.title.clone(),
-                        highlights: title_highlights,
+                        highlights: result.title_highlights.clone(),
                     }
                 }
                 span { class: "mn-command-path",
                     HighlightedText {
-                        text: relative_path,
-                        highlights: path_highlights,
+                        text: result.relative_path_label.clone(),
+                        highlights: result.path_highlights.clone(),
                     }
                 }
                 if let Some(result_match) = preview {
@@ -184,33 +226,11 @@ fn open_search_result(
     mut file_state: Signal<FileState>,
     commands: AppCommands,
     on_close: EventHandler<()>,
-    result: SearchResult,
+    path: PathBuf,
 ) {
-    let node = file_state
-        .read()
-        .node_for_path(&result.path)
-        .unwrap_or_else(|| fallback_note_node(&result));
-    file_state.write().select_path(node.path.clone());
-    commands
-        .open_markdown
-        .call(OpenMarkdownTarget { path: node.path });
+    file_state.write().select_path(path.clone());
+    commands.open_markdown.call(OpenMarkdownTarget { path });
     on_close.call(());
-}
-
-fn fallback_note_node(result: &SearchResult) -> FileNode {
-    FileNode {
-        name: result
-            .path
-            .file_name()
-            .and_then(|name| name.to_str())
-            .unwrap_or(result.title.as_str())
-            .to_string(),
-        path: result.path.clone(),
-        relative_path: result.relative_path.clone(),
-        created_at: 0,
-        updated_at: 0,
-        kind: FileNodeKind::Note { note_id: None },
-    }
 }
 
 fn empty_search_message(query: &str, is_loading: bool, error: Option<&str>) -> String {
