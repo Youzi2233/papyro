@@ -90,6 +90,17 @@ pub struct RecentFile {
     pub opened_at: i64,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct RecoveryDraft {
+    pub workspace_id: String,
+    pub note_id: String,
+    pub relative_path: PathBuf,
+    pub title: String,
+    pub content: String,
+    pub revision: u64,
+    pub updated_at: i64,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct AppSettings {
     pub theme: Theme,

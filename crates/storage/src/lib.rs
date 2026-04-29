@@ -8,11 +8,11 @@ pub use papyro_core::{
     WorkspaceSnapshot,
 };
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use chrono::Utc;
 use papyro_core::models::{
-    AppSettings, EditorTab, FileNode, FileNodeKind, NoteMeta, RecentFile, TrashedNote, Workspace,
-    WorkspaceSettingsOverrides, WorkspaceTreeState,
+    AppSettings, EditorTab, FileNode, FileNodeKind, NoteMeta, RecentFile, RecoveryDraft,
+    TrashedNote, Workspace, WorkspaceSettingsOverrides, WorkspaceTreeState,
 };
 use papyro_core::{
     local_markdown_image_targets, rewrite_moved_note_image_links, workspace_assets_dir, FileState,
@@ -148,6 +148,44 @@ impl SqliteStorage {
         let json = serde_json::to_string(state)?;
         db::settings::set(&self.pool, &workspace_tree_state_key(&workspace.id), &json)?;
         Ok(())
+    }
+
+    pub fn upsert_recovery_draft(
+        &self,
+        workspace: &Workspace,
+        tab: &EditorTab,
+        content: &str,
+        revision: u64,
+    ) -> Result<()> {
+        let relative_path = tab
+            .path
+            .strip_prefix(&workspace.path)
+            .with_context(|| {
+                format!(
+                    "record recovery draft for {} outside workspace {}",
+                    tab.path.display(),
+                    workspace.path.display()
+                )
+            })?
+            .to_path_buf();
+        let draft = RecoveryDraft {
+            workspace_id: workspace.id.clone(),
+            note_id: tab.note_id.clone(),
+            relative_path,
+            title: tab.title.clone(),
+            content: content.to_string(),
+            revision,
+            updated_at: Utc::now().timestamp_millis(),
+        };
+        db::recovery::upsert(&self.pool, &draft)
+    }
+
+    pub fn clear_recovery_draft(&self, workspace: &Workspace, note_id: &str) -> Result<()> {
+        db::recovery::clear(&self.pool, &workspace.id, note_id)
+    }
+
+    pub fn list_recovery_drafts(&self, workspace: &Workspace) -> Result<Vec<RecoveryDraft>> {
+        db::recovery::list_for_workspace(&self.pool, &workspace.id)
     }
 
     pub fn bootstrap_from_env_or_current_dir(&self) -> WorkspaceBootstrap {
@@ -730,6 +768,24 @@ impl NoteStorage for SqliteStorage {
 
     fn list_recent(&self, limit: usize) -> Result<Vec<RecentFile>> {
         db::recent::list_recent(&self.pool, limit)
+    }
+
+    fn upsert_recovery_draft(
+        &self,
+        workspace: &Workspace,
+        tab: &EditorTab,
+        content: &str,
+        revision: u64,
+    ) -> Result<()> {
+        SqliteStorage::upsert_recovery_draft(self, workspace, tab, content, revision)
+    }
+
+    fn clear_recovery_draft(&self, workspace: &Workspace, note_id: &str) -> Result<()> {
+        SqliteStorage::clear_recovery_draft(self, workspace, note_id)
+    }
+
+    fn list_recovery_drafts(&self, workspace: &Workspace) -> Result<Vec<RecoveryDraft>> {
+        SqliteStorage::list_recovery_drafts(self, workspace)
     }
 
     fn load_settings(&self) -> AppSettings {

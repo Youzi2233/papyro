@@ -6,8 +6,13 @@ use std::path::Path;
 
 pub type DbPool = Pool<SqliteConnectionManager>;
 
-const MIGRATION_SQL_FILES: &[(&str, &str)] =
-    &[("V1__init.sql", include_str!("migrations/V1__init.sql"))];
+const MIGRATION_SQL_FILES: &[(&str, &str)] = &[
+    ("V1__init.sql", include_str!("migrations/V1__init.sql")),
+    (
+        "V2__recovery_drafts.sql",
+        include_str!("migrations/V2__recovery_drafts.sql"),
+    ),
+];
 
 pub fn create_pool(db_path: &Path) -> Result<DbPool> {
     if let Some(parent) = db_path.parent() {
@@ -48,6 +53,7 @@ mod tests {
         "tags",
         "note_tags",
         "recent_files",
+        "recovery_drafts",
         "settings",
     ];
     const EXPECTED_INDEXES: &[&str] = &[
@@ -57,6 +63,7 @@ mod tests {
         "idx_note_tags_note",
         "idx_note_tags_tag",
         "idx_recent_opened",
+        "idx_recovery_drafts_updated",
     ];
     const EXPECTED_NOTE_COLUMNS: &[&str] = &[
         "id",
@@ -71,6 +78,15 @@ mod tests {
         "is_trashed",
         "trashed_at",
         "front_matter",
+    ];
+    const EXPECTED_RECOVERY_DRAFT_COLUMNS: &[&str] = &[
+        "workspace_id",
+        "note_id",
+        "relative_path",
+        "title",
+        "content",
+        "revision",
+        "updated_at",
     ];
 
     #[test]
@@ -183,6 +199,13 @@ mod tests {
             assert!(
                 note_columns.iter().any(|name| name == column),
                 "missing notes column {column}"
+            );
+        }
+        let recovery_columns = table_columns(conn, "recovery_drafts")?;
+        for column in EXPECTED_RECOVERY_DRAFT_COLUMNS {
+            assert!(
+                recovery_columns.iter().any(|name| name == column),
+                "missing recovery_drafts column {column}"
             );
         }
 

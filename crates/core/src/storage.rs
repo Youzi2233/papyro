@@ -1,5 +1,5 @@
 use crate::models::{
-    AppSettings, EditorTab, FileNode, RecentFile, Tag, TrashedNote, Workspace,
+    AppSettings, EditorTab, FileNode, RecentFile, RecoveryDraft, Tag, TrashedNote, Workspace,
     WorkspaceSettingsOverrides, WorkspaceTreeState,
 };
 use crate::FileState;
@@ -124,6 +124,15 @@ pub trait NoteStorage: Send + Sync {
     fn delete_tag(&self, id: &str) -> Result<()>;
     fn list_recent_workspaces(&self, limit: usize) -> Result<Vec<Workspace>>;
     fn list_recent(&self, limit: usize) -> Result<Vec<RecentFile>>;
+    fn upsert_recovery_draft(
+        &self,
+        workspace: &Workspace,
+        tab: &EditorTab,
+        content: &str,
+        revision: u64,
+    ) -> Result<()>;
+    fn clear_recovery_draft(&self, workspace: &Workspace, note_id: &str) -> Result<()>;
+    fn list_recovery_drafts(&self, workspace: &Workspace) -> Result<Vec<RecoveryDraft>>;
     fn load_settings(&self) -> AppSettings;
     fn save_settings(&self, settings: &AppSettings) -> Result<()>;
     fn load_workspace_settings(&self, workspace: &Workspace) -> WorkspaceSettingsOverrides;

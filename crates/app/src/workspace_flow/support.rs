@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Result};
 use papyro_core::models::{
-    AppSettings, EditorTab, FileNode, FileNodeKind, RecentFile, SaveStatus, Tag, TrashedNote,
-    Workspace, WorkspaceSettingsOverrides, WorkspaceTreeState,
+    AppSettings, EditorTab, FileNode, FileNodeKind, RecentFile, RecoveryDraft, SaveStatus, Tag,
+    TrashedNote, Workspace, WorkspaceSettingsOverrides, WorkspaceTreeState,
 };
 use papyro_core::storage::{
     DeletePreview, EmptyTrashOutcome, NoteStorage, OpenedNote, SavedAsNote, SavedNote,
@@ -284,6 +284,24 @@ impl NoteStorage for MockStorage {
 
     fn list_recent(&self, _limit: usize) -> Result<Vec<RecentFile>> {
         Ok(self.recent_files.clone())
+    }
+
+    fn upsert_recovery_draft(
+        &self,
+        _workspace: &Workspace,
+        _tab: &EditorTab,
+        _content: &str,
+        _revision: u64,
+    ) -> Result<()> {
+        Ok(())
+    }
+
+    fn clear_recovery_draft(&self, _workspace: &Workspace, _note_id: &str) -> Result<()> {
+        Ok(())
+    }
+
+    fn list_recovery_drafts(&self, _workspace: &Workspace) -> Result<Vec<RecoveryDraft>> {
+        Ok(Vec::new())
     }
 
     fn load_settings(&self) -> AppSettings {
