@@ -1,7 +1,5 @@
 pub mod file_tree;
 
-use crate::action_labels::{delete_action_label, delete_action_title};
-use crate::commands::FileTarget;
 use crate::context::use_app_context;
 use crate::perf::{perf_timer, trace_sidebar_resize};
 use dioxus::prelude::*;
@@ -40,10 +38,6 @@ pub fn Sidebar(on_search: EventHandler<()>) -> Element {
         "mn-sidebar"
     };
     let has_workspace = sidebar_model.name.is_some();
-    let selected_target = sidebar_model.selected_path.clone().map(|path| FileTarget {
-        path,
-        name: sidebar_model.selected_name.clone().unwrap_or_default(),
-    });
 
     rsx! {
         aside {
@@ -155,46 +149,6 @@ pub fn Sidebar(on_search: EventHandler<()>) -> Element {
 
             // ── File tree ──
             FileTree { sort_mode: tree_sort() }
-
-            // ── Context-sensitive ops for selected item ──
-            if sidebar_model.has_selection {
-                div { class: "mn-sidebar-ops",
-                    div { class: "mn-sidebar-ops-header",
-                        if sidebar_model.selected_is_directory {
-                            span { "Folder" }
-                        } else {
-                            span { "Note" }
-                        }
-                        div { style: "display:flex;gap:4px",
-                            if let Some(target) = selected_target.clone() {
-                                button {
-                                    class: "mn-button",
-                                    title: "Show in Explorer",
-                                    onclick: move |_| commands.reveal_in_explorer.call(target.clone()),
-                                    "Reveal"
-                                }
-                            }
-                            button {
-                                class: "mn-button danger",
-                                title: delete_action_title(sidebar_model.selected_delete_pending),
-                                onclick: move |_| commands.delete_selected.call(()),
-                                "{delete_action_label(sidebar_model.selected_delete_pending)}"
-                            }
-                        }
-                    }
-
-                    if sidebar_model.selected_is_directory {
-                        button {
-                            class: "mn-button",
-                            style: "width:100%; justify-content:center",
-                            onclick: move |_| {
-                                show_create.set(!show_create());
-                            },
-                            "New note here"
-                        }
-                    }
-                }
-            }
 
             div {
                 class: "mn-sidebar-resize-handle",

@@ -83,7 +83,6 @@
     --mn-sidebar-actions-margin-top: 14px;
     --mn-sidebar-action-pad:         6px 8px;
     --mn-sidebar-tree-pad:           10px 8px 12px;
-    --mn-sidebar-ops-pad:            12px;
     --mn-tabbar-gap:                 4px;
     --mn-tabbar-pad:                 5px 10px;
     --mn-tabbar-min-height:          36px;
@@ -875,18 +874,6 @@ button.mn-sidebar-nav-item:disabled {
     font-style: italic;
 }
 
-/* ── Sidebar quick-actions ── */
-.mn-sidebar-ops {
-    border-top: var(--mn-border-default);
-    padding: var(--mn-sidebar-ops-pad);
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    background: transparent;
-    box-shadow: none;
-}
-
-.mn-sidebar-ops-header,
 .mn-section-label {
     display: flex;
     align-items: center;
