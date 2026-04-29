@@ -466,7 +466,7 @@ Editor runtime lane
 
 ### 3.2 Design Tokens
 
-- [ ] 重建颜色 token：背景、surface、border、text、muted、accent、danger、success、selection。
+- [x] 重建颜色 token：背景、surface、border、text、muted、accent、danger、success、selection。
 - [ ] 重建 typography token：UI 字体、正文、标题、代码、行高、段落节奏。
 - [ ] 重建 spacing token：shell、sidebar、tabbar、modal、editor paper、menu。
 - [ ] 重建 radius、border、shadow token，避免各组件随意硬编码。
@@ -514,6 +514,7 @@ Editor runtime lane
 验收标准：
 
 - [ui-design-baseline.md](ui-design-baseline.md) 固化视觉原则、主题方向、文档优先和管理 UI 降噪标准。
+- `assets/main.css` 和 `apps/desktop/assets/main.css` 已补齐 danger / warning / success 语义状态色；tab save failed/conflict 不再直接硬编码颜色。
 - 打开应用第一眼是文档，不是工具集合。
 - UI 不再像临时 demo 或组件展示页。
 - 用户可以连续写作 30 分钟，不被视觉噪音和布局跳动打扰。

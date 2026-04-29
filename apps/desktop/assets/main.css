@@ -31,6 +31,14 @@
     --mn-accent-wash:     rgba(47, 111, 108, 0.05);
     --mn-accent-ink:      #ffffff;
 
+    /* Semantic state */
+    --mn-danger:          #b45151;
+    --mn-danger-ink:      #ffffff;
+    --mn-warning:         #9f6a3a;
+    --mn-warning-ink:     #ffffff;
+    --mn-success:         #46664a;
+    --mn-success-ink:     #ffffff;
+
     /* Shadows */
     --mn-shadow-xs:       0 1px 1px rgba(23, 26, 22, .04);
     --mn-shadow-sm:       0 1px 2px rgba(23, 26, 22, .05), 0 8px 24px rgba(23, 26, 22, .06);
@@ -126,6 +134,14 @@
     --mn-accent-wash:     rgba(112, 170, 165, 0.07);
     --mn-accent-ink:      #101211;
 
+    /* Semantic state */
+    --mn-danger:          #d77a7a;
+    --mn-danger-ink:      #101211;
+    --mn-warning:         #d39a60;
+    --mn-warning-ink:     #101211;
+    --mn-success:         #7dbb83;
+    --mn-success-ink:     #101211;
+
     /* Shadows */
     --mn-shadow-xs:       0 1px 1px rgba(0, 0, 0, .22);
     --mn-shadow-sm:       0 1px 2px rgba(0, 0, 0, .28), 0 8px 24px rgba(0, 0, 0, .24);
@@ -163,6 +179,14 @@
         --mn-accent-dim:      rgba(112, 170, 165, 0.17);
         --mn-accent-wash:     rgba(112, 170, 165, 0.07);
         --mn-accent-ink:      #101211;
+
+        /* Semantic state */
+        --mn-danger:          #d77a7a;
+        --mn-danger-ink:      #101211;
+        --mn-warning:         #d39a60;
+        --mn-warning-ink:     #101211;
+        --mn-success:         #7dbb83;
+        --mn-success-ink:     #101211;
 
         --mn-shadow-xs:       0 1px 1px rgba(0, 0, 0, .22);
         --mn-shadow-sm:       0 1px 2px rgba(0, 0, 0, .28), 0 8px 24px rgba(0, 0, 0, .24);
@@ -842,13 +866,13 @@ button { border: 0; cursor: pointer; background: transparent; }
 }
 
 .mn-tab-save-status.failed {
-    background: #b45151;
-    color: #fff;
+    background: var(--mn-danger);
+    color: var(--mn-danger-ink);
 }
 
 .mn-tab-save-status.conflict {
-    background: #9f6a3a;
-    color: #fff;
+    background: var(--mn-warning);
+    color: var(--mn-warning-ink);
 }
 
 .mn-segmented-control,
