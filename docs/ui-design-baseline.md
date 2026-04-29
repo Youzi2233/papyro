@@ -30,6 +30,16 @@ Theme rules:
 
 Strong "skin" themes are outside the current phase. They can return later only after the default professional baseline is stable.
 
+## Typography Baseline
+
+Typography should look native on Windows and macOS without requiring bundled or manually installed fonts.
+
+Font rules:
+
+- UI text should use platform system fonts first, then common Windows, macOS, and CJK fallbacks.
+- Code and path labels should use platform monospace stacks before optional developer fonts.
+- Display serif usage must include platform and Windows-safe fallbacks so headings do not look broken when Iowan or New York are unavailable.
+
 ## Document Priority
 
 The document is the primary visual object.
@@ -65,4 +75,5 @@ Use these checks before accepting UI work:
 - Chrome changes do not create new permanent controls without a main-path reason.
 - Component styling uses shared tokens when a token exists.
 - Any new color, radius, shadow, or spacing value has a clear reason.
+- Font stacks work with default Windows and macOS fonts.
 - A screenshot can be explained as a writing tool, not a component showcase.
