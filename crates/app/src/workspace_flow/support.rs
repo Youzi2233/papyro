@@ -16,6 +16,7 @@ use std::sync::Mutex;
 pub(super) struct MockStorage {
     pub opened_notes: HashMap<PathBuf, OpenedNote>,
     pub save_result: Option<SavedNote>,
+    pub save_conflict: bool,
     pub recent_files: Vec<RecentFile>,
     pub tags: Mutex<Vec<Tag>>,
     pub trashed_notes: Mutex<Vec<TrashedNote>>,
@@ -55,6 +56,12 @@ impl NoteStorage for MockStorage {
             .lock()
             .unwrap()
             .push((tab.id.clone(), content.to_string()));
+        if self.save_conflict {
+            return Err(papyro_core::SaveConflict {
+                path: tab.path.clone(),
+            }
+            .into());
+        }
         self.save_result
             .clone()
             .ok_or_else(|| anyhow!("Missing save result"))
@@ -371,6 +378,7 @@ pub(super) fn tab(id: &str, note_id: &str, path: &str) -> EditorTab {
         path: PathBuf::from(path),
         is_dirty: false,
         save_status: SaveStatus::Saved,
+        disk_content_hash: None,
     }
 }
 

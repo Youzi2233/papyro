@@ -1027,6 +1027,7 @@ mod tests {
             path: std::path::PathBuf::from("a.md"),
             is_dirty: true,
             save_status: papyro_core::models::SaveStatus::Dirty,
+            disk_content_hash: None,
         };
 
         assert_eq!(close_tab_intent(&tab, None), CloseTabIntent::ConfirmDirty);
@@ -1049,6 +1050,7 @@ mod tests {
             path: std::path::PathBuf::from("a.md"),
             is_dirty: false,
             save_status: papyro_core::models::SaveStatus::Saved,
+            disk_content_hash: None,
         };
 
         assert_eq!(close_tab_intent(&tab, None), CloseTabIntent::CloseNow);

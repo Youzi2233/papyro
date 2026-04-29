@@ -1033,6 +1033,7 @@ sequenceDiagram
 
 - dirty 变成 false。
 - save_status 变成 Saved。
+- tab 记录新的磁盘内容 hash，作为下一次保存前的冲突检测基线。
 - 标题可能根据 Markdown H1 更新。
 - recent files 刷新。
 
@@ -1041,6 +1042,14 @@ sequenceDiagram
 - dirty 保持 true。
 - save_status 变成 Failed。
 - status bar 显示错误。
+
+保存冲突：
+
+- storage 在写入前读取磁盘内容并比较 tab 中记录的内容 hash。
+- 如果磁盘内容已经变化，不写文件。
+- dirty 保持 true。
+- save_status 变成 Conflict。
+- 内存里的用户编辑内容保留，后续需要 reload、overwrite 或 save as 策略来解决。
 
 ### 8.5 关闭 tab
 

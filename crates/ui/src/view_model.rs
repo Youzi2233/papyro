@@ -658,6 +658,7 @@ mod tests {
             path: PathBuf::from(format!("workspace/{id}.md")),
             is_dirty: false,
             save_status: SaveStatus::Saved,
+            disk_content_hash: None,
         }
     }
 
@@ -748,6 +749,7 @@ mod tests {
             path: PathBuf::from("workspace/a.md"),
             is_dirty: true,
             save_status: SaveStatus::Dirty,
+            disk_content_hash: None,
         });
 
         let mut tab_contents = TabContentsMap::default();
@@ -871,7 +873,7 @@ mod tests {
 
         fixture
             .editor_tabs
-            .mark_tab_saved("tab-a", "Saved".to_string());
+            .mark_tab_saved("tab-a", "Saved".to_string(), Some(7));
         fixture
             .tab_contents
             .update_tab_content("tab-a", "changed".to_string());
@@ -1116,7 +1118,7 @@ mod tests {
         fixture.file_state.recent_files.clear();
         fixture
             .editor_tabs
-            .mark_tab_saved("tab-a", "Saved".to_string());
+            .mark_tab_saved("tab-a", "Saved".to_string(), Some(7));
         fixture
             .tab_contents
             .update_tab_content("tab-a", "changed".to_string());

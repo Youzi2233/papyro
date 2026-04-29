@@ -66,6 +66,7 @@ pub struct EditorTab {
     pub path: PathBuf,
     pub is_dirty: bool,
     pub save_status: SaveStatus,
+    pub disk_content_hash: Option<u64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]

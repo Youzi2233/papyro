@@ -2,7 +2,7 @@ use crate::handlers::workspace;
 use crate::perf::{perf_timer, trace_editor_input_change};
 use crate::state::RuntimeState;
 use crate::workspace_flow::{
-    apply_clean_open_tab_refresh, apply_save_failure, apply_save_success,
+    apply_clean_open_tab_refresh, apply_save_error, apply_save_failure, apply_save_success,
     begin_clean_open_tab_refresh, begin_save_tab, read_clean_open_tab_refresh_from_storage,
     write_save_snapshot, SaveTabSnapshot,
 };
@@ -107,7 +107,7 @@ fn apply_autosave_work_result(
             apply_flush_success(state, snapshot, saved_note, recent_files);
         }
         Err(error) => {
-            apply_flush_failure(state, snapshot);
+            apply_flush_error(state, snapshot, &error);
             state
                 .status_message
                 .set(Some(format!("Save failed: {error}")));
@@ -158,7 +158,7 @@ pub(crate) async fn flush_dirty_tabs(
                 apply_flush_success(state, &snapshot, saved_note, recent_files);
             }
             Ok(Err(error)) => {
-                apply_flush_failure(state, &snapshot);
+                apply_flush_error(state, &snapshot, &error);
                 state.status_message.set(Some(format!(
                     "Save failed before switching workspace: {error}"
                 )));
@@ -191,7 +191,7 @@ pub(crate) fn flush_dirty_tabs_blocking(
                 apply_flush_success(state, &snapshot, saved_note, recent_files);
             }
             Err(error) => {
-                apply_flush_failure(state, &snapshot);
+                apply_flush_error(state, &snapshot, &error);
                 state
                     .status_message
                     .set(Some(format!("Save failed before shutdown: {error}")));
@@ -253,6 +253,16 @@ fn apply_flush_failure(mut state: RuntimeState, snapshot: &SaveTabSnapshot) -> b
     let tab_contents = state.tab_contents.read();
     let mut editor_tabs = state.editor_tabs.write();
     apply_save_failure(&mut editor_tabs, &tab_contents, snapshot)
+}
+
+fn apply_flush_error(
+    mut state: RuntimeState,
+    snapshot: &SaveTabSnapshot,
+    error: &anyhow::Error,
+) -> bool {
+    let tab_contents = state.tab_contents.read();
+    let mut editor_tabs = state.editor_tabs.write();
+    apply_save_error(&mut editor_tabs, &tab_contents, snapshot, error)
 }
 
 pub(crate) fn use_workspace_watcher(state: RuntimeState, storage: Arc<dyn NoteStorage>) {

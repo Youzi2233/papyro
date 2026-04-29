@@ -8,8 +8,8 @@ use std::sync::Arc;
 use crate::perf::{perf_timer, trace_editor_open_markdown};
 use crate::state::RuntimeState;
 use crate::workspace_flow::{
-    apply_save_failure, apply_save_success, begin_save_tab, open_markdown_target_from_storage,
-    write_save_snapshot,
+    apply_save_error, apply_save_failure, apply_save_success, begin_save_tab,
+    open_markdown_target_from_storage, write_save_snapshot,
 };
 
 pub async fn open_markdown(
@@ -172,7 +172,7 @@ pub fn save_tab_by_id(
             Ok(Err(error)) => {
                 let tab_contents = tab_contents.read();
                 let mut editor_tabs = editor_tabs.write();
-                apply_save_failure(&mut editor_tabs, &tab_contents, &snapshot);
+                apply_save_error(&mut editor_tabs, &tab_contents, &snapshot, &error);
                 status_message.set(Some(format!("Save failed: {error}")));
             }
             Err(error) => {

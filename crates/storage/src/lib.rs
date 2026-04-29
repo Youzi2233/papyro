@@ -15,8 +15,9 @@ use papyro_core::models::{
 };
 use papyro_core::{
     local_markdown_image_targets, rewrite_moved_note_image_links, workspace_assets_dir, FileState,
-    NoteStorage, SearchResult, WorkspaceSearchQuery,
+    NoteStorage, SaveConflict, SearchResult, WorkspaceSearchQuery,
 };
+use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 
@@ -231,6 +232,7 @@ impl SqliteStorage {
                 path: path.to_path_buf(),
                 is_dirty: false,
                 save_status: papyro_core::models::SaveStatus::Saved,
+                disk_content_hash: Some(content_hash(&content)),
             },
             content,
             recent_files,
@@ -243,12 +245,25 @@ impl SqliteStorage {
         tab: &EditorTab,
         content: &str,
     ) -> Result<SavedNote> {
+        if let Some(expected_hash) = tab.disk_content_hash {
+            if tab.path.exists() {
+                let current_content = fs::read_note(&tab.path)?;
+                if content_hash(&current_content) != expected_hash {
+                    return Err(SaveConflict {
+                        path: tab.path.clone(),
+                    }
+                    .into());
+                }
+            }
+        }
+
         fs::write_note(&tab.path, content)?;
         let note_meta = upsert_note_meta_for_path(&self.pool, workspace, &tab.path, content)?;
 
         Ok(SavedNote {
             tab_id: tab.id.clone(),
             title: note_meta.title,
+            disk_content_hash: Some(content_hash(content)),
         })
     }
 
@@ -1329,6 +1344,12 @@ fn system_time_to_millis(time: std::time::SystemTime) -> Option<i64> {
         .map(|duration| duration.as_millis() as i64)
 }
 
+fn content_hash(content: &str) -> u64 {
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    content.hash(&mut hasher);
+    hasher.finish()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1863,6 +1884,7 @@ mod tests {
 
         assert_eq!(opened.content, "# Note Title\n\nhello world");
         assert_eq!(opened.tab.title, "Note Title");
+        assert!(opened.tab.disk_content_hash.is_some());
         assert_eq!(opened.recent_files.len(), 1);
         assert_eq!(opened.recent_files[0].title, "Note Title");
         assert_eq!(opened.recent_files[0].workspace_id, workspace.id);
@@ -1890,12 +1912,37 @@ mod tests {
 
         assert_eq!(saved.tab_id, opened.tab.id);
         assert_eq!(saved.title, "Final");
+        assert!(saved.disk_content_hash.is_some());
+        assert_ne!(saved.disk_content_hash, opened.tab.disk_content_hash);
         assert_eq!(std::fs::read_to_string(&note_path)?, "# Final\n\nnew body");
 
         let meta = db::notes::get_note(&storage.pool, &opened.tab.note_id)?
             .expect("saved note metadata exists");
         assert_eq!(meta.title, "Final");
         assert_eq!(meta.word_count, 4);
+
+        Ok(())
+    }
+
+    #[test]
+    fn save_note_rejects_when_disk_content_changed_since_open() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let workspace_root = create_workspace(&temp)?;
+        let note_path = workspace_root.join("draft.md");
+        std::fs::write(&note_path, "# Draft\n\nold")?;
+
+        let storage = test_storage(&temp)?;
+        let workspace = storage.initialize_workspace(&workspace_root)?.workspace;
+        let opened = storage.open_note(&workspace, &note_path)?;
+
+        std::fs::write(&note_path, "# Draft\n\nexternal")?;
+
+        let error = storage
+            .save_note(&workspace, &opened.tab, "# Draft\n\nlocal")
+            .unwrap_err();
+
+        assert!(error.downcast_ref::<SaveConflict>().is_some());
+        assert_eq!(std::fs::read_to_string(&note_path)?, "# Draft\n\nexternal");
 
         Ok(())
     }

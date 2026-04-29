@@ -28,6 +28,13 @@ pub struct OpenedNote {
 pub struct SavedNote {
     pub tab_id: String,
     pub title: String,
+    pub disk_content_hash: Option<u64>,
+}
+
+#[derive(Debug, thiserror::Error)]
+#[error("Save conflict: {path} changed on disk since it was opened")]
+pub struct SaveConflict {
+    pub path: PathBuf,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]

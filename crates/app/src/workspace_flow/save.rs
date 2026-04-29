@@ -3,8 +3,8 @@ use anyhow::{anyhow, Result};
 use papyro_core::models::{EditorTab, RecentFile, Workspace};
 use papyro_core::storage::{NoteStorage, SavedNote};
 use papyro_core::{
-    begin_tab_save, mark_tab_save_failed_if_current, mark_tab_saved_if_current, EditorTabs,
-    FileState, TabContentsMap,
+    begin_tab_save, mark_tab_conflict_if_current, mark_tab_save_failed_if_current,
+    mark_tab_saved_if_current, EditorTabs, FileState, SaveConflict, TabContentsMap,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -85,6 +85,24 @@ pub(crate) fn apply_save_failure(
     )
 }
 
+pub(crate) fn apply_save_error(
+    editor_tabs: &mut EditorTabs,
+    tab_contents: &TabContentsMap,
+    snapshot: &SaveTabSnapshot,
+    error: &anyhow::Error,
+) -> bool {
+    if error.downcast_ref::<SaveConflict>().is_some() {
+        return mark_tab_conflict_if_current(
+            editor_tabs,
+            tab_contents,
+            snapshot.tab_id(),
+            snapshot.revision,
+        );
+    }
+
+    apply_save_failure(editor_tabs, tab_contents, snapshot)
+}
+
 #[cfg(test)]
 pub(crate) fn save_tab_to_storage(
     storage: &dyn NoteStorage,
@@ -108,7 +126,7 @@ pub(crate) fn save_tab_to_storage(
             Ok(())
         }
         Err(error) => {
-            apply_save_failure(editor_tabs, tab_contents, &snapshot);
+            apply_save_error(editor_tabs, tab_contents, &snapshot, &error);
             Err(error)
         }
     }

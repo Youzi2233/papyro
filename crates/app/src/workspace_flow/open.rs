@@ -175,6 +175,7 @@ pub(crate) fn apply_clean_open_tab_refresh(
     }
 
     let title = opened_note.tab.title.clone();
+    let disk_content_hash = opened_note.tab.disk_content_hash;
     let selected_path = opened_note.tab.path.clone();
     let recent_files = opened_note.recent_files.clone();
     let content = opened_note.content;
@@ -183,7 +184,7 @@ pub(crate) fn apply_clean_open_tab_refresh(
         return false;
     }
 
-    editor_tabs.mark_tab_saved(&snapshot.tab_id, title);
+    editor_tabs.mark_tab_saved(&snapshot.tab_id, title, disk_content_hash);
     file_state.recent_files = recent_files;
     file_state.select_path(selected_path);
     true

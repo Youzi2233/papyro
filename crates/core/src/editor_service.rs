@@ -45,7 +45,11 @@ pub fn should_auto_save(
 }
 
 pub fn mark_tab_saved(tabs: &mut EditorTabs, saved_note: SavedNote) {
-    tabs.mark_tab_saved(&saved_note.tab_id, saved_note.title);
+    tabs.mark_tab_saved(
+        &saved_note.tab_id,
+        saved_note.title,
+        saved_note.disk_content_hash,
+    );
 }
 
 pub fn begin_tab_save(
@@ -67,8 +71,25 @@ pub fn mark_tab_saved_if_current(
         return false;
     }
 
-    tabs.mark_tab_saved(&saved_note.tab_id, saved_note.title);
+    tabs.mark_tab_saved(
+        &saved_note.tab_id,
+        saved_note.title,
+        saved_note.disk_content_hash,
+    );
     true
+}
+
+pub fn mark_tab_conflict_if_current(
+    tabs: &mut EditorTabs,
+    contents: &TabContentsMap,
+    tab_id: &str,
+    revision: u64,
+) -> bool {
+    if !contents.should_auto_save_revision(tab_id, revision) {
+        return false;
+    }
+
+    tabs.mark_tab_conflict(tab_id)
 }
 
 pub fn mark_tab_save_failed_if_current(
@@ -115,6 +136,7 @@ mod tests {
             path: PathBuf::from(path),
             is_dirty: false,
             save_status: crate::models::SaveStatus::Saved,
+            disk_content_hash: None,
         }
     }
 
@@ -144,6 +166,7 @@ mod tests {
             SavedNote {
                 tab_id: "a".to_string(),
                 title: "A".to_string(),
+                disk_content_hash: Some(1),
             },
             1,
         ));
@@ -152,6 +175,7 @@ mod tests {
         let stale_save = SavedNote {
             tab_id: "a".to_string(),
             title: "Old".to_string(),
+            disk_content_hash: Some(2),
         };
         let revision = change_tab_content(&mut tabs, &mut contents, "a", "# A\n\nNew".to_string());
         assert_eq!(revision, Some(2));

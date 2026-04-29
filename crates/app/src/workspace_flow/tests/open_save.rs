@@ -490,6 +490,7 @@ fn save_tab_flow_marks_tab_clean_and_refreshes_recent_files() {
         save_result: Some(SavedNote {
             tab_id: "tab-a".to_string(),
             title: "Saved Title".to_string(),
+            disk_content_hash: Some(42),
         }),
         recent_files: vec![recent_file("note-a", "notes/a.md")],
         ..MockStorage::default()
@@ -567,6 +568,46 @@ fn save_tab_flow_keeps_dirty_state_when_storage_fails() {
             .tab_by_id("tab-a")
             .map(|tab| (tab.is_dirty, tab.save_status.clone())),
         Some((true, SaveStatus::Failed))
+    );
+    assert_eq!(tab_contents.content_for_tab("tab-a"), Some("body updated"));
+}
+
+#[test]
+fn save_tab_flow_marks_conflict_when_storage_reports_conflict() {
+    let storage = MockStorage {
+        save_conflict: true,
+        ..MockStorage::default()
+    };
+    let mut file_state = file_state_with_tree(vec![note_node("workspace/notes/a.md", "note-a")]);
+    let mut editor_tabs = EditorTabs::default();
+    let mut tab = tab("tab-a", "note-a", "workspace/notes/a.md");
+    tab.is_dirty = true;
+    tab.save_status = SaveStatus::Dirty;
+    tab.disk_content_hash = Some(7);
+    editor_tabs.open_tab(tab);
+    let mut tab_contents = TabContentsMap::default();
+    tab_contents.insert_tab(
+        "tab-a".to_string(),
+        "body".to_string(),
+        DocumentStats::default(),
+    );
+    tab_contents.update_tab_content("tab-a", "body updated".to_string());
+
+    let error = save_tab_to_storage(
+        &storage,
+        &mut file_state,
+        &mut editor_tabs,
+        &tab_contents,
+        "tab-a",
+    )
+    .unwrap_err();
+
+    assert!(error.to_string().contains("Save conflict"));
+    assert_eq!(
+        editor_tabs
+            .tab_by_id("tab-a")
+            .map(|tab| (tab.is_dirty, tab.save_status.clone())),
+        Some((true, SaveStatus::Conflict))
     );
     assert_eq!(tab_contents.content_for_tab("tab-a"), Some("body updated"));
 }

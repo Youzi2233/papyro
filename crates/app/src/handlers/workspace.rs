@@ -253,6 +253,7 @@ mod tests {
             path: PathBuf::from(path),
             is_dirty: false,
             save_status: SaveStatus::Saved,
+            disk_content_hash: None,
         }
     }
 

@@ -123,11 +123,12 @@ impl EditorTabs {
         }
     }
 
-    pub fn mark_tab_saved(&mut self, tab_id: &str, title: String) {
+    pub fn mark_tab_saved(&mut self, tab_id: &str, title: String, disk_content_hash: Option<u64>) {
         if let Some(tab) = self.tabs.iter_mut().find(|tab| tab.id == tab_id) {
             tab.is_dirty = false;
             tab.save_status = SaveStatus::Saved;
             tab.title = title;
+            tab.disk_content_hash = disk_content_hash;
         }
     }
 
@@ -345,6 +346,7 @@ mod tests {
             path: PathBuf::from(format!("{id}.md")),
             is_dirty: false,
             save_status: SaveStatus::Saved,
+            disk_content_hash: None,
         }
     }
 
@@ -416,11 +418,16 @@ mod tests {
             tabs.tab_by_id(&tab_id).map(|tab| tab.save_status.clone()),
             Some(SaveStatus::Saving)
         );
-        tabs.mark_tab_saved(&tab_id, "Saved".to_string());
+        tabs.mark_tab_saved(&tab_id, "Saved".to_string(), Some(7));
         assert!(!tabs.tab_by_id(&tab_id).is_some_and(|tab| tab.is_dirty));
         assert_eq!(
             tabs.tab_by_id(&tab_id).map(|tab| tab.save_status.clone()),
             Some(SaveStatus::Saved)
+        );
+        assert_eq!(
+            tabs.tab_by_id(&tab_id)
+                .and_then(|tab| tab.disk_content_hash),
+            Some(7)
         );
     }
 
