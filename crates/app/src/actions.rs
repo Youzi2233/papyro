@@ -20,6 +20,7 @@ pub enum AppAction {
     SaveActiveNote,
     SaveTab(SaveTab),
     CloseTab(CloseTab),
+    ToggleOutline,
     RenameSelected(RenameSelected),
     MoveSelectedTo(MoveSelectedTo),
     SetSelectedFavorite(SetSelectedFavorite),
@@ -158,6 +159,7 @@ impl AppAction {
             Self::SaveActiveNote => "save_active_note",
             Self::SaveTab(_) => "save_tab",
             Self::CloseTab(_) => "close_tab",
+            Self::ToggleOutline => "toggle_outline",
             Self::RenameSelected(_) => "rename_selected",
             Self::MoveSelectedTo(_) => "move_selected_to",
             Self::SetSelectedFavorite(_) => "set_selected_favorite",
@@ -197,6 +199,7 @@ impl AppAction {
             Self::ActivateTab(_) => "editor.tab_switch",
             Self::SaveActiveNote | Self::SaveTab(_) => "editor.save",
             Self::CloseTab(_) => "editor.tab_close",
+            Self::ToggleOutline => "chrome.outline",
             Self::UpsertTag(_) | Self::RenameTag(_) | Self::SetTagColor(_) | Self::DeleteTag(_) => {
                 "workspace.tags"
             }

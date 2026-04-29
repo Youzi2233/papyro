@@ -146,6 +146,10 @@ impl AppDispatcher {
             AppAction::CloseTab(action) => {
                 close_tab(self.shell, self.state, action.tab_id);
             }
+            AppAction::ToggleOutline => {
+                let mut ui_state = self.state.ui_state;
+                ui_state.write().toggle_outline();
+            }
             AppAction::RenameSelected(action) => {
                 file_ops::rename_selected(
                     self.storage.clone(),
@@ -310,6 +314,7 @@ impl AppDispatcher {
         let save_active_note = self.clone();
         let save_tab = self.clone();
         let close_tab = self.clone();
+        let toggle_outline = self.clone();
         let rename_selected = self.clone();
         let move_selected_to = self.clone();
         let set_selected_favorite = self.clone();
@@ -365,6 +370,9 @@ impl AppDispatcher {
             }),
             close_tab: EventHandler::new(move |tab_id| {
                 close_tab.dispatch(AppAction::close_tab(tab_id));
+            }),
+            toggle_outline: EventHandler::new(move |_| {
+                toggle_outline.dispatch(AppAction::ToggleOutline);
             }),
             rename_selected: EventHandler::new(move |name| {
                 rename_selected.dispatch(AppAction::rename_selected(name));
@@ -775,6 +783,11 @@ mod tests {
         assert_eq!(
             AppAction::close_tab("tab-a".to_string()).trace_interaction_path(),
             "editor.tab_close"
+        );
+        assert_eq!(AppAction::ToggleOutline.trace_name(), "toggle_outline");
+        assert_eq!(
+            AppAction::ToggleOutline.trace_interaction_path(),
+            "chrome.outline"
         );
         assert_eq!(
             AppAction::content_changed("tab-a".to_string(), "body".to_string()).trace_tab_id(),

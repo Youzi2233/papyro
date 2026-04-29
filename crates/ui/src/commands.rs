@@ -126,6 +126,7 @@ pub struct AppCommands {
     pub save_active_note: EventHandler<()>,
     pub save_tab: EventHandler<String>,
     pub close_tab: EventHandler<String>,
+    pub toggle_outline: EventHandler<()>,
     pub rename_selected: EventHandler<String>,
     pub move_selected_to: EventHandler<PathBuf>,
     pub set_selected_favorite: EventHandler<bool>,

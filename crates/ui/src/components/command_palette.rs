@@ -180,7 +180,7 @@ fn CommandPaletteRow(
 }
 
 fn execute_command_action(
-    mut ui_state: Signal<UiState>,
+    ui_state: Signal<UiState>,
     commands: AppCommands,
     on_settings: EventHandler<()>,
     on_close: EventHandler<()>,
@@ -198,7 +198,7 @@ fn execute_command_action(
             crate::chrome::toggle_sidebar(ui_state, commands.clone(), "command_palette");
         }
         CommandPaletteActionKind::ToggleOutline => {
-            ui_state.write().toggle_outline();
+            commands.toggle_outline.call(());
         }
         CommandPaletteActionKind::ToggleTheme => {
             crate::chrome::toggle_theme(ui_state, commands.clone());
