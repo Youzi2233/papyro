@@ -777,6 +777,36 @@ test("tab recycle detaches old tab and prevents stale content routing", () => {
   assert.equal(recycleCalls, 1);
 });
 
+test("recycle_editor clears routed dataset and channel state", () => {
+  const registry = new Map();
+  const view = fakeView("body");
+  let recycleCalls = 0;
+
+  attachViewToTab({
+    editorRegistry: registry,
+    view,
+    tabId: "tab-a",
+    container: fakeContainer(),
+    instanceId: "host-a",
+    initialContent: "body",
+    viewMode: "Preview",
+    refreshEditorLayout: () => {},
+  });
+  const entry = registry.get("tab-a");
+  entry.dioxus = { send: () => {} };
+  entry.onRecycle = () => {
+    recycleCalls += 1;
+  };
+
+  assert.equal(recycleEditor(registry, "tab-a"), true);
+
+  assert.equal(registry.has("tab-a"), false);
+  assert.equal(view.dom.dataset.tabId, undefined);
+  assert.equal(view.dom.dataset.viewMode, undefined);
+  assert.equal(entry.dioxus, null);
+  assert.equal(recycleCalls, 1);
+});
+
 test("destroy ignores stale editor host instances", () => {
   const registry = new Map();
   const view = fakeView("body");
