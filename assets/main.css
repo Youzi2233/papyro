@@ -472,6 +472,12 @@ button { border: 0; cursor: pointer; background: transparent; }
     pointer-events: none;
 }
 
+.mn-button:focus-visible,
+.mn-icon-btn:focus-visible {
+    outline: 0;
+    box-shadow: var(--mn-ring-focus);
+}
+
 .mn-icon-btn {
     display: grid;
     place-items: center;
@@ -692,6 +698,12 @@ button.mn-sidebar-nav-item:disabled {
     cursor: not-allowed;
 }
 
+button.mn-sidebar-nav-item:focus-visible,
+.mn-tree-sort-btn:focus-visible {
+    outline: 0;
+    box-shadow: var(--mn-ring-focus-sm);
+}
+
 .mn-sidebar-actions {
     display: flex;
     gap: var(--mn-sidebar-actions-gap);
@@ -801,8 +813,8 @@ button.mn-sidebar-nav-item:disabled {
 }
 
 .mn-tree-row:focus-visible {
-    outline: 2px solid var(--mn-accent);
-    outline-offset: -2px;
+    outline: 0;
+    box-shadow: var(--mn-ring-focus-inset);
 }
 
 .mn-tree-row.active {
@@ -918,6 +930,7 @@ button.mn-sidebar-nav-item:disabled {
     outline: 0;
     background: var(--mn-accent-wash);
     color: var(--mn-accent);
+    box-shadow: var(--mn-ring-focus-inset);
 }
 
 .mn-menu-item.danger,
@@ -1061,6 +1074,12 @@ button.mn-sidebar-nav-item:disabled {
     opacity: 1;
     background: var(--mn-accent-dim);
     color: var(--mn-accent);
+}
+
+.mn-tab-title:focus-visible,
+.mn-tab-close:focus-visible {
+    outline: 0;
+    box-shadow: var(--mn-ring-focus-sm);
 }
 
 .mn-tab-save-status {
@@ -1689,6 +1708,11 @@ button.mn-sidebar-nav-item:disabled {
 
 .mn-modal-close:hover { background: var(--mn-accent-dim); color: var(--mn-accent); }
 
+.mn-modal-close:focus-visible {
+    outline: 0;
+    box-shadow: var(--mn-ring-focus-sm);
+}
+
 .mn-modal-body {
     flex: 1;
     overflow-y: auto;
@@ -1764,6 +1788,11 @@ button.mn-sidebar-nav-item:disabled {
 .mn-command-row:hover,
 .mn-command-row.active {
     background: var(--mn-accent-wash);
+}
+
+.mn-command-row:focus-visible {
+    outline: 0;
+    box-shadow: var(--mn-ring-focus-inset);
 }
 
 .mn-command-row-main {
