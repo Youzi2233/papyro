@@ -29,6 +29,38 @@ fn run_migrations(pool: &DbPool) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rusqlite::Connection;
+
+    const EXPECTED_TABLES: &[&str] = &[
+        "workspaces",
+        "notes",
+        "tags",
+        "note_tags",
+        "recent_files",
+        "settings",
+    ];
+    const EXPECTED_INDEXES: &[&str] = &[
+        "idx_notes_workspace",
+        "idx_notes_updated",
+        "idx_notes_favorite",
+        "idx_note_tags_note",
+        "idx_note_tags_tag",
+        "idx_recent_opened",
+    ];
+    const EXPECTED_NOTE_COLUMNS: &[&str] = &[
+        "id",
+        "workspace_id",
+        "relative_path",
+        "title",
+        "created_at",
+        "updated_at",
+        "word_count",
+        "char_count",
+        "is_favorite",
+        "is_trashed",
+        "trashed_at",
+        "front_matter",
+    ];
 
     #[test]
     fn migrations_are_idempotent() -> Result<()> {
@@ -40,13 +72,82 @@ mod tests {
         let pool = create_pool(&db_path)?;
 
         let conn = pool.get()?;
-        let settings_table: String = conn.query_row(
-            "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'settings'",
-            [],
-            |row| row.get(0),
-        )?;
-        assert_eq!(settings_table, "settings");
+        assert_schema_contract(&conn)?;
 
         Ok(())
+    }
+
+    #[test]
+    fn migrations_upgrade_existing_database_without_dropping_data() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let db_path = temp.path().join("meta.db");
+        let conn = Connection::open(&db_path)?;
+        conn.execute(
+            "CREATE TABLE legacy_marker (id INTEGER PRIMARY KEY, label TEXT NOT NULL)",
+            [],
+        )?;
+        conn.execute(
+            "INSERT INTO legacy_marker (id, label) VALUES (1, 'keep')",
+            [],
+        )?;
+        drop(conn);
+
+        let pool = create_pool(&db_path)?;
+        let conn = pool.get()?;
+
+        assert_schema_contract(&conn)?;
+        let label: String =
+            conn.query_row("SELECT label FROM legacy_marker WHERE id = 1", [], |row| {
+                row.get(0)
+            })?;
+        assert_eq!(label, "keep");
+
+        Ok(())
+    }
+
+    fn assert_schema_contract(conn: &Connection) -> Result<()> {
+        let tables = object_names(conn, "table")?;
+        for table in EXPECTED_TABLES {
+            assert!(
+                tables.iter().any(|name| name == table),
+                "missing table {table}"
+            );
+        }
+
+        let indexes = object_names(conn, "index")?;
+        for index in EXPECTED_INDEXES {
+            assert!(
+                indexes.iter().any(|name| name == index),
+                "missing index {index}"
+            );
+        }
+
+        let note_columns = table_columns(conn, "notes")?;
+        for column in EXPECTED_NOTE_COLUMNS {
+            assert!(
+                note_columns.iter().any(|name| name == column),
+                "missing notes column {column}"
+            );
+        }
+
+        let foreign_keys_enabled: i64 =
+            conn.query_row("PRAGMA foreign_keys", [], |row| row.get(0))?;
+        assert_eq!(foreign_keys_enabled, 1);
+
+        Ok(())
+    }
+
+    fn object_names(conn: &Connection, object_type: &str) -> Result<Vec<String>> {
+        let mut stmt = conn.prepare(
+            "SELECT name FROM sqlite_master WHERE type = ?1 AND name NOT LIKE 'sqlite_%'",
+        )?;
+        let rows = stmt.query_map([object_type], |row| row.get(0))?;
+        rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
+    }
+
+    fn table_columns(conn: &Connection, table: &str) -> Result<Vec<String>> {
+        let mut stmt = conn.prepare(&format!("PRAGMA table_info({table})"))?;
+        let rows = stmt.query_map([], |row| row.get(1))?;
+        rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
     }
 }
