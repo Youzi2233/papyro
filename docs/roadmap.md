@@ -481,7 +481,7 @@ Editor runtime lane
 - [x] Outline toggle 从 tabbar 常驻控件降级到命令面板入口。
 - [x] Format toolbar 从 tabbar 常驻控件移除，避免顶部区域抢占写作注意力。
 - [x] Sidebar action 文案改为稳定文本，避免符号按钮在不同环境乱码或含义不清。
-- [ ] Status bar 只放必要状态，不做信息垃圾桶。
+- [x] Status bar 只放必要状态，不做信息垃圾桶。
 - [ ] Sidebar 支持清晰的 workspace、文件树、搜索入口，但不抢主编辑区。
 - [ ] 设置、标签管理、回收站以 modal/panel 形式按需打开。
 
@@ -520,6 +520,7 @@ Editor runtime lane
 - `assets/main.css` 和 `apps/desktop/assets/main.css` 已补齐 radius/border/shadow/focus ring token，常见边框、圆角、焦点环和 modal 阴影通过 token 收敛。
 - `js/src/editor.js` 的 CodeMirror Source/Hybrid theme 和 CSS Preview/fallback 共用 document / markdown token，编辑、Hybrid 装饰和 Preview 排版从同一组变量取值。
 - `assets/main.css` 和 `apps/desktop/assets/main.css` 的组件区域不再直接写裸色值，剩余颜色集中在 token 定义或 JS 运行时兜底。
+- Status bar 不再常驻显示 `Saved` 和 char count，只保留 word count 与需要用户注意的保存状态。
 - 打开应用第一眼是文档，不是工具集合。
 - UI 不再像临时 demo 或组件展示页。
 - 用户可以连续写作 30 分钟，不被视觉噪音和布局跳动打扰。

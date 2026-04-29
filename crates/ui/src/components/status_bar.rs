@@ -49,15 +49,13 @@ fn status_bar_items(editor_model: &EditorViewModel) -> Vec<StatusBarItem> {
             label: format!("{} words", editor_model.active_stats.word_count),
             tone: StatusTone::Default,
         });
+    }
+    if editor_model.active_save_status != SaveStatus::Saved {
         items.push(StatusBarItem {
-            label: format!("{} chars", editor_model.active_stats.char_count),
-            tone: StatusTone::Default,
+            label: save_status_label(&editor_model.active_save_status).to_string(),
+            tone: save_status_tone(&editor_model.active_save_status),
         });
     }
-    items.push(StatusBarItem {
-        label: save_status_label(&editor_model.active_save_status).to_string(),
-        tone: save_status_tone(&editor_model.active_save_status),
-    });
 
     items
 }
@@ -126,14 +124,21 @@ mod tests {
                     tone: StatusTone::Default,
                 },
                 StatusBarItem {
-                    label: "72 chars".to_string(),
-                    tone: StatusTone::Default,
-                },
-                StatusBarItem {
                     label: "Unsaved".to_string(),
                     tone: StatusTone::Attention,
                 },
             ]
+        );
+    }
+
+    #[test]
+    fn status_bar_items_hide_saved_state_and_char_count() {
+        assert_eq!(
+            status_bar_items(&editor_model(true, SaveStatus::Saved)),
+            vec![StatusBarItem {
+                label: "12 words".to_string(),
+                tone: StatusTone::Default,
+            }]
         );
     }
 
