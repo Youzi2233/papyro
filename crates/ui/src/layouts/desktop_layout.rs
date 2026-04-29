@@ -115,7 +115,13 @@ pub fn DesktopLayout() -> Element {
             }
             div { class: "mn-workbench",
                 if !sidebar_collapsed {
-                    Sidebar {}
+                    Sidebar {
+                        on_search: move |_| {
+                            let started_at = perf_timer();
+                            show_search.set(true);
+                            trace_chrome_open_modal("workspace_search", "sidebar", started_at);
+                        },
+                    }
                 }
                 EditorPane {}
             }

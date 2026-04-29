@@ -483,7 +483,7 @@ Editor runtime lane
 - [x] Sidebar action 文案改为稳定文本，避免符号按钮在不同环境乱码或含义不清。
 - [x] Status bar 只放必要状态，不做信息垃圾桶。
 - [x] Source/Hybrid/Preview 模式切换从 tabbar 常驻分段控件降级到命令面板入口。
-- [ ] Sidebar 支持清晰的 workspace、文件树、搜索入口，但不抢主编辑区。
+- [x] Sidebar 支持清晰的 workspace、文件树、搜索入口，但不抢主编辑区。
 - [ ] 设置、标签管理、回收站以 modal/panel 形式按需打开。
 
 ### 3.4 编辑区体验

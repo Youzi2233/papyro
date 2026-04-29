@@ -569,6 +569,46 @@ button { border: 0; cursor: pointer; background: transparent; }
     font-family: var(--mn-font-code);
 }
 
+.mn-sidebar-nav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 3px;
+    margin-top: 10px;
+    padding: 3px;
+    border: var(--mn-border-subtle);
+    border-radius: var(--mn-radius-sm);
+    background: var(--mn-surface-sunken);
+}
+
+.mn-sidebar-nav-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    min-height: 28px;
+    border-radius: var(--mn-radius-xs);
+    color: var(--mn-ink-3);
+    font-size: var(--mn-type-caption);
+    font-weight: var(--mn-weight-semibold);
+    transition: background 0.14s, color 0.14s, box-shadow 0.14s;
+}
+
+button.mn-sidebar-nav-item:hover {
+    background: var(--mn-accent-wash);
+    color: var(--mn-ink);
+}
+
+.mn-sidebar-nav-item.active {
+    background: var(--mn-surface);
+    color: var(--mn-ink);
+    box-shadow: var(--mn-shadow-hairline);
+}
+
+button.mn-sidebar-nav-item:disabled {
+    opacity: 0.46;
+    cursor: not-allowed;
+}
+
 .mn-sidebar-actions {
     display: flex;
     gap: var(--mn-sidebar-actions-gap);

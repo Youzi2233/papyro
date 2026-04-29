@@ -19,7 +19,7 @@ struct SidebarResizeDrag {
 }
 
 #[component]
-pub fn Sidebar() -> Element {
+pub fn Sidebar(on_search: EventHandler<()>) -> Element {
     let app = use_app_context();
     let commands = app.commands;
     let sidebar_model = app.sidebar_model.read().clone();
@@ -60,6 +60,23 @@ pub fn Sidebar() -> Element {
                             p { class: "mn-sidebar-workspace-name", "No workspace" }
                             p { class: "mn-sidebar-workspace-path", "Open a folder to start" }
                         }
+                    }
+                }
+                div {
+                    class: "mn-sidebar-nav",
+                    role: "group",
+                    "aria-label": "Workspace navigation",
+                    span {
+                        class: "mn-sidebar-nav-item active",
+                        "aria-current": "page",
+                        "Files"
+                    }
+                    button {
+                        class: "mn-sidebar-nav-item",
+                        disabled: !has_workspace,
+                        title: if has_workspace { "Search workspace" } else { "Open a workspace to search" },
+                        onclick: move |_| on_search.call(()),
+                        "Search"
                     }
                 }
                 div { class: "mn-sidebar-actions",
