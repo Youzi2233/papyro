@@ -59,10 +59,8 @@ fn main() {
                 .with_custom_head(chrome.custom_head)
                 .with_custom_event_handler(move |event, _| {
                     if let Event::Opened { urls } = event {
-                        let markdown_paths = urls
-                            .iter()
-                            .filter_map(|url| url.to_file_path().ok())
-                            .collect::<Vec<_>>();
+                        let markdown_paths =
+                            papyro_platform::desktop::file_paths_from_opened_urls(urls.iter());
                         if external_open_sender.send_paths(markdown_paths) {
                             tracing::info!(
                                 url_count = urls.len(),

@@ -3229,6 +3229,7 @@ version = "0.1.0"
 dependencies = [
  "dioxus",
  "papyro-app",
+ "papyro-platform",
  "tracing",
  "tracing-subscriber",
 ]
@@ -3270,6 +3271,7 @@ dependencies = [
  "thiserror 1.0.69",
  "tokio",
  "tracing",
+ "url",
 ]
 
 [[package]]
