@@ -373,7 +373,7 @@ Editor runtime lane
 - [ ] trace 必须包含 tab id、window id、revision、view mode、file size、trigger reason。
 - [ ] 性能日志按交互路径聚合，避免只看到零散点。
 - [x] Tab close 性能观测不再在点击热路径启动 JS eval phase probe。
-- [ ] 增加脚本化手工场景，覆盖 100KB、1MB、5MB Markdown。
+- [x] 增加脚本化手工场景，覆盖 100KB、1MB、5MB Markdown：`node scripts/generate-perf-fixtures.js`。
 
 ### 2.2 Dioxus render 收敛
 

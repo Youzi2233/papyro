@@ -61,8 +61,15 @@ Add new trace points before changing the budget.
 Run these scenarios with `PAPYRO_PERF=1` before and after editor architecture changes:
 
 ```bash
+node scripts/generate-perf-fixtures.js
 PAPYRO_PERF=1 cargo run -p papyro-desktop
 ```
+
+The fixture script writes deterministic Markdown files to `target/perf-fixtures/`:
+
+- `papyro-100kb.md`
+- `papyro-1mb.md`
+- `papyro-5mb.md`
 
 1. Open a 100KB, 1MB, and 5MB Markdown file.
 2. Switch between Source, Hybrid, and Preview from the editor tabbar view toggle.
