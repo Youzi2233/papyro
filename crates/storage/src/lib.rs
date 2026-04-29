@@ -211,6 +211,7 @@ impl SqliteStorage {
                 let global_settings = self.load_settings();
                 let workspace_settings = self.load_workspace_settings(&snapshot.workspace);
                 let settings = global_settings.with_workspace_overrides(&workspace_settings);
+                recovery::prune_stale_drafts_best_effort(&self.pool, Utc::now().timestamp_millis());
                 let recovery_drafts = self
                     .list_recovery_drafts(&snapshot.workspace)
                     .unwrap_or_else(|error| {
@@ -2106,6 +2107,56 @@ mod tests {
         assert!(bootstrap
             .status_message
             .contains("recovery drafts need review"));
+        Ok(())
+    }
+
+    #[test]
+    fn bootstrap_prunes_stale_recovery_drafts() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let workspace_root = create_workspace(&temp)?;
+        let old_path = workspace_root.join("old.md");
+        let fresh_path = workspace_root.join("fresh.md");
+        std::fs::write(&old_path, "# Old")?;
+        std::fs::write(&fresh_path, "# Fresh")?;
+
+        let storage = test_storage(&temp)?;
+        let workspace = storage.initialize_workspace(&workspace_root)?.workspace;
+        let old = storage.open_note(&workspace, &old_path)?;
+        let fresh = storage.open_note(&workspace, &fresh_path)?;
+        let now_ms = Utc::now().timestamp_millis();
+        db::recovery::upsert(
+            &storage.pool,
+            &RecoveryDraft {
+                workspace_id: workspace.id.clone(),
+                note_id: old.tab.note_id.clone(),
+                relative_path: PathBuf::from("old.md"),
+                title: "Old".to_string(),
+                content: "# Old draft".to_string(),
+                revision: 1,
+                updated_at: recovery::stale_cutoff_ms(now_ms) - 1,
+            },
+        )?;
+        db::recovery::upsert(
+            &storage.pool,
+            &RecoveryDraft {
+                workspace_id: workspace.id.clone(),
+                note_id: fresh.tab.note_id.clone(),
+                relative_path: PathBuf::from("fresh.md"),
+                title: "Fresh".to_string(),
+                content: "# Fresh draft".to_string(),
+                revision: 1,
+                updated_at: now_ms,
+            },
+        )?;
+
+        let bootstrap = storage.bootstrap_from_workspace(&workspace_root);
+
+        assert_eq!(bootstrap.recovery_drafts.len(), 1);
+        assert_eq!(bootstrap.recovery_drafts[0].note_id, fresh.tab.note_id);
+        assert_eq!(
+            db::recovery::list_for_workspace(&storage.pool, &workspace.id)?.len(),
+            1
+        );
         Ok(())
     }
 

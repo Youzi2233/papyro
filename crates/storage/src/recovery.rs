@@ -5,6 +5,10 @@ use chrono::Utc;
 use papyro_core::models::{EditorTab, RecoveryDraft, Workspace};
 use std::path::Path;
 
+const RECOVERY_DRAFT_RETENTION_DAYS: i64 = 30;
+const MILLIS_PER_DAY: i64 = 24 * 60 * 60 * 1000;
+const RECOVERY_DRAFT_RETENTION_MS: i64 = RECOVERY_DRAFT_RETENTION_DAYS * MILLIS_PER_DAY;
+
 pub(crate) fn upsert_draft(
     pool: &DbPool,
     workspace: &Workspace,
@@ -41,6 +45,26 @@ pub(crate) fn clear_draft(pool: &DbPool, workspace: &Workspace, note_id: &str) -
 
 pub(crate) fn list_drafts(pool: &DbPool, workspace: &Workspace) -> Result<Vec<RecoveryDraft>> {
     db::recovery::list_for_workspace(pool, &workspace.id)
+}
+
+pub(crate) fn prune_stale_drafts(pool: &DbPool, now_ms: i64) -> Result<usize> {
+    db::recovery::prune_older_than(pool, stale_cutoff_ms(now_ms))
+}
+
+pub(crate) fn prune_stale_drafts_best_effort(pool: &DbPool, now_ms: i64) {
+    match prune_stale_drafts(pool, now_ms) {
+        Ok(deleted) if deleted > 0 => {
+            tracing::info!(deleted, "pruned stale recovery drafts");
+        }
+        Ok(_) => {}
+        Err(error) => {
+            tracing::warn!(%error, "failed to prune stale recovery drafts");
+        }
+    }
+}
+
+pub(crate) fn stale_cutoff_ms(now_ms: i64) -> i64 {
+    now_ms.saturating_sub(RECOVERY_DRAFT_RETENTION_MS)
 }
 
 pub(crate) fn clear_draft_best_effort(pool: &DbPool, workspace: &Workspace, note_id: &str) {
