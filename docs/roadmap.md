@@ -362,8 +362,8 @@ Editor runtime lane
 ### 1.6 Editor Runtime Boundary
 
 - [x] Rust/JS 协议由 `crates/editor` 维护，不在 UI 内散落私有 schema。
-- [ ] JS runtime 只处理浏览器编辑能力：输入、selection、IME、scroll、decorations、format command。
-- [ ] Rust 仍是文档内容、保存状态、tab 状态、workspace 状态的真相来源。
+- [x] JS runtime 只处理浏览器编辑能力：输入、selection、IME、scroll、decorations、format command。见 [editor-protocol.md](editor-protocol.md) 的 runtime responsibility boundary。
+- [x] Rust 仍是文档内容、保存状态、tab 状态、workspace 状态的真相来源。见 [editor-protocol.md](editor-protocol.md) 的 runtime responsibility boundary。
 - [x] `SetViewMode`、`SetPreferences` 必须去重。
 - [x] editor layout refresh 不再经过 Rust command 往返，由 JS runtime 本地处理。
 - [x] host 创建、销毁、隐藏、恢复都有可观测 trace 和 contract test。

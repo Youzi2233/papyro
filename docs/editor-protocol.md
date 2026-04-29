@@ -4,6 +4,22 @@ The editor protocol is the JSON contract between Rust and the browser editor run
 
 Rust owns the schema in `crates/editor/src/protocol.rs`. The Dioxus UI bridge serializes `EditorCommand` values to JavaScript and deserializes `EditorEvent` values from JavaScript.
 
+## Runtime Responsibility Boundary
+
+The JavaScript runtime owns browser editing mechanics only:
+
+- CodeMirror view creation, focus, selection, IME composition, paste handling, scroll/layout measurement, decorations, and formatting commands.
+- Local, idempotent handling for `set_view_mode`, `set_preferences`, `focus`, and layout refresh.
+- Emitting protocol events when the user changes content, requests save, or pastes image data.
+
+Rust remains the source of truth for application state:
+
+- Document content snapshots, revisions, dirty/save status, tabs, workspace metadata, settings, storage, and file-system effects.
+- Opening, saving, closing, moving, renaming, deleting, searching, and asset persistence.
+- Deciding whether runtime events are accepted, ignored, saved, or surfaced as user feedback.
+
+JavaScript must not write files, mutate workspace metadata, own tab truth, or introduce private business events. New JS-to-Rust behavior must first be added to `crates/editor/src/protocol.rs` and covered by protocol tests.
+
 ## Commands
 
 Rust sends commands to `window.papyroEditor.handleRustMessage(tabId, message)`.
