@@ -1,6 +1,7 @@
 pub mod db;
 pub mod fs;
 pub mod index;
+mod recovery;
 
 pub use db::{create_pool, DbPool};
 pub use papyro_core::{
@@ -8,7 +9,7 @@ pub use papyro_core::{
     WorkspaceSnapshot,
 };
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Result};
 use chrono::Utc;
 use papyro_core::models::{
     AppSettings, EditorTab, FileNode, FileNodeKind, NoteMeta, RecentFile, RecoveryDraft,
@@ -157,35 +158,15 @@ impl SqliteStorage {
         content: &str,
         revision: u64,
     ) -> Result<()> {
-        let relative_path = tab
-            .path
-            .strip_prefix(&workspace.path)
-            .with_context(|| {
-                format!(
-                    "record recovery draft for {} outside workspace {}",
-                    tab.path.display(),
-                    workspace.path.display()
-                )
-            })?
-            .to_path_buf();
-        let draft = RecoveryDraft {
-            workspace_id: workspace.id.clone(),
-            note_id: tab.note_id.clone(),
-            relative_path,
-            title: tab.title.clone(),
-            content: content.to_string(),
-            revision,
-            updated_at: Utc::now().timestamp_millis(),
-        };
-        db::recovery::upsert(&self.pool, &draft)
+        recovery::upsert_draft(&self.pool, workspace, tab, content, revision)
     }
 
     pub fn clear_recovery_draft(&self, workspace: &Workspace, note_id: &str) -> Result<()> {
-        db::recovery::clear(&self.pool, &workspace.id, note_id)
+        recovery::clear_draft(&self.pool, workspace, note_id)
     }
 
     pub fn list_recovery_drafts(&self, workspace: &Workspace) -> Result<Vec<RecoveryDraft>> {
-        db::recovery::list_for_workspace(&self.pool, &workspace.id)
+        recovery::list_drafts(&self.pool, workspace)
     }
 
     pub fn bootstrap_from_env_or_current_dir(&self) -> WorkspaceBootstrap {
@@ -240,7 +221,7 @@ impl SqliteStorage {
                         );
                         Vec::new()
                     });
-                let status_message = loaded_workspace_status(
+                let status_message = recovery::loaded_workspace_status(
                     note_count(&snapshot.file_tree),
                     &snapshot.workspace.path,
                     recovery_drafts.len(),
@@ -331,7 +312,7 @@ impl SqliteStorage {
         let note_meta = upsert_note_meta_for_path(&self.pool, workspace, target_path, content)?;
         let opened_at = Utc::now().timestamp_millis();
         db::recent::record_open(&self.pool, &note_meta.id, opened_at)?;
-        clear_recovery_draft_best_effort(&self.pool, workspace, &tab.note_id);
+        recovery::clear_draft_best_effort(&self.pool, workspace, &tab.note_id);
 
         Ok(SavedAsNote {
             tab_id: tab.id.clone(),
@@ -350,7 +331,7 @@ impl SqliteStorage {
     ) -> Result<SavedNote> {
         fs::write_note(&tab.path, content)?;
         let note_meta = upsert_note_meta_for_path(&self.pool, workspace, &tab.path, content)?;
-        clear_recovery_draft_best_effort(&self.pool, workspace, &tab.note_id);
+        recovery::clear_draft_best_effort(&self.pool, workspace, &tab.note_id);
 
         Ok(SavedNote {
             tab_id: tab.id.clone(),
@@ -995,27 +976,6 @@ fn ensure_workspace(pool: &DbPool, root: &Path) -> Result<Workspace> {
 
     db::workspaces::insert_workspace(pool, &workspace)?;
     Ok(workspace)
-}
-
-fn clear_recovery_draft_best_effort(pool: &DbPool, workspace: &Workspace, note_id: &str) {
-    if let Err(error) = db::recovery::clear(pool, &workspace.id, note_id) {
-        tracing::warn!(%error, %note_id, "failed to clear recovery draft after save");
-    }
-}
-
-fn loaded_workspace_status(
-    note_count: usize,
-    workspace_path: &Path,
-    recovery_count: usize,
-) -> String {
-    let mut status = format!(
-        "Loaded {note_count} notes from {}",
-        workspace_path.display()
-    );
-    if recovery_count > 0 {
-        status.push_str(&format!("; {recovery_count} recovery drafts need review"));
-    }
-    status
 }
 
 fn workspace_settings_key(workspace_id: &str) -> String {
