@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use r2d2::Pool;
 use r2d2_sqlite::SqliteConnectionManager;
 use rusqlite_migration::{Migrations, M};
@@ -11,12 +11,17 @@ const MIGRATION_SQL_FILES: &[(&str, &str)] =
 
 pub fn create_pool(db_path: &Path) -> Result<DbPool> {
     if let Some(parent) = db_path.parent() {
-        std::fs::create_dir_all(parent)?;
+        std::fs::create_dir_all(parent)
+            .with_context(|| format!("create storage database directory {}", parent.display()))?;
     }
     let manager = SqliteConnectionManager::file(db_path)
         .with_init(|conn| conn.execute_batch("PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;"));
-    let pool = Pool::builder().max_size(4).build(manager)?;
-    run_migrations(&pool)?;
+    let pool = Pool::builder()
+        .max_size(4)
+        .build(manager)
+        .with_context(|| format!("open storage database {}", db_path.display()))?;
+    run_migrations(&pool)
+        .with_context(|| format!("run storage database migrations for {}", db_path.display()))?;
     Ok(pool)
 }
 
@@ -136,6 +141,22 @@ mod tests {
                 "migration {name} must use contiguous version prefix {expected_prefix}"
             );
         }
+
+        Ok(())
+    }
+
+    #[test]
+    fn create_pool_reports_database_directory_context() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let blocker = temp.path().join("not-a-directory");
+        std::fs::write(&blocker, "blocks child paths")?;
+
+        let error = create_pool(&blocker.join("meta.db"))
+            .expect_err("file parent should block database initialization");
+
+        let message = error.to_string();
+        assert!(message.contains("create storage database directory"));
+        assert!(message.contains("not-a-directory"));
 
         Ok(())
     }

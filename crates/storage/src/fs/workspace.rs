@@ -1,4 +1,5 @@
-﻿use anyhow::Result;
+use anyhow::Context;
+use anyhow::Result;
 use papyro_core::models::{FileNode, FileNodeKind};
 use std::path::{Path, PathBuf};
 
@@ -99,6 +100,28 @@ pub fn get_db_path() -> Result<PathBuf> {
 }
 
 pub fn get_db_path_in_app_data_dir(data_dir: &Path) -> Result<PathBuf> {
-    std::fs::create_dir_all(data_dir)?;
+    std::fs::create_dir_all(data_dir)
+        .with_context(|| format!("create app data directory {}", data_dir.display()))?;
     Ok(data_dir.join("meta.db"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn get_db_path_reports_app_data_directory_context() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let blocker = temp.path().join("not-a-directory");
+        std::fs::write(&blocker, "blocks child paths")?;
+
+        let error = get_db_path_in_app_data_dir(&blocker.join("papyro"))
+            .expect_err("file parent should block app data directory creation");
+
+        let message = error.to_string();
+        assert!(message.contains("create app data directory"));
+        assert!(message.contains("not-a-directory"));
+
+        Ok(())
+    }
 }
