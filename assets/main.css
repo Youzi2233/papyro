@@ -16,7 +16,7 @@
     /* Ink */
     --mn-ink:             #191a17;
     --mn-ink-2:           #555851;
-    --mn-ink-3:           #8b9087;
+    --mn-ink-3:           #6b7168;
     --mn-ink-inverse:     #ffffff;
 
     /* Borders */
@@ -241,7 +241,7 @@
     /* Ink */
     --mn-ink:             #eceee8;
     --mn-ink-2:           #b4b9ae;
-    --mn-ink-3:           #777f73;
+    --mn-ink-3:           #828a7e;
     --mn-ink-inverse:     #121312;
 
     /* Borders */
@@ -294,7 +294,7 @@
 
         --mn-ink:             #eceee8;
         --mn-ink-2:           #b4b9ae;
-        --mn-ink-3:           #777f73;
+        --mn-ink-3:           #828a7e;
         --mn-ink-inverse:     #121312;
 
         --mn-border:          #2c302b;

@@ -28,6 +28,12 @@ node scripts/check-ui-a11y.js
 echo "=== UI accessibility check self-test ==="
 node scripts/check-ui-a11y.js --self-test
 
+echo "=== UI contrast check ==="
+node scripts/check-ui-contrast.js
+
+echo "=== UI contrast check self-test ==="
+node scripts/check-ui-contrast.js --self-test
+
 echo "=== performance fixture generator self-test ==="
 node scripts/generate-perf-fixtures.js --self-test
 
