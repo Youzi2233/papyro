@@ -32,17 +32,26 @@ impl FileTreeSortMode {
 #[component]
 pub fn FileTree(sort_mode: FileTreeSortMode) -> Element {
     let app = use_app_context();
-    let file_state = app.file_state;
     let commands = app.commands;
+    let file_tree_model = app.file_tree_model.read().clone();
     let keyboard_commands = commands.clone();
     let context_rename_commands = commands.clone();
 
-    let nodes = file_state.read().file_tree.clone();
-    let expanded_paths = file_state.read().expanded_paths.clone();
-    let selected_path = file_state.read().selected_path.clone();
+    let nodes = file_tree_model.nodes;
+    let expanded_paths = file_tree_model.expanded_paths;
+    let selected_path = file_tree_model.selected_path;
     let sorted_nodes = sorted_file_tree_nodes(&nodes, sort_mode);
     let visible_items = visible_file_tree_items(&sorted_nodes, &expanded_paths);
     let keyboard_items = visible_items.clone();
+    let render_items = visible_items
+        .iter()
+        .cloned()
+        .map(|item| FileTreeRenderItem {
+            is_selected: selected_path.as_ref() == Some(&item.node.path),
+            is_expanded: expanded_paths.contains(&item.node.path),
+            item,
+        })
+        .collect::<Vec<_>>();
     let mut context_menu = use_signal(|| None::<FileTreeContextMenu>);
     let mut rename_draft = use_signal(|| None::<FileTreeRenameDraft>);
     let drag_source = use_signal(|| None::<FileTreeDragSource>);
@@ -99,10 +108,12 @@ pub fn FileTree(sort_mode: FileTreeSortMode) -> Element {
             if nodes.is_empty() {
                 div { class: "mn-sidebar-empty", "No Markdown files found" }
             } else {
-                for item in visible_items {
+                for item in render_items {
                     FileTreeNode {
-                        node: item.node,
-                        depth: item.depth,
+                        node: item.item.node,
+                        depth: item.item.depth,
+                        is_selected: item.is_selected,
+                        is_expanded: item.is_expanded,
                         rename_draft,
                         drag_source,
                         drop_target,
@@ -139,13 +150,14 @@ pub fn FileTree(sort_mode: FileTreeSortMode) -> Element {
 fn FileTreeNode(
     node: FileNode,
     depth: u32,
+    is_selected: bool,
+    is_expanded: bool,
     rename_draft: Signal<Option<FileTreeRenameDraft>>,
     drag_source: Signal<Option<FileTreeDragSource>>,
     drop_target: Signal<Option<PathBuf>>,
     on_context_menu: EventHandler<FileTreeContextMenu>,
 ) -> Element {
     let app = use_app_context();
-    let file_state = app.file_state;
     let commands = app.commands;
     let mut rename_draft_for_change = rename_draft;
     let rename_draft_for_commit = rename_draft;
@@ -153,13 +165,7 @@ fn FileTreeNode(
     let rename_commands = commands.clone();
     let indent = depth * 14 + 12;
 
-    // Stable key captured outside the memo closure so the closure body is
-    // cheap and only depends on FileState. Tab changes should not make every
-    // file row recalculate active-note styling.
     let node_path = node.path.clone();
-    let node_path_for_memo = node_path.clone();
-    let is_selected =
-        use_memo(move || file_state.read().selected_path.as_ref() == Some(&node_path_for_memo))();
     let active_rename = rename_draft
         .read()
         .as_ref()
@@ -173,7 +179,6 @@ fn FileTreeNode(
 
     match &node.kind {
         FileNodeKind::Directory { .. } => {
-            let is_expanded = file_state.read().is_expanded(&node_path);
             let toggle_path = node_path.clone();
             let toggle_commands = commands.clone();
             let menu_node = node.clone();
@@ -612,6 +617,13 @@ fn FileTreeContextMenuView(
 struct VisibleFileTreeItem {
     node: FileNode,
     depth: u32,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+struct FileTreeRenderItem {
+    item: VisibleFileTreeItem,
+    is_selected: bool,
+    is_expanded: bool,
 }
 
 fn sorted_file_tree_nodes(nodes: &[FileNode], sort_mode: FileTreeSortMode) -> Vec<FileNode> {

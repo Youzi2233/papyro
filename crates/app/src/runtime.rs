@@ -5,9 +5,9 @@ use papyro_core::{NoteStorage, WorkspaceBootstrap};
 use papyro_platform::PlatformApi;
 use papyro_ui::context::{AppContext, EditorServices};
 use papyro_ui::view_model::{
-    EditorPaneViewModel, EditorSurfaceViewModel, EditorViewModel, QuickOpenItemViewModel,
-    SettingsFormViewModel, SettingsWorkspaceViewModel, SidebarViewModel, WorkspaceSearchViewModel,
-    WorkspaceViewModel,
+    EditorPaneViewModel, EditorSurfaceViewModel, EditorViewModel, FileTreeViewModel,
+    QuickOpenItemViewModel, SettingsFormViewModel, SettingsWorkspaceViewModel, SidebarViewModel,
+    WorkspaceSearchViewModel, WorkspaceViewModel,
 };
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -78,6 +78,8 @@ pub fn use_app_runtime(
             state.file_state.read().current_workspace.is_some(),
         )
     });
+    let file_tree_model =
+        use_memo(move || FileTreeViewModel::from_file_state(&state.file_state.read()));
     let quick_open_items =
         use_memo(move || QuickOpenItemViewModel::from_file_state(&state.file_state.read()));
     let workspace_search_model = use_memo(move || {
@@ -125,6 +127,7 @@ pub fn use_app_runtime(
         sidebar_model,
         settings_workspace_model,
         settings_form_model,
+        file_tree_model,
         quick_open_items,
         workspace_search_model,
         editor_model,

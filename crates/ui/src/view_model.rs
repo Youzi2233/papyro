@@ -6,6 +6,7 @@ use papyro_core::{
     DocumentSnapshot, EditorTabs, FileState, SearchField, SearchHighlight, SearchMatch,
     SearchResult, TabContentSnapshot, TabContentsMap, UiState, WorkspaceSearchState,
 };
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -58,6 +59,13 @@ pub struct SettingsFormViewModel {
     pub global_settings: AppSettings,
     pub workspace_settings: AppSettings,
     pub workspace_overrides: WorkspaceSettingsOverrides,
+}
+
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct FileTreeViewModel {
+    pub nodes: Vec<FileNode>,
+    pub expanded_paths: HashSet<PathBuf>,
+    pub selected_path: Option<PathBuf>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -352,6 +360,16 @@ impl SettingsFormViewModel {
             global_settings: ui_state.global_settings.clone(),
             workspace_settings: ui_state.settings.clone(),
             workspace_overrides: ui_state.workspace_overrides.clone(),
+        }
+    }
+}
+
+impl FileTreeViewModel {
+    pub fn from_file_state(file_state: &FileState) -> Self {
+        Self {
+            nodes: file_state.file_tree.clone(),
+            expanded_paths: file_state.expanded_paths.clone(),
+            selected_path: file_state.selected_path.clone(),
         }
     }
 }
@@ -1148,6 +1166,22 @@ mod tests {
         assert_eq!(model.workspace_settings.theme, Theme::Dark);
         assert_eq!(model.workspace_settings.font_size, 18);
         assert_eq!(model.workspace_overrides.theme, Some(Theme::Dark));
+    }
+
+    #[test]
+    fn file_tree_view_model_exposes_tree_expansion_and_selection() {
+        let mut fixture = view_model_fixture();
+        fixture
+            .file_state
+            .expanded_paths
+            .insert(PathBuf::from("notes"));
+        fixture.file_state.select_path(PathBuf::from("notes/a.md"));
+
+        let model = FileTreeViewModel::from_file_state(&fixture.file_state);
+
+        assert_eq!(model.nodes.len(), fixture.file_state.file_tree.len());
+        assert!(model.expanded_paths.contains(&PathBuf::from("notes")));
+        assert_eq!(model.selected_path, Some(PathBuf::from("notes/a.md")));
     }
 
     #[test]
