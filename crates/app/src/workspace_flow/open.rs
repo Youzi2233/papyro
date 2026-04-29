@@ -1,6 +1,6 @@
 use super::utils::current_workspace;
 use anyhow::{bail, Result};
-use papyro_core::models::{DocumentStats, RecentFile, Workspace};
+use papyro_core::models::{DocumentStats, RecentFile, SaveStatus, Workspace};
 use papyro_core::storage::{NoteStorage, OpenedNote, WorkspaceBootstrap};
 use papyro_core::{open_note, EditorTabs, FileState, TabContentsMap, UiState};
 use std::path::{Path, PathBuf};
@@ -115,6 +115,78 @@ where
         path,
         summarize,
     )
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) struct CleanOpenTabRefreshSnapshot {
+    pub tab_id: String,
+    pub path: PathBuf,
+    pub revision: u64,
+}
+
+pub(crate) fn begin_clean_open_tab_refresh(
+    editor_tabs: &EditorTabs,
+    tab_contents: &TabContentsMap,
+    path: &Path,
+) -> Option<CleanOpenTabRefreshSnapshot> {
+    let tab = editor_tabs.tabs.iter().find(|tab| tab.path == path)?;
+    if tab.is_dirty || tab.save_status != SaveStatus::Saved {
+        return None;
+    }
+
+    Some(CleanOpenTabRefreshSnapshot {
+        tab_id: tab.id.clone(),
+        path: tab.path.clone(),
+        revision: tab_contents.revision_for_tab(&tab.id)?,
+    })
+}
+
+pub(crate) fn read_clean_open_tab_refresh_from_storage<S>(
+    storage: &dyn NoteStorage,
+    file_state: &FileState,
+    path: &Path,
+    summarize: S,
+) -> Result<(OpenedNote, DocumentStats)>
+where
+    S: FnOnce(&str) -> DocumentStats,
+{
+    let workspace = current_workspace(file_state)?;
+    load_opened_markdown(storage, &workspace, path, summarize)
+}
+
+pub(crate) fn apply_clean_open_tab_refresh(
+    file_state: &mut FileState,
+    editor_tabs: &mut EditorTabs,
+    tab_contents: &mut TabContentsMap,
+    snapshot: &CleanOpenTabRefreshSnapshot,
+    opened_note: OpenedNote,
+    stats: DocumentStats,
+) -> bool {
+    let Some(tab) = editor_tabs.tab_by_id(&snapshot.tab_id) else {
+        return false;
+    };
+    if tab.path != snapshot.path
+        || tab.is_dirty
+        || tab.save_status != SaveStatus::Saved
+        || tab_contents.revision_for_tab(&snapshot.tab_id) != Some(snapshot.revision)
+        || tab_contents.content_for_tab(&snapshot.tab_id) == Some(opened_note.content.as_str())
+    {
+        return false;
+    }
+
+    let title = opened_note.tab.title.clone();
+    let selected_path = opened_note.tab.path.clone();
+    let recent_files = opened_note.recent_files.clone();
+    let content = opened_note.content;
+
+    if !tab_contents.replace_saved_content(&snapshot.tab_id, content, stats) {
+        return false;
+    }
+
+    editor_tabs.mark_tab_saved(&snapshot.tab_id, title);
+    file_state.recent_files = recent_files;
+    file_state.select_path(selected_path);
+    true
 }
 
 #[derive(Debug, Clone, PartialEq)]

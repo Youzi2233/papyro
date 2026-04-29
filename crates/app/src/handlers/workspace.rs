@@ -173,6 +173,34 @@ pub fn summarize_watch_events(
     summary
 }
 
+pub fn clean_modified_open_tab_paths(
+    events: &[papyro_storage::fs::WatchEvent],
+    workspace_path: &Path,
+    editor_tabs: &EditorTabs,
+) -> Vec<PathBuf> {
+    let mut paths = Vec::new();
+
+    for event in events {
+        let papyro_storage::fs::WatchEvent::Modified(path) = event else {
+            continue;
+        };
+        if !path.starts_with(workspace_path)
+            || !editor_tabs.tabs.iter().any(|tab| {
+                tab.path == *path
+                    && !tab.is_dirty
+                    && tab.save_status == papyro_core::models::SaveStatus::Saved
+            })
+            || paths.contains(path)
+        {
+            continue;
+        }
+
+        paths.push(path.clone());
+    }
+
+    paths
+}
+
 pub fn should_refresh_for_event(
     event: &papyro_storage::fs::WatchEvent,
     workspace_path: &Path,
@@ -368,6 +396,46 @@ mod tests {
         assert_eq!(
             summary.external_message.as_deref(),
             Some("Draft changed outside Papyro while it has unsaved edits. Save may overwrite the external version.")
+        );
+    }
+
+    #[test]
+    fn clean_modified_open_tab_paths_collects_unique_clean_tabs() {
+        let editor_tabs = EditorTabs {
+            tabs: vec![
+                tab("Draft", "workspace/notes/draft.md"),
+                tab("Other", "workspace/notes/other.md"),
+            ],
+            active_tab_id: Some("draft".to_string()),
+        };
+        let events = vec![
+            papyro_storage::fs::WatchEvent::Modified(PathBuf::from("workspace/notes/draft.md")),
+            papyro_storage::fs::WatchEvent::Modified(PathBuf::from("workspace/notes/draft.md")),
+            papyro_storage::fs::WatchEvent::Modified(PathBuf::from("outside.md")),
+            papyro_storage::fs::WatchEvent::Deleted(PathBuf::from("workspace/notes/other.md")),
+        ];
+
+        assert_eq!(
+            clean_modified_open_tab_paths(&events, Path::new("workspace"), &editor_tabs),
+            vec![PathBuf::from("workspace/notes/draft.md")]
+        );
+    }
+
+    #[test]
+    fn clean_modified_open_tab_paths_skips_dirty_tabs() {
+        let mut dirty_tab = tab("Draft", "workspace/notes/draft.md");
+        dirty_tab.is_dirty = true;
+        dirty_tab.save_status = SaveStatus::Dirty;
+        let editor_tabs = EditorTabs {
+            tabs: vec![dirty_tab],
+            active_tab_id: Some("draft".to_string()),
+        };
+        let events = vec![papyro_storage::fs::WatchEvent::Modified(PathBuf::from(
+            "workspace/notes/draft.md",
+        ))];
+
+        assert!(
+            clean_modified_open_tab_paths(&events, Path::new("workspace"), &editor_tabs).is_empty()
         );
     }
 }

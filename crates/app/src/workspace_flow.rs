@@ -15,7 +15,10 @@ mod tests;
 pub(crate) use create::{create_folder_in_storage, create_note_in_storage};
 pub(crate) use delete::{delete_selected_path, empty_trash, restore_trashed_note};
 pub(crate) use move_path::move_selected_path;
-pub(crate) use open::open_markdown_target_from_storage;
+pub(crate) use open::{
+    apply_clean_open_tab_refresh, begin_clean_open_tab_refresh, open_markdown_target_from_storage,
+    read_clean_open_tab_refresh_from_storage,
+};
 #[cfg(test)]
 pub(crate) use open::{open_markdown_from_storage, open_note_from_storage};
 pub(crate) use reload::{

@@ -2,10 +2,16 @@ use crate::handlers::workspace;
 use crate::perf::{perf_timer, trace_editor_input_change};
 use crate::state::RuntimeState;
 use crate::workspace_flow::{
-    apply_save_failure, apply_save_success, begin_save_tab, write_save_snapshot, SaveTabSnapshot,
+    apply_clean_open_tab_refresh, apply_save_failure, apply_save_success,
+    begin_clean_open_tab_refresh, begin_save_tab, read_clean_open_tab_refresh_from_storage,
+    write_save_snapshot, SaveTabSnapshot,
 };
 use dioxus::prelude::*;
-use papyro_core::{models::DocumentStats, NoteStorage, RecentFile, SavedNote};
+use papyro_core::{
+    models::DocumentStats, EditorTabs, FileState, NoteStorage, RecentFile, SavedNote,
+    TabContentsMap,
+};
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -251,7 +257,8 @@ fn apply_flush_failure(mut state: RuntimeState, snapshot: &SaveTabSnapshot) -> b
 
 pub(crate) fn use_workspace_watcher(state: RuntimeState, storage: Arc<dyn NoteStorage>) {
     let mut file_state = state.file_state;
-    let editor_tabs = state.editor_tabs;
+    let mut editor_tabs = state.editor_tabs;
+    let mut tab_contents = state.tab_contents;
     let mut status_message = state.status_message;
     let workspace_watch_path = state.workspace_watch_path;
 
@@ -279,7 +286,12 @@ pub(crate) fn use_workspace_watcher(state: RuntimeState, storage: Arc<dyn NoteSt
                 let editor_tabs_snapshot = editor_tabs.read().clone();
                 let summary =
                     workspace::summarize_watch_events(&events, &path, &editor_tabs_snapshot);
-                if !summary.should_refresh && summary.external_message.is_none() {
+                let clean_refresh_paths =
+                    workspace::clean_modified_open_tab_paths(&events, &path, &editor_tabs_snapshot);
+                if !summary.should_refresh
+                    && summary.external_message.is_none()
+                    && clean_refresh_paths.is_empty()
+                {
                     continue;
                 }
 
@@ -292,10 +304,76 @@ pub(crate) fn use_workspace_watcher(state: RuntimeState, storage: Arc<dyn NoteSt
                     )
                     .await;
                 }
+                refresh_clean_modified_tabs(
+                    storage.clone(),
+                    &mut file_state,
+                    &mut editor_tabs,
+                    &mut tab_contents,
+                    &mut status_message,
+                    clean_refresh_paths,
+                )
+                .await;
                 if let Some(message) = summary.external_message {
                     status_message.set(Some(message));
                 }
             }
         }
     });
+}
+
+async fn refresh_clean_modified_tabs(
+    storage: Arc<dyn NoteStorage>,
+    file_state: &mut Signal<FileState>,
+    editor_tabs: &mut Signal<EditorTabs>,
+    tab_contents: &mut Signal<TabContentsMap>,
+    status_message: &mut Signal<Option<String>>,
+    paths: Vec<PathBuf>,
+) {
+    for path in paths {
+        let snapshot = {
+            let editor_tabs = editor_tabs.read();
+            let tab_contents = tab_contents.read();
+            begin_clean_open_tab_refresh(&editor_tabs, &tab_contents, &path)
+        };
+        let Some(snapshot) = snapshot else {
+            continue;
+        };
+
+        let file_state_snapshot = file_state.read().clone();
+        let storage = storage.clone();
+        let path_for_io = path.clone();
+        let result = tokio::task::spawn_blocking(move || {
+            read_clean_open_tab_refresh_from_storage(
+                storage.as_ref(),
+                &file_state_snapshot,
+                &path_for_io,
+                papyro_editor::parser::summarize_markdown,
+            )
+        })
+        .await;
+
+        match result {
+            Ok(Ok((opened_note, stats))) => {
+                let mut file_state = file_state.write();
+                let mut editor_tabs = editor_tabs.write();
+                let mut tab_contents = tab_contents.write();
+                if apply_clean_open_tab_refresh(
+                    &mut file_state,
+                    &mut editor_tabs,
+                    &mut tab_contents,
+                    &snapshot,
+                    opened_note,
+                    stats,
+                ) {
+                    status_message.set(Some(format!("Refreshed {} from disk", path.display())));
+                }
+            }
+            Ok(Err(error)) => {
+                status_message.set(Some(format!("Refresh changed file failed: {error}")));
+            }
+            Err(error) => {
+                status_message.set(Some(format!("Refresh changed file failed: {error}")));
+            }
+        }
+    }
 }

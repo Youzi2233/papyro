@@ -105,6 +105,111 @@ fn open_markdown_flow_uses_path_target_and_updates_state() {
 }
 
 #[test]
+fn clean_open_tab_refresh_replaces_content_from_storage() {
+    let note_path = PathBuf::from("workspace/notes/a.md");
+    let opened_note = OpenedNote {
+        tab: tab("tab-a", "note-a", "workspace/notes/a.md"),
+        content: "# New".to_string(),
+        recent_files: vec![recent_file("note-a", "notes/a.md")],
+    };
+    let storage = MockStorage {
+        opened_notes: HashMap::from([(note_path.clone(), opened_note)]),
+        ..MockStorage::default()
+    };
+    let mut file_state = file_state_with_tree(vec![note_node("workspace/notes/a.md", "note-a")]);
+    let mut editor_tabs = EditorTabs::default();
+    editor_tabs.open_tab(tab("tab-a", "note-a", "workspace/notes/a.md"));
+    let mut tab_contents = TabContentsMap::default();
+    tab_contents.insert_tab(
+        "tab-a".to_string(),
+        "# Old".to_string(),
+        DocumentStats::default(),
+    );
+
+    let snapshot = begin_clean_open_tab_refresh(&editor_tabs, &tab_contents, &note_path)
+        .expect("clean tab can refresh");
+    let (opened_note, stats) =
+        read_clean_open_tab_refresh_from_storage(&storage, &file_state, &note_path, |content| {
+            DocumentStats {
+                char_count: content.len(),
+                ..DocumentStats::default()
+            }
+        })
+        .expect("refresh content loads");
+
+    assert!(apply_clean_open_tab_refresh(
+        &mut file_state,
+        &mut editor_tabs,
+        &mut tab_contents,
+        &snapshot,
+        opened_note,
+        stats,
+    ));
+
+    assert_eq!(tab_contents.content_for_tab("tab-a"), Some("# New"));
+    assert_eq!(
+        tab_contents
+            .stats_snapshot_for_tab("tab-a")
+            .map(|stats| stats.stats),
+        Some(DocumentStats {
+            char_count: 5,
+            ..DocumentStats::default()
+        })
+    );
+    assert_eq!(file_state.selected_path, Some(note_path));
+    assert_eq!(
+        file_state.recent_files,
+        vec![recent_file("note-a", "notes/a.md")]
+    );
+    assert_eq!(
+        editor_tabs
+            .tab_by_id("tab-a")
+            .map(|tab| (tab.is_dirty, tab.save_status.clone())),
+        Some((false, SaveStatus::Saved))
+    );
+}
+
+#[test]
+fn clean_open_tab_refresh_does_not_overwrite_new_dirty_content() {
+    let note_path = PathBuf::from("workspace/notes/a.md");
+    let mut file_state = file_state_with_tree(vec![note_node("workspace/notes/a.md", "note-a")]);
+    let mut editor_tabs = EditorTabs::default();
+    editor_tabs.open_tab(tab("tab-a", "note-a", "workspace/notes/a.md"));
+    let mut tab_contents = TabContentsMap::default();
+    tab_contents.insert_tab(
+        "tab-a".to_string(),
+        "# Old".to_string(),
+        DocumentStats::default(),
+    );
+    let snapshot = begin_clean_open_tab_refresh(&editor_tabs, &tab_contents, &note_path)
+        .expect("clean tab can refresh");
+    tab_contents.update_tab_content("tab-a", "# User edit".to_string());
+    editor_tabs.mark_tab_dirty("tab-a");
+    let opened_note = OpenedNote {
+        tab: tab("tab-a", "note-a", "workspace/notes/a.md"),
+        content: "# External".to_string(),
+        recent_files: vec![recent_file("note-a", "notes/a.md")],
+    };
+
+    assert!(!apply_clean_open_tab_refresh(
+        &mut file_state,
+        &mut editor_tabs,
+        &mut tab_contents,
+        &snapshot,
+        opened_note,
+        DocumentStats::default(),
+    ));
+
+    assert_eq!(tab_contents.content_for_tab("tab-a"), Some("# User edit"));
+    assert_eq!(
+        editor_tabs
+            .tab_by_id("tab-a")
+            .map(|tab| (tab.is_dirty, tab.save_status.clone())),
+        Some((true, SaveStatus::Dirty))
+    );
+}
+
+#[test]
 fn open_note_flow_reports_storage_failure() {
     let storage = MockStorage::default();
     let mut file_state = file_state_with_tree(Vec::new());
