@@ -1,5 +1,5 @@
 use super::bridge::{send_editor_destroy_batch, EditorBridgeMap};
-use super::document_cache::{DocumentDerivedCache, DocumentDerivedCacheState};
+use super::document_cache::{DocumentCacheKey, DocumentDerivedCache, DocumentDerivedCacheState};
 use super::host::EditorHost;
 use super::outline::OutlinePane;
 use super::preview::{PreviewLinkBridge, PreviewPane};
@@ -14,7 +14,13 @@ use crate::perf::{
 use crate::view_model::{EditorHostItemViewModel, EditorSurfaceViewModel};
 use dioxus::prelude::*;
 use papyro_core::models::ViewMode;
+use papyro_core::DocumentSnapshot;
+use papyro_editor::parser::{
+    analyze_markdown_block_snapshot_with_options, MarkdownBlockAnalysisOptions,
+    MarkdownBlockHintSet,
+};
 use std::collections::HashMap;
+use std::sync::Arc;
 
 #[derive(Debug, Clone, PartialEq)]
 struct EditorTypography {
@@ -58,10 +64,58 @@ pub fn EditorPane() -> Element {
     let outline_visible = surface_model.outline_visible;
     let editor_style = editor_style(&editor_typography);
     let bridges: EditorBridgeMap = use_context_provider(|| Signal::new(HashMap::new()));
-    let _document_cache: DocumentDerivedCache =
+    let document_cache: DocumentDerivedCache =
         use_context_provider(DocumentDerivedCacheState::shared);
     let mut host_lifecycle_state = use_signal(HashMap::<String, bool>::new);
+    let mut block_hint_state = use_signal(|| None::<BlockHintDerivationState>);
+    let block_hint_cache = document_cache.clone();
     let pane = pane_model();
+
+    use_effect(use_reactive(
+        (&pane.active_document, &view_mode),
+        move |(document, view_mode)| {
+            if view_mode != ViewMode::Hybrid {
+                block_hint_state.set(None);
+                return;
+            }
+
+            let Some(document) = document else {
+                block_hint_state.set(None);
+                return;
+            };
+
+            let key = DocumentCacheKey::from_snapshot(&document);
+            if let Some(hints) = block_hint_cache.borrow().block_hints(&key) {
+                block_hint_state.set(Some(BlockHintDerivationState {
+                    key: Some(key),
+                    hints: Some(hints),
+                }));
+                return;
+            }
+
+            let input = BlockHintDerivationInput::from_document(key.clone(), &document);
+            block_hint_state.set(Some(BlockHintDerivationState {
+                key: Some(key.clone()),
+                hints: None,
+            }));
+
+            let mut state = block_hint_state;
+            let cache = block_hint_cache.clone();
+            spawn(async move {
+                let result = derive_block_hints_async(input).await;
+                if !block_hint_result_matches_current(state.peek().as_ref(), &key) {
+                    return;
+                }
+
+                if let Some(hints) = result.hints.as_ref() {
+                    cache
+                        .borrow_mut()
+                        .insert_block_hints(key.clone(), hints.clone());
+                }
+                state.set(Some(result));
+            });
+        },
+    ));
 
     use_effect(use_reactive((&pane.host_items,), move |(host_items,)| {
         let perf_started_at = perf_timer();
@@ -112,6 +166,16 @@ pub fn EditorPane() -> Element {
         perf_started_at,
     );
 
+    let active_document_key = pane
+        .active_document
+        .as_ref()
+        .map(DocumentCacheKey::from_snapshot);
+    let block_hints = resolve_block_hints(
+        &document_cache,
+        active_document_key.as_ref(),
+        block_hint_state.read().as_ref(),
+    );
+
     rsx! {
         main { class: "mn-editor", style: "{editor_style}",
             PreviewLinkBridge {
@@ -140,6 +204,10 @@ pub fn EditorPane() -> Element {
                                             tab_id: host.tab_id.clone(),
                                             is_visible: host.is_active && view_mode.is_editable(),
                                             initial_content: host.initial_content.clone(),
+                                            block_hints: block_hints_for_host(
+                                                host.is_active,
+                                                block_hints.as_ref(),
+                                            ),
                                             view_mode: host_runtime_view_mode(host.is_active, &view_mode),
                                             auto_link_paste: host_runtime_auto_link_paste(
                                                 host.is_active,
@@ -178,6 +246,7 @@ pub fn EditorPane() -> Element {
                                     tab_id: host.tab_id.clone(),
                                     is_visible: false,
                                     initial_content: host.initial_content.clone(),
+                                    block_hints: None,
                                     view_mode: host_runtime_view_mode(false, &view_mode),
                                     auto_link_paste: host_runtime_auto_link_paste(
                                         false,
@@ -232,6 +301,28 @@ struct HostLifecycleChange {
     retired: Vec<String>,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+struct BlockHintDerivationState {
+    key: Option<DocumentCacheKey>,
+    hints: Option<MarkdownBlockHintSet>,
+}
+
+struct BlockHintDerivationInput {
+    key: DocumentCacheKey,
+    revision: u64,
+    content: Arc<str>,
+}
+
+impl BlockHintDerivationInput {
+    fn from_document(key: DocumentCacheKey, document: &DocumentSnapshot) -> Self {
+        Self {
+            key,
+            revision: document.revision,
+            content: document.content.clone(),
+        }
+    }
+}
+
 impl HostLifecycleChange {
     fn has_changes(&self) -> bool {
         !self.created.is_empty()
@@ -277,6 +368,59 @@ fn host_lifecycle_change(
     change
 }
 
+fn resolve_block_hints(
+    document_cache: &DocumentDerivedCache,
+    key: Option<&DocumentCacheKey>,
+    state: Option<&BlockHintDerivationState>,
+) -> Option<MarkdownBlockHintSet> {
+    if let Some(hints) = key.and_then(|key| document_cache.borrow().block_hints(key)) {
+        return Some(hints);
+    }
+
+    state
+        .filter(|state| state.key.as_ref() == key)
+        .and_then(|state| state.hints.clone())
+}
+
+async fn derive_block_hints_async(input: BlockHintDerivationInput) -> BlockHintDerivationState {
+    let key = input.key.clone();
+    let result = tokio::task::spawn_blocking(move || {
+        analyze_markdown_block_snapshot_with_options(
+            input.content.as_ref(),
+            input.revision,
+            MarkdownBlockAnalysisOptions::interactive(),
+        )
+    })
+    .await;
+
+    let hints = match result {
+        Ok(hints) => Some(hints),
+        Err(error) => {
+            tracing::warn!(error = %error, "markdown block hint derivation failed");
+            None
+        }
+    };
+
+    BlockHintDerivationState {
+        key: Some(key),
+        hints,
+    }
+}
+
+fn block_hint_result_matches_current(
+    state: Option<&BlockHintDerivationState>,
+    key: &DocumentCacheKey,
+) -> bool {
+    state.and_then(|state| state.key.as_ref()) == Some(key)
+}
+
+fn block_hints_for_host(
+    is_active: bool,
+    block_hints: Option<&MarkdownBlockHintSet>,
+) -> Option<MarkdownBlockHintSet> {
+    is_active.then(|| block_hints.cloned()).flatten()
+}
+
 fn host_lifecycle_map(current: &[EditorHostItemViewModel]) -> HashMap<String, bool> {
     current
         .iter()
@@ -299,12 +443,30 @@ fn host_runtime_auto_link_paste(is_active: bool, auto_link_paste: bool) -> bool 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use papyro_editor::parser::MarkdownBlockFallback;
 
     fn host_item(tab_id: &str, is_active: bool) -> EditorHostItemViewModel {
         EditorHostItemViewModel {
             tab_id: tab_id.to_string(),
             is_active,
             initial_content: Default::default(),
+        }
+    }
+
+    fn snapshot(tab_id: &str, revision: u64, content: &str) -> DocumentSnapshot {
+        DocumentSnapshot {
+            tab_id: tab_id.to_string(),
+            path: std::path::PathBuf::from(format!("{tab_id}.md")),
+            revision,
+            content: Arc::from(content),
+        }
+    }
+
+    fn block_hints(revision: u64) -> MarkdownBlockHintSet {
+        MarkdownBlockHintSet {
+            revision,
+            fallback: MarkdownBlockFallback::None,
+            blocks: Vec::new(),
         }
     }
 
@@ -375,5 +537,45 @@ mod tests {
         );
         assert!(host_runtime_auto_link_paste(true, true));
         assert!(!host_runtime_auto_link_paste(true, false));
+    }
+
+    #[test]
+    fn block_hints_only_route_to_active_host() {
+        let hints = block_hints(3);
+
+        assert_eq!(block_hints_for_host(true, Some(&hints)), Some(hints));
+        assert_eq!(block_hints_for_host(false, Some(&block_hints(4))), None);
+        assert_eq!(block_hints_for_host(true, None), None);
+    }
+
+    #[test]
+    fn resolve_block_hints_rejects_stale_state() {
+        let cache = DocumentDerivedCacheState::shared();
+        let document = snapshot("a", 2, "# Current");
+        let stale = snapshot("a", 1, "# Old");
+        let current_key = DocumentCacheKey::from_snapshot(&document);
+        let stale_key = DocumentCacheKey::from_snapshot(&stale);
+        let state = BlockHintDerivationState {
+            key: Some(stale_key),
+            hints: Some(block_hints(1)),
+        };
+
+        assert_eq!(
+            resolve_block_hints(&cache, Some(&current_key), Some(&state)),
+            None
+        );
+    }
+
+    #[test]
+    fn resolve_block_hints_prefers_cached_document_match() {
+        let cache = DocumentDerivedCacheState::shared();
+        let document = snapshot("a", 2, "# Current");
+        let key = DocumentCacheKey::from_snapshot(&document);
+        let hints = block_hints(2);
+        cache
+            .borrow_mut()
+            .insert_block_hints(key.clone(), hints.clone());
+
+        assert_eq!(resolve_block_hints(&cache, Some(&key), None), Some(hints));
     }
 }

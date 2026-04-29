@@ -67,6 +67,41 @@ export function setEditorPreferences(entry, preferences) {
   return entry.preferences;
 }
 
+export function normalizeBlockHints(hints) {
+  if (!hints || typeof hints !== "object") return null;
+
+  const revision = Number(hints.revision);
+  if (!Number.isSafeInteger(revision) || revision < 0) return null;
+
+  const fallback =
+    hints.fallback && typeof hints.fallback === "object"
+      ? hints.fallback
+      : { type: "none" };
+  const blocks = Array.isArray(hints.blocks) ? hints.blocks : [];
+
+  return {
+    revision,
+    fallback,
+    blocks,
+  };
+}
+
+export function blockHintsEqual(left, right) {
+  return left?.revision === right?.revision;
+}
+
+export function setBlockHints(entry, hints) {
+  const nextHints = normalizeBlockHints(hints);
+  if (!nextHints) return null;
+
+  if (blockHintsEqual(entry.blockHints, nextHints)) {
+    return entry.blockHints;
+  }
+
+  entry.blockHints = nextHints;
+  return entry.blockHints;
+}
+
 export function isPlainUrl(text) {
   return /^https?:\/\/[^\s<>()]+$/i.test(text.trim());
 }
@@ -905,6 +940,7 @@ export function attachViewToTab({
     suppressChange: true,
     viewMode: "hybrid",
     preferences: normalizeEditorPreferences(),
+    blockHints: null,
   };
   editorRegistry.set(tabId, entry);
   setPreferences(entry, entry.preferences);
@@ -939,6 +975,7 @@ export function handleRustMessage(editorRegistry, tabId, message, options = {}) 
   const refreshEditorLayout = options.refreshEditorLayout ?? (() => {});
   const setMode = options.setViewMode ?? setViewMode;
   const setPreferences = options.setEditorPreferences ?? setEditorPreferences;
+  const setHints = options.setBlockHints ?? setBlockHints;
 
   switch (message.type) {
     case "set_content": {
@@ -985,6 +1022,14 @@ export function handleRustMessage(editorRegistry, tabId, message, options = {}) 
       }
       setPreferences(entry, message);
       return "preferences_updated";
+    case "set_block_hints": {
+      if (!entry) return "missing";
+      const current = entry.blockHints;
+      const next = setHints(entry, message.hints);
+      if (!next) return "block_hints_invalid";
+      if (blockHintsEqual(current, next)) return "block_hints_unchanged";
+      return "block_hints_updated";
+    }
     case "focus":
       if (!entry) return "missing";
       entry.view.focus();

@@ -1,5 +1,5 @@
 use papyro_core::DocumentSnapshot;
-use papyro_editor::parser::OutlineItem;
+use papyro_editor::parser::{MarkdownBlockHintSet, OutlineItem};
 use papyro_editor::performance::PreviewPolicy;
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -13,6 +13,7 @@ pub(super) type DocumentDerivedCache = Rc<RefCell<DocumentDerivedCacheState>>;
 pub(super) struct DocumentDerivedCacheState {
     previews: HashMap<DocumentCacheKey, CachedPreview>,
     outlines: HashMap<DocumentCacheKey, Vec<OutlineItem>>,
+    block_hints: HashMap<DocumentCacheKey, MarkdownBlockHintSet>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -54,6 +55,18 @@ impl DocumentDerivedCacheState {
 
     pub(super) fn insert_outline(&mut self, key: DocumentCacheKey, outline: Vec<OutlineItem>) {
         insert_bounded(&mut self.outlines, key, outline);
+    }
+
+    pub(super) fn block_hints(&self, key: &DocumentCacheKey) -> Option<MarkdownBlockHintSet> {
+        self.block_hints.get(key).cloned()
+    }
+
+    pub(super) fn insert_block_hints(
+        &mut self,
+        key: DocumentCacheKey,
+        hints: MarkdownBlockHintSet,
+    ) {
+        insert_bounded(&mut self.block_hints, key, hints);
     }
 }
 

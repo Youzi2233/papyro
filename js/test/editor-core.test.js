@@ -20,6 +20,7 @@ import {
   markdownListIndentChange,
   markdownListEnterChange,
   markdownShortcutSpaceChange,
+  normalizeBlockHints,
   normalizeEditorPreferences,
   nextLayoutSize,
   normalizeViewMode,
@@ -975,6 +976,49 @@ test("set_preferences ignores duplicate runtime commands", () => {
     "preferences_unchanged",
   );
   assert.equal(preferenceWrites, 0);
+});
+
+test("normalize_block_hints keeps revisioned hint payloads", () => {
+  assert.deepEqual(
+    normalizeBlockHints({
+      revision: "7",
+      fallback: { type: "none" },
+      blocks: [{ kind: { type: "heading", level: 1 }, start_line: 1 }],
+    }),
+    {
+      revision: 7,
+      fallback: { type: "none" },
+      blocks: [{ kind: { type: "heading", level: 1 }, start_line: 1 }],
+    },
+  );
+  assert.equal(normalizeBlockHints({ revision: -1, blocks: [] }), null);
+  assert.equal(normalizeBlockHints(null), null);
+});
+
+test("set_block_hints stores revisioned runtime hints", () => {
+  const registry = new Map();
+  const view = fakeView("body");
+
+  attach(registry, view, "tab-a", "body");
+
+  const result = handleRustMessage(registry, "tab-a", {
+    type: "set_block_hints",
+    hints: {
+      revision: 2,
+      fallback: { type: "none" },
+      blocks: [{ kind: { type: "paragraph" }, start_line: 1, end_line: 1 }],
+    },
+  });
+
+  assert.equal(result, "block_hints_updated");
+  assert.equal(registry.get("tab-a").blockHints.revision, 2);
+  assert.equal(
+    handleRustMessage(registry, "tab-a", {
+      type: "set_block_hints",
+      hints: { revision: 2, fallback: { type: "none" }, blocks: [] },
+    }),
+    "block_hints_unchanged",
+  );
 });
 
 test("insert_markdown message inserts markdown into editor", () => {

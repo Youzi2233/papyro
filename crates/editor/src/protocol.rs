@@ -1,3 +1,4 @@
+use crate::parser::MarkdownBlockHintSet;
 use papyro_core::models::ViewMode;
 use serde::{Deserialize, Serialize};
 
@@ -30,6 +31,7 @@ pub enum EditorEvent {
 pub enum EditorCommand {
     SetContent { content: String },
     SetViewMode { mode: ViewMode },
+    SetBlockHints { hints: MarkdownBlockHintSet },
     SetPreferences { auto_link_paste: bool },
     InsertMarkdown { markdown: String },
     ApplyFormat { kind: EditorFormat },
@@ -92,6 +94,42 @@ mod tests {
         .unwrap();
 
         assert_eq!(value, json!({ "type": "set_view_mode", "mode": "Hybrid" }));
+    }
+
+    #[test]
+    fn serializes_set_block_hints_command() {
+        let value = serde_json::to_value(EditorCommand::SetBlockHints {
+            hints: MarkdownBlockHintSet {
+                revision: 3,
+                fallback: crate::parser::MarkdownBlockFallback::None,
+                blocks: vec![crate::parser::MarkdownBlock {
+                    kind: crate::parser::MarkdownBlockKind::Heading { level: 1 },
+                    start_byte: 0,
+                    end_byte: 8,
+                    start_line: 1,
+                    end_line: 1,
+                }],
+            },
+        })
+        .unwrap();
+
+        assert_eq!(
+            value,
+            json!({
+                "type": "set_block_hints",
+                "hints": {
+                    "revision": 3,
+                    "fallback": { "type": "none" },
+                    "blocks": [{
+                        "kind": { "type": "heading", "level": 1 },
+                        "start_byte": 0,
+                        "end_byte": 8,
+                        "start_line": 1,
+                        "end_line": 1
+                    }]
+                }
+            })
+        );
     }
 
     #[test]

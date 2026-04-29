@@ -8,12 +8,14 @@ use crate::perf::{perf_timer, trace_editor_set_preferences, trace_editor_set_vie
 use crate::view_model::EditorHostInitialContent;
 use dioxus::prelude::*;
 use papyro_core::models::ViewMode;
+use papyro_editor::parser::MarkdownBlockHintSet;
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 struct EditorCommandCache {
     view_mode: Option<ViewMode>,
     auto_link_paste: Option<bool>,
+    block_hints_revision: Option<u64>,
 }
 
 #[component]
@@ -21,6 +23,7 @@ pub(super) fn EditorHost(
     tab_id: String,
     is_visible: bool,
     initial_content: EditorHostInitialContent,
+    block_hints: Option<MarkdownBlockHintSet>,
     view_mode: ViewMode,
     auto_link_paste: bool,
 ) -> Element {
@@ -249,6 +252,23 @@ pub(super) fn EditorHost(
     ));
 
     use_effect(use_reactive(
+        (&tab_id, &is_visible, &block_hints, &runtime_ready),
+        move |(tab_id, is_visible, block_hints, runtime_ready)| {
+            if !is_visible || !runtime_ready {
+                return;
+            }
+
+            let Some(hints) = block_hints else {
+                return;
+            };
+
+            if let Some(bridge) = bridges.read().get(&tab_id) {
+                send_set_block_hints(&bridge.eval, command_cache, &tab_id, hints);
+            }
+        },
+    ));
+
+    use_effect(use_reactive(
         (&tab_id, &runtime_ready, &runtime_command_revision),
         move |(tab_id, runtime_ready, _revision)| {
             if !runtime_ready || !editor_runtime_commands.has_pending_for_tab(&tab_id) {
@@ -330,6 +350,20 @@ fn send_set_preferences(
     trace_editor_set_preferences(tab_id, auto_link_paste, started_at);
 }
 
+fn send_set_block_hints(
+    eval: &dioxus::document::Eval,
+    mut command_cache: Signal<EditorCommandCache>,
+    _tab_id: &str,
+    hints: MarkdownBlockHintSet,
+) {
+    let changed = command_cache.with_mut(|cache| record_block_hints_change(cache, hints.revision));
+    if !changed {
+        return;
+    }
+
+    let _ = eval.send(EditorCommand::SetBlockHints { hints });
+}
+
 fn bridge_eval_for_instance(
     bridges: EditorBridgeMap,
     tab_id: &str,
@@ -380,6 +414,15 @@ fn record_view_mode_change(command_cache: &mut EditorCommandCache, mode: ViewMod
     true
 }
 
+fn record_block_hints_change(command_cache: &mut EditorCommandCache, revision: u64) -> bool {
+    if command_cache.block_hints_revision == Some(revision) {
+        return false;
+    }
+
+    command_cache.block_hints_revision = Some(revision);
+    true
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -409,5 +452,15 @@ mod tests {
         assert!(!record_view_mode_change(&mut cache, ViewMode::Hybrid));
         assert!(record_view_mode_change(&mut cache, ViewMode::Preview));
         assert!(!record_view_mode_change(&mut cache, ViewMode::Preview));
+    }
+
+    #[test]
+    fn block_hints_change_is_idempotent_by_revision() {
+        let mut cache = EditorCommandCache::default();
+
+        assert!(record_block_hints_change(&mut cache, 1));
+        assert!(!record_block_hints_change(&mut cache, 1));
+        assert!(record_block_hints_change(&mut cache, 2));
+        assert!(!record_block_hints_change(&mut cache, 2));
     }
 }

@@ -46,6 +46,8 @@ import {
   pasteMarkdownLinkInView,
   recycleEditor as recycleEditorCore,
   requestSaveForView,
+  blockHintsEqual,
+  setBlockHints as setBlockHintsCore,
   setEditorPreferences as setEditorPreferencesCore,
   setViewMode as setViewModeCore,
   viewIsComposing,
@@ -111,6 +113,7 @@ function placeCursorAtDrop(view, event) {
 }
 
 const setViewModeEffect = StateEffect.define();
+const setBlockHintsEffect = StateEffect.define();
 const EDITOR_COMPOSITION_CLASS = "cm-composition-active";
 const viewModeField = StateField.define({
   create() {
@@ -121,6 +124,17 @@ const viewModeField = StateField.define({
       if (effect.is(setViewModeEffect)) return effect.value;
     }
     return mode;
+  },
+});
+const blockHintsField = StateField.define({
+  create() {
+    return null;
+  },
+  update(hints, transaction) {
+    for (const effect of transaction.effects) {
+      if (effect.is(setBlockHintsEffect)) return effect.value;
+    }
+    return hints;
   },
 });
 
@@ -1120,6 +1134,7 @@ function buildExtensions() {
 
   return [
     viewModeField,
+    blockHintsField,
     lineNumbers(),
     drawSelection(),
     highlightActiveLine(),
@@ -1340,6 +1355,18 @@ function setRuntimePreferences(entry, preferences) {
   return setEditorPreferencesCore(entry, preferences);
 }
 
+function setRuntimeBlockHints(entry, hints) {
+  const currentHints = entry.blockHints;
+  const nextHints = setBlockHintsCore(entry, hints);
+  if (!nextHints) return null;
+  if (blockHintsEqual(currentHints, nextHints)) return nextHints;
+
+  entry.view?.dispatch({
+    effects: setBlockHintsEffect.of(nextHints),
+  });
+  return nextHints;
+}
+
 function attachViewToTab(view, tabId, container, instanceId, initialContent, viewMode) {
   attachViewToTabCore({
     editorRegistry,
@@ -1397,6 +1424,7 @@ function ensureEditor({ tabId, containerId, instanceId = "", initialContent, vie
       suppressChange: false,
       viewMode: "hybrid",
       preferences: normalizeEditorPreferences(),
+      blockHints: null,
     };
     editorRegistry.set(tabId, entry);
     handleRustMessageCore(editorRegistry, tabId, {
@@ -1448,6 +1476,7 @@ window.papyroEditor = {
       applyFormat: applyFormatToView,
       refreshEditorLayout,
       setEditorPreferences: setRuntimePreferences,
+      setBlockHints: setRuntimeBlockHints,
       setViewMode: setEditorViewMode,
     });
   },
