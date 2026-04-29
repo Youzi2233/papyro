@@ -1026,6 +1026,36 @@ test("set_block_hints stores revisioned runtime hints", () => {
   );
 });
 
+test("set_block_hints decoration effects do not change document content", () => {
+  const registry = new Map();
+  const dispatched = [];
+  const view = fakeView("body", { from: 0, to: 0 }, (_view, spec) => {
+    dispatched.push(spec);
+  });
+
+  attach(registry, view, "tab-a", "body");
+
+  const result = handleRustMessage(
+    registry,
+    "tab-a",
+    {
+      type: "set_block_hints",
+      hints: { revision: 3, fallback: { type: "none" }, blocks: [] },
+    },
+    {
+      setBlockHints(entry, hints) {
+        entry.blockHints = normalizeBlockHints(hints);
+        entry.view.dispatch({ effects: ["set_block_hints"] });
+        return entry.blockHints;
+      },
+    },
+  );
+
+  assert.equal(result, "block_hints_updated");
+  assert.equal(view.state.doc.toString(), "body");
+  assert.deepEqual(dispatched, [{ effects: ["set_block_hints"] }]);
+});
+
 test("markdown_decoration_tier separates current near and remote blocks", () => {
   const selections = [
     { fromLine: 10, toLine: 12 },
