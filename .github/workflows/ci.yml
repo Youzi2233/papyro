@@ -61,6 +61,9 @@ jobs:
       - name: File line report
         run: node scripts/report-file-lines.js
 
+      - name: File line report self-test
+        run: node scripts/report-file-lines.js --self-test
+
       - name: Performance smoke checker self-test
         run: node scripts/check-perf-smoke.js --self-test
 

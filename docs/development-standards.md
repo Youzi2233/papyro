@@ -157,11 +157,15 @@ cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo test --workspace
 node scripts/check-workspace-deps.js
 node scripts/report-file-lines.js
+node scripts/report-file-lines.js --self-test
+node scripts/check-perf-smoke.js --self-test
 npm --prefix js run build
 npm --prefix js test
 diff assets/editor.js apps/desktop/assets/editor.js
 diff assets/editor.js apps/mobile/assets/editor.js
 ```
+
+`node scripts/report-file-lines.js` 不只是报告文件体量，也会检查非生成文件的单文件行数预算。默认预算是 2500 行，可用 `PAPYRO_FILE_LINE_LIMIT` 临时调整；`PAPYRO_LINE_REPORT_TOP` 可调整输出的最大文件数量。
 
 在 Windows 环境缺少 Bash 或 `diff` 时，可运行等价 PowerShell 命令，并在 PR 中写明替代方式。
 

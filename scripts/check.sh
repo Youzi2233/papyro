@@ -19,6 +19,9 @@ node scripts/check-workspace-deps.js
 echo "=== file line report ==="
 node scripts/report-file-lines.js
 
+echo "=== file line report self-test ==="
+node scripts/report-file-lines.js --self-test
+
 echo "=== performance smoke checker self-test ==="
 node scripts/check-perf-smoke.js --self-test
 
