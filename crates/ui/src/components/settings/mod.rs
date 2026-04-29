@@ -104,6 +104,7 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
                     h2 { class: "mn-modal-title", "Settings" }
                     button {
                         class: "mn-modal-close",
+                        "aria-label": "Close settings",
                         onclick: move |_| on_close.call(()),
                         "×"
                     }

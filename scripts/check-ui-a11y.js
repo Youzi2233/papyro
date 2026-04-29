@@ -12,6 +12,12 @@ import { extname, join } from "node:path";
 
 const DEFAULT_PATHS = ["crates/ui/src"];
 const ARIA_LABEL_TYPO = /\baria_label\s*:/g;
+const ICON_BUTTON_CLASS_RULES = [
+  {
+    className: "mn-modal-close",
+    description: "modal close button",
+  },
+];
 
 function main() {
   const args = process.argv.slice(2);
@@ -90,7 +96,7 @@ function rustFiles(path) {
 
 function scanFile(file) {
   return scanText(readFileSync(file, "utf8")).map(
-    (line) => `${file}:${line}: use "aria-label" instead of aria_label`,
+    (failure) => `${file}:${failure.line}: ${failure.message}`,
   );
 }
 
@@ -99,16 +105,50 @@ function scanText(source) {
   const lines = source.split(/\r?\n/);
   for (const [index, line] of lines.entries()) {
     if (ARIA_LABEL_TYPO.test(line)) {
-      failures.push(index + 1);
+      failures.push({
+        line: index + 1,
+        message: 'use "aria-label" instead of aria_label',
+      });
     }
     ARIA_LABEL_TYPO.lastIndex = 0;
+
+    for (const rule of ICON_BUTTON_CLASS_RULES) {
+      if (
+        line.includes(`class: "${rule.className}"`) &&
+        !hasAriaLabelNear(lines, index)
+      ) {
+        failures.push({
+          line: index + 1,
+          message: `${rule.description} must include an "aria-label"`,
+        });
+      }
+    }
   }
   return failures;
 }
 
+function hasAriaLabelNear(lines, index) {
+  const start = Math.max(0, index - 2);
+  const end = Math.min(lines.length, index + 8);
+  return lines.slice(start, end).some((line) => line.includes('"aria-label"'));
+}
+
 function runSelfTest() {
   assert(scanText('span { "aria-label": "Close tab" }').length === 0);
-  assert(scanText('span { aria_label: "Close tab" }')[0] === 1);
+  assert(scanText('span { aria_label: "Close tab" }')[0].line === 1);
+  assert(
+    scanText(`button {
+      class: "mn-modal-close",
+      "aria-label": "Close settings",
+      "x"
+    }`).length === 0,
+  );
+  const iconFailures = scanText(`button {
+    class: "mn-modal-close",
+    "x"
+  }`);
+  assert(iconFailures.length === 1);
+  assert(iconFailures[0].message.includes("modal close button"));
 
   const dir = mkdtempSync(join(tmpdir(), "papyro-ui-a11y-"));
   try {
