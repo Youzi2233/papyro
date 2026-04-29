@@ -234,3 +234,49 @@ fn trace_revision(revision: Option<u64>) -> i64 {
 fn trace_content_bytes(content_bytes: Option<usize>) -> i64 {
     content_bytes.map(|bytes| bytes as i64).unwrap_or(-1)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use papyro_core::models::DocumentStats;
+
+    #[test]
+    fn tab_revision_and_bytes_reports_open_tab_metadata() {
+        let mut tab_contents = TabContentsMap::default();
+        tab_contents.insert_tab(
+            "tab-a".to_string(),
+            "hello".to_string(),
+            DocumentStats::default(),
+        );
+        assert_eq!(
+            tab_contents.update_tab_content("tab-a", "hello world".to_string()),
+            Some(1)
+        );
+
+        assert_eq!(
+            tab_revision_and_bytes(&tab_contents, "tab-a"),
+            (Some(1), Some(11))
+        );
+        assert_eq!(
+            tab_revision_and_bytes(&tab_contents, "missing"),
+            (None, None)
+        );
+    }
+
+    #[test]
+    fn missing_trace_fields_use_smoke_checker_sentinels() {
+        assert_eq!(trace_tab_id(Some("tab-a")), "tab-a");
+        assert_eq!(trace_tab_id(None), "none");
+        assert_eq!(trace_revision(Some(7)), 7);
+        assert_eq!(trace_revision(None), -1);
+        assert_eq!(trace_content_bytes(Some(1024)), 1024);
+        assert_eq!(trace_content_bytes(None), -1);
+    }
+
+    #[test]
+    fn theme_names_match_settings_contract() {
+        assert_eq!(theme_name(&Theme::System), "system");
+        assert_eq!(theme_name(&Theme::Light), "light");
+        assert_eq!(theme_name(&Theme::Dark), "dark");
+    }
+}
