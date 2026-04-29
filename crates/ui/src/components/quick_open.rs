@@ -3,7 +3,6 @@ use crate::components::primitives::{Modal, TextInput};
 use crate::context::use_app_context;
 use dioxus::prelude::*;
 use papyro_core::models::{FileNode, FileNodeKind};
-use papyro_core::FileState;
 use std::path::PathBuf;
 
 const QUICK_OPEN_LIMIT: usize = 24;
@@ -71,7 +70,6 @@ pub fn QuickOpenModal(on_close: EventHandler<()>) -> Element {
                                     event.prevent_default();
                                     if let Some(item) = filtered_for_keys.get(active).cloned() {
                                         open_quick_item(
-                                            file_state,
                                             commands_for_keys.clone(),
                                             on_close,
                                             item,
@@ -97,7 +95,6 @@ pub fn QuickOpenModal(on_close: EventHandler<()>) -> Element {
                             QuickOpenRow {
                                 item: filtered[index].clone(),
                                 is_active: index == active,
-                                file_state,
                                 commands: commands.clone(),
                                 on_close,
                             }
@@ -112,7 +109,6 @@ pub fn QuickOpenModal(on_close: EventHandler<()>) -> Element {
 fn QuickOpenRow(
     item: QuickOpenItem,
     is_active: bool,
-    file_state: Signal<FileState>,
     commands: AppCommands,
     on_close: EventHandler<()>,
 ) -> Element {
@@ -122,7 +118,7 @@ fn QuickOpenRow(
         button {
             class: if is_active { "mn-command-row active" } else { "mn-command-row" },
             onclick: move |_| {
-                open_quick_item(file_state, commands.clone(), on_close, item_for_click.clone());
+                open_quick_item(commands.clone(), on_close, item_for_click.clone());
             },
             span { class: "mn-command-row-main",
                 span { class: "mn-command-title", "{item.title}" }
@@ -133,13 +129,7 @@ fn QuickOpenRow(
     }
 }
 
-fn open_quick_item(
-    mut file_state: Signal<FileState>,
-    commands: AppCommands,
-    on_close: EventHandler<()>,
-    item: QuickOpenItem,
-) {
-    file_state.write().select_path(item.path.clone());
+fn open_quick_item(commands: AppCommands, on_close: EventHandler<()>, item: QuickOpenItem) {
     commands
         .open_markdown
         .call(OpenMarkdownTarget { path: item.path });

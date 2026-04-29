@@ -2,7 +2,7 @@ use crate::commands::{AppCommands, OpenMarkdownTarget};
 use crate::components::primitives::{Modal, TextInput};
 use crate::context::use_app_context;
 use dioxus::prelude::*;
-use papyro_core::{FileState, SearchField, SearchHighlight, SearchMatch, SearchResult};
+use papyro_core::{SearchField, SearchHighlight, SearchMatch, SearchResult};
 use std::path::PathBuf;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -56,7 +56,6 @@ impl SearchPreviewModel {
 #[component]
 pub fn SearchModal(on_close: EventHandler<()>) -> Element {
     let app = use_app_context();
-    let file_state = app.file_state;
     let commands = app.commands.clone();
     let workspace_search = app.workspace_search;
     let mut active_index = use_signal(|| 0usize);
@@ -116,7 +115,6 @@ pub fn SearchModal(on_close: EventHandler<()>) -> Element {
                                     event.prevent_default();
                                     if let Some(result) = results_for_keys.get(active).cloned() {
                                         open_search_result(
-                                            file_state,
                                             commands_for_keys.clone(),
                                             on_close,
                                             result.path,
@@ -138,7 +136,6 @@ pub fn SearchModal(on_close: EventHandler<()>) -> Element {
                             SearchResultRow {
                                 result: results[index].clone(),
                                 is_active: index == active,
-                                file_state,
                                 commands: commands.clone(),
                                 on_close,
                             }
@@ -153,7 +150,6 @@ pub fn SearchModal(on_close: EventHandler<()>) -> Element {
 fn SearchResultRow(
     result: SearchResultRowModel,
     is_active: bool,
-    file_state: Signal<FileState>,
     commands: AppCommands,
     on_close: EventHandler<()>,
 ) -> Element {
@@ -169,7 +165,6 @@ fn SearchResultRow(
             class: if is_active { "mn-command-row mn-search-row active" } else { "mn-command-row mn-search-row" },
             onclick: move |_| {
                 open_search_result(
-                    file_state,
                     commands.clone(),
                     on_close,
                     path_for_click.clone(),
@@ -222,13 +217,7 @@ fn HighlightedText(text: String, highlights: Vec<SearchHighlight>) -> Element {
     }
 }
 
-fn open_search_result(
-    mut file_state: Signal<FileState>,
-    commands: AppCommands,
-    on_close: EventHandler<()>,
-    path: PathBuf,
-) {
-    file_state.write().select_path(path.clone());
+fn open_search_result(commands: AppCommands, on_close: EventHandler<()>, path: PathBuf) {
     commands.open_markdown.call(OpenMarkdownTarget { path });
     on_close.call(());
 }
