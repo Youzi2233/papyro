@@ -25,7 +25,10 @@ pub use search::{
     SearchField, SearchHighlight, SearchMatch, SearchResult, WorkspaceSearchQuery,
     WorkspaceSearchState,
 };
-pub use session::DEFAULT_WINDOW_ID;
+pub use session::{
+    RegisteredWindowSession, WindowRouteTarget, WindowSessionId, WindowSessionRegistry,
+    DEFAULT_WINDOW_ID,
+};
 pub use storage::{
     DeletePreview, EmptyTrashOutcome, NoteStorage, OpenedNote, SaveConflict, SavedAsNote,
     SavedNote, WorkspaceBootstrap, WorkspaceSnapshot,
