@@ -392,6 +392,31 @@ test("set_content updates content without echoing content_changed", () => {
   assert.deepEqual(sent, []);
 });
 
+test("rust message handling ignores missing tabs and unknown messages", () => {
+  const registry = new Map();
+  const view = fakeView("body");
+
+  attach(registry, view, "tab-a", "body");
+
+  assert.equal(
+    handleRustMessage(registry, "missing-tab", {
+      type: "set_content",
+      content: "stale",
+    }),
+    "missing",
+  );
+  assert.equal(view.state.doc.toString(), "body");
+
+  assert.equal(
+    handleRustMessage(registry, "tab-a", {
+      type: "unknown_command",
+    }),
+    "ignored",
+  );
+  assert.equal(view.state.doc.toString(), "body");
+  assert.equal(registry.has("tab-a"), true);
+});
+
 test("attach_view_to_tab initializes runtime entry without echoing content", () => {
   const registry = new Map();
   const sent = [];
