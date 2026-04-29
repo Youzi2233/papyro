@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use papyro_core::models::{FileNodeKind, Theme};
+use papyro_core::models::Theme;
 
 use crate::commands::FileTarget;
 use crate::components::{
@@ -17,9 +17,8 @@ use crate::theme::ThemeDomEffect;
 pub fn MobileLayout() -> Element {
     let app = use_app_context();
     let ui_state = app.ui_state;
-    let file_state = app.file_state;
-    let pending_delete_path = app.pending_delete_path;
     let commands = app.commands;
+    let sidebar_model = app.sidebar_model.read().clone();
     let open_workspace_commands = commands.clone();
     let browser_toggle_commands = commands.clone();
     let mut show_settings = use_signal(|| false);
@@ -32,18 +31,13 @@ pub fn MobileLayout() -> Element {
     let theme = (app.theme)();
     let sidebar_collapsed = (app.sidebar_collapsed)();
     let browser_visible = !sidebar_collapsed;
-    let workspace = file_state.read().current_workspace.clone();
-    let selected_node = file_state.read().selected_node();
-    let selected_is_dir = selected_node
-        .as_ref()
-        .is_some_and(|node| matches!(node.kind, FileNodeKind::Directory { .. }));
-    let selected_target = selected_node.as_ref().map(|node| FileTarget {
-        path: node.path.clone(),
-        name: node.name.clone(),
+    let has_workspace = sidebar_model.name.is_some();
+    let selected_is_dir = sidebar_model.selected_is_directory;
+    let selected_delete_pending = sidebar_model.selected_delete_pending;
+    let selected_target = sidebar_model.selected_path.clone().map(|path| FileTarget {
+        path,
+        name: sidebar_model.selected_name.clone().unwrap_or_default(),
     });
-    let selected_delete_pending = selected_node
-        .as_ref()
-        .is_some_and(|node| pending_delete_path.read().as_deref() == Some(node.path.as_path()));
 
     rsx! {
         div { class: "mn-shell mn-shell-mobile",
@@ -69,9 +63,9 @@ pub fn MobileLayout() -> Element {
                                 );
                             }
                         },
-                        if workspace.is_some() { "Switch workspace" } else { "Open workspace" }
+                        if has_workspace { "Switch workspace" } else { "Open workspace" }
                     }
-                    if workspace.is_some() {
+                    if has_workspace {
                         button {
                             class: "mn-button",
                             onclick: move |_| {
@@ -107,19 +101,19 @@ pub fn MobileLayout() -> Element {
                     }
                 }
 
-                if browser_visible || workspace.is_none() {
+                if browser_visible || !has_workspace {
                     section { class: "mn-mobile-browser",
                         div { class: "mn-mobile-browser-header",
                             div {
-                                if let Some(workspace) = &workspace {
-                                    p { class: "mn-mobile-browser-title", "{workspace.name}" }
-                                    p { class: "mn-mobile-browser-path", "{workspace.path.display()}" }
+                                if let (Some(name), Some(path)) = (&sidebar_model.name, &sidebar_model.path) {
+                                    p { class: "mn-mobile-browser-title", "{name}" }
+                                    p { class: "mn-mobile-browser-path", "{path.display()}" }
                                 } else {
                                     p { class: "mn-mobile-browser-title", "No workspace" }
                                     p { class: "mn-mobile-browser-path", "Open a folder to start editing" }
                                 }
                             }
-                            if workspace.is_some() {
+                            if has_workspace {
                                 div { class: "mn-mobile-inline-actions",
                                     button {
                                         class: "mn-button",
@@ -168,13 +162,13 @@ pub fn MobileLayout() -> Element {
                             }
                         }
 
-                        if let Some(selected_node) = &selected_node {
+                        if let Some(selected_name) = &sidebar_model.selected_name {
                             div { class: "mn-mobile-selection",
                                 div { class: "mn-mobile-selection-copy",
                                     p { class: "mn-mobile-selection-title",
                                         if selected_is_dir { "Selected folder" } else { "Selected note" }
                                     }
-                                    p { class: "mn-mobile-selection-name", "{selected_node.name}" }
+                                    p { class: "mn-mobile-selection-name", "{selected_name}" }
                                 }
                                 div { class: "mn-mobile-inline-actions",
                                     button {
