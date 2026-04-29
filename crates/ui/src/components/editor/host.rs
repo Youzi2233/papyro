@@ -26,7 +26,7 @@ pub(super) fn EditorHost(
 ) -> Element {
     let app = use_app_context();
     let commands = app.commands;
-    let mut editor_runtime_commands = app.editor_runtime_commands;
+    let editor_runtime_commands = app.editor_runtime_command_port;
     let bridges = use_context::<EditorBridgeMap>();
     let container_id = format!("mn-editor-{tab_id}");
     let instance_id = use_signal(|| format!("host-{}", Uuid::new_v4()));
@@ -36,7 +36,7 @@ pub(super) fn EditorHost(
     let startup_view_mode = view_mode.clone();
     let state = runtime_state();
     let runtime_ready = state == EditorRuntimeState::Ready;
-    let runtime_command_revision = editor_runtime_commands.read().revision();
+    let runtime_command_revision = editor_runtime_commands.revision();
 
     use_effect(use_reactive(
         (&tab_id, &container_id),
@@ -251,11 +251,11 @@ pub(super) fn EditorHost(
     use_effect(use_reactive(
         (&tab_id, &runtime_ready, &runtime_command_revision),
         move |(tab_id, runtime_ready, _revision)| {
-            if !runtime_ready || !editor_runtime_commands.peek().has_pending_for_tab(&tab_id) {
+            if !runtime_ready || !editor_runtime_commands.has_pending_for_tab(&tab_id) {
                 return;
             }
 
-            let commands = editor_runtime_commands.with_mut(|queue| queue.drain_for_tab(&tab_id));
+            let commands = editor_runtime_commands.drain_for_tab(&tab_id);
             let Some(eval) = bridges.read().get(&tab_id).map(|bridge| bridge.eval) else {
                 return;
             };

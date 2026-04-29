@@ -3,7 +3,7 @@ use crate::state::use_runtime_state;
 use dioxus::prelude::*;
 use papyro_core::{NoteStorage, WorkspaceBootstrap};
 use papyro_platform::PlatformApi;
-use papyro_ui::context::{AppContext, EditorServices};
+use papyro_ui::context::{AppContext, EditorRuntimeCommandPort, EditorServices};
 use papyro_ui::view_model::{
     EditorPaneViewModel, EditorSurfaceViewModel, EditorViewModel, FileTreeViewModel,
     QuickOpenItemViewModel, SettingsFormViewModel, SettingsWorkspaceViewModel, SidebarViewModel,
@@ -115,7 +115,7 @@ pub fn use_app_runtime(
         status_message: state.status_message,
         pending_close_tab: state.pending_close_tab,
         pending_delete_path: state.pending_delete_path,
-        editor_runtime_commands: state.editor_runtime_commands,
+        editor_runtime_command_port: EditorRuntimeCommandPort::new(state.editor_runtime_commands),
         commands,
         editor_services: EditorServices {
             summarize_markdown: papyro_editor::parser::summarize_markdown,

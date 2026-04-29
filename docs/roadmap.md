@@ -315,7 +315,7 @@ Editor runtime lane
 ### 1.4 State Domain 切分
 
 - [x] 将 runtime state 文档化为 WorkspaceState、ChromeState、DocumentState、EditorRuntimeState。
-- [ ] UI 组件优先读取 view model，不直接读多个 raw signal 拼业务判断。
+- [x] UI 组件优先读取 view model / 窄 memo / runtime port，不直接读多个 raw signal 拼业务判断。
 - [x] `DesktopLayout` 只能感知 shell/chrome 需要的数据。
 - [x] `EditorPane` 的 active document / host_items 派生改为消费 `EditorPaneViewModel` memo，不再在组件内直接读取 `EditorTabs` / `TabContentsMap`。
 - [x] Tab 激活从 `EditorTabButton` 直接写 `EditorTabs` 改为走 `AppCommand` / `AppAction` / dispatcher。
@@ -335,6 +335,7 @@ Editor runtime lane
 - [x] MobileLayout 的 workspace 和选中项展示改为消费 `SidebarViewModel`，不再直接读取 raw `FileState` / `pending_delete_path`。
 - [x] SettingsModal 的表单初始值和 scope 切换改为消费 `SettingsFormViewModel`，不再直接读取 raw `UiState`。
 - [x] FileTree 的树、展开路径和选中路径读取改为消费 `FileTreeViewModel`，组件不再直接读取 raw `FileState`。
+- [x] EditorHost 的 runtime 命令队列改为通过 `EditorRuntimeCommandPort` 访问，不再直接暴露 raw queue signal。
 - [x] Sidebar 展示宽度改为消费 `sidebar_width` memo，resize 提交统一走 `crates/ui/src/chrome.rs` helper。
 - [x] chrome 设置目标推导迁移到 `crates/core::ui_state`，UI helper 不再持有全局 / workspace 设置覆盖规则。
 - [x] sidebar/theme/view mode/sidebar width 等 chrome 设置动作改为走 `AppAction` / dispatcher，UI helper 只保留事件入口适配。

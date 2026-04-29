@@ -1,4 +1,4 @@
-use crate::commands::{AppCommands, EditorRuntimeCommandQueue};
+use crate::commands::{AppCommands, EditorRuntimeCommand, EditorRuntimeCommandQueue};
 use crate::view_model::{
     EditorPaneViewModel, EditorSurfaceViewModel, EditorViewModel, FileTreeViewModel,
     QuickOpenItemViewModel, SettingsFormViewModel, SettingsWorkspaceViewModel, SidebarViewModel,
@@ -38,6 +38,35 @@ impl PartialEq for EditorServices {
     }
 }
 
+#[derive(Clone, Copy)]
+pub struct EditorRuntimeCommandPort {
+    queue: Signal<EditorRuntimeCommandQueue>,
+}
+
+impl EditorRuntimeCommandPort {
+    pub fn new(queue: Signal<EditorRuntimeCommandQueue>) -> Self {
+        Self { queue }
+    }
+
+    pub fn revision(self) -> u64 {
+        self.queue.read().revision()
+    }
+
+    pub fn has_pending_for_tab(self, tab_id: &str) -> bool {
+        self.queue.peek().has_pending_for_tab(tab_id)
+    }
+
+    pub fn drain_for_tab(mut self, tab_id: &str) -> Vec<EditorRuntimeCommand> {
+        self.queue.with_mut(|queue| queue.drain_for_tab(tab_id))
+    }
+}
+
+impl PartialEq for EditorRuntimeCommandPort {
+    fn eq(&self, _other: &Self) -> bool {
+        true
+    }
+}
+
 #[derive(Clone, PartialEq)]
 pub struct AppContext {
     pub file_state: Signal<FileState>,
@@ -48,7 +77,7 @@ pub struct AppContext {
     pub status_message: Signal<Option<String>>,
     pub pending_close_tab: Signal<Option<String>>,
     pub pending_delete_path: Signal<Option<PathBuf>>,
-    pub editor_runtime_commands: Signal<EditorRuntimeCommandQueue>,
+    pub editor_runtime_command_port: EditorRuntimeCommandPort,
     pub commands: AppCommands,
     pub editor_services: EditorServices,
     pub workspace_model: Memo<WorkspaceViewModel>,
