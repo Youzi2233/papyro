@@ -613,6 +613,108 @@ fn save_tab_flow_marks_conflict_when_storage_reports_conflict() {
 }
 
 #[test]
+fn overwrite_tab_flow_saves_conflicted_content_explicitly() {
+    let storage = MockStorage {
+        save_result: Some(SavedNote {
+            tab_id: "tab-a".to_string(),
+            title: "Local Title".to_string(),
+            disk_content_hash: Some(99),
+        }),
+        recent_files: vec![recent_file("note-a", "notes/a.md")],
+        ..MockStorage::default()
+    };
+    let mut file_state = file_state_with_tree(vec![note_node("workspace/notes/a.md", "note-a")]);
+    let mut editor_tabs = EditorTabs::default();
+    let mut tab = tab("tab-a", "note-a", "workspace/notes/a.md");
+    tab.is_dirty = true;
+    tab.save_status = SaveStatus::Conflict;
+    tab.disk_content_hash = Some(7);
+    editor_tabs.open_tab(tab);
+    let mut tab_contents = TabContentsMap::default();
+    tab_contents.insert_tab(
+        "tab-a".to_string(),
+        "body".to_string(),
+        DocumentStats::default(),
+    );
+    tab_contents.update_tab_content("tab-a", "# Local Title\n\nbody".to_string());
+
+    overwrite_tab_to_storage(
+        &storage,
+        &mut file_state,
+        &mut editor_tabs,
+        &tab_contents,
+        "tab-a",
+    )
+    .unwrap();
+
+    assert_eq!(
+        storage.overwritten_payloads.lock().unwrap().clone(),
+        vec![("tab-a".to_string(), "# Local Title\n\nbody".to_string())]
+    );
+    assert!(storage.saved_payloads.lock().unwrap().is_empty());
+    assert_eq!(
+        editor_tabs.tab_by_id("tab-a").map(|tab| (
+            tab.is_dirty,
+            tab.save_status.clone(),
+            tab.title.clone(),
+            tab.disk_content_hash,
+        )),
+        Some((
+            false,
+            SaveStatus::Saved,
+            "Local Title".to_string(),
+            Some(99)
+        ))
+    );
+    assert_eq!(
+        file_state.recent_files,
+        vec![recent_file("note-a", "notes/a.md")]
+    );
+}
+
+#[test]
+fn overwrite_tab_flow_requires_conflict_state() {
+    let storage = MockStorage {
+        save_result: Some(SavedNote {
+            tab_id: "tab-a".to_string(),
+            title: "Saved".to_string(),
+            disk_content_hash: Some(99),
+        }),
+        ..MockStorage::default()
+    };
+    let mut file_state = file_state_with_tree(vec![note_node("workspace/notes/a.md", "note-a")]);
+    let mut editor_tabs = EditorTabs::default();
+    let mut tab = tab("tab-a", "note-a", "workspace/notes/a.md");
+    tab.is_dirty = true;
+    tab.save_status = SaveStatus::Dirty;
+    editor_tabs.open_tab(tab);
+    let mut tab_contents = TabContentsMap::default();
+    tab_contents.insert_tab(
+        "tab-a".to_string(),
+        "body".to_string(),
+        DocumentStats::default(),
+    );
+
+    let error = overwrite_tab_to_storage(
+        &storage,
+        &mut file_state,
+        &mut editor_tabs,
+        &tab_contents,
+        "tab-a",
+    )
+    .unwrap_err();
+
+    assert!(error.to_string().contains("not in a save conflict"));
+    assert!(storage.overwritten_payloads.lock().unwrap().is_empty());
+    assert_eq!(
+        editor_tabs
+            .tab_by_id("tab-a")
+            .map(|tab| (tab.is_dirty, tab.save_status.clone())),
+        Some((true, SaveStatus::Dirty))
+    );
+}
+
+#[test]
 fn save_tab_flow_fails_when_tab_is_missing() {
     let storage = MockStorage::default();
     let mut file_state = file_state_with_tree(Vec::new());

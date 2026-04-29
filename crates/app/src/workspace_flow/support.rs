@@ -31,6 +31,7 @@ pub(super) struct MockStorage {
     pub deleted_paths: Mutex<Vec<PathBuf>>,
     pub deleted_extra_paths: Mutex<Vec<PathBuf>>,
     pub saved_payloads: Mutex<Vec<(String, String)>>,
+    pub overwritten_payloads: Mutex<Vec<(String, String)>>,
     pub saved_tree_states: Mutex<Vec<(String, WorkspaceTreeState)>>,
     pub created_note_requests: Mutex<Vec<(PathBuf, String)>>,
     pub created_folder_requests: Mutex<Vec<(PathBuf, String)>>,
@@ -62,6 +63,21 @@ impl NoteStorage for MockStorage {
             }
             .into());
         }
+        self.save_result
+            .clone()
+            .ok_or_else(|| anyhow!("Missing save result"))
+    }
+
+    fn overwrite_note(
+        &self,
+        _workspace: &Workspace,
+        tab: &EditorTab,
+        content: &str,
+    ) -> Result<SavedNote> {
+        self.overwritten_payloads
+            .lock()
+            .unwrap()
+            .push((tab.id.clone(), content.to_string()));
         self.save_result
             .clone()
             .ok_or_else(|| anyhow!("Missing save result"))

@@ -64,6 +64,12 @@ pub trait NoteStorage: Send + Sync {
     fn open_note(&self, workspace: &Workspace, path: &Path) -> Result<OpenedNote>;
     fn save_note(&self, workspace: &Workspace, tab: &EditorTab, content: &str)
         -> Result<SavedNote>;
+    fn overwrite_note(
+        &self,
+        workspace: &Workspace,
+        tab: &EditorTab,
+        content: &str,
+    ) -> Result<SavedNote>;
     fn create_note(&self, parent: &Path, name: &str) -> Result<PathBuf>;
     fn create_folder(&self, parent: &Path, name: &str) -> Result<PathBuf>;
     fn delete_path(&self, path: &Path) -> Result<()>;

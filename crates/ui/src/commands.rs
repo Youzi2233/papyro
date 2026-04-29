@@ -152,6 +152,7 @@ pub struct AppCommands {
     pub paste_image: EventHandler<PasteImageRequest>,
     pub activate_tab: EventHandler<String>,
     pub save_active_note: EventHandler<()>,
+    pub overwrite_active_note: EventHandler<()>,
     pub save_tab: EventHandler<String>,
     pub close_tab: EventHandler<String>,
     pub toggle_outline: EventHandler<()>,

@@ -257,6 +257,24 @@ impl SqliteStorage {
             }
         }
 
+        self.write_saved_note(workspace, tab, content)
+    }
+
+    pub fn overwrite_note(
+        &self,
+        workspace: &Workspace,
+        tab: &EditorTab,
+        content: &str,
+    ) -> Result<SavedNote> {
+        self.write_saved_note(workspace, tab, content)
+    }
+
+    fn write_saved_note(
+        &self,
+        workspace: &Workspace,
+        tab: &EditorTab,
+        content: &str,
+    ) -> Result<SavedNote> {
         fs::write_note(&tab.path, content)?;
         let note_meta = upsert_note_meta_for_path(&self.pool, workspace, &tab.path, content)?;
 
@@ -549,6 +567,15 @@ impl NoteStorage for SqliteStorage {
         SqliteStorage::save_note(self, workspace, tab, content)
     }
 
+    fn overwrite_note(
+        &self,
+        workspace: &Workspace,
+        tab: &EditorTab,
+        content: &str,
+    ) -> Result<SavedNote> {
+        SqliteStorage::overwrite_note(self, workspace, tab, content)
+    }
+
     fn create_note(&self, parent: &Path, name: &str) -> Result<PathBuf> {
         fs::create_note(parent, name)
     }
@@ -793,6 +820,10 @@ pub fn open_note(workspace: &Workspace, path: &Path) -> Result<OpenedNote> {
 
 pub fn save_note(workspace: &Workspace, tab: &EditorTab, content: &str) -> Result<SavedNote> {
     SqliteStorage::shared()?.save_note(workspace, tab, content)
+}
+
+pub fn overwrite_note(workspace: &Workspace, tab: &EditorTab, content: &str) -> Result<SavedNote> {
+    SqliteStorage::shared()?.overwrite_note(workspace, tab, content)
 }
 
 pub fn initialize_workspace(root: &Path) -> Result<WorkspaceSnapshot> {
@@ -1943,6 +1974,28 @@ mod tests {
 
         assert!(error.downcast_ref::<SaveConflict>().is_some());
         assert_eq!(std::fs::read_to_string(&note_path)?, "# Draft\n\nexternal");
+
+        Ok(())
+    }
+
+    #[test]
+    fn overwrite_note_replaces_changed_disk_content() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let workspace_root = create_workspace(&temp)?;
+        let note_path = workspace_root.join("draft.md");
+        std::fs::write(&note_path, "# Draft\n\nold")?;
+
+        let storage = test_storage(&temp)?;
+        let workspace = storage.initialize_workspace(&workspace_root)?.workspace;
+        let opened = storage.open_note(&workspace, &note_path)?;
+
+        std::fs::write(&note_path, "# Draft\n\nexternal")?;
+
+        let saved = storage.overwrite_note(&workspace, &opened.tab, "# Local\n\nkept")?;
+
+        assert_eq!(saved.title, "Local");
+        assert_ne!(saved.disk_content_hash, opened.tab.disk_content_hash);
+        assert_eq!(std::fs::read_to_string(&note_path)?, "# Local\n\nkept");
 
         Ok(())
     }

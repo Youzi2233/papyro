@@ -3,7 +3,7 @@ use crate::components::primitives::{Modal, TextInput};
 use crate::context::use_app_context;
 use crate::perf::{perf_timer, trace_chrome_open_modal};
 use dioxus::prelude::*;
-use papyro_core::models::{Theme, ViewMode};
+use papyro_core::models::{SaveStatus, Theme, ViewMode};
 use std::path::PathBuf;
 
 const COMMAND_PALETTE_LIMIT: usize = 24;
@@ -14,6 +14,7 @@ pub(crate) struct CommandPaletteActionInput<'a> {
     pub recent_files: &'a [crate::view_model::RecentFileListItem],
     pub trashed_notes: &'a [crate::view_model::TrashedNoteListItem],
     pub has_active_tab: bool,
+    pub active_save_status: SaveStatus,
     pub selected_note_name: Option<&'a str>,
     pub theme: Theme,
     pub view_mode: ViewMode,
@@ -35,6 +36,7 @@ pub(crate) enum CommandPaletteActionKind {
     OpenMarkdown(OpenMarkdownTarget),
     RefreshWorkspace,
     SaveActiveNote,
+    OverwriteActiveNote,
     ToggleSidebar,
     ToggleOutline,
     ToggleTheme,
@@ -62,6 +64,7 @@ pub fn CommandPaletteModal(on_close: EventHandler<()>, on_settings: EventHandler
         recent_files: &workspace_model.recent_files,
         trashed_notes: &workspace_model.trashed_notes,
         has_active_tab: editor_model.has_active_tab,
+        active_save_status: editor_model.active_save_status.clone(),
         selected_note_name: selected_note_name(&workspace_model),
         theme,
         view_mode: editor_model.view_mode,
@@ -187,6 +190,7 @@ fn execute_command_action(
         CommandPaletteActionKind::OpenMarkdown(target) => commands.open_markdown.call(target),
         CommandPaletteActionKind::RefreshWorkspace => commands.refresh_workspace.call(()),
         CommandPaletteActionKind::SaveActiveNote => commands.save_active_note.call(()),
+        CommandPaletteActionKind::OverwriteActiveNote => commands.overwrite_active_note.call(()),
         CommandPaletteActionKind::ToggleSidebar => {
             crate::chrome::toggle_sidebar(commands.clone(), "command_palette");
         }
@@ -333,6 +337,14 @@ pub(crate) fn command_palette_actions(
             "FILE",
             CommandPaletteActionKind::SaveActiveNote,
         ));
+        if input.active_save_status == SaveStatus::Conflict {
+            actions.push(action(
+                "Overwrite conflicted note",
+                "Replace the disk version with editor content",
+                "FILE",
+                CommandPaletteActionKind::OverwriteActiveNote,
+            ));
+        }
     }
 
     if let Some(name) = input.selected_note_name {
@@ -426,6 +438,7 @@ mod tests {
             recent_files: &[],
             trashed_notes: &[],
             has_active_tab: false,
+            active_save_status: SaveStatus::Saved,
             selected_note_name: None,
             theme: Theme::Light,
             view_mode: ViewMode::Hybrid,
@@ -472,6 +485,23 @@ mod tests {
         assert!(titles.contains(&"Open workspace"));
         assert!(!titles.contains(&"Refresh workspace"));
         assert!(!titles.contains(&"Save active note"));
+        assert!(!titles.contains(&"Overwrite conflicted note"));
+    }
+
+    #[test]
+    fn command_palette_actions_include_conflict_overwrite() {
+        let actions = command_palette_actions(CommandPaletteActionInput {
+            has_active_tab: true,
+            active_save_status: SaveStatus::Conflict,
+            ..test_input()
+        });
+
+        assert!(actions.iter().any(|action| {
+            action.title == "Overwrite conflicted note"
+                && action.detail == "Replace the disk version with editor content"
+                && action.group == "FILE"
+                && matches!(action.kind, CommandPaletteActionKind::OverwriteActiveNote)
+        }));
     }
 
     #[test]

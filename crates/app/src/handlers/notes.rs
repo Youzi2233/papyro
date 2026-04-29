@@ -8,8 +8,9 @@ use std::sync::Arc;
 use crate::perf::{perf_timer, trace_editor_open_markdown};
 use crate::state::RuntimeState;
 use crate::workspace_flow::{
-    apply_save_error, apply_save_failure, apply_save_success, begin_save_tab,
-    open_markdown_target_from_storage, write_save_snapshot,
+    apply_save_error, apply_save_failure, apply_save_success, begin_conflict_overwrite_tab,
+    begin_save_tab, open_markdown_target_from_storage, write_overwrite_snapshot,
+    write_save_snapshot,
 };
 
 pub async fn open_markdown(
@@ -117,6 +118,28 @@ pub fn save_active_note(
     );
 }
 
+pub fn overwrite_active_note(
+    storage: Arc<dyn NoteStorage>,
+    file_state: Signal<FileState>,
+    editor_tabs: Signal<EditorTabs>,
+    tab_contents: Signal<TabContentsMap>,
+    status_message: Signal<Option<String>>,
+) {
+    let active_tab_id = editor_tabs.read().active_tab_id.clone();
+    let Some(active_tab_id) = active_tab_id else {
+        return;
+    };
+
+    overwrite_tab_by_id(
+        storage,
+        file_state,
+        editor_tabs,
+        tab_contents,
+        status_message,
+        &active_tab_id,
+    );
+}
+
 pub fn save_tab_by_id(
     storage: Arc<dyn NoteStorage>,
     mut file_state: Signal<FileState>,
@@ -180,6 +203,77 @@ pub fn save_tab_by_id(
                 let mut editor_tabs = editor_tabs.write();
                 apply_save_failure(&mut editor_tabs, &tab_contents, &snapshot);
                 status_message.set(Some(format!("Save failed: {error}")));
+            }
+        }
+    });
+}
+
+pub fn overwrite_tab_by_id(
+    storage: Arc<dyn NoteStorage>,
+    mut file_state: Signal<FileState>,
+    mut editor_tabs: Signal<EditorTabs>,
+    tab_contents: Signal<TabContentsMap>,
+    mut status_message: Signal<Option<String>>,
+    tab_id: &str,
+) {
+    let workspace = file_state.read().current_workspace.clone();
+    let Some(workspace) = workspace else {
+        return;
+    };
+
+    if editor_tabs.read().tab_by_id(tab_id).is_none() {
+        return;
+    }
+
+    let snapshot = {
+        let mut next_file_state = file_state.read().clone();
+        next_file_state.current_workspace = Some(workspace);
+        let mut editor_tabs = editor_tabs.write();
+        let tab_contents = tab_contents.read();
+        begin_conflict_overwrite_tab(&next_file_state, &mut editor_tabs, &tab_contents, tab_id)
+    };
+
+    let Ok(snapshot) = snapshot else {
+        return;
+    };
+    spawn(async move {
+        let snapshot_for_io = snapshot.clone();
+        let result: Result<
+            Result<(papyro_core::SavedNote, Vec<papyro_core::RecentFile>), anyhow::Error>,
+            tokio::task::JoinError,
+        > = tokio::task::spawn_blocking(move || {
+            write_overwrite_snapshot(storage.as_ref(), &snapshot_for_io)
+        })
+        .await;
+
+        match result {
+            Ok(Ok((saved_note, recent_files))) => {
+                let saved_title = saved_note.title.clone();
+                let tab_contents = tab_contents.read();
+                let mut file_state = file_state.write();
+                let mut editor_tabs = editor_tabs.write();
+                if apply_save_success(
+                    &mut file_state,
+                    &mut editor_tabs,
+                    &tab_contents,
+                    &snapshot,
+                    saved_note,
+                    recent_files,
+                ) {
+                    status_message.set(Some(format!("Overwrote disk version of {saved_title}")));
+                }
+            }
+            Ok(Err(error)) => {
+                let tab_contents = tab_contents.read();
+                let mut editor_tabs = editor_tabs.write();
+                apply_save_error(&mut editor_tabs, &tab_contents, &snapshot, &error);
+                status_message.set(Some(format!("Overwrite failed: {error}")));
+            }
+            Err(error) => {
+                let tab_contents = tab_contents.read();
+                let mut editor_tabs = editor_tabs.write();
+                apply_save_failure(&mut editor_tabs, &tab_contents, &snapshot);
+                status_message.set(Some(format!("Overwrite failed: {error}")));
             }
         }
     });
