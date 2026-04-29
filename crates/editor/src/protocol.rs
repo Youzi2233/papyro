@@ -131,6 +131,29 @@ mod tests {
     }
 
     #[test]
+    fn serializes_focus_command() {
+        let value = serde_json::to_value(EditorCommand::Focus).unwrap();
+
+        assert_eq!(value, json!({ "type": "focus" }));
+    }
+
+    #[test]
+    fn deserializes_runtime_ready_event() {
+        let event: EditorEvent = serde_json::from_value(json!({
+            "type": "runtime_ready",
+            "tab_id": "tab-a",
+        }))
+        .unwrap();
+
+        assert_eq!(
+            event,
+            EditorEvent::RuntimeReady {
+                tab_id: "tab-a".to_string(),
+            }
+        );
+    }
+
+    #[test]
     fn deserializes_content_changed_event() {
         let event: EditorEvent = serde_json::from_value(json!({
             "type": "content_changed",
@@ -162,6 +185,22 @@ mod tests {
             EditorEvent::RuntimeError {
                 tab_id: "tab-a".to_string(),
                 message: "boom".to_string()
+            }
+        );
+    }
+
+    #[test]
+    fn deserializes_save_requested_event() {
+        let event: EditorEvent = serde_json::from_value(json!({
+            "type": "save_requested",
+            "tab_id": "tab-a",
+        }))
+        .unwrap();
+
+        assert_eq!(
+            event,
+            EditorEvent::SaveRequested {
+                tab_id: "tab-a".to_string(),
             }
         );
     }
