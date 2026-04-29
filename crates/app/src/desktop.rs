@@ -123,7 +123,7 @@ pub fn DesktopApp() -> Element {
     let startup_open_request =
         use_hook(|| try_consume_context::<DesktopStartupOpenRequest>().unwrap_or_default());
     let external_open_requests =
-        use_hook(|| try_consume_context::<DesktopExternalOpenRequestReceiver>());
+        use_hook(try_consume_context::<DesktopExternalOpenRequestReceiver>);
     let bootstrap = use_hook(|| desktop_bootstrap(&startup_open_request));
     let storage = use_hook(|| {
         Arc::new(papyro_storage::SqliteStorage::shared().expect("default storage is initialized"))
