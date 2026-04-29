@@ -1608,6 +1608,14 @@ button.mn-sidebar-nav-item:disabled {
     font-family: var(--mn-font-ui);
 }
 
+.mn-empty-actions {
+    display: flex;
+    justify-content: center;
+    gap: var(--mn-action-gap);
+    flex-wrap: wrap;
+    margin-top: 18px;
+}
+
 /* ── Settings modal ── */
 .mn-modal-overlay {
     position: fixed;

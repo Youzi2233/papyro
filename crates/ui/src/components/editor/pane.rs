@@ -4,7 +4,8 @@ use super::host::EditorHost;
 use super::outline::OutlinePane;
 use super::preview::{PreviewLinkBridge, PreviewPane};
 use super::tabbar::EditorTabButton;
-use crate::components::primitives::EmptyState;
+use crate::commands::AppCommands;
+use crate::components::primitives::{Button, ButtonVariant};
 use crate::context::use_app_context;
 use crate::perf::{
     perf_timer, trace_editor_host_lifecycle, trace_editor_pane_render_prep,
@@ -163,9 +164,8 @@ pub fn EditorPane() -> Element {
                     }
                 }
             } else {
-                EmptyState {
-                    title: "Open a note to start editing",
-                    description: "Select a file from the sidebar, or create a new note with the New button.",
+                EditorEmptyState {
+                    commands: commands.clone(),
                 }
                 if !pane.host_items.is_empty() {
                     div { class: "mn-editor-retired-hosts",
@@ -186,6 +186,35 @@ pub fn EditorPane() -> Element {
                                 }
                             }
                         }
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[component]
+fn EditorEmptyState(commands: AppCommands) -> Element {
+    let create_commands = commands.clone();
+    let open_commands = commands.clone();
+
+    rsx! {
+        section { class: "mn-empty",
+            div { class: "mn-empty-card",
+                h1 { "Open a note" }
+                p { "Pick a Markdown file from the sidebar or start a new note." }
+                div { class: "mn-empty-actions",
+                    Button {
+                        label: "New note",
+                        variant: ButtonVariant::Primary,
+                        disabled: false,
+                        on_click: move |_| create_commands.create_note.call("Untitled".to_string()),
+                    }
+                    Button {
+                        label: "Open workspace",
+                        variant: ButtonVariant::Default,
+                        disabled: false,
+                        on_click: move |_| open_commands.open_workspace.call(()),
                     }
                 }
             }
