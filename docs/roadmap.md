@@ -387,7 +387,7 @@ Editor runtime lane
 - [x] UI context 将 theme、sidebar collapsed、sidebar width 拆为窄 memo，避免一个 chrome 字段变化唤醒无关组件。
 - [x] Status message lane 从 `DesktopLayout` / `MobileLayout` props 中拆出，只让 `StatusBar` 消费。
 - [x] Quick Open 候选列表和查询过滤使用 `use_memo` 派生，避免输入时重复 flatten 文件树。
-- [ ] 避免在 render 中 clone 大内容、渲染 HTML、提取 outline。
+- [x] 避免在 render 中 clone 大内容、渲染 HTML、提取 outline：document content 使用 `Arc<str>` snapshot，preview/outline 已移入 `spawn_blocking` 派生任务。
 
 ### 2.3 Editor host 性能
 
