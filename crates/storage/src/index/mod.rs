@@ -296,4 +296,45 @@ mod tests {
 
         Ok(())
     }
+
+    #[test]
+    fn search_workspace_scans_1000_notes_and_returns_late_matches() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let root = temp.path();
+        let query = "papyro-search-target";
+
+        for index in 1..=1000 {
+            let batch = (index - 1) / 100 + 1;
+            let batch_dir = root.join(format!("batch-{batch:02}"));
+            std::fs::create_dir_all(&batch_dir)?;
+            let target_line = if index >= 951 {
+                format!("The searchable marker {query} appears near the end.")
+            } else {
+                "This note intentionally omits the late-search marker.".to_string()
+            };
+            std::fs::write(
+                batch_dir.join(format!("{index:04}-search-fixture.md")),
+                format!(
+                    "# Search Fixture Note {index:04}\n\n{target_line}\n\n- Note index: {index:04}\n"
+                ),
+            )?;
+        }
+
+        let results = search_workspace(&workspace(root), query, 50)?;
+
+        assert_eq!(results.len(), 50);
+        assert_eq!(
+            results.first().map(|result| result.relative_path.as_path()),
+            Some(Path::new("batch-10/0951-search-fixture.md"))
+        );
+        assert_eq!(
+            results.last().map(|result| result.relative_path.as_path()),
+            Some(Path::new("batch-10/1000-search-fixture.md"))
+        );
+        assert!(results
+            .iter()
+            .all(|result| result.relative_path.starts_with(Path::new("batch-10"))));
+
+        Ok(())
+    }
 }
