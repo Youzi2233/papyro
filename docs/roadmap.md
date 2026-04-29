@@ -328,6 +328,7 @@ Editor runtime lane
 - [x] Workspace Search 弹窗改为消费 `WorkspaceSearchViewModel` memo，搜索结果行 payload 在 view model 层收敛。
 - [x] Sidebar、Header、StatusBar 不读取 document content 或 editor host 状态。
 - [x] StatusBar 改为消费 `EditorViewModel`，不再直接读取 `EditorTabs` 和 `TabContentsMap`。
+- [x] StatusBar 的状态消息改为消费窄 `status_text` memo，不再直接读取 raw `status_message` signal。
 - [x] Header 改为消费窄 `theme` / `sidebar_collapsed` memo，展示逻辑不再直接读取 raw `UiState`。
 - [x] DesktopLayout 只消费 sidebar 展示状态，主题 DOM 副作用下沉到 `ThemeDomEffect`。
 - [x] MobileLayout 的主题和浏览器展示状态改为消费窄 memo。

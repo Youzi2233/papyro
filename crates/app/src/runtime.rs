@@ -92,6 +92,7 @@ pub fn use_app_runtime(
     });
     let editor_surface_model =
         use_memo(move || EditorSurfaceViewModel::from_ui_state(&state.ui_state.read()));
+    let status_text = use_memo(move || state.status_message.read().clone());
     let theme = use_memo(move || state.ui_state.read().theme().clone());
     let sidebar_collapsed = use_memo(move || state.ui_state.read().sidebar_collapsed());
     let sidebar_width = use_memo(move || state.ui_state.read().settings.sidebar_width);
@@ -121,6 +122,7 @@ pub fn use_app_runtime(
         editor_model,
         editor_pane_model,
         editor_surface_model,
+        status_text,
         theme,
         sidebar_collapsed,
         sidebar_width,

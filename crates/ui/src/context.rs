@@ -58,6 +58,7 @@ pub struct AppContext {
     pub editor_model: Memo<EditorViewModel>,
     pub editor_pane_model: Memo<EditorPaneViewModel>,
     pub editor_surface_model: Memo<EditorSurfaceViewModel>,
+    pub status_text: Memo<Option<String>>,
     pub theme: Memo<Theme>,
     pub sidebar_collapsed: Memo<bool>,
     pub sidebar_width: Memo<u32>,
