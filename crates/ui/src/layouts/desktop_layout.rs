@@ -115,21 +115,38 @@ pub fn DesktopLayout() -> Element {
                 EditorPane {}
             }
             StatusBar {}
-            if *show_settings.read() {
-                SettingsModal { on_close: move |_| show_settings.set(false) }
+            DesktopModalLayer {
+                show_settings,
+                show_quick_open,
+                show_command_palette,
+                show_search,
             }
-            if *show_quick_open.read() {
-                QuickOpenModal { on_close: move |_| show_quick_open.set(false) }
+        }
+    }
+}
+
+#[component]
+fn DesktopModalLayer(
+    mut show_settings: Signal<bool>,
+    mut show_quick_open: Signal<bool>,
+    mut show_command_palette: Signal<bool>,
+    mut show_search: Signal<bool>,
+) -> Element {
+    rsx! {
+        if *show_settings.read() {
+            SettingsModal { on_close: move |_| show_settings.set(false) }
+        }
+        if *show_quick_open.read() {
+            QuickOpenModal { on_close: move |_| show_quick_open.set(false) }
+        }
+        if *show_command_palette.read() {
+            CommandPaletteModal {
+                on_close: move |_| show_command_palette.set(false),
+                on_settings: move |_| show_settings.set(true),
             }
-            if *show_command_palette.read() {
-                CommandPaletteModal {
-                    on_close: move |_| show_command_palette.set(false),
-                    on_settings: move |_| show_settings.set(true),
-                }
-            }
-            if *show_search.read() {
-                SearchModal { on_close: move |_| show_search.set(false) }
-            }
+        }
+        if *show_search.read() {
+            SearchModal { on_close: move |_| show_search.set(false) }
         }
     }
 }
