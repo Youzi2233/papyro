@@ -47,6 +47,7 @@ import {
   pasteMarkdownLinkInView,
   recycleEditor as recycleEditorCore,
   requestSaveForView,
+  shouldUseFullDocumentHybridScan,
   blockHintsEqual,
   setBlockHints as setBlockHintsCore,
   setEditorPreferences as setEditorPreferencesCore,
@@ -991,6 +992,7 @@ function addTableDecorations(decorations, line, block) {
 
 function deriveHybridBlockContext(state) {
   const hints = state.field(blockHintsField, false);
+  const allowFullDocumentScan = shouldUseFullDocumentHybridScan(state.doc.length);
   if (sourceOnlyBlockHints(hints)) {
     return {
       hintRanges: [],
@@ -1004,7 +1006,20 @@ function deriveHybridBlockContext(state) {
 
   const hintRanges = blockHintRanges(hints);
   const usesBlockHints = hintRanges.length > 0;
-  const lines = documentLineTexts(state.doc);
+  if (!usesBlockHints && !allowFullDocumentScan) {
+    return {
+      hintRanges: [],
+      usesBlockHints: true,
+      codeBlocks: [],
+      frontMatterBlock: null,
+      mathBlocks: [],
+      tableBlocks: [],
+    };
+  }
+
+  const lines = allowFullDocumentScan || !usesBlockHints
+    ? documentLineTexts(state.doc)
+    : null;
 
   return {
     hintRanges,
@@ -1012,8 +1027,8 @@ function deriveHybridBlockContext(state) {
     codeBlocks: usesBlockHints
       ? codeBlocksFromHints(hintRanges)
       : collectMarkdownCodeBlocks(lines),
-    frontMatterBlock: collectMarkdownFrontMatterBlock(lines),
-    mathBlocks: collectMarkdownMathBlocks(lines),
+    frontMatterBlock: lines ? collectMarkdownFrontMatterBlock(lines) : null,
+    mathBlocks: lines ? collectMarkdownMathBlocks(lines) : [],
     tableBlocks: usesBlockHints
       ? tableBlocksFromHints(hintRanges)
       : collectMarkdownTableBlocks(lines),

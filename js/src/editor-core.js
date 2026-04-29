@@ -140,6 +140,13 @@ export function markdownDecorationTier(
   return nearestDistance <= nearDistance ? "near" : "remote";
 }
 
+export function shouldUseFullDocumentHybridScan(docLength, maxLength = 64 * 1024) {
+  const length = Number(docLength);
+  const max = Number(maxLength);
+  if (!Number.isFinite(length) || !Number.isFinite(max)) return false;
+  return length >= 0 && length <= max;
+}
+
 export function isPlainUrl(text) {
   return /^https?:\/\/[^\s<>()]+$/i.test(text.trim());
 }

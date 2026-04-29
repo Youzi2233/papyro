@@ -38,6 +38,7 @@ import {
   pasteMarkdownLinkInView,
   recycleEditor,
   requestSaveForView,
+  shouldUseFullDocumentHybridScan,
   viewIsComposing,
 } from "../src/editor-core.js";
 
@@ -1034,6 +1035,12 @@ test("markdown_decoration_tier separates current near and remote blocks", () => 
   assert.equal(markdownDecorationTier(selections, 28, 29), "near");
   assert.equal(markdownDecorationTier(selections, 40, 40), "remote");
   assert.equal(markdownDecorationTier([], 1, 1), "remote");
+});
+
+test("should_use_full_document_hybrid_scan caps large documents", () => {
+  assert.equal(shouldUseFullDocumentHybridScan(64 * 1024), true);
+  assert.equal(shouldUseFullDocumentHybridScan(64 * 1024 + 1), false);
+  assert.equal(shouldUseFullDocumentHybridScan(Number.NaN), false);
 });
 
 test("insert_markdown message inserts markdown into editor", () => {
