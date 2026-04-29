@@ -53,6 +53,8 @@
 - [ ] `node scripts/check-ui-a11y.js --self-test`
 - [ ] `node scripts/generate-perf-fixtures.js --self-test`
 - [ ] `node scripts/check-perf-smoke.js --self-test`
+- [ ] `node scripts/check-perf-docs.js`
+- [ ] `node scripts/check-perf-docs.js --self-test`
 - [ ] `npm --prefix js run build`
 - [ ] `npm --prefix js test`
 - [ ] `assets/editor.js` 与宿主副本已同步

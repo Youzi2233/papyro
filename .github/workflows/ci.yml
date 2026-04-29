@@ -103,6 +103,12 @@ jobs:
       - name: Performance smoke checker self-test
         run: node scripts/check-perf-smoke.js --self-test
 
+      - name: Performance documentation check
+        run: node scripts/check-perf-docs.js
+
+      - name: Performance documentation check self-test
+        run: node scripts/check-perf-docs.js --self-test
+
       - name: Editor JS build
         run: npm --prefix js run build
 

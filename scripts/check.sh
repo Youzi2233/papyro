@@ -34,6 +34,12 @@ node scripts/generate-perf-fixtures.js --self-test
 echo "=== performance smoke checker self-test ==="
 node scripts/check-perf-smoke.js --self-test
 
+echo "=== performance documentation check ==="
+node scripts/check-perf-docs.js
+
+echo "=== performance documentation check self-test ==="
+node scripts/check-perf-docs.js --self-test
+
 echo "=== npm run build ==="
 npm --prefix js run build
 

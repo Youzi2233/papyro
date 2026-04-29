@@ -162,6 +162,8 @@ node scripts/check-ui-a11y.js
 node scripts/check-ui-a11y.js --self-test
 node scripts/generate-perf-fixtures.js --self-test
 node scripts/check-perf-smoke.js --self-test
+node scripts/check-perf-docs.js
+node scripts/check-perf-docs.js --self-test
 npm --prefix js run build
 npm --prefix js test
 diff assets/editor.js apps/desktop/assets/editor.js
