@@ -37,6 +37,12 @@ pub(crate) async fn save_pasted_image_asset(
     file.write_all(&bytes)
         .await
         .map_err(|error| format!("failed to write pasted image: {error}"))?;
+    file.flush()
+        .await
+        .map_err(|error| format!("failed to flush pasted image: {error}"))?;
+    file.sync_all()
+        .await
+        .map_err(|error| format!("failed to sync pasted image: {error}"))?;
 
     let link = markdown_asset_link(workspace, note_path, &path);
 
