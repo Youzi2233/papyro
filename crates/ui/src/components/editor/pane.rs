@@ -4,7 +4,7 @@ use super::host::EditorHost;
 use super::outline::OutlinePane;
 use super::preview::{PreviewLinkBridge, PreviewPane};
 use super::tabbar::EditorTabButton;
-use crate::components::primitives::{EmptyState, SegmentedControl, SegmentedControlOption};
+use crate::components::primitives::EmptyState;
 use crate::context::use_app_context;
 use crate::perf::{
     perf_timer, trace_editor_host_lifecycle, trace_editor_pane_render_prep,
@@ -123,13 +123,6 @@ pub fn EditorPane() -> Element {
                             key: "{item.id}",
                             item,
                         }
-                    }
-                    div { class: "mn-tabbar-spacer" }
-                    ViewToggle {
-                        view_mode: view_mode.clone(),
-                        on_change: move |mode| {
-                            crate::chrome::set_view_mode(commands.clone(), mode, "tabbar");
-                        },
                     }
                 }
                 section { class: "mn-document",
@@ -272,47 +265,6 @@ fn host_runtime_view_mode(is_active: bool, view_mode: &ViewMode) -> ViewMode {
 
 fn host_runtime_auto_link_paste(is_active: bool, auto_link_paste: bool) -> bool {
     is_active && auto_link_paste
-}
-
-#[component]
-fn ViewToggle(view_mode: ViewMode, on_change: EventHandler<ViewMode>) -> Element {
-    let selected = view_mode_value(&view_mode).to_string();
-    let options = vec![
-        SegmentedControlOption::new("Source", "source"),
-        SegmentedControlOption::new("Hybrid", "hybrid"),
-        SegmentedControlOption::new("Preview", "preview"),
-    ];
-
-    rsx! {
-        SegmentedControl {
-            label: "Editor view mode",
-            options,
-            selected,
-            class_name: "mn-view-toggle",
-            on_change: move |value: String| {
-                if let Some(mode) = view_mode_from_value(&value) {
-                    on_change.call(mode);
-                }
-            },
-        }
-    }
-}
-
-fn view_mode_value(view_mode: &ViewMode) -> &'static str {
-    match view_mode {
-        ViewMode::Source => "source",
-        ViewMode::Hybrid => "hybrid",
-        ViewMode::Preview => "preview",
-    }
-}
-
-fn view_mode_from_value(value: &str) -> Option<ViewMode> {
-    match value {
-        "source" => Some(ViewMode::Source),
-        "hybrid" => Some(ViewMode::Hybrid),
-        "preview" => Some(ViewMode::Preview),
-        _ => None,
-    }
 }
 
 #[cfg(test)]

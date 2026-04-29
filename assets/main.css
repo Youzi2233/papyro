@@ -952,8 +952,6 @@ button { border: 0; cursor: pointer; background: transparent; }
 
 .mn-tabbar::-webkit-scrollbar { display: none; }
 
-.mn-tabbar-spacer { flex: 1; }
-
 .mn-tab {
     display: inline-flex;
     align-items: center;
@@ -1048,8 +1046,7 @@ button { border: 0; cursor: pointer; background: transparent; }
     color: var(--mn-warning-ink);
 }
 
-.mn-segmented-control,
-.mn-view-toggle {
+.mn-segmented-control {
     display: inline-flex;
     border: var(--mn-border-default);
     border-radius: 6px;
