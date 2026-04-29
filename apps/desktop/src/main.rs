@@ -110,25 +110,60 @@ window.__PAPYRO_EDITOR_LOAD_ERROR__ = "desktop editor runtime script has not loa
 fn desktop_interpreter_patch_head() -> &'static str {
     r#"<script>
 (() => {
-    const patchInterpreter = () => {
-        const interpreter = window.interpreter;
-        if (!interpreter || interpreter.__papyroSyncEditsPatched) {
-            return !!interpreter;
-        }
-
-        if (
-            typeof interpreter.run_from_bytes !== "function" ||
-            typeof interpreter.markEditsFinished !== "function"
-        ) {
+    const hasDioxusTarget = (target) => {
+        if (!(target instanceof Node)) {
             return false;
         }
 
-        interpreter.rafEdits = function(bytes) {
-            this.run_from_bytes(bytes);
-            this.markEditsFinished();
-        };
-        interpreter.__papyroSyncEditsPatched = true;
-        return true;
+        for (let node = target; node; node = node.parentNode) {
+            if (node instanceof Element && node.hasAttribute("data-dioxus-id")) {
+                return true;
+            }
+        }
+
+        return false;
+    };
+
+    const patchInterpreter = () => {
+        const interpreter = window.interpreter;
+        if (!interpreter) {
+            return false;
+        }
+
+        if (
+            !interpreter.__papyroNullEventGuardPatched &&
+            typeof interpreter.handleEvent === "function"
+        ) {
+            const handleEvent = interpreter.handleEvent;
+            interpreter.handleEvent = function(event, name, bubbles) {
+                if (!hasDioxusTarget(event?.target)) {
+                    return;
+                }
+
+                return handleEvent.call(this, event, name, bubbles);
+            };
+            interpreter.__papyroNullEventGuardPatched = true;
+        }
+
+        if (!interpreter.__papyroSyncEditsPatched) {
+            if (
+                typeof interpreter.run_from_bytes !== "function" ||
+                typeof interpreter.markEditsFinished !== "function"
+            ) {
+                return false;
+            }
+
+            interpreter.rafEdits = function(bytes) {
+                this.run_from_bytes(bytes);
+                this.markEditsFinished();
+            };
+            interpreter.__papyroSyncEditsPatched = true;
+        }
+
+        return (
+            interpreter.__papyroNullEventGuardPatched &&
+            interpreter.__papyroSyncEditsPatched
+        );
     };
 
     if (patchInterpreter()) {
@@ -274,5 +309,14 @@ mod tests {
         assert!(head.contains("window.__PAPYRO_EDITOR_SCRIPT_SRC__"));
         assert!(head.contains(r#"/assets/editor.js?name=\"quoted\""#));
         assert!(head.contains(r#"src="/assets/editor.js?name=&quot;quoted&quot;""#));
+    }
+
+    #[test]
+    fn desktop_interpreter_patch_filters_unknown_event_targets() {
+        let head = desktop_interpreter_patch_head();
+
+        assert!(head.contains("__papyroNullEventGuardPatched"));
+        assert!(head.contains("hasDioxusTarget(event?.target)"));
+        assert!(head.contains(r#"hasAttribute("data-dioxus-id")"#));
     }
 }
