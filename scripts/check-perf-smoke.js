@@ -321,7 +321,44 @@ function runSelfTest() {
     return;
   }
 
+  assertSelfTestError(
+    validateRecords(parseRecords(selfTestMissingFieldLog()), {
+      requireSmokeTraces: false,
+    }),
+    "is missing tab_id",
+  );
+  assertSelfTestError(
+    validateRecords(parseRecords(selfTestOverBudgetLog()), {
+      requireSmokeTraces: false,
+    }),
+    "took 99ms, budget 50ms",
+  );
+  assertSelfTestError(
+    validateRecords(parseRecords(selfTestLargeLivePreviewLog()), {
+      requireSmokeTraces: false,
+    }),
+    "expected degraded preview",
+  );
+
   console.log("Performance smoke checker self-test passed.");
+}
+
+function assertSelfTestError(result, expectedMessage) {
+  if (result.errors.some((error) => error.includes(expectedMessage))) {
+    return;
+  }
+
+  console.error("Performance smoke checker self-test failed:");
+  console.error(`- Expected error containing: ${expectedMessage}`);
+  if (result.errors.length === 0) {
+    console.error("- No errors were reported.");
+  } else {
+    for (const error of result.errors) {
+      console.error(`- Actual error: ${error}`);
+    }
+  }
+  process.exitCode = 1;
+  throw new Error("performance smoke checker self-test failed");
 }
 
 function selfTestLog() {
@@ -344,6 +381,18 @@ function selfTestLog() {
     `INFO papyro_ui::perf: ${baseFields} elapsed_ms=2 perf tab close trigger`,
     `INFO papyro_app::perf: ${baseFields} close_intent="clean" closed=true elapsed_ms=12 perf runtime close_tab handler`,
   ].join("\n");
+}
+
+function selfTestMissingFieldLog() {
+  return `INFO papyro_app::perf: window_id="main" interaction_path="editor.test" revision=1 view_mode="hybrid" content_bytes=102400 trigger_reason="self_test" action="open_markdown" elapsed_ms=1 perf app dispatch action`;
+}
+
+function selfTestOverBudgetLog() {
+  return `INFO papyro_app::perf: window_id="main" interaction_path="editor.test" tab_id="tab-a" revision=1 view_mode="hybrid" content_bytes=102400 trigger_reason="self_test" action="open_markdown" elapsed_ms=99 perf app dispatch action`;
+}
+
+function selfTestLargeLivePreviewLog() {
+  return `INFO papyro_ui::perf: window_id="main" interaction_path="editor.preview" tab_id="tab-a" revision=1 view_mode="hybrid" content_bytes=2097152 trigger_reason="self_test" code_highlighting=false live_preview=true elapsed_ms=120 perf editor preview render`;
 }
 
 main();
