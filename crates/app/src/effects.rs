@@ -9,7 +9,7 @@ use crate::workspace_flow::{
 use dioxus::prelude::*;
 use papyro_core::{
     models::DocumentStats, EditorTabs, FileState, NoteStorage, RecentFile, SavedNote,
-    TabContentsMap,
+    TabContentsMap, Workspace,
 };
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -46,6 +46,13 @@ pub(crate) fn record_content_change(
     );
 
     let delay = Duration::from_millis(state.ui_state.read().settings.auto_save_delay_ms);
+    schedule_recovery_draft(
+        storage.clone(),
+        state,
+        tab_id.clone(),
+        revision,
+        recovery_cache_delay(delay),
+    );
 
     spawn(async move {
         tokio::time::sleep(delay).await;
@@ -130,6 +137,92 @@ fn refresh_stats_if_current(
             .write()
             .refresh_stats(snapshot.tab_id(), snapshot.revision, stats);
     }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+struct RecoveryDraftSnapshot {
+    workspace: Workspace,
+    tab: papyro_core::models::EditorTab,
+    content: String,
+    revision: u64,
+}
+
+fn schedule_recovery_draft(
+    storage: Arc<dyn NoteStorage>,
+    state: RuntimeState,
+    tab_id: String,
+    revision: u64,
+    delay: Duration,
+) {
+    spawn(async move {
+        tokio::time::sleep(delay).await;
+        let Some(snapshot) = begin_recovery_draft_snapshot(state, &tab_id, revision) else {
+            return;
+        };
+
+        let storage_for_work = storage.clone();
+        let snapshot_for_work = snapshot.clone();
+        let result = tokio::task::spawn_blocking(move || {
+            write_recovery_draft_snapshot(storage_for_work.as_ref(), &snapshot_for_work)
+        })
+        .await;
+
+        match result {
+            Ok(Ok(())) => {}
+            Ok(Err(error)) => {
+                tracing::warn!(%error, tab_id = snapshot.tab.id, "failed to write recovery draft");
+            }
+            Err(error) => {
+                tracing::warn!(%error, tab_id = snapshot.tab.id, "recovery draft task failed");
+            }
+        }
+    });
+}
+
+fn recovery_cache_delay(auto_save_delay: Duration) -> Duration {
+    let auto_save_ms = u64::try_from(auto_save_delay.as_millis()).unwrap_or(u64::MAX);
+    if auto_save_ms == 0 {
+        return Duration::ZERO;
+    }
+
+    Duration::from_millis(auto_save_ms.saturating_div(2).clamp(1, 250))
+}
+
+fn begin_recovery_draft_snapshot(
+    state: RuntimeState,
+    tab_id: &str,
+    revision: u64,
+) -> Option<RecoveryDraftSnapshot> {
+    let workspace = state.file_state.read().current_workspace.clone()?;
+    let tab = state.editor_tabs.read().tab_by_id(tab_id)?.clone();
+    if !tab.is_dirty {
+        return None;
+    }
+
+    let tab_contents = state.tab_contents.read();
+    if !tab_contents.should_auto_save_revision(tab_id, revision) {
+        return None;
+    }
+    let content = tab_contents.content_for_tab(tab_id)?.to_string();
+
+    Some(RecoveryDraftSnapshot {
+        workspace,
+        tab,
+        content,
+        revision,
+    })
+}
+
+fn write_recovery_draft_snapshot(
+    storage: &dyn NoteStorage,
+    snapshot: &RecoveryDraftSnapshot,
+) -> anyhow::Result<()> {
+    storage.upsert_recovery_draft(
+        &snapshot.workspace,
+        &snapshot.tab,
+        &snapshot.content,
+        snapshot.revision,
+    )
 }
 
 pub(crate) async fn flush_dirty_tabs(
@@ -409,5 +502,23 @@ async fn refresh_clean_modified_tabs(
                 status_message.set(Some(format!("Refresh changed file failed: {error}")));
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn recovery_cache_delay_runs_before_autosave_for_typical_delays() {
+        assert_eq!(
+            recovery_cache_delay(Duration::from_millis(500)),
+            Duration::from_millis(250)
+        );
+        assert_eq!(
+            recovery_cache_delay(Duration::from_millis(100)),
+            Duration::from_millis(50)
+        );
+        assert_eq!(recovery_cache_delay(Duration::ZERO), Duration::ZERO);
     }
 }

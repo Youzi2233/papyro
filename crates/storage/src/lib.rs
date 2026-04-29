@@ -319,6 +319,7 @@ impl SqliteStorage {
         let note_meta = upsert_note_meta_for_path(&self.pool, workspace, target_path, content)?;
         let opened_at = Utc::now().timestamp_millis();
         db::recent::record_open(&self.pool, &note_meta.id, opened_at)?;
+        clear_recovery_draft_best_effort(&self.pool, workspace, &tab.note_id);
 
         Ok(SavedAsNote {
             tab_id: tab.id.clone(),
@@ -337,6 +338,7 @@ impl SqliteStorage {
     ) -> Result<SavedNote> {
         fs::write_note(&tab.path, content)?;
         let note_meta = upsert_note_meta_for_path(&self.pool, workspace, &tab.path, content)?;
+        clear_recovery_draft_best_effort(&self.pool, workspace, &tab.note_id);
 
         Ok(SavedNote {
             tab_id: tab.id.clone(),
@@ -981,6 +983,12 @@ fn ensure_workspace(pool: &DbPool, root: &Path) -> Result<Workspace> {
 
     db::workspaces::insert_workspace(pool, &workspace)?;
     Ok(workspace)
+}
+
+fn clear_recovery_draft_best_effort(pool: &DbPool, workspace: &Workspace, note_id: &str) {
+    if let Err(error) = db::recovery::clear(pool, &workspace.id, note_id) {
+        tracing::warn!(%error, %note_id, "failed to clear recovery draft after save");
+    }
 }
 
 fn workspace_settings_key(workspace_id: &str) -> String {
@@ -2072,6 +2080,24 @@ mod tests {
         assert!(error.downcast_ref::<SaveConflict>().is_some());
         assert_eq!(std::fs::read_to_string(&note_path)?, "# Draft\n\nexternal");
 
+        Ok(())
+    }
+
+    #[test]
+    fn save_note_clears_recovery_draft() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let workspace_root = create_workspace(&temp)?;
+        let note_path = workspace_root.join("draft.md");
+        std::fs::write(&note_path, "# Draft")?;
+
+        let storage = test_storage(&temp)?;
+        let workspace = storage.initialize_workspace(&workspace_root)?.workspace;
+        let opened = storage.open_note(&workspace, &note_path)?;
+        storage.upsert_recovery_draft(&workspace, &opened.tab, "# Unsaved", 1)?;
+
+        storage.save_note(&workspace, &opened.tab, "# Saved")?;
+
+        assert!(storage.list_recovery_drafts(&workspace)?.is_empty());
         Ok(())
     }
 
