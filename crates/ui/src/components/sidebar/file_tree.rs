@@ -104,6 +104,10 @@ pub fn FileTree(sort_mode: FileTreeSortMode) -> Element {
                         event.prevent_default();
                         begin_inline_rename(keyboard_commands.clone(), rename_draft, node);
                     }
+                    FileTreeKeyboardAction::DeleteSelected => {
+                        event.prevent_default();
+                        keyboard_commands.delete_selected.call(());
+                    }
                 }
             },
             if nodes.is_empty() {
@@ -710,6 +714,7 @@ enum FileTreeKey {
     F2,
     Enter,
     Space,
+    Delete,
 }
 
 impl FileTreeKey {
@@ -722,6 +727,7 @@ impl FileTreeKey {
             Key::F2 => Some(Self::F2),
             Key::Enter => Some(Self::Enter),
             Key::Character(value) if value == " " => Some(Self::Space),
+            Key::Delete => Some(Self::Delete),
             _ => None,
         }
     }
@@ -734,6 +740,7 @@ enum FileTreeKeyboardAction {
     ToggleDirectory(PathBuf),
     OpenNote(FileNode),
     Rename(FileNode),
+    DeleteSelected,
 }
 
 fn file_tree_keyboard_action(
@@ -743,10 +750,13 @@ fn file_tree_keyboard_action(
     key: FileTreeKey,
 ) -> FileTreeKeyboardAction {
     let Some(current_index) = current_tree_index(items, selected_path) else {
-        return items
-            .first()
-            .map(|item| FileTreeKeyboardAction::Select(item.node.path.clone()))
-            .unwrap_or(FileTreeKeyboardAction::None);
+        return match key {
+            FileTreeKey::Delete => FileTreeKeyboardAction::None,
+            _ => items
+                .first()
+                .map(|item| FileTreeKeyboardAction::Select(item.node.path.clone()))
+                .unwrap_or(FileTreeKeyboardAction::None),
+        };
     };
 
     let current = &items[current_index].node;
@@ -780,6 +790,7 @@ fn file_tree_keyboard_action(
                 .unwrap_or(FileTreeKeyboardAction::None),
         },
         FileTreeKey::F2 => FileTreeKeyboardAction::Rename(current.clone()),
+        FileTreeKey::Delete => FileTreeKeyboardAction::DeleteSelected,
         FileTreeKey::Enter | FileTreeKey::Space => match &current.kind {
             FileNodeKind::Directory { .. } => {
                 FileTreeKeyboardAction::ToggleDirectory(current.path.clone())
@@ -1095,6 +1106,41 @@ mod tests {
             FileTreeKeyboardAction::Rename(node)
                 if node.path == Path::new("workspace/notes/a.md")
         ));
+    }
+
+    #[test]
+    fn keyboard_navigation_requests_delete_for_selected_item() {
+        let nodes = vec![directory(
+            "workspace/notes",
+            vec![note("workspace/notes/a.md")],
+        )];
+        let expanded = HashSet::from([PathBuf::from("workspace/notes")]);
+        let items = visible_file_tree_items(&nodes, &expanded);
+
+        assert_eq!(
+            file_tree_keyboard_action(
+                &items,
+                Some(Path::new("workspace/notes/a.md")),
+                &expanded,
+                FileTreeKey::Delete,
+            ),
+            FileTreeKeyboardAction::DeleteSelected
+        );
+    }
+
+    #[test]
+    fn keyboard_delete_without_selection_does_not_select_first_item() {
+        let nodes = vec![directory(
+            "workspace/notes",
+            vec![note("workspace/notes/a.md")],
+        )];
+        let expanded = HashSet::from([PathBuf::from("workspace/notes")]);
+        let items = visible_file_tree_items(&nodes, &expanded);
+
+        assert_eq!(
+            file_tree_keyboard_action(&items, None, &expanded, FileTreeKey::Delete),
+            FileTreeKeyboardAction::None
+        );
     }
 
     #[test]
