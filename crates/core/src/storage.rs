@@ -67,6 +67,7 @@ pub struct WorkspaceBootstrap {
     pub settings: AppSettings,
     pub global_settings: AppSettings,
     pub workspace_settings: WorkspaceSettingsOverrides,
+    pub recovery_drafts: Vec<RecoveryDraft>,
 }
 
 pub trait NoteStorage: Send + Sync {

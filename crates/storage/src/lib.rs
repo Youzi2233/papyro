@@ -230,20 +230,32 @@ impl SqliteStorage {
                 let global_settings = self.load_settings();
                 let workspace_settings = self.load_workspace_settings(&snapshot.workspace);
                 let settings = global_settings.with_workspace_overrides(&workspace_settings);
+                let recovery_drafts = self
+                    .list_recovery_drafts(&snapshot.workspace)
+                    .unwrap_or_else(|error| {
+                        tracing::warn!(
+                            %error,
+                            workspace_id = %snapshot.workspace.id,
+                            "failed to list recovery drafts during workspace bootstrap"
+                        );
+                        Vec::new()
+                    });
+                let status_message = loaded_workspace_status(
+                    note_count(&snapshot.file_tree),
+                    &snapshot.workspace.path,
+                    recovery_drafts.len(),
+                );
 
                 WorkspaceBootstrap {
                     file_state,
                     workspace_root: Some(snapshot.workspace.path.clone()),
                     db_path: Some(snapshot.db_path),
-                    status_message: format!(
-                        "Loaded {} notes from {}",
-                        note_count(&snapshot.file_tree),
-                        snapshot.workspace.path.display()
-                    ),
+                    status_message,
                     error_message: None,
                     settings,
                     global_settings,
                     workspace_settings,
+                    recovery_drafts,
                 }
             }
             Err(error) => WorkspaceBootstrap {
@@ -989,6 +1001,21 @@ fn clear_recovery_draft_best_effort(pool: &DbPool, workspace: &Workspace, note_i
     if let Err(error) = db::recovery::clear(pool, &workspace.id, note_id) {
         tracing::warn!(%error, %note_id, "failed to clear recovery draft after save");
     }
+}
+
+fn loaded_workspace_status(
+    note_count: usize,
+    workspace_path: &Path,
+    recovery_count: usize,
+) -> String {
+    let mut status = format!(
+        "Loaded {note_count} notes from {}",
+        workspace_path.display()
+    );
+    if recovery_count > 0 {
+        status.push_str(&format!("; {recovery_count} recovery drafts need review"));
+    }
+    status
 }
 
 fn workspace_settings_key(workspace_id: &str) -> String {
@@ -2098,6 +2125,27 @@ mod tests {
         storage.save_note(&workspace, &opened.tab, "# Saved")?;
 
         assert!(storage.list_recovery_drafts(&workspace)?.is_empty());
+        Ok(())
+    }
+
+    #[test]
+    fn bootstrap_reports_recovery_drafts_that_need_review() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let workspace_root = create_workspace(&temp)?;
+        let note_path = workspace_root.join("draft.md");
+        std::fs::write(&note_path, "# Draft")?;
+
+        let storage = test_storage(&temp)?;
+        let workspace = storage.initialize_workspace(&workspace_root)?.workspace;
+        let opened = storage.open_note(&workspace, &note_path)?;
+        storage.upsert_recovery_draft(&workspace, &opened.tab, "# Unsaved", 1)?;
+
+        let bootstrap = storage.bootstrap_from_workspace(&workspace_root);
+
+        assert_eq!(bootstrap.recovery_drafts.len(), 1);
+        assert!(bootstrap
+            .status_message
+            .contains("recovery drafts need review"));
         Ok(())
     }
 
