@@ -423,6 +423,51 @@ export function markdownEnterChange(doc, cursor) {
   );
 }
 
+function parseMarkdownListBackspaceLine(line) {
+  const task = /^(\s*)[-*+][ \t]+\[[ xX]\][ \t]+/.exec(line);
+  if (task) {
+    return {
+      markerLength: task[0].length,
+      indentLength: task[1].length,
+    };
+  }
+
+  return parseMarkdownListLine(line);
+}
+
+export function markdownListBackspaceChange(doc, cursor) {
+  const lineStart = doc.lastIndexOf("\n", cursor - 1) + 1;
+  let lineEnd = doc.indexOf("\n", cursor);
+  if (lineEnd < 0) lineEnd = doc.length;
+
+  const line = doc.slice(lineStart, lineEnd);
+  const list = parseMarkdownListBackspaceLine(line);
+  if (!list) return null;
+
+  const markerEnd = lineStart + list.markerLength;
+  if (cursor !== markerEnd) return null;
+
+  if (list.indentLength > 0) {
+    const indent = line.slice(0, list.indentLength);
+    const removeLength = indent.startsWith("\t")
+      ? 1
+      : Math.min(2, indent.match(/^ */)[0].length);
+    if (removeLength === 0) return null;
+
+    return {
+      changes: { from: lineStart, to: lineStart + removeLength, insert: "" },
+      selection: { anchor: cursor - removeLength },
+      doc: `${doc.slice(0, lineStart)}${doc.slice(lineStart + removeLength)}`,
+    };
+  }
+
+  return {
+    changes: { from: lineStart, to: markerEnd, insert: "" },
+    selection: { anchor: lineStart },
+    doc: `${doc.slice(0, lineStart)}${doc.slice(markerEnd)}`,
+  };
+}
+
 export function markdownShortcutSpaceChange(doc, cursor) {
   const lineStart = doc.lastIndexOf("\n", cursor - 1) + 1;
   const beforeCursor = doc.slice(lineStart, cursor);
@@ -463,6 +508,22 @@ export function completeMarkdownShortcutOnSpace(view) {
   if (range.from !== range.to) return false;
 
   const result = markdownShortcutSpaceChange(view.state.doc.toString(), range.from);
+  if (!result) return false;
+
+  view.dispatch({
+    changes: result.changes,
+    selection: result.selection,
+  });
+  return true;
+}
+
+export function handleMarkdownBackspace(view) {
+  if (viewIsComposing(view)) return false;
+
+  const range = view.state.selection.main;
+  if (range.from !== range.to) return false;
+
+  const result = markdownListBackspaceChange(view.state.doc.toString(), range.from);
   if (!result) return false;
 
   view.dispatch({

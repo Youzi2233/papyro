@@ -9,6 +9,7 @@ import {
   collectMarkdownTableBlocks,
   completeMarkdownShortcutOnSpace,
   formatSelectionChange,
+  handleMarkdownBackspace,
   handleRustMessage,
   handleMarkdownEnter,
   hybridDecorationLevel,
@@ -23,6 +24,7 @@ import {
   markdownEnterChange,
   markdownListIndentChange,
   markdownDecorationTier,
+  markdownListBackspaceChange,
   markdownListEnterChange,
   markdownShortcutSpaceChange,
   modeSupportsEditorScroll,
@@ -706,6 +708,25 @@ test("markdown_list_enter_change ignores non-list lines", () => {
   assert.equal(markdownListEnterChange("plain", 5), null);
 });
 
+test("markdown_list_backspace_change exits and outdents list prefixes", () => {
+  assert.deepEqual(markdownListBackspaceChange("- item", 2), {
+    changes: { from: 0, to: 2, insert: "" },
+    selection: { anchor: 0 },
+    doc: "item",
+  });
+  assert.deepEqual(markdownListBackspaceChange("  - item", 4), {
+    changes: { from: 0, to: 2, insert: "" },
+    selection: { anchor: 2 },
+    doc: "- item",
+  });
+  assert.deepEqual(markdownListBackspaceChange("- [ ] task", 6), {
+    changes: { from: 0, to: 6, insert: "" },
+    selection: { anchor: 0 },
+    doc: "task",
+  });
+  assert.equal(markdownListBackspaceChange("- item", 4), null);
+});
+
 test("markdown_blockquote_enter_change continues and exits quotes", () => {
   assert.deepEqual(markdownBlockquoteEnterChange("> quote", 7), {
     changes: { from: 7, to: 7, insert: "\n> " },
@@ -803,6 +824,11 @@ test("markdown input commands yield during IME composition", () => {
   indent.composing = true;
   assert.equal(indentMarkdownListInView(indent, "indent"), false);
   assert.equal(indent.state.doc.toString(), "- item");
+
+  const backspace = fakeView("- item", { from: 2, to: 2 });
+  backspace.composing = true;
+  assert.equal(handleMarkdownBackspace(backspace), false);
+  assert.equal(backspace.state.doc.toString(), "- item");
 });
 
 test("markdown_list_indent_change indents selected list lines", () => {
@@ -838,6 +864,14 @@ test("indent_markdown_list_in_view dispatches list indentation", () => {
   assert.equal(indentMarkdownListInView(view, "indent"), true);
   assert.equal(view.state.doc.toString(), "  - item");
   assert.deepEqual(view.state.selection.main, { from: 2, to: 2 });
+});
+
+test("markdown backspace view command exits list prefix", () => {
+  const view = fakeView("- item", { from: 2, to: 2 });
+
+  assert.equal(handleMarkdownBackspace(view), true);
+  assert.equal(view.state.doc.toString(), "item");
+  assert.deepEqual(view.state.selection.main, { from: 0, to: 0 });
 });
 
 test("tab recycle detaches old tab and prevents stale content routing", () => {
