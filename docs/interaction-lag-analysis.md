@@ -334,8 +334,9 @@ DocumentSnapshot(tab_id, path, revision, content)
 当前实现已将 `revision` 收敛为单调内容版本，而不是保存后会重置的 dirty 计数。
 因此 preview HTML、outline 和 stats 可以按 `tab_id + revision` 判断命中或过期。
 stats 仍保存在 `TabContentsMap` 中，但现在以 `DocumentStatsSnapshot` 记录 revision；
-状态栏只展示当前 revision 的统计结果。search snippet 当前来自 workspace search 结果，
-后续应迁入搜索索引或文档派生管线，而不是在 UI 渲染路径临时生成。
+状态栏只展示当前 revision 的统计结果。search snippet 当前由 storage search index 管线
+产出，app 通过 `spawn_blocking` 执行 workspace search，UI 只消费 `SearchMatch.snippet`
+并做高亮分段。
 
 ## 解决方案
 

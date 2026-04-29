@@ -339,7 +339,7 @@ Editor runtime lane
 - [x] `revision` 定义为单调内容版本，避免保存或外部刷新后缓存误命中。
 - [x] preview HTML 和 outline 缓存键收敛为 `tab_id + revision`。
 - [x] stats 输出携带 revision，并按 `tab_id + revision` 进行过期保护。
-- [ ] search snippets 迁入文档派生管线或搜索索引管线，避免在 UI 结果渲染时生成。
+- [x] search snippets 由 storage search index 管线产出，UI 只消费 `SearchMatch.snippet`。
 - [ ] 大文档 preview 和 outline 计算移出 render path。
 - [ ] 派生数据计算支持取消或丢弃过期 revision。
 - [ ] 派生数据失败只影响对应面板，不阻塞编辑。
@@ -405,7 +405,7 @@ Editor runtime lane
 - [x] 5MB 文件默认暂停 live preview，保证编辑优先。
 - [ ] outline 提取异步化并支持过期结果丢弃。
 - [ ] preview HTML 渲染失败或超时显示轻量占位。
-- [ ] 搜索 snippet 生成不阻塞编辑器输入。
+- [x] 搜索 snippet 生成在 workspace search 的 `spawn_blocking` 路径中完成，不阻塞编辑器输入。
 
 ### 2.5 UI 操作性能
 

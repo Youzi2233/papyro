@@ -377,4 +377,28 @@ mod tests {
             }]
         );
     }
+
+    #[test]
+    fn preview_match_uses_storage_supplied_body_snippet() {
+        let matches = vec![
+            SearchMatch {
+                field: SearchField::Title,
+                line: None,
+                snippet: "Release Plan".to_string(),
+                highlights: vec![SearchHighlight { start: 0, end: 7 }],
+            },
+            SearchMatch {
+                field: SearchField::Body,
+                line: Some(3),
+                snippet: "Ship the search feature safely.".to_string(),
+                highlights: vec![SearchHighlight { start: 9, end: 15 }],
+            },
+        ];
+
+        let preview = preview_match(&matches).unwrap();
+
+        assert_eq!(preview.field, SearchField::Body);
+        assert_eq!(preview.line, Some(3));
+        assert_eq!(preview.snippet, "Ship the search feature safely.");
+    }
 }

@@ -212,6 +212,10 @@ mod tests {
         assert!(results[0].matches.iter().any(|result_match| {
             result_match.field == SearchField::Body && result_match.line == Some(3)
         }));
+        assert!(results[0].matches.iter().any(|result_match| {
+            result_match.field == SearchField::Body
+                && result_match.snippet == "Ship the search feature safely."
+        }));
 
         Ok(())
     }
