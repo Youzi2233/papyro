@@ -1,7 +1,10 @@
 use crate::actions::AppAction;
 use crate::state::RuntimeState;
 use dioxus::prelude::ReadableExt;
-use papyro_core::{models::ViewMode, TabContentsMap, DEFAULT_WINDOW_ID};
+use papyro_core::{
+    models::{Theme, ViewMode},
+    TabContentsMap, DEFAULT_WINDOW_ID,
+};
 use std::path::Path;
 use std::time::Instant;
 
@@ -147,6 +150,76 @@ pub(crate) fn trace_runtime_close_tab_handler(
             elapsed_ms = started_at.elapsed().as_millis(),
             "perf runtime close_tab handler"
         );
+    }
+}
+
+pub(crate) fn trace_chrome_toggle_sidebar(
+    trigger: &str,
+    collapsed: bool,
+    started_at: Option<Instant>,
+) {
+    if let Some(started_at) = started_at {
+        tracing::info!(
+            window_id = DEFAULT_WINDOW_ID,
+            interaction_path = "chrome.sidebar",
+            tab_id = trace_tab_id(None),
+            revision = trace_revision(None),
+            view_mode = "none",
+            content_bytes = trace_content_bytes(None),
+            trigger_reason = trigger,
+            collapsed,
+            elapsed_ms = started_at.elapsed().as_millis(),
+            "perf chrome toggle sidebar"
+        );
+    }
+}
+
+pub(crate) fn trace_chrome_toggle_theme(from: &Theme, to: &Theme, started_at: Option<Instant>) {
+    if let Some(started_at) = started_at {
+        tracing::info!(
+            window_id = DEFAULT_WINDOW_ID,
+            interaction_path = "chrome.theme",
+            tab_id = trace_tab_id(None),
+            revision = trace_revision(None),
+            view_mode = "none",
+            content_bytes = trace_content_bytes(None),
+            trigger_reason = "toggle_theme",
+            from = theme_name(from),
+            to = theme_name(to),
+            elapsed_ms = started_at.elapsed().as_millis(),
+            "perf chrome toggle theme"
+        );
+    }
+}
+
+pub(crate) fn trace_editor_view_mode_change(
+    trigger: &str,
+    from: &ViewMode,
+    to: &ViewMode,
+    started_at: Option<Instant>,
+) {
+    if let Some(started_at) = started_at {
+        tracing::info!(
+            window_id = DEFAULT_WINDOW_ID,
+            interaction_path = "editor.view_mode",
+            tab_id = trace_tab_id(None),
+            revision = trace_revision(None),
+            view_mode = to.as_str(),
+            content_bytes = trace_content_bytes(None),
+            trigger_reason = trigger,
+            from = from.as_str(),
+            to = to.as_str(),
+            elapsed_ms = started_at.elapsed().as_millis(),
+            "perf editor view mode change"
+        );
+    }
+}
+
+fn theme_name(theme: &Theme) -> &'static str {
+    match theme {
+        Theme::System => "system",
+        Theme::Light => "light",
+        Theme::Dark => "dark",
     }
 }
 

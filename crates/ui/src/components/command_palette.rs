@@ -4,7 +4,6 @@ use crate::context::use_app_context;
 use crate::perf::{perf_timer, trace_chrome_open_modal};
 use dioxus::prelude::*;
 use papyro_core::models::{Theme, ViewMode};
-use papyro_core::UiState;
 use std::path::PathBuf;
 
 const COMMAND_PALETTE_LIMIT: usize = 24;
@@ -49,7 +48,6 @@ pub(crate) enum CommandPaletteActionKind {
 #[component]
 pub fn CommandPaletteModal(on_close: EventHandler<()>, on_settings: EventHandler<()>) -> Element {
     let app = use_app_context();
-    let ui_state = app.ui_state;
     let commands = app.commands.clone();
     let workspace_model = app.workspace_model.read().clone();
     let editor_model = app.editor_model.read().clone();
@@ -114,7 +112,6 @@ pub fn CommandPaletteModal(on_close: EventHandler<()>, on_settings: EventHandler
                                     event.prevent_default();
                                     if let Some(action) = filtered_for_keys.get(active).cloned() {
                                         execute_command_action(
-                                            ui_state,
                                             commands_for_keys.clone(),
                                             on_settings,
                                             on_close,
@@ -135,7 +132,6 @@ pub fn CommandPaletteModal(on_close: EventHandler<()>, on_settings: EventHandler
                             CommandPaletteRow {
                                 action: filtered[index].clone(),
                                 is_active: index == active,
-                                ui_state,
                                 commands: commands.clone(),
                                 on_settings,
                                 on_close,
@@ -151,7 +147,6 @@ pub fn CommandPaletteModal(on_close: EventHandler<()>, on_settings: EventHandler
 fn CommandPaletteRow(
     action: CommandPaletteAction,
     is_active: bool,
-    ui_state: Signal<UiState>,
     commands: AppCommands,
     on_settings: EventHandler<()>,
     on_close: EventHandler<()>,
@@ -163,7 +158,6 @@ fn CommandPaletteRow(
             class: if is_active { "mn-command-row active" } else { "mn-command-row" },
             onclick: move |_| {
                 execute_command_action(
-                    ui_state,
                     commands.clone(),
                     on_settings,
                     on_close,
@@ -180,7 +174,6 @@ fn CommandPaletteRow(
 }
 
 fn execute_command_action(
-    ui_state: Signal<UiState>,
     commands: AppCommands,
     on_settings: EventHandler<()>,
     on_close: EventHandler<()>,
@@ -195,13 +188,13 @@ fn execute_command_action(
         CommandPaletteActionKind::RefreshWorkspace => commands.refresh_workspace.call(()),
         CommandPaletteActionKind::SaveActiveNote => commands.save_active_note.call(()),
         CommandPaletteActionKind::ToggleSidebar => {
-            crate::chrome::toggle_sidebar(ui_state, commands.clone(), "command_palette");
+            crate::chrome::toggle_sidebar(commands.clone(), "command_palette");
         }
         CommandPaletteActionKind::ToggleOutline => {
             commands.toggle_outline.call(());
         }
         CommandPaletteActionKind::ToggleTheme => {
-            crate::chrome::toggle_theme(ui_state, commands.clone());
+            crate::chrome::toggle_theme(commands.clone());
         }
         CommandPaletteActionKind::OpenSettings => {
             let started_at = perf_timer();
@@ -209,7 +202,7 @@ fn execute_command_action(
             trace_chrome_open_modal("settings", "command_palette", started_at);
         }
         CommandPaletteActionKind::SetViewMode(mode) => {
-            crate::chrome::set_view_mode(ui_state, commands.clone(), mode, "command_palette");
+            crate::chrome::set_view_mode(commands.clone(), mode, "command_palette");
         }
         CommandPaletteActionKind::SetSelectedFavorite(favorite) => {
             commands.set_selected_favorite.call(favorite);

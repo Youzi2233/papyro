@@ -21,7 +21,6 @@ struct SidebarResizeDrag {
 #[component]
 pub fn Sidebar() -> Element {
     let app = use_app_context();
-    let ui_state = app.ui_state;
     let commands = app.commands;
     let sidebar_model = app.sidebar_model.read().clone();
     let resize_commands = commands.clone();
@@ -209,7 +208,7 @@ pub fn Sidebar() -> Element {
                         event.prevent_default();
                         let width = sidebar_width_from_drag(drag, event.client_coordinates().x);
                         resize_preview_width.set(Some(width));
-                        crate::chrome::set_sidebar_width(ui_state, resize_commands.clone(), width);
+                        crate::chrome::set_sidebar_width(resize_commands.clone(), width);
                         trace_sidebar_resize(drag.start_width, width, drag.started_at);
                         resize_drag.set(None);
                         resize_preview_width.set(None);

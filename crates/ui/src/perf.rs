@@ -1,7 +1,4 @@
-use papyro_core::{
-    models::{Theme, ViewMode},
-    DocumentSnapshot, DEFAULT_WINDOW_ID,
-};
+use papyro_core::{models::ViewMode, DocumentSnapshot, DEFAULT_WINDOW_ID};
 use std::time::Instant;
 
 pub(crate) fn perf_enabled() -> bool {
@@ -98,28 +95,6 @@ impl<'a> TraceContext<'a> {
     }
 }
 
-pub(crate) fn trace_sidebar_toggle(
-    trigger: &'static str,
-    collapsed: bool,
-    started_at: Option<Instant>,
-) {
-    if let Some(started_at) = started_at {
-        let ctx = TraceContext::chrome(trigger, "chrome.sidebar");
-        tracing::info!(
-            window_id = DEFAULT_WINDOW_ID,
-            interaction_path = ctx.interaction_path,
-            tab_id = ctx.tab_id(),
-            revision = ctx.revision(),
-            view_mode = ctx.view_mode(),
-            content_bytes = ctx.content_bytes(),
-            trigger_reason = ctx.trigger_reason,
-            collapsed,
-            elapsed_ms = started_at.elapsed().as_millis(),
-            "perf chrome toggle sidebar"
-        );
-    }
-}
-
 pub(crate) fn trace_sidebar_resize(start_width: u32, end_width: u32, started_at: Option<Instant>) {
     if let Some(started_at) = started_at {
         let ctx = TraceContext::chrome("drag_commit", "chrome.sidebar");
@@ -162,56 +137,6 @@ pub(crate) fn trace_chrome_open_modal(
     }
 }
 
-pub(crate) fn trace_view_mode_change(
-    trigger: &'static str,
-    from: &ViewMode,
-    to: &ViewMode,
-    started_at: Option<Instant>,
-) {
-    if let Some(started_at) = started_at {
-        let ctx = TraceContext {
-            tab_id: None,
-            revision: None,
-            view_mode: Some(to),
-            content_bytes: None,
-            trigger_reason: trigger,
-            interaction_path: "editor.view_mode",
-        };
-        tracing::info!(
-            window_id = DEFAULT_WINDOW_ID,
-            interaction_path = ctx.interaction_path,
-            tab_id = ctx.tab_id(),
-            revision = ctx.revision(),
-            view_mode = ctx.view_mode(),
-            content_bytes = ctx.content_bytes(),
-            trigger_reason = ctx.trigger_reason,
-            from = from.as_str(),
-            to = to.as_str(),
-            elapsed_ms = started_at.elapsed().as_millis(),
-            "perf editor view mode change"
-        );
-    }
-}
-
-pub(crate) fn trace_theme_toggle(from: &Theme, to: &Theme, started_at: Option<Instant>) {
-    if let Some(started_at) = started_at {
-        let ctx = TraceContext::chrome("toggle_theme", "chrome.theme");
-        tracing::info!(
-            window_id = DEFAULT_WINDOW_ID,
-            interaction_path = ctx.interaction_path,
-            tab_id = ctx.tab_id(),
-            revision = ctx.revision(),
-            view_mode = ctx.view_mode(),
-            content_bytes = ctx.content_bytes(),
-            trigger_reason = ctx.trigger_reason,
-            from = theme_name(from),
-            to = theme_name(to),
-            elapsed_ms = started_at.elapsed().as_millis(),
-            "perf chrome toggle theme"
-        );
-    }
-}
-
 pub(crate) fn trace_outline_extract(
     tab_id: Option<&str>,
     revision: Option<u64>,
@@ -244,14 +169,6 @@ pub(crate) fn trace_outline_extract(
             elapsed_ms = started_at.elapsed().as_millis(),
             "perf editor outline extract"
         );
-    }
-}
-
-fn theme_name(theme: &Theme) -> &'static str {
-    match theme {
-        Theme::System => "system",
-        Theme::Light => "light",
-        Theme::Dark => "dark",
     }
 }
 

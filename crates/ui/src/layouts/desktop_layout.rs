@@ -11,7 +11,6 @@ use dioxus::prelude::*;
 #[component]
 pub fn DesktopLayout() -> Element {
     let app = use_app_context();
-    let ui_state = app.ui_state;
     let commands = app.commands;
     let mut show_settings = use_signal(|| false);
     let mut show_quick_open = use_signal(|| false);
@@ -85,11 +84,7 @@ pub fn DesktopLayout() -> Element {
                     }
                     "save_active_note" => shortcut_commands.save_active_note.call(()),
                     "toggle_sidebar" => {
-                        crate::chrome::toggle_sidebar(
-                            ui_state,
-                            shortcut_commands.clone(),
-                            "shortcut",
-                        );
+                        crate::chrome::toggle_sidebar(shortcut_commands.clone(), "shortcut");
                     }
                     _ => {}
                 }

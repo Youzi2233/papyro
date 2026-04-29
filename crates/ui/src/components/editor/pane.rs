@@ -48,7 +48,6 @@ pub fn EditorPane() -> Element {
     let perf_started_at = perf_timer();
     let app = use_app_context();
     let editor_services = app.editor_services;
-    let ui_state = app.ui_state;
     let commands = app.commands;
     let pane_model = app.editor_pane_model;
     let surface_model = app.editor_surface_model.read().clone();
@@ -126,12 +125,7 @@ pub fn EditorPane() -> Element {
                     ViewToggle {
                         view_mode: view_mode.clone(),
                         on_change: move |mode| {
-                            crate::chrome::set_view_mode(
-                                ui_state,
-                                commands.clone(),
-                                mode,
-                                "tabbar",
-                            );
+                            crate::chrome::set_view_mode(commands.clone(), mode, "tabbar");
                         },
                     }
                 }

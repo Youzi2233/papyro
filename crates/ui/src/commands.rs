@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use papyro_core::models::{AppSettings, WorkspaceSettingsOverrides};
+use papyro_core::models::{AppSettings, ViewMode, WorkspaceSettingsOverrides};
 use std::path::PathBuf;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -111,6 +111,34 @@ pub struct DeleteTagRequest {
     pub id: String,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ChromeTrigger {
+    pub trigger: String,
+}
+
+impl ChromeTrigger {
+    pub fn new(trigger: impl Into<String>) -> Self {
+        Self {
+            trigger: trigger.into(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SetViewModeRequest {
+    pub mode: ViewMode,
+    pub trigger: String,
+}
+
+impl SetViewModeRequest {
+    pub fn new(mode: ViewMode, trigger: impl Into<String>) -> Self {
+        Self {
+            mode,
+            trigger: trigger.into(),
+        }
+    }
+}
+
 #[derive(Clone, PartialEq)]
 pub struct AppCommands {
     pub open_workspace: EventHandler<()>,
@@ -127,6 +155,10 @@ pub struct AppCommands {
     pub save_tab: EventHandler<String>,
     pub close_tab: EventHandler<String>,
     pub toggle_outline: EventHandler<()>,
+    pub toggle_sidebar: EventHandler<ChromeTrigger>,
+    pub toggle_theme: EventHandler<()>,
+    pub set_view_mode: EventHandler<SetViewModeRequest>,
+    pub set_sidebar_width: EventHandler<u32>,
     pub rename_selected: EventHandler<String>,
     pub move_selected_to: EventHandler<PathBuf>,
     pub set_selected_favorite: EventHandler<bool>,

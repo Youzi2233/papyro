@@ -16,7 +16,6 @@ use crate::theme::ThemeDomEffect;
 #[component]
 pub fn MobileLayout() -> Element {
     let app = use_app_context();
-    let ui_state = app.ui_state;
     let commands = app.commands;
     let sidebar_model = app.sidebar_model.read().clone();
     let open_workspace_commands = commands.clone();
@@ -57,7 +56,6 @@ pub fn MobileLayout() -> Element {
                             commands.open_workspace.call(());
                             if sidebar_collapsed {
                                 crate::chrome::toggle_sidebar(
-                                    ui_state,
                                     open_workspace_commands.clone(),
                                     "mobile_open_workspace",
                                 );
@@ -70,7 +68,6 @@ pub fn MobileLayout() -> Element {
                             class: "mn-button",
                             onclick: move |_| {
                                 crate::chrome::toggle_sidebar(
-                                    ui_state,
                                     browser_toggle_commands.clone(),
                                     "mobile_toolbar",
                                 );
@@ -86,7 +83,7 @@ pub fn MobileLayout() -> Element {
                     button {
                         class: "mn-button",
                         onclick: move |_| {
-                            crate::chrome::toggle_theme(ui_state, commands.clone());
+                            crate::chrome::toggle_theme(commands.clone());
                         },
                         if theme == Theme::Dark { "Light theme" } else { "Dark theme" }
                     }

@@ -1,7 +1,8 @@
 use papyro_core::models::{AppSettings, WorkspaceSettingsOverrides};
 use papyro_ui::commands::{
-    ContentChange, DeleteTagRequest, FileTarget, OpenMarkdownTarget, PasteImageRequest,
-    RenameTagRequest, RestoreTrashedNoteTarget, SetTagColorRequest, UpsertTagRequest,
+    ChromeTrigger, ContentChange, DeleteTagRequest, FileTarget, OpenMarkdownTarget,
+    PasteImageRequest, RenameTagRequest, RestoreTrashedNoteTarget, SetTagColorRequest,
+    SetViewModeRequest, UpsertTagRequest,
 };
 use std::path::PathBuf;
 
@@ -21,6 +22,10 @@ pub enum AppAction {
     SaveTab(SaveTab),
     CloseTab(CloseTab),
     ToggleOutline,
+    ToggleSidebar(ChromeTrigger),
+    ToggleTheme,
+    SetViewMode(SetViewModeRequest),
+    SetSidebarWidth(SetSidebarWidth),
     RenameSelected(RenameSelected),
     MoveSelectedTo(MoveSelectedTo),
     SetSelectedFavorite(SetSelectedFavorite),
@@ -82,6 +87,11 @@ pub struct SaveTab {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CloseTab {
     pub tab_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SetSidebarWidth {
+    pub width: u32,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -166,6 +176,10 @@ impl AppAction {
             Self::SaveTab(_) => "save_tab",
             Self::CloseTab(_) => "close_tab",
             Self::ToggleOutline => "toggle_outline",
+            Self::ToggleSidebar(_) => "toggle_sidebar",
+            Self::ToggleTheme => "toggle_theme",
+            Self::SetViewMode(_) => "set_view_mode",
+            Self::SetSidebarWidth(_) => "set_sidebar_width",
             Self::RenameSelected(_) => "rename_selected",
             Self::MoveSelectedTo(_) => "move_selected_to",
             Self::SetSelectedFavorite(_) => "set_selected_favorite",
@@ -208,6 +222,9 @@ impl AppAction {
             Self::SaveActiveNote | Self::SaveTab(_) => "editor.save",
             Self::CloseTab(_) => "editor.tab_close",
             Self::ToggleOutline => "chrome.outline",
+            Self::ToggleSidebar(_) | Self::SetSidebarWidth(_) => "chrome.sidebar",
+            Self::ToggleTheme => "chrome.theme",
+            Self::SetViewMode(_) => "editor.view_mode",
             Self::UpsertTag(_) | Self::RenameTag(_) | Self::SetTagColor(_) | Self::DeleteTag(_) => {
                 "workspace.tags"
             }
@@ -266,6 +283,18 @@ impl AppAction {
 
     pub fn close_tab(tab_id: String) -> Self {
         Self::CloseTab(CloseTab { tab_id })
+    }
+
+    pub fn toggle_sidebar(trigger: ChromeTrigger) -> Self {
+        Self::ToggleSidebar(trigger)
+    }
+
+    pub fn set_view_mode(request: SetViewModeRequest) -> Self {
+        Self::SetViewMode(request)
+    }
+
+    pub fn set_sidebar_width(width: u32) -> Self {
+        Self::SetSidebarWidth(SetSidebarWidth { width })
     }
 
     pub fn rename_selected(name: String) -> Self {

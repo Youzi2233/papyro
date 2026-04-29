@@ -3,7 +3,8 @@ use crate::assets::save_pasted_image_asset;
 use crate::effects;
 use crate::handlers::{file_ops, notes, search, tags, workspace};
 use crate::perf::{
-    perf_timer, tab_revision_and_bytes, trace_app_dispatch, trace_editor_switch_tab,
+    perf_timer, tab_revision_and_bytes, trace_app_dispatch, trace_chrome_toggle_sidebar,
+    trace_chrome_toggle_theme, trace_editor_switch_tab, trace_editor_view_mode_change,
     trace_runtime_close_tab_handler,
 };
 use crate::runtime::AppShell;
@@ -11,9 +12,14 @@ use crate::settings_persistence::{enqueue_global_settings_save, enqueue_workspac
 use crate::state::RuntimeState;
 use dioxus::prelude::*;
 use papyro_core::models::{AppSettings, WorkspaceSettingsOverrides, WorkspaceTreeState};
-use papyro_core::{FileState, NoteStorage, UiState};
+use papyro_core::{
+    settings_target_theme, sidebar_toggle_target, sidebar_width_target, theme_toggle_target,
+    view_mode_target, ChromeSettingsTarget, FileState, NoteStorage, UiState,
+};
 use papyro_platform::PlatformApi;
-use papyro_ui::commands::{AppCommands, ContentChange, OpenMarkdownTarget, PasteImageRequest};
+use papyro_ui::commands::{
+    AppCommands, ContentChange, OpenMarkdownTarget, PasteImageRequest, SetViewModeRequest,
+};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -149,6 +155,18 @@ impl AppDispatcher {
             AppAction::ToggleOutline => {
                 let mut ui_state = self.state.ui_state;
                 ui_state.write().toggle_outline();
+            }
+            AppAction::ToggleSidebar(action) => {
+                toggle_sidebar(self.storage.clone(), self.state, action.trigger);
+            }
+            AppAction::ToggleTheme => {
+                toggle_theme(self.storage.clone(), self.state);
+            }
+            AppAction::SetViewMode(action) => {
+                set_view_mode(self.storage.clone(), self.state, action);
+            }
+            AppAction::SetSidebarWidth(action) => {
+                set_sidebar_width(self.storage.clone(), self.state, action.width);
             }
             AppAction::RenameSelected(action) => {
                 file_ops::rename_selected(
@@ -319,6 +337,10 @@ impl AppDispatcher {
         let save_tab = self.clone();
         let close_tab = self.clone();
         let toggle_outline = self.clone();
+        let toggle_sidebar = self.clone();
+        let toggle_theme = self.clone();
+        let set_view_mode = self.clone();
+        let set_sidebar_width = self.clone();
         let rename_selected = self.clone();
         let move_selected_to = self.clone();
         let set_selected_favorite = self.clone();
@@ -378,6 +400,18 @@ impl AppDispatcher {
             }),
             toggle_outline: EventHandler::new(move |_| {
                 toggle_outline.dispatch(AppAction::ToggleOutline);
+            }),
+            toggle_sidebar: EventHandler::new(move |trigger| {
+                toggle_sidebar.dispatch(AppAction::toggle_sidebar(trigger));
+            }),
+            toggle_theme: EventHandler::new(move |_| {
+                toggle_theme.dispatch(AppAction::ToggleTheme);
+            }),
+            set_view_mode: EventHandler::new(move |request| {
+                set_view_mode.dispatch(AppAction::set_view_mode(request));
+            }),
+            set_sidebar_width: EventHandler::new(move |width| {
+                set_sidebar_width.dispatch(AppAction::set_sidebar_width(width));
             }),
             rename_selected: EventHandler::new(move |name| {
                 rename_selected.dispatch(AppAction::rename_selected(name));
@@ -609,6 +643,81 @@ fn apply_workspace_settings(
     );
 }
 
+fn toggle_sidebar(storage: Arc<dyn NoteStorage>, state: RuntimeState, trigger: String) {
+    let started_at = perf_timer();
+    let (collapsed, target) = {
+        let ui_state = state.ui_state.read();
+        sidebar_toggle_target(&ui_state)
+    };
+
+    apply_chrome_settings_target(storage, state, target);
+    trace_chrome_toggle_sidebar(&trigger, collapsed, started_at);
+}
+
+fn toggle_theme(storage: Arc<dyn NoteStorage>, state: RuntimeState) {
+    let started_at = perf_timer();
+    let (from_theme, target) = {
+        let ui_state = state.ui_state.read();
+        (ui_state.theme().clone(), theme_toggle_target(&ui_state))
+    };
+    let to_theme = settings_target_theme(&target);
+
+    apply_chrome_settings_target(storage, state, target);
+    trace_chrome_toggle_theme(&from_theme, &to_theme, started_at);
+}
+
+fn set_view_mode(storage: Arc<dyn NoteStorage>, state: RuntimeState, request: SetViewModeRequest) {
+    let started_at = perf_timer();
+    let Some((previous_mode, next_mode, target)) = ({
+        let ui_state = state.ui_state.read();
+        view_mode_target(&ui_state, request.mode)
+    }) else {
+        return;
+    };
+
+    apply_chrome_settings_target(storage, state, target);
+    trace_editor_view_mode_change(&request.trigger, &previous_mode, &next_mode, started_at);
+}
+
+fn set_sidebar_width(storage: Arc<dyn NoteStorage>, state: RuntimeState, width: u32) {
+    let target = {
+        let ui_state = state.ui_state.read();
+        sidebar_width_target(&ui_state, width)
+    };
+
+    if let Some(target) = target {
+        apply_chrome_settings_target(storage, state, target);
+    }
+}
+
+fn apply_chrome_settings_target(
+    storage: Arc<dyn NoteStorage>,
+    state: RuntimeState,
+    target: ChromeSettingsTarget,
+) {
+    match target {
+        ChromeSettingsTarget::Global(settings) => {
+            apply_settings(
+                storage,
+                state.ui_state,
+                state.status_message,
+                state.settings_persistence,
+                settings,
+            );
+        }
+        ChromeSettingsTarget::Workspace(overrides) => {
+            apply_workspace_settings(
+                storage,
+                state.file_state,
+                state.ui_state,
+                state.status_message,
+                state.settings_persistence,
+                overrides,
+            );
+        }
+    }
+}
+
 fn toggle_expanded_path(
     storage: Arc<dyn NoteStorage>,
     mut file_state: Signal<FileState>,
@@ -677,8 +786,8 @@ mod tests {
     use super::*;
     use papyro_core::models::{Theme, ViewMode, Workspace, WorkspaceSettingsOverrides};
     use papyro_ui::commands::{
-        DeleteTagRequest, OpenMarkdownTarget, RenameTagRequest, RestoreTrashedNoteTarget,
-        SetTagColorRequest, UpsertTagRequest,
+        ChromeTrigger, DeleteTagRequest, OpenMarkdownTarget, RenameTagRequest,
+        RestoreTrashedNoteTarget, SetTagColorRequest, SetViewModeRequest, UpsertTagRequest,
     };
 
     #[test]
@@ -807,6 +916,27 @@ mod tests {
         assert_eq!(
             AppAction::ToggleOutline.trace_interaction_path(),
             "chrome.outline"
+        );
+        assert_eq!(
+            AppAction::toggle_sidebar(ChromeTrigger::new("test")),
+            AppAction::ToggleSidebar(ChromeTrigger::new("test"))
+        );
+        assert_eq!(
+            AppAction::ToggleTheme.trace_interaction_path(),
+            "chrome.theme"
+        );
+        assert_eq!(
+            AppAction::set_view_mode(SetViewModeRequest::new(ViewMode::Preview, "test")),
+            AppAction::SetViewMode(SetViewModeRequest::new(ViewMode::Preview, "test"))
+        );
+        assert_eq!(
+            AppAction::set_view_mode(SetViewModeRequest::new(ViewMode::Preview, "test"))
+                .trace_interaction_path(),
+            "editor.view_mode"
+        );
+        assert_eq!(
+            AppAction::set_sidebar_width(320),
+            AppAction::SetSidebarWidth(crate::actions::SetSidebarWidth { width: 320 })
         );
         assert_eq!(
             AppAction::content_changed("tab-a".to_string(), "body".to_string()).trace_tab_id(),

@@ -6,7 +6,6 @@ use papyro_core::models::Theme;
 #[component]
 pub fn AppHeader(on_settings: EventHandler<()>) -> Element {
     let app = use_app_context();
-    let ui_state = app.ui_state;
     let commands = app.commands;
     let sidebar_commands = commands.clone();
     let theme_commands = commands.clone();
@@ -22,7 +21,7 @@ pub fn AppHeader(on_settings: EventHandler<()>) -> Element {
                 label: "Toggle sidebar (Ctrl+\\)",
                 icon: sidebar_icon,
                 on_click: move |_| {
-                    crate::chrome::toggle_sidebar(ui_state, sidebar_commands.clone(), "header");
+                    crate::chrome::toggle_sidebar(sidebar_commands.clone(), "header");
                 },
             }
             span { class: "mn-brand-title", "Papyro" }
@@ -32,7 +31,7 @@ pub fn AppHeader(on_settings: EventHandler<()>) -> Element {
                     label: "Toggle theme",
                     icon: theme_icon,
                     on_click: move |_| {
-                        crate::chrome::toggle_theme(ui_state, theme_commands.clone());
+                        crate::chrome::toggle_theme(theme_commands.clone());
                     },
                 }
                 IconButton {
