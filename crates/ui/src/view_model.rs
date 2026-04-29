@@ -501,7 +501,7 @@ impl RecoveryDraftsViewModel {
                 updated_at: draft.updated_at,
             })
             .collect::<Vec<_>>();
-        drafts.sort_by(|left, right| right.updated_at.cmp(&left.updated_at));
+        drafts.sort_by_key(|draft| std::cmp::Reverse(draft.updated_at));
         Self { drafts }
     }
 
