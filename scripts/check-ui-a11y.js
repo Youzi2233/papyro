@@ -14,6 +14,10 @@ const DEFAULT_PATHS = ["crates/ui/src"];
 const ARIA_LABEL_TYPO = /\baria_label\s*:/g;
 const ICON_BUTTON_CLASS_RULES = [
   {
+    className: "mn-icon-btn",
+    description: "icon button",
+  },
+  {
     className: "mn-modal-close",
     description: "modal close button",
   },
@@ -136,6 +140,22 @@ function hasAriaLabelNear(lines, index) {
 function runSelfTest() {
   assert(scanText('span { "aria-label": "Close tab" }').length === 0);
   assert(scanText('span { aria_label: "Close tab" }')[0].line === 1);
+  assert(
+    scanText(`button {
+      class: "mn-icon-btn",
+      title: "Toggle sidebar",
+      "aria-label": "Toggle sidebar",
+      "x"
+    }`).length === 0,
+  );
+  const iconButtonFailures = scanText(`button {
+    class: "mn-icon-btn",
+    title: "Toggle sidebar",
+    "x"
+  }`);
+  assert(iconButtonFailures.length === 1);
+  assert(iconButtonFailures[0].message.includes("icon button"));
+
   assert(
     scanText(`button {
       class: "mn-modal-close",
