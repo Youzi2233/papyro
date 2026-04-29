@@ -392,6 +392,46 @@ test("set_content updates content without echoing content_changed", () => {
   assert.deepEqual(sent, []);
 });
 
+test("attach_view_to_tab initializes runtime entry without echoing content", () => {
+  const registry = new Map();
+  const sent = [];
+  let layoutRefreshes = 0;
+  const view = fakeView("", { from: 0, to: 0 }, () => {
+    const tabId = view.dom.dataset.tabId;
+    const entry = registry.get(tabId);
+    if (entry && !entry.suppressChange) {
+      entry.dioxus?.send({ type: "content_changed", tab_id: tabId });
+    }
+  });
+  const container = fakeContainer();
+
+  attachViewToTab({
+    editorRegistry: registry,
+    view,
+    tabId: "tab-a",
+    container,
+    instanceId: "host-a",
+    initialContent: "Initial note",
+    viewMode: "Preview",
+    refreshEditorLayout: () => {
+      layoutRefreshes += 1;
+    },
+  });
+  registry.get("tab-a").dioxus = { send: (message) => sent.push(message) };
+
+  assert.equal(view.dom.dataset.tabId, "tab-a");
+  assert.equal(view.dom.dataset.viewMode, "preview");
+  assert.equal(view.dom.parentElement, container);
+  assert.equal(view.state.doc.toString(), "Initial note");
+  assert.equal(layoutRefreshes, 1);
+  assert.equal(registry.get("tab-a").instanceId, "host-a");
+  assert.equal(registry.get("tab-a").suppressChange, false);
+  assert.deepEqual(registry.get("tab-a").preferences, {
+    autoLinkPaste: true,
+  });
+  assert.deepEqual(sent, []);
+});
+
 test("apply_format wraps a selected range", () => {
   const view = fakeView("word", { from: 0, to: 4 });
 
