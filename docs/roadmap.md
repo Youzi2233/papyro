@@ -651,7 +651,7 @@ Tabs 模式适合一个窗口内管理多篇笔记，是默认工作方式。
 MultiWindow 模式适合用户把多篇笔记摊开在多个窗口中写作。它由设置决定，重启后全局生效，但必须满足可靠性门控后才能实现。
 
 - [x] 先完成 `WindowSession` 文档和窗口注册表，再实现多窗口打开。
-- [ ] 先完成保存 mtime/hash 冲突检测，再允许同一文件多窗口编辑。
+- [x] 先完成保存 mtime/hash 冲突检测，再允许同一文件多窗口编辑。见 Phase 7.1 的 `disk_content_hash` / `SaveConflict` 验收证据。
 - [ ] 先完成已运行实例外部打开事件路由，再做系统双击聚焦已有窗口。
 - [ ] 每个文档窗口必须拥有独立 `WindowSession`、`tab_contents`、chrome state 和 editor host。
 - [ ] 多窗口模式下可以隐藏或弱化 tabbar，避免“窗口里再套 tab”的混乱体验。
