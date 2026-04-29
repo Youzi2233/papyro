@@ -54,6 +54,7 @@ pub fn CommandPaletteModal(on_close: EventHandler<()>, on_settings: EventHandler
     let workspace_model = app.workspace_model.read().clone();
     let editor_model = app.editor_model.read().clone();
     let theme = (app.theme)();
+    let outline_visible = (app.outline_visible)();
     let mut query = use_signal(String::new);
     let mut active_index = use_signal(|| 0usize);
 
@@ -66,7 +67,7 @@ pub fn CommandPaletteModal(on_close: EventHandler<()>, on_settings: EventHandler
         selected_note_name: selected_note_name(&workspace_model),
         theme,
         view_mode: editor_model.view_mode,
-        outline_visible: ui_state.read().outline_visible(),
+        outline_visible,
     });
     let query_value = query();
     let filtered = filter_command_palette_actions(&actions, &query_value);

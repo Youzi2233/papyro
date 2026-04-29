@@ -60,6 +60,7 @@ pub struct AppContext {
     pub theme: Memo<Theme>,
     pub sidebar_collapsed: Memo<bool>,
     pub sidebar_width: Memo<u32>,
+    pub outline_visible: Memo<bool>,
 }
 
 pub fn use_app_context() -> AppContext {

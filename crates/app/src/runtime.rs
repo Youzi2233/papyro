@@ -92,6 +92,7 @@ pub fn use_app_runtime(
     let theme = use_memo(move || state.ui_state.read().theme().clone());
     let sidebar_collapsed = use_memo(move || state.ui_state.read().sidebar_collapsed());
     let sidebar_width = use_memo(move || state.ui_state.read().settings.sidebar_width);
+    let outline_visible = use_memo(move || state.ui_state.read().outline_visible());
     use_context_provider(|| AppContext {
         file_state: state.file_state,
         editor_tabs: state.editor_tabs,
@@ -119,6 +120,7 @@ pub fn use_app_runtime(
         theme,
         sidebar_collapsed,
         sidebar_width,
+        outline_visible,
     });
 
     crate::effects::use_workspace_watcher(state, watch_storage);
