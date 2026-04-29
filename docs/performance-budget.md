@@ -39,6 +39,7 @@ continue work after the interaction if the writing surface stays responsive.
 
 ## Trace Names
 
+- `perf app dispatch action`
 - `perf editor pane render prep`
 - `perf editor open markdown`
 - `perf editor switch tab`

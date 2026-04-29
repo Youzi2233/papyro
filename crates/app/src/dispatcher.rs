@@ -3,7 +3,8 @@ use crate::assets::save_pasted_image_asset;
 use crate::effects;
 use crate::handlers::{file_ops, notes, search, tags, workspace};
 use crate::perf::{
-    perf_timer, tab_revision_and_bytes, trace_editor_switch_tab, trace_runtime_close_tab_handler,
+    perf_timer, tab_revision_and_bytes, trace_app_dispatch, trace_editor_switch_tab,
+    trace_runtime_close_tab_handler,
 };
 use crate::runtime::AppShell;
 use crate::settings_persistence::{enqueue_global_settings_save, enqueue_workspace_settings_save};
@@ -46,6 +47,7 @@ impl AppDispatcher {
     }
 
     pub fn dispatch(&self, action: AppAction) {
+        trace_app_dispatch(&action, self.state, perf_timer());
         match action {
             AppAction::OpenWorkspace => {
                 let platform = self.platform.clone();
@@ -769,6 +771,15 @@ mod tests {
             AppAction::SetSelectedFavorite(crate::actions::SetSelectedFavorite { favorite: true })
         );
         assert_eq!(AppAction::empty_trash(), AppAction::EmptyTrash);
+        assert_eq!(AppAction::SaveActiveNote.trace_name(), "save_active_note");
+        assert_eq!(
+            AppAction::close_tab("tab-a".to_string()).trace_interaction_path(),
+            "editor.tab_close"
+        );
+        assert_eq!(
+            AppAction::content_changed("tab-a".to_string(), "body".to_string()).trace_tab_id(),
+            Some("tab-a")
+        );
         assert_eq!(
             AppAction::upsert_tag(UpsertTagRequest {
                 name: "Planning".to_string(),

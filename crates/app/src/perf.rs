@@ -1,3 +1,6 @@
+use crate::actions::AppAction;
+use crate::state::RuntimeState;
+use dioxus::prelude::ReadableExt;
 use papyro_core::{models::ViewMode, TabContentsMap, DEFAULT_WINDOW_ID};
 use std::path::Path;
 use std::time::Instant;
@@ -18,6 +21,37 @@ pub(crate) fn tab_revision_and_bytes(
         tab_contents.revision_for_tab(tab_id),
         tab_contents.content_for_tab(tab_id).map(str::len),
     )
+}
+
+pub(crate) fn trace_app_dispatch(
+    action: &AppAction,
+    state: RuntimeState,
+    started_at: Option<Instant>,
+) {
+    if let Some(started_at) = started_at {
+        let view_mode = state.ui_state.read().view_mode.clone();
+        let tab_id = action
+            .trace_tab_id()
+            .map(str::to_string)
+            .or_else(|| state.editor_tabs.read().active_tab_id.clone());
+        let (revision, content_bytes) = tab_id
+            .as_deref()
+            .map(|tab_id| tab_revision_and_bytes(&state.tab_contents.read(), tab_id))
+            .unwrap_or((None, None));
+
+        tracing::info!(
+            window_id = DEFAULT_WINDOW_ID,
+            interaction_path = action.trace_interaction_path(),
+            tab_id = trace_tab_id(tab_id.as_deref()),
+            revision = trace_revision(revision),
+            view_mode = view_mode.as_str(),
+            content_bytes = trace_content_bytes(content_bytes),
+            trigger_reason = "app_dispatch",
+            action = action.trace_name(),
+            elapsed_ms = started_at.elapsed().as_millis(),
+            "perf app dispatch action"
+        );
+    }
 }
 
 pub(crate) fn trace_editor_open_markdown(

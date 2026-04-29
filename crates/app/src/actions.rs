@@ -143,6 +143,80 @@ pub struct SaveWorkspaceSettings {
 }
 
 impl AppAction {
+    pub(crate) fn trace_name(&self) -> &'static str {
+        match self {
+            Self::OpenWorkspace => "open_workspace",
+            Self::OpenWorkspacePath(_) => "open_workspace_path",
+            Self::RefreshWorkspace => "refresh_workspace",
+            Self::CreateNote(_) => "create_note",
+            Self::CreateFolder(_) => "create_folder",
+            Self::OpenMarkdown(_) => "open_markdown",
+            Self::SearchWorkspace(_) => "search_workspace",
+            Self::ContentChanged(_) => "content_changed",
+            Self::PasteImage(_) => "paste_image",
+            Self::ActivateTab(_) => "activate_tab",
+            Self::SaveActiveNote => "save_active_note",
+            Self::SaveTab(_) => "save_tab",
+            Self::CloseTab(_) => "close_tab",
+            Self::RenameSelected(_) => "rename_selected",
+            Self::MoveSelectedTo(_) => "move_selected_to",
+            Self::SetSelectedFavorite(_) => "set_selected_favorite",
+            Self::RestoreTrashedNote(_) => "restore_trashed_note",
+            Self::EmptyTrash => "empty_trash",
+            Self::UpsertTag(_) => "upsert_tag",
+            Self::RenameTag(_) => "rename_tag",
+            Self::SetTagColor(_) => "set_tag_color",
+            Self::DeleteTag(_) => "delete_tag",
+            Self::DeleteSelected => "delete_selected",
+            Self::ToggleExpandedPath(_) => "toggle_expanded_path",
+            Self::RevealInExplorer(_) => "reveal_in_explorer",
+            Self::ExportHtml => "export_html",
+            Self::SaveSettings(_) => "save_settings",
+            Self::SaveWorkspaceSettings(_) => "save_workspace_settings",
+        }
+    }
+
+    pub(crate) fn trace_interaction_path(&self) -> &'static str {
+        match self {
+            Self::OpenWorkspace | Self::OpenWorkspacePath(_) | Self::RefreshWorkspace => {
+                "workspace.open"
+            }
+            Self::CreateNote(_)
+            | Self::CreateFolder(_)
+            | Self::RenameSelected(_)
+            | Self::MoveSelectedTo(_)
+            | Self::SetSelectedFavorite(_)
+            | Self::RestoreTrashedNote(_)
+            | Self::EmptyTrash
+            | Self::DeleteSelected
+            | Self::ToggleExpandedPath(_) => "workspace.file_ops",
+            Self::OpenMarkdown(_) => "editor.open_markdown",
+            Self::SearchWorkspace(_) => "workspace.search",
+            Self::ContentChanged(_) => "editor.input",
+            Self::PasteImage(_) => "editor.paste_image",
+            Self::ActivateTab(_) => "editor.tab_switch",
+            Self::SaveActiveNote | Self::SaveTab(_) => "editor.save",
+            Self::CloseTab(_) => "editor.tab_close",
+            Self::UpsertTag(_) | Self::RenameTag(_) | Self::SetTagColor(_) | Self::DeleteTag(_) => {
+                "workspace.tags"
+            }
+            Self::RevealInExplorer(_) => "platform.reveal",
+            Self::ExportHtml => "platform.export",
+            Self::SaveSettings(_) | Self::SaveWorkspaceSettings(_) => "chrome.settings",
+        }
+    }
+
+    pub(crate) fn trace_tab_id(&self) -> Option<&str> {
+        match self {
+            Self::ContentChanged(action) => Some(action.tab_id.as_str()),
+            Self::PasteImage(action) => Some(action.request.tab_id.as_str()),
+            Self::ActivateTab(action) => Some(action.tab_id.as_str()),
+            Self::SaveTab(action) => Some(action.tab_id.as_str()),
+            Self::CloseTab(action) => Some(action.tab_id.as_str()),
+            _ => None,
+        }
+    }
+
     pub fn create_note(name: String) -> Self {
         Self::CreateNote(CreateNote { name })
     }
