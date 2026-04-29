@@ -82,6 +82,8 @@ pub(super) fn EditorTabButton(item: EditorTabItemViewModel) -> Element {
         .as_ref()
         .map(|indicator| indicator.marker)
         .unwrap_or_default();
+    let open_label = format!("Open {}", item.title);
+    let close_label = tab_close_label(&item.title);
 
     rsx! {
         div {
@@ -90,20 +92,22 @@ pub(super) fn EditorTabButton(item: EditorTabItemViewModel) -> Element {
             class: if item.is_active { "mn-tab active" } else { "mn-tab" },
             button {
                 class: "mn-tab-title",
+                "aria-label": "{open_label}",
                 onclick: move |_| commands.activate_tab.call(activate_tab_id.clone()),
                 "{item.title}"
                 if has_status_indicator {
                     span {
                         class: "mn-tab-save-status {status_class}",
                         title: "{status_label}",
-                        aria_label: "{status_label}",
+                        "aria-label": "{status_label}",
                         "{status_marker}"
                     }
                 }
             }
             button {
                 class: "mn-tab-close",
-                title: "Close tab",
+                title: "{close_label}",
+                "aria-label": "{close_label}",
                 "data-close-tab-id": "{close_tab_id}",
                 "data-next-active-tab-id": "{item.next_active_tab_id}",
                 "data-immediate-close": if item.should_retire_host_on_close { "true" } else { "false" },
@@ -134,6 +138,10 @@ pub(super) fn EditorTabButton(item: EditorTabItemViewModel) -> Element {
             }
         }
     }
+}
+
+fn tab_close_label(title: &str) -> String {
+    format!("Close {title}")
 }
 
 fn save_status_attr(save_status: &SaveStatus) -> &'static str {
@@ -185,5 +193,10 @@ mod tests {
                 marker: "!",
             })
         );
+    }
+
+    #[test]
+    fn tab_close_label_names_target_tab() {
+        assert_eq!(tab_close_label("Draft"), "Close Draft");
     }
 }
