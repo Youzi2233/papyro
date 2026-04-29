@@ -370,8 +370,8 @@ Editor runtime lane
 
 - [x] 已有 `PAPYRO_PERF` trace 基础。
 - [ ] 为每个主路径建立 trace chain：用户事件、Dioxus action、use case、state update、render prep、editor command。
-- [ ] trace 必须包含 tab id、window id、revision、view mode、file size、trigger reason。
-- [ ] 性能日志按交互路径聚合，避免只看到零散点。
+- [x] trace 必须包含 tab id、window id、revision、view mode、file size、trigger reason。
+- [x] 性能日志按交互路径聚合，避免只看到零散点。
 - [x] Tab close 性能观测不再在点击热路径启动 JS eval phase probe。
 - [x] 增加脚本化手工场景，覆盖 100KB、1MB、5MB Markdown：`node scripts/generate-perf-fixtures.js`。
 

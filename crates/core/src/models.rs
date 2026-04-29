@@ -244,6 +244,14 @@ impl ViewMode {
     pub fn is_editable(&self) -> bool {
         matches!(self, Self::Source | Self::Hybrid)
     }
+
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Source => "source",
+            Self::Hybrid => "hybrid",
+            Self::Preview => "preview",
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
@@ -325,6 +333,13 @@ mod tests {
         assert_eq!(overrides.line_height, None);
         assert_eq!(overrides.view_mode, None);
         assert_eq!(global.with_workspace_overrides(&overrides), scoped);
+    }
+
+    #[test]
+    fn view_mode_as_str_matches_trace_values() {
+        assert_eq!(ViewMode::Source.as_str(), "source");
+        assert_eq!(ViewMode::Hybrid.as_str(), "hybrid");
+        assert_eq!(ViewMode::Preview.as_str(), "preview");
     }
 
     #[test]

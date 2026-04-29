@@ -40,7 +40,7 @@ continue work after the interaction if the writing surface stays responsive.
 ## Trace Names
 
 - `perf editor pane render prep`
-- `perf editor open note`
+- `perf editor open markdown`
 - `perf editor switch tab`
 - `perf editor view mode change`
 - `perf editor outline extract`
@@ -48,13 +48,34 @@ continue work after the interaction if the writing surface stays responsive.
 - `perf editor command set_preferences`
 - `perf editor input change`
 - `perf editor preview render`
+- `perf editor host lifecycle`
+- `perf editor host destroy`
+- `perf editor stale bridge cleanup`
 - `perf chrome toggle sidebar`
 - `perf chrome resize sidebar`
+- `perf chrome toggle theme`
 - `perf chrome open modal`
 - `perf tab close trigger`
 - `perf runtime close_tab handler`
 
 Add new trace points before changing the budget.
+
+## Trace Context
+
+Every `PAPYRO_PERF` trace should include these shared fields so logs can be
+grouped by interaction path instead of read as isolated points:
+
+- `interaction_path`: logical lane, for example `editor.tab_close`,
+  `editor.view_mode`, `editor.input`, `document.derived`, `chrome.sidebar`,
+  `chrome.theme`, or `chrome.modal`.
+- `window_id`: current window identity. The single-window implementation uses
+  `main` until the future `WindowSession` boundary is implemented.
+- `tab_id`: active or target tab id, or `none` for chrome-only traces.
+- `revision`: document revision, or `-1` when the trace is not document-bound.
+- `view_mode`: `source`, `hybrid`, `preview`, or `none`.
+- `content_bytes`: document size, or `-1` when no document is involved.
+- `trigger_reason`: user or runtime trigger, for example `click`, `shortcut`,
+  `app_action`, `document_snapshot`, `size_gate`, or `runtime_command`.
 
 ## Manual Scenarios
 

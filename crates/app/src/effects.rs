@@ -1,4 +1,5 @@
 use crate::handlers::workspace;
+use crate::perf::{perf_timer, trace_editor_input_change};
 use crate::state::RuntimeState;
 use crate::workspace_flow::{
     apply_save_failure, apply_save_success, begin_save_tab, write_save_snapshot, SaveTabSnapshot,
@@ -6,7 +7,7 @@ use crate::workspace_flow::{
 use dioxus::prelude::*;
 use papyro_core::{models::DocumentStats, NoteStorage, RecentFile, SavedNote};
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 pub(crate) fn record_content_change(
     storage: Arc<dyn NoteStorage>,
@@ -14,7 +15,7 @@ pub(crate) fn record_content_change(
     tab_id: String,
     content: String,
 ) {
-    let perf_started_at = perf_enabled().then(Instant::now);
+    let perf_started_at = perf_timer();
     let byte_len = content.len();
     let revision = papyro_core::change_tab_content(
         &mut state.editor_tabs.write(),
@@ -22,30 +23,21 @@ pub(crate) fn record_content_change(
         &tab_id,
         content,
     );
+    let view_mode = state.ui_state.read().view_mode.clone();
 
     let Some(revision) = revision else {
-        if let Some(started_at) = perf_started_at {
-            tracing::info!(
-                tab_id = %tab_id,
-                bytes = byte_len,
-                changed = false,
-                elapsed_ms = started_at.elapsed().as_millis(),
-                "perf editor input change"
-            );
-        }
+        trace_editor_input_change(&tab_id, None, &view_mode, byte_len, false, perf_started_at);
         return;
     };
 
-    if let Some(started_at) = perf_started_at {
-        tracing::info!(
-            tab_id = %tab_id,
-            revision,
-            bytes = byte_len,
-            changed = true,
-            elapsed_ms = started_at.elapsed().as_millis(),
-            "perf editor input change"
-        );
-    }
+    trace_editor_input_change(
+        &tab_id,
+        Some(revision),
+        &view_mode,
+        byte_len,
+        true,
+        perf_started_at,
+    );
 
     let delay = Duration::from_millis(state.ui_state.read().settings.auto_save_delay_ms);
 
@@ -298,8 +290,4 @@ pub(crate) fn use_workspace_watcher(state: RuntimeState, storage: Arc<dyn NoteSt
             }
         }
     });
-}
-
-fn perf_enabled() -> bool {
-    std::env::var_os("PAPYRO_PERF").is_some()
 }

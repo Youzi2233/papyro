@@ -4,6 +4,7 @@ pub mod editor_state;
 pub mod file_state;
 pub mod models;
 pub mod search;
+pub mod session;
 pub mod storage;
 pub mod ui_state;
 pub use assets::{
@@ -24,6 +25,7 @@ pub use search::{
     SearchField, SearchHighlight, SearchMatch, SearchResult, WorkspaceSearchQuery,
     WorkspaceSearchState,
 };
+pub use session::DEFAULT_WINDOW_ID;
 pub use storage::{
     DeletePreview, NoteStorage, OpenedNote, SavedNote, WorkspaceBootstrap, WorkspaceSnapshot,
 };

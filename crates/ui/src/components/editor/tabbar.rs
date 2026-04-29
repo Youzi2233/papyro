@@ -1,6 +1,7 @@
 use super::bridge::perf_enabled;
 use crate::commands::AppCommands;
 use crate::context::use_app_context;
+use crate::perf::trace_tab_close_trigger;
 use crate::view_model::EditorTabItemViewModel;
 use dioxus::prelude::*;
 use std::time::Instant;
@@ -10,14 +11,7 @@ fn request_tab_close(commands: AppCommands, close_tab_id: String, trigger: &'sta
 
     commands.close_tab.call(close_tab_id.clone());
 
-    if let Some(started_at) = perf_started_at {
-        tracing::info!(
-            tab_id = %close_tab_id,
-            trigger,
-            elapsed_ms = started_at.elapsed().as_millis(),
-            "perf tab close trigger"
-        );
-    }
+    trace_tab_close_trigger(&close_tab_id, trigger, perf_started_at);
 }
 
 #[component]

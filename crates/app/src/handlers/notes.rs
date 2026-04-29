@@ -4,8 +4,8 @@ use papyro_editor::parser::summarize_markdown;
 use papyro_ui::commands::OpenMarkdownTarget;
 use std::path::PathBuf;
 use std::sync::Arc;
-use std::time::Instant;
 
+use crate::perf::{perf_timer, trace_editor_open_markdown};
 use crate::state::RuntimeState;
 use crate::workspace_flow::{
     apply_save_failure, apply_save_success, begin_save_tab, open_markdown_target_from_storage,
@@ -17,7 +17,7 @@ pub async fn open_markdown(
     mut state: RuntimeState,
     target: OpenMarkdownTarget,
 ) {
-    let perf_started_at = perf_enabled().then(Instant::now);
+    let perf_started_at = perf_timer();
     let perf_path = target.path.clone();
     let mut next_file_state = state.file_state.read().clone();
     let mut next_editor_tabs = state.editor_tabs.read().clone();
@@ -45,20 +45,25 @@ pub async fn open_markdown(
 
     match result {
         Ok(Ok(next_state)) => {
-            if let Some(started_at) = perf_started_at {
-                let active_tab_id = next_state.editor_tabs.active_tab_id.as_deref();
-                let bytes = next_state
-                    .tab_contents
-                    .active_content(active_tab_id)
-                    .map(str::len)
-                    .unwrap_or_default();
-                tracing::info!(
-                    path = %perf_path.display(),
-                    bytes,
-                    elapsed_ms = started_at.elapsed().as_millis(),
-                    "perf editor open markdown"
-                );
-            }
+            let active_tab_id = next_state.editor_tabs.active_tab_id.as_deref();
+            let revision =
+                active_tab_id.and_then(|tab_id| next_state.tab_contents.revision_for_tab(tab_id));
+            let content_bytes = active_tab_id
+                .and_then(|tab_id| next_state.tab_contents.content_for_tab(tab_id))
+                .map(str::len);
+            let view_mode = next_state
+                .ui_state
+                .as_ref()
+                .map(|ui_state| ui_state.view_mode.clone())
+                .unwrap_or_else(|| state.ui_state.read().view_mode.clone());
+            trace_editor_open_markdown(
+                perf_path.as_path(),
+                active_tab_id,
+                revision,
+                &view_mode,
+                content_bytes,
+                perf_started_at,
+            );
             state.file_state.set(next_state.file_state);
             state.editor_tabs.set(next_state.editor_tabs);
             state.tab_contents.set(next_state.tab_contents);
@@ -88,10 +93,6 @@ struct OpenMarkdownStateUpdate {
     tab_contents: papyro_core::TabContentsMap,
     ui_state: Option<papyro_core::UiState>,
     watch_path: Option<PathBuf>,
-}
-
-fn perf_enabled() -> bool {
-    std::env::var_os("PAPYRO_PERF").is_some()
 }
 
 pub fn save_active_note(

@@ -2,6 +2,9 @@ use crate::actions::AppAction;
 use crate::assets::save_pasted_image_asset;
 use crate::effects;
 use crate::handlers::{file_ops, notes, search, tags, workspace};
+use crate::perf::{
+    perf_timer, tab_revision_and_bytes, trace_editor_switch_tab, trace_runtime_close_tab_handler,
+};
 use crate::runtime::AppShell;
 use crate::settings_persistence::{enqueue_global_settings_save, enqueue_workspace_settings_save};
 use crate::state::RuntimeState;
@@ -410,20 +413,18 @@ impl AppDispatcher {
     }
 }
 
-fn perf_enabled() -> bool {
-    std::env::var_os("PAPYRO_PERF").is_some()
-}
-
 fn activate_tab(mut state: RuntimeState, tab_id: String) {
-    let perf_started_at = perf_enabled().then(std::time::Instant::now);
+    let perf_started_at = perf_timer();
     state.editor_tabs.write().set_active_tab(&tab_id);
-    if let Some(started_at) = perf_started_at {
-        tracing::info!(
-            tab_id,
-            elapsed_ms = started_at.elapsed().as_millis(),
-            "perf editor switch tab"
-        );
-    }
+    let view_mode = state.ui_state.read().view_mode.clone();
+    let (revision, content_bytes) = tab_revision_and_bytes(&state.tab_contents.read(), &tab_id);
+    trace_editor_switch_tab(
+        &tab_id,
+        revision,
+        &view_mode,
+        content_bytes,
+        perf_started_at,
+    );
 }
 
 fn paste_image(mut state: RuntimeState, request: PasteImageRequest) {
@@ -456,7 +457,7 @@ fn paste_image(mut state: RuntimeState, request: PasteImageRequest) {
 }
 
 fn close_tab(shell: AppShell, mut state: RuntimeState, tab_id: String) {
-    let perf_started_at = perf_enabled().then(std::time::Instant::now);
+    let perf_started_at = perf_timer();
 
     let tab = state
         .editor_tabs
@@ -466,6 +467,8 @@ fn close_tab(shell: AppShell, mut state: RuntimeState, tab_id: String) {
         .find(|t| t.id == tab_id)
         .cloned();
     let Some(tab) = tab else { return };
+    let view_mode = state.ui_state.read().view_mode.clone();
+    let (revision, content_bytes) = tab_revision_and_bytes(&state.tab_contents.read(), &tab.id);
 
     if close_tab_intent(&tab, state.pending_close_tab.read().as_deref())
         == CloseTabIntent::ConfirmDirty
@@ -474,6 +477,15 @@ fn close_tab(shell: AppShell, mut state: RuntimeState, tab_id: String) {
         state
             .status_message
             .set(Some(shell.close_confirmation(&tab.title)));
+        trace_runtime_close_tab_handler(
+            &tab.id,
+            revision,
+            &view_mode,
+            content_bytes,
+            "confirm_dirty",
+            false,
+            perf_started_at,
+        );
         return;
     }
 
@@ -493,13 +505,15 @@ fn close_tab(shell: AppShell, mut state: RuntimeState, tab_id: String) {
         .status_message
         .set(Some(format!("Closed {closed_title}")));
 
-    if let Some(started_at) = perf_started_at {
-        tracing::info!(
-            tab_id = %tab.id,
-            elapsed_ms = started_at.elapsed().as_millis(),
-            "perf runtime close_tab handler"
-        );
-    }
+    trace_runtime_close_tab_handler(
+        &tab.id,
+        revision,
+        &view_mode,
+        content_bytes,
+        "close_now",
+        true,
+        perf_started_at,
+    );
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

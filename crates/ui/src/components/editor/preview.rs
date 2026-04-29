@@ -1,15 +1,15 @@
-use super::bridge::perf_enabled;
 #[cfg(test)]
 use super::document_cache::DocumentDerivedCacheState;
 use super::document_cache::{
     CachedPreview, CachedPreviewStatus, DocumentCacheKey, DocumentDerivedCache,
 };
 use crate::context::EditorServices;
+use crate::perf::{perf_timer, trace_preview_render};
 use dioxus::prelude::*;
 use papyro_core::DocumentSnapshot;
 use papyro_editor::performance::PreviewPolicy;
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 const PREVIEW_RENDER_TIMEOUT: Duration = Duration::from_secs(2);
 
@@ -102,6 +102,8 @@ struct PreviewRenderState {
 
 struct PreviewRenderInput {
     key: DocumentCacheKey,
+    tab_id: String,
+    revision: u64,
     content: Arc<str>,
     render_html_with_highlighting: fn(&str, bool) -> String,
 }
@@ -114,6 +116,8 @@ impl PreviewRenderInput {
     ) -> Self {
         Self {
             key,
+            tab_id: document.tab_id.clone(),
+            revision: document.revision,
             content: document.content.clone(),
             render_html_with_highlighting: editor_services.render_markdown_html_with_highlighting,
         }
@@ -126,7 +130,12 @@ async fn render_preview_async(input: PreviewRenderInput) -> PreviewRenderState {
     let result = tokio::time::timeout(
         PREVIEW_RENDER_TIMEOUT,
         tokio::task::spawn_blocking(move || {
-            render_preview_for_content(input.content.as_ref(), input.render_html_with_highlighting)
+            render_preview_for_content(
+                input.tab_id.as_str(),
+                input.revision,
+                input.content.as_ref(),
+                input.render_html_with_highlighting,
+            )
         }),
     )
     .await;
@@ -171,10 +180,12 @@ fn resolve_preview(
 }
 
 fn render_preview_for_content(
+    tab_id: &str,
+    revision: u64,
     content: &str,
     render_html_with_highlighting: fn(&str, bool) -> String,
 ) -> CachedPreview {
-    let started_at = perf_enabled().then(Instant::now);
+    let started_at = perf_timer();
     let policy = PreviewPolicy::for_len(content.len());
     let html = if policy.live_preview_enabled {
         render_html_with_highlighting(content, policy.code_highlighting_enabled)
@@ -182,15 +193,14 @@ fn render_preview_for_content(
         String::new()
     };
 
-    if let Some(started_at) = started_at {
-        tracing::info!(
-            bytes = policy.byte_len,
-            code_highlighting = policy.code_highlighting_enabled,
-            live_preview = policy.live_preview_enabled,
-            elapsed_ms = started_at.elapsed().as_millis(),
-            "perf editor preview render"
-        );
-    }
+    trace_preview_render(
+        tab_id,
+        revision,
+        policy.byte_len,
+        policy.code_highlighting_enabled,
+        policy.live_preview_enabled,
+        started_at,
+    );
 
     CachedPreview {
         html,
@@ -319,7 +329,7 @@ mod tests {
             format!("<p>{markdown}:{highlight_code}</p>")
         }
 
-        let preview = render_preview_for_content("hello", render);
+        let preview = render_preview_for_content("a", 1, "hello", render);
 
         assert_eq!(preview.html, "<p>hello:true</p>");
         assert_eq!(preview.status, CachedPreviewStatus::Ready);

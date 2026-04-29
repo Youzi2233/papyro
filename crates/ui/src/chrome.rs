@@ -1,5 +1,5 @@
 use crate::commands::AppCommands;
-use crate::perf::{perf_timer, trace_sidebar_toggle, trace_view_mode_change};
+use crate::perf::{perf_timer, trace_sidebar_toggle, trace_theme_toggle, trace_view_mode_change};
 use dioxus::prelude::*;
 use papyro_core::models::{AppSettings, Theme, ViewMode, WorkspaceSettingsOverrides};
 use papyro_core::UiState;
@@ -27,12 +27,15 @@ pub(crate) fn toggle_sidebar(
 }
 
 pub(crate) fn toggle_theme(ui_state: Signal<UiState>, commands: AppCommands) {
-    let target = {
+    let started_at = perf_timer();
+    let (from_theme, target) = {
         let state = ui_state.read();
-        theme_toggle_target(&state)
+        (state.theme().clone(), theme_toggle_target(&state))
     };
+    let to_theme = settings_target_theme(&target);
 
     call_settings_target(commands, target);
+    trace_theme_toggle(&from_theme, &to_theme, started_at);
 }
 
 pub(crate) fn set_view_mode(
@@ -70,6 +73,15 @@ fn call_settings_target(commands: AppCommands, target: SettingsSaveTarget) {
         SettingsSaveTarget::Global(settings) => commands.save_settings.call(settings),
         SettingsSaveTarget::Workspace(overrides) => {
             commands.save_workspace_settings.call(overrides)
+        }
+    }
+}
+
+fn settings_target_theme(target: &SettingsSaveTarget) -> Theme {
+    match target {
+        SettingsSaveTarget::Global(settings) => settings.theme.clone(),
+        SettingsSaveTarget::Workspace(overrides) => {
+            overrides.theme.clone().unwrap_or(Theme::System)
         }
     }
 }

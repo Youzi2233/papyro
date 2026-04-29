@@ -24,6 +24,7 @@
 - `EditorPane` 不再为所有打开 tab 无上限渲染 `EditorHost`，当前策略保留 active host 加最近 warm hosts。
 - Outline 和 preview HTML 派生已经离开同步 render/effect 热路径。两者都以 `tab_id + revision` 作为缓存键，过期结果不会回写当前 UI。
 - preview HTML 渲染通过 `spawn_blocking` 执行，渲染中显示 Pending 占位，失败或超过 2 秒显示 Failed 占位。
+- `PAPYRO_PERF` trace 已统一携带 `interaction_path`、`window_id`、`tab_id`、`revision`、`view_mode`、`content_bytes` 和 `trigger_reason`，用于按交互链路聚合卡顿来源。
 
 因此，剩余优化重点不再是“把 IO 延后”或“减少 Rust/JS layout 往返”，而是继续压缩粗粒度 `UiState` 写入、Dioxus diff、全局 CSS repaint、派生任务预算和 dispatcher 热点。
 

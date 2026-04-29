@@ -85,6 +85,7 @@ struct OutlineRenderState {
 struct OutlineDerivationInput {
     key: DocumentCacheKey,
     tab_id: String,
+    revision: u64,
     content: Arc<str>,
 }
 
@@ -93,6 +94,7 @@ impl OutlineDerivationInput {
         Self {
             key,
             tab_id: document.tab_id.clone(),
+            revision: document.revision,
             content: document.content.clone(),
         }
     }
@@ -117,7 +119,11 @@ fn resolve_outline(
 async fn derive_outline_async(input: OutlineDerivationInput) -> OutlineRenderState {
     let key = input.key.clone();
     let result = tokio::task::spawn_blocking(move || {
-        derive_outline_for_content(Some(input.tab_id.as_str()), input.content.as_ref())
+        derive_outline_for_content(
+            Some(input.tab_id.as_str()),
+            Some(input.revision),
+            input.content.as_ref(),
+        )
     })
     .await;
 
@@ -135,7 +141,11 @@ async fn derive_outline_async(input: OutlineDerivationInput) -> OutlineRenderSta
     }
 }
 
-fn derive_outline_for_content(tab_id: Option<&str>, content: &str) -> Vec<OutlineItem> {
+fn derive_outline_for_content(
+    tab_id: Option<&str>,
+    revision: Option<u64>,
+    content: &str,
+) -> Vec<OutlineItem> {
     let started_at = perf_timer();
     let should_extract = should_extract_outline(content.len());
     let outline = if should_extract {
@@ -145,6 +155,7 @@ fn derive_outline_for_content(tab_id: Option<&str>, content: &str) -> Vec<Outlin
     };
     trace_outline_extract(
         tab_id,
+        revision,
         content.len(),
         outline.len(),
         !should_extract,
@@ -231,7 +242,7 @@ mod tests {
 
     #[test]
     fn derive_outline_for_content_extracts_headings() {
-        let outline = derive_outline_for_content(Some("a"), "# Current\n\n## Next");
+        let outline = derive_outline_for_content(Some("a"), Some(1), "# Current\n\n## Next");
 
         assert_eq!(
             outline,

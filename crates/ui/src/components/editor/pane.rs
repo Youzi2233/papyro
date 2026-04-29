@@ -1,4 +1,4 @@
-use super::bridge::{perf_enabled, send_editor_destroy_batch, EditorBridgeMap};
+use super::bridge::{send_editor_destroy_batch, EditorBridgeMap};
 use super::document_cache::{DocumentDerivedCache, DocumentDerivedCacheState};
 use super::host::EditorHost;
 use super::outline::OutlinePane;
@@ -6,12 +6,14 @@ use super::preview::PreviewPane;
 use super::tabbar::EditorTabButton;
 use crate::components::primitives::{EmptyState, SegmentedControl, SegmentedControlOption};
 use crate::context::use_app_context;
-use crate::perf::{perf_timer, trace_editor_host_lifecycle};
+use crate::perf::{
+    perf_timer, trace_editor_host_lifecycle, trace_editor_pane_render_prep,
+    trace_editor_stale_bridge_cleanup,
+};
 use crate::view_model::{EditorHostItemViewModel, EditorSurfaceViewModel};
 use dioxus::prelude::*;
 use papyro_core::models::ViewMode;
 use std::collections::HashMap;
-use std::time::Instant;
 
 #[derive(Debug, Clone, PartialEq)]
 struct EditorTypography {
@@ -43,7 +45,7 @@ fn editor_style(typography: &EditorTypography) -> String {
 
 #[component]
 pub fn EditorPane() -> Element {
-    let perf_started_at = perf_enabled().then(Instant::now);
+    let perf_started_at = perf_timer();
     let app = use_app_context();
     let editor_services = app.editor_services;
     let ui_state = app.ui_state;
@@ -62,7 +64,7 @@ pub fn EditorPane() -> Element {
     let pane = pane_model();
 
     use_effect(use_reactive((&pane.host_items,), move |(host_items,)| {
-        let perf_started_at = perf_enabled().then(Instant::now);
+        let perf_started_at = perf_timer();
         let host_lifecycle_started_at = perf_timer();
         let lifecycle_change =
             host_lifecycle_change(&host_lifecycle_state.peek(), host_items.as_slice());
@@ -99,22 +101,16 @@ pub fn EditorPane() -> Element {
         };
         send_editor_destroy_batch(retired_bridges);
 
-        if let Some(started_at) = perf_started_at {
-            tracing::info!(
-                elapsed_ms = started_at.elapsed().as_millis(),
-                "perf editor stale bridge cleanup"
-            );
-        }
+        trace_editor_stale_bridge_cleanup(stale.len(), perf_started_at);
     }));
 
-    if let Some(started_at) = perf_started_at {
-        tracing::info!(
-            tab_count = pane.open_tab_ids.len(),
-            host_count = pane.host_items.len(),
-            elapsed_ms = started_at.elapsed().as_millis(),
-            "perf editor pane render prep"
-        );
-    }
+    trace_editor_pane_render_prep(
+        pane.active_document.as_ref(),
+        &view_mode,
+        pane.open_tab_ids.len(),
+        pane.host_items.len(),
+        perf_started_at,
+    );
 
     rsx! {
         main { class: "mn-editor", style: "{editor_style}",
