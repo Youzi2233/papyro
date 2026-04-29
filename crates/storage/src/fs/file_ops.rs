@@ -1,4 +1,5 @@
 use anyhow::Result;
+use std::io::Write;
 use std::path::{Path, PathBuf};
 
 pub fn read_note(path: &Path) -> Result<String> {
@@ -6,10 +7,18 @@ pub fn read_note(path: &Path) -> Result<String> {
 }
 
 pub fn write_note(path: &Path, content: &str) -> Result<()> {
-    if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent)?;
-    }
-    Ok(std::fs::write(path, content)?)
+    let parent = path.parent().unwrap_or_else(|| Path::new("."));
+    std::fs::create_dir_all(parent)?;
+
+    let mut temp_file = tempfile::Builder::new()
+        .prefix(".papyro-save-")
+        .suffix(".tmp")
+        .tempfile_in(parent)?;
+    temp_file.write_all(content.as_bytes())?;
+    temp_file.as_file_mut().sync_all()?;
+    temp_file.persist(path).map_err(|error| error.error)?;
+
+    Ok(())
 }
 
 pub fn create_note(dir: &Path, name: &str) -> Result<PathBuf> {
@@ -132,4 +141,28 @@ fn unique_folder_path(parent: &Path, name: &str) -> PathBuf {
         }
     }
     candidate
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn write_note_replaces_existing_file_from_temp_file() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let path = temp.path().join("notes").join("a.md");
+
+        write_note(&path, "old")?;
+        write_note(&path, "new")?;
+
+        assert_eq!(std::fs::read_to_string(&path)?, "new");
+        let parent_entries = std::fs::read_dir(path.parent().unwrap())?
+            .map(|entry| entry.map(|entry| entry.file_name()))
+            .collect::<std::io::Result<Vec<_>>>()?;
+        assert!(!parent_entries
+            .iter()
+            .any(|name| name.to_string_lossy().starts_with(".papyro-save-")));
+
+        Ok(())
+    }
 }
