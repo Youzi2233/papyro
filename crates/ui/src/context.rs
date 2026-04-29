@@ -1,7 +1,7 @@
 use crate::commands::{AppCommands, EditorRuntimeCommandQueue};
 use crate::view_model::{
     EditorPaneViewModel, EditorSurfaceViewModel, EditorViewModel, QuickOpenItemViewModel,
-    SettingsWorkspaceViewModel, SidebarViewModel, WorkspaceViewModel,
+    SettingsWorkspaceViewModel, SidebarViewModel, WorkspaceSearchViewModel, WorkspaceViewModel,
 };
 use dioxus::prelude::*;
 use papyro_core::{
@@ -54,6 +54,7 @@ pub struct AppContext {
     pub sidebar_model: Memo<SidebarViewModel>,
     pub settings_workspace_model: Memo<SettingsWorkspaceViewModel>,
     pub quick_open_items: Memo<Vec<QuickOpenItemViewModel>>,
+    pub workspace_search_model: Memo<WorkspaceSearchViewModel>,
     pub editor_model: Memo<EditorViewModel>,
     pub editor_pane_model: Memo<EditorPaneViewModel>,
     pub editor_surface_model: Memo<EditorSurfaceViewModel>,

@@ -1,8 +1,9 @@
 use crate::commands::{AppCommands, OpenMarkdownTarget};
 use crate::components::primitives::{Modal, TextInput};
 use crate::context::use_app_context;
+use crate::view_model::SearchResultRowViewModel;
 use dioxus::prelude::*;
-use papyro_core::{SearchField, SearchHighlight, SearchMatch, SearchResult};
+use papyro_core::{SearchField, SearchHighlight};
 use std::path::PathBuf;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -11,62 +12,15 @@ pub(crate) struct HighlightSegment {
     pub is_match: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-struct SearchResultRowModel {
-    title: String,
-    path: PathBuf,
-    relative_path_label: String,
-    title_highlights: Vec<SearchHighlight>,
-    path_highlights: Vec<SearchHighlight>,
-    preview: Option<SearchPreviewModel>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-struct SearchPreviewModel {
-    field: SearchField,
-    line: Option<usize>,
-    snippet: String,
-    highlights: Vec<SearchHighlight>,
-}
-
-impl SearchResultRowModel {
-    fn from_result(result: &SearchResult) -> Self {
-        Self {
-            title: result.title.clone(),
-            path: result.path.clone(),
-            relative_path_label: result.relative_path.to_string_lossy().replace('\\', "/"),
-            title_highlights: highlights_for_field(&result.matches, SearchField::Title),
-            path_highlights: highlights_for_field(&result.matches, SearchField::Path),
-            preview: preview_match(&result.matches).map(SearchPreviewModel::from_match),
-        }
-    }
-}
-
-impl SearchPreviewModel {
-    fn from_match(result_match: SearchMatch) -> Self {
-        Self {
-            field: result_match.field,
-            line: result_match.line,
-            snippet: result_match.snippet,
-            highlights: result_match.highlights,
-        }
-    }
-}
-
 #[component]
 pub fn SearchModal(on_close: EventHandler<()>) -> Element {
     let app = use_app_context();
     let commands = app.commands.clone();
-    let workspace_search = app.workspace_search;
+    let workspace_search_model = app.workspace_search_model.read().clone();
     let mut active_index = use_signal(|| 0usize);
 
-    let state = workspace_search.read().clone();
-    let query_value = state.query.clone();
-    let results = state
-        .results
-        .iter()
-        .map(SearchResultRowModel::from_result)
-        .collect::<Vec<_>>();
+    let query_value = workspace_search_model.query.clone();
+    let results = workspace_search_model.results.clone();
     let active = if results.is_empty() {
         0
     } else {
@@ -76,8 +30,8 @@ pub fn SearchModal(on_close: EventHandler<()>) -> Element {
     let commands_for_keys = commands.clone();
     let empty_message = empty_search_message(
         query_value.as_str(),
-        state.is_loading,
-        state.error.as_deref(),
+        workspace_search_model.is_loading,
+        workspace_search_model.error.as_deref(),
     );
 
     rsx! {
@@ -148,7 +102,7 @@ pub fn SearchModal(on_close: EventHandler<()>) -> Element {
 
 #[component]
 fn SearchResultRow(
-    result: SearchResultRowModel,
+    result: SearchResultRowViewModel,
     is_active: bool,
     commands: AppCommands,
     on_close: EventHandler<()>,
@@ -236,22 +190,6 @@ fn empty_search_message(query: &str, is_loading: bool, error: Option<&str>) -> S
     }
 
     "No matching notes".to_string()
-}
-
-fn preview_match(matches: &[SearchMatch]) -> Option<SearchMatch> {
-    matches
-        .iter()
-        .find(|result_match| result_match.field == SearchField::Body)
-        .or_else(|| matches.first())
-        .cloned()
-}
-
-fn highlights_for_field(matches: &[SearchMatch], field: SearchField) -> Vec<SearchHighlight> {
-    matches
-        .iter()
-        .find(|result_match| result_match.field == field)
-        .map(|result_match| result_match.highlights.clone())
-        .unwrap_or_default()
 }
 
 fn field_label(field: SearchField) -> &'static str {
@@ -388,26 +326,7 @@ mod tests {
     }
 
     #[test]
-    fn preview_match_uses_storage_supplied_body_snippet() {
-        let matches = vec![
-            SearchMatch {
-                field: SearchField::Title,
-                line: None,
-                snippet: "Release Plan".to_string(),
-                highlights: vec![SearchHighlight { start: 0, end: 7 }],
-            },
-            SearchMatch {
-                field: SearchField::Body,
-                line: Some(3),
-                snippet: "Ship the search feature safely.".to_string(),
-                highlights: vec![SearchHighlight { start: 9, end: 15 }],
-            },
-        ];
-
-        let preview = preview_match(&matches).unwrap();
-
-        assert_eq!(preview.field, SearchField::Body);
-        assert_eq!(preview.line, Some(3));
-        assert_eq!(preview.snippet, "Ship the search feature safely.");
+    fn field_label_names_search_match_sources() {
+        assert_eq!(field_label(SearchField::Body), "BODY");
     }
 }

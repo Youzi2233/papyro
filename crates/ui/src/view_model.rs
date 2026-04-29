@@ -2,7 +2,8 @@ use papyro_core::models::{
     DocumentStats, EditorTab, FileNode, FileNodeKind, SaveStatus, Theme, ViewMode,
 };
 use papyro_core::{
-    DocumentSnapshot, EditorTabs, FileState, TabContentSnapshot, TabContentsMap, UiState,
+    DocumentSnapshot, EditorTabs, FileState, SearchField, SearchHighlight, SearchMatch,
+    SearchResult, TabContentSnapshot, TabContentsMap, UiState, WorkspaceSearchState,
 };
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -55,6 +56,32 @@ pub struct QuickOpenItemViewModel {
     pub path: PathBuf,
     pub title: String,
     pub path_label: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct WorkspaceSearchViewModel {
+    pub query: String,
+    pub results: Vec<SearchResultRowViewModel>,
+    pub is_loading: bool,
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SearchResultRowViewModel {
+    pub title: String,
+    pub path: PathBuf,
+    pub relative_path_label: String,
+    pub title_highlights: Vec<SearchHighlight>,
+    pub path_highlights: Vec<SearchHighlight>,
+    pub preview: Option<SearchPreviewViewModel>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SearchPreviewViewModel {
+    pub field: SearchField,
+    pub line: Option<usize>,
+    pub snippet: String,
+    pub highlights: Vec<SearchHighlight>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -318,6 +345,45 @@ impl QuickOpenItemViewModel {
     }
 }
 
+impl WorkspaceSearchViewModel {
+    pub fn from_search_state(state: &WorkspaceSearchState) -> Self {
+        Self {
+            query: state.query.clone(),
+            results: state
+                .results
+                .iter()
+                .map(SearchResultRowViewModel::from_result)
+                .collect(),
+            is_loading: state.is_loading,
+            error: state.error.clone(),
+        }
+    }
+}
+
+impl SearchResultRowViewModel {
+    fn from_result(result: &SearchResult) -> Self {
+        Self {
+            title: result.title.clone(),
+            path: result.path.clone(),
+            relative_path_label: result.relative_path.to_string_lossy().replace('\\', "/"),
+            title_highlights: highlights_for_field(&result.matches, SearchField::Title),
+            path_highlights: highlights_for_field(&result.matches, SearchField::Path),
+            preview: preview_match(&result.matches).map(SearchPreviewViewModel::from_match),
+        }
+    }
+}
+
+impl SearchPreviewViewModel {
+    fn from_match(result_match: SearchMatch) -> Self {
+        Self {
+            field: result_match.field,
+            line: result_match.line,
+            snippet: result_match.snippet,
+            highlights: result_match.highlights,
+        }
+    }
+}
+
 impl EditorViewModel {
     pub fn from_editor_state(
         editor_tabs: &EditorTabs,
@@ -499,6 +565,22 @@ fn collect_quick_open_items_into(nodes: &[FileNode], items: &mut Vec<QuickOpenIt
             }),
         }
     }
+}
+
+fn preview_match(matches: &[SearchMatch]) -> Option<SearchMatch> {
+    matches
+        .iter()
+        .find(|result_match| result_match.field == SearchField::Body)
+        .or_else(|| matches.first())
+        .cloned()
+}
+
+fn highlights_for_field(matches: &[SearchMatch], field: SearchField) -> Vec<SearchHighlight> {
+    matches
+        .iter()
+        .find(|result_match| result_match.field == field)
+        .map(|result_match| result_match.highlights.clone())
+        .unwrap_or_default()
 }
 
 #[cfg(test)]
@@ -839,6 +921,57 @@ mod tests {
             vec!["journal/ideas.md", "journal/today.md", "root.md"]
         );
         assert_eq!(items[0].title, "ideas");
+    }
+
+    #[test]
+    fn workspace_search_view_model_builds_row_payloads() {
+        let mut state = WorkspaceSearchState::default();
+        state.finish(
+            "",
+            vec![SearchResult {
+                title: "Release Plan".to_string(),
+                path: PathBuf::from("workspace/notes/release.md"),
+                relative_path: PathBuf::from("notes/release.md"),
+                matches: vec![
+                    SearchMatch {
+                        field: SearchField::Title,
+                        line: None,
+                        snippet: "Release Plan".to_string(),
+                        highlights: vec![SearchHighlight { start: 0, end: 7 }],
+                    },
+                    SearchMatch {
+                        field: SearchField::Body,
+                        line: Some(3),
+                        snippet: "Ship the search feature safely.".to_string(),
+                        highlights: vec![SearchHighlight { start: 9, end: 15 }],
+                    },
+                ],
+            }],
+        );
+
+        let model = WorkspaceSearchViewModel::from_search_state(&state);
+
+        assert_eq!(model.query, "");
+        assert_eq!(model.results.len(), 1);
+        assert_eq!(model.results[0].relative_path_label, "notes/release.md");
+        assert_eq!(
+            model.results[0].title_highlights,
+            vec![SearchHighlight { start: 0, end: 7 }]
+        );
+        assert_eq!(
+            model.results[0].preview.as_ref().map(|preview| (
+                preview.field,
+                preview.line,
+                preview.snippet.as_str(),
+                preview.highlights.clone()
+            )),
+            Some((
+                SearchField::Body,
+                Some(3),
+                "Ship the search feature safely.",
+                vec![SearchHighlight { start: 9, end: 15 }]
+            ))
+        );
     }
 
     #[test]
