@@ -122,7 +122,11 @@ small {
 }
 
 .mn-button {
+    min-width: 0;
+    max-width: 100%;
     cursor: pointer;
+    overflow-wrap: anywhere;
+    text-align: center;
 }
 
 .mn-icon-btn {

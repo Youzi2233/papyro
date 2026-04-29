@@ -417,7 +417,10 @@ button { border: 0; cursor: pointer; background: transparent; }
 .mn-button {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: var(--mn-button-gap);
+    min-width: 0;
+    max-width: 100%;
     border: var(--mn-border-default);
     border-radius: var(--mn-radius-sm);
     background: var(--mn-surface-raised);
@@ -425,8 +428,11 @@ button { border: 0; cursor: pointer; background: transparent; }
     padding: var(--mn-button-pad);
     font-size: var(--mn-type-control);
     font-weight: var(--mn-weight-medium);
+    line-height: var(--mn-line-control);
     cursor: pointer;
-    white-space: nowrap;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    text-align: center;
     box-shadow: var(--mn-shadow-xs);
     transition: border-color 0.14s, background 0.14s, color 0.14s, transform 0.14s, box-shadow 0.14s;
 }
