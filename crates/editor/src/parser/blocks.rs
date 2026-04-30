@@ -55,6 +55,23 @@ pub struct MarkdownBlock {
     pub end_byte: usize,
     pub start_line: usize,
     pub end_line: usize,
+    pub ranges: MarkdownBlockRanges,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MarkdownBlockRanges {
+    pub source: MarkdownBlockRange,
+    pub content: Option<MarkdownBlockRange>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub markers: Vec<MarkdownBlockRange>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MarkdownBlockRange {
+    pub start_byte: usize,
+    pub end_byte: usize,
+    pub start_line: usize,
+    pub end_line: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -66,6 +83,8 @@ pub enum MarkdownBlockKind {
     BlockQuote,
     ListItem { ordered: bool, task: Option<bool> },
     FencedCode { language: Option<String> },
+    Mermaid { language: Option<String> },
+    Math,
     Table,
     ThematicBreak,
 }
@@ -96,6 +115,28 @@ pub fn analyze_markdown_blocks(markdown: &str) -> Vec<MarkdownBlock> {
             continue;
         }
 
+        if let Some(math_fence) = parse_math_fence(trimmed) {
+            let start = index;
+            index += 1;
+            if math_fence == MathFence::Block {
+                while index < lines.len() {
+                    if matches!(
+                        parse_math_fence(lines[index].text.trim_start()),
+                        Some(MathFence::Block)
+                    ) {
+                        index += 1;
+                        break;
+                    }
+                    index += 1;
+                }
+            }
+            blocks.push(block_from_lines(
+                MarkdownBlockKind::Math,
+                &lines[start..index],
+            ));
+            continue;
+        }
+
         if let Some((marker, language)) = parse_fence_start(trimmed) {
             let start = index;
             index += 1;
@@ -106,10 +147,12 @@ pub fn analyze_markdown_blocks(markdown: &str) -> Vec<MarkdownBlock> {
                 }
                 index += 1;
             }
-            blocks.push(block_from_lines(
-                MarkdownBlockKind::FencedCode { language },
-                &lines[start..index],
-            ));
+            let kind = if language.as_deref() == Some("mermaid") {
+                MarkdownBlockKind::Mermaid { language }
+            } else {
+                MarkdownBlockKind::FencedCode { language }
+            };
+            blocks.push(block_from_lines(kind, &lines[start..index]));
             continue;
         }
 
@@ -257,15 +300,388 @@ fn trim_line_ending(line: &str) -> &str {
 }
 
 fn block_from_lines(kind: MarkdownBlockKind, lines: &[LineSpan<'_>]) -> MarkdownBlock {
-    let first = lines.first().expect("block has at least one line");
-    let last = lines.last().expect("block has at least one line");
+    let source = MarkdownBlockRange::from_lines(lines);
+    let ranges = MarkdownBlockRanges {
+        source,
+        content: content_range_for_block(&kind, lines),
+        markers: marker_ranges_for_block(&kind, lines),
+    };
     MarkdownBlock {
         kind,
-        start_byte: first.start_byte,
-        end_byte: last.end_byte,
-        start_line: first.line_number,
-        end_line: last.line_number,
+        start_byte: source.start_byte,
+        end_byte: source.end_byte,
+        start_line: source.start_line,
+        end_line: source.end_line,
+        ranges,
     }
+}
+
+impl MarkdownBlockRange {
+    fn from_lines(lines: &[LineSpan<'_>]) -> Self {
+        let first = lines.first().expect("block has at least one line");
+        let last = lines.last().expect("block has at least one line");
+        Self {
+            start_byte: first.start_byte,
+            end_byte: last.end_byte,
+            start_line: first.line_number,
+            end_line: last.line_number,
+        }
+    }
+
+    fn text_from_lines(lines: &[LineSpan<'_>]) -> Self {
+        let first = lines.first().expect("block has at least one line");
+        let last = lines.last().expect("block has at least one line");
+        Self {
+            start_byte: first.start_byte,
+            end_byte: last.text_end_byte(),
+            start_line: first.line_number,
+            end_line: last.line_number,
+        }
+    }
+
+    fn on_line(line: LineSpan<'_>, start_offset: usize, end_offset: usize) -> Self {
+        Self {
+            start_byte: line.start_byte + start_offset,
+            end_byte: line.start_byte + end_offset,
+            start_line: line.line_number,
+            end_line: line.line_number,
+        }
+    }
+
+    fn byte_span(
+        start: LineSpan<'_>,
+        start_byte: usize,
+        end: LineSpan<'_>,
+        end_byte: usize,
+    ) -> Self {
+        Self {
+            start_byte,
+            end_byte,
+            start_line: start.line_number,
+            end_line: end.line_number,
+        }
+    }
+}
+
+impl LineSpan<'_> {
+    fn text_end_byte(self) -> usize {
+        self.start_byte + self.text.len()
+    }
+}
+
+fn content_range_for_block(
+    kind: &MarkdownBlockKind,
+    lines: &[LineSpan<'_>],
+) -> Option<MarkdownBlockRange> {
+    match kind {
+        MarkdownBlockKind::Blank | MarkdownBlockKind::ThematicBreak => None,
+        MarkdownBlockKind::Heading { .. } => {
+            let line = *lines.first()?;
+            let marker_end = parse_heading_marker_end(line.text)?;
+            Some(MarkdownBlockRange::on_line(
+                line,
+                marker_end,
+                line.text.len(),
+            ))
+        }
+        MarkdownBlockKind::ListItem { .. } => {
+            let line = *lines.first()?;
+            let marker = parse_list_marker_detail(line.text)?;
+            Some(MarkdownBlockRange::on_line(
+                line,
+                marker.marker_end,
+                line.text.len(),
+            ))
+        }
+        MarkdownBlockKind::BlockQuote => blockquote_content_range(lines),
+        MarkdownBlockKind::FencedCode { .. } | MarkdownBlockKind::Mermaid { .. } => {
+            fenced_content_range(lines)
+        }
+        MarkdownBlockKind::Math => math_content_range(lines),
+        MarkdownBlockKind::Paragraph | MarkdownBlockKind::Table => {
+            Some(MarkdownBlockRange::text_from_lines(lines))
+        }
+    }
+}
+
+fn marker_ranges_for_block(
+    kind: &MarkdownBlockKind,
+    lines: &[LineSpan<'_>],
+) -> Vec<MarkdownBlockRange> {
+    match kind {
+        MarkdownBlockKind::Heading { .. } => lines
+            .first()
+            .and_then(|line| {
+                parse_heading_marker_end(line.text)
+                    .map(|marker_end| MarkdownBlockRange::on_line(*line, 0, marker_end))
+            })
+            .into_iter()
+            .collect(),
+        MarkdownBlockKind::ListItem { .. } => lines
+            .first()
+            .and_then(|line| {
+                parse_list_marker_detail(line.text)
+                    .map(|marker| MarkdownBlockRange::on_line(*line, 0, marker.marker_end))
+            })
+            .into_iter()
+            .collect(),
+        MarkdownBlockKind::BlockQuote => lines
+            .iter()
+            .filter_map(|line| {
+                parse_blockquote_marker_end(line.text)
+                    .map(|marker_end| MarkdownBlockRange::on_line(*line, 0, marker_end))
+            })
+            .collect(),
+        MarkdownBlockKind::FencedCode { .. } | MarkdownBlockKind::Mermaid { .. } => {
+            fenced_marker_ranges(lines)
+        }
+        MarkdownBlockKind::Math => math_marker_ranges(lines),
+        MarkdownBlockKind::Table => table_marker_ranges(lines),
+        MarkdownBlockKind::ThematicBreak => lines
+            .first()
+            .map(|line| MarkdownBlockRange::on_line(*line, 0, line.text.len()))
+            .into_iter()
+            .collect(),
+        MarkdownBlockKind::Blank | MarkdownBlockKind::Paragraph => Vec::new(),
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct ListMarkerDetail {
+    ordered: bool,
+    task: Option<bool>,
+    marker_end: usize,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum MathFence {
+    Block,
+    SingleLine,
+}
+
+fn parse_heading_marker_end(line: &str) -> Option<usize> {
+    let indent_len = leading_whitespace_len(line);
+    let trimmed = &line[indent_len..];
+    let level = trimmed.chars().take_while(|ch| *ch == '#').count();
+    if !(1..=6).contains(&level) {
+        return None;
+    }
+
+    let whitespace_len = leading_whitespace_len(&trimmed[level..]);
+    (whitespace_len > 0).then_some(indent_len + level + whitespace_len)
+}
+
+fn parse_list_marker_detail(line: &str) -> Option<ListMarkerDetail> {
+    let indent_len = leading_whitespace_len(line);
+    let trimmed = &line[indent_len..];
+    let (ordered, marker_len) = parse_unordered_marker_len(trimmed)
+        .map(|len| (false, len))
+        .or_else(|| parse_ordered_marker_len(trimmed).map(|len| (true, len)))?;
+
+    let rest = &trimmed[marker_len..];
+    let rest_indent = leading_whitespace_len(rest);
+    let task_start = indent_len + marker_len + rest_indent;
+    let task_text = &line[task_start..];
+    let (task, task_len) = parse_task_marker_with_trailing_space(task_text)
+        .map(|(checked, len)| (Some(checked), len))
+        .unwrap_or((None, 0));
+
+    Some(ListMarkerDetail {
+        ordered,
+        task,
+        marker_end: task_start + task_len,
+    })
+}
+
+fn parse_unordered_marker_len(line: &str) -> Option<usize> {
+    ["- ", "* ", "+ "]
+        .iter()
+        .find_map(|marker| line.starts_with(marker).then_some(marker.len()))
+}
+
+fn parse_ordered_marker_len(line: &str) -> Option<usize> {
+    let digit_count = line.chars().take_while(|ch| ch.is_ascii_digit()).count();
+    if digit_count == 0 {
+        return None;
+    }
+
+    let marker = line[digit_count..].chars().next()?;
+    if marker != '.' && marker != ')' {
+        return None;
+    }
+
+    let after_marker = digit_count + marker.len_utf8();
+    let whitespace_len = leading_whitespace_len(&line[after_marker..]);
+    (whitespace_len > 0).then_some(after_marker + whitespace_len)
+}
+
+fn parse_task_marker_with_trailing_space(line: &str) -> Option<(bool, usize)> {
+    let checked = match line.get(..3)? {
+        "[ ]" => false,
+        "[x]" | "[X]" => true,
+        _ => return None,
+    };
+    let whitespace_len = leading_whitespace_len(&line[3..]);
+    Some((checked, 3 + whitespace_len))
+}
+
+fn parse_blockquote_marker_end(line: &str) -> Option<usize> {
+    let indent_len = leading_whitespace_len(line);
+    let trimmed = &line[indent_len..];
+    let after_marker = trimmed.strip_prefix('>')?;
+    let marker_ws = after_marker
+        .chars()
+        .next()
+        .filter(|character| character.is_ascii_whitespace())
+        .map(char::len_utf8)
+        .unwrap_or_default();
+    Some(indent_len + 1 + marker_ws)
+}
+
+fn blockquote_content_range(lines: &[LineSpan<'_>]) -> Option<MarkdownBlockRange> {
+    let first = *lines.first()?;
+    let last = *lines.last()?;
+    let marker_end = parse_blockquote_marker_end(first.text)?;
+    Some(MarkdownBlockRange::byte_span(
+        first,
+        first.start_byte + marker_end,
+        last,
+        last.text_end_byte(),
+    ))
+}
+
+fn fenced_marker_ranges(lines: &[LineSpan<'_>]) -> Vec<MarkdownBlockRange> {
+    let Some(first) = lines.first().copied() else {
+        return Vec::new();
+    };
+    let Some((marker, _language)) = parse_fence_start(first.text.trim_start()) else {
+        return Vec::new();
+    };
+
+    let mut markers = vec![MarkdownBlockRange::on_line(first, 0, first.text.len())];
+    if let Some(last) = lines
+        .last()
+        .copied()
+        .filter(|line| line.line_number != first.line_number)
+    {
+        if is_fence_close(last.text.trim_start(), marker) {
+            markers.push(MarkdownBlockRange::on_line(last, 0, last.text.len()));
+        }
+    }
+    markers
+}
+
+fn fenced_content_range(lines: &[LineSpan<'_>]) -> Option<MarkdownBlockRange> {
+    let first = *lines.first()?;
+    let start = lines.get(1).copied()?;
+    let closing = lines.last().copied().filter(|line| {
+        line.line_number != first.line_number
+            && parse_fence_start(first.text.trim_start())
+                .is_some_and(|(marker, _)| is_fence_close(line.text.trim_start(), marker))
+    });
+    let end = if closing.is_some() && lines.len() >= 3 {
+        lines[lines.len() - 2]
+    } else if closing.is_none() {
+        *lines.last()?
+    } else {
+        start
+    };
+    let end_byte = closing
+        .map(|line| line.start_byte)
+        .unwrap_or_else(|| end.text_end_byte());
+    Some(MarkdownBlockRange::byte_span(
+        start,
+        start.start_byte,
+        end,
+        end_byte,
+    ))
+}
+
+fn parse_math_fence(line: &str) -> Option<MathFence> {
+    if line.trim() == "$$" {
+        return Some(MathFence::Block);
+    }
+
+    let trimmed = line.trim();
+    (trimmed.starts_with("$$") && trimmed.ends_with("$$") && trimmed.len() > 4)
+        .then_some(MathFence::SingleLine)
+}
+
+fn math_marker_ranges(lines: &[LineSpan<'_>]) -> Vec<MarkdownBlockRange> {
+    let Some(first) = lines.first().copied() else {
+        return Vec::new();
+    };
+    if matches!(parse_math_fence(first.text), Some(MathFence::SingleLine)) {
+        let indent_len = leading_whitespace_len(first.text);
+        let end_marker_start = first.text.len().saturating_sub(2);
+        return vec![
+            MarkdownBlockRange::on_line(first, indent_len, indent_len + 2),
+            MarkdownBlockRange::on_line(first, end_marker_start, first.text.len()),
+        ];
+    }
+
+    let mut markers = vec![MarkdownBlockRange::on_line(
+        first,
+        leading_whitespace_len(first.text),
+        first.text.len(),
+    )];
+    if let Some(last) = lines
+        .last()
+        .copied()
+        .filter(|line| line.line_number != first.line_number)
+        .filter(|line| matches!(parse_math_fence(line.text), Some(MathFence::Block)))
+    {
+        markers.push(MarkdownBlockRange::on_line(
+            last,
+            leading_whitespace_len(last.text),
+            last.text.len(),
+        ));
+    }
+    markers
+}
+
+fn math_content_range(lines: &[LineSpan<'_>]) -> Option<MarkdownBlockRange> {
+    let first = *lines.first()?;
+    if matches!(parse_math_fence(first.text), Some(MathFence::SingleLine)) {
+        let start = first.start_byte + leading_whitespace_len(first.text) + 2;
+        let end = first.text_end_byte().saturating_sub(2);
+        return Some(MarkdownBlockRange::byte_span(first, start, first, end));
+    }
+
+    let start = lines.get(1).copied()?;
+    let closing = lines
+        .last()
+        .copied()
+        .filter(|line| line.line_number != first.line_number)
+        .filter(|line| matches!(parse_math_fence(line.text), Some(MathFence::Block)));
+    let end = if closing.is_some() && lines.len() >= 3 {
+        lines[lines.len() - 2]
+    } else if closing.is_none() {
+        *lines.last()?
+    } else {
+        start
+    };
+    let end_byte = closing
+        .map(|line| line.start_byte)
+        .unwrap_or_else(|| end.text_end_byte());
+    Some(MarkdownBlockRange::byte_span(
+        start,
+        start.start_byte,
+        end,
+        end_byte,
+    ))
+}
+
+fn table_marker_ranges(lines: &[LineSpan<'_>]) -> Vec<MarkdownBlockRange> {
+    lines
+        .get(1)
+        .map(|line| MarkdownBlockRange::on_line(*line, 0, line.text.len()))
+        .into_iter()
+        .collect()
+}
+
+fn leading_whitespace_len(line: &str) -> usize {
+    line.len() - line.trim_start().len()
 }
 
 fn parse_fence_start(line: &str) -> Option<(char, Option<String>)> {
@@ -291,16 +707,16 @@ fn is_fence_close(line: &str, marker: char) -> bool {
 }
 
 fn parse_heading_level(line: &str) -> Option<u8> {
-    let level = line.chars().take_while(|ch| *ch == '#').count();
+    let level = line
+        .trim_start()
+        .chars()
+        .take_while(|ch| *ch == '#')
+        .count();
     if !(1..=6).contains(&level) {
         return None;
     }
 
-    line[level..]
-        .chars()
-        .next()
-        .is_some_and(char::is_whitespace)
-        .then_some(level as u8)
+    parse_heading_marker_end(line).map(|_| level as u8)
 }
 
 fn is_thematic_break(line: &str) -> bool {
@@ -314,43 +730,7 @@ fn is_thematic_break(line: &str) -> bool {
 }
 
 fn parse_list_marker(line: &str) -> Option<(bool, Option<bool>)> {
-    let unordered = ["- ", "* ", "+ "]
-        .iter()
-        .find_map(|marker| line.strip_prefix(marker).map(|rest| (false, rest)));
-    let ordered = parse_ordered_marker(line).map(|rest| (true, rest));
-    let (ordered, rest) = unordered.or(ordered)?;
-    Some((ordered, parse_task_marker(rest.trim_start())))
-}
-
-fn parse_ordered_marker(line: &str) -> Option<&str> {
-    let digit_count = line.chars().take_while(|ch| ch.is_ascii_digit()).count();
-    if digit_count == 0 {
-        return None;
-    }
-
-    let rest = &line[digit_count..];
-    let marker = rest.chars().next()?;
-    if marker != '.' && marker != ')' {
-        return None;
-    }
-
-    let rest = &rest[marker.len_utf8()..];
-    rest.chars()
-        .next()
-        .is_some_and(char::is_whitespace)
-        .then_some(rest.trim_start())
-}
-
-fn parse_task_marker(rest: &str) -> Option<bool> {
-    if rest.len() < 3 {
-        return None;
-    }
-    let marker = &rest[..3];
-    match marker {
-        "[ ]" => Some(false),
-        "[x]" | "[X]" => Some(true),
-        _ => None,
-    }
+    parse_list_marker_detail(line).map(|marker| (marker.ordered, marker.task))
 }
 
 fn is_table_start(lines: &[LineSpan<'_>], index: usize) -> bool {
@@ -452,6 +832,130 @@ mod tests {
     }
 
     #[test]
+    fn blocks_report_heading_list_quote_and_code_edit_ranges() {
+        let markdown = [
+            "## Heading",
+            "- [x] task",
+            "> quote",
+            "```rust",
+            "let x = 1;",
+            "```",
+        ]
+        .join("\n");
+        let blocks = analyze_markdown_blocks(&markdown);
+
+        assert_eq!(blocks[0].ranges.markers, vec![range(0, 3, 1, 1)]);
+        assert_eq!(blocks[0].ranges.content, Some(range(3, 10, 1, 1)));
+
+        let task_start = markdown.find("- [x] task").unwrap();
+        assert_eq!(
+            blocks[1].ranges.markers,
+            vec![range(task_start, task_start + "- [x] ".len(), 2, 2)]
+        );
+        assert_eq!(
+            blocks[1].ranges.content,
+            Some(range(
+                task_start + "- [x] ".len(),
+                task_start + "- [x] task".len(),
+                2,
+                2
+            ))
+        );
+
+        let quote_start = markdown.find("> quote").unwrap();
+        assert_eq!(
+            blocks[2].ranges.markers,
+            vec![range(quote_start, quote_start + 2, 3, 3)]
+        );
+        assert_eq!(
+            blocks[2].ranges.content,
+            Some(range(quote_start + 2, quote_start + "> quote".len(), 3, 3))
+        );
+
+        let fence_start = markdown.find("```rust").unwrap();
+        let code_start = markdown.find("let x = 1;").unwrap();
+        let closing_start = markdown.rfind("```").unwrap();
+        assert_eq!(
+            blocks[3].ranges.markers,
+            vec![
+                range(fence_start, fence_start + "```rust".len(), 4, 4),
+                range(closing_start, closing_start + "```".len(), 6, 6),
+            ]
+        );
+        assert_eq!(
+            blocks[3].ranges.content,
+            Some(range(code_start, closing_start, 5, 5))
+        );
+    }
+
+    #[test]
+    fn blocks_report_table_math_and_mermaid_edit_ranges() {
+        let markdown = [
+            "| A | B |",
+            "|---|---|",
+            "| 1 | 2 |",
+            "$$",
+            "x^2",
+            "$$",
+            "```mermaid",
+            "flowchart TD",
+            "A --> B",
+            "```",
+        ]
+        .join("\n");
+        let blocks = analyze_markdown_blocks(&markdown);
+
+        assert_eq!(blocks[0].kind, MarkdownBlockKind::Table);
+        let delimiter_start = markdown.find("|---|---|").unwrap();
+        assert_eq!(
+            blocks[0].ranges.markers,
+            vec![range(
+                delimiter_start,
+                delimiter_start + "|---|---|".len(),
+                2,
+                2
+            )]
+        );
+
+        assert_eq!(blocks[1].kind, MarkdownBlockKind::Math);
+        let math_open = markdown.find("$$").unwrap();
+        let math_content = markdown.find("x^2").unwrap();
+        let math_close = markdown[math_content..].find("$$").unwrap() + math_content;
+        assert_eq!(
+            blocks[1].ranges.markers,
+            vec![
+                range(math_open, math_open + 2, 4, 4),
+                range(math_close, math_close + 2, 6, 6),
+            ]
+        );
+        assert_eq!(
+            blocks[1].ranges.content,
+            Some(range(math_content, math_close, 5, 5))
+        );
+
+        assert_eq!(
+            blocks[2].kind,
+            MarkdownBlockKind::Mermaid {
+                language: Some("mermaid".to_string())
+            }
+        );
+        let mermaid_open = markdown.find("```mermaid").unwrap();
+        let mermaid_content = markdown.find("flowchart TD").unwrap();
+        let mermaid_close = markdown.rfind("```").unwrap();
+        assert_eq!(
+            blocks[2].ranges.markers,
+            vec![
+                range(mermaid_open, mermaid_open + "```mermaid".len(), 7, 7),
+                range(mermaid_close, mermaid_close + 3, 10, 10),
+            ]
+        );
+        assert_eq!(
+            blocks[2].ranges.content,
+            Some(range(mermaid_content, mermaid_close, 8, 9))
+        );
+    }
+
+    #[test]
     fn snapshot_preserves_revision_and_blocks() {
         let snapshot = analyze_markdown_block_snapshot("# Title\n\nbody", 42);
 
@@ -508,18 +1012,8 @@ mod tests {
 
     #[test]
     fn snapshot_serializes_block_hints_for_js() {
-        let value = serde_json::to_value(MarkdownBlockHintSet {
-            revision: 5,
-            fallback: MarkdownBlockFallback::None,
-            blocks: vec![MarkdownBlock {
-                kind: MarkdownBlockKind::Heading { level: 2 },
-                start_byte: 0,
-                end_byte: 9,
-                start_line: 1,
-                end_line: 1,
-            }],
-        })
-        .unwrap();
+        let snapshot = analyze_markdown_block_snapshot("## Title\n", 5);
+        let value = serde_json::to_value(snapshot).unwrap();
 
         assert_eq!(
             value,
@@ -531,7 +1025,27 @@ mod tests {
                     "start_byte": 0,
                     "end_byte": 9,
                     "start_line": 1,
-                    "end_line": 1
+                    "end_line": 1,
+                    "ranges": {
+                        "source": {
+                            "start_byte": 0,
+                            "end_byte": 9,
+                            "start_line": 1,
+                            "end_line": 1
+                        },
+                        "content": {
+                            "start_byte": 3,
+                            "end_byte": 8,
+                            "start_line": 1,
+                            "end_line": 1
+                        },
+                        "markers": [{
+                            "start_byte": 0,
+                            "end_byte": 3,
+                            "start_line": 1,
+                            "end_line": 1
+                        }]
+                    }
                 }]
             })
         );
@@ -540,5 +1054,19 @@ mod tests {
     #[test]
     fn empty_markdown_has_no_blocks() {
         assert!(analyze_markdown_blocks("").is_empty());
+    }
+
+    fn range(
+        start_byte: usize,
+        end_byte: usize,
+        start_line: usize,
+        end_line: usize,
+    ) -> MarkdownBlockRange {
+        MarkdownBlockRange {
+            start_byte,
+            end_byte,
+            start_line,
+            end_line,
+        }
     }
 }

@@ -23,6 +23,8 @@ import { tags as t } from "@lezer/highlight";
 import katex from "katex";
 import {
   applyFormatToView,
+  appendMarkdownTableColumn,
+  appendMarkdownTableRow,
   attachViewToTab as attachViewToTabCore,
   collectMarkdownCodeBlocks,
   collectMarkdownFrontMatterBlock,
@@ -30,15 +32,23 @@ import {
   collectMarkdownTableBlocks,
   completeMarkdownShortcutOnSpace,
   continueMarkdownListOnEnter,
+  deleteMarkdownTableLastColumn,
+  deleteMarkdownTableLastRow,
   handleMarkdownBackspace,
   handleRustMessage as handleRustMessageCore,
   hybridDecorationLevel,
+  hybridHeadingDecorationLevel,
   indentMarkdownListInView,
+  inlineMarkdownMarkersTouched,
   latestModeScrollSnapshot,
+  markdownBlockLineRange,
+  markdownCodeFenceInfoRange,
   markdownDecorationTier,
+  markdownTaskCheckboxToggleChange,
   modeSupportsEditorScroll,
   normalizeEditorPreferences,
   nextLayoutSize,
+  parseMarkdownTable,
   parseMarkdownBlockquoteLine,
   parseMarkdownFootnoteDefinitionLine,
   parseMarkdownHeadingLine,
@@ -53,7 +63,9 @@ import {
   recycleEditor as recycleEditorCore,
   requestSaveForView,
   restoreScrollSnapshot,
+  rewriteMarkdownTableCell,
   saveModeScrollSnapshot,
+  selectionTouchesTextRange,
   shouldUseFullDocumentHybridScan,
   blockHintsEqual,
   setBlockHints as setBlockHintsCore,
@@ -127,6 +139,8 @@ const setViewModeEffect = StateEffect.define();
 const setBlockHintsEffect = StateEffect.define();
 const EDITOR_COMPOSITION_CLASS = "cm-composition-active";
 const HYBRID_NEAR_BLOCK_DISTANCE = 2;
+const HYBRID_TABLE_WIDGET_MAX_BYTES = 32 * 1024;
+const HYBRID_TABLE_WIDGET_MAX_CELLS = 400;
 const viewModeField = StateField.define({
   create() {
     return "hybrid";
@@ -327,6 +341,61 @@ const editorTheme = EditorView.theme({
     borderBottomLeftRadius: "var(--mn-markdown-code-radius, 6px)",
     borderBottomRightRadius: "var(--mn-markdown-code-radius, 6px)",
     paddingBottom: "var(--mn-markdown-table-line-pad-y, .55em)",
+  },
+  ".cm-hybrid-table-widget": {
+    display: "block",
+    overflowX: "auto",
+    margin: "var(--mn-markdown-block-gap, 14px) 0",
+  },
+  ".cm-hybrid-table-toolbar": {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "6px",
+    marginBottom: "6px",
+  },
+  ".cm-hybrid-table-toolbar button": {
+    border: "var(--mn-border-subtle, 1px solid var(--mn-divider))",
+    borderRadius: "6px",
+    background: "var(--mn-surface)",
+    color: "var(--mn-ink-2)",
+    font: "inherit",
+    fontSize: ".82em",
+    padding: "4px 8px",
+    cursor: "pointer",
+  },
+  ".cm-hybrid-table-toolbar button:hover": {
+    color: "var(--mn-ink)",
+    borderColor: "var(--mn-accent)",
+  },
+  ".cm-hybrid-table-widget table": {
+    width: "100%",
+    borderCollapse: "collapse",
+    background: "var(--mn-surface)",
+    border: "var(--mn-markdown-table-border, var(--mn-border-default, 1px solid var(--mn-border)))",
+    borderRadius: "var(--mn-markdown-code-radius, 6px)",
+    overflow: "hidden",
+  },
+  ".cm-hybrid-table-widget th, .cm-hybrid-table-widget td": {
+    border: "var(--mn-markdown-table-border, var(--mn-border-default, 1px solid var(--mn-border)))",
+    padding: "0",
+  },
+  ".cm-hybrid-table-widget th": {
+    background: "var(--mn-markdown-table-head-bg, var(--mn-surface-sunken))",
+  },
+  ".cm-hybrid-table-cell-input": {
+    boxSizing: "border-box",
+    width: "100%",
+    minWidth: "96px",
+    border: "0",
+    outline: "none",
+    background: "transparent",
+    color: "var(--mn-ink)",
+    font: "inherit",
+    padding: "var(--mn-markdown-table-cell-pad, 7px 12px)",
+  },
+  ".cm-hybrid-table-cell-input:focus": {
+    background: "var(--mn-selection-soft, color-mix(in srgb, var(--mn-accent) 12%, transparent))",
+    boxShadow: "inset 0 0 0 1px var(--mn-accent)",
   },
   ".cm-hybrid-code-info": {
     display: "inline-flex",
@@ -570,14 +639,12 @@ function sourceOnlyBlockHints(hints) {
 }
 
 function blockHintRange(block) {
-  const fromLine = Number(block?.start_line);
-  const toLine = Number(block?.end_line);
-  if (!Number.isSafeInteger(fromLine) || !Number.isSafeInteger(toLine)) return null;
-  if (fromLine < 1 || toLine < fromLine) return null;
+  const range = markdownBlockLineRange(block);
+  if (!range) return null;
 
   return {
-    fromLine,
-    toLine,
+    fromLine: range.fromLine,
+    toLine: range.toLine,
     kind: block.kind ?? { type: "paragraph" },
   };
 }
@@ -595,10 +662,35 @@ function hintRangesByKind(hintRanges, kind) {
 }
 
 function codeBlocksFromHints(hintRanges) {
-  return hintRangesByKind(hintRanges, "fenced_code").map((block) => ({
+  return hintRanges
+    .filter((block) => ["fenced_code", "mermaid"].includes(block.kind?.type))
+    .map((block) => ({
+      fromLine: block.fromLine,
+      toLine: block.toLine,
+      info: block.kind?.language ?? (block.kind?.type === "mermaid" ? "mermaid" : ""),
+    }));
+}
+
+function mathSourceFromHint(doc, block) {
+  if (block.fromLine === block.toLine) {
+    const text = doc.line(block.fromLine).text.trim();
+    return text.startsWith("$$") && text.endsWith("$$")
+      ? text.slice(2, -2).trim()
+      : "";
+  }
+
+  const lines = [];
+  for (let lineNumber = block.fromLine + 1; lineNumber < block.toLine; lineNumber += 1) {
+    lines.push(doc.line(lineNumber).text);
+  }
+  return lines.join("\n").trim();
+}
+
+function mathBlocksFromHints(hintRanges, doc) {
+  return hintRangesByKind(hintRanges, "math").map((block) => ({
     fromLine: block.fromLine,
     toLine: block.toLine,
-    info: block.kind?.language ?? "",
+    source: mathSourceFromHint(doc, block),
   }));
 }
 
@@ -694,11 +786,26 @@ function renderKatexMath(target, source, displayMode) {
   return true;
 }
 
-function addInlineDecorations(decorations, line) {
+function inlineDecorationsEnabled(tier) {
+  return (
+    hybridDecorationLevel("emphasis", tier) === "full" ||
+    hybridDecorationLevel("link", tier) === "full"
+  );
+}
+
+function addInlineDecorations(decorations, line, selectionRanges = []) {
   for (const span of parseMarkdownInlineSpans(line.text)) {
     const contentFrom = line.from + span.openTo;
     const contentTo = line.from + span.closeFrom;
     if (span.type === "footnote_ref") {
+      if (
+        selectionTouchesTextRange(selectionRanges, {
+          from: line.from + span.from,
+          to: line.from + span.to,
+        })
+      ) {
+        continue;
+      }
       decorations.push(
         Decoration.replace({
           widget: new FootnoteReferenceWidget(span.label),
@@ -708,6 +815,14 @@ function addInlineDecorations(decorations, line) {
     }
 
     if (span.type === "inline_math") {
+      if (
+        selectionTouchesTextRange(selectionRanges, {
+          from: line.from + span.from,
+          to: line.from + span.to,
+        })
+      ) {
+        continue;
+      }
       decorations.push(
         Decoration.replace({
           widget: new InlineMathWidget(line.text.slice(span.openTo, span.closeFrom)),
@@ -718,6 +833,7 @@ function addInlineDecorations(decorations, line) {
 
     const className = inlineClassForType(span.type);
     if (!className) continue;
+    if (inlineMarkdownMarkersTouched(span, selectionRanges, line.from)) continue;
 
     decorations.push(Decoration.replace({}).range(line.from + span.from, contentFrom));
     decorations.push(Decoration.mark({ class: className }).range(contentFrom, contentTo));
@@ -775,23 +891,44 @@ function addImageDecorations(decorations, line) {
 }
 
 class TaskCheckboxWidget extends WidgetType {
-  constructor(checked) {
+  constructor(checked, checkPosition) {
     super();
     this.checked = checked;
+    this.checkPosition = checkPosition;
   }
 
   eq(other) {
-    return other.checked === this.checked;
+    return (
+      other instanceof TaskCheckboxWidget &&
+      other.checked === this.checked &&
+      other.checkPosition === this.checkPosition
+    );
   }
 
-  toDOM() {
+  toDOM(view) {
     const wrapper = document.createElement("span");
     wrapper.className = "cm-hybrid-task-checkbox";
 
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
     checkbox.checked = this.checked;
-    checkbox.disabled = true;
+    checkbox.setAttribute("aria-label", this.checked ? "Mark task incomplete" : "Mark task complete");
+    checkbox.addEventListener("mousedown", (event) => {
+      event.preventDefault();
+    });
+    checkbox.addEventListener("click", (event) => {
+      event.preventDefault();
+      const change = markdownTaskCheckboxToggleChange(
+        view.state.doc.toString(),
+        this.checkPosition,
+      );
+      if (!change) return;
+      view.dispatch({
+        changes: change.changes,
+        selection: change.selection,
+      });
+      view.focus();
+    });
     wrapper.appendChild(checkbox);
 
     return wrapper;
@@ -802,15 +939,30 @@ class TaskCheckboxWidget extends WidgetType {
   }
 }
 
-function addTaskDecorations(decorations, line) {
+function addTaskDecorations(decorations, line, selectionRanges = []) {
   const task = parseMarkdownTaskLine(line.text);
-  if (!task) return;
+  if (!task) return false;
+  if (
+    selectionTouchesTextRange(selectionRanges, {
+      from: line.from,
+      to: line.from + task.markerLength,
+    })
+  ) {
+    return false;
+  }
+
+  const taskMarkerStart = line.text.slice(0, task.markerLength).search(/\[[ xX]\]/);
+  if (taskMarkerStart < 0) return false;
 
   decorations.push(
     Decoration.replace({
-      widget: new TaskCheckboxWidget(task.checked),
+      widget: new TaskCheckboxWidget(
+        task.checked,
+        line.from + taskMarkerStart + 1,
+      ),
     }).range(line.from, line.from + task.markerLength),
   );
+  return true;
 }
 
 class ListMarkerWidget extends WidgetType {
@@ -831,9 +983,17 @@ class ListMarkerWidget extends WidgetType {
   }
 }
 
-function addListDecorations(decorations, line) {
+function addListDecorations(decorations, line, selectionRanges = []) {
   const list = parseMarkdownListLine(line.text);
   if (!list) return false;
+  if (
+    selectionTouchesTextRange(selectionRanges, {
+      from: line.from + list.indentLength,
+      to: line.from + list.markerLength,
+    })
+  ) {
+    return false;
+  }
 
   decorations.push(
     Decoration.replace({
@@ -869,9 +1029,17 @@ function addHorizontalRuleDecorations(decorations, line) {
   return true;
 }
 
-function addBlockquoteDecorations(decorations, line) {
+function addBlockquoteDecorations(decorations, line, selectionRanges = []) {
   const blockquote = parseMarkdownBlockquoteLine(line.text);
   if (!blockquote) return false;
+  if (
+    selectionTouchesTextRange(selectionRanges, {
+      from: line.from,
+      to: line.from + blockquote.markerLength,
+    })
+  ) {
+    return false;
+  }
 
   decorations.push(
     Decoration.line({
@@ -920,20 +1088,48 @@ function addFootnoteDefinitionDecorations(decorations, line) {
 }
 
 class CodeFenceWidget extends WidgetType {
-  constructor(info) {
+  constructor(info, infoRange) {
     super();
     this.info = info;
+    this.infoRange = infoRange;
   }
 
   eq(other) {
-    return other instanceof CodeFenceWidget && other.info === this.info;
+    return (
+      other instanceof CodeFenceWidget &&
+      other.info === this.info &&
+      other.infoRange?.from === this.infoRange?.from &&
+      other.infoRange?.to === this.infoRange?.to
+    );
   }
 
-  toDOM() {
+  toDOM(view) {
     const label = document.createElement("span");
     label.className = "cm-hybrid-code-info";
     label.textContent = this.info || "code";
+    label.tabIndex = 0;
+    label.setAttribute("role", "button");
+    label.setAttribute("aria-label", "Edit code block language");
+    const focusInfo = (event) => {
+      event.preventDefault();
+      const from = this.infoRange?.from ?? this.infoRange?.to;
+      const to = this.infoRange?.to ?? from;
+      if (!Number.isSafeInteger(from) || !Number.isSafeInteger(to)) return;
+      view.dispatch({ selection: { anchor: from, head: to } });
+      view.focus();
+    };
+    label.addEventListener("mousedown", (event) => event.preventDefault());
+    label.addEventListener("click", focusInfo);
+    label.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        focusInfo(event);
+      }
+    });
     return label;
+  }
+
+  ignoreEvent() {
+    return false;
   }
 }
 
@@ -980,9 +1176,10 @@ function addCodeBlockDecorations(decorations, line, block, tier) {
 
   decorations.push(Decoration.line({ class: classes }).range(line.from));
   if (level === "full" && isStart) {
+    const infoRange = markdownCodeFenceInfoRange(line.text, line.from);
     decorations.push(
       Decoration.replace({
-        widget: new CodeFenceWidget(isStart ? block.info : ""),
+        widget: new CodeFenceWidget(isStart ? block.info : "", infoRange),
       }).range(line.from, line.to),
     );
   } else if (level === "full" && isEnd) {
@@ -1014,6 +1211,128 @@ function addFrontMatterDecorations(decorations, line, block) {
   if (isStart || isEnd) {
     decorations.push(Decoration.replace({}).range(line.from, line.to));
   }
+}
+
+class MarkdownTableWidget extends WidgetType {
+  constructor(markdown, fromLine, toLine) {
+    super();
+    this.markdown = markdown;
+    this.fromLine = fromLine;
+    this.toLine = toLine;
+    this.table = parseMarkdownTable(markdown);
+  }
+
+  eq(other) {
+    return (
+      other instanceof MarkdownTableWidget &&
+      other.markdown === this.markdown &&
+      other.fromLine === this.fromLine &&
+      other.toLine === this.toLine
+    );
+  }
+
+  toDOM(view) {
+    const wrapper = document.createElement("div");
+    wrapper.className = "cm-hybrid-table-widget";
+    if (!this.table) {
+      wrapper.textContent = this.markdown;
+      return wrapper;
+    }
+
+    const replaceTable = (updated) => {
+      if (!updated || updated === this.markdown) return;
+      const from = view.state.doc.line(this.fromLine).from;
+      const to = view.state.doc.line(this.toLine).to;
+      view.dispatch({
+        changes: { from, to, insert: updated },
+        selection: { anchor: from },
+      });
+      view.focus();
+    };
+    const toolbar = document.createElement("div");
+    toolbar.className = "cm-hybrid-table-toolbar";
+    const commands = [
+      ["Add row", () => appendMarkdownTableRow(this.markdown)],
+      ["Delete row", () => deleteMarkdownTableLastRow(this.markdown)],
+      ["Add column", () => appendMarkdownTableColumn(this.markdown)],
+      ["Delete column", () => deleteMarkdownTableLastColumn(this.markdown)],
+    ];
+    for (const [label, command] of commands) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = label;
+      button.addEventListener("mousedown", (event) => event.preventDefault());
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        replaceTable(command());
+      });
+      toolbar.appendChild(button);
+    }
+    wrapper.appendChild(toolbar);
+
+    const table = document.createElement("table");
+    const tbody = document.createElement("tbody");
+    for (const row of this.table.rows) {
+      const tr = document.createElement("tr");
+      row.cells.forEach((cell, columnIndex) => {
+        const cellElement = document.createElement(row.kind === "header" ? "th" : "td");
+        const input = document.createElement("input");
+        input.className = "cm-hybrid-table-cell-input";
+        input.value = cell;
+        input.setAttribute("aria-label", `Edit table cell ${row.sourceRowIndex + 1}:${columnIndex + 1}`);
+        input.addEventListener("keydown", (event) => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            input.blur();
+          }
+          event.stopPropagation();
+        });
+        input.addEventListener("mousedown", (event) => event.stopPropagation());
+        input.addEventListener("click", (event) => event.stopPropagation());
+        input.addEventListener("blur", () => {
+          if (input.value === cell) return;
+          const updated = rewriteMarkdownTableCell(
+            this.markdown,
+            row.sourceRowIndex,
+            columnIndex,
+            input.value,
+          );
+          replaceTable(updated);
+        });
+        cellElement.appendChild(input);
+        tr.appendChild(cellElement);
+      });
+      tbody.appendChild(tr);
+    }
+    table.appendChild(tbody);
+    wrapper.appendChild(table);
+    return wrapper;
+  }
+
+  ignoreEvent() {
+    return true;
+  }
+}
+
+function addTableWidgetDecorations(decorations, state, block) {
+  const from = state.doc.line(block.fromLine).from;
+  const to = state.doc.line(block.toLine).to;
+  const markdown = state.sliceDoc(from, to);
+  if (markdown.length > HYBRID_TABLE_WIDGET_MAX_BYTES) return false;
+
+  const table = parseMarkdownTable(markdown);
+  if (!table) return false;
+  const cellCount = table.rows.length * table.columnCount;
+  if (cellCount > HYBRID_TABLE_WIDGET_MAX_CELLS) return false;
+
+  decorations.push(
+    Decoration.replace({
+      block: true,
+      widget: new MarkdownTableWidget(markdown, block.fromLine, block.toLine),
+    }).range(from, to),
+  );
+  return true;
 }
 
 function addTableDecorations(decorations, line, block) {
@@ -1068,7 +1387,9 @@ function deriveHybridBlockContext(state) {
       ? codeBlocksFromHints(hintRanges)
       : collectMarkdownCodeBlocks(lines),
     frontMatterBlock: lines ? collectMarkdownFrontMatterBlock(lines) : null,
-    mathBlocks: lines ? collectMarkdownMathBlocks(lines) : [],
+    mathBlocks: usesBlockHints
+      ? mathBlocksFromHints(hintRanges, state.doc)
+      : collectMarkdownMathBlocks(lines),
     tableBlocks: usesBlockHints
       ? tableBlocksFromHints(hintRanges)
       : collectMarkdownTableBlocks(lines),
@@ -1096,11 +1417,15 @@ function headingDecorationForLine(context, line) {
   return parseMarkdownHeadingLine(line.text);
 }
 
-function addHeadingDecorations(decorations, line, heading, tier) {
-  const level = hybridDecorationLevel("heading", tier);
-  if (level === "source") return;
-
+function addHeadingDecorations(decorations, line, heading, tier, selectionRanges) {
   const markerTo = line.from + heading.markerLength;
+  const level = hybridHeadingDecorationLevel(
+    tier,
+    { from: line.from, to: markerTo },
+    selectionRanges,
+  );
+  if (level === "source") return false;
+
   decorations.push(
     Decoration.line({
       class: `cm-hybrid-heading-line cm-hybrid-heading-line-${heading.level}`,
@@ -1108,7 +1433,7 @@ function addHeadingDecorations(decorations, line, heading, tier) {
   );
 
   if (level !== "full") {
-    return;
+    return true;
   }
 
   decorations.push(Decoration.replace({}).range(line.from, markerTo));
@@ -1117,6 +1442,7 @@ function addHeadingDecorations(decorations, line, heading, tier) {
       class: `cm-hybrid-heading cm-hybrid-heading-${heading.level}`,
     }).range(markerTo, line.to),
   );
+  return true;
 }
 
 function buildHybridMarkdownDecorations(
@@ -1132,6 +1458,7 @@ function buildHybridMarkdownDecorations(
 
   const decorations = [];
   const emittedMathBlocks = new Set();
+  const emittedTableBlocks = new Set();
   let lastLineNumber = -1;
 
   for (const range of view.visibleRanges) {
@@ -1191,17 +1518,53 @@ function buildHybridMarkdownDecorations(
           tableBlock.fromLine,
           tableBlock.toLine,
         );
-        if (hybridDecorationLevel("table", tier) !== "source") {
+        const tableLevel = hybridDecorationLevel("table", tier);
+        if (tableLevel === "full") {
+          if (!emittedTableBlocks.has(tableBlock.fromLine)) {
+            emittedTableBlocks.add(tableBlock.fromLine);
+            if (!addTableWidgetDecorations(decorations, view.state, tableBlock)) {
+              addTableDecorations(decorations, line, tableBlock);
+            }
+          }
+        } else if (tableLevel !== "source") {
           addTableDecorations(decorations, line, tableBlock);
         }
         continue;
       }
 
       const tier = decorationTierForLine(view.state, line);
-      if (tier === "current") continue;
-
+      const selectionRanges = view.state.selection.ranges;
       const heading = headingDecorationForLine(context, line);
+      if (heading) {
+        const headingDecorated = addHeadingDecorations(
+          decorations,
+          line,
+          heading,
+          tier,
+          selectionRanges,
+        );
+        if (headingDecorated && inlineDecorationsEnabled(tier)) {
+          addInlineDecorations(decorations, line, selectionRanges);
+        }
+        continue;
+      }
+
       if (!heading) {
+        if (tier === "current") {
+          if (hybridDecorationLevel("quote", tier) === "full") {
+            addBlockquoteDecorations(decorations, line, selectionRanges);
+          }
+          if (hybridDecorationLevel("task", tier) === "widget") {
+            addTaskDecorations(decorations, line, selectionRanges);
+          }
+          if (hybridDecorationLevel("list", tier) === "full") {
+            addListDecorations(decorations, line, selectionRanges);
+          }
+          if (inlineDecorationsEnabled(tier)) {
+            addInlineDecorations(decorations, line, selectionRanges);
+          }
+          continue;
+        }
         if (hybridDecorationLevel("rule", tier) === "full") {
           if (addHorizontalRuleDecorations(decorations, line)) continue;
         }
@@ -1209,27 +1572,22 @@ function buildHybridMarkdownDecorations(
           if (addFootnoteDefinitionDecorations(decorations, line)) continue;
         }
         if (hybridDecorationLevel("quote", tier) === "full") {
-          addBlockquoteDecorations(decorations, line);
+          addBlockquoteDecorations(decorations, line, selectionRanges);
         }
         if (hybridDecorationLevel("task", tier) === "widget") {
-          addTaskDecorations(decorations, line);
+          addTaskDecorations(decorations, line, selectionRanges);
         }
         if (hybridDecorationLevel("list", tier) === "full") {
-          addListDecorations(decorations, line);
+          addListDecorations(decorations, line, selectionRanges);
         }
         if (hybridDecorationLevel("image", tier) === "widget") {
           addImageDecorations(decorations, line);
         }
-        if (
-          hybridDecorationLevel("emphasis", tier) === "full" ||
-          hybridDecorationLevel("link", tier) === "full"
-        ) {
-          addInlineDecorations(decorations, line);
+        if (inlineDecorationsEnabled(tier)) {
+          addInlineDecorations(decorations, line, selectionRanges);
         }
         continue;
       }
-
-      addHeadingDecorations(decorations, line, heading, tier);
     }
   }
 

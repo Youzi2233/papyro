@@ -99,17 +99,7 @@ mod tests {
     #[test]
     fn serializes_set_block_hints_command() {
         let value = serde_json::to_value(EditorCommand::SetBlockHints {
-            hints: MarkdownBlockHintSet {
-                revision: 3,
-                fallback: crate::parser::MarkdownBlockFallback::None,
-                blocks: vec![crate::parser::MarkdownBlock {
-                    kind: crate::parser::MarkdownBlockKind::Heading { level: 1 },
-                    start_byte: 0,
-                    end_byte: 8,
-                    start_line: 1,
-                    end_line: 1,
-                }],
-            },
+            hints: crate::parser::analyze_markdown_block_snapshot("# Title\n", 3),
         })
         .unwrap();
 
@@ -125,7 +115,27 @@ mod tests {
                         "start_byte": 0,
                         "end_byte": 8,
                         "start_line": 1,
-                        "end_line": 1
+                        "end_line": 1,
+                        "ranges": {
+                            "source": {
+                                "start_byte": 0,
+                                "end_byte": 8,
+                                "start_line": 1,
+                                "end_line": 1
+                            },
+                            "content": {
+                                "start_byte": 2,
+                                "end_byte": 7,
+                                "start_line": 1,
+                                "end_line": 1
+                            },
+                            "markers": [{
+                                "start_byte": 0,
+                                "end_byte": 2,
+                                "start_line": 1,
+                                "end_line": 1
+                            }]
+                        }
                     }]
                 }
             })

@@ -151,17 +151,17 @@ export const hybridDecorationPolicies = Object.freeze({
   heading: {
     budget: "visible_line",
     fallback: "source",
-    levels: { current: "source", near: "full", remote: "structure" },
+    levels: { current: "full", near: "full", remote: "structure" },
   },
   emphasis: {
     budget: "near_visible_line",
     fallback: "source",
-    levels: { current: "source", near: "full", remote: "source" },
+    levels: { current: "full", near: "full", remote: "full" },
   },
   link: {
     budget: "near_visible_line",
     fallback: "source",
-    levels: { current: "source", near: "full", remote: "source" },
+    levels: { current: "full", near: "full", remote: "full" },
   },
   image: {
     budget: "near_visible_line",
@@ -171,12 +171,12 @@ export const hybridDecorationPolicies = Object.freeze({
   task: {
     budget: "near_visible_line",
     fallback: "source",
-    levels: { current: "source", near: "widget", remote: "source" },
+    levels: { current: "widget", near: "widget", remote: "source" },
   },
   list: {
     budget: "near_visible_line",
     fallback: "source",
-    levels: { current: "source", near: "full", remote: "source" },
+    levels: { current: "full", near: "full", remote: "source" },
   },
   code: {
     budget: "visible_block",
@@ -191,7 +191,7 @@ export const hybridDecorationPolicies = Object.freeze({
   quote: {
     budget: "near_visible_line",
     fallback: "source",
-    levels: { current: "source", near: "full", remote: "source" },
+    levels: { current: "full", near: "full", remote: "source" },
   },
   rule: {
     budget: "near_visible_line",
@@ -201,7 +201,7 @@ export const hybridDecorationPolicies = Object.freeze({
   table: {
     budget: "visible_block",
     fallback: "source",
-    levels: { current: "source", near: "structure", remote: "structure" },
+    levels: { current: "source", near: "full", remote: "full" },
   },
   footnote: {
     budget: "near_visible_line",
@@ -221,6 +221,86 @@ export function hybridDecorationPolicy(kind) {
 export function hybridDecorationLevel(kind, tier) {
   const policy = hybridDecorationPolicy(kind);
   return policy.levels?.[tier] ?? policy.fallback;
+}
+
+function normalizedSelectionRange(range) {
+  const from = safeInteger(range?.from);
+  const to = safeInteger(range?.to ?? range?.from);
+  if (from === null || to === null) return null;
+  return {
+    from: Math.min(from, to),
+    to: Math.max(from, to),
+  };
+}
+
+export function selectionTouchesTextRange(selectionRanges, textRange) {
+  const from = safeInteger(textRange?.from);
+  const to = safeInteger(textRange?.to);
+  if (from === null || to === null || to <= from) return false;
+
+  return (selectionRanges ?? []).some((range) => {
+    const selection = normalizedSelectionRange(range);
+    if (!selection) return false;
+    if (selection.from === selection.to) {
+      return selection.from >= from && selection.from < to;
+    }
+
+    return selection.from < to && selection.to > from;
+  });
+}
+
+export function hybridHeadingDecorationLevel(tier, markerRange, selectionRanges) {
+  const level = hybridDecorationLevel("heading", tier);
+  if (level === "source") return "source";
+  return selectionTouchesTextRange(selectionRanges, markerRange) ? "source" : level;
+}
+
+export function inlineMarkdownMarkersTouched(span, selectionRanges, lineFrom = 0) {
+  const spanFrom = safeInteger(span?.from);
+  const openTo = safeInteger(span?.openTo);
+  const closeFrom = safeInteger(span?.closeFrom);
+  const spanTo = safeInteger(span?.to);
+  const offset = safeInteger(lineFrom);
+  if (
+    spanFrom === null ||
+    openTo === null ||
+    closeFrom === null ||
+    spanTo === null ||
+    offset === null
+  ) {
+    return false;
+  }
+
+  return (
+    selectionTouchesTextRange(selectionRanges, {
+      from: offset + spanFrom,
+      to: offset + openTo,
+    }) ||
+    selectionTouchesTextRange(selectionRanges, {
+      from: offset + closeFrom,
+      to: offset + spanTo,
+    })
+  );
+}
+
+export function markdownTaskCheckboxToggleChange(doc, checkPosition) {
+  if (typeof doc !== "string") return null;
+
+  const position = safeInteger(checkPosition);
+  if (position === null || position <= 0 || position >= doc.length - 1) {
+    return null;
+  }
+  if (doc[position - 1] !== "[" || doc[position + 1] !== "]") return null;
+
+  const current = doc[position];
+  if (current !== " " && current !== "x" && current !== "X") return null;
+
+  const insert = current.toLowerCase() === "x" ? " " : "x";
+  return {
+    changes: { from: position, to: position + 1, insert },
+    selection: { anchor: position + 1 },
+    doc: `${doc.slice(0, position)}${insert}${doc.slice(position + 1)}`,
+  };
 }
 
 function safeInteger(value) {
@@ -269,11 +349,78 @@ export function utf8ByteRangeToStringRange(text, fromByte, toByte) {
   return { from: fromIndex, to: toIndex };
 }
 
-export function markdownBlockLineRange(block) {
+function normalizeMarkdownRange(range) {
+  if (!range || typeof range !== "object") return null;
+
+  const startByte = safeInteger(range.startByte ?? range.start_byte);
+  const endByte = safeInteger(range.endByte ?? range.end_byte);
+  const startLine = safeInteger(range.startLine ?? range.start_line);
+  const endLine = safeInteger(range.endLine ?? range.end_line);
+  if (
+    startByte === null ||
+    endByte === null ||
+    startLine === null ||
+    endLine === null ||
+    startByte < 0 ||
+    endByte < startByte ||
+    startLine < 1 ||
+    endLine < startLine
+  ) {
+    return null;
+  }
+
+  return { startByte, endByte, startLine, endLine };
+}
+
+function legacyMarkdownBlockSourceRange(block) {
+  const startByte = safeInteger(block.fromByte ?? block.startByte ?? block.start_byte);
+  const endByte = safeInteger(block.toByte ?? block.endByte ?? block.end_byte);
+  const startLine = safeInteger(block.fromLine ?? block.startLine ?? block.start_line);
+  const endLine = safeInteger(block.toLine ?? block.endLine ?? block.end_line ?? startLine);
+
+  if (
+    startByte === null ||
+    endByte === null ||
+    startLine === null ||
+    endLine === null ||
+    startByte < 0 ||
+    endByte < startByte ||
+    startLine < 1 ||
+    endLine < startLine
+  ) {
+    return null;
+  }
+
+  return { startByte, endByte, startLine, endLine };
+}
+
+export function markdownBlockEditRanges(block) {
   if (!block || typeof block !== "object") return null;
 
-  const fromLine = safeInteger(block.fromLine ?? block.startLine ?? block.start_line);
-  const toLine = safeInteger(block.toLine ?? block.endLine ?? block.end_line ?? fromLine);
+  const source =
+    normalizeMarkdownRange(block.ranges?.source) ??
+    legacyMarkdownBlockSourceRange(block);
+  if (!source) return null;
+
+  const content = normalizeMarkdownRange(block.ranges?.content);
+  const markers = Array.isArray(block.ranges?.markers)
+    ? block.ranges.markers.map(normalizeMarkdownRange).filter(Boolean)
+    : [];
+
+  return { source, content, markers };
+}
+
+export function markdownBlockLineRange(block) {
+  const ranges = markdownBlockEditRanges(block);
+  if (ranges) {
+    return {
+      fromLine: ranges.source.startLine,
+      toLine: ranges.source.endLine,
+    };
+  }
+
+  const fromLine = safeInteger(block?.fromLine ?? block?.startLine ?? block?.start_line);
+  const toLine = safeInteger(block?.toLine ?? block?.endLine ?? block?.end_line ?? fromLine);
   if (fromLine === null || toLine === null || fromLine < 1 || toLine < fromLine) {
     return null;
   }
@@ -284,9 +431,10 @@ export function markdownBlockLineRange(block) {
 export function markdownBlockStringRange(markdown, block) {
   if (!block || typeof block !== "object") return null;
 
-  const fromByte = block.fromByte ?? block.startByte ?? block.start_byte;
-  const toByte = block.toByte ?? block.endByte ?? block.end_byte;
-  return utf8ByteRangeToStringRange(markdown, fromByte, toByte);
+  const source = markdownBlockEditRanges(block)?.source;
+  if (!source) return null;
+
+  return utf8ByteRangeToStringRange(markdown, source.startByte, source.endByte);
 }
 
 export function hybridBlockState(block, options = {}) {
@@ -949,6 +1097,18 @@ export function parseMarkdownCodeFenceLine(line) {
   };
 }
 
+export function markdownCodeFenceInfoRange(line, lineFrom = 0) {
+  if (typeof line !== "string") return null;
+  const fence = parseMarkdownCodeFenceLine(line);
+  const offset = safeInteger(lineFrom);
+  if (!fence || offset === null) return null;
+
+  const rest = line.slice(fence.markerLength);
+  const whitespaceLength = rest.length - rest.trimStart().length;
+  const from = offset + fence.markerLength + whitespaceLength;
+  return { from, to: offset + line.length };
+}
+
 export function collectMarkdownCodeBlocks(lines) {
   const blocks = [];
   let open = null;
@@ -1095,6 +1255,119 @@ function isMarkdownTableSeparator(line) {
   if (!cells) return false;
 
   return cells.every((cell) => /^:?-{3,}:?$/.test(cell));
+}
+
+function markdownTableAlignment(cell) {
+  if (/^:-{3,}:$/.test(cell)) return "center";
+  if (/^:-{3,}$/.test(cell)) return "left";
+  if (/^-{3,}:$/.test(cell)) return "right";
+  return null;
+}
+
+export function parseMarkdownTable(markdown) {
+  if (typeof markdown !== "string") return null;
+
+  const lines = markdown.split(/\r\n|\n/);
+  if (lines.length < 2 || !isMarkdownTableSeparator(lines[1] ?? "")) {
+    return null;
+  }
+
+  const header = parseMarkdownTableRowParts(lines[0]);
+  const separator = parseMarkdownTableRowParts(lines[1]);
+  if (!header || !separator) return null;
+
+  const columnCount = header.cells.length;
+  const rows = [{ kind: "header", sourceRowIndex: 0, cells: header.cells }];
+
+  for (let index = 2; index < lines.length; index += 1) {
+    const row = parseMarkdownTableRowParts(lines[index]);
+    if (!row) return null;
+    rows.push({
+      kind: "body",
+      sourceRowIndex: index,
+      cells: row.cells,
+    });
+  }
+
+  return {
+    columnCount,
+    alignments: separator.cells.slice(0, columnCount).map(markdownTableAlignment),
+    rows: rows.map((row) => ({
+      ...row,
+      cells: Array.from(
+        { length: columnCount },
+        (_, index) => row.cells[index] ?? "",
+      ),
+    })),
+  };
+}
+
+function parseMarkdownTableDocument(markdown) {
+  if (typeof markdown !== "string") return null;
+
+  const lineEnding = markdown.includes("\r\n") ? "\r\n" : "\n";
+  const lines = markdown.split(/\r\n|\n/);
+  if (lines.length < 2 || !isMarkdownTableSeparator(lines[1] ?? "")) {
+    return null;
+  }
+
+  const parts = lines.map(parseMarkdownTableRowParts);
+  if (parts.some((part) => !part)) return null;
+
+  const columnCount = parts[0].cells.length;
+  if (columnCount < 2) return null;
+
+  return { lineEnding, parts, columnCount };
+}
+
+function renderMarkdownTableDocument(table) {
+  return table.parts.map(renderMarkdownTableRow).join(table.lineEnding);
+}
+
+export function appendMarkdownTableRow(markdown) {
+  const table = parseMarkdownTableDocument(markdown);
+  if (!table) return null;
+
+  const template = table.parts[table.parts.length - 1] ?? table.parts[0];
+  table.parts.push({
+    ...template,
+    cells: Array.from({ length: table.columnCount }, () => ""),
+  });
+  return renderMarkdownTableDocument(table);
+}
+
+export function deleteMarkdownTableLastRow(markdown) {
+  const table = parseMarkdownTableDocument(markdown);
+  if (!table || table.parts.length <= 2) return null;
+
+  table.parts.pop();
+  return renderMarkdownTableDocument(table);
+}
+
+export function appendMarkdownTableColumn(markdown, header = "Column") {
+  const table = parseMarkdownTableDocument(markdown);
+  if (!table) return null;
+
+  table.parts.forEach((part, index) => {
+    if (index === 0) {
+      part.cells.push(escapeMarkdownTableCell(header));
+    } else if (index === 1) {
+      part.cells.push("---");
+    } else {
+      part.cells.push("");
+    }
+  });
+  return renderMarkdownTableDocument(table);
+}
+
+export function deleteMarkdownTableLastColumn(markdown) {
+  const table = parseMarkdownTableDocument(markdown);
+  if (!table || table.columnCount <= 2) return null;
+
+  table.parts.forEach((part) => {
+    part.cells.pop();
+  });
+  return renderMarkdownTableDocument(table);
 }
 
 export function collectMarkdownTableBlocks(lines) {

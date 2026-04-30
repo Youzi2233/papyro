@@ -3,26 +3,35 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
   applyFormatToView,
+  appendMarkdownTableColumn,
+  appendMarkdownTableRow,
   attachViewToTab,
   collectMarkdownCodeBlocks,
   collectMarkdownFrontMatterBlock,
   collectMarkdownMathBlocks,
   collectMarkdownTableBlocks,
   completeMarkdownShortcutOnSpace,
+  deleteMarkdownTableLastColumn,
+  deleteMarkdownTableLastRow,
   formatSelectionChange,
   handleMarkdownBackspace,
   handleRustMessage,
   handleMarkdownEnter,
   hybridBlockState,
   hybridDecorationLevel,
+  hybridHeadingDecorationLevel,
   hybridDecorationPolicy,
   hybridDecorationPolicies,
   indentMarkdownListInView,
+  inlineMarkdownMarkersTouched,
   insertMarkdownInView,
   latestModeScrollSnapshot,
+  markdownBlockEditRanges,
   markdownBlockLineRange,
   markdownBlockStringRange,
+  markdownCodeFenceInfoRange,
   markdownLinkPasteChange,
+  markdownTaskCheckboxToggleChange,
   markdownBlockquoteEnterChange,
   markdownCodeFenceEnterChange,
   markdownEnterChange,
@@ -46,6 +55,7 @@ import {
   parseMarkdownImageSpans,
   parseMarkdownInlineSpans,
   parseMarkdownListLine,
+  parseMarkdownTable,
   parseMarkdownTaskLine,
   pasteMarkdownLinkInView,
   recycleEditor,
@@ -54,6 +64,7 @@ import {
   restoreScrollSnapshot,
   rewriteMarkdownTableCell,
   saveModeScrollSnapshot,
+  selectionTouchesTextRange,
   shouldUseFullDocumentHybridScan,
   utf8ByteOffsetToStringIndex,
   utf8ByteRangeToStringRange,
@@ -436,6 +447,27 @@ test("utf8 byte range mapping preserves rust offsets for unicode markdown", () =
     { from: 9, to: 11 },
   );
   assert.equal(utf8ByteOffsetToStringIndex(heading, fromByte + 1), null);
+});
+
+test("markdown block edit ranges normalize rust range payloads", () => {
+  const block = {
+    start_byte: 0,
+    end_byte: 12,
+    start_line: 1,
+    end_line: 1,
+    ranges: {
+      source: { start_byte: 0, end_byte: 12, start_line: 1, end_line: 1 },
+      content: { start_byte: 3, end_byte: 11, start_line: 1, end_line: 1 },
+      markers: [{ start_byte: 0, end_byte: 3, start_line: 1, end_line: 1 }],
+    },
+  };
+
+  assert.deepEqual(markdownBlockEditRanges(block), {
+    source: { startByte: 0, endByte: 12, startLine: 1, endLine: 1 },
+    content: { startByte: 3, endByte: 11, startLine: 1, endLine: 1 },
+    markers: [{ startByte: 0, endByte: 3, startLine: 1, endLine: 1 }],
+  });
+  assert.deepEqual(markdownBlockLineRange(block), { fromLine: 1, toLine: 1 });
 });
 
 test("parse_markdown_inline_spans ignores emphasis inside image alt", () => {
@@ -838,15 +870,56 @@ test("markdown shortcut view commands dispatch completions", () => {
   assert.equal(fence.state.doc.toString(), "```\n\n```");
 });
 
-test("heading shortcut keeps the edited heading line in source tier", () => {
-  const view = fakeView("#", { from: 1, to: 1 });
-
-  assert.equal(completeMarkdownShortcutOnSpace(view), true);
-  assert.equal(view.state.doc.toString(), "# ");
-
+test("heading decoration keeps content editable while exposing touched markers", () => {
   const tier = markdownDecorationTier([{ fromLine: 1, toLine: 1 }], 1, 1);
+  const marker = { from: 0, to: 2 };
+
   assert.equal(tier, "current");
-  assert.equal(hybridDecorationLevel("heading", tier), "source");
+  assert.equal(hybridDecorationLevel("heading", tier), "full");
+  assert.equal(
+    hybridHeadingDecorationLevel(tier, marker, [{ from: 2, to: 2 }]),
+    "full",
+  );
+  assert.equal(
+    hybridHeadingDecorationLevel(tier, marker, [{ from: 1, to: 1 }]),
+    "source",
+  );
+  assert.equal(
+    hybridHeadingDecorationLevel(tier, marker, [{ from: 0, to: 7 }]),
+    "source",
+  );
+  assert.equal(selectionTouchesTextRange([{ from: 2, to: 2 }], marker), false);
+  assert.equal(selectionTouchesTextRange([{ from: 1, to: 1 }], marker), true);
+});
+
+test("inline decoration keeps content editable while exposing touched markers", () => {
+  const [strong, link] = parseMarkdownInlineSpans("A **bold** [link](https://example.com)");
+
+  assert.equal(strong.type, "strong");
+  assert.equal(
+    inlineMarkdownMarkersTouched(strong, [{ from: 5, to: 5 }], 0),
+    false,
+  );
+  assert.equal(
+    inlineMarkdownMarkersTouched(strong, [{ from: 2, to: 3 }], 0),
+    true,
+  );
+  assert.equal(
+    inlineMarkdownMarkersTouched(strong, [{ from: 8, to: 10 }], 0),
+    true,
+  );
+
+  assert.equal(link.type, "link");
+  assert.equal(
+    inlineMarkdownMarkersTouched(link, [{ from: 13, to: 13 }], 0),
+    false,
+  );
+  assert.equal(
+    inlineMarkdownMarkersTouched(link, [{ from: 17, to: 18 }], 0),
+    true,
+  );
+  assert.equal(hybridDecorationLevel("emphasis", "current"), "full");
+  assert.equal(hybridDecorationLevel("link", "remote"), "full");
 });
 
 test("current code and table blocks keep source editing tier", () => {
@@ -865,7 +938,36 @@ test("current code and table blocks keep source editing tier", () => {
   assert.equal(currentTableTier, "current");
   assert.equal(hybridDecorationLevel("code", currentCodeTier), "source");
   assert.equal(hybridDecorationLevel("table", currentTableTier), "source");
-  assert.equal(hybridDecorationLevel("table", "near"), "structure");
+  assert.equal(hybridDecorationLevel("table", "near"), "full");
+});
+
+test("task checkbox toggle change rewrites only the checkbox marker", () => {
+  assert.deepEqual(markdownTaskCheckboxToggleChange("- [ ] Todo", 3), {
+    changes: { from: 3, to: 4, insert: "x" },
+    selection: { anchor: 4 },
+    doc: "- [x] Todo",
+  });
+  assert.deepEqual(markdownTaskCheckboxToggleChange("- [X] Todo", 3), {
+    changes: { from: 3, to: 4, insert: " " },
+    selection: { anchor: 4 },
+    doc: "- [ ] Todo",
+  });
+  assert.equal(markdownTaskCheckboxToggleChange("- [?] Todo", 3), null);
+  assert.equal(hybridDecorationLevel("task", "current"), "widget");
+  assert.equal(hybridDecorationLevel("list", "current"), "full");
+  assert.equal(hybridDecorationLevel("quote", "current"), "full");
+});
+
+test("code fence info range targets the editable language segment", () => {
+  assert.deepEqual(markdownCodeFenceInfoRange("```rust", 10), {
+    from: 13,
+    to: 17,
+  });
+  assert.deepEqual(markdownCodeFenceInfoRange("~~~", 4), {
+    from: 7,
+    to: 7,
+  });
+  assert.equal(markdownCodeFenceInfoRange("    ```rust", 0), null);
 });
 
 test("markdown input commands yield during IME composition", () => {
@@ -1384,6 +1486,79 @@ test("rewrite_markdown_table_cell updates one cell without changing table shape"
   );
   assert.equal(rewriteMarkdownTableCell(table, 1, 0, "invalid"), null);
   assert.equal(rewriteMarkdownTableCell(table, 2, 3, "invalid"), null);
+});
+
+test("parse_markdown_table exposes editable cells and alignments", () => {
+  assert.deepEqual(
+    parseMarkdownTable([
+      "| Name | Status | Count |",
+      "| :--- | :---: | ---: |",
+      "| Alpha | Ready | 1 |",
+    ].join("\n")),
+    {
+      columnCount: 3,
+      alignments: ["left", "center", "right"],
+      rows: [
+        {
+          kind: "header",
+          sourceRowIndex: 0,
+          cells: ["Name", "Status", "Count"],
+        },
+        {
+          kind: "body",
+          sourceRowIndex: 2,
+          cells: ["Alpha", "Ready", "1"],
+        },
+      ],
+    },
+  );
+  assert.equal(parseMarkdownTable("| A |\n| --- |"), null);
+});
+
+test("markdown table row and column commands preserve table shape", () => {
+  const table = [
+    "| Name | Status |",
+    "| --- | :---: |",
+    "| Alpha | Ready |",
+  ].join("\n");
+
+  assert.equal(
+    appendMarkdownTableRow(table),
+    [
+      "| Name | Status |",
+      "| --- | :---: |",
+      "| Alpha | Ready |",
+      "|  |  |",
+    ].join("\n"),
+  );
+  assert.equal(
+    appendMarkdownTableColumn(table, "Owner"),
+    [
+      "| Name | Status | Owner |",
+      "| --- | :---: | --- |",
+      "| Alpha | Ready |  |",
+    ].join("\n"),
+  );
+  assert.equal(
+    deleteMarkdownTableLastRow(table),
+    [
+      "| Name | Status |",
+      "| --- | :---: |",
+    ].join("\n"),
+  );
+  assert.equal(
+    deleteMarkdownTableLastColumn([
+      "| Name | Status | Owner |",
+      "| --- | :---: | --- |",
+      "| Alpha | Ready | You |",
+    ].join("\n")),
+    [
+      "| Name | Status |",
+      "| --- | :---: |",
+      "| Alpha | Ready |",
+    ].join("\n"),
+  );
+  assert.equal(deleteMarkdownTableLastColumn("| A | B |\n| --- | --- |"), null);
 });
 
 test("next_mermaid_block_state toggles between rendered editing and error states", () => {

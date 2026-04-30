@@ -14,10 +14,10 @@
 
 - [x] M0：基线和验收夹具
 - [x] M1：Markdown 样式与 Preview 质量
-- [ ] M2：可编辑语义 Block Model
-- [ ] M3：Heading 和 Inline Typora-like 编辑
-- [ ] M4：列表、任务、引用和代码块
-- [ ] M5：表格基础编辑
+- [x] M2：可编辑语义 Block Model
+- [x] M3：Heading 和 Inline Typora-like 编辑
+- [x] M4：列表、任务、引用和代码块
+- [x] M5：表格基础编辑
 - [ ] M6：Mermaid、数学和媒体块
 - [ ] M7：性能、质量门禁和文档收敛
 
@@ -152,15 +152,29 @@ Preview CSS 和 Hybrid decoration/widget 应共享语义 class 或 token：
 
 任务：
 
-- [ ] 扩展 `MarkdownBlockKind` 和 `MarkdownBlock`，增加 marker/content/source 子范围。
-- [ ] 为 heading、list item、task、quote、fenced code、table、math、Mermaid 补 parser tests。
-- [ ] 把 block hints protocol 测试从“有类型和行号”升级到“有可编辑范围和元数据”。
-- [ ] 保留 `SourceOnly` fallback，超大文档或解析失败时不进入重 decoration。
+- [x] 扩展 `MarkdownBlockKind` 和 `MarkdownBlock`，增加 marker/content/source 子范围。
+- [x] 为 heading、list item、task、quote、fenced code、table、math、Mermaid 补 parser tests。
+- [x] 把 block hints protocol 测试从“有类型和行号”升级到“有可编辑范围和元数据”。
+- [x] 保留 `SourceOnly` fallback，超大文档或解析失败时不进入重 decoration。
 
 验收清单：
 
-- [ ] Rust parser 能稳定输出 block edit ranges。
-- [ ] JS runtime 可以只靠 hints 定位当前 block 的 render/edit 边界。
+- [x] Rust parser 能稳定输出 block edit ranges。
+- [x] JS runtime 可以只靠 hints 定位当前 block 的 render/edit 边界。
+
+阶段验证：
+
+- `cargo test -p papyro-editor --lib`
+- `cargo test -p papyro-ui --lib`
+- `npm --prefix js test`
+- `npm --prefix js run build`
+- `cargo clippy --workspace --all-targets --all-features -- -D warnings`
+- `cargo test --workspace`
+- `node scripts/check-ui-contrast.js`
+- `node scripts/report-file-lines.js`
+- `node scripts/check-workspace-deps.js`
+- `node scripts/check-perf-smoke.js --self-test`
+- `git diff --check`
 
 ### M3：Heading 和 Inline Typora-like 编辑
 
@@ -168,17 +182,22 @@ Preview CSS 和 Hybrid decoration/widget 应共享语义 class 或 token：
 
 任务：
 
-- [ ] Heading rendered state 隐藏 `# `，文字区直接可编辑。
-- [ ] 光标进入 heading 文字时不强制显示整行源码；只有修改 heading level 时才暴露或更新 marker。
-- [ ] 粗体、斜体、删除线、行内代码、链接在非编辑态隐藏 Markdown 边界。
-- [ ] 当前 selection 覆盖 inline 边界时自动回到源码可见，避免用户无法理解选区。
-- [ ] 保持 IME composition 期间不切 decoration。
+- [x] Heading rendered state 隐藏 `# `，文字区直接可编辑。
+- [x] 光标进入 heading 文字时不强制显示整行源码；只有修改 heading level 时才暴露或更新 marker。
+- [x] 粗体、斜体、删除线、行内代码、链接在非编辑态隐藏 Markdown 边界。
+- [x] 当前 selection 覆盖 inline 边界时自动回到源码可见，避免用户无法理解选区。
+- [x] 保持 IME composition 期间不切 decoration。
 
 验收清单：
 
-- [ ] `# 标题` 回车后显示为标题。
-- [ ] 点击标题文字可以直接修改文字，撤销/重做稳定。
-- [ ] 中文输入法不丢字、不重复、不跳光标。
+- [x] `# 标题` 回车后显示为标题。
+- [x] 点击标题文字可以直接修改文字，撤销/重做稳定。
+- [x] 中文输入法不丢字、不重复、不跳光标。
+
+阶段验证：
+
+- `npm --prefix js test`
+- `npm --prefix js run build`
 
 ### M4：列表、任务、引用和代码块
 
@@ -186,17 +205,22 @@ Preview CSS 和 Hybrid decoration/widget 应共享语义 class 或 token：
 
 任务：
 
-- [ ] 无序/有序列表 marker rendered state 显示为排版 marker，编辑时保持自然 continuation。
-- [ ] 任务 checkbox 可点击切换，并回写 `[ ]` / `[x]`。
-- [ ] 引用块隐藏 `>` marker，但保留可理解的编辑入口。
-- [ ] 代码块非当前块显示 Preview-like code panel；当前代码块显示源码编辑。
-- [ ] 代码块语言标签可点击编辑语言信息。
+- [x] 无序/有序列表 marker rendered state 显示为排版 marker，编辑时保持自然 continuation。
+- [x] 任务 checkbox 可点击切换，并回写 `[ ]` / `[x]`。
+- [x] 引用块隐藏 `>` marker，但保留可理解的编辑入口。
+- [x] 代码块非当前块显示 Preview-like code panel；当前代码块显示源码编辑。
+- [x] 代码块语言标签可点击编辑语言信息。
 
 验收清单：
 
-- [ ] 列表回车、退格、Tab/Shift-Tab 不破坏 Markdown。
-- [ ] 任务 checkbox 点击只修改对应 list item。
-- [ ] 代码块输入不触发错误 decoration 或滚动跳动。
+- [x] 列表回车、退格、Tab/Shift-Tab 不破坏 Markdown。
+- [x] 任务 checkbox 点击只修改对应 list item。
+- [x] 代码块输入不触发错误 decoration 或滚动跳动。
+
+阶段验证：
+
+- `npm --prefix js test`
+- `npm --prefix js run build`
 
 ### M5：表格基础编辑
 
@@ -204,17 +228,22 @@ Preview CSS 和 Hybrid decoration/widget 应共享语义 class 或 token：
 
 任务：
 
-- [ ] 为 table block 增加 cells、alignments 和 separator metadata。
-- [ ] 在 rendered state 使用 block widget 展示表格。
-- [ ] 点击单元格进入 cell edit，失焦后回写 Markdown table。
-- [ ] 支持新增/删除行列的最小命令入口，优先放到块内轻量按钮或命令面板。
-- [ ] 表格解析失败或复杂内容直接回到 source_fallback。
+- [x] 为 table block 增加 cells、alignments 和 separator metadata。
+- [x] 在 rendered state 使用 block widget 展示表格。
+- [x] 点击单元格进入 cell edit，失焦后回写 Markdown table。
+- [x] 支持新增/删除行列的最小命令入口，优先放到块内轻量按钮或命令面板。
+- [x] 表格解析失败或复杂内容直接回到 source_fallback。
 
 验收清单：
 
-- [ ] 修改单元格不会破坏 separator 和列数。
-- [ ] Source/Hybrid/Preview 对同一表格保持一致。
-- [ ] 大表格或异常表格可降级，不阻塞输入。
+- [x] 修改单元格不会破坏 separator 和列数。
+- [x] Source/Hybrid/Preview 对同一表格保持一致。
+- [x] 大表格或异常表格可降级，不阻塞输入。
+
+阶段验证：
+
+- `npm --prefix js test`
+- `npm --prefix js run build`
 
 ### M6：Mermaid、数学和媒体块
 
@@ -260,11 +289,10 @@ Preview CSS 和 Hybrid decoration/widget 应共享语义 class 或 token：
 - [ ] `docs: add markdown editing roadmap`
 - [ ] `test: add hybrid markdown fixtures`
 - [x] `style: align markdown preview typography`
-- [ ] `refactor: extend markdown block hints`
-- [ ] `feat: render editable hybrid headings`
-- [ ] `feat: improve hybrid list editing`
-- [ ] `feat: render hybrid code blocks`
-- [ ] `feat: edit markdown tables in hybrid mode`
+- [x] `refactor: extend markdown block hints`
+- [x] `feat: render editable hybrid headings and inline marks`
+- [x] `feat: improve hybrid list task quote and code editing`
+- [x] `feat: edit markdown tables in hybrid mode`
 - [ ] `feat: render mermaid blocks in hybrid mode`
 - [ ] `perf: gate hybrid block rendering by document size`
 
