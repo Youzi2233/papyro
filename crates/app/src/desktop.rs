@@ -11,6 +11,7 @@ use std::ffi::OsString;
 use std::fmt::Display;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use url::Url;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DesktopStartupChrome {
@@ -45,6 +46,14 @@ pub fn desktop_external_open_request_channel() -> (
     DesktopExternalOpenRequestReceiver,
 ) {
     markdown_open_request_channel()
+}
+
+pub fn desktop_send_external_open_urls<'a>(
+    sender: &DesktopExternalOpenRequestSender,
+    urls: impl IntoIterator<Item = &'a Url>,
+) -> bool {
+    let markdown_paths = papyro_platform::desktop::file_paths_from_opened_urls(urls);
+    sender.send_paths(markdown_paths)
 }
 
 pub fn desktop_startup_chrome(favicon: impl Display, main_css: &str) -> DesktopStartupChrome {
@@ -258,6 +267,29 @@ mod tests {
         let request = desktop_startup_open_request_from_args([OsString::from("papyro.exe")]);
 
         assert!(request.is_empty());
+    }
+
+    #[test]
+    fn desktop_external_open_urls_enqueue_markdown_file_paths() {
+        let current_dir = std::env::current_dir().unwrap();
+        let markdown_path = current_dir.join("notes/a.md");
+        let ignored_path = current_dir.join("notes/image.png");
+        let urls = [
+            Url::from_file_path(&markdown_path).unwrap(),
+            Url::from_file_path(&ignored_path).unwrap(),
+            Url::parse("https://example.test/remote.md").unwrap(),
+        ];
+        let (sender, receiver) = desktop_external_open_request_channel();
+
+        assert!(desktop_send_external_open_urls(&sender, urls.iter()));
+
+        let request = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap()
+            .block_on(receiver.recv())
+            .unwrap();
+        assert_eq!(request.markdown_paths, vec![markdown_path]);
     }
 
     #[test]

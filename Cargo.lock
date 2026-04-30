@@ -3208,6 +3208,7 @@ dependencies = [
  "tempfile",
  "tokio",
  "tracing",
+ "url",
 ]
 
 [[package]]
@@ -3229,7 +3230,6 @@ version = "0.1.0"
 dependencies = [
  "dioxus",
  "papyro-app",
- "papyro-platform",
  "tracing",
  "tracing-subscriber",
 ]

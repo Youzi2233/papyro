@@ -16,6 +16,7 @@ flume = { workspace = true }
 rfd = { workspace = true, optional = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
+url = { workspace = true }
 papyro-core = { path = "../core" }
 papyro-ui = { path = "../ui" }
 papyro-editor = { path = "../editor" }

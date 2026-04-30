@@ -59,9 +59,10 @@ fn main() {
                 .with_custom_head(chrome.custom_head)
                 .with_custom_event_handler(move |event, _| {
                     if let Event::Opened { urls } = event {
-                        let markdown_paths =
-                            papyro_platform::desktop::file_paths_from_opened_urls(urls.iter());
-                        if external_open_sender.send_paths(markdown_paths) {
+                        if papyro_app::desktop::desktop_send_external_open_urls(
+                            &external_open_sender,
+                            urls.iter(),
+                        ) {
                             tracing::info!(
                                 url_count = urls.len(),
                                 "desktop external open request queued"

@@ -7,6 +7,5 @@ edition.workspace = true
 [dependencies]
 dioxus = { workspace = true, features = ["desktop"] }
 papyro-app = { path = "../../crates/app", features = ["desktop-shell"] }
-papyro-platform = { path = "../../crates/platform" }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
