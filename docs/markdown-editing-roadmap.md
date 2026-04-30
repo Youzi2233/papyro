@@ -4,14 +4,15 @@
 
 ## Todo 更新规则
 
-- `[ ]` 表示未完成；`[x]` 表示已经完成、验证通过，并且对应变更已进入版本控制。
+- `[ ]` 表示未完成；`[x]` 表示已经完成并有验证证据。
 - 每完成一个标准任务，同步勾选对应任务和验收项。
+- 提交仍按最小任务执行；勾选不代表已经提交或推送。
 - 如果实现时发现任务需要拆分、合并或调整顺序，先更新本文，再继续推进。
 - 只勾选有明确验证证据的事项；验证命令和风险记录写在对应提交或阶段说明里。
 
 ## 总体进度
 
-- [ ] M0：基线和验收夹具
+- [x] M0：基线和验收夹具
 - [ ] M1：Markdown 样式与 Preview 质量
 - [ ] M2：可编辑语义 Block Model
 - [ ] M3：Heading 和 Inline Typora-like 编辑
@@ -38,6 +39,7 @@ Papyro 当前编辑链路已经具备继续演进的基础：
 - Preview renderer 与 Hybrid renderer 没有共享 block/component 级渲染契约，只是共享部分 CSS token。
 - `MarkdownBlockHintSet` 还缺少可编辑所需的 marker/content/cell/source 子范围。
 - 表格、Mermaid、复杂代码块等还没有“渲染态点击进入源码态，失焦回到渲染态”的块级状态机。
+- Preview 当前也不会把 Mermaid fenced code block 渲染为图形；Mermaid 图形渲染属于 M6 范围。
 - 代码高亮、表格、列表、引用等在 Hybrid 与 Preview 中的视觉一致性还不够稳定。
 
 ## 目标体验
@@ -118,15 +120,15 @@ Preview CSS 和 Hybrid decoration/widget 应共享语义 class 或 token：
 
 任务：
 
-- [ ] 新增 Hybrid fixture Markdown，覆盖 heading、inline marks、list、task、quote、code、table、image、math、Mermaid。
-- [ ] 在 `js/test/editor-core.test.js` 增加 block state、range mapping、table rewrite、Mermaid edit/render toggle 的纯函数测试。
-- [ ] 在 `docs/ui-smoke-checklist.md` 增加手动 Hybrid smoke：中文输入法、标题回车、表格编辑、Mermaid 点击编辑、Source/Hybrid/Preview 切换。
-- [ ] 补充性能验收：100KB 文档 Hybrid 输入仍在 16ms 交互预算内，1MB/5MB 走降级策略。
+- [x] 新增 Hybrid fixture Markdown，覆盖 heading、inline marks、list、task、quote、code、table、image、math、Mermaid。
+- [x] 在 `js/test/editor-core.test.js` 增加 block state、range mapping、table rewrite、Mermaid edit/render toggle 的纯函数测试；这只是状态基线，不代表 Mermaid 渲染已实现。
+- [x] 在 `docs/ui-smoke-checklist.md` 增加手动 Hybrid smoke：中文输入法、标题回车、表格编辑、Mermaid 点击编辑、Source/Hybrid/Preview 切换。
+- [x] 补充性能验收：100KB 文档 Hybrid 输入仍在 16ms 交互预算内，1MB/5MB 走降级策略。
 
 验收清单：
 
-- [ ] 测试夹具和 smoke checklist 能描述当前缺口。
-- [ ] 后续每个 Hybrid 改动都有对应 fixture 或测试覆盖。
+- [x] 测试夹具和 smoke checklist 能描述当前缺口。
+- [x] 后续每个 Hybrid 改动都有对应 fixture 或测试覆盖。
 
 ### M1：Markdown 样式与 Preview 质量
 

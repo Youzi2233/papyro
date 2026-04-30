@@ -223,6 +223,99 @@ export function hybridDecorationLevel(kind, tier) {
   return policy.levels?.[tier] ?? policy.fallback;
 }
 
+function safeInteger(value) {
+  const number = Number(value);
+  return Number.isSafeInteger(number) ? number : null;
+}
+
+function utf8ByteLengthForCodePoint(codePoint) {
+  if (codePoint <= 0x7f) return 1;
+  if (codePoint <= 0x7ff) return 2;
+  if (codePoint <= 0xffff) return 3;
+  return 4;
+}
+
+export function utf8ByteOffsetToStringIndex(text, byteOffset) {
+  if (typeof text !== "string") return null;
+
+  const target = safeInteger(byteOffset);
+  if (target === null || target < 0) return null;
+
+  let bytes = 0;
+  for (let index = 0; index < text.length;) {
+    if (bytes === target) return index;
+
+    const codePoint = text.codePointAt(index);
+    const codeUnits = codePoint > 0xffff ? 2 : 1;
+    const nextBytes = bytes + utf8ByteLengthForCodePoint(codePoint);
+    if (target > bytes && target < nextBytes) return null;
+
+    bytes = nextBytes;
+    index += codeUnits;
+  }
+
+  return bytes === target ? text.length : null;
+}
+
+export function utf8ByteRangeToStringRange(text, fromByte, toByte) {
+  const from = safeInteger(fromByte);
+  const to = safeInteger(toByte);
+  if (from === null || to === null || from < 0 || to < from) return null;
+
+  const fromIndex = utf8ByteOffsetToStringIndex(text, from);
+  const toIndex = utf8ByteOffsetToStringIndex(text, to);
+  if (fromIndex === null || toIndex === null || toIndex < fromIndex) return null;
+
+  return { from: fromIndex, to: toIndex };
+}
+
+export function markdownBlockLineRange(block) {
+  if (!block || typeof block !== "object") return null;
+
+  const fromLine = safeInteger(block.fromLine ?? block.startLine ?? block.start_line);
+  const toLine = safeInteger(block.toLine ?? block.endLine ?? block.end_line ?? fromLine);
+  if (fromLine === null || toLine === null || fromLine < 1 || toLine < fromLine) {
+    return null;
+  }
+
+  return { fromLine, toLine };
+}
+
+export function markdownBlockStringRange(markdown, block) {
+  if (!block || typeof block !== "object") return null;
+
+  const fromByte = block.fromByte ?? block.startByte ?? block.start_byte;
+  const toByte = block.toByte ?? block.endByte ?? block.end_byte;
+  return utf8ByteRangeToStringRange(markdown, fromByte, toByte);
+}
+
+export function hybridBlockState(block, options = {}) {
+  const fallback = options.fallback ?? block?.fallback;
+  if (fallback?.type && fallback.type !== "none") return "source_fallback";
+
+  const renderStatus = options.renderStatus ?? block?.renderStatus;
+  if (
+    options.renderError ||
+    block?.renderError ||
+    renderStatus?.type === "error" ||
+    renderStatus?.state === "error"
+  ) {
+    return "error";
+  }
+
+  const range = markdownBlockLineRange(block);
+  if (!range) return "source_fallback";
+
+  const tier = markdownDecorationTier(
+    options.selectionLineRanges ?? [],
+    range.fromLine,
+    range.toLine,
+    options.nearDistance,
+  );
+
+  return tier === "current" ? "editing" : "rendered";
+}
+
 export function isPlainUrl(text) {
   return /^https?:\/\/[^\s<>()]+$/i.test(text.trim());
 }
@@ -958,16 +1051,43 @@ export function collectMarkdownMathBlocks(lines) {
   return blocks;
 }
 
-function parseMarkdownTableRow(line) {
+function splitMarkdownTableCells(body) {
+  const cells = [];
+  let cell = "";
+
+  for (let index = 0; index < body.length; index += 1) {
+    const char = body[index];
+    if (char === "|" && !isEscaped(body, index)) {
+      cells.push(cell);
+      cell = "";
+    } else {
+      cell += char;
+    }
+  }
+
+  cells.push(cell);
+  return cells;
+}
+
+function parseMarkdownTableRowParts(line) {
   const trimmed = line.trim();
   if (!trimmed.includes("|")) return null;
 
   const body = trimmed.startsWith("|") ? trimmed.slice(1) : trimmed;
   const trimmedBody = body.endsWith("|") ? body.slice(0, -1) : body;
-  const cells = trimmedBody.split("|").map((cell) => cell.trim());
+  const cells = splitMarkdownTableCells(trimmedBody).map((cell) => cell.trim());
   if (cells.length < 2 || cells.every((cell) => cell.length === 0)) return null;
 
-  return cells;
+  return {
+    cells,
+    indent: line.match(/^\s*/)?.[0] ?? "",
+    leadingPipe: trimmed.startsWith("|"),
+    trailingPipe: trimmed.endsWith("|"),
+  };
+}
+
+function parseMarkdownTableRow(line) {
+  return parseMarkdownTableRowParts(line)?.cells ?? null;
 }
 
 function isMarkdownTableSeparator(line) {
@@ -1002,6 +1122,94 @@ export function collectMarkdownTableBlocks(lines) {
   }
 
   return blocks;
+}
+
+function escapeMarkdownTableCell(value) {
+  const text = String(value ?? "").replace(/\r?\n/g, " ").trim();
+  let escaped = "";
+
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index];
+    escaped += char === "|" && !isEscaped(text, index) ? "\\|" : char;
+  }
+
+  return escaped;
+}
+
+function renderMarkdownTableRow(parts) {
+  const body = parts.cells.map((cell) => ` ${cell} `).join("|");
+  return `${parts.indent}${parts.leadingPipe ? "|" : ""}${body}${parts.trailingPipe ? "|" : ""}`;
+}
+
+export function rewriteMarkdownTableCell(markdown, rowIndex, columnIndex, value) {
+  if (typeof markdown !== "string") return null;
+
+  const targetRow = safeInteger(rowIndex);
+  const targetColumn = safeInteger(columnIndex);
+  if (targetRow === null || targetColumn === null || targetRow < 0 || targetColumn < 0) {
+    return null;
+  }
+
+  const lineEnding = markdown.includes("\r\n") ? "\r\n" : "\n";
+  const lines = markdown.split(/\r\n|\n/);
+  if (targetRow >= lines.length || targetRow === 1) return null;
+  if (!isMarkdownTableSeparator(lines[1] ?? "")) return null;
+
+  const header = parseMarkdownTableRowParts(lines[0]);
+  const row = parseMarkdownTableRowParts(lines[targetRow]);
+  if (!header || !row || targetColumn >= header.cells.length) return null;
+
+  while (row.cells.length < header.cells.length) {
+    row.cells.push("");
+  }
+
+  row.cells[targetColumn] = escapeMarkdownTableCell(value);
+  lines[targetRow] = renderMarkdownTableRow(row);
+  return lines.join(lineEnding);
+}
+
+export function nextMermaidBlockState(currentState = {}, event = {}) {
+  const current =
+    currentState && typeof currentState === "object"
+      ? { mode: currentState.mode ?? currentState.state ?? "rendered", ...currentState }
+      : { mode: "rendered" };
+  const type = event?.type;
+
+  switch (type) {
+    case "pointer_down":
+    case "edit":
+      return { ...current, mode: "editing", pending: false, error: null };
+    case "source_changed":
+      return {
+        ...current,
+        mode: "editing",
+        source: event.source ?? current.source ?? "",
+        dirty: true,
+        error: null,
+      };
+    case "blur":
+    case "confirm":
+      return { ...current, mode: "rendered", pending: true, dirty: false, error: null };
+    case "render_succeeded":
+      return {
+        ...current,
+        mode: "rendered",
+        pending: false,
+        svg: event.svg ?? current.svg ?? "",
+        error: null,
+      };
+    case "render_failed":
+      return {
+        ...current,
+        mode: "error",
+        pending: false,
+        error: String(event.error ?? "Mermaid render failed"),
+      };
+    case "source_fallback":
+      return { ...current, mode: "source_fallback", pending: false };
+    default:
+      return current;
+  }
 }
 
 function collectLinkSpans(line, spans, occupied) {

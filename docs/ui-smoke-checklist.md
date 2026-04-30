@@ -48,6 +48,39 @@
 - Preview 中本地 workspace 图片可以显示。
 - 回到可编辑模式后输入正常。
 
+## Hybrid Markdown Editing Flow
+
+目标：验证 Hybrid mode 的 Typora-like 改造不会破坏 Markdown 写作主路径。
+
+准备：
+
+- 可直接复制 `js/test/fixtures/hybrid-editing-baseline.md` 到临时 workspace。
+- 内容应包含标题、行内标记、列表、任务、引用、代码块、表格、图片、数学块和 Mermaid。
+
+当前状态：
+
+- M0 只要求 fixture、纯逻辑测试和手动验收场景落位。
+- Mermaid 在 Preview/Hybrid 中渲染为图形属于 M6 范围，当前可以作为 fenced code 或 source_fallback 记录缺口。
+
+步骤：
+
+1. 打开 Hybrid fixture 文档。
+2. 在 Hybrid mode 输入 `# 新标题` 并按回车。
+3. 使用中文输入法在标题和普通段落中继续输入。
+4. 在任务列表里点击 checkbox。
+5. 在表格单元格中修改文本，再切换 Source 检查 Markdown table。
+6. 点击 Mermaid 块进入源码编辑，再点击块外回到渲染态。
+7. 在 Source / Hybrid / Preview 之间连续切换两轮。
+
+通过标准：
+
+- 标题回车后能进入排版态，继续编辑标题文字不丢失内容。
+- 中文输入法不丢字、不重复、不跳光标。
+- 任务 checkbox 只修改对应 list item。
+- 表格修改后列数和 separator 不被破坏。
+- M6 之前，Mermaid 块保持源码可编辑；M6 之后，渲染失败时显示错误态但源码仍可编辑。
+- 三种模式切换后滚动位置和编辑内容保持稳定。
+
 ## Modal And Search Flow
 
 目标：验证低频工具不会打断写作主路径。

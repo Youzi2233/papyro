@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import {
   applyFormatToView,
   attachViewToTab,
@@ -12,12 +13,15 @@ import {
   handleMarkdownBackspace,
   handleRustMessage,
   handleMarkdownEnter,
+  hybridBlockState,
   hybridDecorationLevel,
   hybridDecorationPolicy,
   hybridDecorationPolicies,
   indentMarkdownListInView,
   insertMarkdownInView,
   latestModeScrollSnapshot,
+  markdownBlockLineRange,
+  markdownBlockStringRange,
   markdownLinkPasteChange,
   markdownBlockquoteEnterChange,
   markdownCodeFenceEnterChange,
@@ -31,6 +35,7 @@ import {
   normalizeBlockHints,
   normalizeEditorPreferences,
   nextLayoutSize,
+  nextMermaidBlockState,
   normalizeViewMode,
   openReplacePanelInView,
   parseMarkdownBlockquoteLine,
@@ -47,10 +52,19 @@ import {
   readScrollSnapshot,
   requestSaveForView,
   restoreScrollSnapshot,
+  rewriteMarkdownTableCell,
   saveModeScrollSnapshot,
   shouldUseFullDocumentHybridScan,
+  utf8ByteOffsetToStringIndex,
+  utf8ByteRangeToStringRange,
   viewIsComposing,
 } from "../src/editor-core.js";
+
+const hybridFixture = readFileSync(
+  new URL("./fixtures/hybrid-editing-baseline.md", import.meta.url),
+  "utf8",
+);
+const hybridFixtureLines = hybridFixture.trimEnd().split(/\r?\n/);
 
 function fakeContainer() {
   return {
@@ -377,6 +391,51 @@ test("collect_markdown_table_blocks returns pipe table ranges", () => {
     "| Name | Value |",
     "| -- | --- |",
   ]), []);
+});
+
+test("hybrid fixture covers target markdown editing blocks", () => {
+  assert.ok(hybridFixture.includes("# Hybrid 标题"));
+
+  const paragraph = hybridFixtureLines.find((line) => line.startsWith("Paragraph"));
+  const inlineTypes = parseMarkdownInlineSpans(paragraph).map((span) => span.type);
+  assert.ok(inlineTypes.includes("strong"));
+  assert.ok(inlineTypes.includes("emphasis"));
+  assert.ok(inlineTypes.includes("link"));
+  assert.ok(inlineTypes.includes("inline_code"));
+  assert.ok(inlineTypes.includes("inline_math"));
+
+  assert.ok(hybridFixtureLines.some((line) => parseMarkdownHeadingLine(line)));
+  assert.ok(hybridFixtureLines.some((line) => parseMarkdownTaskLine(line)));
+  assert.ok(hybridFixtureLines.some((line) => parseMarkdownListLine(line)));
+  assert.ok(hybridFixtureLines.some((line) => parseMarkdownBlockquoteLine(line)));
+  assert.ok(hybridFixtureLines.some((line) => parseMarkdownImageSpans(line).length > 0));
+  assert.ok(collectMarkdownMathBlocks(hybridFixtureLines).length > 0);
+  assert.ok(collectMarkdownTableBlocks(hybridFixtureLines).length > 0);
+
+  const codeBlocks = collectMarkdownCodeBlocks(hybridFixtureLines);
+  assert.ok(codeBlocks.some((block) => block.info === "rust"));
+  assert.ok(codeBlocks.some((block) => block.info === "mermaid"));
+});
+
+test("utf8 byte range mapping preserves rust offsets for unicode markdown", () => {
+  const heading = "# Hybrid 标题\n";
+  const fromByte = new TextEncoder().encode("# Hybrid ").length;
+  const toByte = new TextEncoder().encode("# Hybrid 标题").length;
+
+  assert.deepEqual(utf8ByteRangeToStringRange(heading, fromByte, toByte), {
+    from: 9,
+    to: 11,
+  });
+  assert.deepEqual(
+    markdownBlockStringRange(heading, {
+      start_byte: fromByte,
+      end_byte: toByte,
+      start_line: 1,
+      end_line: 1,
+    }),
+    { from: 9, to: 11 },
+  );
+  assert.equal(utf8ByteOffsetToStringIndex(heading, fromByte + 1), null);
 });
 
 test("parse_markdown_inline_spans ignores emphasis inside image alt", () => {
@@ -1240,6 +1299,40 @@ test("markdown_decoration_tier treats cross block selections as current", () => 
   assert.equal(markdownDecorationTier(selections, 13, 14), "near");
 });
 
+test("hybrid_block_state models edit render error and fallback modes", () => {
+  const block = {
+    kind: { type: "heading", level: 1 },
+    start_line: 6,
+    end_line: 6,
+  };
+
+  assert.deepEqual(markdownBlockLineRange(block), { fromLine: 6, toLine: 6 });
+  assert.equal(
+    hybridBlockState(block, {
+      selectionLineRanges: [{ fromLine: 6, toLine: 6 }],
+    }),
+    "editing",
+  );
+  assert.equal(
+    hybridBlockState(block, {
+      selectionLineRanges: [{ fromLine: 20, toLine: 20 }],
+    }),
+    "rendered",
+  );
+  assert.equal(
+    hybridBlockState(block, {
+      fallback: { type: "source_only", reason: "document_too_large" },
+    }),
+    "source_fallback",
+  );
+  assert.equal(
+    hybridBlockState(block, {
+      renderStatus: { state: "error", message: "render failed" },
+    }),
+    "error",
+  );
+});
+
 test("should_use_full_document_hybrid_scan caps large documents", () => {
   assert.equal(shouldUseFullDocumentHybridScan(64 * 1024), true);
   assert.equal(shouldUseFullDocumentHybridScan(64 * 1024 + 1), false);
@@ -1270,6 +1363,69 @@ test("hybrid_decoration_policies cover required markdown kinds", () => {
   assert.equal(hybridDecorationLevel("code", "near"), "full");
   assert.equal(hybridDecorationLevel("image", "remote"), "source");
   assert.equal(hybridDecorationLevel("unknown", "near"), "full");
+});
+
+test("rewrite_markdown_table_cell updates one cell without changing table shape", () => {
+  const table = [
+    "| Name | Status |",
+    "| --- | :---: |",
+    "| Alpha | Ready |",
+    "| Beta | Waiting |",
+  ].join("\n");
+
+  assert.equal(
+    rewriteMarkdownTableCell(table, 2, 1, "Done | blocked"),
+    [
+      "| Name | Status |",
+      "| --- | :---: |",
+      "| Alpha | Done \\| blocked |",
+      "| Beta | Waiting |",
+    ].join("\n"),
+  );
+  assert.equal(rewriteMarkdownTableCell(table, 1, 0, "invalid"), null);
+  assert.equal(rewriteMarkdownTableCell(table, 2, 3, "invalid"), null);
+});
+
+test("next_mermaid_block_state toggles between rendered editing and error states", () => {
+  let state = {
+    mode: "rendered",
+    source: "flowchart TD\nA --> B",
+  };
+
+  state = nextMermaidBlockState(state, { type: "pointer_down" });
+  assert.equal(state.mode, "editing");
+
+  state = nextMermaidBlockState(state, {
+    type: "source_changed",
+    source: "flowchart LR\nA --> B",
+  });
+  assert.equal(state.mode, "editing");
+  assert.equal(state.dirty, true);
+  assert.equal(state.source, "flowchart LR\nA --> B");
+
+  state = nextMermaidBlockState(state, { type: "blur" });
+  assert.equal(state.mode, "rendered");
+  assert.equal(state.pending, true);
+  assert.equal(state.dirty, false);
+
+  state = nextMermaidBlockState(state, {
+    type: "render_failed",
+    error: "Parse error",
+  });
+  assert.equal(state.mode, "error");
+  assert.equal(state.error, "Parse error");
+
+  state = nextMermaidBlockState(state, { type: "pointer_down" });
+  assert.equal(state.mode, "editing");
+  assert.equal(state.error, null);
+
+  state = nextMermaidBlockState(state, {
+    type: "render_succeeded",
+    svg: "<svg></svg>",
+  });
+  assert.equal(state.mode, "rendered");
+  assert.equal(state.pending, false);
+  assert.equal(state.svg, "<svg></svg>");
 });
 
 test("insert_markdown message inserts markdown into editor", () => {

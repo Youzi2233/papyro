@@ -38,6 +38,21 @@ continue work after the interaction if the writing surface stays responsive.
 - At 5MB, live preview pauses and outline extraction is skipped.
 - Editing remains available while expensive preview work is reduced.
 
+## Hybrid Markdown Editing Acceptance
+
+Hybrid mode should keep the writing surface responsive while richer Markdown
+blocks are added:
+
+| File size | Hybrid input | Hybrid behavior |
+| --- | ---: | --- |
+| 100KB | 16ms | Full block hints and near-visible decorations stay enabled. |
+| 1MB | 32ms | Source-like editing remains available; expensive widgets and highlighting may be disabled. |
+| 5MB | 50ms | Hybrid explicitly degrades to source_fallback for heavy block rendering. |
+
+The degradation path should be visible in tests or traces. A large document should
+never create enough decorations, widgets, Mermaid renders, or code highlights to
+block keystroke handling.
+
 ## Trace Names
 
 - `perf app dispatch action`
