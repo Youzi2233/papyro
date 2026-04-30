@@ -6,6 +6,10 @@ use std::path::PathBuf;
 pub struct ContentChange {
     pub tab_id: String,
     pub content: String,
+    pub hybrid_block_kind: Option<String>,
+    pub hybrid_block_state: Option<String>,
+    pub hybrid_block_tier: Option<String>,
+    pub hybrid_fallback_reason: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

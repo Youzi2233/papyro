@@ -20,6 +20,7 @@ import {
   hybridBlockState,
   hybridDecorationLevel,
   hybridHeadingDecorationLevel,
+  hybridInputTraceContext,
   hybridDecorationPolicy,
   hybridDecorationPolicies,
   indentMarkdownListInView,
@@ -55,6 +56,7 @@ import {
   parseMarkdownImageSpans,
   parseMarkdownInlineSpans,
   parseMarkdownListLine,
+  parseStandaloneMarkdownImageBlock,
   parseMarkdownTable,
   parseMarkdownTaskLine,
   pasteMarkdownLinkInView,
@@ -64,6 +66,7 @@ import {
   restoreScrollSnapshot,
   rewriteMarkdownTableCell,
   saveModeScrollSnapshot,
+  sanitizeMarkdownImageSrc,
   selectionTouchesTextRange,
   shouldUseFullDocumentHybridScan,
   utf8ByteOffsetToStringIndex,
@@ -247,6 +250,22 @@ test("parse_markdown_image_spans keeps external image urls", () => {
       title: "Remote title",
     },
   ]);
+});
+
+test("standalone image blocks and source sanitization support hybrid media", () => {
+  assert.deepEqual(parseStandaloneMarkdownImageBlock('  ![Alt](assets/a.png "Title")  '), {
+    from: 2,
+    to: 30,
+    alt: "Alt",
+    src: "assets/a.png",
+    title: "Title",
+  });
+  assert.equal(parseStandaloneMarkdownImageBlock("before ![Alt](a.png)"), null);
+  assert.equal(sanitizeMarkdownImageSrc("https://example.test/a.png"), "https://example.test/a.png");
+  assert.equal(sanitizeMarkdownImageSrc("assets/a.png"), "assets/a.png");
+  assert.equal(sanitizeMarkdownImageSrc("javascript:alert(1)"), "");
+  assert.equal(sanitizeMarkdownImageSrc("java script:alert(1)"), "");
+  assert.equal(sanitizeMarkdownImageSrc("file:///tmp/a.png"), "");
 });
 
 test("parse_markdown_task_line recognizes task markers", () => {
@@ -1436,6 +1455,54 @@ test("hybrid_block_state models edit render error and fallback modes", () => {
       renderStatus: { state: "error", message: "render failed" },
     }),
     "error",
+  );
+});
+
+test("hybrid_input_trace_context reports current block and fallback path", () => {
+  const hints = {
+    revision: 4,
+    fallback: { type: "none" },
+    blocks: [
+      { kind: { type: "heading", level: 1 }, start_line: 1, end_line: 1 },
+      { kind: { type: "table" }, start_line: 4, end_line: 6 },
+    ],
+  };
+
+  assert.deepEqual(
+    hybridInputTraceContext(hints, [{ fromLine: 4, toLine: 4 }], 4, 2),
+    {
+      hybridBlockKind: "table",
+      hybridBlockState: "editing",
+      hybridBlockTier: "current",
+      hybridFallbackReason: "none",
+    },
+  );
+  assert.deepEqual(
+    hybridInputTraceContext(hints, [{ fromLine: 20, toLine: 20 }], 1, 2),
+    {
+      hybridBlockKind: "heading",
+      hybridBlockState: "rendered",
+      hybridBlockTier: "remote",
+      hybridFallbackReason: "none",
+    },
+  );
+  assert.deepEqual(
+    hybridInputTraceContext(
+      {
+        revision: 5,
+        fallback: { type: "source_only", reason: "document_too_large" },
+        blocks: [],
+      },
+      [{ fromLine: 1, toLine: 1 }],
+      1,
+      2,
+    ),
+    {
+      hybridBlockKind: "source_fallback",
+      hybridBlockState: "source_fallback",
+      hybridBlockTier: "source_fallback",
+      hybridFallbackReason: "document_too_large",
+    },
   );
 });
 

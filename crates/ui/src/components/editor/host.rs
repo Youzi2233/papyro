@@ -200,10 +200,22 @@ pub(super) fn EditorHost(
                             tracing::warn!(%tab_id, %message, "editor runtime failed");
                             runtime_state.set(EditorRuntimeState::Error(message));
                         }
-                        EditorEvent::ContentChanged { tab_id, content } => {
-                            commands
-                                .content_changed
-                                .call(ContentChange { tab_id, content });
+                        EditorEvent::ContentChanged {
+                            tab_id,
+                            content,
+                            hybrid_block_kind,
+                            hybrid_block_state,
+                            hybrid_block_tier,
+                            hybrid_fallback_reason,
+                        } => {
+                            commands.content_changed.call(ContentChange {
+                                tab_id,
+                                content,
+                                hybrid_block_kind,
+                                hybrid_block_state,
+                                hybrid_block_tier,
+                                hybrid_fallback_reason,
+                            });
                         }
                         EditorEvent::SaveRequested { tab_id } => {
                             commands.save_tab.call(tab_id);

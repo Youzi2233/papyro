@@ -5,6 +5,7 @@ use papyro_core::{
     models::{Theme, ViewMode},
     TabContentsMap, DEFAULT_WINDOW_ID,
 };
+use papyro_editor::parser::INTERACTIVE_BLOCK_ANALYSIS_MAX_BYTES;
 use std::path::Path;
 use std::time::Instant;
 
@@ -14,6 +15,14 @@ pub(crate) fn perf_enabled() -> bool {
 
 pub(crate) fn perf_timer() -> Option<Instant> {
     perf_enabled().then(Instant::now)
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+pub(crate) struct HybridInputTraceContext<'a> {
+    pub block_kind: Option<&'a str>,
+    pub block_state: Option<&'a str>,
+    pub block_tier: Option<&'a str>,
+    pub fallback_reason: Option<&'a str>,
 }
 
 pub(crate) fn tab_revision_and_bytes(
@@ -109,6 +118,7 @@ pub(crate) fn trace_editor_input_change(
     view_mode: &ViewMode,
     content_bytes: usize,
     changed: bool,
+    hybrid: HybridInputTraceContext<'_>,
     started_at: Option<Instant>,
 ) {
     if let Some(started_at) = started_at {
@@ -121,6 +131,10 @@ pub(crate) fn trace_editor_input_change(
             content_bytes,
             trigger_reason = "editor_event",
             changed,
+            hybrid_block_kind = trace_optional(hybrid.block_kind),
+            hybrid_block_state = trace_optional(hybrid.block_state),
+            hybrid_block_tier = trace_optional(hybrid.block_tier),
+            hybrid_fallback_reason = trace_optional(hybrid.fallback_reason),
             elapsed_ms = started_at.elapsed().as_millis(),
             "perf editor input change"
         );
@@ -218,6 +232,9 @@ pub(crate) fn trace_workspace_search(
 
 pub(crate) fn trace_editor_view_mode_change(
     trigger: &str,
+    tab_id: Option<&str>,
+    revision: Option<u64>,
+    content_bytes: Option<usize>,
     from: &ViewMode,
     to: &ViewMode,
     started_at: Option<Instant>,
@@ -226,11 +243,12 @@ pub(crate) fn trace_editor_view_mode_change(
         tracing::info!(
             window_id = DEFAULT_WINDOW_ID,
             interaction_path = "editor.view_mode",
-            tab_id = trace_tab_id(None),
-            revision = trace_revision(None),
+            tab_id = trace_tab_id(tab_id),
+            revision = trace_revision(revision),
             view_mode = to.as_str(),
-            content_bytes = trace_content_bytes(None),
+            content_bytes = trace_content_bytes(content_bytes),
             trigger_reason = trigger,
+            hybrid_render_gate = hybrid_render_gate(content_bytes, to),
             from = from.as_str(),
             to = to.as_str(),
             elapsed_ms = started_at.elapsed().as_millis(),
@@ -261,6 +279,22 @@ fn trace_content_bytes(content_bytes: Option<usize>) -> i64 {
 
 fn trace_result_count(result_count: Option<usize>) -> i64 {
     result_count.map(|count| count as i64).unwrap_or(-1)
+}
+
+fn trace_optional(value: Option<&str>) -> &str {
+    value.filter(|value| !value.is_empty()).unwrap_or("none")
+}
+
+fn hybrid_render_gate(content_bytes: Option<usize>, to: &ViewMode) -> &'static str {
+    if to != &ViewMode::Hybrid {
+        return "inactive";
+    }
+
+    match content_bytes {
+        Some(bytes) if bytes <= INTERACTIVE_BLOCK_ANALYSIS_MAX_BYTES => "block_hints",
+        Some(_) => "source_fallback",
+        None => "unknown",
+    }
 }
 
 #[cfg(test)]
@@ -301,6 +335,27 @@ mod tests {
         assert_eq!(trace_content_bytes(None), -1);
         assert_eq!(trace_result_count(Some(50)), 50);
         assert_eq!(trace_result_count(None), -1);
+        assert_eq!(trace_optional(Some("table")), "table");
+        assert_eq!(trace_optional(Some("")), "none");
+        assert_eq!(trace_optional(None), "none");
+        assert_eq!(
+            hybrid_render_gate(
+                Some(INTERACTIVE_BLOCK_ANALYSIS_MAX_BYTES),
+                &ViewMode::Hybrid
+            ),
+            "block_hints"
+        );
+        assert_eq!(
+            hybrid_render_gate(
+                Some(INTERACTIVE_BLOCK_ANALYSIS_MAX_BYTES + 1),
+                &ViewMode::Hybrid
+            ),
+            "source_fallback"
+        );
+        assert_eq!(
+            hybrid_render_gate(Some(1024), &ViewMode::Source),
+            "inactive"
+        );
     }
 
     #[test]

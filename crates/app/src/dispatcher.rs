@@ -116,12 +116,7 @@ impl AppDispatcher {
                 );
             }
             AppAction::ContentChanged(action) => {
-                effects::record_content_change(
-                    self.storage.clone(),
-                    self.state,
-                    action.tab_id,
-                    action.content,
-                );
+                effects::record_content_change(self.storage.clone(), self.state, action);
             }
             AppAction::PasteImage(action) => {
                 paste_image(self.state, action.request);
@@ -477,7 +472,7 @@ impl AppDispatcher {
                 search_workspace.dispatch(AppAction::search_workspace(query));
             }),
             content_changed: EventHandler::new(move |change: ContentChange| {
-                content_changed.dispatch(AppAction::content_changed(change.tab_id, change.content));
+                content_changed.dispatch(AppAction::content_change(change));
             }),
             paste_image: EventHandler::new(move |request| {
                 paste_image.dispatch(AppAction::paste_image(request));
@@ -794,9 +789,22 @@ fn set_view_mode(storage: Arc<dyn NoteStorage>, state: RuntimeState, request: Se
     }) else {
         return;
     };
+    let active_tab_id = state.editor_tabs.read().active_tab_id.clone();
+    let (revision, content_bytes) = active_tab_id
+        .as_deref()
+        .map(|tab_id| tab_revision_and_bytes(&state.tab_contents.read(), tab_id))
+        .unwrap_or((None, None));
 
     apply_chrome_settings_target(storage, state, target);
-    trace_editor_view_mode_change(&request.trigger, &previous_mode, &next_mode, started_at);
+    trace_editor_view_mode_change(
+        &request.trigger,
+        active_tab_id.as_deref(),
+        revision,
+        content_bytes,
+        &previous_mode,
+        &next_mode,
+        started_at,
+    );
 }
 
 fn set_sidebar_width(storage: Arc<dyn NoteStorage>, state: RuntimeState, width: u32) {
@@ -966,10 +974,21 @@ mod tests {
             })
         );
         assert_eq!(
-            AppAction::content_changed("tab-a".to_string(), "body".to_string()),
+            AppAction::content_change(papyro_ui::commands::ContentChange {
+                tab_id: "tab-a".to_string(),
+                content: "body".to_string(),
+                hybrid_block_kind: None,
+                hybrid_block_state: None,
+                hybrid_block_tier: None,
+                hybrid_fallback_reason: None,
+            }),
             AppAction::ContentChanged(papyro_ui::commands::ContentChange {
                 tab_id: "tab-a".to_string(),
-                content: "body".to_string()
+                content: "body".to_string(),
+                hybrid_block_kind: None,
+                hybrid_block_state: None,
+                hybrid_block_tier: None,
+                hybrid_fallback_reason: None
             })
         );
         assert_eq!(
@@ -1092,7 +1111,15 @@ mod tests {
             AppAction::SetSidebarWidth(crate::actions::SetSidebarWidth { width: 320 })
         );
         assert_eq!(
-            AppAction::content_changed("tab-a".to_string(), "body".to_string()).trace_tab_id(),
+            AppAction::content_change(papyro_ui::commands::ContentChange {
+                tab_id: "tab-a".to_string(),
+                content: "body".to_string(),
+                hybrid_block_kind: None,
+                hybrid_block_state: None,
+                hybrid_block_tier: None,
+                hybrid_fallback_reason: None,
+            })
+            .trace_tab_id(),
             Some("tab-a")
         );
         assert_eq!(

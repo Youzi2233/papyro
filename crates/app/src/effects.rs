@@ -1,5 +1,5 @@
 use crate::handlers::workspace;
-use crate::perf::{perf_timer, trace_editor_input_change};
+use crate::perf::{perf_timer, trace_editor_input_change, HybridInputTraceContext};
 use crate::state::RuntimeState;
 use crate::status_messages::{save_failure_message, SaveFailureContext};
 use crate::workspace_flow::{
@@ -12,6 +12,7 @@ use papyro_core::{
     models::DocumentStats, EditorTabs, FileState, NoteStorage, RecentFile, SavedNote,
     TabContentsMap, Workspace,
 };
+use papyro_ui::commands::ContentChange;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
@@ -19,10 +20,17 @@ use std::time::Duration;
 pub(crate) fn record_content_change(
     storage: Arc<dyn NoteStorage>,
     mut state: RuntimeState,
-    tab_id: String,
-    content: String,
+    change: ContentChange,
 ) {
     let perf_started_at = perf_timer();
+    let ContentChange {
+        tab_id,
+        content,
+        hybrid_block_kind,
+        hybrid_block_state,
+        hybrid_block_tier,
+        hybrid_fallback_reason,
+    } = change;
     let byte_len = content.len();
     let revision = papyro_core::change_tab_content(
         &mut state.editor_tabs.write(),
@@ -31,9 +39,23 @@ pub(crate) fn record_content_change(
         content,
     );
     let view_mode = state.ui_state.read().view_mode.clone();
+    let hybrid_trace = HybridInputTraceContext {
+        block_kind: hybrid_block_kind.as_deref(),
+        block_state: hybrid_block_state.as_deref(),
+        block_tier: hybrid_block_tier.as_deref(),
+        fallback_reason: hybrid_fallback_reason.as_deref(),
+    };
 
     let Some(revision) = revision else {
-        trace_editor_input_change(&tab_id, None, &view_mode, byte_len, false, perf_started_at);
+        trace_editor_input_change(
+            &tab_id,
+            None,
+            &view_mode,
+            byte_len,
+            false,
+            hybrid_trace,
+            perf_started_at,
+        );
         return;
     };
 
@@ -43,6 +65,7 @@ pub(crate) fn record_content_change(
         &view_mode,
         byte_len,
         true,
+        hybrid_trace,
         perf_started_at,
     );
 

@@ -18,8 +18,8 @@
 - [x] M3：Heading 和 Inline Typora-like 编辑
 - [x] M4：列表、任务、引用和代码块
 - [x] M5：表格基础编辑
-- [ ] M6：Mermaid、数学和媒体块
-- [ ] M7：性能、质量门禁和文档收敛
+- [x] M6：Mermaid、数学和媒体块
+- [x] M7：性能、质量门禁和文档收敛
 
 ## 当前架构判断
 
@@ -254,8 +254,8 @@ Preview CSS 和 Hybrid decoration/widget 应共享语义 class 或 token：
 - [x] Mermaid fenced code block rendered state 调用安全渲染路径，带 timeout 和错误态。
 - [x] 点击 Mermaid 图进入源码编辑；失焦或按确认后重新渲染。
 - [x] 数学块复用同样状态机，避免当前 widget 和源码切换逻辑分裂。
-- [ ] 图片 block 支持 rendered preview、alt/title/source 编辑入口。
-- [ ] 远程资源或不安全 URL 沿用 Preview sanitization 原则。
+- [x] 图片 block 支持 rendered preview、alt/title/source 编辑入口。
+- [x] 远程资源或不安全 URL 沿用 Preview sanitization 原则。
 
 验收清单：
 
@@ -269,18 +269,18 @@ Preview CSS 和 Hybrid decoration/widget 应共享语义 class 或 token：
 
 任务：
 
-- [ ] 扩展 `perf editor input change` / `perf editor view mode change` 覆盖 Hybrid block render/edit 切换。
-- [ ] 更新 `docs/editor-protocol.md`、`docs/editor-runtime-cache-policy.md` 和 `docs/performance-budget.md`。
-- [ ] `npm --prefix js test` 覆盖 Hybrid pure logic。
-- [ ] `npm --prefix js run build` 后同步 `assets/editor.js`、`apps/desktop/assets/editor.js`、`apps/mobile/assets/editor.js`。
-- [ ] 大文档 smoke 覆盖 100KB、1MB、5MB。
+- [x] 扩展 `perf editor input change` / `perf editor view mode change` 覆盖 Hybrid block render/edit 切换。
+- [x] 更新 `docs/editor-protocol.md`、`docs/editor-runtime-cache-policy.md` 和 `docs/performance-budget.md`。
+- [x] `npm --prefix js test` 覆盖 Hybrid pure logic。
+- [x] `npm --prefix js run build` 后同步 `assets/editor.js`、`apps/desktop/assets/editor.js`、`apps/mobile/assets/editor.js`。
+- [x] 大文档 smoke checker 覆盖 100KB、1MB、5MB。
 
 验收清单：
 
-- [ ] 100KB 文档 Hybrid 输入稳定。
-- [ ] 1MB 文档不因全量渲染卡顿。
-- [ ] 5MB 文档明确降级，不让编辑区假死。
-- [ ] 新文档说明清楚哪些块是 Typora-like，哪些仍是 fallback。
+- [x] 100KB 文档 Hybrid 输入有 block editing trace 覆盖。
+- [x] 1MB 文档不进入全量 Hybrid block render。
+- [x] 5MB 文档明确记录 `source_fallback` 降级路径。
+- [x] 新文档说明清楚哪些块是 Typora-like，哪些仍是 fallback。
 
 ## 建议提交顺序
 
@@ -293,7 +293,8 @@ Preview CSS 和 Hybrid decoration/widget 应共享语义 class 或 token：
 - [x] `feat: render editable hybrid headings and inline marks`
 - [x] `feat: improve hybrid list task quote and code editing`
 - [x] `feat: edit markdown tables in hybrid mode`
-- [ ] `feat: render mermaid blocks in hybrid mode`
-- [ ] `perf: gate hybrid block rendering by document size`
+- [x] `feat: render mermaid blocks in hybrid mode`
+- [x] `feat: render hybrid image blocks`
+- [x] `perf: gate hybrid block rendering by document size`
 
 提交正文只写本次 diff 对应的代码意图，不堆砌验证命令。

@@ -53,6 +53,13 @@ const REQUIRED_CONTEXT_FIELDS = [
   "trigger_reason",
 ];
 
+const REQUIRED_INPUT_HYBRID_FIELDS = [
+  "hybrid_block_kind",
+  "hybrid_block_state",
+  "hybrid_block_tier",
+  "hybrid_fallback_reason",
+];
+
 const STATIC_BUDGETS_MS = new Map([
   ["perf app dispatch action", 50],
   ["perf editor pane render prep", 50],
@@ -199,6 +206,23 @@ function validateRecords(records, options) {
         );
       }
     }
+    if (record.traceName === "perf editor input change") {
+      for (const field of REQUIRED_INPUT_HYBRID_FIELDS) {
+        if (!record.fields.has(field)) {
+          errors.push(
+            `Line ${record.lineNumber} (${record.traceName}) is missing ${field}`,
+          );
+        }
+      }
+    }
+    if (
+      record.traceName === "perf editor view mode change" &&
+      !record.fields.has("hybrid_render_gate")
+    ) {
+      errors.push(
+        `Line ${record.lineNumber} (${record.traceName}) is missing hybrid_render_gate`,
+      );
+    }
 
     const budget = budgetForRecord(record);
     if (budget === null) {
@@ -233,7 +257,59 @@ function validateRecords(records, options) {
     );
   }
 
+  if (options.requireSmokeTraces) {
+    validateHybridCoverage(records, errors);
+  }
+
   return { errors, warnings };
+}
+
+function validateHybridCoverage(records, errors) {
+  const hybridInputs = records.filter(
+    (record) =>
+      record.traceName === "perf editor input change" &&
+      record.fields.get("view_mode") === "hybrid",
+  );
+  const hasBlockEditingInput = hybridInputs.some((record) => {
+    const kind = record.fields.get("hybrid_block_kind");
+    return (
+      record.fields.get("hybrid_block_state") === "editing" &&
+      kind !== "none" &&
+      kind !== "source_fallback"
+    );
+  });
+  const hasSourceFallbackInput = hybridInputs.some(
+    (record) =>
+      record.fields.get("hybrid_block_state") === "source_fallback" ||
+      record.fields.get("hybrid_fallback_reason") !== "none",
+  );
+
+  if (!hasBlockEditingInput) {
+    errors.push("Missing Hybrid block editing input trace.");
+  }
+  if (!hasSourceFallbackInput) {
+    errors.push("Missing Hybrid source_fallback input trace.");
+  }
+
+  const hybridModeChanges = records.filter(
+    (record) =>
+      record.traceName === "perf editor view mode change" &&
+      record.fields.get("to") === "hybrid",
+  );
+  if (
+    !hybridModeChanges.some(
+      (record) => record.fields.get("hybrid_render_gate") === "block_hints",
+    )
+  ) {
+    errors.push("Missing Hybrid view mode trace with block_hints gate.");
+  }
+  if (
+    !hybridModeChanges.some(
+      (record) => record.fields.get("hybrid_render_gate") === "source_fallback",
+    )
+  ) {
+    errors.push("Missing Hybrid view mode trace with source_fallback gate.");
+  }
 }
 
 function budgetForRecord(record) {
@@ -354,6 +430,12 @@ function runSelfTest() {
     }),
     "expected degraded preview",
   );
+  assertSelfTestError(
+    validateRecords(parseRecords(selfTestMissingHybridInputContextLog()), {
+      requireSmokeTraces: false,
+    }),
+    "is missing hybrid_block_kind",
+  );
 
   console.log("Performance smoke checker self-test passed.");
 }
@@ -393,11 +475,12 @@ function selfTestLog() {
     `INFO papyro_app::perf: ${baseFields} elapsed_ms=20 perf editor switch tab`,
     `INFO papyro_app::perf: ${oneMbFields} elapsed_ms=150 perf editor switch tab`,
     `INFO papyro_app::perf: ${fiveMbFields} elapsed_ms=300 perf editor switch tab`,
-    `INFO papyro_ui::perf: ${baseFields} from="source" to="hybrid" elapsed_ms=10 perf editor view mode change`,
+    `INFO papyro_ui::perf: ${baseFields} from="source" to="hybrid" hybrid_render_gate="block_hints" elapsed_ms=10 perf editor view mode change`,
+    `INFO papyro_ui::perf: ${oneMbFields} from="source" to="hybrid" hybrid_render_gate="source_fallback" elapsed_ms=10 perf editor view mode change`,
     `INFO papyro_ui::perf: ${baseFields} mode="hybrid" elapsed_ms=8 perf editor command set_view_mode`,
-    `INFO papyro_app::perf: ${baseFields} changed=true elapsed_ms=5 perf editor input change`,
-    `INFO papyro_app::perf: ${oneMbFields} changed=true elapsed_ms=32 perf editor input change`,
-    `INFO papyro_app::perf: ${fiveMbFields} changed=true elapsed_ms=50 perf editor input change`,
+    `INFO papyro_app::perf: ${baseFields} changed=true hybrid_block_kind="table" hybrid_block_state="editing" hybrid_block_tier="current" hybrid_fallback_reason="none" elapsed_ms=5 perf editor input change`,
+    `INFO papyro_app::perf: ${oneMbFields} changed=true hybrid_block_kind="source_fallback" hybrid_block_state="source_fallback" hybrid_block_tier="source_fallback" hybrid_fallback_reason="document_too_large" elapsed_ms=32 perf editor input change`,
+    `INFO papyro_app::perf: ${fiveMbFields} changed=true hybrid_block_kind="source_fallback" hybrid_block_state="source_fallback" hybrid_block_tier="source_fallback" hybrid_fallback_reason="document_too_large" elapsed_ms=50 perf editor input change`,
     `INFO papyro_ui::perf: ${baseFields} code_highlighting=false live_preview=true elapsed_ms=120 perf editor preview render`,
     `INFO papyro_ui::perf: ${oneMbFields} code_highlighting=false live_preview=true elapsed_ms=1000 perf editor preview render`,
     `INFO papyro_ui::perf: ${fiveMbFields} code_highlighting=false live_preview=false elapsed_ms=150 perf editor preview render`,
@@ -429,6 +512,10 @@ function selfTestSearchOverBudgetLog() {
 
 function selfTestLargeLivePreviewLog() {
   return `INFO papyro_ui::perf: window_id="main" interaction_path="editor.preview" tab_id="tab-a" revision=1 view_mode="hybrid" content_bytes=2097152 trigger_reason="self_test" code_highlighting=false live_preview=true elapsed_ms=120 perf editor preview render`;
+}
+
+function selfTestMissingHybridInputContextLog() {
+  return `INFO papyro_app::perf: window_id="main" interaction_path="editor.input" tab_id="tab-a" revision=1 view_mode="hybrid" content_bytes=102400 trigger_reason="editor_event" changed=true elapsed_ms=5 perf editor input change`;
 }
 
 main();

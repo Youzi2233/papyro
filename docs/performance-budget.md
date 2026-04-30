@@ -53,6 +53,19 @@ The degradation path should be visible in tests or traces. A large document shou
 never create enough decorations, widgets, Mermaid renders, or code highlights to
 block keystroke handling.
 
+Hybrid input traces must identify the block path being edited:
+
+| Field | Expected values |
+| --- | --- |
+| `hybrid_block_kind` | `heading`, `paragraph`, `list_item`, `block_quote`, `fenced_code`, `table`, `image`, `math`, `mermaid`, `source_fallback`, or `none`. |
+| `hybrid_block_state` | `editing`, `rendered`, `error`, `source_fallback`, or the non-Hybrid mode name. |
+| `hybrid_block_tier` | `current`, `near`, `remote`, `source_fallback`, or `none`. |
+| `hybrid_fallback_reason` | `none`, `document_too_large`, `too_many_blocks`, `missing_hints`, or `invalid_cursor`. |
+
+`perf editor view mode change` also records `hybrid_render_gate`. Switching into
+Hybrid should report `block_hints` for small documents and `source_fallback` for
+documents above the interactive block analysis limit.
+
 ## Trace Names
 
 - `perf app dispatch action`
@@ -128,7 +141,9 @@ node scripts/check-perf-smoke.js target/perf-smoke.log
 
 The checker fails when required smoke traces are missing, shared trace context is
 missing, an interaction exceeds its budget, or a large document still uses live
-preview instead of the degraded preview path. CI runs
+preview instead of the degraded preview path. It also fails when Hybrid input
+records omit block kind/state/tier/fallback fields, or when the smoke log does
+not include both normal block rendering and source fallback coverage. CI runs
 `node scripts/generate-perf-fixtures.js --self-test` and
 `node scripts/check-perf-smoke.js --self-test` so the fixtures and checker do
 not silently rot.
@@ -143,11 +158,17 @@ not silently rot.
 8. Open `target/perf-fixtures/workspace-search-1000/` as a workspace, then search
    for `papyro-search-target` from Workspace Search. The target term appears in
    the final 50 notes so the scan exercises the full 1000-file workspace.
-9. Close the active tab after editing content.
+9. In Hybrid mode, edit at least one rich block in the 100KB file, such as a
+   table, image, Mermaid block, or heading.
+10. In Hybrid mode, type in the 1MB or 5MB file and confirm the input trace uses
+    `hybrid_block_state="source_fallback"`.
+11. Close the active tab after editing content.
 
 Mode changes should be checked as a chain:
 
 - `perf editor view mode change` records the UI action and trigger.
+- `perf editor view mode change` records `hybrid_render_gate`, so the log shows
+  whether Hybrid will use block hints or source fallback.
 - `perf editor command set_view_mode` records command sends to each editor host.
 
 Sidebar changes should only emit `perf chrome toggle sidebar` plus local JS layout

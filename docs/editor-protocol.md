@@ -28,6 +28,7 @@ Rust sends commands to `window.papyroEditor.handleRustMessage(tabId, message)`.
 | --- | --- | --- | --- |
 | `SetContent` | `set_content` | `content: string` | Replace the editor document without echoing `content_changed`. |
 | `SetViewMode` | `set_view_mode` | `mode: ViewMode` | Switch the browser editor between source, hybrid, and preview-aware runtime behavior. |
+| `SetBlockHints` | `set_block_hints` | `hints: MarkdownBlockHintSet` | Send revisioned Markdown block ranges and fallback state for Hybrid rendering. |
 | `SetPreferences` | `set_preferences` | `auto_link_paste: bool` | Update editor-only preferences without resending document content. |
 | `InsertMarkdown` | `insert_markdown` | `markdown: string` | Insert generated Markdown at the current editor selection. |
 | `ApplyFormat` | `apply_format` | `kind: EditorFormat` | Apply Markdown formatting to the current selection. |
@@ -72,14 +73,32 @@ JavaScript sends events through the Dioxus channel.
 | --- | --- | --- | --- |
 | `RuntimeReady` | `runtime_ready` | `tab_id: string` | Rust marks the host ready and sends the latest content. |
 | `RuntimeError` | `runtime_error` | `tab_id: string`, `message: string` | Rust shows fallback UI and logs the error. |
-| `ContentChanged` | `content_changed` | `tab_id: string`, `content: string` | Rust updates tab content and schedules autosave. |
+| `ContentChanged` | `content_changed` | `tab_id: string`, `content: string`, optional Hybrid trace fields | Rust updates tab content, records input trace context, and schedules autosave. |
 | `SaveRequested` | `save_requested` | `tab_id: string` | Rust saves the requested tab. |
 | `PasteImageRequested` | `paste_image_requested` | `tab_id: string`, `mime_type: string`, `data: string` | Rust stores pasted image data and sends `InsertMarkdown` for the generated asset link. |
+
+Hybrid trace fields are optional for compatibility with older runtime messages,
+but the current runtime sends them on every content change:
+
+| Field | Meaning |
+| --- | --- |
+| `hybrid_block_kind` | Current Markdown block kind, for example `heading`, `table`, `image`, `mermaid`, or `source_fallback`. |
+| `hybrid_block_state` | `editing`, `rendered`, `error`, `source_fallback`, or the non-Hybrid mode name. |
+| `hybrid_block_tier` | Decoration tier for the cursor block: `current`, `near`, `remote`, or `source_fallback`. |
+| `hybrid_fallback_reason` | `none`, `document_too_large`, `too_many_blocks`, `missing_hints`, or `invalid_cursor`. |
 
 Example:
 
 ```json
-{ "type": "content_changed", "tab_id": "tab-a", "content": "# Draft" }
+{
+  "type": "content_changed",
+  "tab_id": "tab-a",
+  "content": "# Draft",
+  "hybrid_block_kind": "heading",
+  "hybrid_block_state": "editing",
+  "hybrid_block_tier": "current",
+  "hybrid_fallback_reason": "none"
+}
 ```
 
 ## Contract Rules
@@ -88,6 +107,8 @@ Example:
 - `set_view_mode` and `set_preferences` are idempotent in Rust and JavaScript.
   Duplicate runtime commands may return `"mode_unchanged"` or `"preferences_unchanged"`
   and must not trigger layout refresh or preference writes.
+- `set_block_hints` is revisioned. JavaScript may return `"block_hints_unchanged"`
+  when the revision and payload are already active.
 - Commands for a missing tab may return `"missing"` in JavaScript and should not throw.
 - `destroy` must include the host `instance_id`; JavaScript ignores stale destroy messages so delayed cleanup cannot detach a newer host for the same tab id.
 - `content_changed` is the only event that updates Rust document content.

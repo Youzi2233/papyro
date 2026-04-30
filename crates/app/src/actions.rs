@@ -300,8 +300,8 @@ impl AppAction {
         Self::SearchWorkspace(SearchWorkspace { query })
     }
 
-    pub fn content_changed(tab_id: String, content: String) -> Self {
-        Self::ContentChanged(ContentChange { tab_id, content })
+    pub fn content_change(change: ContentChange) -> Self {
+        Self::ContentChanged(change)
     }
 
     pub fn activate_tab(tab_id: String) -> Self {

@@ -20,12 +20,8 @@ import {
   searchKeymap,
 } from "@codemirror/search";
 import { tags as t } from "@lezer/highlight";
-import katex from "katex";
-import mermaid from "mermaid";
 import {
   applyFormatToView,
-  appendMarkdownTableColumn,
-  appendMarkdownTableRow,
   attachViewToTab as attachViewToTabCore,
   collectMarkdownCodeBlocks,
   collectMarkdownFrontMatterBlock,
@@ -33,10 +29,9 @@ import {
   collectMarkdownTableBlocks,
   completeMarkdownShortcutOnSpace,
   continueMarkdownListOnEnter,
-  deleteMarkdownTableLastColumn,
-  deleteMarkdownTableLastRow,
   handleMarkdownBackspace,
   handleRustMessage as handleRustMessageCore,
+  hybridInputTraceContext,
   hybridDecorationLevel,
   hybridHeadingDecorationLevel,
   indentMarkdownListInView,
@@ -49,13 +44,11 @@ import {
   modeSupportsEditorScroll,
   normalizeEditorPreferences,
   nextLayoutSize,
-  parseMarkdownTable,
   parseMarkdownBlockquoteLine,
   parseMarkdownFootnoteDefinitionLine,
   parseMarkdownCodeFenceLine,
   parseMarkdownHeadingLine,
   parseMarkdownHorizontalRuleLine,
-  parseMarkdownImageSpans,
   parseMarkdownInlineSpans,
   parseMarkdownListLine,
   parseMarkdownTaskLine,
@@ -65,7 +58,6 @@ import {
   recycleEditor as recycleEditorCore,
   requestSaveForView,
   restoreScrollSnapshot,
-  rewriteMarkdownTableCell,
   saveModeScrollSnapshot,
   selectionTouchesTextRange,
   shouldUseFullDocumentHybridScan,
@@ -75,14 +67,20 @@ import {
   setViewMode as setViewModeCore,
   viewIsComposing,
 } from "./editor-core.js";
+import {
+  InlineMathWidget,
+  addImageDecorations,
+  addMathBlockDecorations,
+  addMermaidBlockDecorations,
+  addTableWidgetDecorations,
+  renderPreviewMermaid,
+  tableWidgetData,
+} from "./editor-media.js";
 
 // tabId → { view, dioxus, suppressChange }
 const editorRegistry = new Map();
 const modeScrollSnapshots = new Map();
 const previewScrollListeners = new WeakMap();
-const MERMAID_RENDER_TIMEOUT_MS = 2500;
-let mermaidInitialized = false;
-let mermaidRenderCounter = 0;
 
 function isVisibleElement(element) {
   if (!(element instanceof HTMLElement)) return false;
@@ -532,6 +530,30 @@ const editorTheme = EditorView.theme({
     backgroundColor: "var(--mn-markdown-image-bg, var(--mn-surface))",
     boxShadow: "none",
   },
+  ".cm-hybrid-image-block": {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "flex-start",
+    width: "fit-content",
+    maxWidth: "100%",
+    margin: "var(--mn-markdown-block-gap, .95em) 0",
+    cursor: "pointer",
+  },
+  ".cm-hybrid-image-caption": {
+    marginTop: "6px",
+    color: "var(--mn-ink-3)",
+    fontFamily: "var(--mn-font-ui)",
+    fontSize: "var(--mn-type-small)",
+  },
+  ".cm-hybrid-image-preview-error": {
+    border: "var(--mn-border-subtle, 1px solid var(--mn-divider))",
+    borderRadius: "var(--mn-markdown-image-radius, 6px)",
+    backgroundColor: "var(--mn-markdown-code-block-bg, var(--mn-surface-sunken))",
+    color: "var(--mn-accent-strong)",
+    padding: "var(--mn-markdown-code-block-pad-y, 14px) var(--mn-markdown-code-block-pad-x, 18px)",
+    fontFamily: "var(--mn-markdown-mono-font)",
+    fontSize: "var(--mn-markdown-code-block-size)",
+  },
   ".cm-hybrid-task-checkbox": {
     display: "inline-flex",
     alignItems: "center",
@@ -667,6 +689,33 @@ function blockHintRanges(hints) {
 
 function hintRangesByKind(hintRanges, kind) {
   return hintRanges.filter((block) => block.kind?.type === kind);
+}
+
+function inputTraceContextForView(entry, state) {
+  const mode = state.field(viewModeField, false);
+  if (mode !== "hybrid") {
+    return {
+      hybrid_block_kind: "none",
+      hybrid_block_state: mode,
+      hybrid_block_tier: "none",
+      hybrid_fallback_reason: "none",
+    };
+  }
+
+  const line = state.doc.lineAt(state.selection.main.head);
+  const trace = hybridInputTraceContext(
+    entry?.blockHints,
+    selectionLineRanges(state),
+    line.number,
+    HYBRID_NEAR_BLOCK_DISTANCE,
+  );
+
+  return {
+    hybrid_block_kind: trace.hybridBlockKind,
+    hybrid_block_state: trace.hybridBlockState,
+    hybrid_block_tier: trace.hybridBlockTier,
+    hybrid_fallback_reason: trace.hybridFallbackReason,
+  };
 }
 
 function isMermaidLanguage(info) {
@@ -805,33 +854,6 @@ function inlineClassForType(type) {
   }
 }
 
-class InlineMathWidget extends WidgetType {
-  constructor(source) {
-    super();
-    this.source = source;
-  }
-
-  eq(other) {
-    return other instanceof InlineMathWidget && other.source === this.source;
-  }
-
-  toDOM() {
-    const wrapper = document.createElement("span");
-    wrapper.className = "cm-hybrid-inline-math";
-
-    if (!renderKatexMath(wrapper, this.source, false)) {
-      wrapper.classList.add("cm-hybrid-inline-math-error");
-      wrapper.textContent = `$${this.source}$`;
-    }
-
-    return wrapper;
-  }
-
-  ignoreEvent() {
-    return false;
-  }
-}
-
 class FootnoteReferenceWidget extends WidgetType {
   constructor(label) {
     super();
@@ -852,150 +874,6 @@ class FootnoteReferenceWidget extends WidgetType {
   ignoreEvent() {
     return false;
   }
-}
-
-function renderKatexMath(target, source, displayMode) {
-  try {
-    target.innerHTML = katex.renderToString(source, {
-      displayMode,
-      output: "mathml",
-      throwOnError: false,
-      strict: "ignore",
-    });
-  } catch {
-    return false;
-  }
-
-  return true;
-}
-
-function ensureMermaidInitialized() {
-  if (mermaidInitialized) return;
-  mermaid.initialize({
-    startOnLoad: false,
-    securityLevel: "strict",
-    theme: "base",
-    htmlLabels: false,
-  });
-  mermaidInitialized = true;
-}
-
-function withRenderTimeout(promise, timeoutMs, label) {
-  return Promise.race([
-    promise,
-    new Promise((_, reject) => {
-      setTimeout(() => reject(new Error(`${label} timed out`)), timeoutMs);
-    }),
-  ]);
-}
-
-function createMermaidStatus(message, source, error = false) {
-  const wrapper = document.createElement("div");
-  wrapper.className = error
-    ? "mn-mermaid-status mn-mermaid-status-error"
-    : "mn-mermaid-status";
-
-  const label = document.createElement("div");
-  label.className = "mn-mermaid-label";
-  label.textContent = error ? "Mermaid render failed" : message;
-  wrapper.append(label);
-
-  if (source) {
-    const pre = document.createElement("pre");
-    pre.className = "mn-mermaid-source";
-    pre.textContent = source;
-    wrapper.append(pre);
-  }
-
-  return wrapper;
-}
-
-async function renderMermaidSvg(source) {
-  const trimmed = String(source ?? "").trim();
-  if (!trimmed) {
-    throw new Error("Mermaid source is empty");
-  }
-
-  ensureMermaidInitialized();
-  const id = `papyro-mermaid-${++mermaidRenderCounter}`;
-  return withRenderTimeout(
-    Promise.resolve(mermaid.render(id, trimmed)),
-    MERMAID_RENDER_TIMEOUT_MS,
-    "Mermaid render",
-  );
-}
-
-async function renderMermaidIntoElement(element, source) {
-  if (!(element instanceof HTMLElement)) return false;
-
-  const normalizedSource = String(source ?? "").trim();
-  const token = String(++mermaidRenderCounter);
-  element.dataset.mermaidRenderToken = token;
-  element.dataset.mermaidSource = normalizedSource;
-  element.dataset.mermaidState = "pending";
-  element.replaceChildren(createMermaidStatus("Rendering Mermaid diagram...", "", false));
-
-  try {
-    const result = await renderMermaidSvg(normalizedSource);
-    if (element.dataset.mermaidRenderToken !== token) return false;
-
-    const svgWrapper = document.createElement("div");
-    svgWrapper.className = "mn-mermaid-svg";
-    svgWrapper.innerHTML = result.svg ?? "";
-    result.bindFunctions?.(svgWrapper);
-
-    element.dataset.mermaidState = "rendered";
-    element.replaceChildren(svgWrapper);
-    return true;
-  } catch (error) {
-    if (element.dataset.mermaidRenderToken !== token) return false;
-
-    const message = error instanceof Error ? error.message : String(error);
-    element.dataset.mermaidState = "error";
-    element.replaceChildren(createMermaidStatus(message, normalizedSource, true));
-    return false;
-  }
-}
-
-function mermaidSourceFromElement(element) {
-  return (
-    element.querySelector(".mn-mermaid-source")?.textContent ??
-    element.dataset.mermaidSource ??
-    ""
-  );
-}
-
-function renderPreviewMermaid(root = document) {
-  const scope = root instanceof Element || root instanceof Document ? root : document;
-  let count = 0;
-  for (const block of scope.querySelectorAll(".mn-preview .mn-mermaid-block")) {
-    if (!(block instanceof HTMLElement)) continue;
-
-    const source = mermaidSourceFromElement(block);
-    if (!source.trim()) continue;
-
-    if (
-      block.dataset.mermaidState === "rendered" &&
-      block.dataset.mermaidSource === source.trim()
-    ) {
-      continue;
-    }
-
-    count += 1;
-    void renderMermaidIntoElement(block, source);
-  }
-  return count;
-}
-
-function focusMarkdownBlockSource(view, fromLine, event) {
-  event.preventDefault();
-  if (!Number.isSafeInteger(fromLine) || fromLine < 1 || fromLine > view.state.doc.lines) {
-    return;
-  }
-
-  const from = view.state.doc.line(fromLine).from;
-  view.dispatch({ selection: { anchor: from } });
-  view.focus();
 }
 
 function inlineDecorationsEnabled(tier) {
@@ -1050,55 +928,6 @@ function addInlineDecorations(decorations, line, selectionRanges = []) {
     decorations.push(Decoration.replace({}).range(line.from + span.from, contentFrom));
     decorations.push(Decoration.mark({ class: className }).range(contentFrom, contentTo));
     decorations.push(Decoration.replace({}).range(contentTo, line.from + span.to));
-  }
-}
-
-class ImagePreviewWidget extends WidgetType {
-  constructor(src, alt, title) {
-    super();
-    this.src = src;
-    this.alt = alt;
-    this.title = title;
-  }
-
-  eq(other) {
-    return (
-      other.src === this.src &&
-      other.alt === this.alt &&
-      other.title === this.title
-    );
-  }
-
-  toDOM() {
-    const wrapper = document.createElement("span");
-    wrapper.className = "cm-hybrid-image-preview";
-    wrapper.tabIndex = 0;
-    wrapper.setAttribute("role", "img");
-    wrapper.setAttribute("aria-label", this.alt || "Image preview");
-
-    const image = document.createElement("img");
-    image.src = this.src;
-    image.alt = this.alt;
-    if (this.title) image.title = this.title;
-    image.loading = "lazy";
-    image.decoding = "async";
-    wrapper.appendChild(image);
-
-    return wrapper;
-  }
-
-  ignoreEvent() {
-    return false;
-  }
-}
-
-function addImageDecorations(decorations, line) {
-  for (const image of parseMarkdownImageSpans(line.text)) {
-    decorations.push(
-      Decoration.replace({
-        widget: new ImagePreviewWidget(image.src, image.alt, image.title),
-      }).range(line.from + image.from, line.from + image.to),
-    );
   }
 }
 
@@ -1345,99 +1174,6 @@ class CodeFenceWidget extends WidgetType {
   }
 }
 
-class MathBlockWidget extends WidgetType {
-  constructor(source, fromLine, toLine) {
-    super();
-    this.source = source;
-    this.fromLine = fromLine;
-    this.toLine = toLine;
-  }
-
-  eq(other) {
-    return (
-      other instanceof MathBlockWidget &&
-      other.source === this.source &&
-      other.fromLine === this.fromLine &&
-      other.toLine === this.toLine
-    );
-  }
-
-  toDOM(view) {
-    const wrapper = document.createElement("span");
-    wrapper.className = "cm-hybrid-math-block";
-    wrapper.tabIndex = 0;
-    wrapper.setAttribute("role", "button");
-    wrapper.setAttribute("aria-label", "Edit math block source");
-    wrapper.title = "Math block";
-
-    if (!renderKatexMath(wrapper, this.source, true)) {
-      wrapper.classList.add("cm-hybrid-math-block-error");
-      wrapper.textContent = this.source ? `$$\n${this.source}\n$$` : "$$";
-    }
-
-    wrapper.addEventListener("mousedown", (event) => event.preventDefault());
-    wrapper.addEventListener("click", (event) => {
-      focusMarkdownBlockSource(view, this.fromLine, event);
-    });
-    wrapper.addEventListener("keydown", (event) => {
-      if (event.key === "Enter" || event.key === " ") {
-        focusMarkdownBlockSource(view, this.fromLine, event);
-      }
-    });
-
-    return wrapper;
-  }
-
-  ignoreEvent() {
-    return false;
-  }
-}
-
-class MermaidBlockWidget extends WidgetType {
-  constructor(source, fromLine, toLine) {
-    super();
-    this.source = source;
-    this.fromLine = fromLine;
-    this.toLine = toLine;
-  }
-
-  eq(other) {
-    return (
-      other instanceof MermaidBlockWidget &&
-      other.source === this.source &&
-      other.fromLine === this.fromLine &&
-      other.toLine === this.toLine
-    );
-  }
-
-  toDOM(view) {
-    const wrapper = document.createElement("div");
-    wrapper.className = "mn-mermaid-block cm-hybrid-mermaid-block";
-    wrapper.tabIndex = 0;
-    wrapper.setAttribute("role", "button");
-    wrapper.setAttribute("aria-label", "Edit Mermaid diagram source");
-
-    const editSource = (event) => {
-      focusMarkdownBlockSource(view, this.fromLine, event);
-    };
-
-    wrapper.addEventListener("mousedown", (event) => event.preventDefault());
-    wrapper.addEventListener("click", editSource);
-    wrapper.addEventListener("keydown", (event) => {
-      if (event.key === "Enter" || event.key === " ") {
-        editSource(event);
-      }
-    });
-
-    void renderMermaidIntoElement(wrapper, this.source);
-    return wrapper;
-  }
-
-  ignoreEvent() {
-    return false;
-  }
-}
-
 function addCodeBlockDecorations(decorations, line, block, tier) {
   const level = hybridDecorationLevel("code", tier);
   if (level === "source") return;
@@ -1463,28 +1199,6 @@ function addCodeBlockDecorations(decorations, line, block, tier) {
   }
 }
 
-function addMathBlockDecorations(decorations, state, block) {
-  const from = state.doc.line(block.fromLine).from;
-  const to = state.doc.line(block.toLine).to;
-  decorations.push(
-    Decoration.replace({
-      block: true,
-      widget: new MathBlockWidget(block.source, block.fromLine, block.toLine),
-    }).range(from, to),
-  );
-}
-
-function addMermaidBlockDecorations(decorations, state, block) {
-  const from = state.doc.line(block.fromLine).from;
-  const to = state.doc.line(block.toLine).to;
-  decorations.push(
-    Decoration.replace({
-      block: true,
-      widget: new MermaidBlockWidget(block.source, block.fromLine, block.toLine),
-    }).range(from, to),
-  );
-}
-
 function addFrontMatterDecorations(decorations, line, block) {
   const isStart = line.number === block.fromLine;
   const isEnd = line.number === block.toLine;
@@ -1498,135 +1212,6 @@ function addFrontMatterDecorations(decorations, line, block) {
   if (isStart || isEnd) {
     decorations.push(Decoration.replace({}).range(line.from, line.to));
   }
-}
-
-class MarkdownTableWidget extends WidgetType {
-  constructor(markdown, fromLine, toLine) {
-    super();
-    this.markdown = markdown;
-    this.fromLine = fromLine;
-    this.toLine = toLine;
-    this.table = parseMarkdownTable(markdown);
-  }
-
-  eq(other) {
-    return (
-      other instanceof MarkdownTableWidget &&
-      other.markdown === this.markdown &&
-      other.fromLine === this.fromLine &&
-      other.toLine === this.toLine
-    );
-  }
-
-  toDOM(view) {
-    const wrapper = document.createElement("div");
-    wrapper.className = "cm-hybrid-table-widget";
-    if (!this.table) {
-      wrapper.textContent = this.markdown;
-      return wrapper;
-    }
-
-    const replaceTable = (updated) => {
-      if (!updated || updated === this.markdown) return;
-      const from = view.state.doc.line(this.fromLine).from;
-      const to = view.state.doc.line(this.toLine).to;
-      view.dispatch({
-        changes: { from, to, insert: updated },
-        selection: { anchor: from },
-      });
-      view.focus();
-    };
-    const toolbar = document.createElement("div");
-    toolbar.className = "cm-hybrid-table-toolbar";
-    const commands = [
-      ["Add row", () => appendMarkdownTableRow(this.markdown)],
-      ["Delete row", () => deleteMarkdownTableLastRow(this.markdown)],
-      ["Add column", () => appendMarkdownTableColumn(this.markdown)],
-      ["Delete column", () => deleteMarkdownTableLastColumn(this.markdown)],
-    ];
-    for (const [label, command] of commands) {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.textContent = label;
-      button.addEventListener("mousedown", (event) => event.preventDefault());
-      button.addEventListener("click", (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        replaceTable(command());
-      });
-      toolbar.appendChild(button);
-    }
-    wrapper.appendChild(toolbar);
-
-    const table = document.createElement("table");
-    const tbody = document.createElement("tbody");
-    for (const row of this.table.rows) {
-      const tr = document.createElement("tr");
-      row.cells.forEach((cell, columnIndex) => {
-        const cellElement = document.createElement(row.kind === "header" ? "th" : "td");
-        const input = document.createElement("input");
-        input.className = "cm-hybrid-table-cell-input";
-        input.value = cell;
-        input.setAttribute("aria-label", `Edit table cell ${row.sourceRowIndex + 1}:${columnIndex + 1}`);
-        input.addEventListener("keydown", (event) => {
-          if (event.key === "Enter") {
-            event.preventDefault();
-            input.blur();
-          }
-          event.stopPropagation();
-        });
-        input.addEventListener("mousedown", (event) => event.stopPropagation());
-        input.addEventListener("click", (event) => event.stopPropagation());
-        input.addEventListener("blur", () => {
-          if (input.value === cell) return;
-          const updated = rewriteMarkdownTableCell(
-            this.markdown,
-            row.sourceRowIndex,
-            columnIndex,
-            input.value,
-          );
-          replaceTable(updated);
-        });
-        cellElement.appendChild(input);
-        tr.appendChild(cellElement);
-      });
-      tbody.appendChild(tr);
-    }
-    table.appendChild(tbody);
-    wrapper.appendChild(table);
-    return wrapper;
-  }
-
-  ignoreEvent() {
-    return true;
-  }
-}
-
-function addTableWidgetDecorations(decorations, state, block) {
-  const table = tableWidgetData(state, block);
-  if (!table) return false;
-
-  decorations.push(
-    Decoration.replace({
-      block: true,
-      widget: new MarkdownTableWidget(table.markdown, block.fromLine, block.toLine),
-    }).range(table.from, table.to),
-  );
-  return true;
-}
-
-function tableWidgetData(state, block) {
-  const from = state.doc.line(block.fromLine).from;
-  const to = state.doc.line(block.toLine).to;
-  const markdown = state.sliceDoc(from, to);
-  if (markdown.length > HYBRID_TABLE_WIDGET_MAX_BYTES) return null;
-
-  const table = parseMarkdownTable(markdown);
-  if (!table) return null;
-  const cellCount = table.rows.length * table.columnCount;
-  if (cellCount > HYBRID_TABLE_WIDGET_MAX_CELLS) return null;
-
-  return { from, to, markdown };
 }
 
 function addTableDecorations(decorations, line, block) {
@@ -1810,7 +1395,15 @@ function buildHybridMarkdownDecorations(
           tableBlock.toLine,
         );
         const tableLevel = hybridDecorationLevel("table", tier);
-        if (tableLevel === "full" && tableWidgetData(view.state, tableBlock)) {
+        if (
+          tableLevel === "full" &&
+          tableWidgetData(
+            view.state,
+            tableBlock,
+            HYBRID_TABLE_WIDGET_MAX_BYTES,
+            HYBRID_TABLE_WIDGET_MAX_CELLS,
+          )
+        ) {
           continue;
         }
         if (tableLevel !== "source") {
@@ -1903,8 +1496,21 @@ function buildHybridBlockWidgetDecorations(state) {
       addMermaidBlockDecorations(decorations, state, block);
     } else if (block.widgetKind === "math") {
       addMathBlockDecorations(decorations, state, block);
-    } else if (tableWidgetData(state, block)) {
-      addTableWidgetDecorations(decorations, state, block);
+    } else if (
+      tableWidgetData(
+        state,
+        block,
+        HYBRID_TABLE_WIDGET_MAX_BYTES,
+        HYBRID_TABLE_WIDGET_MAX_CELLS,
+      )
+    ) {
+      addTableWidgetDecorations(
+        decorations,
+        state,
+        block,
+        HYBRID_TABLE_WIDGET_MAX_BYTES,
+        HYBRID_TABLE_WIDGET_MAX_CELLS,
+      );
     }
   }
 
@@ -2108,6 +1714,7 @@ function buildExtensions() {
         type: "content_changed",
         tab_id: tabId,
         content: update.state.doc.toString(),
+        ...inputTraceContextForView(entry, update.state),
       });
     }),
   ];

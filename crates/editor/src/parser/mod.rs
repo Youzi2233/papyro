@@ -8,7 +8,8 @@ pub use blocks::{
     analyze_markdown_block_snapshot, analyze_markdown_block_snapshot_with_options,
     analyze_markdown_blocks, MarkdownBlock, MarkdownBlockAnalysisOptions, MarkdownBlockFallback,
     MarkdownBlockFallbackReason, MarkdownBlockHintSet, MarkdownBlockKind, MarkdownBlockRange,
-    MarkdownBlockRanges,
+    MarkdownBlockRanges, INTERACTIVE_BLOCK_ANALYSIS_MAX_BLOCKS,
+    INTERACTIVE_BLOCK_ANALYSIS_MAX_BYTES,
 };
 pub use markdown::summarize_markdown;
 pub use outline::{extract_outline, OutlineItem};

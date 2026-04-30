@@ -31,6 +31,16 @@ Content 和 revision 永远属于 Rust：
 - `revision` 是单调内容版本，派生数据和恢复 metadata 必须绑定 revision。
 - JS 的 `content_changed` 事件只提交新内容，不能成为保存状态或文件状态的真相来源。
 
+### Hybrid block hints
+
+Hybrid block hints 是按 `tab_id + revision` 派生的轻量结构，仍然属于 Rust 侧派生数据：
+
+- 只为当前 active tab 发送 block hints；warm / hidden host 不接收 Hybrid block hints。
+- 100KB 级文档可以使用完整 block hints 和近视口 decoration。
+- 超过 interactive block analysis 上限的文档返回 `source_only` fallback，JS 只保留 Source-like 编辑路径。
+- JS 在 `content_changed` 事件里只回传当前 Hybrid 输入 trace 上下文，例如 block kind、state、tier 和 fallback reason；这些字段只用于性能定位，不改变文档真相。
+- Mermaid、数学、表格和图片 widget 必须服从同一个 fallback 策略，不能绕过 block hints 自行全量扫描大文档。
+
 ### Selection 和 scroll
 
 Selection 和 scroll 是浏览器编辑器状态。策略是轻量保存，按 revision 校验：

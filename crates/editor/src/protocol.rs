@@ -15,6 +15,10 @@ pub enum EditorEvent {
     ContentChanged {
         tab_id: String,
         content: String,
+        hybrid_block_kind: Option<String>,
+        hybrid_block_state: Option<String>,
+        hybrid_block_tier: Option<String>,
+        hybrid_fallback_reason: Option<String>,
     },
     SaveRequested {
         tab_id: String,
@@ -214,7 +218,37 @@ mod tests {
             event,
             EditorEvent::ContentChanged {
                 tab_id: "tab-a".to_string(),
-                content: "Hello".to_string()
+                content: "Hello".to_string(),
+                hybrid_block_kind: None,
+                hybrid_block_state: None,
+                hybrid_block_tier: None,
+                hybrid_fallback_reason: None
+            }
+        );
+    }
+
+    #[test]
+    fn deserializes_content_changed_hybrid_trace_context() {
+        let event: EditorEvent = serde_json::from_value(json!({
+            "type": "content_changed",
+            "tab_id": "tab-a",
+            "content": "| A | B |",
+            "hybrid_block_kind": "table",
+            "hybrid_block_state": "editing",
+            "hybrid_block_tier": "current",
+            "hybrid_fallback_reason": "none"
+        }))
+        .unwrap();
+
+        assert_eq!(
+            event,
+            EditorEvent::ContentChanged {
+                tab_id: "tab-a".to_string(),
+                content: "| A | B |".to_string(),
+                hybrid_block_kind: Some("table".to_string()),
+                hybrid_block_state: Some("editing".to_string()),
+                hybrid_block_tier: Some("current".to_string()),
+                hybrid_fallback_reason: Some("none".to_string())
             }
         );
     }

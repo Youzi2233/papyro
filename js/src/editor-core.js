@@ -469,6 +469,82 @@ export function hybridBlockState(block, options = {}) {
   return tier === "current" ? "editing" : "rendered";
 }
 
+function hybridTraceFallback(reason) {
+  return typeof reason === "string" && reason.length > 0 ? reason : "none";
+}
+
+function hybridTraceBlockKind(block) {
+  const kind = block?.kind?.type;
+  return typeof kind === "string" && kind.length > 0 ? kind : "unknown";
+}
+
+export function hybridInputTraceContext(
+  hints,
+  selectionLineRanges,
+  cursorLine,
+  nearDistance,
+) {
+  if (!hints || typeof hints !== "object") {
+    return {
+      hybridBlockKind: "none",
+      hybridBlockState: "source_fallback",
+      hybridBlockTier: "none",
+      hybridFallbackReason: "missing_hints",
+    };
+  }
+
+  const fallback = hints.fallback;
+  if (fallback?.type && fallback.type !== "none") {
+    return {
+      hybridBlockKind: "source_fallback",
+      hybridBlockState: "source_fallback",
+      hybridBlockTier: "source_fallback",
+      hybridFallbackReason: hybridTraceFallback(fallback.reason ?? fallback.type),
+    };
+  }
+
+  const line = safeInteger(cursorLine);
+  if (line === null) {
+    return {
+      hybridBlockKind: "none",
+      hybridBlockState: "source_fallback",
+      hybridBlockTier: "none",
+      hybridFallbackReason: "invalid_cursor",
+    };
+  }
+
+  const block = (Array.isArray(hints.blocks) ? hints.blocks : []).find((candidate) => {
+    const range = markdownBlockLineRange(candidate);
+    return range && line >= range.fromLine && line <= range.toLine;
+  });
+  if (!block) {
+    return {
+      hybridBlockKind: "none",
+      hybridBlockState: "rendered",
+      hybridBlockTier: "remote",
+      hybridFallbackReason: "none",
+    };
+  }
+
+  const range = markdownBlockLineRange(block);
+  const tier = markdownDecorationTier(
+    selectionLineRanges ?? [],
+    range.fromLine,
+    range.toLine,
+    nearDistance,
+  );
+
+  return {
+    hybridBlockKind: hybridTraceBlockKind(block),
+    hybridBlockState: hybridBlockState(block, {
+      selectionLineRanges,
+      nearDistance,
+    }),
+    hybridBlockTier: tier,
+    hybridFallbackReason: "none",
+  };
+}
+
 export function isPlainUrl(text) {
   return /^https?:\/\/[^\s<>()]+$/i.test(text.trim());
 }
@@ -1012,6 +1088,20 @@ function collectFootnoteReferenceSpans(line, spans, occupied) {
 
 const imageRegexp = /!\[([^\]\n]*)\]\(([^)\s\n]+)(?:\s+"([^"]*)")?\)/g;
 
+export function sanitizeMarkdownImageSrc(src) {
+  const trimmed = String(src ?? "").trim();
+  if (!trimmed) return "";
+
+  const normalized = Array.from(trimmed)
+    .filter((character) => !/[\s\u0000-\u001f\u007f]/.test(character))
+    .join("")
+    .toLowerCase();
+  const schemeMatch = /^([a-z][a-z0-9+.-]*):/.exec(normalized);
+  if (!schemeMatch) return trimmed;
+
+  return ["http", "https"].includes(schemeMatch[1]) ? trimmed : "";
+}
+
 function collectImageRanges(line, occupied) {
   for (const match of line.matchAll(imageRegexp)) {
     occupied.push({
@@ -1029,6 +1119,17 @@ export function parseMarkdownImageSpans(line) {
     src: match[2],
     title: match[3] ?? "",
   }));
+}
+
+export function parseStandaloneMarkdownImageBlock(line) {
+  const text = String(line ?? "");
+  const leading = text.length - text.trimStart().length;
+  const trimmed = text.trim();
+  const [image] = parseMarkdownImageSpans(trimmed);
+
+  return image && image.from === 0 && image.to === trimmed.length
+    ? { ...image, from: leading, to: leading + trimmed.length }
+    : null;
 }
 
 export function parseMarkdownTaskLine(line) {
