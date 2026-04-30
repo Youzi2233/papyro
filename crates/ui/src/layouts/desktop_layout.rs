@@ -1,7 +1,6 @@
 use crate::components::{
     command_palette::CommandPaletteModal,
     editor::EditorPane,
-    header::AppHeader,
     quick_open::QuickOpenModal,
     recovery::{RecoveryDraftCompareModal, RecoveryDraftsModal},
     search::SearchModal,
@@ -130,13 +129,6 @@ pub fn DesktopLayout() -> Element {
         div {
             class: "mn-shell",
             ThemeDomEffect {}
-            AppHeader {
-                on_settings: move |_| {
-                    let started_at = perf_timer();
-                    show_settings.set(true);
-                    trace_chrome_open_modal("settings", "header", started_at);
-                },
-            }
             div { class: "mn-workbench",
                 if !sidebar_collapsed {
                     Sidebar {
@@ -145,11 +137,34 @@ pub fn DesktopLayout() -> Element {
                             show_search.set(true);
                             trace_chrome_open_modal("workspace_search", "sidebar", started_at);
                         },
+                        on_settings: move |_| {
+                            let started_at = perf_timer();
+                            show_settings.set(true);
+                            trace_chrome_open_modal("settings", "sidebar", started_at);
+                        },
                     }
                 }
-                EditorPane {}
+                div { class: "mn-main-column",
+                    EditorPane {
+                        on_settings: move |_| {
+                            let started_at = perf_timer();
+                            show_settings.set(true);
+                            trace_chrome_open_modal("settings", "editor", started_at);
+                        },
+                        on_quick_open: move |_| {
+                            let started_at = perf_timer();
+                            show_quick_open.set(true);
+                            trace_chrome_open_modal("quick_open", "editor", started_at);
+                        },
+                        on_command_palette: move |_| {
+                            let started_at = perf_timer();
+                            show_command_palette.set(true);
+                            trace_chrome_open_modal("command_palette", "editor", started_at);
+                        },
+                    }
+                    StatusBar {}
+                }
             }
-            StatusBar {}
             DesktopModalLayer {
                 show_settings,
                 show_quick_open,

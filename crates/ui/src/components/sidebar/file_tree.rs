@@ -202,8 +202,8 @@ fn FileTreeNode(
                         role: "treeitem",
                         "aria-selected": "true",
                         "aria-expanded": "{is_expanded}",
-                        span { class: "mn-tree-caret", if is_expanded { "v" } else { ">" } }
-                        span { class: "mn-tree-icon", "dir" }
+                        span { class: file_tree_caret_class(is_expanded), "aria-hidden": "true" }
+                        span { class: file_tree_icon_class(folder_icon_kind(is_expanded)), "aria-hidden": "true" }
                         input {
                             class: "mn-tree-rename-input",
                             value: "{draft.value}",
@@ -290,8 +290,8 @@ fn FileTreeNode(
                             drag_source.set(None);
                             drop_target.set(None);
                         },
-                        span { class: "mn-tree-caret", if is_expanded { "v" } else { ">" } }
-                        span { class: "mn-tree-icon", "dir" }
+                        span { class: file_tree_caret_class(is_expanded), "aria-hidden": "true" }
+                        span { class: file_tree_icon_class(folder_icon_kind(is_expanded)), "aria-hidden": "true" }
                         span { class: "mn-tree-label", "{node.name}" }
                     }
                 }
@@ -313,7 +313,7 @@ fn FileTreeNode(
                         style: "padding-left: {indent + 18}px",
                         role: "treeitem",
                         "aria-selected": "true",
-                        span { class: "mn-tree-icon", "md" }
+                        span { class: file_tree_icon_class(FileTreeIconKind::Markdown), "aria-hidden": "true" }
                         input {
                             class: "mn-tree-rename-input",
                             value: "{draft.value}",
@@ -378,7 +378,7 @@ fn FileTreeNode(
                             drag_source.set(None);
                             drop_target.set(None);
                         },
-                        span { class: "mn-tree-icon", "md" }
+                        span { class: file_tree_icon_class(FileTreeIconKind::Markdown), "aria-hidden": "true" }
                         span { class: "mn-tree-label", "{node_title}" }
                     }
                 }
@@ -461,6 +461,37 @@ fn file_tree_row_class(
         classes.push("drop-target");
     }
     classes.join(" ")
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum FileTreeIconKind {
+    Folder,
+    FolderOpen,
+    Markdown,
+}
+
+fn folder_icon_kind(is_expanded: bool) -> FileTreeIconKind {
+    if is_expanded {
+        FileTreeIconKind::FolderOpen
+    } else {
+        FileTreeIconKind::Folder
+    }
+}
+
+fn file_tree_caret_class(is_expanded: bool) -> &'static str {
+    if is_expanded {
+        "mn-tree-caret expanded"
+    } else {
+        "mn-tree-caret"
+    }
+}
+
+fn file_tree_icon_class(kind: FileTreeIconKind) -> &'static str {
+    match kind {
+        FileTreeIconKind::Folder => "mn-tree-icon folder",
+        FileTreeIconKind::FolderOpen => "mn-tree-icon folder-open",
+        FileTreeIconKind::Markdown => "mn-tree-icon markdown",
+    }
 }
 
 fn begin_inline_rename(
@@ -1013,6 +1044,26 @@ mod tests {
         assert_eq!(
             file_tree_row_class("note", false, true, false, false),
             "mn-tree-row note editing"
+        );
+    }
+
+    #[test]
+    fn tree_icon_classes_reflect_node_state() {
+        assert_eq!(folder_icon_kind(false), FileTreeIconKind::Folder);
+        assert_eq!(folder_icon_kind(true), FileTreeIconKind::FolderOpen);
+        assert_eq!(file_tree_caret_class(false), "mn-tree-caret");
+        assert_eq!(file_tree_caret_class(true), "mn-tree-caret expanded");
+        assert_eq!(
+            file_tree_icon_class(FileTreeIconKind::Folder),
+            "mn-tree-icon folder"
+        );
+        assert_eq!(
+            file_tree_icon_class(FileTreeIconKind::FolderOpen),
+            "mn-tree-icon folder-open"
+        );
+        assert_eq!(
+            file_tree_icon_class(FileTreeIconKind::Markdown),
+            "mn-tree-icon markdown"
         );
     }
 

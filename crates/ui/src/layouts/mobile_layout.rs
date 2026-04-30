@@ -4,11 +4,14 @@ use papyro_core::models::Theme;
 use crate::action_labels::{delete_action_label, delete_action_title};
 use crate::commands::FileTarget;
 use crate::components::{
+    command_palette::CommandPaletteModal,
     editor::EditorPane,
     header::AppHeader,
+    quick_open::QuickOpenModal,
     settings::SettingsModal,
     sidebar::{FileTree, FileTreeSortMode},
     status_bar::StatusBar,
+    trash::TrashModal,
 };
 use crate::context::use_app_context;
 use crate::perf::{perf_timer, trace_chrome_open_modal};
@@ -22,6 +25,9 @@ pub fn MobileLayout() -> Element {
     let open_workspace_commands = commands.clone();
     let browser_toggle_commands = commands.clone();
     let mut show_settings = use_signal(|| false);
+    let mut show_quick_open = use_signal(|| false);
+    let mut show_command_palette = use_signal(|| false);
+    let mut show_trash = use_signal(|| false);
     let mut show_create = use_signal(|| false);
     let mut show_rename = use_signal(|| false);
     let mut create_name = use_signal(String::new);
@@ -245,12 +251,41 @@ pub fn MobileLayout() -> Element {
                 }
 
                 div { class: "mn-workbench mn-workbench-mobile",
-                    EditorPane {}
+                    EditorPane {
+                        on_settings: move |_| {
+                            let started_at = perf_timer();
+                            show_settings.set(true);
+                            trace_chrome_open_modal("settings", "mobile_editor", started_at);
+                        },
+                        on_quick_open: move |_| {
+                            let started_at = perf_timer();
+                            show_quick_open.set(true);
+                            trace_chrome_open_modal("quick_open", "mobile_editor", started_at);
+                        },
+                        on_command_palette: move |_| {
+                            let started_at = perf_timer();
+                            show_command_palette.set(true);
+                            trace_chrome_open_modal("command_palette", "mobile_editor", started_at);
+                        },
+                    }
                 }
             }
             StatusBar {}
             if *show_settings.read() {
                 SettingsModal { on_close: move |_| show_settings.set(false) }
+            }
+            if *show_quick_open.read() {
+                QuickOpenModal { on_close: move |_| show_quick_open.set(false) }
+            }
+            if *show_command_palette.read() {
+                CommandPaletteModal {
+                    on_close: move |_| show_command_palette.set(false),
+                    on_settings: move |_| show_settings.set(true),
+                    on_trash: move |_| show_trash.set(true),
+                }
+            }
+            if *show_trash.read() {
+                TrashModal { on_close: move |_| show_trash.set(false) }
             }
         }
     }

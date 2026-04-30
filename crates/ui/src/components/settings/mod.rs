@@ -109,8 +109,17 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
                         "×"
                     }
                 }
-                div { class: "mn-modal-body",
-                    SettingSection { label: "Scope",
+                div { class: "mn-modal-body mn-settings-body",
+                    div { class: "mn-settings-layout",
+                        nav { class: "mn-settings-nav", "aria-label": "Settings sections",
+                            a { class: "mn-settings-nav-item", href: "#mn-settings-scope", "Scope" }
+                            a { class: "mn-settings-nav-item", href: "#mn-settings-appearance", "Appearance" }
+                            a { class: "mn-settings-nav-item", href: "#mn-settings-editor", "Editor" }
+                            a { class: "mn-settings-nav-item", href: "#mn-settings-saving", "Saving" }
+                            a { class: "mn-settings-nav-item", href: "#mn-settings-tags", "Tags" }
+                        }
+                        div { class: "mn-settings-content",
+                    SettingSection { section_id: "mn-settings-scope", label: "Scope",
                         SettingRow { label: "Save target",
                             SegmentedControl {
                                 label: "Settings save target",
@@ -140,7 +149,7 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
                             }
                         }
                     }
-                    SettingSection { label: "Appearance",
+                    SettingSection { section_id: "mn-settings-appearance", label: "Appearance",
                         SettingRow { label: "Theme",
                             SegmentedControl {
                                 label: "Theme",
@@ -155,7 +164,7 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
                             }
                         }
                     }
-                    SettingSection { label: "Editor",
+                    SettingSection { section_id: "mn-settings-editor", label: "Editor",
                         SettingRow { label: "Font family",
                             Dropdown {
                                 label: "Font family",
@@ -200,7 +209,7 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
                             }
                         }
                     }
-                    SettingSection { label: "Saving",
+                    SettingSection { section_id: "mn-settings-saving", label: "Saving",
                         SettingRow { label: "Auto-save delay ({auto_save_ms}ms)",
                             Slider {
                                 label: "Auto-save delay",
@@ -220,6 +229,8 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
                         tags: settings_workspace.tags.clone(),
                         has_workspace,
                         commands: tag_commands,
+                    }
+                        }
                     }
                 }
                 div { class: "mn-modal-footer",
@@ -242,9 +253,9 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
 }
 
 #[component]
-fn SettingSection(label: &'static str, children: Element) -> Element {
+fn SettingSection(section_id: &'static str, label: &'static str, children: Element) -> Element {
     rsx! {
-        div { class: "mn-setting-section",
+        div { id: "{section_id}", class: "mn-setting-section",
             h3 { class: "mn-setting-section-label", "{label}" }
             {children}
         }
@@ -274,7 +285,7 @@ fn TagManagementSection(
     let can_create = has_workspace && !cleaned_tag_name(&new_name_value).is_empty();
 
     rsx! {
-        SettingSection { label: "Tags",
+        SettingSection { section_id: "mn-settings-tags", label: "Tags",
             if has_workspace {
                 div { class: "mn-tag-manager",
                     div { class: "mn-tag-create-row",

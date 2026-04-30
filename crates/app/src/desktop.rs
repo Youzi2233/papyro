@@ -83,8 +83,8 @@ fn build_startup_chrome(
     favicon: &str,
     main_css: &str,
 ) -> DesktopStartupChrome {
-    let light_bg = (251, 246, 234, 255);
-    let dark_bg = (22, 19, 14, 255);
+    let light_bg = (243, 245, 248, 255);
+    let dark_bg = (15, 17, 23, 255);
 
     let (background_color, forced_theme_attr) = match settings.theme {
         Theme::Light => (light_bg, "light"),
@@ -103,10 +103,10 @@ fn build_startup_chrome(
     let custom_head = format!(
         r#"{theme_script}<link rel="icon" href="{favicon}">
 <style>
-html,body{{margin:0;padding:0;overflow:hidden;background:#fbf6ea;color:#25211a;
+html,body{{margin:0;padding:0;overflow:hidden;background:#f3f5f8;color:#111827;
 font-family:"SF Pro Text",-apple-system,BlinkMacSystemFont,"Segoe UI Variable","Segoe UI",system-ui,sans-serif;}}
-:root[data-theme="dark"] html,:root[data-theme="dark"] body{{background:#16130e;color:#f0e6d1;}}
-@media(prefers-color-scheme:dark){{:root:not([data-theme="light"]) html,:root:not([data-theme="light"]) body{{background:#16130e;color:#f0e6d1;}}}}
+:root[data-theme="dark"] html,:root[data-theme="dark"] body{{background:#0f1117;color:#f3f4f6;}}
+@media(prefers-color-scheme:dark){{:root:not([data-theme="light"]) html,:root:not([data-theme="light"]) body{{background:#0f1117;color:#f3f4f6;}}}}
 </style>
 <style>{main_css}</style>"#,
         favicon = favicon,
@@ -213,7 +213,7 @@ mod tests {
         let chrome =
             build_startup_chrome(&settings, "/favicon.ico", ".mn-shell { display: grid; }");
 
-        assert_eq!(chrome.background_color, (251, 246, 234, 255));
+        assert_eq!(chrome.background_color, (243, 245, 248, 255));
         assert!(chrome.custom_head.contains("data-theme','light'"));
         assert!(chrome.custom_head.contains(r#"href="/favicon.ico""#));
         assert!(chrome.custom_head.contains(".mn-shell"));
@@ -229,7 +229,7 @@ mod tests {
 
         let chrome = build_startup_chrome(&settings, "/favicon.ico", "");
 
-        assert_eq!(chrome.background_color, (22, 19, 14, 255));
+        assert_eq!(chrome.background_color, (15, 17, 23, 255));
         assert!(!chrome.custom_head.contains("setAttribute('data-theme'"));
         assert!(chrome.custom_head.contains("prefers-color-scheme:dark"));
     }

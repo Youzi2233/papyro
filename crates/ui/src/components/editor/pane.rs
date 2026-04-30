@@ -11,7 +11,7 @@ use crate::perf::{
     perf_timer, trace_editor_host_lifecycle, trace_editor_pane_render_prep,
     trace_editor_stale_bridge_cleanup,
 };
-use crate::view_model::{EditorHostItemViewModel, EditorSurfaceViewModel};
+use crate::view_model::{EditorHostItemViewModel, EditorSurfaceViewModel, EditorTabItemViewModel};
 use dioxus::prelude::*;
 use papyro_core::models::ViewMode;
 use papyro_core::DocumentSnapshot;
@@ -21,6 +21,68 @@ use papyro_editor::parser::{
 };
 use std::collections::HashMap;
 use std::sync::Arc;
+
+const TABBAR_WHEEL_BRIDGE_SCRIPT: &str = r#"
+    if (!window.__papyroTabbarWheelBridgeInstalled) {
+        window.__papyroTabbarWheelBridgeInstalled = true;
+        let syncQueued = false;
+        const syncTabbars = () => {
+            document.querySelectorAll(".mn-tabbar").forEach((tabbar) => {
+                const row = tabbar.closest(".mn-editor-tabs-row");
+                const overflowing = tabbar.scrollWidth > tabbar.clientWidth + 1;
+                tabbar.classList.toggle("overflowing", overflowing);
+                row?.classList.toggle("overflowing", overflowing);
+            });
+        };
+        const queueSync = () => {
+            if (syncQueued) return;
+            syncQueued = true;
+            requestAnimationFrame(() => {
+                syncQueued = false;
+                syncTabbars();
+            });
+        };
+        const resizeObserver = new ResizeObserver(queueSync);
+        const observeTabbars = () => {
+            document.querySelectorAll(".mn-editor-tabs-row, .mn-tabbar").forEach((element) => {
+                resizeObserver.observe(element);
+            });
+        };
+        const mutationObserver = new MutationObserver(() => {
+            observeTabbars();
+            queueSync();
+        });
+        const handler = (event) => {
+            const target = event.target;
+            const element = target instanceof Element ? target : target?.parentElement;
+            const tabbar = element?.closest(".mn-tabbar");
+            if (!tabbar || tabbar.scrollWidth <= tabbar.clientWidth + 1) return;
+
+            const deltaX = Number(event.deltaX || 0);
+            const deltaY = Number(event.deltaY || 0);
+            const delta = Math.abs(deltaX) > Math.abs(deltaY) ? deltaX : deltaY;
+            if (!delta) return;
+
+            const atStart = tabbar.scrollLeft <= 0;
+            const atEnd = tabbar.scrollLeft + tabbar.clientWidth >= tabbar.scrollWidth - 1;
+            if ((delta < 0 && atStart) || (delta > 0 && atEnd)) return;
+
+            event.preventDefault();
+            event.stopPropagation();
+            tabbar.scrollLeft += delta;
+        };
+        observeTabbars();
+        queueSync();
+        window.addEventListener("resize", queueSync);
+        mutationObserver.observe(document.body || document.documentElement, {
+            childList: true,
+            subtree: true,
+            characterData: true,
+        });
+        document.addEventListener("wheel", handler, { passive: false });
+    }
+    await new Promise(() => {});
+"#;
 
 #[derive(Debug, Clone, PartialEq)]
 struct EditorTypography {
@@ -50,8 +112,75 @@ fn editor_style(typography: &EditorTypography) -> String {
     )
 }
 
+fn editor_view_modes() -> Vec<ViewMode> {
+    vec![ViewMode::Source, ViewMode::Hybrid, ViewMode::Preview]
+}
+
+fn view_mode_label(mode: &ViewMode) -> &'static str {
+    match mode {
+        ViewMode::Source => "Source",
+        ViewMode::Hybrid => "Hybrid",
+        ViewMode::Preview => "Preview",
+    }
+}
+
+fn view_mode_option_class(current: &ViewMode, mode: &ViewMode) -> &'static str {
+    if current == mode {
+        "mn-view-mode-option active"
+    } else {
+        "mn-view-mode-option"
+    }
+}
+
+fn sidebar_toggle_label(collapsed: bool) -> &'static str {
+    if collapsed {
+        "Show sidebar (Ctrl+\\)"
+    } else {
+        "Hide sidebar (Ctrl+\\)"
+    }
+}
+
+fn sidebar_toggle_icon_class(collapsed: bool) -> &'static str {
+    if collapsed {
+        "mn-tool-icon sidebar-closed"
+    } else {
+        "mn-tool-icon sidebar-open"
+    }
+}
+
+fn outline_tool_class(visible: bool) -> &'static str {
+    if visible {
+        "mn-editor-tool icon-only active"
+    } else {
+        "mn-editor-tool icon-only"
+    }
+}
+
+fn scroll_editor_tabs(delta: i32) {
+    document::eval(&format!(
+        r#"document.querySelector(".mn-tabbar")?.scrollBy({{ left: {delta}, behavior: "smooth" }});"#
+    ));
+}
+
 #[component]
-pub fn EditorPane() -> Element {
+fn TabbarWheelBridge() -> Element {
+    use_effect(move || {
+        let mut eval = document::eval(TABBAR_WHEEL_BRIDGE_SCRIPT);
+        spawn(async move {
+            let _ = eval.recv::<String>().await;
+        });
+    });
+
+    rsx! {}
+}
+
+#[component]
+pub fn EditorPane(
+    on_settings: EventHandler<()>,
+    on_quick_open: EventHandler<()>,
+    on_command_palette: EventHandler<()>,
+) -> Element {
+    let _ = (on_settings, on_quick_open, on_command_palette);
     let perf_started_at = perf_timer();
     let app = use_app_context();
     let editor_services = app.editor_services;
@@ -60,8 +189,10 @@ pub fn EditorPane() -> Element {
     let workspace_model = app.workspace_model;
     let surface_model = app.editor_surface_model.read().clone();
     let view_mode = surface_model.view_mode.clone();
+    let sidebar_collapsed = (app.sidebar_collapsed)();
+    let workspace = workspace_model();
     let workspace_path = if view_mode == ViewMode::Preview {
-        workspace_model().path
+        workspace.path.clone()
     } else {
         None
     };
@@ -187,15 +318,16 @@ pub fn EditorPane() -> Element {
             PreviewLinkBridge {
                 commands: commands.clone(),
             }
+            TabbarWheelBridge {}
+            EditorChrome {
+                tab_items: pane.tab_items.clone(),
+                has_active_tab: pane.has_active_tab,
+                view_mode: view_mode.clone(),
+                outline_visible,
+                sidebar_collapsed,
+                commands: commands.clone(),
+            }
             if pane.has_active_tab {
-                div { class: "mn-tabbar",
-                    for item in pane.tab_items.iter().cloned() {
-                        EditorTabButton {
-                            key: "{item.id}",
-                            item,
-                        }
-                    }
-                }
                 section { class: "mn-document",
                     div { class: "mn-document-main",
                         div {
@@ -263,6 +395,106 @@ pub fn EditorPane() -> Element {
                             }
                         }
                     }
+                }
+            }
+        }
+    }
+}
+
+#[component]
+fn EditorChrome(
+    tab_items: Vec<EditorTabItemViewModel>,
+    has_active_tab: bool,
+    view_mode: ViewMode,
+    outline_visible: bool,
+    sidebar_collapsed: bool,
+    commands: AppCommands,
+) -> Element {
+    let sidebar_commands = commands.clone();
+    let outline_commands = commands.clone();
+    let mode_commands = commands.clone();
+    let sidebar_label = sidebar_toggle_label(sidebar_collapsed);
+    let sidebar_icon_class = sidebar_toggle_icon_class(sidebar_collapsed);
+    let outline_class = outline_tool_class(outline_visible);
+    let outline_label = if outline_visible {
+        "Hide outline"
+    } else {
+        "Show outline"
+    };
+
+    rsx! {
+        div { class: "mn-editor-chrome",
+            div { class: "mn-editor-tabs-row",
+                button {
+                    class: "mn-editor-tool mn-editor-sidebar-toggle icon-only",
+                    title: "{sidebar_label}",
+                    "aria-label": "{sidebar_label}",
+                    onclick: move |_| {
+                        crate::chrome::toggle_sidebar(sidebar_commands.clone(), "editor");
+                    },
+                    span { class: sidebar_icon_class, "aria-hidden": "true" }
+                }
+                button {
+                    class: "mn-tab-scroll-btn",
+                    title: "Scroll tabs left",
+                    "aria-label": "Scroll tabs left",
+                    onclick: move |_| scroll_editor_tabs(-220),
+                    span { class: "mn-tool-icon tab-left", "aria-hidden": "true" }
+                }
+                div { class: "mn-tabbar",
+                    if tab_items.is_empty() {
+                        span { class: "mn-tabbar-placeholder", "No open note" }
+                    } else {
+                        for item in tab_items.iter().cloned() {
+                            EditorTabButton {
+                                key: "{item.id}",
+                                item,
+                            }
+                        }
+                    }
+                }
+                button {
+                    class: "mn-tab-scroll-btn",
+                    title: "Scroll tabs right",
+                    "aria-label": "Scroll tabs right",
+                    onclick: move |_| scroll_editor_tabs(220),
+                    span { class: "mn-tool-icon tab-right", "aria-hidden": "true" }
+                }
+            }
+            div { class: "mn-editor-tools",
+                div {
+                    class: "mn-view-mode-switch",
+                    role: "radiogroup",
+                    "aria-label": "Editor view mode",
+                    for mode in editor_view_modes() {
+                        button {
+                            class: view_mode_option_class(&view_mode, &mode),
+                            r#type: "button",
+                            role: "radio",
+                            disabled: !has_active_tab,
+                            "aria-checked": if mode == view_mode { "true" } else { "false" },
+                            onclick: {
+                                let mode_commands = mode_commands.clone();
+                                let mode = mode.clone();
+                                move |_| {
+                                    crate::chrome::set_view_mode(
+                                        mode_commands.clone(),
+                                        mode.clone(),
+                                        "editor_chrome",
+                                    );
+                                }
+                            },
+                            "{view_mode_label(&mode)}"
+                        }
+                    }
+                }
+                button {
+                    class: outline_class,
+                    title: "{outline_label}",
+                    "aria-label": "{outline_label}",
+                    disabled: !has_active_tab,
+                    onclick: move |_| outline_commands.toggle_outline.call(()),
+                    span { class: "mn-tool-icon outline", "aria-hidden": "true" }
                 }
             }
         }
@@ -491,6 +723,38 @@ mod tests {
 
         assert!(editor_style(&typography).contains("--mn-editor-font-size: 18px"));
         assert!(!editor_style(&typography).contains("sidebar"));
+    }
+
+    #[test]
+    fn editor_chrome_view_mode_helpers_keep_visible_labels() {
+        assert_eq!(editor_view_modes().len(), 3);
+        assert_eq!(view_mode_label(&ViewMode::Source), "Source");
+        assert_eq!(view_mode_label(&ViewMode::Hybrid), "Hybrid");
+        assert_eq!(view_mode_label(&ViewMode::Preview), "Preview");
+        assert_eq!(
+            view_mode_option_class(&ViewMode::Hybrid, &ViewMode::Hybrid),
+            "mn-view-mode-option active"
+        );
+        assert_eq!(
+            view_mode_option_class(&ViewMode::Hybrid, &ViewMode::Source),
+            "mn-view-mode-option"
+        );
+    }
+
+    #[test]
+    fn editor_chrome_icon_helpers_reflect_panel_state() {
+        assert_eq!(sidebar_toggle_label(false), "Hide sidebar (Ctrl+\\)");
+        assert_eq!(sidebar_toggle_label(true), "Show sidebar (Ctrl+\\)");
+        assert_eq!(
+            sidebar_toggle_icon_class(false),
+            "mn-tool-icon sidebar-open"
+        );
+        assert_eq!(
+            sidebar_toggle_icon_class(true),
+            "mn-tool-icon sidebar-closed"
+        );
+        assert_eq!(outline_tool_class(false), "mn-editor-tool icon-only");
+        assert_eq!(outline_tool_class(true), "mn-editor-tool icon-only active");
     }
 
     #[test]
