@@ -62,8 +62,12 @@
 - 标题使用祈使句或结果导向短句，例如 `feat: render hybrid headings`。
 - 标题建议控制在 50 字符以内，最多 72 字符。不要为了极短而牺牲可读性。
 - `scope` 可选，只有能显著提升检索价值时才使用：`type(scope): summary`。
-- 提交正文统一使用英文，可详细说明背景、主要改动、影响范围、风险和验证结果。
-- 正文建议每行 72 字符左右，按主题拆成短段落或 bullet。
+- 提交正文统一使用英文，但正文是可选项。标题已能说明本意时，不要硬写正文。
+- 正文只写和本次 diff 直接对应的内容：为什么改、改了哪些代码事实、用户或模块行为如何变化、有什么风险或回滚点。
+- 正文每句话都应该能指向本次改动的文件、函数、样式或测试。不能对应到代码意图的句子必须删除。
+- 不要用正文堆砌泛泛描述、roadmap 口号、工具流程、检查命令清单或与主要修改无关的背景。
+- 验证命令优先写在 PR 描述或交付说明中。只有迁移、生成物同步、已知测试缺口或回归风险需要解释时，才在正文里写一行简短的 `Validation:`。
+- 正文建议每行 72 字符左右，最多 1-3 个短段落或 bullet。
 - 简单文档、注释或机械变更可以不写正文；涉及架构、协议、存储、数据安全或多模块协作时建议写正文。
 - 不把无关格式化、依赖升级、生成文件和功能改动混在同一提交。
 - 提交前确认源码、测试、文档和生成文件处于一致状态。
@@ -96,18 +100,13 @@ test: cover save retry flow
 正文示例：
 
 ```text
-feat: route editor view mode
+fix: preserve dirty save state
 
-- Add set_view_mode to the Rust/JS editor protocol so the runtime can
-  receive Source, Hybrid, and Preview changes without relying on UI-only
-  state.
+Keep SaveStatus::Dirty when storage rejects a write so the tab still
+prompts before close.
 
-- Store the normalized mode on the JS editor registry and DOM dataset.
-  Reused editor hosts now keep mode state consistent when tabs are
-  recycled or reattached.
-
-- Cover protocol serialization and JS mode normalization with tests, then
-  rebuild generated editor bundles so host assets stay synchronized.
+Refresh recent files only after a successful save to avoid presenting a
+failed path as clean.
 ```
 
 不推荐示例：
@@ -119,6 +118,16 @@ finish all refactors
 wip
 misc changes
 feat: add everything
+```
+
+不推荐正文示例：
+
+```text
+style: overhaul desktop workspace UI
+
+- Improve many UI files and keep existing architecture boundaries.
+- Update things according to roadmap and run all expected checks.
+- Make the app cleaner, safer, and more professional.
 ```
 
 ## PR 规范
