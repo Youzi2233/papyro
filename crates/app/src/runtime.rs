@@ -131,6 +131,8 @@ pub fn use_app_runtime(
             render_markdown_html: papyro_editor::renderer::render_markdown_html,
             render_markdown_html_with_highlighting:
                 papyro_editor::renderer::render_markdown_html_with_highlighting,
+            render_markdown_html_with_highlight_theme:
+                papyro_editor::renderer::render_markdown_html_with_highlight_theme,
         },
         workspace_model,
         sidebar_model,

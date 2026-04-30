@@ -10,6 +10,7 @@ use papyro_core::{
     models::{RecoveryDraft, RecoveryDraftComparison},
     EditorTabs, FileState, TabContentsMap, UiState, WorkspaceSearchState,
 };
+use papyro_editor::renderer::CodeHighlightTheme;
 use std::path::PathBuf;
 
 #[derive(Clone, Copy)]
@@ -17,6 +18,7 @@ pub struct EditorServices {
     pub summarize_markdown: fn(&str) -> DocumentStats,
     pub render_markdown_html: fn(&str) -> String,
     pub render_markdown_html_with_highlighting: fn(&str, bool) -> String,
+    pub render_markdown_html_with_highlight_theme: fn(&str, bool, CodeHighlightTheme) -> String,
 }
 
 impl EditorServices {
@@ -30,6 +32,15 @@ impl EditorServices {
 
     pub fn render_html_with_highlighting(self, markdown: &str, highlight_code: bool) -> String {
         (self.render_markdown_html_with_highlighting)(markdown, highlight_code)
+    }
+
+    pub fn render_html_with_highlight_theme(
+        self,
+        markdown: &str,
+        highlight_code: bool,
+        highlight_theme: CodeHighlightTheme,
+    ) -> String {
+        (self.render_markdown_html_with_highlight_theme)(markdown, highlight_code, highlight_theme)
     }
 }
 

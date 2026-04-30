@@ -13,12 +13,13 @@ use crate::perf::{
 };
 use crate::view_model::{EditorHostItemViewModel, EditorSurfaceViewModel, EditorTabItemViewModel};
 use dioxus::prelude::*;
-use papyro_core::models::ViewMode;
+use papyro_core::models::{Theme, ViewMode};
 use papyro_core::DocumentSnapshot;
 use papyro_editor::parser::{
     analyze_markdown_block_snapshot_with_options, MarkdownBlockAnalysisOptions,
     MarkdownBlockHintSet,
 };
+use papyro_editor::renderer::CodeHighlightTheme;
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -116,6 +117,13 @@ fn editor_view_modes() -> Vec<ViewMode> {
     vec![ViewMode::Source, ViewMode::Hybrid, ViewMode::Preview]
 }
 
+fn code_highlight_theme(theme: &Theme) -> CodeHighlightTheme {
+    match theme {
+        Theme::Dark => CodeHighlightTheme::Dark,
+        Theme::Light | Theme::System => CodeHighlightTheme::Light,
+    }
+}
+
 fn view_mode_label(mode: &ViewMode) -> &'static str {
     match mode {
         ViewMode::Source => "Source",
@@ -189,6 +197,11 @@ pub fn EditorPane(
     let workspace_model = app.workspace_model;
     let surface_model = app.editor_surface_model.read().clone();
     let view_mode = surface_model.view_mode.clone();
+    let highlight_theme = if view_mode == ViewMode::Preview {
+        code_highlight_theme(&(app.theme)())
+    } else {
+        CodeHighlightTheme::Light
+    };
     let sidebar_collapsed = (app.sidebar_collapsed)();
     let workspace = workspace_model();
     let workspace_path = if view_mode == ViewMode::Preview {
@@ -361,6 +374,7 @@ pub fn EditorPane(
                                 active_document: pane.active_document.clone(),
                                 workspace_path: workspace_path.clone(),
                                 editor_services,
+                                highlight_theme,
                             }
                         }
                         if outline_visible {

@@ -1,7 +1,7 @@
 #[cfg(test)]
 use super::document_cache::DocumentDerivedCacheState;
 use super::document_cache::{
-    CachedPreview, CachedPreviewStatus, DocumentCacheKey, DocumentDerivedCache,
+    CachedPreview, CachedPreviewStatus, DocumentCacheKey, DocumentDerivedCache, PreviewCacheKey,
 };
 use crate::commands::AppCommands;
 use crate::context::EditorServices;
@@ -9,6 +9,7 @@ use crate::perf::{perf_timer, trace_preview_render};
 use dioxus::prelude::*;
 use papyro_core::DocumentSnapshot;
 use papyro_editor::performance::PreviewPolicy;
+use papyro_editor::renderer::CodeHighlightTheme;
 use std::path::{Component, Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
@@ -50,6 +51,7 @@ pub(super) fn PreviewPane(
     active_document: Option<DocumentSnapshot>,
     workspace_path: Option<PathBuf>,
     editor_services: EditorServices,
+    highlight_theme: CodeHighlightTheme,
 ) -> Element {
     let document_cache = use_context::<DocumentDerivedCache>();
     let mut preview_state = use_signal(|| None::<PreviewRenderState>);
@@ -57,13 +59,14 @@ pub(super) fn PreviewPane(
     let services = editor_services;
 
     use_effect(use_reactive(
-        (&active_document, &workspace_path),
-        move |(document, workspace_path)| {
+        (&active_document, &workspace_path, &highlight_theme),
+        move |(document, workspace_path, highlight_theme)| {
             let Some(document) = document else {
                 preview_state.set(None);
                 return;
             };
-            let key = DocumentCacheKey::from_snapshot(&document);
+            let document_key = DocumentCacheKey::from_snapshot(&document);
+            let key = PreviewCacheKey::new(document_key, highlight_theme);
 
             if let Some(preview) = effect_cache.borrow().preview(&key) {
                 preview_state.set(Some(PreviewRenderState {
@@ -78,6 +81,7 @@ pub(super) fn PreviewPane(
                 &document,
                 workspace_path.clone(),
                 services,
+                highlight_theme,
             );
             preview_state.set(Some(PreviewRenderState {
                 key: Some(key.clone()),
@@ -104,7 +108,8 @@ pub(super) fn PreviewPane(
 
     let key = active_document
         .as_ref()
-        .map(DocumentCacheKey::from_snapshot);
+        .map(DocumentCacheKey::from_snapshot)
+        .map(|key| PreviewCacheKey::new(key, highlight_theme));
     let rendered_preview = resolve_preview(
         &document_cache,
         key.as_ref(),
@@ -196,26 +201,28 @@ fn attach_preview_scroll_script(tab_id: &str, revision: u64) -> String {
 
 #[derive(Debug, Clone, PartialEq)]
 struct PreviewRenderState {
-    key: Option<DocumentCacheKey>,
+    key: Option<PreviewCacheKey>,
     preview: CachedPreview,
 }
 
 struct PreviewRenderInput {
-    key: DocumentCacheKey,
+    key: PreviewCacheKey,
     tab_id: String,
     revision: u64,
     content: Arc<str>,
     note_path: PathBuf,
     workspace_path: Option<PathBuf>,
-    render_html_with_highlighting: fn(&str, bool) -> String,
+    highlight_theme: CodeHighlightTheme,
+    render_html_with_highlight_theme: fn(&str, bool, CodeHighlightTheme) -> String,
 }
 
 impl PreviewRenderInput {
     fn from_document(
-        key: DocumentCacheKey,
+        key: PreviewCacheKey,
         document: &DocumentSnapshot,
         workspace_path: Option<PathBuf>,
         editor_services: EditorServices,
+        highlight_theme: CodeHighlightTheme,
     ) -> Self {
         Self {
             key,
@@ -224,7 +231,9 @@ impl PreviewRenderInput {
             content: document.content.clone(),
             note_path: document.path.clone(),
             workspace_path,
-            render_html_with_highlighting: editor_services.render_markdown_html_with_highlighting,
+            highlight_theme,
+            render_html_with_highlight_theme: editor_services
+                .render_markdown_html_with_highlight_theme,
         }
     }
 }
@@ -241,7 +250,8 @@ async fn render_preview_async(input: PreviewRenderInput) -> PreviewRenderState {
                 input.content.as_ref(),
                 input.note_path.as_path(),
                 input.workspace_path.as_deref(),
-                input.render_html_with_highlighting,
+                input.highlight_theme,
+                input.render_html_with_highlight_theme,
             )
         }),
     )
@@ -271,7 +281,7 @@ async fn render_preview_async(input: PreviewRenderInput) -> PreviewRenderState {
 
 fn resolve_preview(
     document_cache: &DocumentDerivedCache,
-    key: Option<&DocumentCacheKey>,
+    key: Option<&PreviewCacheKey>,
     state: Option<&PreviewRenderState>,
     document: Option<&DocumentSnapshot>,
 ) -> CachedPreview {
@@ -292,7 +302,8 @@ fn render_preview_for_content(
     content: &str,
     note_path: &Path,
     workspace_path: Option<&Path>,
-    render_html_with_highlighting: fn(&str, bool) -> String,
+    highlight_theme: CodeHighlightTheme,
+    render_html_with_highlight_theme: fn(&str, bool, CodeHighlightTheme) -> String,
 ) -> CachedPreview {
     let started_at = perf_timer();
     let policy = PreviewPolicy::for_len(content.len());
@@ -302,7 +313,8 @@ fn render_preview_for_content(
             policy.code_highlighting_enabled,
             note_path,
             workspace_path,
-            render_html_with_highlighting,
+            highlight_theme,
+            render_html_with_highlight_theme,
         )
     } else {
         String::new()
@@ -329,16 +341,18 @@ fn render_preview_html(
     highlight_code: bool,
     note_path: &Path,
     workspace_path: Option<&Path>,
-    render_html_with_highlighting: fn(&str, bool) -> String,
+    highlight_theme: CodeHighlightTheme,
+    render_html_with_highlight_theme: fn(&str, bool, CodeHighlightTheme) -> String,
 ) -> String {
     let Some(workspace_path) = workspace_path else {
-        return render_html_with_highlighting(content, highlight_code);
+        return render_html_with_highlight_theme(content, highlight_code, highlight_theme);
     };
 
-    papyro_editor::renderer::render_markdown_html_with_image_resolver(
+    papyro_editor::renderer::render_markdown_html_with_image_resolver_and_highlight_theme(
         content,
         highlight_code,
         Some(&|url| local_preview_image_url(url, workspace_path, note_path)),
+        highlight_theme,
     )
 }
 
@@ -468,7 +482,7 @@ fn preview_notice(preview: &CachedPreview) -> Option<&'static str> {
 
 fn preview_result_matches_current(
     state: Option<&PreviewRenderState>,
-    key: &DocumentCacheKey,
+    key: &PreviewCacheKey,
 ) -> bool {
     state.and_then(|state| state.key.as_ref()) == Some(key)
 }
@@ -487,13 +501,17 @@ mod tests {
         }
     }
 
+    fn preview_key(document: &DocumentSnapshot, theme: CodeHighlightTheme) -> PreviewCacheKey {
+        PreviewCacheKey::new(DocumentCacheKey::from_snapshot(document), theme)
+    }
+
     #[test]
     fn resolve_preview_ignores_stale_render_state() {
         let document_cache = DocumentDerivedCacheState::shared();
         let document = snapshot("a", 1, "# Current");
         let stale_document = snapshot("a", 0, "# Old");
-        let key = DocumentCacheKey::from_snapshot(&document);
-        let stale_key = DocumentCacheKey::from_snapshot(&stale_document);
+        let key = preview_key(&document, CodeHighlightTheme::Light);
+        let stale_key = preview_key(&stale_document, CodeHighlightTheme::Light);
         let state = PreviewRenderState {
             key: Some(stale_key),
             preview: CachedPreview {
@@ -513,7 +531,7 @@ mod tests {
     fn resolve_preview_prefers_cached_document_match() {
         let document_cache = DocumentDerivedCacheState::shared();
         let document = snapshot("a", 1, "# Current");
-        let key = DocumentCacheKey::from_snapshot(&document);
+        let key = preview_key(&document, CodeHighlightTheme::Light);
         document_cache.borrow_mut().insert_preview(
             key.clone(),
             CachedPreview {
@@ -532,8 +550,8 @@ mod tests {
     fn preview_result_matching_rejects_stale_completed_work() {
         let current_document = snapshot("a", 2, "# Current");
         let stale_document = snapshot("a", 1, "# Old");
-        let current_key = DocumentCacheKey::from_snapshot(&current_document);
-        let stale_key = DocumentCacheKey::from_snapshot(&stale_document);
+        let current_key = preview_key(&current_document, CodeHighlightTheme::Light);
+        let stale_key = preview_key(&stale_document, CodeHighlightTheme::Light);
         let state = PreviewRenderState {
             key: Some(current_key.clone()),
             preview: preview_pending(&current_document),
@@ -545,15 +563,35 @@ mod tests {
 
     #[test]
     fn render_preview_for_content_renders_html() {
-        fn render(markdown: &str, highlight_code: bool) -> String {
-            format!("<p>{markdown}:{highlight_code}</p>")
+        fn render(
+            markdown: &str,
+            highlight_code: bool,
+            highlight_theme: CodeHighlightTheme,
+        ) -> String {
+            format!("<p>{markdown}:{highlight_code}:{highlight_theme:?}</p>")
         }
 
-        let preview =
-            render_preview_for_content("a", 1, "hello", Path::new("note.md"), None, render);
+        let preview = render_preview_for_content(
+            "a",
+            1,
+            "hello",
+            Path::new("note.md"),
+            None,
+            CodeHighlightTheme::Dark,
+            render,
+        );
 
-        assert_eq!(preview.html, "<p>hello:true</p>");
+        assert_eq!(preview.html, "<p>hello:true:Dark</p>");
         assert_eq!(preview.status, CachedPreviewStatus::Ready);
+    }
+
+    #[test]
+    fn preview_cache_key_tracks_highlight_theme() {
+        let document = snapshot("a", 1, "# Current");
+        let light = preview_key(&document, CodeHighlightTheme::Light);
+        let dark = preview_key(&document, CodeHighlightTheme::Dark);
+
+        assert_ne!(light, dark);
     }
 
     #[test]
@@ -577,7 +615,11 @@ mod tests {
 
     #[test]
     fn render_preview_for_content_rewrites_local_image_sources() {
-        fn render(markdown: &str, _highlight_code: bool) -> String {
+        fn render(
+            markdown: &str,
+            _highlight_code: bool,
+            _highlight_theme: CodeHighlightTheme,
+        ) -> String {
             format!("<p>{markdown}</p>")
         }
 
@@ -589,6 +631,7 @@ mod tests {
             "![image](../assets/pasted.png)",
             &note_path,
             Some(workspace.as_path()),
+            CodeHighlightTheme::Light,
             render,
         );
 

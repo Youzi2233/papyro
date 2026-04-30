@@ -256,20 +256,28 @@ const editorTheme = EditorView.theme({
     backgroundColor: "var(--mn-markdown-quote-bg, transparent)",
     color: "var(--mn-markdown-quote-color, var(--mn-ink-2))",
     paddingLeft: "var(--mn-markdown-quote-pad-x, 1.1em)",
+    paddingTop: "var(--mn-markdown-quote-pad-y, .48em)",
+    paddingBottom: "var(--mn-markdown-quote-pad-y, .48em)",
   },
   ".cm-line.cm-hybrid-code-block-line": {
     backgroundColor: "var(--mn-markdown-code-block-bg, var(--mn-surface-sunken, rgba(178,75,47,.08)))",
     color: "var(--mn-ink)",
+    borderLeft: "var(--mn-border-subtle, 1px solid var(--mn-divider))",
+    borderRight: "var(--mn-border-subtle, 1px solid var(--mn-divider))",
     fontFamily: 'var(--mn-markdown-mono-font, var(--mn-editor-font, "Cascadia Code", monospace))',
+    fontSize: "var(--mn-markdown-code-block-size, 13.5px)",
+    lineHeight: "var(--mn-markdown-code-block-line, 1.65)",
     paddingLeft: "var(--mn-markdown-code-block-pad-x, 22px)",
     paddingRight: "var(--mn-markdown-code-block-pad-x, 22px)",
   },
   ".cm-line.cm-hybrid-code-block-start": {
+    borderTop: "var(--mn-border-subtle, 1px solid var(--mn-divider))",
     borderTopLeftRadius: "var(--mn-markdown-code-radius, 6px)",
     borderTopRightRadius: "var(--mn-markdown-code-radius, 6px)",
     paddingTop: "var(--mn-markdown-code-block-pad-y, 18px)",
   },
   ".cm-line.cm-hybrid-code-block-end": {
+    borderBottom: "var(--mn-border-subtle, 1px solid var(--mn-divider))",
     borderBottomLeftRadius: "var(--mn-markdown-code-radius, 6px)",
     borderBottomRightRadius: "var(--mn-markdown-code-radius, 6px)",
     paddingBottom: "var(--mn-markdown-code-block-pad-y, 18px)",
@@ -321,8 +329,17 @@ const editorTheme = EditorView.theme({
     paddingBottom: "var(--mn-markdown-table-line-pad-y, .55em)",
   },
   ".cm-hybrid-code-info": {
+    display: "inline-flex",
+    width: "fit-content",
+    border: "var(--mn-border-subtle, 1px solid var(--mn-divider))",
+    borderRadius: "var(--mn-radius-xs, 5px)",
+    backgroundColor: "var(--mn-surface, #fff)",
     color: "var(--mn-ink-3)",
     fontSize: ".78em",
+    fontWeight: "var(--mn-weight-bold, 700)",
+    lineHeight: "1.6",
+    marginBottom: ".35em",
+    padding: "0 .55em",
     textTransform: "uppercase",
   },
   ".cm-hybrid-heading": {
@@ -379,20 +396,24 @@ const editorTheme = EditorView.theme({
     display: "block",
     width: "100%",
     boxSizing: "border-box",
-    margin: "0.75em 0",
+    margin: "var(--mn-markdown-block-gap, .95em) 0",
     padding: "var(--mn-markdown-code-block-pad-y, 18px) var(--mn-markdown-code-block-pad-x, 22px)",
-    border: "var(--mn-border-default, 1px solid var(--mn-border))",
+    border: "var(--mn-border-subtle, 1px solid var(--mn-divider))",
     borderRadius: "var(--mn-markdown-code-radius, 6px)",
     backgroundColor: "var(--mn-markdown-code-block-bg, var(--mn-surface-sunken, #fbf6ea))",
     color: "var(--mn-ink)",
     overflowX: "auto",
     textAlign: "center",
   },
+  ".cm-hybrid-math-block:focus-visible, .cm-hybrid-image-preview:focus-visible": {
+    outline: "2px solid var(--mn-accent)",
+    outlineOffset: "2px",
+  },
   ".cm-hybrid-math-block math": {
     fontSize: "1.15em",
   },
   ".cm-hybrid-math-block-error": {
-    color: "var(--mn-accent-strong)",
+    color: "var(--mn-danger, var(--mn-accent-strong))",
     fontFamily: 'var(--mn-markdown-mono-font, var(--mn-editor-font, "Cascadia Code", monospace))',
     textAlign: "left",
     whiteSpace: "pre-wrap",
@@ -723,6 +744,9 @@ class ImagePreviewWidget extends WidgetType {
   toDOM() {
     const wrapper = document.createElement("span");
     wrapper.className = "cm-hybrid-image-preview";
+    wrapper.tabIndex = 0;
+    wrapper.setAttribute("role", "img");
+    wrapper.setAttribute("aria-label", this.alt || "Image preview");
 
     const image = document.createElement("img");
     image.src = this.src;
@@ -908,7 +932,7 @@ class CodeFenceWidget extends WidgetType {
   toDOM() {
     const label = document.createElement("span");
     label.className = "cm-hybrid-code-info";
-    label.textContent = this.info;
+    label.textContent = this.info || "code";
     return label;
   }
 }
@@ -926,6 +950,8 @@ class MathBlockWidget extends WidgetType {
   toDOM() {
     const wrapper = document.createElement("span");
     wrapper.className = "cm-hybrid-math-block";
+    wrapper.tabIndex = 0;
+    wrapper.title = "Math block";
 
     if (!renderKatexMath(wrapper, this.source, true)) {
       wrapper.classList.add("cm-hybrid-math-block-error");
@@ -953,12 +979,14 @@ function addCodeBlockDecorations(decorations, line, block, tier) {
   ].filter(Boolean).join(" ");
 
   decorations.push(Decoration.line({ class: classes }).range(line.from));
-  if (level === "full" && (isStart || isEnd)) {
+  if (level === "full" && isStart) {
     decorations.push(
       Decoration.replace({
         widget: new CodeFenceWidget(isStart ? block.info : ""),
       }).range(line.from, line.to),
     );
+  } else if (level === "full" && isEnd) {
+    decorations.push(Decoration.replace({}).range(line.from, line.to));
   }
 }
 

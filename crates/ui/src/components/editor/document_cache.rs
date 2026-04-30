@@ -1,8 +1,10 @@
 use papyro_core::DocumentSnapshot;
 use papyro_editor::parser::{MarkdownBlockHintSet, OutlineItem};
 use papyro_editor::performance::PreviewPolicy;
+use papyro_editor::renderer::CodeHighlightTheme;
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::hash::Hash;
 use std::rc::Rc;
 
 const MAX_CACHE_ENTRIES: usize = 24;
@@ -11,7 +13,7 @@ pub(super) type DocumentDerivedCache = Rc<RefCell<DocumentDerivedCacheState>>;
 
 #[derive(Default)]
 pub(super) struct DocumentDerivedCacheState {
-    previews: HashMap<DocumentCacheKey, CachedPreview>,
+    previews: HashMap<PreviewCacheKey, CachedPreview>,
     outlines: HashMap<DocumentCacheKey, Vec<OutlineItem>>,
     block_hints: HashMap<DocumentCacheKey, MarkdownBlockHintSet>,
 }
@@ -20,6 +22,12 @@ pub(super) struct DocumentDerivedCacheState {
 pub(super) struct DocumentCacheKey {
     tab_id: String,
     revision: u64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub(super) struct PreviewCacheKey {
+    document: DocumentCacheKey,
+    highlight_theme: CodeHighlightTheme,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -41,11 +49,11 @@ impl DocumentDerivedCacheState {
         Rc::new(RefCell::new(Self::default()))
     }
 
-    pub(super) fn preview(&self, key: &DocumentCacheKey) -> Option<CachedPreview> {
+    pub(super) fn preview(&self, key: &PreviewCacheKey) -> Option<CachedPreview> {
         self.previews.get(key).cloned()
     }
 
-    pub(super) fn insert_preview(&mut self, key: DocumentCacheKey, preview: CachedPreview) {
+    pub(super) fn insert_preview(&mut self, key: PreviewCacheKey, preview: CachedPreview) {
         insert_bounded(&mut self.previews, key, preview);
     }
 
@@ -79,7 +87,19 @@ impl DocumentCacheKey {
     }
 }
 
-fn insert_bounded<T>(map: &mut HashMap<DocumentCacheKey, T>, key: DocumentCacheKey, value: T) {
+impl PreviewCacheKey {
+    pub(super) fn new(document: DocumentCacheKey, highlight_theme: CodeHighlightTheme) -> Self {
+        Self {
+            document,
+            highlight_theme,
+        }
+    }
+}
+
+fn insert_bounded<K, T>(map: &mut HashMap<K, T>, key: K, value: T)
+where
+    K: Clone + Eq + Hash,
+{
     if !map.contains_key(&key) && map.len() >= MAX_CACHE_ENTRIES {
         if let Some(old_key) = map.keys().next().cloned() {
             map.remove(&old_key);

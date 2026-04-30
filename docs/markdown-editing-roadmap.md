@@ -13,7 +13,7 @@
 ## 总体进度
 
 - [x] M0：基线和验收夹具
-- [ ] M1：Markdown 样式与 Preview 质量
+- [x] M1：Markdown 样式与 Preview 质量
 - [ ] M2：可编辑语义 Block Model
 - [ ] M3：Heading 和 Inline Typora-like 编辑
 - [ ] M4：列表、任务、引用和代码块
@@ -136,15 +136,15 @@ Preview CSS 和 Hybrid decoration/widget 应共享语义 class 或 token：
 
 任务：
 
-- [ ] 调整 Preview heading、paragraph、list、blockquote、table、code block 的 spacing 和字号层级。
-- [ ] 将 Hybrid heading/list/table/code decoration 的视觉参数对齐 Preview token。
-- [ ] 为代码高亮建立亮暗主题映射，替换单一 `InspiredGitHub` 依赖。
-- [ ] 为 Mermaid/math/code/image 增加统一 block chrome：语言标签、错误态、点击态、focus ring。
+- [x] 调整 Preview heading、paragraph、list、blockquote、table、code block 的 spacing 和字号层级。
+- [x] 将 Hybrid heading/list/table/code decoration 的视觉参数对齐 Preview token。
+- [x] 为代码高亮建立亮暗主题映射，替换单一 `InspiredGitHub` 依赖。
+- [x] 为 Mermaid/math/code/image 增加统一 block chrome：语言标签、错误态、点击态、focus ring。
 
 验收清单：
 
-- [ ] Hybrid 与 Preview 对同一 Markdown 的标题、列表、引用、表格、代码块视觉节奏一致。
-- [ ] `node scripts/check-ui-contrast.js` 和 `node scripts/report-file-lines.js` 通过。
+- [x] Hybrid 与 Preview 对同一 Markdown 的标题、列表、引用、表格、代码块视觉节奏一致。
+- [x] `node scripts/check-ui-contrast.js` 和 `node scripts/report-file-lines.js` 通过。
 
 ### M2：可编辑语义 Block Model
 
@@ -259,7 +259,7 @@ Preview CSS 和 Hybrid decoration/widget 应共享语义 class 或 token：
 
 - [ ] `docs: add markdown editing roadmap`
 - [ ] `test: add hybrid markdown fixtures`
-- [ ] `style: align markdown preview typography`
+- [x] `style: align markdown preview typography`
 - [ ] `refactor: extend markdown block hints`
 - [ ] `feat: render editable hybrid headings`
 - [ ] `feat: improve hybrid list editing`

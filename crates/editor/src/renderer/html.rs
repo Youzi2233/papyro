@@ -10,6 +10,32 @@ thread_local! {
 
 type ImageUrlResolver<'a> = &'a dyn Fn(&str) -> Option<String>;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum CodeHighlightTheme {
+    Light,
+    Dark,
+}
+
+impl CodeHighlightTheme {
+    fn name(self) -> &'static str {
+        match self {
+            Self::Light => "light",
+            Self::Dark => "dark",
+        }
+    }
+
+    fn candidates(self) -> &'static [&'static str] {
+        match self {
+            Self::Light => &["base16-ocean.light", "InspiredGitHub", "Solarized (light)"],
+            Self::Dark => &[
+                "base16-ocean.dark",
+                "base16-eighties.dark",
+                "Solarized (dark)",
+            ],
+        }
+    }
+}
+
 pub fn render_markdown_html(markdown: &str) -> String {
     render_markdown_html_with_highlighting(
         markdown,
@@ -18,13 +44,40 @@ pub fn render_markdown_html(markdown: &str) -> String {
 }
 
 pub fn render_markdown_html_with_highlighting(markdown: &str, highlight_code: bool) -> String {
-    render_markdown_html_with_image_resolver(markdown, highlight_code, None)
+    render_markdown_html_with_highlight_theme(markdown, highlight_code, CodeHighlightTheme::Light)
+}
+
+pub fn render_markdown_html_with_highlight_theme(
+    markdown: &str,
+    highlight_code: bool,
+    highlight_theme: CodeHighlightTheme,
+) -> String {
+    render_markdown_html_with_image_resolver_and_highlight_theme(
+        markdown,
+        highlight_code,
+        None,
+        highlight_theme,
+    )
 }
 
 pub fn render_markdown_html_with_image_resolver(
     markdown: &str,
     highlight_code: bool,
     image_url_resolver: Option<ImageUrlResolver<'_>>,
+) -> String {
+    render_markdown_html_with_image_resolver_and_highlight_theme(
+        markdown,
+        highlight_code,
+        image_url_resolver,
+        CodeHighlightTheme::Light,
+    )
+}
+
+pub fn render_markdown_html_with_image_resolver_and_highlight_theme(
+    markdown: &str,
+    highlight_code: bool,
+    image_url_resolver: Option<ImageUrlResolver<'_>>,
+    highlight_theme: CodeHighlightTheme,
 ) -> String {
     let mut options = Options::empty();
     options.insert(Options::ENABLE_TABLES);
@@ -35,7 +88,7 @@ pub fn render_markdown_html_with_image_resolver(
     let parser = Parser::new_ext(markdown, options);
     let sanitized = sanitize_events(parser, image_url_resolver);
     let highlighted = if highlight_code {
-        highlight_code_blocks(sanitized)
+        highlight_code_blocks(sanitized, highlight_theme)
     } else {
         sanitized
     };
@@ -83,7 +136,10 @@ fn sanitize_events<'a>(
     sanitized
 }
 
-fn highlight_code_blocks<'a>(input_events: impl IntoIterator<Item = Event<'a>>) -> Vec<Event<'a>> {
+fn highlight_code_blocks<'a>(
+    input_events: impl IntoIterator<Item = Event<'a>>,
+    highlight_theme: CodeHighlightTheme,
+) -> Vec<Event<'a>> {
     let mut highlighted_events = Vec::new();
     let mut code_buf = String::new();
     let mut in_code_block = false;
@@ -101,7 +157,7 @@ fn highlight_code_blocks<'a>(input_events: impl IntoIterator<Item = Event<'a>>) 
             }
             Event::End(TagEnd::CodeBlock) => {
                 in_code_block = false;
-                let html = render_code_block(&code_buf, current_lang.as_deref());
+                let html = render_code_block(&code_buf, current_lang.as_deref(), highlight_theme);
                 highlighted_events.push(Event::Html(html.into()));
                 current_lang = None;
                 code_buf.clear();
@@ -116,7 +172,11 @@ fn highlight_code_blocks<'a>(input_events: impl IntoIterator<Item = Event<'a>>) 
     highlighted_events
 }
 
-fn render_code_block(code: &str, lang: Option<&str>) -> String {
+fn render_code_block(
+    code: &str,
+    lang: Option<&str>,
+    highlight_theme: CodeHighlightTheme,
+) -> String {
     if let Some(lang) = lang {
         let highlighted = SYNTAX_SET.with(|ss| {
             THEME_SET.with(|ts| {
@@ -125,9 +185,10 @@ fn render_code_block(code: &str, lang: Option<&str>) -> String {
                     .or_else(|| ss.find_syntax_by_name(lang))
                     .unwrap_or_else(|| ss.find_syntax_plain_text());
 
-                let theme = ts
-                    .themes
-                    .get("InspiredGitHub")
+                let theme = highlight_theme
+                    .candidates()
+                    .iter()
+                    .find_map(|name| ts.themes.get(*name))
                     .or_else(|| ts.themes.values().next());
 
                 theme.and_then(|t| highlighted_html_for_string(code, ss, syntax, t).ok())
@@ -136,7 +197,10 @@ fn render_code_block(code: &str, lang: Option<&str>) -> String {
 
         if let Some(html) = highlighted {
             let lang = html_attr_escape(lang);
-            return format!(r#"<div class="mn-code-block" data-lang="{lang}">{html}</div>"#);
+            let highlight_theme = highlight_theme.name();
+            return format!(
+                r#"<div class="mn-code-block" data-lang="{lang}" data-highlight-theme="{highlight_theme}">{html}</div>"#
+            );
         }
     }
 
@@ -260,5 +324,23 @@ mod tests {
 
         assert!(!html.contains("onclick="));
         assert!(html.contains("rust&quot;"));
+    }
+
+    #[test]
+    fn render_markdown_html_marks_code_highlight_theme() {
+        let light = render_markdown_html_with_highlight_theme(
+            "```rust\nfn main() {}\n```",
+            true,
+            CodeHighlightTheme::Light,
+        );
+        let dark = render_markdown_html_with_highlight_theme(
+            "```rust\nfn main() {}\n```",
+            true,
+            CodeHighlightTheme::Dark,
+        );
+
+        assert!(light.contains(r#"class="mn-code-block""#));
+        assert!(light.contains(r#"data-highlight-theme="light""#));
+        assert!(dark.contains(r#"data-highlight-theme="dark""#));
     }
 }
