@@ -553,6 +553,38 @@ small {
     color: var(--mn-muted);
 }
 
+.mn-mermaid-block {
+    margin: 0 0 16px;
+    padding: 14px;
+    border: 1px solid var(--mn-border);
+    border-radius: 12px;
+    background: rgba(25, 26, 23, 0.035);
+    color: var(--mn-text);
+    overflow-x: auto;
+}
+
+.mn-mermaid-svg {
+    display: flex;
+    justify-content: center;
+    min-width: max-content;
+}
+
+.mn-mermaid-svg svg {
+    max-width: 100%;
+    height: auto;
+}
+
+.mn-mermaid-status {
+    display: grid;
+    gap: 8px;
+    color: var(--mn-muted);
+    font-size: 12px;
+}
+
+.mn-mermaid-status-error { color: var(--mn-accent-dark); }
+.mn-mermaid-label { font-weight: 700; }
+.mn-mermaid-source { margin: 0; white-space: pre-wrap; }
+
 .mn-editor-retired-hosts {
     position: fixed;
     left: -10000px;

@@ -251,17 +251,17 @@ Preview CSS 和 Hybrid decoration/widget 应共享语义 class 或 token：
 
 任务：
 
-- [ ] Mermaid fenced code block rendered state 调用安全渲染路径，带 timeout 和错误态。
-- [ ] 点击 Mermaid 图进入源码编辑；失焦或按确认后重新渲染。
-- [ ] 数学块复用同样状态机，避免当前 widget 和源码切换逻辑分裂。
+- [x] Mermaid fenced code block rendered state 调用安全渲染路径，带 timeout 和错误态。
+- [x] 点击 Mermaid 图进入源码编辑；失焦或按确认后重新渲染。
+- [x] 数学块复用同样状态机，避免当前 widget 和源码切换逻辑分裂。
 - [ ] 图片 block 支持 rendered preview、alt/title/source 编辑入口。
 - [ ] 远程资源或不安全 URL 沿用 Preview sanitization 原则。
 
 验收清单：
 
-- [ ] Mermaid 源码修改后能重新渲染。
-- [ ] 渲染失败显示错误态，不丢失源码。
-- [ ] 点击块外能回到 rendered state。
+- [x] Mermaid 源码修改后能重新渲染。
+- [x] 渲染失败显示错误态，不丢失源码。
+- [x] 点击块外能回到 rendered state。
 
 ### M7：性能、质量门禁和文档收敛
 

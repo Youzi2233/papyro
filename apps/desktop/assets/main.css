@@ -1759,10 +1759,7 @@ button { border: 0; cursor: pointer; background: transparent; }
 }
 .mn-preview .mn-code-block > pre { margin: 0; }
 
-.mn-code-block {
-    position: relative;
-    margin: 0 0 var(--mn-markdown-block-gap);
-}
+.mn-code-block { position: relative; margin: 0 0 var(--mn-markdown-block-gap); }
 
 .mn-code-block[data-lang]::before {
     content: attr(data-lang);
@@ -1777,6 +1774,11 @@ button { border: 0; cursor: pointer; background: transparent; }
     letter-spacing: var(--mn-letter-normal);
     pointer-events: none;
 }
+
+.mn-mermaid-block { box-sizing: border-box; margin: 0 0 var(--mn-markdown-block-gap); padding: var(--mn-markdown-code-block-pad-y) var(--mn-markdown-code-block-pad-x); border: var(--mn-border-subtle); border-radius: var(--mn-markdown-code-radius); background: var(--mn-markdown-code-block-bg); color: var(--mn-ink); overflow-x: auto; }
+.mn-mermaid-svg { display: flex; justify-content: center; min-width: max-content; } .mn-mermaid-svg svg { max-width: 100%; height: auto; }
+.mn-mermaid-status { display: grid; gap: 10px; color: var(--mn-ink-3); font-family: var(--mn-font-ui); font-size: var(--mn-type-small); } .mn-mermaid-status-error { color: var(--mn-accent-strong); } .mn-mermaid-label { font-weight: var(--mn-weight-bold); }
+.mn-mermaid-source { margin: 0; white-space: pre-wrap; font-family: var(--mn-markdown-mono-font); font-size: var(--mn-markdown-code-block-size); line-height: var(--mn-markdown-code-block-line); color: var(--mn-ink-2); }
 
 /* preview: tables */
 .mn-preview table {

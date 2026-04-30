@@ -87,11 +87,7 @@ pub fn render_markdown_html_with_image_resolver_and_highlight_theme(
 
     let parser = Parser::new_ext(markdown, options);
     let sanitized = sanitize_events(parser, image_url_resolver);
-    let highlighted = if highlight_code {
-        highlight_code_blocks(sanitized, highlight_theme)
-    } else {
-        sanitized
-    };
+    let highlighted = render_code_blocks(sanitized, highlight_code, highlight_theme);
 
     let mut output = String::new();
     html::push_html(&mut output, highlighted.into_iter());
@@ -136,8 +132,9 @@ fn sanitize_events<'a>(
     sanitized
 }
 
-fn highlight_code_blocks<'a>(
+fn render_code_blocks<'a>(
     input_events: impl IntoIterator<Item = Event<'a>>,
+    highlight_code: bool,
     highlight_theme: CodeHighlightTheme,
 ) -> Vec<Event<'a>> {
     let mut highlighted_events = Vec::new();
@@ -157,7 +154,12 @@ fn highlight_code_blocks<'a>(
             }
             Event::End(TagEnd::CodeBlock) => {
                 in_code_block = false;
-                let html = render_code_block(&code_buf, current_lang.as_deref(), highlight_theme);
+                let html = render_code_block(
+                    &code_buf,
+                    current_lang.as_deref(),
+                    highlight_code,
+                    highlight_theme,
+                );
                 highlighted_events.push(Event::Html(html.into()));
                 current_lang = None;
                 code_buf.clear();
@@ -175,32 +177,40 @@ fn highlight_code_blocks<'a>(
 fn render_code_block(
     code: &str,
     lang: Option<&str>,
+    highlight_code: bool,
     highlight_theme: CodeHighlightTheme,
 ) -> String {
+    let lang = lang.and_then(code_language_token);
+    if is_mermaid_language(lang) {
+        return render_mermaid_block(code);
+    }
+
     if let Some(lang) = lang {
-        let highlighted = SYNTAX_SET.with(|ss| {
-            THEME_SET.with(|ts| {
-                let syntax = ss
-                    .find_syntax_by_token(lang)
-                    .or_else(|| ss.find_syntax_by_name(lang))
-                    .unwrap_or_else(|| ss.find_syntax_plain_text());
+        if highlight_code {
+            let highlighted = SYNTAX_SET.with(|ss| {
+                THEME_SET.with(|ts| {
+                    let syntax = ss
+                        .find_syntax_by_token(lang)
+                        .or_else(|| ss.find_syntax_by_name(lang))
+                        .unwrap_or_else(|| ss.find_syntax_plain_text());
 
-                let theme = highlight_theme
-                    .candidates()
-                    .iter()
-                    .find_map(|name| ts.themes.get(*name))
-                    .or_else(|| ts.themes.values().next());
+                    let theme = highlight_theme
+                        .candidates()
+                        .iter()
+                        .find_map(|name| ts.themes.get(*name))
+                        .or_else(|| ts.themes.values().next());
 
-                theme.and_then(|t| highlighted_html_for_string(code, ss, syntax, t).ok())
-            })
-        });
+                    theme.and_then(|t| highlighted_html_for_string(code, ss, syntax, t).ok())
+                })
+            });
 
-        if let Some(html) = highlighted {
-            let lang = html_attr_escape(lang);
-            let highlight_theme = highlight_theme.name();
-            return format!(
-                r#"<div class="mn-code-block" data-lang="{lang}" data-highlight-theme="{highlight_theme}">{html}</div>"#
-            );
+            if let Some(html) = highlighted {
+                let lang = html_attr_escape(lang);
+                let highlight_theme = highlight_theme.name();
+                return format!(
+                    r#"<div class="mn-code-block" data-lang="{lang}" data-highlight-theme="{highlight_theme}">{html}</div>"#
+                );
+            }
         }
     }
 
@@ -209,6 +219,23 @@ fn render_code_block(
     format!(
         r#"<pre><code class="language-{}">{}</code></pre>"#,
         lang, escaped
+    )
+}
+
+fn code_language_token(lang: &str) -> Option<&str> {
+    lang.split_whitespace()
+        .next()
+        .filter(|token| !token.is_empty())
+}
+
+fn is_mermaid_language(lang: Option<&str>) -> bool {
+    lang.is_some_and(|lang| lang.eq_ignore_ascii_case("mermaid"))
+}
+
+fn render_mermaid_block(source: &str) -> String {
+    let escaped = html_escape(source);
+    format!(
+        r#"<div class="mn-mermaid-block" data-mermaid-state="source"><pre class="mn-mermaid-source">{escaped}</pre></div>"#
     )
 }
 
@@ -342,5 +369,27 @@ mod tests {
         assert!(light.contains(r#"class="mn-code-block""#));
         assert!(light.contains(r#"data-highlight-theme="light""#));
         assert!(dark.contains(r#"data-highlight-theme="dark""#));
+    }
+
+    #[test]
+    fn render_markdown_html_wraps_mermaid_blocks_without_code_highlighting() {
+        let html =
+            render_markdown_html_with_highlighting("```mermaid\nflowchart TD\nA --> B\n```", false);
+
+        assert!(html.contains(r#"class="mn-mermaid-block""#));
+        assert!(html.contains(r#"class="mn-mermaid-source""#));
+        assert!(html.contains("flowchart TD"));
+        assert!(!html.contains(r#"class="language-mermaid""#));
+    }
+
+    #[test]
+    fn render_markdown_html_escapes_mermaid_source() {
+        let html = render_markdown_html_with_highlighting(
+            "```mermaid\n<script>alert(1)</script>\n```",
+            true,
+        );
+
+        assert!(html.contains("&lt;script&gt;alert(1)&lt;/script&gt;"));
+        assert!(!html.contains("<script>"));
     }
 }

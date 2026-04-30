@@ -183,10 +183,15 @@ export const hybridDecorationPolicies = Object.freeze({
     fallback: "source",
     levels: { current: "source", near: "full", remote: "structure" },
   },
+  mermaid: {
+    budget: "visible_block",
+    fallback: "source",
+    levels: { current: "source", near: "full", remote: "full" },
+  },
   math: {
     budget: "near_visible_block",
     fallback: "source",
-    levels: { current: "source", near: "full", remote: "source" },
+    levels: { current: "source", near: "full", remote: "full" },
   },
   quote: {
     budget: "near_visible_line",

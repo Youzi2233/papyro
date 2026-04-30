@@ -939,6 +939,10 @@ test("current code and table blocks keep source editing tier", () => {
   assert.equal(hybridDecorationLevel("code", currentCodeTier), "source");
   assert.equal(hybridDecorationLevel("table", currentTableTier), "source");
   assert.equal(hybridDecorationLevel("table", "near"), "full");
+  assert.equal(hybridDecorationLevel("mermaid", "current"), "source");
+  assert.equal(hybridDecorationLevel("mermaid", "remote"), "full");
+  assert.equal(hybridDecorationLevel("math", "current"), "source");
+  assert.equal(hybridDecorationLevel("math", "remote"), "full");
 });
 
 test("task checkbox toggle change rewrites only the checkbox marker", () => {
