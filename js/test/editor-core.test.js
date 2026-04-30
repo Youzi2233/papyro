@@ -6,6 +6,7 @@ import {
   appendMarkdownTableColumn,
   appendMarkdownTableRow,
   attachViewToTab,
+  collapsedSelectionTouchesTextRange,
   collectMarkdownCodeBlocks,
   collectMarkdownFrontMatterBlock,
   collectMarkdownMathBlocks,
@@ -60,12 +61,14 @@ import {
   parseMarkdownTable,
   parseMarkdownTaskLine,
   pasteMarkdownLinkInView,
+  pastePlainTextInView,
   recycleEditor,
   readScrollSnapshot,
   requestSaveForView,
   restoreScrollSnapshot,
   rewriteMarkdownTableCell,
   saveModeScrollSnapshot,
+  selectionOverlapsTextRange,
   sanitizeMarkdownImageSrc,
   selectionTouchesTextRange,
   shouldUseFullDocumentHybridScan,
@@ -735,6 +738,21 @@ test("paste_markdown_link_in_view dispatches selected URL paste", () => {
   assert.deepEqual(view.state.selection.main, { from: 33, to: 33 });
 });
 
+test("paste_plain_text_in_view replaces selected text", () => {
+  const view = fakeView("replace this text", { from: 8, to: 12 });
+
+  assert.equal(pastePlainTextInView(view, "that", {}), true);
+  assert.equal(view.state.doc.toString(), "replace that text");
+  assert.deepEqual(view.state.selection.main, { from: 12, to: 12 });
+});
+
+test("paste_plain_text_in_view keeps URL autolink behavior", () => {
+  const view = fakeView("Read docs", { from: 5, to: 9 });
+
+  assert.equal(pastePlainTextInView(view, "https://example.test", {}), true);
+  assert.equal(view.state.doc.toString(), "Read [docs](https://example.test)");
+});
+
 test("insert_markdown_in_view replaces selection and moves cursor", () => {
   const view = fakeView("before selection after", { from: 7, to: 16 });
 
@@ -889,7 +907,7 @@ test("markdown shortcut view commands dispatch completions", () => {
   assert.equal(fence.state.doc.toString(), "```\n\n```");
 });
 
-test("heading decoration keeps content editable while exposing touched markers", () => {
+test("heading decoration stays rendered while selecting marker text", () => {
   const tier = markdownDecorationTier([{ fromLine: 1, toLine: 1 }], 1, 1);
   const marker = { from: 0, to: 2 };
 
@@ -901,17 +919,21 @@ test("heading decoration keeps content editable while exposing touched markers",
   );
   assert.equal(
     hybridHeadingDecorationLevel(tier, marker, [{ from: 1, to: 1 }]),
-    "source",
+    "full",
   );
   assert.equal(
     hybridHeadingDecorationLevel(tier, marker, [{ from: 0, to: 7 }]),
-    "source",
+    "full",
   );
   assert.equal(selectionTouchesTextRange([{ from: 2, to: 2 }], marker), false);
   assert.equal(selectionTouchesTextRange([{ from: 1, to: 1 }], marker), true);
+  assert.equal(selectionOverlapsTextRange([{ from: 1, to: 1 }], marker), false);
+  assert.equal(selectionOverlapsTextRange([{ from: 1, to: 2 }], marker), true);
+  assert.equal(collapsedSelectionTouchesTextRange([{ from: 1, to: 1 }], marker), true);
+  assert.equal(collapsedSelectionTouchesTextRange([{ from: 1, to: 2 }], marker), false);
 });
 
-test("inline decoration keeps content editable while exposing touched markers", () => {
+test("inline decoration only exposes markers for collapsed cursor edits", () => {
   const [strong, link] = parseMarkdownInlineSpans("A **bold** [link](https://example.com)");
 
   assert.equal(strong.type, "strong");
@@ -921,10 +943,14 @@ test("inline decoration keeps content editable while exposing touched markers", 
   );
   assert.equal(
     inlineMarkdownMarkersTouched(strong, [{ from: 2, to: 3 }], 0),
-    true,
+    false,
   );
   assert.equal(
     inlineMarkdownMarkersTouched(strong, [{ from: 8, to: 10 }], 0),
+    false,
+  );
+  assert.equal(
+    inlineMarkdownMarkersTouched(strong, [{ from: 2, to: 2 }], 0),
     true,
   );
 
@@ -935,13 +961,17 @@ test("inline decoration keeps content editable while exposing touched markers", 
   );
   assert.equal(
     inlineMarkdownMarkersTouched(link, [{ from: 17, to: 18 }], 0),
+    false,
+  );
+  assert.equal(
+    inlineMarkdownMarkersTouched(link, [{ from: 17, to: 17 }], 0),
     true,
   );
   assert.equal(hybridDecorationLevel("emphasis", "current"), "full");
   assert.equal(hybridDecorationLevel("link", "remote"), "full");
 });
 
-test("current code and table blocks keep source editing tier", () => {
+test("current code table and mermaid blocks stay rendered", () => {
   const currentCodeTier = markdownDecorationTier(
     [{ fromLine: 2, toLine: 2 }],
     1,
@@ -955,10 +985,11 @@ test("current code and table blocks keep source editing tier", () => {
 
   assert.equal(currentCodeTier, "current");
   assert.equal(currentTableTier, "current");
-  assert.equal(hybridDecorationLevel("code", currentCodeTier), "source");
-  assert.equal(hybridDecorationLevel("table", currentTableTier), "source");
+  assert.equal(hybridDecorationLevel("code", currentCodeTier), "full");
+  assert.equal(hybridDecorationLevel("code", "remote"), "full");
+  assert.equal(hybridDecorationLevel("table", currentTableTier), "full");
   assert.equal(hybridDecorationLevel("table", "near"), "full");
-  assert.equal(hybridDecorationLevel("mermaid", "current"), "source");
+  assert.equal(hybridDecorationLevel("mermaid", "current"), "full");
   assert.equal(hybridDecorationLevel("mermaid", "remote"), "full");
   assert.equal(hybridDecorationLevel("math", "current"), "source");
   assert.equal(hybridDecorationLevel("math", "remote"), "full");
@@ -1507,8 +1538,8 @@ test("hybrid_input_trace_context reports current block and fallback path", () =>
 });
 
 test("should_use_full_document_hybrid_scan caps large documents", () => {
-  assert.equal(shouldUseFullDocumentHybridScan(64 * 1024), true);
-  assert.equal(shouldUseFullDocumentHybridScan(64 * 1024 + 1), false);
+  assert.equal(shouldUseFullDocumentHybridScan(256 * 1024), true);
+  assert.equal(shouldUseFullDocumentHybridScan(256 * 1024 + 1), false);
   assert.equal(shouldUseFullDocumentHybridScan(Number.NaN), false);
 });
 
@@ -1532,9 +1563,13 @@ test("hybrid_decoration_policies cover required markdown kinds", () => {
     assert.ok(hybridDecorationPolicy(kind).budget);
   }
 
-  assert.equal(hybridDecorationLevel("heading", "remote"), "structure");
+  assert.equal(hybridDecorationLevel("heading", "remote"), "full");
   assert.equal(hybridDecorationLevel("code", "near"), "full");
-  assert.equal(hybridDecorationLevel("image", "remote"), "source");
+  assert.equal(hybridDecorationLevel("code", "remote"), "full");
+  assert.equal(hybridDecorationLevel("mermaid", "current"), "full");
+  assert.equal(hybridDecorationLevel("list", "remote"), "full");
+  assert.equal(hybridDecorationLevel("task", "remote"), "widget");
+  assert.equal(hybridDecorationLevel("image", "remote"), "widget");
   assert.equal(hybridDecorationLevel("unknown", "near"), "full");
 });
 

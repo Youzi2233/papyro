@@ -1,6 +1,17 @@
-import { Decoration, WidgetType } from "@codemirror/view";
+import { EditorState, Prec } from "@codemirror/state";
+import {
+  Decoration,
+  EditorView,
+  WidgetType,
+  drawSelection,
+  keymap,
+} from "@codemirror/view";
+import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
+import { HighlightStyle, syntaxHighlighting } from "@codemirror/language";
+import { tags as t } from "@lezer/highlight";
 import katex from "katex";
 import mermaid from "mermaid";
+import { mermaid as mermaidCodeMirror } from "codemirror-lang-mermaid";
 import {
   appendMarkdownTableColumn,
   appendMarkdownTableRow,
@@ -14,8 +25,110 @@ import {
 } from "./editor-core.js";
 
 const MERMAID_RENDER_TIMEOUT_MS = 2500;
+const MERMAID_EDIT_RENDER_DELAY_MS = 220;
 let mermaidInitialized = false;
 let mermaidRenderCounter = 0;
+let pendingMermaidEditorFocusKey = "";
+const mermaidRenderedHeights = new Map();
+
+const mermaidHighlightStyle = HighlightStyle.define([
+  { tag: t.keyword, color: "var(--mn-accent)", fontWeight: "var(--mn-weight-medium, 500)" },
+  { tag: [t.typeName, t.className], color: "var(--mn-accent-strong)" },
+  { tag: [t.name, t.variableName, t.definition(t.variableName)], color: "var(--mn-ink)" },
+  { tag: t.string, color: "var(--mn-ink-2)" },
+  { tag: [t.number, t.bool, t.atom], color: "var(--mn-accent-strong)" },
+  { tag: t.comment, color: "var(--mn-ink-3)", fontStyle: "italic" },
+  { tag: [t.operator, t.punctuation], color: "var(--mn-ink-2)" },
+]);
+
+const transparentNativeSelectionTheme = Prec.highest(
+  EditorView.theme({
+    "&::selection, & ::selection, .cm-content::selection, .cm-content:focus::selection, .cm-content:focus ::selection, .cm-line::selection, .cm-line *::selection": {
+      background: "transparent !important",
+      backgroundColor: "transparent !important",
+      color: "inherit !important",
+    },
+    ".cm-content:focus": {
+      caretColor: "transparent !important",
+    },
+  }),
+);
+
+function mermaidBlockKey(fromLine, toLine) {
+  return `${fromLine}:${toLine}`;
+}
+
+function mermaidSourceEditorExtensions(onChange, onCommit) {
+  return [
+    history(),
+    drawSelection(),
+    transparentNativeSelectionTheme,
+    mermaidCodeMirror(),
+    syntaxHighlighting(mermaidHighlightStyle, { fallback: true }),
+    EditorView.lineWrapping,
+    keymap.of([
+      {
+        key: "Mod-Enter",
+        run() {
+          onCommit();
+          return true;
+        },
+      },
+      ...defaultKeymap,
+      ...historyKeymap,
+    ]),
+    EditorView.updateListener.of((update) => {
+      if (update.docChanged) onChange(update.state.doc.toString());
+    }),
+    EditorView.theme({
+      "&": {
+        height: "100%",
+        background: "transparent",
+        color: "var(--mn-ink)",
+        fontSize: "var(--mn-markdown-code-block-size)",
+      },
+      ".cm-scroller": {
+        overflowX: "hidden",
+        overflowY: "auto",
+        cursor: "text",
+        fontFamily: "var(--mn-markdown-mono-font)",
+        lineHeight: "var(--mn-markdown-code-block-line)",
+        padding: "var(--mn-markdown-code-block-pad-y, 18px) var(--mn-markdown-code-block-pad-x, 22px)",
+      },
+      ".cm-content": {
+        minWidth: "0",
+        width: "100%",
+        whiteSpace: "pre-wrap",
+        overflowWrap: "anywhere",
+        cursor: "text",
+        caretColor: "var(--mn-caret, var(--mn-accent))",
+      },
+      ".cm-line": {
+        cursor: "text",
+      },
+      ".cm-gutters": {
+        display: "none",
+      },
+      ".cm-activeLine": {
+        background: "transparent",
+      },
+      ".cm-selectionBackground, &.cm-focused .cm-selectionBackground": {
+        background: "var(--mn-editor-selection, rgba(100, 116, 139, .26))",
+        backgroundColor: "var(--mn-editor-selection, rgba(100, 116, 139, .26))",
+        color: "var(--mn-ink)",
+      },
+      "&::selection, & ::selection, .cm-content::selection, .cm-content:focus::selection, .cm-content:focus ::selection, .cm-line::selection, .cm-line *::selection": {
+        background: "transparent !important",
+        backgroundColor: "transparent !important",
+        color: "inherit !important",
+      },
+      ".cm-cursor, .cm-dropCursor": {
+        borderLeftColor: "var(--mn-caret, var(--mn-accent))",
+        borderLeftWidth: "2px",
+      },
+    }),
+  ];
+}
 
 function focusMarkdownBlockSource(view, fromLine, event) {
   event.preventDefault();
@@ -307,11 +420,12 @@ export class MathBlockWidget extends WidgetType {
 }
 
 export class MermaidBlockWidget extends WidgetType {
-  constructor(source, fromLine, toLine) {
+  constructor(source, fromLine, toLine, editing = false) {
     super();
     this.source = source;
     this.fromLine = fromLine;
     this.toLine = toLine;
+    this.editing = editing;
   }
 
   eq(other) {
@@ -319,17 +433,50 @@ export class MermaidBlockWidget extends WidgetType {
       other instanceof MermaidBlockWidget &&
       other.source === this.source &&
       other.fromLine === this.fromLine &&
-      other.toLine === this.toLine
+      other.toLine === this.toLine &&
+      other.editing === this.editing
     );
   }
 
-  toDOM(view) {
+  replaceSource(view, source) {
+    if (
+      !Number.isSafeInteger(this.fromLine) ||
+      !Number.isSafeInteger(this.toLine) ||
+      this.fromLine < 1 ||
+      this.toLine < this.fromLine ||
+      this.toLine > view.state.doc.lines
+    ) {
+      return;
+    }
+
+    const normalizedSource = String(source ?? "").replace(/\s+$/u, "");
+    if (normalizedSource === this.source) return;
+
+    const from = view.state.doc.line(this.fromLine).from;
+    const to = view.state.doc.line(this.toLine).to;
+    const markdown = `\`\`\`mermaid\n${normalizedSource}\n\`\`\``;
+    view.dispatch({
+      changes: { from, to, insert: markdown },
+    });
+  }
+
+  toRenderedDOM(view) {
     const wrapper = document.createElement("div");
     wrapper.className = "mn-mermaid-block cm-hybrid-mermaid-block";
     wrapper.tabIndex = 0;
     wrapper.setAttribute("role", "button");
     wrapper.setAttribute("aria-label", "Edit Mermaid diagram source");
-    const editSource = (event) => focusMarkdownBlockSource(view, this.fromLine, event);
+    const editSource = (event) => {
+      pendingMermaidEditorFocusKey = mermaidBlockKey(this.fromLine, this.toLine);
+      const height = wrapper.getBoundingClientRect().height;
+      if (Number.isFinite(height) && height > 0) {
+        mermaidRenderedHeights.set(
+          pendingMermaidEditorFocusKey,
+          Math.ceil(height),
+        );
+      }
+      focusMarkdownBlockSource(view, this.fromLine, event);
+    };
 
     wrapper.addEventListener("mousedown", (event) => event.preventDefault());
     wrapper.addEventListener("click", editSource);
@@ -341,8 +488,75 @@ export class MermaidBlockWidget extends WidgetType {
     return wrapper;
   }
 
+  toEditingDOM(view) {
+    const wrapper = document.createElement("div");
+    wrapper.className = "mn-mermaid-block cm-hybrid-mermaid-block cm-hybrid-mermaid-split";
+    const key = mermaidBlockKey(this.fromLine, this.toLine);
+    const renderedHeight = mermaidRenderedHeights.get(key);
+    if (Number.isFinite(renderedHeight) && renderedHeight > 0) {
+      wrapper.style.height = `${renderedHeight}px`;
+    } else {
+      wrapper.style.minHeight = "150px";
+    }
+
+    const sourcePane = document.createElement("div");
+    sourcePane.className = "cm-hybrid-mermaid-source-pane cm-hybrid-mermaid-source-editor";
+
+    const previewPane = document.createElement("div");
+    previewPane.className = "cm-hybrid-mermaid-preview-pane";
+    const preview = document.createElement("div");
+    preview.className = "cm-hybrid-mermaid-preview";
+    previewPane.append(preview);
+    wrapper.append(sourcePane, previewPane);
+
+    let renderTimer = 0;
+    let sourceView = null;
+    const scheduleRender = () => {
+      window.clearTimeout(renderTimer);
+      renderTimer = window.setTimeout(() => {
+        void renderMermaidIntoElement(preview, sourceView?.state.doc.toString() ?? "");
+      }, MERMAID_EDIT_RENDER_DELAY_MS);
+    };
+    const commit = () => {
+      window.clearTimeout(renderTimer);
+      this.replaceSource(view, sourceView?.state.doc.toString() ?? "");
+    };
+
+    sourceView = new EditorView({
+      state: EditorState.create({
+        doc: this.source,
+        extensions: mermaidSourceEditorExtensions(scheduleRender, () => {
+          commit();
+          view.focus();
+        }),
+      }),
+      parent: sourcePane,
+    });
+    wrapper.__papyroMermaidSourceView = sourceView;
+    wrapper.addEventListener("focusout", () => {
+      window.setTimeout(() => {
+        if (!wrapper.contains(document.activeElement)) commit();
+      }, 0);
+    });
+
+    void renderMermaidIntoElement(preview, this.source);
+    if (pendingMermaidEditorFocusKey === key) {
+      pendingMermaidEditorFocusKey = "";
+      window.queueMicrotask(() => sourceView?.focus());
+    }
+    return wrapper;
+  }
+
+  toDOM(view) {
+    return this.editing ? this.toEditingDOM(view) : this.toRenderedDOM(view);
+  }
+
+  destroy(dom) {
+    dom.__papyroMermaidSourceView?.destroy?.();
+  }
+
   ignoreEvent() {
-    return false;
+    return true;
   }
 }
 
@@ -459,13 +673,13 @@ export function addMathBlockDecorations(decorations, state, block) {
   );
 }
 
-export function addMermaidBlockDecorations(decorations, state, block) {
+export function addMermaidBlockDecorations(decorations, state, block, editing = false) {
   const from = state.doc.line(block.fromLine).from;
   const to = state.doc.line(block.toLine).to;
   decorations.push(
     Decoration.replace({
       block: true,
-      widget: new MermaidBlockWidget(block.source, block.fromLine, block.toLine),
+      widget: new MermaidBlockWidget(block.source, block.fromLine, block.toLine, editing),
     }).range(from, to),
   );
 }

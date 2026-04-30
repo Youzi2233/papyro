@@ -140,7 +140,7 @@ export function markdownDecorationTier(
   return nearestDistance <= nearDistance ? "near" : "remote";
 }
 
-export function shouldUseFullDocumentHybridScan(docLength, maxLength = 64 * 1024) {
+export function shouldUseFullDocumentHybridScan(docLength, maxLength = 256 * 1024) {
   const length = Number(docLength);
   const max = Number(maxLength);
   if (!Number.isFinite(length) || !Number.isFinite(max)) return false;
@@ -151,7 +151,7 @@ export const hybridDecorationPolicies = Object.freeze({
   heading: {
     budget: "visible_line",
     fallback: "source",
-    levels: { current: "full", near: "full", remote: "structure" },
+    levels: { current: "full", near: "full", remote: "full" },
   },
   emphasis: {
     budget: "near_visible_line",
@@ -166,27 +166,27 @@ export const hybridDecorationPolicies = Object.freeze({
   image: {
     budget: "near_visible_line",
     fallback: "source",
-    levels: { current: "source", near: "widget", remote: "source" },
+    levels: { current: "source", near: "widget", remote: "widget" },
   },
   task: {
     budget: "near_visible_line",
     fallback: "source",
-    levels: { current: "widget", near: "widget", remote: "source" },
+    levels: { current: "widget", near: "widget", remote: "widget" },
   },
   list: {
     budget: "near_visible_line",
     fallback: "source",
-    levels: { current: "full", near: "full", remote: "source" },
+    levels: { current: "full", near: "full", remote: "full" },
   },
   code: {
     budget: "visible_block",
     fallback: "source",
-    levels: { current: "source", near: "full", remote: "structure" },
+    levels: { current: "full", near: "full", remote: "full" },
   },
   mermaid: {
     budget: "visible_block",
     fallback: "source",
-    levels: { current: "source", near: "full", remote: "full" },
+    levels: { current: "full", near: "full", remote: "full" },
   },
   math: {
     budget: "near_visible_block",
@@ -196,22 +196,22 @@ export const hybridDecorationPolicies = Object.freeze({
   quote: {
     budget: "near_visible_line",
     fallback: "source",
-    levels: { current: "full", near: "full", remote: "source" },
+    levels: { current: "full", near: "full", remote: "full" },
   },
   rule: {
     budget: "near_visible_line",
     fallback: "source",
-    levels: { current: "source", near: "full", remote: "source" },
+    levels: { current: "full", near: "full", remote: "full" },
   },
   table: {
     budget: "visible_block",
     fallback: "source",
-    levels: { current: "source", near: "full", remote: "full" },
+    levels: { current: "full", near: "full", remote: "full" },
   },
   footnote: {
     budget: "near_visible_line",
     fallback: "source",
-    levels: { current: "source", near: "full", remote: "source" },
+    levels: { current: "full", near: "full", remote: "full" },
   },
 });
 
@@ -254,10 +254,37 @@ export function selectionTouchesTextRange(selectionRanges, textRange) {
   });
 }
 
+export function selectionOverlapsTextRange(selectionRanges, textRange) {
+  const from = safeInteger(textRange?.from);
+  const to = safeInteger(textRange?.to);
+  if (from === null || to === null || to <= from) return false;
+
+  return (selectionRanges ?? []).some((range) => {
+    const selection = normalizedSelectionRange(range);
+    if (!selection || selection.from === selection.to) return false;
+    return selection.from < to && selection.to > from;
+  });
+}
+
+export function collapsedSelectionTouchesTextRange(selectionRanges, textRange) {
+  const from = safeInteger(textRange?.from);
+  const to = safeInteger(textRange?.to);
+  if (from === null || to === null || to <= from) return false;
+
+  return (selectionRanges ?? []).some((range) => {
+    const selection = normalizedSelectionRange(range);
+    return Boolean(
+      selection &&
+        selection.from === selection.to &&
+        selection.from >= from &&
+        selection.from < to,
+    );
+  });
+}
+
 export function hybridHeadingDecorationLevel(tier, markerRange, selectionRanges) {
   const level = hybridDecorationLevel("heading", tier);
-  if (level === "source") return "source";
-  return selectionTouchesTextRange(selectionRanges, markerRange) ? "source" : level;
+  return level;
 }
 
 export function inlineMarkdownMarkersTouched(span, selectionRanges, lineFrom = 0) {
@@ -277,11 +304,11 @@ export function inlineMarkdownMarkersTouched(span, selectionRanges, lineFrom = 0
   }
 
   return (
-    selectionTouchesTextRange(selectionRanges, {
+    collapsedSelectionTouchesTextRange(selectionRanges, {
       from: offset + spanFrom,
       to: offset + openTo,
     }) ||
-    selectionTouchesTextRange(selectionRanges, {
+    collapsedSelectionTouchesTextRange(selectionRanges, {
       from: offset + closeFrom,
       to: offset + spanTo,
     })
@@ -612,6 +639,21 @@ export function pasteMarkdownLinkInView(view, pastedText, preferences) {
   view.dispatch({
     changes: result.changes,
     selection: result.selection,
+  });
+  return true;
+}
+
+export function pastePlainTextInView(view, pastedText, preferences) {
+  const text = pastedText ?? "";
+  if (!text) return false;
+  if (pasteMarkdownLinkInView(view, text, preferences)) return true;
+
+  const range = view.state.selection.main;
+  if (range.from === range.to) return false;
+
+  view.dispatch({
+    changes: { from: range.from, to: range.to, insert: text },
+    selection: { anchor: range.from + text.length },
   });
   return true;
 }

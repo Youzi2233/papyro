@@ -1,4 +1,4 @@
-import { EditorState, StateEffect, StateField } from "@codemirror/state";
+import { EditorSelection, EditorState, StateEffect, StateField } from "@codemirror/state";
 import {
   EditorView,
   Decoration,
@@ -23,6 +23,7 @@ import { tags as t } from "@lezer/highlight";
 import {
   applyFormatToView,
   attachViewToTab as attachViewToTabCore,
+  collapsedSelectionTouchesTextRange,
   collectMarkdownCodeBlocks,
   collectMarkdownFrontMatterBlock,
   collectMarkdownMathBlocks,
@@ -35,7 +36,6 @@ import {
   hybridDecorationLevel,
   hybridHeadingDecorationLevel,
   indentMarkdownListInView,
-  inlineMarkdownMarkersTouched,
   latestModeScrollSnapshot,
   markdownBlockLineRange,
   markdownCodeFenceInfoRange,
@@ -53,13 +53,13 @@ import {
   parseMarkdownListLine,
   parseMarkdownTaskLine,
   openReplacePanelInView,
-  pasteMarkdownLinkInView,
+  pastePlainTextInView,
   readScrollSnapshot,
   recycleEditor as recycleEditorCore,
   requestSaveForView,
   restoreScrollSnapshot,
   saveModeScrollSnapshot,
-  selectionTouchesTextRange,
+  selectionOverlapsTextRange,
   shouldUseFullDocumentHybridScan,
   blockHintsEqual,
   setBlockHints as setBlockHintsCore,
@@ -184,10 +184,20 @@ const editorTheme = EditorView.theme({
   ".cm-content": {
     minHeight: "100%",
     width: "100%",
+    padding: "0",
+    fontFamily: "inherit",
+    fontSize: "inherit",
+    lineHeight: "var(--mn-document-line-height, var(--mn-editor-line-height, 1.75))",
     caretColor: "var(--mn-accent, #b24b2f)",
     maxWidth: "var(--mn-document-measure, 860px)",
     marginInline: "auto",
     color: "var(--mn-editor-ink, var(--mn-ink, #25211a))",
+  },
+  ".cm-line": {
+    boxSizing: "border-box",
+    lineHeight: "var(--mn-document-line-height, var(--mn-editor-line-height, 1.75))",
+    paddingTop: "0",
+    paddingBottom: "0",
   },
   ".cm-gutters": {
     backgroundColor: "transparent",
@@ -195,6 +205,9 @@ const editorTheme = EditorView.theme({
     color: "var(--mn-ink-3, #a08f78)",
     paddingTop: "var(--mn-document-pad-top, 24px)",
     paddingRight: "var(--mn-document-gutter-gap, 8px)",
+  },
+  "&[data-view-mode='hybrid'] .cm-gutters, &[data-view-mode='preview'] .cm-gutters": {
+    display: "none",
   },
   ".cm-activeLine": { backgroundColor: "var(--mn-active-line, rgba(178,75,47,.05))" },
   ".cm-activeLineGutter": {
@@ -216,8 +229,16 @@ const editorTheme = EditorView.theme({
   "&.cm-composition-active .cm-activeLine": {
     backgroundColor: "var(--mn-composition-line, rgba(159, 106, 58, .10))",
   },
-  ".cm-selectionBackground, &.cm-focused .cm-selectionBackground, ::selection": {
-    backgroundColor: "var(--mn-selection, rgba(178,75,47,.15))",
+  ".cm-selectionBackground, &.cm-focused .cm-selectionBackground": {
+    background: "var(--mn-editor-selection, rgba(100, 116, 139, .26))",
+    backgroundColor: "var(--mn-editor-selection, rgba(100, 116, 139, .26))",
+    color: "var(--mn-ink)",
+  },
+  ".cm-selectionBackground": {
+    borderRadius: "2px",
+  },
+  "&[data-view-mode='hybrid'] .cm-activeLine, &[data-view-mode='preview'] .cm-activeLine": {
+    backgroundColor: "transparent",
   },
   ".cm-focused": { outline: "none" },
   ".cm-panels": {
@@ -277,27 +298,30 @@ const editorTheme = EditorView.theme({
     paddingBottom: "var(--mn-markdown-quote-pad-y, .48em)",
   },
   ".cm-line.cm-hybrid-code-block-line": {
-    backgroundColor: "var(--mn-markdown-code-block-bg, var(--mn-surface-sunken, rgba(178,75,47,.08)))",
+    backgroundColor: "var(--mn-hybrid-code-block-bg, rgba(100, 116, 139, .09))",
     color: "var(--mn-ink)",
-    borderLeft: "var(--mn-border-subtle, 1px solid var(--mn-divider))",
-    borderRight: "var(--mn-border-subtle, 1px solid var(--mn-divider))",
     fontFamily: 'var(--mn-markdown-mono-font, var(--mn-editor-font, "Cascadia Code", monospace))',
-    fontSize: "var(--mn-markdown-code-block-size, 13.5px)",
-    lineHeight: "var(--mn-markdown-code-block-line, 1.65)",
     paddingLeft: "var(--mn-markdown-code-block-pad-x, 22px)",
     paddingRight: "var(--mn-markdown-code-block-pad-x, 22px)",
   },
   ".cm-line.cm-hybrid-code-block-start": {
-    borderTop: "var(--mn-border-subtle, 1px solid var(--mn-divider))",
     borderTopLeftRadius: "var(--mn-markdown-code-radius, 6px)",
     borderTopRightRadius: "var(--mn-markdown-code-radius, 6px)",
-    paddingTop: "var(--mn-markdown-code-block-pad-y, 18px)",
   },
   ".cm-line.cm-hybrid-code-block-end": {
-    borderBottom: "var(--mn-border-subtle, 1px solid var(--mn-divider))",
     borderBottomLeftRadius: "var(--mn-markdown-code-radius, 6px)",
     borderBottomRightRadius: "var(--mn-markdown-code-radius, 6px)",
-    paddingBottom: "var(--mn-markdown-code-block-pad-y, 18px)",
+  },
+  ".cm-line.cm-hybrid-code-block-fence-end": {
+    height: "1px",
+    minHeight: "1px",
+    overflow: "hidden",
+    border: "0",
+    paddingLeft: "0",
+    paddingRight: "0",
+    paddingTop: "0",
+    paddingBottom: "0",
+    lineHeight: "1px",
   },
   ".cm-line.cm-hybrid-front-matter-line": {
     backgroundColor: "var(--mn-surface, #fbf6ea)",
@@ -355,6 +379,8 @@ const editorTheme = EditorView.theme({
     flexWrap: "wrap",
     gap: "6px",
     marginBottom: "6px",
+    userSelect: "none",
+    WebkitUserSelect: "none",
   },
   ".cm-hybrid-table-toolbar button": {
     border: "var(--mn-border-subtle, 1px solid var(--mn-divider))",
@@ -410,9 +436,10 @@ const editorTheme = EditorView.theme({
     fontSize: ".78em",
     fontWeight: "var(--mn-weight-bold, 700)",
     lineHeight: "1.6",
-    marginBottom: ".35em",
     padding: "0 .55em",
     textTransform: "uppercase",
+    userSelect: "none",
+    WebkitUserSelect: "none",
   },
   ".cm-hybrid-heading": {
     color: "var(--mn-ink)",
@@ -443,11 +470,26 @@ const editorTheme = EditorView.theme({
   },
   ".cm-hybrid-inline-code": {
     borderRadius: "var(--mn-radius-xs, 5px)",
-    backgroundColor: "var(--mn-markdown-code-bg, rgba(178,75,47,.08))",
+    background: "transparent",
+    backgroundColor: "transparent",
+    boxDecorationBreak: "clone",
+    WebkitBoxDecorationBreak: "clone",
+    boxShadow: "0 0 0 .14em color-mix(in srgb, var(--mn-markdown-code-bg, #f6f8fb) 72%, transparent)",
     color: "var(--mn-markdown-code-color, var(--mn-accent-strong))",
     fontFamily: 'var(--mn-markdown-mono-font, var(--mn-editor-font, "Cascadia Code", monospace))',
     fontSize: ".92em",
-    padding: "var(--mn-markdown-inline-code-pad, .1em .42em)",
+    lineHeight: "inherit",
+    padding: "0",
+  },
+  ".cm-hybrid-inline-code-selected": {
+    background: "transparent",
+    backgroundColor: "transparent",
+    boxShadow: "none",
+  },
+  ".cm-hybrid-inline-code::selection, .cm-hybrid-inline-code *::selection": {
+    background: "transparent !important",
+    backgroundColor: "transparent !important",
+    color: "inherit !important",
   },
   ".cm-hybrid-inline-math": {
     display: "inline-flex",
@@ -479,6 +521,97 @@ const editorTheme = EditorView.theme({
   },
   ".cm-hybrid-math-block, .cm-hybrid-mermaid-block": {
     cursor: "pointer",
+  },
+  ".cm-hybrid-math-block, .cm-hybrid-image-preview, .cm-hybrid-mermaid-block:not(.cm-hybrid-mermaid-split), .cm-hybrid-mermaid-preview, .cm-hybrid-code-info, .cm-hybrid-list-marker, .cm-hybrid-task-checkbox, .cm-hybrid-footnote-ref, .cm-hybrid-footnote-label, .cm-hybrid-horizontal-rule": {
+    userSelect: "none",
+    WebkitUserSelect: "none",
+  },
+  ".cm-hybrid-mermaid-split": {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(min(240px, 100%), 1fr))",
+    gap: "10px",
+    cursor: "default",
+    alignItems: "stretch",
+    minHeight: "0",
+  },
+  ".cm-hybrid-mermaid-source-pane, .cm-hybrid-mermaid-preview-pane": {
+    display: "grid",
+    gridTemplateRows: "minmax(0, 1fr)",
+    minWidth: "0",
+    minHeight: "0",
+  },
+  ".cm-hybrid-mermaid-source-editor": {
+    boxSizing: "border-box",
+    height: "100%",
+    width: "100%",
+    minWidth: "0",
+    minHeight: "0",
+    overflow: "hidden",
+    borderRadius: "var(--mn-markdown-code-radius, 6px)",
+    background: "var(--mn-markdown-code-block-bg, var(--mn-surface-sunken, #f6f8fb))",
+    cursor: "text",
+    userSelect: "text",
+    WebkitUserSelect: "text",
+  },
+  ".cm-hybrid-mermaid-source-editor *": {
+    userSelect: "text",
+    WebkitUserSelect: "text",
+  },
+  ".cm-hybrid-mermaid-source-editor .cm-editor": {
+    boxSizing: "border-box",
+    height: "100%",
+    width: "100%",
+    minWidth: "0",
+    background: "transparent",
+    color: "var(--mn-ink)",
+    cursor: "text",
+  },
+  ".cm-hybrid-mermaid-source-editor .cm-scroller": {
+    overflowX: "hidden",
+    cursor: "text",
+    fontFamily: "var(--mn-markdown-mono-font)",
+    fontSize: "var(--mn-markdown-code-block-size)",
+    lineHeight: "var(--mn-markdown-code-block-line)",
+    padding: "var(--mn-markdown-code-block-pad-y, 18px) var(--mn-markdown-code-block-pad-x, 22px)",
+  },
+  ".cm-hybrid-mermaid-source-editor .cm-content": {
+    minWidth: "0",
+    width: "100%",
+    whiteSpace: "pre-wrap",
+    overflowWrap: "anywhere",
+    cursor: "text",
+    caretColor: "var(--mn-caret, var(--mn-accent))",
+  },
+  ".cm-hybrid-mermaid-source-editor .cm-line": {
+    cursor: "text",
+  },
+  ".cm-hybrid-mermaid-source-editor .cm-gutters": {
+    display: "none",
+  },
+  ".cm-hybrid-mermaid-source-editor .cm-activeLine": {
+    background: "transparent",
+  },
+  ".cm-hybrid-mermaid-source-editor .cm-selectionBackground, .cm-hybrid-mermaid-source-editor .cm-focused .cm-selectionBackground": {
+    background: "var(--mn-editor-selection, rgba(100, 116, 139, .26))",
+    backgroundColor: "var(--mn-editor-selection, rgba(100, 116, 139, .26))",
+    color: "var(--mn-ink)",
+  },
+  ".cm-hybrid-mermaid-source-editor::selection, .cm-hybrid-mermaid-source-editor ::selection, .cm-hybrid-mermaid-source-editor .cm-content::selection, .cm-hybrid-mermaid-source-editor .cm-content:focus::selection, .cm-hybrid-mermaid-source-editor .cm-content:focus ::selection, .cm-hybrid-mermaid-source-editor .cm-line::selection, .cm-hybrid-mermaid-source-editor .cm-line *::selection": {
+    background: "transparent !important",
+    backgroundColor: "transparent !important",
+    color: "inherit !important",
+  },
+  ".cm-hybrid-mermaid-preview": {
+    boxSizing: "border-box",
+    height: "100%",
+    minHeight: "0",
+    minWidth: "0",
+    display: "grid",
+    alignItems: "center",
+    borderRadius: "var(--mn-radius-sm, 6px)",
+    background: "var(--mn-surface, #fff)",
+    padding: "10px",
+    overflow: "auto",
   },
   ".cm-hybrid-math-block:focus-visible, .cm-hybrid-image-preview:focus-visible, .cm-hybrid-mermaid-block:focus-visible": {
     outline: "2px solid var(--mn-accent)",
@@ -569,12 +702,19 @@ const editorTheme = EditorView.theme({
     cursor: "default",
   },
   ".cm-hybrid-list-marker": {
-    display: "inline-flex",
-    justifyContent: "flex-end",
+    display: "inline-block",
+    boxSizing: "content-box",
     minWidth: "var(--mn-markdown-list-marker-width, 1.4em)",
-    marginRight: "var(--mn-markdown-list-marker-gap, .45em)",
-    color: "var(--mn-accent)",
+    paddingRight: "var(--mn-markdown-list-marker-gap, .45em)",
+    color: "var(--mn-ink-3)",
+    cursor: "text",
     fontVariantNumeric: "tabular-nums",
+    fontSize: "inherit",
+    lineHeight: "inherit",
+    textAlign: "right",
+    userSelect: "none",
+    WebkitUserSelect: "none",
+    verticalAlign: "baseline",
   },
   ".cm-hybrid-horizontal-rule": {
     display: "block",
@@ -602,7 +742,7 @@ const markdownHighlightStyle = HighlightStyle.define([
   { tag: t.comment, color: "var(--mn-ink-3)", fontStyle: "italic" },
   { tag: t.quote, color: "var(--mn-ink-2)", fontStyle: "italic" },
 
-  { tag: t.list, color: "var(--mn-accent)" },
+  { tag: t.list, color: "inherit" },
   { tag: t.meta, color: "var(--mn-ink-3)" },
   { tag: t.processingInstruction, color: "var(--mn-ink-3)" },
   { tag: t.contentSeparator, color: "var(--mn-ink-3)" },
@@ -723,7 +863,30 @@ function isMermaidLanguage(info) {
   return language.toLowerCase() === "mermaid";
 }
 
-function codeBlocksFromHints(hintRanges) {
+function codeBlockHasClosingFence(doc, block) {
+  if (
+    !doc ||
+    !block ||
+    !Number.isSafeInteger(block.fromLine) ||
+    !Number.isSafeInteger(block.toLine) ||
+    block.toLine <= block.fromLine ||
+    block.toLine > doc.lines
+  ) {
+    return false;
+  }
+
+  const startFence = parseMarkdownCodeFenceLine(doc.line(block.fromLine).text);
+  const endFence = parseMarkdownCodeFenceLine(doc.line(block.toLine).text);
+  return Boolean(
+    startFence &&
+      endFence &&
+      endFence.info === "" &&
+      endFence.marker === startFence.marker &&
+      endFence.markerLength >= startFence.markerLength,
+  );
+}
+
+function codeBlocksFromHints(hintRanges, doc) {
   return hintRanges
     .filter((block) =>
       block.kind?.type === "fenced_code" &&
@@ -733,11 +896,17 @@ function codeBlocksFromHints(hintRanges) {
       fromLine: block.fromLine,
       toLine: block.toLine,
       info: block.kind?.language ?? "",
+      hasClosingFence: codeBlockHasClosingFence(doc, block),
     }));
 }
 
-function codeBlocksWithoutMermaid(blocks) {
-  return blocks.filter((block) => !isMermaidLanguage(block.info));
+function codeBlocksWithoutMermaid(blocks, doc) {
+  return blocks
+    .filter((block) => !isMermaidLanguage(block.info))
+    .map((block) => ({
+      ...block,
+      hasClosingFence: codeBlockHasClosingFence(doc, block),
+    }));
 }
 
 function fencedBlockSourceFromLines(lines, block) {
@@ -883,51 +1052,74 @@ function inlineDecorationsEnabled(tier) {
   );
 }
 
-function addInlineDecorations(decorations, line, selectionRanges = []) {
+function addAtomicReplacement(decorations, atomicRanges, from, to, spec = {}) {
+  if (!Number.isSafeInteger(from) || !Number.isSafeInteger(to) || to <= from) return;
+
+  decorations.push(Decoration.replace(spec).range(from, to));
+  atomicRanges?.push(Decoration.replace({}).range(from, to));
+}
+
+function addInlineDecorations(decorations, atomicRanges, line, selectionRanges = []) {
   for (const span of parseMarkdownInlineSpans(line.text)) {
     const contentFrom = line.from + span.openTo;
     const contentTo = line.from + span.closeFrom;
     if (span.type === "footnote_ref") {
       if (
-        selectionTouchesTextRange(selectionRanges, {
+        collapsedSelectionTouchesTextRange(selectionRanges, {
           from: line.from + span.from,
           to: line.from + span.to,
         })
       ) {
         continue;
       }
-      decorations.push(
-        Decoration.replace({
+      addAtomicReplacement(
+        decorations,
+        atomicRanges,
+        line.from + span.from,
+        line.from + span.to,
+        {
           widget: new FootnoteReferenceWidget(span.label),
-        }).range(line.from + span.from, line.from + span.to),
+        },
       );
       continue;
     }
 
     if (span.type === "inline_math") {
       if (
-        selectionTouchesTextRange(selectionRanges, {
+        collapsedSelectionTouchesTextRange(selectionRanges, {
           from: line.from + span.from,
           to: line.from + span.to,
         })
       ) {
         continue;
       }
-      decorations.push(
-        Decoration.replace({
+      addAtomicReplacement(
+        decorations,
+        atomicRanges,
+        line.from + span.from,
+        line.from + span.to,
+        {
           widget: new InlineMathWidget(line.text.slice(span.openTo, span.closeFrom)),
-        }).range(line.from + span.from, line.from + span.to),
+        },
       );
       continue;
     }
 
-    const className = inlineClassForType(span.type);
+    let className = inlineClassForType(span.type);
     if (!className) continue;
-    if (inlineMarkdownMarkersTouched(span, selectionRanges, line.from)) continue;
+    if (
+      span.type === "inline_code" &&
+      selectionOverlapsTextRange(selectionRanges, {
+        from: contentFrom,
+        to: contentTo,
+      })
+    ) {
+      className = `${className} cm-hybrid-inline-code-selected`;
+    }
 
-    decorations.push(Decoration.replace({}).range(line.from + span.from, contentFrom));
+    addAtomicReplacement(decorations, atomicRanges, line.from + span.from, contentFrom);
     decorations.push(Decoration.mark({ class: className }).range(contentFrom, contentTo));
-    decorations.push(Decoration.replace({}).range(contentTo, line.from + span.to));
+    addAtomicReplacement(decorations, atomicRanges, contentTo, line.from + span.to);
   }
 }
 
@@ -980,69 +1172,98 @@ class TaskCheckboxWidget extends WidgetType {
   }
 }
 
-function addTaskDecorations(decorations, line, selectionRanges = []) {
+function addTaskDecorations(decorations, atomicRanges, line) {
   const task = parseMarkdownTaskLine(line.text);
   if (!task) return false;
-  if (
-    selectionTouchesTextRange(selectionRanges, {
-      from: line.from,
-      to: line.from + task.markerLength,
-    })
-  ) {
-    return false;
-  }
 
   const taskMarkerStart = line.text.slice(0, task.markerLength).search(/\[[ xX]\]/);
   if (taskMarkerStart < 0) return false;
 
-  decorations.push(
-    Decoration.replace({
+  addAtomicReplacement(
+    decorations,
+    atomicRanges,
+    line.from,
+    line.from + task.markerLength,
+    {
       widget: new TaskCheckboxWidget(
         task.checked,
         line.from + taskMarkerStart + 1,
       ),
-    }).range(line.from, line.from + task.markerLength),
+    },
   );
   return true;
 }
 
 class ListMarkerWidget extends WidgetType {
-  constructor(marker) {
+  constructor(marker, contentPosition) {
     super();
     this.marker = marker;
+    this.contentPosition = contentPosition;
   }
 
   eq(other) {
-    return other instanceof ListMarkerWidget && other.marker === this.marker;
+    return (
+      other instanceof ListMarkerWidget &&
+      other.marker === this.marker &&
+      other.contentPosition === this.contentPosition
+    );
   }
 
-  toDOM() {
+  contentAnchor(view) {
+    if (
+      !Number.isSafeInteger(this.contentPosition) ||
+      this.contentPosition < 0 ||
+      this.contentPosition > view.state.doc.length
+    ) {
+      return 0;
+    }
+
+    const line = view.state.doc.lineAt(this.contentPosition);
+    const relativeContentPosition = this.contentPosition - line.from;
+    const leadingInline = parseMarkdownInlineSpans(line.text).find((span) =>
+      span.from === relativeContentPosition,
+    );
+
+    if (leadingInline && Number.isSafeInteger(leadingInline.openTo)) {
+      return line.from + leadingInline.openTo;
+    }
+    return this.contentPosition;
+  }
+
+  toDOM(view) {
     const marker = document.createElement("span");
     marker.className = "cm-hybrid-list-marker";
     marker.textContent = this.marker;
+    const focusContent = (event) => {
+      event.preventDefault();
+      view.dispatch({ selection: { anchor: this.contentAnchor(view) } });
+      view.focus();
+    };
+    marker.addEventListener("mousedown", (event) => event.preventDefault());
+    marker.addEventListener("click", focusContent);
     return marker;
+  }
+
+  ignoreEvent() {
+    return true;
   }
 }
 
-function addListDecorations(decorations, line, selectionRanges = []) {
+function addListDecorations(decorations, atomicRanges, line) {
   const list = parseMarkdownListLine(line.text);
   if (!list) return false;
-  if (
-    selectionTouchesTextRange(selectionRanges, {
-      from: line.from + list.indentLength,
-      to: line.from + list.markerLength,
-    })
-  ) {
-    return false;
-  }
 
-  decorations.push(
-    Decoration.replace({
-      widget: new ListMarkerWidget(list.ordered ? list.marker : "•"),
-    }).range(
-      line.from + list.indentLength,
-      line.from + list.markerLength,
-    ),
+  addAtomicReplacement(
+    decorations,
+    atomicRanges,
+    line.from + list.indentLength,
+    line.from + list.markerLength,
+    {
+      widget: new ListMarkerWidget(
+        list.ordered ? list.marker : "•",
+        line.from + list.markerLength,
+      ),
+    },
   );
   return true;
 }
@@ -1059,37 +1280,31 @@ class HorizontalRuleWidget extends WidgetType {
   }
 }
 
-function addHorizontalRuleDecorations(decorations, line) {
+function addHorizontalRuleDecorations(decorations, atomicRanges, line) {
   if (!parseMarkdownHorizontalRuleLine(line.text)) return false;
 
-  decorations.push(
-    Decoration.replace({
+  addAtomicReplacement(
+    decorations,
+    atomicRanges,
+    line.from,
+    line.to,
+    {
       widget: new HorizontalRuleWidget(),
-    }).range(line.from, line.to),
+    },
   );
   return true;
 }
 
-function addBlockquoteDecorations(decorations, line, selectionRanges = []) {
+function addBlockquoteDecorations(decorations, atomicRanges, line) {
   const blockquote = parseMarkdownBlockquoteLine(line.text);
   if (!blockquote) return false;
-  if (
-    selectionTouchesTextRange(selectionRanges, {
-      from: line.from,
-      to: line.from + blockquote.markerLength,
-    })
-  ) {
-    return false;
-  }
 
   decorations.push(
     Decoration.line({
       class: "cm-hybrid-blockquote-line",
     }).range(line.from),
   );
-  decorations.push(
-    Decoration.replace({}).range(line.from, line.from + blockquote.markerLength),
-  );
+  addAtomicReplacement(decorations, atomicRanges, line.from, line.from + blockquote.markerLength);
   return true;
 }
 
@@ -1111,7 +1326,7 @@ class FootnoteDefinitionLabelWidget extends WidgetType {
   }
 }
 
-function addFootnoteDefinitionDecorations(decorations, line) {
+function addFootnoteDefinitionDecorations(decorations, atomicRanges, line) {
   const footnote = parseMarkdownFootnoteDefinitionLine(line.text);
   if (!footnote) return false;
 
@@ -1120,10 +1335,14 @@ function addFootnoteDefinitionDecorations(decorations, line) {
       class: "cm-hybrid-footnote-line",
     }).range(line.from),
   );
-  decorations.push(
-    Decoration.replace({
+  addAtomicReplacement(
+    decorations,
+    atomicRanges,
+    line.from,
+    line.from + footnote.markerLength,
+    {
       widget: new FootnoteDefinitionLabelWidget(footnote.label),
-    }).range(line.from, line.from + footnote.markerLength),
+    },
   );
   return true;
 }
@@ -1144,62 +1363,56 @@ class CodeFenceWidget extends WidgetType {
     );
   }
 
-  toDOM(view) {
+  toDOM() {
     const label = document.createElement("span");
     label.className = "cm-hybrid-code-info";
     label.textContent = this.info || "code";
-    label.tabIndex = 0;
-    label.setAttribute("role", "button");
-    label.setAttribute("aria-label", "Edit code block language");
-    const focusInfo = (event) => {
-      event.preventDefault();
-      const from = this.infoRange?.from ?? this.infoRange?.to;
-      const to = this.infoRange?.to ?? from;
-      if (!Number.isSafeInteger(from) || !Number.isSafeInteger(to)) return;
-      view.dispatch({ selection: { anchor: from, head: to } });
-      view.focus();
-    };
+    label.setAttribute("aria-hidden", "true");
     label.addEventListener("mousedown", (event) => event.preventDefault());
-    label.addEventListener("click", focusInfo);
-    label.addEventListener("keydown", (event) => {
-      if (event.key === "Enter" || event.key === " ") {
-        focusInfo(event);
-      }
-    });
     return label;
   }
 
   ignoreEvent() {
-    return false;
+    return true;
   }
 }
 
-function addCodeBlockDecorations(decorations, line, block, tier) {
+function addCodeBlockDecorations(decorations, atomicRanges, line, block, tier) {
   const level = hybridDecorationLevel("code", tier);
   if (level === "source") return;
 
   const isStart = line.number === block.fromLine;
-  const isEnd = line.number === block.toLine;
+  const isClosingFence = Boolean(block.hasClosingFence && line.number === block.toLine);
+  const isContentEnd = Boolean(
+    block.hasClosingFence
+      ? line.number === block.toLine - 1
+      : line.number === block.toLine,
+  );
   const classes = [
     "cm-hybrid-code-block-line",
     isStart ? "cm-hybrid-code-block-start" : "",
-    isEnd ? "cm-hybrid-code-block-end" : "",
+    isContentEnd ? "cm-hybrid-code-block-end" : "",
+    isClosingFence ? "cm-hybrid-code-block-fence-end" : "",
   ].filter(Boolean).join(" ");
 
   decorations.push(Decoration.line({ class: classes }).range(line.from));
   if (level === "full" && isStart) {
     const infoRange = markdownCodeFenceInfoRange(line.text, line.from);
-    decorations.push(
-      Decoration.replace({
+    addAtomicReplacement(
+      decorations,
+      atomicRanges,
+      line.from,
+      line.to,
+      {
         widget: new CodeFenceWidget(isStart ? block.info : "", infoRange),
-      }).range(line.from, line.to),
+      },
     );
-  } else if (level === "full" && isEnd) {
-    decorations.push(Decoration.replace({}).range(line.from, line.to));
+  } else if (level === "full" && isClosingFence) {
+    addAtomicReplacement(decorations, atomicRanges, line.from, line.to);
   }
 }
 
-function addFrontMatterDecorations(decorations, line, block) {
+function addFrontMatterDecorations(decorations, atomicRanges, line, block) {
   const isStart = line.number === block.fromLine;
   const isEnd = line.number === block.toLine;
   const classes = [
@@ -1210,7 +1423,7 @@ function addFrontMatterDecorations(decorations, line, block) {
 
   decorations.push(Decoration.line({ class: classes }).range(line.from));
   if (isStart || isEnd) {
-    decorations.push(Decoration.replace({}).range(line.from, line.to));
+    addAtomicReplacement(decorations, atomicRanges, line.from, line.to);
   }
 }
 
@@ -1266,8 +1479,8 @@ function deriveHybridBlockContext(state) {
     hintRanges,
     usesBlockHints,
     codeBlocks: usesBlockHints
-      ? codeBlocksFromHints(hintRanges)
-      : codeBlocksWithoutMermaid(scannedCodeBlocks),
+      ? codeBlocksFromHints(hintRanges, state.doc)
+      : codeBlocksWithoutMermaid(scannedCodeBlocks, state.doc),
     mermaidBlocks: usesBlockHints
       ? mermaidBlocksFromHints(hintRanges, state.doc)
       : mermaidBlocksFromScannedCodeBlocks(scannedCodeBlocks, lines),
@@ -1302,7 +1515,7 @@ function headingDecorationForLine(context, line) {
   return parseMarkdownHeadingLine(line.text);
 }
 
-function addHeadingDecorations(decorations, line, heading, tier, selectionRanges) {
+function addHeadingDecorations(decorations, atomicRanges, line, heading, tier, selectionRanges) {
   const markerTo = line.from + heading.markerLength;
   const level = hybridHeadingDecorationLevel(
     tier,
@@ -1321,7 +1534,7 @@ function addHeadingDecorations(decorations, line, heading, tier, selectionRanges
     return true;
   }
 
-  decorations.push(Decoration.replace({}).range(line.from, markerTo));
+  addAtomicReplacement(decorations, atomicRanges, line.from, markerTo);
   decorations.push(
     Decoration.mark({
       class: `cm-hybrid-heading cm-hybrid-heading-${heading.level}`,
@@ -1335,13 +1548,20 @@ function buildHybridMarkdownDecorations(
   context,
 ) {
   if (view.state.field(viewModeField, false) !== "hybrid") {
-    return Decoration.none;
+    return {
+      decorations: Decoration.none,
+      atomicRanges: Decoration.none,
+    };
   }
   if (viewIsComposing(view)) {
-    return Decoration.none;
+    return {
+      decorations: Decoration.none,
+      atomicRanges: Decoration.none,
+    };
   }
 
   const decorations = [];
+  const atomicRanges = [];
   let lastLineNumber = -1;
 
   for (const range of view.visibleRanges) {
@@ -1359,7 +1579,7 @@ function buildHybridMarkdownDecorations(
           context.frontMatterBlock.toLine,
         );
         if (tier === "near") {
-          addFrontMatterDecorations(decorations, line, context.frontMatterBlock);
+          addFrontMatterDecorations(decorations, atomicRanges, line, context.frontMatterBlock);
         }
         continue;
       }
@@ -1376,9 +1596,7 @@ function buildHybridMarkdownDecorations(
           codeBlock.fromLine,
           codeBlock.toLine,
         );
-        if (tier !== "current") {
-          addCodeBlockDecorations(decorations, line, codeBlock, tier);
-        }
+        addCodeBlockDecorations(decorations, atomicRanges, line, codeBlock, tier);
         continue;
       }
 
@@ -1418,13 +1636,14 @@ function buildHybridMarkdownDecorations(
       if (heading) {
         const headingDecorated = addHeadingDecorations(
           decorations,
+          atomicRanges,
           line,
           heading,
           tier,
           selectionRanges,
         );
         if (headingDecorated && inlineDecorationsEnabled(tier)) {
-          addInlineDecorations(decorations, line, selectionRanges);
+          addInlineDecorations(decorations, atomicRanges, line, selectionRanges);
         }
         continue;
       }
@@ -1432,46 +1651,49 @@ function buildHybridMarkdownDecorations(
       if (!heading) {
         if (tier === "current") {
           if (hybridDecorationLevel("quote", tier) === "full") {
-            addBlockquoteDecorations(decorations, line, selectionRanges);
+            addBlockquoteDecorations(decorations, atomicRanges, line);
           }
           if (hybridDecorationLevel("task", tier) === "widget") {
-            addTaskDecorations(decorations, line, selectionRanges);
+            addTaskDecorations(decorations, atomicRanges, line);
           }
           if (hybridDecorationLevel("list", tier) === "full") {
-            addListDecorations(decorations, line, selectionRanges);
+            addListDecorations(decorations, atomicRanges, line);
           }
           if (inlineDecorationsEnabled(tier)) {
-            addInlineDecorations(decorations, line, selectionRanges);
+            addInlineDecorations(decorations, atomicRanges, line, selectionRanges);
           }
           continue;
         }
         if (hybridDecorationLevel("rule", tier) === "full") {
-          if (addHorizontalRuleDecorations(decorations, line)) continue;
+          if (addHorizontalRuleDecorations(decorations, atomicRanges, line)) continue;
         }
         if (hybridDecorationLevel("footnote", tier) === "full") {
-          if (addFootnoteDefinitionDecorations(decorations, line)) continue;
+          if (addFootnoteDefinitionDecorations(decorations, atomicRanges, line)) continue;
         }
         if (hybridDecorationLevel("quote", tier) === "full") {
-          addBlockquoteDecorations(decorations, line, selectionRanges);
+          addBlockquoteDecorations(decorations, atomicRanges, line);
         }
         if (hybridDecorationLevel("task", tier) === "widget") {
-          addTaskDecorations(decorations, line, selectionRanges);
+          addTaskDecorations(decorations, atomicRanges, line);
         }
         if (hybridDecorationLevel("list", tier) === "full") {
-          addListDecorations(decorations, line, selectionRanges);
+          addListDecorations(decorations, atomicRanges, line);
         }
         if (hybridDecorationLevel("image", tier) === "widget") {
           addImageDecorations(decorations, line);
         }
         if (inlineDecorationsEnabled(tier)) {
-          addInlineDecorations(decorations, line, selectionRanges);
+          addInlineDecorations(decorations, atomicRanges, line, selectionRanges);
         }
         continue;
       }
     }
   }
 
-  return Decoration.set(decorations, true);
+  return {
+    decorations: Decoration.set(decorations, true),
+    atomicRanges: Decoration.set(atomicRanges, true),
+  };
 }
 
 function buildHybridBlockWidgetDecorations(state) {
@@ -1493,7 +1715,7 @@ function buildHybridBlockWidgetDecorations(state) {
     if (hybridDecorationLevel(block.widgetKind, tier) !== "full") continue;
 
     if (block.widgetKind === "mermaid") {
-      addMermaidBlockDecorations(decorations, state, block);
+      addMermaidBlockDecorations(decorations, state, block, tier === "current");
     } else if (block.widgetKind === "math") {
       addMathBlockDecorations(decorations, state, block);
     } else if (
@@ -1560,10 +1782,12 @@ const hybridHeadingPlugin = ViewPlugin.fromClass(
     constructor(view) {
       this.blockContext = deriveHybridBlockContext(view.state);
       this.composing = viewIsComposing(view);
-      this.decorations = buildHybridMarkdownDecorations(
+      const decorated = buildHybridMarkdownDecorations(
         view,
         this.blockContext,
       );
+      this.decorations = decorated.decorations;
+      this.atomicRanges = decorated.atomicRanges;
     }
 
     update(update) {
@@ -1583,15 +1807,30 @@ const hybridHeadingPlugin = ViewPlugin.fromClass(
         composingChanged ||
         hintsChanged
       ) {
-        this.decorations = buildHybridMarkdownDecorations(
+        const decorated = buildHybridMarkdownDecorations(
           update.view,
           this.blockContext,
         );
+        this.decorations = decorated.decorations;
+        this.atomicRanges = decorated.atomicRanges;
+        if (
+          update.docChanged ||
+          update.viewportChanged ||
+          viewModeChanged(update) ||
+          composingChanged ||
+          hintsChanged
+        ) {
+          update.view.requestMeasure();
+        }
       }
     }
   },
   {
     decorations: (plugin) => plugin.decorations,
+    provide: (plugin) =>
+      EditorView.atomicRanges.of((view) =>
+        view.plugin(plugin)?.atomicRanges ?? Decoration.none,
+      ),
   },
 );
 
@@ -1623,6 +1862,124 @@ const compositionClassPlugin = ViewPlugin.fromClass(
 /* Extensions read the current tab id from `view.dom.dataset.tabId` instead of
  * closure-capturing it. That lets a single view be recycled across tabs
  * without rebuilding all its extensions — the hot path for pool reuse. */
+function shouldUseRelaxedPointerHit(event, view) {
+  if (event.button !== 0 || event.detail !== 1) return false;
+  const target = event.target;
+  if (!(target instanceof Element)) return false;
+  if (!view.contentDOM.contains(target)) return false;
+  if (target.closest("input, textarea, button, select")) return false;
+  if (target.closest(".cm-hybrid-mermaid-source-editor, .cm-hybrid-table-widget")) return false;
+  return true;
+}
+
+function pointerCoordsAdjustment(view, event) {
+  const coords = { x: event.clientX, y: event.clientY };
+  const rawPos = view.posAtCoords(coords, false);
+  if (!Number.isSafeInteger(rawPos) || rawPos <= 0) return null;
+
+  const rawLine = view.state.doc.lineAt(rawPos);
+  if (rawLine.number <= 1) return null;
+
+  const lineStart = view.coordsAtPos(rawLine.from, 1);
+  if (!lineStart) return null;
+
+  const topLeadingSlack = Math.min(
+    5,
+    Math.max(2, view.defaultLineHeight * 0.14),
+  );
+  if (event.clientY >= lineStart.top + topLeadingSlack) return null;
+
+  const rawBlock = view.lineBlockAt(rawLine.from);
+  const previousBlock = view.lineBlockAtHeight(Math.max(0, rawBlock.top - 1));
+  if (!previousBlock || previousBlock.to > rawBlock.from) return null;
+
+  const previousBottom = view.documentTop + previousBlock.bottom;
+  return {
+    x: event.clientX,
+    y: Math.min(previousBottom - 1, event.clientY - topLeadingSlack),
+  };
+}
+
+function pointerPositionAt(view, coords) {
+  if (typeof view.posAndSideAtCoords === "function") {
+    return view.posAndSideAtCoords(coords, false);
+  }
+
+  const pos = view.posAtCoords(coords, false);
+  return {
+    pos: Number.isSafeInteger(pos) ? pos : view.state.selection.main.head,
+    assoc: 0,
+  };
+}
+
+function rawPointerPosition(view, event) {
+  return pointerPositionAt(view, {
+    x: event.clientX,
+    y: event.clientY,
+  });
+}
+
+function pointerPosition(view, event) {
+  return pointerPositionAt(
+    view,
+    pointerCoordsAdjustment(view, event) ?? {
+      x: event.clientX,
+      y: event.clientY,
+    },
+  );
+}
+
+function pointerMovedFrom(startEvent, event) {
+  return (
+    Math.max(
+      Math.abs(event.clientX - startEvent.clientX),
+      Math.abs(event.clientY - startEvent.clientY),
+    ) >= 10
+  );
+}
+
+function relaxedPointerSelectionStyle(view, event) {
+  if (!shouldUseRelaxedPointerHit(event, view)) return null;
+  if (!pointerCoordsAdjustment(view, event)) return null;
+
+  const startEvent = event;
+  let adjustedStart = pointerPosition(view, event);
+  let rawStart = rawPointerPosition(view, event);
+  let startSelection = view.state.selection;
+  return {
+    update(update) {
+      if (!update.docChanged) return;
+      adjustedStart = {
+        ...adjustedStart,
+        pos: update.changes.mapPos(adjustedStart.pos),
+      };
+      rawStart = {
+        ...rawStart,
+        pos: update.changes.mapPos(rawStart.pos),
+      };
+      startSelection = startSelection.map(update.changes);
+    },
+    get(event, extend, multiple) {
+      const useAdjustedClick = !pointerMovedFrom(startEvent, event);
+      const start = useAdjustedClick ? adjustedStart : rawStart;
+      const current = useAdjustedClick
+        ? pointerPosition(view, event)
+        : rawPointerPosition(view, event);
+      const range = start.pos === current.pos
+        ? EditorSelection.cursor(current.pos, current.assoc)
+        : EditorSelection.range(start.pos, current.pos, current.assoc);
+
+      if (extend) {
+        return startSelection.replaceRange(
+          startSelection.main.extend(range.from, range.to, range.assoc),
+        );
+      }
+      if (multiple) return startSelection.addRange(range);
+      return EditorSelection.create([range]);
+    },
+  };
+}
+
 function runFormatShortcut(kind) {
   return (view) => applyFormatToView(view, kind);
 }
@@ -1651,6 +2008,7 @@ function buildExtensions() {
     viewModeField,
     blockHintsField,
     hybridBlockWidgetField,
+    EditorView.mouseSelectionStyle.of(relaxedPointerSelectionStyle),
     lineNumbers(),
     drawSelection(),
     highlightActiveLine(),
@@ -1676,7 +2034,7 @@ function buildExtensions() {
         }
 
         const text = event.clipboardData?.getData("text/plain") ?? "";
-        if (!pasteMarkdownLinkInView(view, text, entry.preferences)) return false;
+        if (!pastePlainTextInView(view, text, entry.preferences)) return false;
 
         event.preventDefault();
         return true;
@@ -1795,9 +2153,11 @@ function refreshEditorLayout(view) {
   queueMicrotask(measure);
   if (typeof requestAnimationFrame === "function") {
     requestAnimationFrame(measure);
+    requestAnimationFrame(() => requestAnimationFrame(measure));
   } else {
     setTimeout(measure, 0);
   }
+  setTimeout(measure, 80);
 }
 
 function disconnectLayoutObserver(entry) {
