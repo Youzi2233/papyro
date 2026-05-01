@@ -107,3 +107,5 @@ Slate 很灵活，但相比 ProseMirror/Tiptap，Papyro 需要自己实现更多
 - 增加 cursor placement 测试：inline code、link、list marker、code fence、table 和 Mermaid。
 - 增加 selection color 和 selection replacement 测试：覆盖 inline widget 和 block widget。
 - 增加一个手工/可视 smoke fixture，包含标题、列表、链接、inline code、代码块、表格、公式、图片和 Mermaid。
+
+当前可重复覆盖位于 `js/test/editor-core.test.js`，主 Markdown fixture 是 `js/test/fixtures/hybrid-editing-baseline.md`。

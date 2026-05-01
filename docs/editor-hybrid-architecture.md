@@ -107,3 +107,5 @@ Long-term decision:
 - Add tests for cursor placement around inline code, links, list markers, code fences, tables, and Mermaid.
 - Add tests for selection color and selection replacement across inline and block widgets.
 - Add a visual/manual smoke fixture with headings, lists, links, inline code, code blocks, tables, math, images, and Mermaid.
+
+Current repeatable coverage lives in `js/test/editor-core.test.js` and uses `js/test/fixtures/hybrid-editing-baseline.md` for the main Markdown fixture.

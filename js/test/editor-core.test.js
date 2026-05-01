@@ -1050,6 +1050,90 @@ test("relaxed pointer hit testing keeps near-top clicks on the previous line", (
   );
 });
 
+test("hybrid regression smoke covers cursor selection paste ime and block transitions", () => {
+  const inlineLine = hybridFixtureLines.find((line) => line.startsWith("Paragraph"));
+  const inlineSpans = parseMarkdownInlineSpans(inlineLine);
+  const inlineCode = inlineSpans.find((span) => span.type === "inline_code");
+  const link = inlineSpans.find((span) => span.type === "link");
+  const lineOffset = 40;
+
+  assert.ok(inlineCode);
+  assert.ok(link);
+  assert.equal(
+    inlineMarkdownMarkersTouched(
+      inlineCode,
+      [{ from: lineOffset + inlineCode.openTo + 1, to: lineOffset + inlineCode.openTo + 1 }],
+      lineOffset,
+    ),
+    false,
+  );
+  assert.equal(
+    inlineMarkdownMarkersTouched(
+      link,
+      [{ from: lineOffset + link.openTo, to: lineOffset + link.closeFrom }],
+      lineOffset,
+    ),
+    false,
+  );
+  assert.equal(
+    selectionOverlapsTextRange(
+      [{ from: lineOffset + inlineCode.openTo, to: lineOffset + inlineCode.closeFrom }],
+      { from: lineOffset + inlineCode.openTo, to: lineOffset + inlineCode.closeFrom },
+    ),
+    true,
+  );
+
+  assert.ok(
+    relaxedPointerCoordsAdjustment({
+      rawPos: 72,
+      rawLineNumber: 4,
+      rawLineFrom: 60,
+      previousBlockTo: 60,
+      eventX: 160,
+      eventY: 202,
+      rawLineTop: 200,
+      previousBlockBottom: 198,
+      defaultLineHeight: 26,
+    }),
+  );
+
+  const pasteView = fakeView("Alpha Beta Gamma", { from: 6, to: 10 });
+  assert.equal(pastePlainTextInView(pasteView, "Delta", { autoLinkPaste: false }), true);
+  assert.equal(pasteView.state.doc.toString(), "Alpha Delta Gamma");
+  assert.deepEqual(pasteView.state.selection.main, { from: 11, to: 11 });
+
+  const shortcutView = fakeView("#", { from: 1, to: 1 });
+  shortcutView.composing = true;
+  assert.equal(completeMarkdownShortcutOnSpace(shortcutView), false);
+
+  const fenceView = fakeView("```", { from: 3, to: 3 });
+  fenceView.compositionStarted = true;
+  assert.equal(handleMarkdownEnter(fenceView), false);
+
+  const codeBlock = { kind: { type: "fenced_code" }, start_line: 3, end_line: 5 };
+  assert.equal(
+    hybridBlockState(codeBlock, {
+      selectionLineRanges: [{ fromLine: 3, toLine: 3 }],
+    }),
+    "editing",
+  );
+  assert.equal(
+    hybridBlockState(codeBlock, {
+      selectionLineRanges: [{ fromLine: 12, toLine: 12 }],
+    }),
+    "rendered",
+  );
+
+  let mermaid = nextMermaidBlockState(
+    { mode: "rendered", source: "flowchart TD\nA --> B" },
+    { type: "pointer_down" },
+  );
+  assert.equal(mermaid.mode, "editing");
+  mermaid = nextMermaidBlockState(mermaid, { type: "blur" });
+  assert.equal(mermaid.mode, "rendered");
+  assert.equal(mermaid.pending, true);
+});
+
 test("current code table and mermaid blocks stay rendered", () => {
   const currentCodeTier = markdownDecorationTier(
     [{ fromLine: 2, toLine: 2 }],
