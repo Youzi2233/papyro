@@ -2,8 +2,8 @@ use crate::commands::{
     AppCommands, DeleteTagRequest, RenameTagRequest, SetTagColorRequest, UpsertTagRequest,
 };
 use crate::components::primitives::{
-    Button, ButtonVariant, Dropdown, DropdownOption, SegmentedControl, SegmentedControlOption,
-    Slider, Toggle,
+    Button, ButtonVariant, Dropdown, DropdownOption, Modal, SegmentedControl,
+    SegmentedControlOption, Slider, Toggle,
 };
 use crate::context::use_app_context;
 use crate::i18n::use_i18n;
@@ -99,229 +99,230 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
     };
 
     rsx! {
-        div { class: "mn-modal-overlay", onclick: move |_| on_close.call(()),
-            div { class: "mn-modal mn-settings-modal", onclick: move |event| event.stop_propagation(),
-                div { class: "mn-modal-header",
-                    h2 { class: "mn-modal-title", {i18n.text("Settings", "设置")} }
-                    button {
-                        class: "mn-modal-close",
-                        "aria-label": i18n.text("Close settings", "关闭设置"),
-                        onclick: move |_| on_close.call(()),
-                        "x"
-                    }
+    Modal {
+        label: i18n.text("Settings", "设置").to_string(),
+        class_name: "mn-modal mn-settings-modal".to_string(),
+        on_close,
+        div { class: "mn-modal-header",
+                h2 { class: "mn-modal-title", {i18n.text("Settings", "设置")} }
+                button {
+                    class: "mn-modal-close",
+                    "aria-label": i18n.text("Close settings", "关闭设置"),
+                    onclick: move |_| on_close.call(()),
+                    "x"
                 }
-                div { class: "mn-modal-body mn-settings-body",
-                    div { class: "mn-settings-layout",
-                        nav {
-                            class: "mn-settings-nav",
-                            "aria-label": i18n.text("Settings navigation", "设置导航"),
-                            div { class: "mn-settings-nav-list",
-                                SettingsNavButton {
-                                    label: i18n.text("General", "通用设置").to_string(),
-                                    active: active_panel() == SettingsPanel::General,
-                                    on_click: move |_| active_panel.set(SettingsPanel::General),
-                                }
-                                SettingsNavButton {
-                                    label: i18n.text("About Papyro", "关于 Papyro").to_string(),
-                                    active: active_panel() == SettingsPanel::About,
-                                    on_click: move |_| active_panel.set(SettingsPanel::About),
-                                }
+            }
+            div { class: "mn-modal-body mn-settings-body",
+                div { class: "mn-settings-layout",
+                    nav {
+                        class: "mn-settings-nav",
+                        "aria-label": i18n.text("Settings navigation", "设置导航"),
+                        div { class: "mn-settings-nav-list",
+                            SettingsNavButton {
+                                label: i18n.text("General", "通用设置").to_string(),
+                                active: active_panel() == SettingsPanel::General,
+                                on_click: move |_| active_panel.set(SettingsPanel::General),
+                            }
+                            SettingsNavButton {
+                                label: i18n.text("About Papyro", "关于 Papyro").to_string(),
+                                active: active_panel() == SettingsPanel::About,
+                                on_click: move |_| active_panel.set(SettingsPanel::About),
                             }
                         }
-                        div { class: "mn-settings-content",
-                            if active_panel() == SettingsPanel::General {
-                                div { class: "mn-settings-panel",
-                                    div { class: "mn-settings-panel-body mn-settings-grid",
-                                        SettingSection {
-                                            label: i18n.text("Interface", "界面").to_string(),
-                                            class_name: "mn-setting-section-card".to_string(),
-                                            SettingRow {
-                                                label: i18n.text("Language", "语言").to_string(),
-                                                Dropdown {
-                                                    label: i18n.text("App language", "应用语言").to_string(),
-                                                    options: language_options,
-                                                    selected: language_value(language()).to_string(),
-                                                    on_change: move |value: String| {
-                                                        if let Some(next_language) = language_from_value(&value) {
-                                                            language.set(next_language);
-                                                        }
-                                                    },
-                                                }
+                    }
+                    div { class: "mn-settings-content",
+                        if active_panel() == SettingsPanel::General {
+                            div { class: "mn-settings-panel",
+                                div { class: "mn-settings-panel-body mn-settings-grid",
+                                    SettingSection {
+                                        label: i18n.text("Interface", "界面").to_string(),
+                                        class_name: "mn-setting-section-card".to_string(),
+                                        SettingRow {
+                                            label: i18n.text("Language", "语言").to_string(),
+                                            Dropdown {
+                                                label: i18n.text("App language", "应用语言").to_string(),
+                                                options: language_options,
+                                                selected: language_value(language()).to_string(),
+                                                on_change: move |value: String| {
+                                                    if let Some(next_language) = language_from_value(&value) {
+                                                        language.set(next_language);
+                                                    }
+                                                },
                                             }
-                                            SettingRow {
+                                        }
+                                        SettingRow {
+                                            label: i18n.text("Theme", "主题").to_string(),
+                                            SegmentedControl {
                                                 label: i18n.text("Theme", "主题").to_string(),
-                                                SegmentedControl {
-                                                    label: i18n.text("Theme", "主题").to_string(),
-                                                    options: theme_options,
-                                                    selected: theme_value(&theme()).to_string(),
-                                                    class_name: "mn-settings-theme-segmented".to_string(),
-                                                    on_change: move |value: String| {
-                                                        if let Some(next_theme) = theme_from_value(&value) {
-                                                            theme.set(next_theme);
-                                                        }
-                                                    },
-                                                }
+                                                options: theme_options,
+                                                selected: theme_value(&theme()).to_string(),
+                                                class_name: "mn-settings-theme-segmented".to_string(),
+                                                on_change: move |value: String| {
+                                                    if let Some(next_theme) = theme_from_value(&value) {
+                                                        theme.set(next_theme);
+                                                    }
+                                                },
                                             }
-                                        }
-                                        SettingSection {
-                                            label: i18n.text("Editor", "编辑器").to_string(),
-                                            class_name: "mn-setting-section-card".to_string(),
-                                            SettingRow {
-                                                label: i18n.text("Font family", "字体").to_string(),
-                                                Dropdown {
-                                                    label: i18n.text("Font family", "字体").to_string(),
-                                                    options: font_options,
-                                                    selected: font_family(),
-                                                    on_change: move |value: String| font_family.set(value),
-                                                }
-                                            }
-                                            SettingRow {
-                                                label: format!(
-                                                    "{} ({}px)",
-                                                    i18n.text("Font size", "字号"),
-                                                    font_size()
-                                                ),
-                                                Slider {
-                                                    label: i18n.text("Font size", "字号").to_string(),
-                                                    value: font_size().to_string(),
-                                                    min: "12".to_string(),
-                                                    max: "24".to_string(),
-                                                    step: "1".to_string(),
-                                                    on_input: move |value: String| {
-                                                        if let Ok(v) = value.parse::<u8>() {
-                                                            font_size.set(v);
-                                                        }
-                                                    },
-                                                }
-                                            }
-                                            SettingRow {
-                                                label: format!(
-                                                    "{} ({:.1})",
-                                                    i18n.text("Line height", "行高"),
-                                                    line_height()
-                                                ),
-                                                Slider {
-                                                    label: i18n.text("Line height", "行高").to_string(),
-                                                    value: format!("{:.1}", line_height()),
-                                                    min: "1.2".to_string(),
-                                                    max: "2.4".to_string(),
-                                                    step: "0.1".to_string(),
-                                                    on_input: move |value: String| {
-                                                        if let Ok(v) = value.parse::<f32>() {
-                                                            line_height.set(v);
-                                                        }
-                                                    },
-                                                }
-                                            }
-                                            SettingRow {
-                                                label: i18n.text("Paste URL as link", "粘贴 URL 时转成链接").to_string(),
-                                                Toggle {
-                                                    label: i18n.text("Paste URL as link", "粘贴 URL 时转成链接").to_string(),
-                                                    checked: auto_link_paste(),
-                                                    on_change: move |checked| auto_link_paste.set(checked),
-                                                }
-                                            }
-                                        }
-                                        SettingSection {
-                                            label: i18n.text("Saving", "保存").to_string(),
-                                            class_name: "mn-setting-section-card".to_string(),
-                                            SettingRow {
-                                                label: format!(
-                                                    "{} ({}ms)",
-                                                    i18n.text("Auto-save delay", "自动保存延迟"),
-                                                    auto_save_ms()
-                                                ),
-                                                Slider {
-                                                    label: i18n.text("Auto-save delay", "自动保存延迟").to_string(),
-                                                    value: auto_save_ms().to_string(),
-                                                    min: "200".to_string(),
-                                                    max: "3000".to_string(),
-                                                    step: "100".to_string(),
-                                                    on_input: move |value: String| {
-                                                        if let Ok(v) = value.parse::<u64>() {
-                                                            auto_save_ms.set(v);
-                                                        }
-                                                    },
-                                                }
-                                            }
-                                        }
-                                        TagManagementSection {
-                                            tags: settings_workspace.tags.clone(),
-                                            has_workspace,
-                                            commands: tag_commands,
                                         }
                                     }
+                                    SettingSection {
+                                        label: i18n.text("Editor", "编辑器").to_string(),
+                                        class_name: "mn-setting-section-card".to_string(),
+                                        SettingRow {
+                                            label: i18n.text("Font family", "字体").to_string(),
+                                            Dropdown {
+                                                label: i18n.text("Font family", "字体").to_string(),
+                                                options: font_options,
+                                                selected: font_family(),
+                                                on_change: move |value: String| font_family.set(value),
+                                            }
+                                        }
+                                        SettingRow {
+                                            label: format!(
+                                                "{} ({}px)",
+                                                i18n.text("Font size", "字号"),
+                                                font_size()
+                                            ),
+                                            Slider {
+                                                label: i18n.text("Font size", "字号").to_string(),
+                                                value: font_size().to_string(),
+                                                min: "12".to_string(),
+                                                max: "24".to_string(),
+                                                step: "1".to_string(),
+                                                on_input: move |value: String| {
+                                                    if let Ok(v) = value.parse::<u8>() {
+                                                        font_size.set(v);
+                                                    }
+                                                },
+                                            }
+                                        }
+                                        SettingRow {
+                                            label: format!(
+                                                "{} ({:.1})",
+                                                i18n.text("Line height", "行高"),
+                                                line_height()
+                                            ),
+                                            Slider {
+                                                label: i18n.text("Line height", "行高").to_string(),
+                                                value: format!("{:.1}", line_height()),
+                                                min: "1.2".to_string(),
+                                                max: "2.4".to_string(),
+                                                step: "0.1".to_string(),
+                                                on_input: move |value: String| {
+                                                    if let Ok(v) = value.parse::<f32>() {
+                                                        line_height.set(v);
+                                                    }
+                                                },
+                                            }
+                                        }
+                                        SettingRow {
+                                            label: i18n.text("Paste URL as link", "粘贴 URL 时转成链接").to_string(),
+                                            Toggle {
+                                                label: i18n.text("Paste URL as link", "粘贴 URL 时转成链接").to_string(),
+                                                checked: auto_link_paste(),
+                                                on_change: move |checked| auto_link_paste.set(checked),
+                                            }
+                                        }
+                                    }
+                                    SettingSection {
+                                        label: i18n.text("Saving", "保存").to_string(),
+                                        class_name: "mn-setting-section-card".to_string(),
+                                        SettingRow {
+                                            label: format!(
+                                                "{} ({}ms)",
+                                                i18n.text("Auto-save delay", "自动保存延迟"),
+                                                auto_save_ms()
+                                            ),
+                                            Slider {
+                                                label: i18n.text("Auto-save delay", "自动保存延迟").to_string(),
+                                                value: auto_save_ms().to_string(),
+                                                min: "200".to_string(),
+                                                max: "3000".to_string(),
+                                                step: "100".to_string(),
+                                                on_input: move |value: String| {
+                                                    if let Ok(v) = value.parse::<u64>() {
+                                                        auto_save_ms.set(v);
+                                                    }
+                                                },
+                                            }
+                                        }
+                                    }
+                                    TagManagementSection {
+                                        tags: settings_workspace.tags.clone(),
+                                        has_workspace,
+                                        commands: tag_commands,
+                                    }
                                 }
-                            } else {
-                                div { class: "mn-settings-panel",
-                                    div { class: "mn-about-card",
-                                        div { class: "mn-about-hero",
-                                            div { class: "mn-about-brand",
-                                                div { class: "mn-about-app", "Papyro" }
-                                                p { class: "mn-about-summary",
-                                                    {i18n.text(
-                                                        "Built for people who want their notes to stay readable, portable, and pleasant to work in every day.",
-                                                        "为那些希望笔记始终可读、可迁移、并且每天都用得顺手的人而设计。",
-                                                    )}
-                                                }
-                                            }
-                                            div { class: "mn-about-version-badge", "v{APP_VERSION}" }
-                                        }
-                                        div { class: "mn-about-grid",
-                                            AboutMetaItem {
-                                                label: i18n.text("Editor", "编辑器").to_string(),
-                                                value: i18n.text(
-                                                    "Markdown editing with source, hybrid, and preview workflows",
-                                                    "支持源码、混合与预览工作流的 Markdown 编辑体验",
-                                                ).to_string(),
-                                            }
-                                            AboutMetaItem {
-                                                label: i18n.text("Storage", "存储").to_string(),
-                                                value: i18n.text(
-                                                    "Local-first files and workspace organization",
-                                                    "本地优先的文件存储与工作区组织方式",
-                                                ).to_string(),
-                                            }
-                                            AboutMetaItem {
-                                                label: i18n.text("Runtime", "运行时").to_string(),
-                                                value: i18n.text(
-                                                    "Rust application shell with a Dioxus-based interface",
-                                                    "基于 Rust 应用壳与 Dioxus 界面层构建",
-                                                ).to_string(),
-                                            }
-                                            AboutMetaItem {
-                                                label: i18n.text("Focus", "定位").to_string(),
-                                                value: i18n.text(
-                                                    "Calm note-taking, quick navigation, and durable Markdown output",
-                                                    "强调沉浸式记录、快速导航与稳定的 Markdown 产出",
-                                                ).to_string(),
+                            }
+                        } else {
+                            div { class: "mn-settings-panel",
+                                div { class: "mn-about-card",
+                                    div { class: "mn-about-hero",
+                                        div { class: "mn-about-brand",
+                                            div { class: "mn-about-app", "Papyro" }
+                                            p { class: "mn-about-summary",
+                                                {i18n.text(
+                                                    "Built for people who want their notes to stay readable, portable, and pleasant to work in every day.",
+                                                    "为那些希望笔记始终可读、可迁移、并且每天都用得顺手的人而设计。",
+                                                )}
                                             }
                                         }
-                                        div { class: "mn-about-note",
-                                            {i18n.text(
-                                                "Papyro keeps the content format open, so your notes stay usable outside the app as plain Markdown files.",
-                                                "Papyro 保持内容格式开放，你的笔记始终可以作为普通 Markdown 文件在应用之外继续使用。",
-                                            )}
+                                        div { class: "mn-about-version-badge", "v{APP_VERSION}" }
+                                    }
+                                    div { class: "mn-about-grid",
+                                        AboutMetaItem {
+                                            label: i18n.text("Editor", "编辑器").to_string(),
+                                            value: i18n.text(
+                                                "Markdown editing with source, hybrid, and preview workflows",
+                                                "支持源码、混合与预览工作流的 Markdown 编辑体验",
+                                            ).to_string(),
                                         }
+                                        AboutMetaItem {
+                                            label: i18n.text("Storage", "存储").to_string(),
+                                            value: i18n.text(
+                                                "Local-first files and workspace organization",
+                                                "本地优先的文件存储与工作区组织方式",
+                                            ).to_string(),
+                                        }
+                                        AboutMetaItem {
+                                            label: i18n.text("Runtime", "运行时").to_string(),
+                                            value: i18n.text(
+                                                "Rust application shell with a Dioxus-based interface",
+                                                "基于 Rust 应用壳与 Dioxus 界面层构建",
+                                            ).to_string(),
+                                        }
+                                        AboutMetaItem {
+                                            label: i18n.text("Focus", "定位").to_string(),
+                                            value: i18n.text(
+                                                "Calm note-taking, quick navigation, and durable Markdown output",
+                                                "强调沉浸式记录、快速导航与稳定的 Markdown 产出",
+                                            ).to_string(),
+                                        }
+                                    }
+                                    div { class: "mn-about-note",
+                                        {i18n.text(
+                                            "Papyro keeps the content format open, so your notes stay usable outside the app as plain Markdown files.",
+                                            "Papyro 保持内容格式开放，你的笔记始终可以作为普通 Markdown 文件在应用之外继续使用。",
+                                        )}
                                     }
                                 }
                             }
                         }
                     }
                 }
-                div { class: "mn-modal-footer",
-                    Button {
-                        label: i18n.text("Cancel", "取消").to_string(),
-                        variant: ButtonVariant::Default,
-                        disabled: false,
-                        on_click: move |_| on_close.call(()),
-                    }
-                    Button {
-                        label: i18n.text("Save settings", "保存设置").to_string(),
-                        variant: ButtonVariant::Primary,
-                        disabled: false,
-                        on_click: save,
-                    }
+            }
+            div { class: "mn-modal-footer",
+                Button {
+                    label: i18n.text("Cancel", "取消").to_string(),
+                    variant: ButtonVariant::Default,
+                    disabled: false,
+                    on_click: move |_| on_close.call(()),
+                }
+                Button {
+                    label: i18n.text("Save settings", "保存设置").to_string(),
+                    variant: ButtonVariant::Primary,
+                    disabled: false,
+                    on_click: save,
                 }
             }
         }
