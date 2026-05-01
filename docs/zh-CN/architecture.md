@@ -301,6 +301,8 @@ flowchart TD
 - `UiState`
 - `NoteStorage` trait
 - `ProcessRuntimeSession`
+- `WindowSession`
+- `WindowSessionKind`
 
 判断代码是否适合放 `core`：
 
@@ -766,6 +768,19 @@ flowchart TD
 
 这块是 roadmap 里的重点，因为它会影响多 workspace、多 tab 和未来多窗口。
 打开另一个 workspace 里的文件时不能丢掉已有 tab；active tab 的路径是左侧文件树和 watcher context 的事实来源。
+
+### Window Session 所有权
+
+`crates/core/src/session.rs` 把进程和窗口路由保持为纯规则，便于测试。
+
+- `ProcessRuntimeSession` 保存用户配置的打开方式，以及当前 runtime 实际启用的打开方式。
+- `WindowSessionRegistry` 保存已知窗口和当前聚焦窗口。
+- `WindowSessionKind::Main` 在单窗口模式下负责普通 tab 编辑。
+- `WindowSessionKind::Settings` 是进程级工具窗口，不能接收文档 tab。
+- `WindowSessionKind::Document { path }` 是唯一拥有明确文档路径的窗口类型。
+- 窗口上的 workspace path 只是上下文元数据，不代表拥有某个文档。
+
+这样后续设置窗口和文档窗口可以共用一套路由模型，而不是靠桌面端临时分支实现。
 
 ## 20. Settings 为什么未来要变成独立窗口
 

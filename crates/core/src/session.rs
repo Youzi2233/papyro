@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 pub const DEFAULT_WINDOW_ID: &str = "main";
+pub const SETTINGS_WINDOW_ID: &str = "settings";
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct WindowSessionId(String);
@@ -48,37 +49,70 @@ impl From<String> for WindowSessionId {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct RegisteredWindowSession {
-    pub window_id: WindowSessionId,
-    pub workspace_path: Option<PathBuf>,
-    pub document_path: Option<PathBuf>,
+pub enum WindowSessionKind {
+    Main,
+    Settings,
+    Document { path: PathBuf },
 }
 
-impl RegisteredWindowSession {
-    pub fn new(window_id: impl Into<WindowSessionId>) -> Self {
+impl WindowSessionKind {
+    fn owns_document(&self, path: &Path) -> bool {
+        matches!(self, Self::Document { path: owned } if owned == path)
+    }
+
+    fn accepts_tab_documents(&self) -> bool {
+        !matches!(self, Self::Settings)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WindowSession {
+    pub window_id: WindowSessionId,
+    pub kind: WindowSessionKind,
+    pub workspace_path: Option<PathBuf>,
+}
+
+pub type RegisteredWindowSession = WindowSession;
+
+impl WindowSession {
+    pub fn new(window_id: impl Into<WindowSessionId>, kind: WindowSessionKind) -> Self {
         Self {
             window_id: window_id.into(),
+            kind,
             workspace_path: None,
-            document_path: None,
         }
     }
 
     pub fn main() -> Self {
-        Self::new(WindowSessionId::main())
+        Self::new(WindowSessionId::main(), WindowSessionKind::Main)
     }
 
-    pub fn with_workspace_path(mut self, workspace_path: impl Into<PathBuf>) -> Self {
+    pub fn settings() -> Self {
+        Self::new(
+            WindowSessionId::new(SETTINGS_WINDOW_ID),
+            WindowSessionKind::Settings,
+        )
+    }
+
+    pub fn document(window_id: impl Into<WindowSessionId>, path: impl Into<PathBuf>) -> Self {
+        Self::new(window_id, WindowSessionKind::Document { path: path.into() })
+    }
+
+    pub fn with_workspace_context(mut self, workspace_path: impl Into<PathBuf>) -> Self {
         self.workspace_path = Some(workspace_path.into());
         self
     }
 
-    pub fn with_document_path(mut self, document_path: impl Into<PathBuf>) -> Self {
-        self.document_path = Some(document_path.into());
-        self
+    pub fn is_tool_window(&self) -> bool {
+        matches!(self.kind, WindowSessionKind::Settings)
     }
 
     pub fn owns_document(&self, path: &Path) -> bool {
-        self.document_path.as_deref() == Some(path)
+        self.kind.owns_document(path)
+    }
+
+    pub fn accepts_tab_documents(&self) -> bool {
+        self.kind.accepts_tab_documents()
     }
 }
 
@@ -124,12 +158,12 @@ impl ProcessRuntimeSession {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WindowSessionRegistry {
     focused_window_id: WindowSessionId,
-    sessions: BTreeMap<WindowSessionId, RegisteredWindowSession>,
+    sessions: BTreeMap<WindowSessionId, WindowSession>,
 }
 
 impl WindowSessionRegistry {
     pub fn with_main_window() -> Self {
-        let main = RegisteredWindowSession::main();
+        let main = WindowSession::main();
         let focused_window_id = main.window_id.clone();
         let sessions = BTreeMap::from([(main.window_id.clone(), main)]);
         Self {
@@ -142,10 +176,7 @@ impl WindowSessionRegistry {
         &self.focused_window_id
     }
 
-    pub fn register(
-        &mut self,
-        session: RegisteredWindowSession,
-    ) -> Option<RegisteredWindowSession> {
+    pub fn register(&mut self, session: WindowSession) -> Option<WindowSession> {
         self.sessions.insert(session.window_id.clone(), session)
     }
 
@@ -158,11 +189,11 @@ impl WindowSessionRegistry {
         true
     }
 
-    pub fn get(&self, window_id: &WindowSessionId) -> Option<&RegisteredWindowSession> {
+    pub fn get(&self, window_id: &WindowSessionId) -> Option<&WindowSession> {
         self.sessions.get(window_id)
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &RegisteredWindowSession> {
+    pub fn iter(&self) -> impl Iterator<Item = &WindowSession> {
         self.sessions.values()
     }
 
@@ -174,7 +205,13 @@ impl WindowSessionRegistry {
     }
 
     pub fn route_tabs_open(&self) -> WindowRouteTarget {
-        WindowRouteTarget::CurrentWindow(self.focused_window_id.clone())
+        let target = self
+            .sessions
+            .get(&self.focused_window_id)
+            .filter(|session| session.accepts_tab_documents())
+            .map(|session| session.window_id.clone())
+            .unwrap_or_else(WindowSessionId::main);
+        WindowRouteTarget::CurrentWindow(target)
     }
 
     pub fn route_multi_window_open(&self, path: &Path) -> WindowRouteTarget {
@@ -212,7 +249,10 @@ mod tests {
         assert!(!registry.focus(&secondary));
         assert_eq!(registry.focused_window_id(), &WindowSessionId::main());
 
-        registry.register(RegisteredWindowSession::new(secondary.clone()));
+        registry.register(WindowSession::new(
+            secondary.clone(),
+            WindowSessionKind::Main,
+        ));
 
         assert!(registry.focus(&secondary));
         assert_eq!(registry.focused_window_id(), &secondary);
@@ -222,7 +262,10 @@ mod tests {
     fn tabs_route_uses_current_focused_window() {
         let mut registry = WindowSessionRegistry::default();
         let secondary = WindowSessionId::from("doc-1");
-        registry.register(RegisteredWindowSession::new(secondary.clone()));
+        registry.register(WindowSession::new(
+            secondary.clone(),
+            WindowSessionKind::Main,
+        ));
         registry.focus(&secondary);
 
         assert_eq!(
@@ -236,10 +279,10 @@ mod tests {
         let mut registry = WindowSessionRegistry::default();
         let note_path = PathBuf::from("workspace/notes/a.md");
         let document_window = WindowSessionId::from("doc-a");
-        registry.register(
-            RegisteredWindowSession::new(document_window.clone())
-                .with_document_path(note_path.clone()),
-        );
+        registry.register(WindowSession::document(
+            document_window.clone(),
+            note_path.clone(),
+        ));
 
         assert_eq!(
             registry.route_multi_window_open(&note_path),
@@ -261,13 +304,42 @@ mod tests {
     fn workspace_metadata_does_not_claim_document_ownership() {
         let mut registry = WindowSessionRegistry::default();
         registry.register(
-            RegisteredWindowSession::new("workspace-window").with_workspace_path("workspace"),
+            WindowSession::new("workspace-window", WindowSessionKind::Main)
+                .with_workspace_context("workspace"),
         );
 
         assert_eq!(
             registry.route_multi_window_open(Path::new("workspace/notes/a.md")),
             WindowRouteTarget::NewDocumentWindow
         );
+    }
+
+    #[test]
+    fn settings_window_does_not_receive_tab_documents() {
+        let mut registry = WindowSessionRegistry::default();
+        let settings = WindowSession::settings();
+        let settings_id = settings.window_id.clone();
+        registry.register(settings);
+        registry.focus(&settings_id);
+
+        assert_eq!(
+            registry.route_tabs_open(),
+            WindowRouteTarget::CurrentWindow(WindowSessionId::main())
+        );
+        assert!(registry
+            .get(&settings_id)
+            .is_some_and(WindowSession::is_tool_window));
+    }
+
+    #[test]
+    fn document_session_owns_only_its_explicit_document_path() {
+        let note_path = PathBuf::from("workspace/notes/a.md");
+        let session =
+            WindowSession::document("doc-a", note_path.clone()).with_workspace_context("workspace");
+
+        assert!(session.owns_document(&note_path));
+        assert!(!session.owns_document(Path::new("workspace/notes/b.md")));
+        assert_eq!(session.workspace_path, Some(PathBuf::from("workspace")));
     }
 
     #[test]
@@ -296,10 +368,10 @@ mod tests {
         let note_path = PathBuf::from("workspace/notes/a.md");
         let document_window = WindowSessionId::from("doc-a");
         let mut runtime = ProcessRuntimeSession::with_multi_window_available(&settings);
-        runtime.window_registry.register(
-            RegisteredWindowSession::new(document_window.clone())
-                .with_document_path(note_path.clone()),
-        );
+        runtime.window_registry.register(WindowSession::document(
+            document_window.clone(),
+            note_path.clone(),
+        ));
 
         assert_eq!(
             runtime.route_markdown_open(&note_path),

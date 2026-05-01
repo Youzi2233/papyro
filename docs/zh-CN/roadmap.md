@@ -179,7 +179,7 @@ flowchart TD
 
 ## Phase 6 - 多窗口模式
 
-- [ ] 定义生产级 `ProcessRuntime` 和 `WindowSession`。
+- [x] 定义生产级 `ProcessRuntime` 和 `WindowSession`。
 - [ ] 先把设置做成进程级工具窗口。
 - [ ] 在 `NoteOpenMode::MultiWindow` 后面增加 document window routing。
 - [ ] 每个窗口独立拥有 tab contents、selection 和 dirty state。

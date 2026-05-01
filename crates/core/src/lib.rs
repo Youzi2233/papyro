@@ -26,8 +26,9 @@ pub use search::{
     WorkspaceSearchState,
 };
 pub use session::{
-    ProcessRuntimeSession, RegisteredWindowSession, WindowRouteTarget, WindowSessionId,
-    WindowSessionRegistry, DEFAULT_WINDOW_ID,
+    ProcessRuntimeSession, RegisteredWindowSession, WindowRouteTarget, WindowSession,
+    WindowSessionId, WindowSessionKind, WindowSessionRegistry, DEFAULT_WINDOW_ID,
+    SETTINGS_WINDOW_ID,
 };
 pub use storage::{
     DeletePreview, EmptyTrashOutcome, NoteStorage, OpenedNote, SaveConflict, SavedAsNote,

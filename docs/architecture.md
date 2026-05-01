@@ -273,6 +273,8 @@ The core layer owns stable data and pure rules:
 - `UiState`
 - `NoteStorage`
 - `ProcessRuntimeSession`
+- `WindowSession`
+- `WindowSessionKind`
 
 If logic can be tested without Dioxus, filesystem APIs, or platform APIs, it may belong in `core`.
 
@@ -680,6 +682,19 @@ flowchart TD
 This matters for multi-workspace tabs and future multi-window behavior.
 Opening a file in another workspace must preserve existing tabs; the active
 tab path is the source of truth for the sidebar tree and watcher context.
+
+### Window Session Ownership
+
+`crates/core/src/session.rs` keeps process/window routing pure and testable.
+
+- `ProcessRuntimeSession` stores the configured note open mode and the effective runtime mode.
+- `WindowSessionRegistry` stores known windows and the focused window.
+- `WindowSessionKind::Main` owns normal tabbed editing in single-window mode.
+- `WindowSessionKind::Settings` is a process-level tool window and must not receive document tabs.
+- `WindowSessionKind::Document { path }` is the only window kind that owns one explicit document path.
+- Workspace paths on a window are context metadata; they do not imply document ownership.
+
+This means future settings windows and document windows can share one routing model instead of special desktop shortcuts.
 
 ## 20. Why Settings Should Become A Window
 

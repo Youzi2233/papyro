@@ -217,7 +217,7 @@ Professional constraints:
 
 Goal: support advanced workflows after single-window routing is reliable.
 
-- [ ] Define production `ProcessRuntime` and `WindowSession` ownership.
+- [x] Define production `ProcessRuntime` and `WindowSession` ownership.
 - [ ] Move settings to a process-level tool window first.
 - [ ] Add document window routing behind `NoteOpenMode::MultiWindow`.
 - [ ] Ensure each window owns its own tab contents, selection, and dirty state.
