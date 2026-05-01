@@ -1510,49 +1510,136 @@ function renderMarkdownTableDocument(table) {
 }
 
 export function appendMarkdownTableRow(markdown) {
-  const table = parseMarkdownTableDocument(markdown);
-  if (!table) return null;
-
-  const template = table.parts[table.parts.length - 1] ?? table.parts[0];
-  table.parts.push({
-    ...template,
-    cells: Array.from({ length: table.columnCount }, () => ""),
-  });
-  return renderMarkdownTableDocument(table);
+  return insertMarkdownTableRowAfter(markdown, Number.MAX_SAFE_INTEGER);
 }
 
 export function deleteMarkdownTableLastRow(markdown) {
   const table = parseMarkdownTableDocument(markdown);
   if (!table || table.parts.length <= 2) return null;
 
-  table.parts.pop();
-  return renderMarkdownTableDocument(table);
+  return deleteMarkdownTableRow(markdown, table.parts.length - 1);
 }
 
 export function appendMarkdownTableColumn(markdown, header = "Column") {
-  const table = parseMarkdownTableDocument(markdown);
-  if (!table) return null;
-
-  table.parts.forEach((part, index) => {
-    if (index === 0) {
-      part.cells.push(escapeMarkdownTableCell(header));
-    } else if (index === 1) {
-      part.cells.push("---");
-    } else {
-      part.cells.push("");
-    }
-  });
-  return renderMarkdownTableDocument(table);
+  return insertMarkdownTableColumnAfter(markdown, Number.MAX_SAFE_INTEGER, header);
 }
 
 export function deleteMarkdownTableLastColumn(markdown) {
   const table = parseMarkdownTableDocument(markdown);
   if (!table || table.columnCount <= 2) return null;
 
-  table.parts.forEach((part) => {
-    part.cells.pop();
+  return deleteMarkdownTableColumn(markdown, table.columnCount - 1);
+}
+
+export function insertMarkdownTableRowAfter(markdown, rowIndex) {
+  const table = parseMarkdownTableDocument(markdown);
+  if (!table) return null;
+
+  const targetRow = safeInteger(rowIndex);
+  if (targetRow === null || targetRow < 0) return null;
+
+  const insertionIndex =
+    targetRow <= 1
+      ? 2
+      : Math.min(targetRow + 1, table.parts.length);
+  const template =
+    table.parts[Math.min(Math.max(insertionIndex - 1, 0), table.parts.length - 1)] ??
+    table.parts[0];
+
+  table.parts.splice(insertionIndex, 0, {
+    ...template,
+    cells: Array.from({ length: table.columnCount }, () => ""),
   });
   return renderMarkdownTableDocument(table);
+}
+
+export function deleteMarkdownTableRow(markdown, rowIndex) {
+  const table = parseMarkdownTableDocument(markdown);
+  if (!table || table.parts.length <= 2) return null;
+
+  const targetRow = safeInteger(rowIndex);
+  if (targetRow === null || targetRow <= 1 || targetRow >= table.parts.length) {
+    return null;
+  }
+
+  table.parts.splice(targetRow, 1);
+  return renderMarkdownTableDocument(table);
+}
+
+export function insertMarkdownTableColumnAfter(markdown, columnIndex, header = "Column") {
+  const table = parseMarkdownTableDocument(markdown);
+  if (!table) return null;
+
+  const targetColumn = safeInteger(columnIndex);
+  if (targetColumn === null || targetColumn < 0) return null;
+  const insertionIndex = Math.min(targetColumn + 1, table.columnCount);
+
+  table.parts.forEach((part, index) => {
+    if (index === 0) {
+      part.cells.splice(insertionIndex, 0, escapeMarkdownTableCell(header));
+    } else if (index === 1) {
+      part.cells.splice(insertionIndex, 0, "---");
+    } else {
+      part.cells.splice(insertionIndex, 0, "");
+    }
+  });
+  return renderMarkdownTableDocument(table);
+}
+
+export function deleteMarkdownTableColumn(markdown, columnIndex) {
+  const table = parseMarkdownTableDocument(markdown);
+  if (!table || table.columnCount <= 2) return null;
+
+  const targetColumn = safeInteger(columnIndex);
+  if (
+    targetColumn === null ||
+    targetColumn < 0 ||
+    targetColumn >= table.columnCount
+  ) {
+    return null;
+  }
+
+  table.parts.forEach((part) => {
+    part.cells.splice(targetColumn, 1);
+  });
+  return renderMarkdownTableDocument(table);
+}
+
+export function nextMarkdownTableCellPosition(
+  rowCount,
+  columnCount,
+  rowIndex,
+  columnIndex,
+  direction = 1,
+) {
+  const rows = safeInteger(rowCount);
+  const columns = safeInteger(columnCount);
+  const row = safeInteger(rowIndex);
+  const column = safeInteger(columnIndex);
+  const step = Number(direction) < 0 ? -1 : 1;
+
+  if (
+    rows === null ||
+    columns === null ||
+    row === null ||
+    column === null ||
+    rows <= 0 ||
+    columns <= 0 ||
+    row < 0 ||
+    column < 0 ||
+    row >= rows ||
+    column >= columns
+  ) {
+    return null;
+  }
+
+  const cellCount = rows * columns;
+  const current = row * columns + column;
+  const next = (current + step + cellCount) % cellCount;
+  return {
+    rowIndex: Math.floor(next / columns),
+    columnIndex: next % columns,
+  };
 }
 
 export function collectMarkdownTableBlocks(lines) {

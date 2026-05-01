@@ -16,6 +16,8 @@ import {
   completeMarkdownShortcutOnSpace,
   deleteMarkdownTableLastColumn,
   deleteMarkdownTableLastRow,
+  deleteMarkdownTableColumn,
+  deleteMarkdownTableRow,
   formatSelectionChange,
   handleMarkdownBackspace,
   handleRustMessage,
@@ -28,6 +30,8 @@ import {
   hybridDecorationPolicies,
   indentMarkdownListInView,
   inlineMarkdownMarkersTouched,
+  insertMarkdownTableColumnAfter,
+  insertMarkdownTableRowAfter,
   insertMarkdownInView,
   latestModeScrollSnapshot,
   markdownBlockEditRanges,
@@ -48,6 +52,7 @@ import {
   normalizeBlockHints,
   normalizeEditorPreferences,
   nextLayoutSize,
+  nextMarkdownTableCellPosition,
   nextMermaidBlockState,
   normalizeViewMode,
   openReplacePanelInView,
@@ -1974,6 +1979,78 @@ test("markdown table row and column commands preserve table shape", () => {
     ].join("\n"),
   );
   assert.equal(deleteMarkdownTableLastColumn("| A | B |\n| --- | --- |"), null);
+});
+
+test("markdown table commands target the active row and column", () => {
+  const table = [
+    "| Name | Status | Owner |",
+    "| --- | :---: | ---: |",
+    "| Alpha | Ready | You |",
+    "| Beta | Waiting | Me |",
+  ].join("\n");
+
+  assert.equal(
+    insertMarkdownTableRowAfter(table, 2),
+    [
+      "| Name | Status | Owner |",
+      "| --- | :---: | ---: |",
+      "| Alpha | Ready | You |",
+      "|  |  |  |",
+      "| Beta | Waiting | Me |",
+    ].join("\n"),
+  );
+  assert.equal(
+    deleteMarkdownTableRow(table, 2),
+    [
+      "| Name | Status | Owner |",
+      "| --- | :---: | ---: |",
+      "| Beta | Waiting | Me |",
+    ].join("\n"),
+  );
+  assert.equal(
+    insertMarkdownTableColumnAfter(table, 0, "Notes"),
+    [
+      "| Name | Notes | Status | Owner |",
+      "| --- | --- | :---: | ---: |",
+      "| Alpha |  | Ready | You |",
+      "| Beta |  | Waiting | Me |",
+    ].join("\n"),
+  );
+  assert.equal(
+    deleteMarkdownTableColumn(table, 1),
+    [
+      "| Name | Owner |",
+      "| --- | ---: |",
+      "| Alpha | You |",
+      "| Beta | Me |",
+    ].join("\n"),
+  );
+  assert.equal(insertMarkdownTableRowAfter(table, 0), [
+    "| Name | Status | Owner |",
+    "| --- | :---: | ---: |",
+    "|  |  |  |",
+    "| Alpha | Ready | You |",
+    "| Beta | Waiting | Me |",
+  ].join("\n"));
+  assert.equal(deleteMarkdownTableRow(table, 0), null);
+  assert.equal(deleteMarkdownTableColumn(table, 99), null);
+});
+
+test("markdown table cell navigation wraps predictably", () => {
+  assert.deepEqual(nextMarkdownTableCellPosition(3, 2, 0, 0, 1), {
+    rowIndex: 0,
+    columnIndex: 1,
+  });
+  assert.deepEqual(nextMarkdownTableCellPosition(3, 2, 0, 1, 1), {
+    rowIndex: 1,
+    columnIndex: 0,
+  });
+  assert.deepEqual(nextMarkdownTableCellPosition(3, 2, 0, 0, -1), {
+    rowIndex: 2,
+    columnIndex: 1,
+  });
+  assert.equal(nextMarkdownTableCellPosition(0, 2, 0, 0, 1), null);
+  assert.equal(nextMarkdownTableCellPosition(3, 2, 3, 0, 1), null);
 });
 
 test("next_mermaid_block_state toggles between rendered editing and error states", () => {

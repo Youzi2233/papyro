@@ -13,10 +13,11 @@ import katex from "katex";
 import mermaid from "mermaid";
 import { mermaid as mermaidCodeMirror } from "codemirror-lang-mermaid";
 import {
-  appendMarkdownTableColumn,
-  appendMarkdownTableRow,
-  deleteMarkdownTableLastColumn,
-  deleteMarkdownTableLastRow,
+  deleteMarkdownTableColumn,
+  deleteMarkdownTableRow,
+  insertMarkdownTableColumnAfter,
+  insertMarkdownTableRowAfter,
+  nextMarkdownTableCellPosition,
   parseMarkdownImageSpans,
   parseMarkdownTable,
   parseStandaloneMarkdownImageBlock,
@@ -644,6 +645,31 @@ class MarkdownTableWidget extends WidgetType {
       return wrapper;
     }
 
+    const initialRowIndex = this.table.rows.length > 1 ? 1 : 0;
+    let activeCell = {
+      rowIndex: initialRowIndex,
+      sourceRowIndex: this.table.rows[initialRowIndex]?.sourceRowIndex ?? 0,
+      columnIndex: 0,
+    };
+
+    const setActiveCell = (rowIndex, columnIndex) => {
+      activeCell = {
+        rowIndex,
+        sourceRowIndex: this.table.rows[rowIndex]?.sourceRowIndex ?? 0,
+        columnIndex,
+      };
+    };
+
+    const focusCell = (rowIndex, columnIndex) => {
+      const input = wrapper.querySelector(
+        `.cm-hybrid-table-cell-input[data-table-row="${rowIndex}"][data-table-column="${columnIndex}"]`,
+      );
+      if (!input) return false;
+      input.focus();
+      input.select();
+      return true;
+    };
+
     const replaceTable = (updated) => {
       if (!updated || updated === this.markdown) return;
       const from = view.state.doc.line(this.fromLine).from;
@@ -657,10 +683,10 @@ class MarkdownTableWidget extends WidgetType {
     const toolbar = document.createElement("div");
     toolbar.className = "cm-hybrid-table-toolbar";
     const commands = [
-      ["Add row", () => appendMarkdownTableRow(this.markdown)],
-      ["Delete row", () => deleteMarkdownTableLastRow(this.markdown)],
-      ["Add column", () => appendMarkdownTableColumn(this.markdown)],
-      ["Delete column", () => deleteMarkdownTableLastColumn(this.markdown)],
+      ["Add row below", () => insertMarkdownTableRowAfter(this.markdown, activeCell.sourceRowIndex)],
+      ["Delete row", () => deleteMarkdownTableRow(this.markdown, activeCell.sourceRowIndex)],
+      ["Add column right", () => insertMarkdownTableColumnAfter(this.markdown, activeCell.columnIndex)],
+      ["Delete column", () => deleteMarkdownTableColumn(this.markdown, activeCell.columnIndex)],
     ];
     for (const [label, command] of commands) {
       const button = document.createElement("button");
@@ -678,23 +704,48 @@ class MarkdownTableWidget extends WidgetType {
 
     const table = document.createElement("table");
     const tbody = document.createElement("tbody");
-    for (const row of this.table.rows) {
+    this.table.rows.forEach((row, rowIndex) => {
       const tr = document.createElement("tr");
       row.cells.forEach((cell, columnIndex) => {
         const cellElement = document.createElement(row.kind === "header" ? "th" : "td");
         const input = document.createElement("input");
         input.className = "cm-hybrid-table-cell-input";
         input.value = cell;
+        input.dataset.tableRow = String(rowIndex);
+        input.dataset.tableColumn = String(columnIndex);
         input.setAttribute("aria-label", `Edit table cell ${row.sourceRowIndex + 1}:${columnIndex + 1}`);
         input.addEventListener("keydown", (event) => {
+          setActiveCell(rowIndex, columnIndex);
+          if (event.key === "Tab") {
+            event.preventDefault();
+            event.stopPropagation();
+            const next = nextMarkdownTableCellPosition(
+              this.table.rows.length,
+              this.table.columnCount,
+              rowIndex,
+              columnIndex,
+              event.shiftKey ? -1 : 1,
+            );
+            if (next) {
+              focusCell(next.rowIndex, next.columnIndex);
+            }
+            return;
+          }
           if (event.key === "Enter") {
             event.preventDefault();
             input.blur();
           }
           event.stopPropagation();
         });
-        input.addEventListener("mousedown", (event) => event.stopPropagation());
-        input.addEventListener("click", (event) => event.stopPropagation());
+        input.addEventListener("focus", () => setActiveCell(rowIndex, columnIndex));
+        input.addEventListener("mousedown", (event) => {
+          setActiveCell(rowIndex, columnIndex);
+          event.stopPropagation();
+        });
+        input.addEventListener("click", (event) => {
+          setActiveCell(rowIndex, columnIndex);
+          event.stopPropagation();
+        });
         input.addEventListener("blur", () => {
           if (input.value === cell) return;
           const updated = rewriteMarkdownTableCell(
@@ -709,7 +760,7 @@ class MarkdownTableWidget extends WidgetType {
         tr.appendChild(cellElement);
       });
       tbody.appendChild(tr);
-    }
+    });
     table.appendChild(tbody);
     wrapper.appendChild(table);
     return wrapper;

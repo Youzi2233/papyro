@@ -110,6 +110,8 @@ Expected capabilities:
 
 The command palette includes insertion commands for common blocks: table, fenced code block, display math, Mermaid diagram, and task list. These commands insert Markdown into the active tab through the editor runtime command queue, so they share the same selection replacement path as pasted snippets.
 
+Hybrid table widgets support direct cell editing, Tab/Shift+Tab cell navigation, and row/column actions relative to the focused cell. The Markdown source remains the storage format, but normal table edits should not require hand-aligning pipe syntax.
+
 ## Markdown Rendering
 
 Current Rust-side stack:

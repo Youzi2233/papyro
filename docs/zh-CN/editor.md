@@ -95,6 +95,8 @@ Hybrid 不是“把 Markdown 标记藏起来”就完成了。它需要对齐 Ty
 
 命令面板提供常见 block 插入命令：表格、围栏代码块、独立数学公式、Mermaid 图和任务列表。这些命令会通过 editor runtime command queue 插入到当前 tab，因此和粘贴片段共用同一条 selection replacement 路径。
 
+Hybrid 表格 widget 支持直接编辑单元格、用 Tab/Shift+Tab 在单元格之间移动，并且行列操作会围绕当前聚焦的单元格执行。Markdown 源码仍然是存储格式，但常规表格编辑不应要求用户手动对齐 pipe 语法。
+
 ## 渲染栈
 
 Rust 侧：
