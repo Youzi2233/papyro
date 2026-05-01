@@ -55,6 +55,7 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
     let mut line_height = use_signal(|| effective_settings.line_height);
     let mut auto_link_paste = use_signal(|| effective_settings.auto_link_paste);
     let mut auto_save_ms = use_signal(|| effective_settings.auto_save_delay_ms);
+    let font_preview_style = font_preview_style(&font_family(), font_size(), line_height());
 
     let save_commands = commands.clone();
     let save_settings_form_model = settings_form_model;
@@ -215,6 +216,13 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
                                                     }
                                                 },
                                             }
+                                        }
+                                        div {
+                                            class: "mn-font-preview",
+                                            style: "{font_preview_style}",
+                                            p { class: "mn-font-preview-title", {i18n.text("A clear note starts with readable type.", "清晰的笔记，从易读的字体开始。")} }
+                                            p { class: "mn-font-preview-body", {i18n.text("Headings, body text, numbers 123, and 中文内容 should all feel calm and balanced.", "标题、正文、数字 123 和中文内容都应该清楚、平衡。")} }
+                                            code { class: "mn-font-preview-code", "inline_code = true" }
                                         }
                                         FormField {
                                             label: i18n.text("Paste URL as link", "粘贴 URL 时转成链接").to_string(),
@@ -615,6 +623,10 @@ fn font_family_options(i18n: UiText) -> Vec<DropdownOption> {
     ]
 }
 
+fn font_preview_style(font_family: &str, font_size: u8, line_height: f32) -> String {
+    format!("font-family: {font_family}; font-size: {font_size}px; line-height: {line_height:.1};")
+}
+
 fn language_value(language: AppLanguage) -> &'static str {
     language.as_str()
 }
@@ -718,6 +730,14 @@ mod tests {
         assert!(options
             .iter()
             .any(|option| option.value == FONT_PRESET_MONO_CODE));
+    }
+
+    #[test]
+    fn font_preview_style_reflects_current_typography() {
+        assert_eq!(
+            font_preview_style("system-ui", 17, 1.7),
+            "font-family: system-ui; font-size: 17px; line-height: 1.7;"
+        );
     }
 
     #[test]

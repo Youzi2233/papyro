@@ -168,7 +168,7 @@ Goal: give users several high-quality visual choices without making the app feel
 - [ ] Research open-source Markdown style references before adopting any visual baseline. Candidate references include [`sindresorhus/github-markdown-css`](https://github.com/sindresorhus/github-markdown-css) for GitHub-flavored Markdown layout and color behavior, plus well-known code theme ecosystems such as [Shiki](https://github.com/shikijs/shiki), [highlight.js](https://github.com/highlightjs/highlight.js), and [Catppuccin](https://github.com/catppuccin/catppuccin).
 - [ ] Keep Markdown render styles compatible across Preview and Hybrid so headings, lists, tables, blockquotes, code, math, and Mermaid do not visually drift between modes.
 - [x] Replace odd font presets with practical system-first presets: UI Sans, System Serif, Reading Serif, Mono Code, and CJK-friendly fallback stacks.
-- [ ] Make font settings understandable for normal users: preview text, clear labels, safe defaults, and no obscure font names as the first choices.
+- [x] Make font settings understandable for normal users: preview text, clear labels, safe defaults, and no obscure font names as the first choices.
 - [ ] Add theme and Markdown-style snapshot/smoke checks so future CSS changes do not break contrast, spacing, or code readability.
 
 ## Phase 5 - File Association, Tabs, And Workspace Sessions

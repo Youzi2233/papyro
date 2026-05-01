@@ -495,6 +495,40 @@
     gap: 8px;
 }
 
+.mn-font-preview {
+    display: grid;
+    gap: 8px;
+    padding: 14px 16px;
+    border: var(--mn-border-default);
+    border-radius: var(--mn-radius-sm);
+    background: var(--mn-surface-sunken);
+    color: var(--mn-ink);
+}
+
+.mn-font-preview-title,
+.mn-font-preview-body {
+    margin: 0;
+}
+
+.mn-font-preview-title {
+    font-size: 1.12em;
+    font-weight: var(--mn-weight-bold);
+}
+
+.mn-font-preview-body {
+    color: var(--mn-ink-2);
+}
+
+.mn-font-preview-code {
+    width: fit-content;
+    padding: 2px 6px;
+    border-radius: var(--mn-radius-xs);
+    background: var(--mn-markdown-code-bg);
+    color: var(--mn-markdown-code-color);
+    font-family: var(--mn-font-code);
+    font-size: 0.9em;
+}
+
 .mn-settings-theme-segmented {
     display: inline-flex;
     width: fit-content;
