@@ -2,6 +2,15 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::path::PathBuf;
 
+pub const FONT_PRESET_UI_SANS: &str = "-apple-system, BlinkMacSystemFont, \"Segoe UI Variable Text\", \"Segoe UI\", Aptos, \"PingFang SC\", \"Microsoft YaHei UI\", system-ui, sans-serif";
+pub const FONT_PRESET_SYSTEM_SERIF: &str =
+    "ui-serif, Georgia, Cambria, \"Times New Roman\", \"Noto Serif CJK SC\", serif";
+pub const FONT_PRESET_READING_SERIF: &str =
+    "Georgia, \"Times New Roman\", \"Noto Serif CJK SC\", \"Songti SC\", SimSun, serif";
+pub const FONT_PRESET_MONO_CODE: &str = "ui-monospace, \"SFMono-Regular\", \"SF Mono\", \"Cascadia Code\", \"JetBrains Mono\", Consolas, \"Liberation Mono\", Menlo, monospace";
+pub const FONT_PRESET_CJK_SANS: &str = "-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei UI\", \"Noto Sans CJK SC\", system-ui, sans-serif";
+pub const DEFAULT_FONT_FAMILY: &str = FONT_PRESET_UI_SANS;
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Workspace {
     pub id: String,
@@ -167,9 +176,7 @@ impl Default for AppSettings {
         Self {
             theme: Theme::System,
             language: AppLanguage::English,
-            font_family:
-                "\"Aptos\", \"Segoe UI Variable Text\", \"Segoe UI\", system-ui, sans-serif"
-                    .to_string(),
+            font_family: DEFAULT_FONT_FAMILY.to_string(),
             font_size: 16,
             line_height: 1.6,
             note_open_mode: NoteOpenMode::Tabs,
@@ -353,6 +360,15 @@ mod tests {
         assert_eq!(effective.auto_save_delay_ms, 1000);
         assert_eq!(effective.view_mode, ViewMode::Source);
         assert_eq!(effective.font_family, global.font_family);
+    }
+
+    #[test]
+    fn default_font_family_uses_system_first_stack() {
+        let settings = AppSettings::default();
+
+        assert_eq!(settings.font_family, DEFAULT_FONT_FAMILY);
+        assert!(settings.font_family.contains("system-ui"));
+        assert!(settings.font_family.contains("PingFang SC"));
     }
 
     #[test]

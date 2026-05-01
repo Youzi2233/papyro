@@ -6,10 +6,14 @@ use crate::components::primitives::{
     SegmentedControlOption, Slider, Toggle,
 };
 use crate::context::use_app_context;
-use crate::i18n::use_i18n;
+use crate::i18n::{use_i18n, UiText};
 use crate::view_model::TagListItem;
 use dioxus::prelude::*;
-use papyro_core::models::{AppLanguage, AppSettings, Theme, WorkspaceSettingsOverrides};
+use papyro_core::models::{
+    AppLanguage, AppSettings, Theme, WorkspaceSettingsOverrides, FONT_PRESET_CJK_SANS,
+    FONT_PRESET_MONO_CODE, FONT_PRESET_READING_SERIF, FONT_PRESET_SYSTEM_SERIF,
+    FONT_PRESET_UI_SANS,
+};
 
 const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 const DEFAULT_TAG_COLOR: &str = "#6B7280";
@@ -65,15 +69,7 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
         DropdownOption::new("English", "english"),
         DropdownOption::new("中文", "chinese"),
     ];
-    let font_options = vec![
-        DropdownOption::new(
-            "Cascadia Code",
-            "\"Cascadia Code\", \"JetBrains Mono\", monospace",
-        ),
-        DropdownOption::new("JetBrains Mono", "\"JetBrains Mono\", monospace"),
-        DropdownOption::new("Fira Code", "\"Fira Code\", monospace"),
-        DropdownOption::new("Courier New", "\"Courier New\", monospace"),
-    ];
+    let font_options = font_family_options(i18n);
 
     let save = move |_| {
         let base = save_settings_form_model.read().global_settings.clone();
@@ -603,6 +599,22 @@ fn theme_from_value(value: &str) -> Option<Theme> {
     }
 }
 
+fn font_family_options(i18n: UiText) -> Vec<DropdownOption> {
+    vec![
+        DropdownOption::new(i18n.text("UI Sans", "界面无衬线"), FONT_PRESET_UI_SANS),
+        DropdownOption::new(
+            i18n.text("System Serif", "系统衬线"),
+            FONT_PRESET_SYSTEM_SERIF,
+        ),
+        DropdownOption::new(
+            i18n.text("Reading Serif", "阅读衬线"),
+            FONT_PRESET_READING_SERIF,
+        ),
+        DropdownOption::new(i18n.text("Mono Code", "代码等宽"), FONT_PRESET_MONO_CODE),
+        DropdownOption::new(i18n.text("CJK Sans", "中日韩无衬线"), FONT_PRESET_CJK_SANS),
+    ]
+}
+
 fn language_value(language: AppLanguage) -> &'static str {
     language.as_str()
 }
@@ -680,6 +692,32 @@ mod tests {
         assert_eq!(language_value(AppLanguage::Chinese), "chinese");
         assert_eq!(language_from_value("english"), Some(AppLanguage::English));
         assert_eq!(language_from_value("missing"), None);
+    }
+
+    #[test]
+    fn font_family_options_are_system_first_markdown_presets() {
+        let options = font_family_options(UiText::new(AppLanguage::English));
+        let labels = options
+            .iter()
+            .map(|option| option.label.as_str())
+            .collect::<Vec<_>>();
+
+        assert_eq!(
+            labels,
+            vec![
+                "UI Sans",
+                "System Serif",
+                "Reading Serif",
+                "Mono Code",
+                "CJK Sans"
+            ]
+        );
+        assert!(options
+            .iter()
+            .any(|option| option.value == FONT_PRESET_UI_SANS));
+        assert!(options
+            .iter()
+            .any(|option| option.value == FONT_PRESET_MONO_CODE));
     }
 
     #[test]
