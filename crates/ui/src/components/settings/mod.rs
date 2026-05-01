@@ -2,7 +2,7 @@ use crate::commands::{
     AppCommands, DeleteTagRequest, RenameTagRequest, SetTagColorRequest, UpsertTagRequest,
 };
 use crate::components::primitives::{
-    Button, ButtonVariant, Dropdown, DropdownOption, FormField, Modal, Slider, Toggle,
+    Button, ButtonVariant, DropdownOption, FormField, Modal, Select, Slider, Toggle,
 };
 use crate::context::use_app_context;
 use crate::i18n::{use_i18n, UiText};
@@ -132,7 +132,7 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
                                         FormField {
                                             label: i18n.text("Language", "语言").to_string(),
                                             class_name: String::new(),
-                                            Dropdown {
+                                            Select {
                                                 label: i18n.text("App language", "应用语言").to_string(),
                                                 options: language_options,
                                                 selected: language_value(language()).to_string(),
@@ -146,7 +146,7 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
                                         FormField {
                                             label: i18n.text("Theme", "主题").to_string(),
                                             class_name: String::new(),
-                                            Dropdown {
+                                            Select {
                                                 label: i18n.text("Theme", "主题").to_string(),
                                                 options: theme_options,
                                                 selected: theme_value(&theme()).to_string(),
@@ -164,7 +164,7 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
                                         FormField {
                                             label: i18n.text("Font family", "字体").to_string(),
                                             class_name: String::new(),
-                                            Dropdown {
+                                            Select {
                                                 label: i18n.text("Font family", "字体").to_string(),
                                                 options: font_options,
                                                 selected: font_family(),

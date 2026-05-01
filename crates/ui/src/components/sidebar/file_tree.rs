@@ -1,6 +1,6 @@
 ﻿use crate::action_labels::open_note_label;
 use crate::commands::{AppCommands, FileTarget, OpenMarkdownTarget};
-use crate::components::primitives::{Menu, MenuItem, MenuSeparator};
+use crate::components::primitives::{ContextMenu, MenuItem, MenuSeparator};
 use crate::context::use_app_context;
 use crate::i18n::use_i18n;
 use dioxus::prelude::*;
@@ -663,7 +663,7 @@ fn FileTreeContextMenuView(
     let delete_label = i18n.text("Move to trash", "移动到回收站");
 
     rsx! {
-        Menu {
+        ContextMenu {
             label: if is_workspace_root || is_workspace_blank {
                 i18n.text("Workspace actions", "工作区操作").to_string()
             } else {

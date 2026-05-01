@@ -1,7 +1,7 @@
 pub mod file_tree;
 
 use crate::commands::FileTarget;
-use crate::components::primitives::{Menu, MenuItem};
+use crate::components::primitives::{ContextMenu, MenuItem};
 use crate::context::use_app_context;
 use crate::i18n::use_i18n;
 use crate::perf::{perf_timer, trace_sidebar_resize};
@@ -332,7 +332,7 @@ fn SidebarWorkspaceMenuView(menu: SidebarWorkspaceMenu, on_close: EventHandler<(
     let reveal_target = menu.target.clone();
 
     rsx! {
-        Menu {
+        ContextMenu {
             label: i18n.text("Workspace actions", "工作区操作").to_string(),
             class_name: "mn-tree-context-menu".to_string(),
             style,

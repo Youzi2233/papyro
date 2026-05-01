@@ -1658,6 +1658,33 @@ button { border: 0; cursor: pointer; background: transparent; }
     color: var(--mn-ink-inverse);
 }
 
+.mn-tabs {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+}
+
+.mn-tabs-option {
+    padding: 6px 10px;
+    border-radius: 6px;
+    color: var(--mn-chrome-ink-muted);
+    font-size: var(--mn-type-small);
+    font-weight: var(--mn-weight-medium);
+    transition: background 0.14s, color 0.14s;
+}
+
+.mn-tabs-option:hover,
+.mn-tabs-option:focus-visible {
+    color: var(--mn-chrome-ink);
+    background: var(--mn-chrome-hover);
+}
+
+.mn-tabs-option.active {
+    color: var(--mn-chrome-ink);
+    background: var(--mn-chrome-active);
+}
+
 /* 閳光偓閳光偓 Document area 閳光偓閳光偓 */
 .mn-document {
     display: flex;

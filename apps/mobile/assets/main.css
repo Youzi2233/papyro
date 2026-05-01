@@ -1184,6 +1184,32 @@ small {
     color: var(--mn-accent-ink);
 }
 
+.mn-tabs {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+}
+
+.mn-tabs-option {
+    padding: 6px 10px;
+    border-radius: 12px;
+    color: var(--mn-muted);
+    font-size: 0.86rem;
+    font-weight: 700;
+}
+
+.mn-tabs-option:hover,
+.mn-tabs-option:focus-visible {
+    color: var(--mn-ink);
+    background: var(--mn-panel);
+}
+
+.mn-tabs-option.active {
+    color: var(--mn-accent-ink);
+    background: var(--mn-accent);
+}
+
 .mn-settings-panel .mn-button:not(.primary):not(.danger) {
     border-color: var(--mn-border);
     background: var(--mn-bg);

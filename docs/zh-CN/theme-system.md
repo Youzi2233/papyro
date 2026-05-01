@@ -47,6 +47,17 @@ flowchart TD
 - 不要把行为写成颜色名。用 `--mn-status-warning`，不要用 `--mn-yellow`。
 - 新增主题前，必须确认 token 覆盖 app chrome、editor canvas、Markdown、代码块、selection、focus ring 和状态色。
 
+## 组件基础件
+
+共享 UI surface 放在 `crates/ui/src/components/primitives.rs`。新增界面前优先复用这些基础件：
+
+- `Button` 和 `IconButton`
+- `Select` 和 `SegmentedControl`
+- `Modal`、`ContextMenu`、`Tooltip` 和 `Message`
+- `Tabs` 和 `FormField`
+
+行为和可访问性参考成熟开源系统：Radix Primitives 用作键盘交互和 ARIA 行为参考，shadcn/ui 用作 copy-and-own 组合方式和克制视觉层级参考。Papyro 不直接依赖这两个 React 库。
+
 ## 当前主题
 
 Papyro 当前提供 System、Light、Dark、GitHub Light、GitHub Dark、High Contrast 和 Warm Reading。后续增加高质量主题时，优先覆盖基础色板；只有主题确实需要表达不同语义时，才覆盖语义 token。

@@ -26,6 +26,12 @@ pub struct DropdownOption {
     pub value: String,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TabOption {
+    pub label: String,
+    pub value: String,
+}
+
 impl SegmentedControlOption {
     pub fn new(label: &str, value: &str) -> Self {
         Self {
@@ -36,6 +42,15 @@ impl SegmentedControlOption {
 }
 
 impl DropdownOption {
+    pub fn new(label: &str, value: &str) -> Self {
+        Self {
+            label: label.to_string(),
+            value: value.to_string(),
+        }
+    }
+}
+
+impl TabOption {
     pub fn new(label: &str, value: &str) -> Self {
         Self {
             label: label.to_string(),
@@ -59,6 +74,14 @@ fn segmented_option_class(is_selected: bool) -> &'static str {
         "mn-segmented-option active"
     } else {
         "mn-segmented-option"
+    }
+}
+
+fn tab_option_class(is_selected: bool) -> &'static str {
+    if is_selected {
+        "mn-tabs-option active"
+    } else {
+        "mn-tabs-option"
     }
 }
 
@@ -163,6 +186,17 @@ pub fn Button(
 pub fn StatusMessage(message: String) -> Element {
     rsx! {
         span { class: "mn-status-message", "{message}" }
+    }
+}
+
+#[component]
+pub fn Message(message: String, tone: StatusTone) -> Element {
+    rsx! {
+        div {
+            class: status_tone_class(tone),
+            role: "status",
+            "{message}"
+        }
     }
 }
 
@@ -275,6 +309,23 @@ pub fn Dropdown(
 }
 
 #[component]
+pub fn Select(
+    label: String,
+    options: Vec<DropdownOption>,
+    selected: String,
+    on_change: EventHandler<String>,
+) -> Element {
+    rsx! {
+        Dropdown {
+            label,
+            options,
+            selected,
+            on_change,
+        }
+    }
+}
+
+#[component]
 pub fn Menu(label: String, class_name: String, style: String, children: Element) -> Element {
     rsx! {
         div {
@@ -287,6 +338,18 @@ pub fn Menu(label: String, class_name: String, style: String, children: Element)
                 event.prevent_default();
                 event.stop_propagation();
             },
+            {children}
+        }
+    }
+}
+
+#[component]
+pub fn ContextMenu(label: String, class_name: String, style: String, children: Element) -> Element {
+    rsx! {
+        Menu {
+            label,
+            class_name,
+            style,
             {children}
         }
     }
@@ -321,6 +384,42 @@ pub fn IconButton(label: String, icon: String, on_click: EventHandler<()>) -> El
                 "aria-label": "{label}",
                 onclick: move |_| on_click.call(()),
                 "{icon}"
+            }
+        }
+    }
+}
+
+#[component]
+pub fn Tabs(
+    label: String,
+    options: Vec<TabOption>,
+    selected: String,
+    class_name: String,
+    on_change: EventHandler<String>,
+) -> Element {
+    let class = if class_name.trim().is_empty() {
+        "mn-tabs".to_string()
+    } else {
+        class_name
+    };
+
+    rsx! {
+        div {
+            class: "{class}",
+            role: "tablist",
+            "aria-label": "{label}",
+            for option in options {
+                button {
+                    class: tab_option_class(option.value == selected),
+                    r#type: "button",
+                    role: "tab",
+                    "aria-selected": if option.value == selected { "true" } else { "false" },
+                    onclick: {
+                        let value = option.value.clone();
+                        move |_| on_change.call(value.clone())
+                    },
+                    "{option.label}"
+                }
             }
         }
     }
@@ -452,6 +551,12 @@ mod tests {
     fn segmented_option_class_marks_active_option() {
         assert_eq!(segmented_option_class(false), "mn-segmented-option");
         assert_eq!(segmented_option_class(true), "mn-segmented-option active");
+    }
+
+    #[test]
+    fn tab_option_class_marks_active_option() {
+        assert_eq!(tab_option_class(false), "mn-tabs-option");
+        assert_eq!(tab_option_class(true), "mn-tabs-option active");
     }
 
     #[test]

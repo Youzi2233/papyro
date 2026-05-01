@@ -47,6 +47,17 @@ When changing a token that is mirrored in an app asset, update both copies in th
 - Do not encode behavior in a color name. Use `--mn-status-warning`, not `--mn-yellow`.
 - Do not introduce a new theme until the token contract covers app chrome, editor canvas, Markdown, code blocks, selection, focus rings, and status colors.
 
+## Component Primitives
+
+Shared UI surfaces live in `crates/ui/src/components/primitives.rs`. Use these before creating one-off controls:
+
+- `Button` and `IconButton`
+- `Select` and `SegmentedControl`
+- `Modal`, `ContextMenu`, `Tooltip`, and `Message`
+- `Tabs` and `FormField`
+
+Behavior and accessibility should use mature open-source systems as references. Radix Primitives is the reference for keyboard and ARIA behavior, while shadcn/ui is the reference for copy-and-own composition and restrained visual hierarchy. Papyro does not depend on either React library directly.
+
 ## Current Themes
 
 Papyro currently ships System, Light, Dark, GitHub Light, GitHub Dark, High Contrast, and Warm Reading. Curated themes should override palette tokens first, then only override semantic tokens when the theme needs a deliberate behavior difference.
