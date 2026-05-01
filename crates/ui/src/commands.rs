@@ -23,11 +23,16 @@ pub struct PasteImageRequest {
 pub struct InsertMarkdownRequest {
     pub tab_id: String,
     pub markdown: String,
+    pub cursor_offset: Option<usize>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum EditorRuntimeCommand {
-    InsertMarkdown { tab_id: String, markdown: String },
+    InsertMarkdown {
+        tab_id: String,
+        markdown: String,
+        cursor_offset: Option<usize>,
+    },
 }
 
 impl EditorRuntimeCommand {
@@ -50,9 +55,21 @@ impl EditorRuntimeCommandQueue {
     }
 
     pub fn push_insert_markdown(&mut self, tab_id: String, markdown: String) {
+        self.push_insert_markdown_with_cursor(tab_id, markdown, None);
+    }
+
+    pub fn push_insert_markdown_with_cursor(
+        &mut self,
+        tab_id: String,
+        markdown: String,
+        cursor_offset: Option<usize>,
+    ) {
         self.revision = self.revision.saturating_add(1);
-        self.pending
-            .push(EditorRuntimeCommand::InsertMarkdown { tab_id, markdown });
+        self.pending.push(EditorRuntimeCommand::InsertMarkdown {
+            tab_id,
+            markdown,
+            cursor_offset,
+        });
     }
 
     pub fn has_pending_for_tab(&self, tab_id: &str) -> bool {
@@ -214,10 +231,26 @@ mod tests {
             vec![EditorRuntimeCommand::InsertMarkdown {
                 tab_id: "a".to_string(),
                 markdown: "![a](a.png)".to_string(),
+                cursor_offset: None,
             }]
         );
         assert!(!queue.has_pending_for_tab("a"));
         assert!(queue.has_pending_for_tab("b"));
+    }
+
+    #[test]
+    fn editor_runtime_command_queue_keeps_insert_cursor_offset() {
+        let mut queue = EditorRuntimeCommandQueue::default();
+        queue.push_insert_markdown_with_cursor("a".to_string(), "$x$".to_string(), Some(2));
+
+        assert_eq!(
+            queue.drain_for_tab("a"),
+            vec![EditorRuntimeCommand::InsertMarkdown {
+                tab_id: "a".to_string(),
+                markdown: "$x$".to_string(),
+                cursor_offset: Some(2),
+            }]
+        );
     }
 
     #[test]

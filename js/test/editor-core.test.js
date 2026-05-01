@@ -795,6 +795,11 @@ test("insert_markdown_in_view replaces selection and moves cursor", () => {
   assert.equal(insertMarkdownInView(view, "![image](assets/paste.png)"), true);
   assert.equal(view.state.doc.toString(), "before ![image](assets/paste.png) after");
   assert.deepEqual(view.state.selection.main, { from: 33, to: 33 });
+
+  const math = fakeView("formula: ", { from: 9, to: 9 });
+  assert.equal(insertMarkdownInView(math, "$$", 1), true);
+  assert.equal(math.state.doc.toString(), "formula: $$");
+  assert.deepEqual(math.state.selection.main, { from: 10, to: 10 });
 });
 
 test("request_save_for_view routes active tab save requests", () => {
@@ -2103,9 +2108,11 @@ test("insert_markdown message inserts markdown into editor", () => {
 
   const result = handleRustMessage(registry, "tab-a", {
     type: "insert_markdown",
-    markdown: "![image](assets/paste.png)",
+    markdown: "$$",
+    cursor_offset: 1,
   });
 
   assert.equal(result, "markdown_inserted");
-  assert.equal(view.state.doc.toString(), "body![image](assets/paste.png)");
+  assert.equal(view.state.doc.toString(), "body$$");
+  assert.deepEqual(view.state.selection.main, { from: 5, to: 5 });
 });

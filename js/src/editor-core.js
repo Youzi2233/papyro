@@ -695,14 +695,24 @@ export function pastePlainTextInView(view, pastedText, preferences) {
   return true;
 }
 
-export function insertMarkdownInView(view, markdown) {
+function normalizedCursorOffset(cursorOffset, length) {
+  if (cursorOffset === null || cursorOffset === undefined) return length;
+  const offset = Number(cursorOffset);
+  if (!Number.isSafeInteger(offset) || offset < 0 || offset > length) {
+    return length;
+  }
+  return offset;
+}
+
+export function insertMarkdownInView(view, markdown, cursorOffset = null) {
   const text = markdown ?? "";
   if (!text) return false;
 
   const range = view.state.selection.main;
+  const selectionOffset = normalizedCursorOffset(cursorOffset, text.length);
   view.dispatch({
     changes: { from: range.from, to: range.to, insert: text },
-    selection: { anchor: range.from + text.length },
+    selection: { anchor: range.from + selectionOffset },
   });
   return true;
 }
@@ -2198,7 +2208,7 @@ export function handleRustMessage(editorRegistry, tabId, message, options = {}) 
       return "formatted";
     case "insert_markdown":
       if (!entry) return "missing";
-      insertMarkdownInView(entry.view, message.markdown);
+      insertMarkdownInView(entry.view, message.markdown, message.cursor_offset);
       return "markdown_inserted";
     case "set_view_mode": {
       if (!entry) return "missing";

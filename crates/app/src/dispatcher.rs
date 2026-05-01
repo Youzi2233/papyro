@@ -652,7 +652,11 @@ fn insert_markdown(mut state: RuntimeState, request: InsertMarkdownRequest) {
     }
 
     state.editor_runtime_commands.with_mut(|commands| {
-        commands.push_insert_markdown(request.tab_id, request.markdown);
+        commands.push_insert_markdown_with_cursor(
+            request.tab_id,
+            request.markdown,
+            request.cursor_offset,
+        );
     });
     state
         .status_message
@@ -1039,11 +1043,13 @@ mod tests {
             AppAction::insert_markdown(InsertMarkdownRequest {
                 tab_id: "tab-a".to_string(),
                 markdown: "\n| A | B |\n| --- | --- |\n".to_string(),
+                cursor_offset: Some(4),
             }),
             AppAction::InsertMarkdown(crate::actions::InsertMarkdown {
                 request: InsertMarkdownRequest {
                     tab_id: "tab-a".to_string(),
                     markdown: "\n| A | B |\n| --- | --- |\n".to_string(),
+                    cursor_offset: Some(4),
                 }
             })
         );

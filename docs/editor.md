@@ -108,7 +108,7 @@ Expected capabilities:
 
 ## Insertion Entry
 
-The command palette includes insertion commands for common blocks: table, fenced code block, display math, Mermaid diagram, and task list. These commands insert Markdown into the active tab through the editor runtime command queue, so they share the same selection replacement path as pasted snippets.
+The command palette includes insertion commands for common writing structures: table, fenced code block, inline math, display math, Mermaid diagram, and task list. These commands insert Markdown into the active tab through the editor runtime command queue, so they share the same selection replacement path as pasted snippets. Snippets can include a cursor landing offset, which keeps formula and block insertion ready for immediate typing.
 
 Hybrid table widgets support direct cell editing, Tab/Shift+Tab cell navigation, and row/column actions relative to the focused cell. The Markdown source remains the storage format, but normal table edits should not require hand-aligning pipe syntax.
 

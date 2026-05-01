@@ -33,14 +33,30 @@ pub enum EditorEvent {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum EditorCommand {
-    SetContent { content: String },
-    SetViewMode { mode: ViewMode },
-    SetBlockHints { hints: MarkdownBlockHintSet },
-    SetPreferences { auto_link_paste: bool },
-    InsertMarkdown { markdown: String },
-    ApplyFormat { kind: EditorFormat },
+    SetContent {
+        content: String,
+    },
+    SetViewMode {
+        mode: ViewMode,
+    },
+    SetBlockHints {
+        hints: MarkdownBlockHintSet,
+    },
+    SetPreferences {
+        auto_link_paste: bool,
+    },
+    InsertMarkdown {
+        markdown: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        cursor_offset: Option<usize>,
+    },
+    ApplyFormat {
+        kind: EditorFormat,
+    },
     Focus,
-    Destroy { instance_id: String },
+    Destroy {
+        instance_id: String,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -163,12 +179,27 @@ mod tests {
     fn serializes_insert_markdown_command() {
         let value = serde_json::to_value(EditorCommand::InsertMarkdown {
             markdown: "![image](assets/paste.png)".to_string(),
+            cursor_offset: None,
         })
         .unwrap();
 
         assert_eq!(
             value,
             json!({ "type": "insert_markdown", "markdown": "![image](assets/paste.png)" })
+        );
+    }
+
+    #[test]
+    fn serializes_insert_markdown_cursor_offset() {
+        let value = serde_json::to_value(EditorCommand::InsertMarkdown {
+            markdown: "$x$".to_string(),
+            cursor_offset: Some(2),
+        })
+        .unwrap();
+
+        assert_eq!(
+            value,
+            json!({ "type": "insert_markdown", "markdown": "$x$", "cursor_offset": 2 })
         );
     }
 

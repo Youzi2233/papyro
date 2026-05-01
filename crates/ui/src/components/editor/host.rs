@@ -294,8 +294,15 @@ pub(super) fn EditorHost(
 
             for command in commands {
                 match command {
-                    EditorRuntimeCommand::InsertMarkdown { markdown, .. } => {
-                        let _ = eval.send(EditorCommand::InsertMarkdown { markdown });
+                    EditorRuntimeCommand::InsertMarkdown {
+                        markdown,
+                        cursor_offset,
+                        ..
+                    } => {
+                        let _ = eval.send(EditorCommand::InsertMarkdown {
+                            markdown,
+                            cursor_offset,
+                        });
                     }
                 }
             }

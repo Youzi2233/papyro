@@ -153,7 +153,7 @@ Goal: make Hybrid mode useful for real writing, not just decorated source text.
 - [ ] Align Hybrid editing with modern Markdown writing tools such as Typora and Feishu Docs: inserting tables, math, code blocks, callouts, links, images, and Mermaid should be discoverable and fast.
 - [x] Add editor insertion affordances for common blocks instead of requiring users to remember Markdown syntax for every task.
 - [x] Make table creation and editing feel document-native: add rows/columns, move between cells, preserve alignment, and avoid layout jumps.
-- [ ] Make math insertion and editing first-class, including inline math, display math, preview feedback, and error states.
+- [x] Make math insertion and editing first-class, including inline math, display math, preview feedback, and error states.
 - [ ] Treat enterprise-grade editing as the bar: predictable paste, undo, selection, IME, keyboard navigation, accessibility, and stable layout are required before calling Hybrid complete.
 - [ ] Decide whether long-term Hybrid remains CodeMirror decoration-based or moves toward a richer document model.
 

@@ -434,23 +434,41 @@ pub(crate) fn command_palette_actions(
     actions
 }
 
+const INSERT_CURSOR_MARKER: &str = "{|cursor|}";
+
+fn markdown_insert_template(template: &str) -> (String, Option<usize>) {
+    let Some(cursor_offset) = template.find(INSERT_CURSOR_MARKER) else {
+        return (template.to_string(), None);
+    };
+
+    let mut markdown = String::with_capacity(template.len() - INSERT_CURSOR_MARKER.len());
+    markdown.push_str(&template[..cursor_offset]);
+    markdown.push_str(&template[cursor_offset + INSERT_CURSOR_MARKER.len()..]);
+    (markdown, Some(cursor_offset))
+}
+
 fn markdown_insert_actions(language: AppLanguage, tab_id: &str) -> Vec<CommandPaletteAction> {
     let i18n = i18n_for(language);
     [
         (
             i18n.text("Insert table", "插入表格"),
             i18n.text("Add a basic Markdown table", "添加基础 Markdown 表格"),
-            "\n| Column | Value |\n| --- | --- |\n|  |  |\n",
+            "\n| Column | Value |\n| --- | --- |\n| {|cursor|} |  |\n",
         ),
         (
             i18n.text("Insert code block", "插入代码块"),
             i18n.text("Add a fenced code block", "添加围栏代码块"),
-            "\n```text\ncode\n```\n",
+            "\n```text\n{|cursor|}\n```\n",
+        ),
+        (
+            i18n.text("Insert inline math", "插入行内公式"),
+            i18n.text("Add an inline KaTeX expression", "添加行内 KaTeX 公式"),
+            "${|cursor|}$",
         ),
         (
             i18n.text("Insert math block", "插入公式块"),
             i18n.text("Add a display math block", "添加独立数学公式"),
-            "\n$$\nE = mc^2\n$$\n",
+            "\n$$\n{|cursor|}\n$$\n",
         ),
         (
             i18n.text("Insert Mermaid diagram", "插入 Mermaid 图"),
@@ -458,23 +476,25 @@ fn markdown_insert_actions(language: AppLanguage, tab_id: &str) -> Vec<CommandPa
                 "Add a live Mermaid diagram block",
                 "添加可预览的 Mermaid 图表",
             ),
-            "\n```mermaid\nflowchart TD\n    A[Start] --> B[Finish]\n```\n",
+            "\n```mermaid\nflowchart TD\n    A[Start] --> B[Finish]{|cursor|}\n```\n",
         ),
         (
             i18n.text("Insert task list", "插入任务列表"),
             i18n.text("Add a Markdown checklist item", "添加 Markdown 待办项"),
-            "\n- [ ] Task\n",
+            "\n- [ ] {|cursor|}\n",
         ),
     ]
     .into_iter()
-    .map(|(title, detail, markdown)| {
+    .map(|(title, detail, template)| {
+        let (markdown, cursor_offset) = markdown_insert_template(template);
         action(
             title,
             detail,
             "INSERT",
             CommandPaletteActionKind::InsertMarkdown(InsertMarkdownRequest {
                 tab_id: tab_id.to_string(),
-                markdown: markdown.to_string(),
+                markdown,
+                cursor_offset,
             }),
         )
     })
@@ -576,6 +596,7 @@ mod tests {
         assert!(titles.contains(&"Unfavorite selected note"));
         assert!(titles.contains(&"Use source mode"));
         assert!(titles.contains(&"Insert table"));
+        assert!(titles.contains(&"Insert inline math"));
         assert!(titles.contains(&"Insert Mermaid diagram"));
         assert!(!titles.contains(&"Use hybrid mode"));
     }
@@ -836,6 +857,16 @@ mod tests {
                     CommandPaletteActionKind::InsertMarkdown(request)
                         if request.tab_id == "tab-a"
                             && request.markdown.contains("| Column | Value |")
+                            && request.cursor_offset.is_some()
+                )
+        }));
+        assert!(actions.iter().any(|action| {
+            action.title == "Insert inline math"
+                && matches!(
+                    &action.kind,
+                    CommandPaletteActionKind::InsertMarkdown(request)
+                        if request.markdown == "$$"
+                            && request.cursor_offset == Some(1)
                 )
         }));
         assert!(actions.iter().any(|action| {
@@ -844,6 +875,7 @@ mod tests {
                     &action.kind,
                     CommandPaletteActionKind::InsertMarkdown(request)
                         if request.markdown.contains("$$")
+                            && request.cursor_offset.is_some()
                 )
         }));
     }
