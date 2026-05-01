@@ -100,6 +100,81 @@ fn create_folder_flow_uses_note_parent_and_selects_new_folder() {
 }
 
 #[test]
+fn create_note_flow_uses_workspace_root_when_root_is_selected() {
+    let created_path = PathBuf::from("workspace/root.md");
+    let storage = MockStorage {
+        create_note_result: Some(created_path.clone()),
+        opened_notes: HashMap::from([(
+            created_path.clone(),
+            OpenedNote {
+                tab: tab("tab-root", "note-root", "workspace/root.md"),
+                content: "# Root".to_string(),
+                recent_files: vec![recent_file("note-root", "root.md")],
+            },
+        )]),
+        ..MockStorage::default()
+    };
+    let mut file_state = file_state_with_tree(vec![directory_node(
+        "workspace/notes",
+        vec![note_node("workspace/notes/old.md", "note-old")],
+    )]);
+    file_state.select_path(PathBuf::from("workspace"));
+    let mut editor_tabs = EditorTabs::default();
+    let mut tab_contents = TabContentsMap::default();
+
+    let created = create_note_in_storage(
+        &storage,
+        &mut file_state,
+        &mut editor_tabs,
+        &mut tab_contents,
+        "root.md",
+        |content| DocumentStats {
+            char_count: content.len(),
+            ..DocumentStats::default()
+        },
+    )
+    .unwrap();
+
+    assert_eq!(created, created_path.clone());
+    assert_eq!(
+        storage.created_note_requests.lock().unwrap().clone(),
+        vec![(PathBuf::from("workspace"), "root.md".to_string())]
+    );
+    assert_eq!(file_state.selected_path, Some(created_path.clone()));
+    assert!(file_state
+        .file_tree
+        .iter()
+        .any(|node| node.path == std::path::Path::new("workspace/root.md")));
+}
+
+#[test]
+fn create_folder_flow_uses_workspace_root_when_root_is_selected() {
+    let created_path = PathBuf::from("workspace/folder");
+    let storage = MockStorage {
+        create_folder_result: Some(created_path.clone()),
+        ..MockStorage::default()
+    };
+    let mut file_state = file_state_with_tree(vec![directory_node(
+        "workspace/notes",
+        vec![note_node("workspace/notes/old.md", "note-old")],
+    )]);
+    file_state.select_path(PathBuf::from("workspace"));
+
+    let created = create_folder_in_storage(&storage, &mut file_state, "folder").unwrap();
+
+    assert_eq!(created, created_path.clone());
+    assert_eq!(
+        storage.created_folder_requests.lock().unwrap().clone(),
+        vec![(PathBuf::from("workspace"), "folder".to_string())]
+    );
+    assert_eq!(file_state.selected_path, Some(created_path.clone()));
+    assert!(file_state
+        .file_tree
+        .iter()
+        .any(|node| node.path == std::path::Path::new("workspace/folder")));
+}
+
+#[test]
 fn create_note_flow_fails_without_workspace() {
     let storage = MockStorage::default();
     let mut file_state = papyro_core::FileState::default();

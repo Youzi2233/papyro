@@ -1,5 +1,7 @@
 pub mod file_tree;
 
+use crate::commands::FileTarget;
+use crate::components::primitives::{Menu, MenuItem};
 use crate::context::use_app_context;
 use crate::i18n::use_i18n;
 use crate::perf::{perf_timer, trace_sidebar_resize};
@@ -19,6 +21,28 @@ struct SidebarResizeDrag {
     started_at: Option<Instant>,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+struct SidebarWorkspaceMenu {
+    position: SidebarContextMenuPosition,
+    target: FileTarget,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+struct SidebarContextMenuPosition {
+    x: f64,
+    y: f64,
+}
+
+impl SidebarContextMenuPosition {
+    fn from_event(event: &MouseEvent) -> Self {
+        let point = event.client_coordinates();
+        Self {
+            x: point.x,
+            y: point.y,
+        }
+    }
+}
+
 #[component]
 pub fn Sidebar(on_search: EventHandler<()>, on_settings: EventHandler<()>) -> Element {
     let app = use_app_context();
@@ -34,6 +58,7 @@ pub fn Sidebar(on_search: EventHandler<()>, on_settings: EventHandler<()>) -> El
     let mut tree_sort = use_signal(FileTreeSortMode::default);
     let mut resize_drag = use_signal(|| None::<SidebarResizeDrag>);
     let mut resize_preview_width = use_signal(|| None::<u32>);
+    let mut workspace_menu = use_signal(|| None::<SidebarWorkspaceMenu>);
 
     let configured_sidebar_width = (app.sidebar_width)();
     let sidebar_width = resize_preview_width().unwrap_or(configured_sidebar_width);
@@ -53,6 +78,12 @@ pub fn Sidebar(on_search: EventHandler<()>, on_settings: EventHandler<()>) -> El
     } else {
         "mn-button-icon note"
     };
+    let workspace_root_path = sidebar_model.path.clone();
+    let workspace_root_selected = sidebar_model.root_selected;
+    let workspace_root_target_name = sidebar_model
+        .name
+        .clone()
+        .unwrap_or_else(|| workspace_path_text.clone());
     let workspace_action_label = if has_workspace {
         i18n.text("Switch", "切换")
     } else {
@@ -62,9 +93,9 @@ pub fn Sidebar(on_search: EventHandler<()>, on_settings: EventHandler<()>) -> El
     rsx! {
         aside {
             class: "{sidebar_class}",
-            style: "width: {sidebar_width}px",
+            style: format!("width: {}px", sidebar_width),
+            onclick: move |_| workspace_menu.set(None),
 
-            // ── Header ──
             div { class: "mn-sidebar-header",
                 div { class: "mn-sidebar-brand",
                     div { class: "mn-sidebar-brand-mark", "P" }
@@ -103,12 +134,51 @@ pub fn Sidebar(on_search: EventHandler<()>, on_settings: EventHandler<()>) -> El
                     span { class: "mn-sidebar-search-label", {i18n.text("Search notes", "搜索笔记")} }
                     span { class: "mn-sidebar-search-shortcut", "Ctrl Shift F" }
                 }
-                div { class: "mn-sidebar-workspace", title: "{workspace_path_text}",
-                    span { class: "mn-sidebar-workspace-label", {i18n.text("Folder", "目录")} }
-                    span { class: "mn-sidebar-workspace-path", "{workspace_path_text}" }
+                if let Some(root_path) = workspace_root_path.clone() {
+                    button {
+                        r#type: "button",
+                        class: if workspace_root_selected {
+                            "mn-sidebar-workspace active"
+                        } else {
+                            "mn-sidebar-workspace"
+                        },
+                        title: i18n.text(
+                            "Use the workspace root for new notes and folders",
+                            "将工作区根目录作为新建笔记和文件夹的位置",
+                        ),
+                        "aria-pressed": if workspace_root_selected { "true" } else { "false" },
+                        onclick: {
+                            let commands = commands.clone();
+                            let root_path = root_path.clone();
+                            move |_| commands.select_path.call(root_path.clone())
+                        },
+                        oncontextmenu: {
+                            let commands = commands.clone();
+                            let root_path = root_path.clone();
+                            let target_name = workspace_root_target_name.clone();
+                            move |event| {
+                                event.prevent_default();
+                                event.stop_propagation();
+                                commands.select_path.call(root_path.clone());
+                                workspace_menu.set(Some(SidebarWorkspaceMenu {
+                                    position: SidebarContextMenuPosition::from_event(&event),
+                                    target: FileTarget {
+                                        path: root_path.clone(),
+                                        name: target_name.clone(),
+                                    },
+                                }));
+                            }
+                        },
+                        span { class: "mn-sidebar-workspace-label", {i18n.text("Folder", "目录")} }
+                        span { class: "mn-sidebar-workspace-path", "{workspace_path_text}" }
+                    }
+                } else {
+                    div { class: "mn-sidebar-workspace", title: "{workspace_path_text}",
+                        span { class: "mn-sidebar-workspace-label", {i18n.text("Folder", "目录")} }
+                        span { class: "mn-sidebar-workspace-path", "{workspace_path_text}" }
+                    }
                 }
 
-                // ── Inline create form ──
                 if show_create() {
                     div { class: "mn-sidebar-create",
                         input {
@@ -161,7 +231,6 @@ pub fn Sidebar(on_search: EventHandler<()>, on_settings: EventHandler<()>) -> El
                 }
             }
 
-            // ── File tree ──
             FileTree { sort_mode: tree_sort() }
 
             div { class: "mn-sidebar-footer",
@@ -230,8 +299,71 @@ pub fn Sidebar(on_search: EventHandler<()>, on_settings: EventHandler<()>) -> El
                     },
                 }
             }
+            if let Some(menu) = workspace_menu() {
+                div {
+                    class: "mn-tree-context-dismiss",
+                    onclick: move |_| workspace_menu.set(None),
+                    oncontextmenu: move |event| {
+                        event.prevent_default();
+                        workspace_menu.set(None);
+                    },
+                }
+                SidebarWorkspaceMenuView {
+                    menu,
+                    on_close: move |_| workspace_menu.set(None),
+                }
+            }
         }
     }
+}
+
+#[component]
+fn SidebarWorkspaceMenuView(menu: SidebarWorkspaceMenu, on_close: EventHandler<()>) -> Element {
+    let app = use_app_context();
+    let i18n = use_i18n();
+    let commands = app.commands;
+    let style = sidebar_context_menu_style(menu.position);
+    let reveal_target = menu.target.clone();
+
+    rsx! {
+        Menu {
+            label: i18n.text("Workspace actions", "工作区操作").to_string(),
+            class_name: "mn-tree-context-menu".to_string(),
+            style,
+            MenuItem {
+                label: i18n.text("New note", "新建笔记").to_string(),
+                danger: false,
+                on_select: move |_| {
+                    commands.create_note.call("Untitled".to_string());
+                    on_close.call(());
+                },
+            }
+            MenuItem {
+                label: i18n.text("New folder", "新建文件夹").to_string(),
+                danger: false,
+                on_select: move |_| {
+                    commands.create_folder.call("New Folder".to_string());
+                    on_close.call(());
+                },
+            }
+            MenuItem {
+                label: i18n.text("Reveal", "定位").to_string(),
+                danger: false,
+                on_select: move |_| {
+                    commands.reveal_in_explorer.call(reveal_target.clone());
+                    on_close.call(());
+                },
+            }
+        }
+    }
+}
+
+fn sidebar_context_menu_style(position: SidebarContextMenuPosition) -> String {
+    let left = position.x.max(8.0);
+    let top = position.y.max(8.0);
+    format!(
+        "left: min({left:.0}px, calc(100vw - 188px)); top: min({top:.0}px, calc(100vh - 180px));"
+    )
 }
 
 fn sidebar_width_from_drag(drag: SidebarResizeDrag, current_x: f64) -> u32 {

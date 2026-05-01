@@ -1,4 +1,4 @@
-use crate::action_labels::open_note_label;
+﻿use crate::action_labels::open_note_label;
 use crate::commands::{AppCommands, FileTarget, OpenMarkdownTarget};
 use crate::components::primitives::{Menu, MenuItem, MenuSeparator};
 use crate::context::use_app_context;
@@ -37,12 +37,18 @@ pub fn FileTree(sort_mode: FileTreeSortMode) -> Element {
     let i18n = use_i18n();
     let commands = app.commands;
     let file_tree_model = app.file_tree_model.read().clone();
+    let sidebar_model = app.sidebar_model.read().clone();
     let keyboard_commands = commands.clone();
     let context_rename_commands = commands.clone();
 
     let nodes = file_tree_model.nodes;
     let expanded_paths = file_tree_model.expanded_paths;
     let selected_path = file_tree_model.selected_path;
+    let workspace_root_path = sidebar_model.path.clone();
+    let workspace_root_name = sidebar_model
+        .name
+        .clone()
+        .unwrap_or_else(|| "Workspace".to_string());
     let sorted_nodes = sorted_file_tree_nodes(&nodes, sort_mode);
     let visible_items = visible_file_tree_items(&sorted_nodes, &expanded_paths);
     let keyboard_items = visible_items.clone();
@@ -129,6 +135,31 @@ pub fn FileTree(sort_mode: FileTreeSortMode) -> Element {
                             context_menu.set(Some(menu));
                         },
                     }
+                }
+            }
+            if let Some(root_path) = workspace_root_path.clone() {
+                div {
+                    class: "mn-file-tree-blank",
+                    "aria-hidden": "true",
+                    onclick: {
+                        let root_click_path = root_path.clone();
+                        move |_| {
+                            keyboard_commands.select_path.call(root_click_path.clone());
+                        }
+                    },
+                    oncontextmenu: {
+                        let root_menu_path = root_path.clone();
+                        let root_menu_name = workspace_root_name.clone();
+                        move |event| {
+                            event.prevent_default();
+                            event.stop_propagation();
+                            keyboard_commands.select_path.call(root_menu_path.clone());
+                            context_menu.set(Some(FileTreeContextMenu::from_workspace_blank_event(
+                                &workspace_root_node(&root_menu_path, &root_menu_name),
+                                &event,
+                            )));
+                        }
+                    },
                 }
             }
             if let Some(menu) = context_menu() {
@@ -497,6 +528,19 @@ fn file_tree_icon_class(kind: FileTreeIconKind) -> &'static str {
     }
 }
 
+fn workspace_root_node(path: &Path, name: &str) -> FileNode {
+    FileNode {
+        name: name.to_string(),
+        path: path.to_path_buf(),
+        relative_path: PathBuf::new(),
+        created_at: 0,
+        updated_at: 0,
+        kind: FileNodeKind::Directory {
+            children: Vec::new(),
+        },
+    }
+}
+
 fn begin_inline_rename(
     commands: AppCommands,
     mut rename_draft: Signal<Option<FileTreeRenameDraft>>,
@@ -526,6 +570,14 @@ fn commit_inline_rename(
 struct FileTreeContextMenu {
     node: FileNode,
     position: ContextMenuPosition,
+    kind: FileTreeContextMenuKind,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum FileTreeContextMenuKind {
+    Node,
+    WorkspaceRoot,
+    WorkspaceBlank,
 }
 
 impl FileTreeContextMenu {
@@ -537,11 +589,32 @@ impl FileTreeContextMenu {
                 x: point.x,
                 y: point.y,
             },
+            kind: FileTreeContextMenuKind::Node,
+        }
+    }
+
+    fn from_workspace_blank_event(node: &FileNode, event: &MouseEvent) -> Self {
+        let point = event.client_coordinates();
+        Self {
+            node: node.clone(),
+            position: ContextMenuPosition {
+                x: point.x,
+                y: point.y,
+            },
+            kind: FileTreeContextMenuKind::WorkspaceBlank,
         }
     }
 
     fn is_directory(&self) -> bool {
         matches!(self.node.kind, FileNodeKind::Directory { .. })
+    }
+
+    fn is_workspace_root(&self) -> bool {
+        self.kind == FileTreeContextMenuKind::WorkspaceRoot
+    }
+
+    fn is_workspace_blank(&self) -> bool {
+        self.kind == FileTreeContextMenuKind::WorkspaceBlank
     }
 
     fn file_target(&self) -> FileTarget {
@@ -577,19 +650,28 @@ fn FileTreeContextMenuView(
     let commands = app.commands;
     let style = context_menu_style(menu.position);
     let is_directory = menu.is_directory();
+    let is_workspace_root = menu.is_workspace_root();
+    let is_workspace_blank = menu.is_workspace_blank();
     let open_node = menu.node.clone();
     let rename_node = menu.node.clone();
     let toggle_path = menu.node.path.clone();
+    let create_target_path = menu.node.path.clone();
+    let create_note_target_path = create_target_path.clone();
+    let create_folder_target_path = create_target_path.clone();
     let delete_path = menu.node.path.clone();
     let reveal_target = menu.file_target();
-    let delete_label = i18n.text("Move to trash", "移到回收站");
+    let delete_label = i18n.text("Move to trash", "移动到回收站");
 
     rsx! {
         Menu {
-            label: i18n.text("File actions", "文件操作").to_string(),
+            label: if is_workspace_root || is_workspace_blank {
+                i18n.text("Workspace actions", "工作区操作").to_string()
+            } else {
+                i18n.text("File actions", "文件操作").to_string()
+            },
             class_name: "mn-tree-context-menu".to_string(),
             style,
-            if !is_directory {
+            if !is_workspace_root && !is_workspace_blank && !is_directory {
                 MenuItem {
                     label: i18n.text("Open", "打开").to_string(),
                     danger: false,
@@ -602,7 +684,7 @@ fn FileTreeContextMenuView(
                     },
                 }
             }
-            if is_directory {
+            if !is_workspace_root && !is_workspace_blank && is_directory {
                 MenuItem {
                     label: i18n.text("Expand / collapse", "展开 / 收起").to_string(),
                     danger: false,
@@ -612,50 +694,67 @@ fn FileTreeContextMenuView(
                     },
                 }
             }
-            MenuItem {
-                label: i18n.text("Rename", "重命名").to_string(),
-                danger: false,
-                on_select: move |_| {
-                    on_rename_start.call(rename_node.clone());
-                    on_close.call(());
-                },
-            }
             if is_directory {
-            MenuItem {
-                label: i18n.text("New note", "新建笔记").to_string(),
-                danger: false,
-                on_select: move |_| {
-                    commands.create_note.call("Untitled".to_string());
-                    on_close.call(());
-                },
-            }
+                MenuItem {
+                    label: i18n.text("New note", "新建笔记").to_string(),
+                    danger: false,
+                    on_select: move |_| {
+                        commands.select_path.call(create_note_target_path.clone());
+                        commands.create_note.call("Untitled".to_string());
+                        on_close.call(());
+                    },
+                }
             }
             if is_directory {
                 MenuItem {
                     label: i18n.text("New folder", "新建文件夹").to_string(),
                     danger: false,
                     on_select: move |_| {
+                        commands.select_path.call(create_folder_target_path.clone());
                         commands.create_folder.call("New Folder".to_string());
                         on_close.call(());
                     },
                 }
             }
-            MenuItem {
-                label: i18n.text("Reveal", "定位").to_string(),
-                danger: false,
-                on_select: move |_| {
-                    commands.reveal_in_explorer.call(reveal_target.clone());
-                    on_close.call(());
-                },
+            if !is_workspace_root && !is_workspace_blank {
+                MenuItem {
+                    label: i18n.text("Rename", "重命名").to_string(),
+                    danger: false,
+                    on_select: move |_| {
+                        on_rename_start.call(rename_node.clone());
+                        on_close.call(());
+                    },
+                }
             }
-            MenuSeparator {}
-            MenuItem {
-                label: delete_label.to_string(),
-                danger: true,
-                on_select: move |_| {
-                    commands.delete_path.call(delete_path.clone());
-                    on_close.call(());
-                },
+            if is_workspace_blank {
+                MenuItem {
+                    label: i18n.text("Refresh", "刷新").to_string(),
+                    danger: false,
+                    on_select: move |_| {
+                        commands.refresh_workspace.call(());
+                        on_close.call(());
+                    },
+                }
+            } else {
+                MenuItem {
+                    label: i18n.text("Reveal", "定位").to_string(),
+                    danger: false,
+                    on_select: move |_| {
+                        commands.reveal_in_explorer.call(reveal_target.clone());
+                        on_close.call(());
+                    },
+                }
+            }
+            if !is_workspace_root && !is_workspace_blank {
+                MenuSeparator {}
+                MenuItem {
+                    label: delete_label.to_string(),
+                    danger: true,
+                    on_select: move |_| {
+                        commands.delete_path.call(delete_path.clone());
+                        on_close.call(());
+                    },
+                }
             }
         }
     }
@@ -1229,6 +1328,7 @@ mod tests {
         let menu = FileTreeContextMenu {
             node: directory("workspace/notes", Vec::new()),
             position: ContextMenuPosition { x: 24.0, y: 36.0 },
+            kind: FileTreeContextMenuKind::Node,
         };
 
         assert!(menu.is_directory());
@@ -1239,6 +1339,31 @@ mod tests {
                 name: "notes".to_string(),
             }
         );
+    }
+
+    #[test]
+    fn context_menu_model_marks_workspace_root_scope() {
+        let menu = FileTreeContextMenu {
+            node: directory("workspace", Vec::new()),
+            position: ContextMenuPosition { x: 12.0, y: 18.0 },
+            kind: FileTreeContextMenuKind::WorkspaceRoot,
+        };
+
+        assert!(menu.is_directory());
+        assert!(menu.is_workspace_root());
+    }
+
+    #[test]
+    fn context_menu_model_marks_workspace_blank_scope() {
+        let menu = FileTreeContextMenu {
+            node: directory("workspace", Vec::new()),
+            position: ContextMenuPosition { x: 16.0, y: 28.0 },
+            kind: FileTreeContextMenuKind::WorkspaceBlank,
+        };
+
+        assert!(menu.is_directory());
+        assert!(menu.is_workspace_blank());
+        assert!(!menu.is_workspace_root());
     }
 
     #[test]

@@ -42,6 +42,7 @@ pub struct SidebarViewModel {
     pub path: Option<PathBuf>,
     pub selected_name: Option<String>,
     pub selected_path: Option<PathBuf>,
+    pub root_selected: bool,
     pub has_selection: bool,
     pub selected_is_directory: bool,
     pub selected_delete_pending: bool,
@@ -342,6 +343,10 @@ impl SidebarViewModel {
     pub fn from_file_state(file_state: &FileState, pending_delete_path: Option<&Path>) -> Self {
         let selected_node = file_state.selected_node();
         let selected_path = selected_node.as_ref().map(|node| node.path.as_path());
+        let current_workspace_path = file_state
+            .current_workspace
+            .as_ref()
+            .map(|workspace| &workspace.path);
 
         Self {
             name: file_state
@@ -354,6 +359,9 @@ impl SidebarViewModel {
                 .map(|workspace| workspace.path.clone()),
             selected_name: selected_node.as_ref().map(|node| node.name.clone()),
             selected_path: selected_node.as_ref().map(|node| node.path.clone()),
+            root_selected: current_workspace_path
+                .zip(file_state.selected_path.as_ref())
+                .is_some_and(|(workspace_path, selected_path)| workspace_path == selected_path),
             has_selection: selected_node.is_some(),
             selected_is_directory: selected_node
                 .as_ref()
