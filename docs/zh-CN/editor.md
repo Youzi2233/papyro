@@ -114,9 +114,7 @@ JS 侧：
 - KaTeX
 - `codemirror-lang-mermaid`
 
-采用新的 Markdown 样式或渲染库前，优先选择社区认可高、license 清楚、维护稳定的开源项目。候选调研方向包括 [GitHub-style Markdown CSS](https://github.com/sindresorhus/github-markdown-css)、[Shiki](https://github.com/shikijs/shiki)/[highlight.js](https://github.com/highlightjs/highlight.js) 代码主题生态、[Catppuccin](https://github.com/catppuccin/catppuccin) 等成熟调色生态。
-
-不要直接复制大段第三方样式。Papyro 需要统一的应用设计系统。
+采用新的 Markdown 样式或渲染库前，先看 [Markdown 样式参考调研](markdown-style-references.md)。不要直接复制大段第三方样式。Papyro 需要统一的应用设计系统。
 
 ## 协议规则
 

@@ -13,6 +13,7 @@ This directory is intentionally small. Older phase notes, duplicated design draf
 | Start coding safely | [Development standards](development-standards.md) |
 | Work on Markdown editing | [Editor guide](editor.md) |
 | Change themes or Markdown styles | [Theme system](theme-system.md) |
+| Choose Markdown style references | [Markdown style references](markdown-style-references.md) |
 | Keep interactions fast | [Performance budget](performance-budget.md) |
 | Use AI helpers | [AI skills](ai-skills.md) |
 
@@ -26,11 +27,13 @@ flowchart LR
     development["Development standards<br/>how to change it"]
     editor["Editor guide<br/>if touching Markdown"]
     themes["Theme system<br/>if touching visual tokens"]
+    references["Style references<br/>before adopting external CSS"]
     performance["Performance budget<br/>if touching render paths"]
 
     readme --> roadmap --> architecture --> development
     development --> editor
     development --> themes
+    themes --> references
     development --> performance
 ```
 

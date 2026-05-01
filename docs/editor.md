@@ -129,13 +129,7 @@ Current JS-side stack:
 - KaTeX for math
 - `codemirror-lang-mermaid` for Mermaid syntax support
 
-Before adopting additional Markdown styles or parser/render libraries, prefer mature open-source projects with strong community adoption, clear licenses, and stable maintenance. Candidate research areas:
-
-- [GitHub-style Markdown CSS](https://github.com/sindresorhus/github-markdown-css) for a familiar baseline
-- [Shiki](https://github.com/shikijs/shiki) or [highlight.js](https://github.com/highlightjs/highlight.js) theme ecosystems for code style references
-- [Catppuccin](https://github.com/catppuccin/catppuccin) or similarly mature palettes for optional theme inspiration
-
-Do not copy large third-party styles blindly. Papyro needs a coherent app design system.
+Before adopting additional Markdown styles or parser/render libraries, use [Markdown style references](markdown-style-references.md). Do not copy large third-party styles blindly. Papyro needs a coherent app design system.
 
 ## Protocol Rules
 
