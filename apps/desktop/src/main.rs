@@ -5,7 +5,11 @@ use dioxus::prelude::*;
 use std::io;
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
-const MAIN_CSS: &str = include_str!("../assets/main.css");
+const MAIN_CSS: &str = concat!(
+    include_str!("../assets/styles/modal.css"),
+    "\n",
+    include_str!("../assets/main.css")
+);
 const EDITOR_JS: &str = include_str!("../assets/editor.js");
 const EDITOR_JS_SRC: &str = "/assets/editor.js";
 
