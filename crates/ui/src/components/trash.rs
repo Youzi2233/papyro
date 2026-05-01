@@ -109,6 +109,9 @@ mod tests {
             "No deleted notes"
         );
         assert_eq!(trash_count_label(AppLanguage::English, 1), "1 deleted note");
-        assert_eq!(trash_count_label(AppLanguage::English, 3), "3 deleted notes");
+        assert_eq!(
+            trash_count_label(AppLanguage::English, 3),
+            "3 deleted notes"
+        );
     }
 }

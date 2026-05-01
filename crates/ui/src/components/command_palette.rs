@@ -268,7 +268,10 @@ pub(crate) fn command_palette_actions(
         ),
         action(
             i18n.text("Toggle sidebar", "切换侧边栏"),
-            i18n.text("Show or hide the workspace browser", "显示或隐藏工作区文件栏"),
+            i18n.text(
+                "Show or hide the workspace browser",
+                "显示或隐藏工作区文件栏",
+            ),
             "VIEW",
             CommandPaletteActionKind::ToggleSidebar,
         ),
@@ -278,7 +281,10 @@ pub(crate) fn command_palette_actions(
             } else {
                 i18n.text("Show outline", "显示大纲")
             },
-            i18n.text("Toggle the active note heading outline", "切换当前笔记的大纲面板"),
+            i18n.text(
+                "Toggle the active note heading outline",
+                "切换当前笔记的大纲面板",
+            ),
             "VIEW",
             CommandPaletteActionKind::ToggleOutline,
         ),

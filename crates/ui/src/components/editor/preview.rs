@@ -478,18 +478,14 @@ fn preview_notice(language: AppLanguage, preview: &CachedPreview) -> Option<&'st
         CachedPreviewStatus::Failed => {
             Some(i18n.text("Preview could not be rendered.", "无法渲染预览。"))
         }
-        CachedPreviewStatus::Ready if !preview.policy.live_preview_enabled => {
-            Some(i18n.text(
-                "Large document mode keeps editing responsive by pausing live preview.",
-                "大文档模式会暂停实时预览，以保持编辑流畅。",
-            ))
-        }
-        CachedPreviewStatus::Ready if !preview.policy.code_highlighting_enabled => {
-            Some(i18n.text(
-                "Large document mode keeps editing responsive by disabling code highlighting.",
-                "大文档模式会关闭代码高亮，以保持编辑流畅。",
-            ))
-        }
+        CachedPreviewStatus::Ready if !preview.policy.live_preview_enabled => Some(i18n.text(
+            "Large document mode keeps editing responsive by pausing live preview.",
+            "大文档模式会暂停实时预览，以保持编辑流畅。",
+        )),
+        CachedPreviewStatus::Ready if !preview.policy.code_highlighting_enabled => Some(i18n.text(
+            "Large document mode keeps editing responsive by disabling code highlighting.",
+            "大文档模式会关闭代码高亮，以保持编辑流畅。",
+        )),
         CachedPreviewStatus::Ready => None,
     }
 }

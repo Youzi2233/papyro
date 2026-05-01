@@ -32,13 +32,19 @@ mod tests {
             open_note_label(AppLanguage::English, "Daily note"),
             "Open Daily note"
         );
-        assert_eq!(open_note_label(AppLanguage::Chinese, "每日笔记"), "打开 每日笔记");
+        assert_eq!(
+            open_note_label(AppLanguage::Chinese, "每日笔记"),
+            "打开 每日笔记"
+        );
     }
 
     #[test]
     fn delete_action_labels_reflect_confirmation_state() {
         assert_eq!(delete_action_label(AppLanguage::English, false), "Delete");
-        assert_eq!(delete_action_label(AppLanguage::English, true), "Confirm delete");
+        assert_eq!(
+            delete_action_label(AppLanguage::English, true),
+            "Confirm delete"
+        );
         assert_eq!(
             delete_action_title(AppLanguage::English, false),
             "Delete selected"

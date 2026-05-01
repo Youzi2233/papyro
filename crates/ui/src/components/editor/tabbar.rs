@@ -202,7 +202,13 @@ mod tests {
 
     #[test]
     fn i18n_close_label_names_target_tab() {
-        assert_eq!(i18n_for(AppLanguage::English).close_label("Draft"), "Close Draft");
-        assert_eq!(i18n_for(AppLanguage::Chinese).close_label("草稿"), "关闭 草稿");
+        assert_eq!(
+            i18n_for(AppLanguage::English).close_label("Draft"),
+            "Close Draft"
+        );
+        assert_eq!(
+            i18n_for(AppLanguage::Chinese).close_label("草稿"),
+            "关闭 草稿"
+        );
     }
 }

@@ -254,7 +254,10 @@ fn clamp_sidebar_width(width: f64) -> u32 {
 
 fn sidebar_workspace_path_text(path: Option<&Path>, i18n: crate::i18n::UiText) -> String {
     path.map(|path| path.display().to_string())
-        .unwrap_or_else(|| i18n.text("Open a folder to start", "打开目录即可开始").to_string())
+        .unwrap_or_else(|| {
+            i18n.text("Open a folder to start", "打开目录即可开始")
+                .to_string()
+        })
 }
 
 #[cfg(test)]

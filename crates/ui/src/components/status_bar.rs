@@ -55,7 +55,9 @@ fn status_bar_items(editor_model: &EditorViewModel, language: AppLanguage) -> Ve
     }
     if editor_model.active_save_status != SaveStatus::Saved {
         items.push(StatusBarItem {
-            label: i18n.save_status(&editor_model.active_save_status).to_string(),
+            label: i18n
+                .save_status(&editor_model.active_save_status)
+                .to_string(),
             tone: save_status_tone(&editor_model.active_save_status),
         });
     }
@@ -104,10 +106,11 @@ mod tests {
 
     #[test]
     fn status_bar_items_hide_editor_stats_without_active_tab() {
-        assert!(
-            status_bar_items(&editor_model(false, SaveStatus::Saved), AppLanguage::English)
-                .is_empty()
-        );
+        assert!(status_bar_items(
+            &editor_model(false, SaveStatus::Saved),
+            AppLanguage::English
+        )
+        .is_empty());
     }
 
     #[test]

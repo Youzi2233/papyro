@@ -195,7 +195,9 @@ fn empty_search_message(
     }
 
     if is_loading {
-        return i18n.text("Searching notes...", "正在搜索笔记...").to_string();
+        return i18n
+            .text("Searching notes...", "正在搜索笔记...")
+            .to_string();
     }
 
     if let Some(error) = error {
@@ -338,6 +340,9 @@ mod tests {
     #[test]
     fn field_label_names_search_match_sources() {
         assert_eq!(field_label(AppLanguage::English, SearchField::Body), "BODY");
-        assert_eq!(field_label(AppLanguage::Chinese, SearchField::Title), "标题");
+        assert_eq!(
+            field_label(AppLanguage::Chinese, SearchField::Title),
+            "标题"
+        );
     }
 }
