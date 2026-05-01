@@ -1,4 +1,4 @@
-import { EditorSelection, EditorState, StateEffect, StateField } from "@codemirror/state";
+﻿import { EditorSelection, EditorState, StateEffect, StateField } from "@codemirror/state";
 import {
   EditorView,
   Decoration,
@@ -12,14 +12,16 @@ import {
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { markdown } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
-import { syntaxHighlighting, HighlightStyle } from "@codemirror/language";
+import { syntaxHighlighting } from "@codemirror/language";
 import {
   highlightSelectionMatches,
   openSearchPanel,
   search,
   searchKeymap,
 } from "@codemirror/search";
-import { tags as t } from "@lezer/highlight";
+
+import { editorTheme, markdownHighlightStyle } from "./editor-theme.js";
+
 import {
   activeOutlineHeadingIndex,
   activePreviewHeadingIndex,
@@ -82,7 +84,7 @@ import {
   tableWidgetData,
 } from "./editor-media.js";
 
-// tabId → { view, dioxus, suppressChange }
+// tabId 闁?{ view, dioxus, suppressChange }
 const editorRegistry = new Map();
 const modeScrollSnapshots = new Map();
 const editorScrollListeners = new WeakMap();
@@ -174,596 +176,6 @@ const blockHintsField = StateField.define({
     return hints;
   },
 });
-
-const editorTheme = EditorView.theme({
-  "&": {
-    height: "100%",
-    fontSize: "var(--mn-document-body-size, var(--mn-editor-font-size, 15px))",
-    backgroundColor: "var(--mn-editor-bg, #fffdf8)",
-    color: "var(--mn-editor-ink, var(--mn-ink, #25211a))",
-  },
-  ".cm-scroller": {
-    overflow: "auto",
-    fontFamily: 'var(--mn-document-font, var(--mn-editor-font, "Cascadia Code", "JetBrains Mono", "Fira Code", monospace))',
-    lineHeight: "var(--mn-document-line-height, var(--mn-editor-line-height, 1.75))",
-    padding: "var(--mn-document-pad-top, 24px) var(--mn-document-pad-x, 28px) var(--mn-document-pad-bottom, 72px)",
-  },
-  ".cm-content": {
-    minHeight: "100%",
-    width: "100%",
-    padding: "0",
-    fontFamily: "inherit",
-    fontSize: "inherit",
-    lineHeight: "var(--mn-document-line-height, var(--mn-editor-line-height, 1.75))",
-    caretColor: "var(--mn-accent, #b24b2f)",
-    maxWidth: "var(--mn-document-measure, 860px)",
-    marginInline: "auto",
-    color: "var(--mn-editor-ink, var(--mn-ink, #25211a))",
-  },
-  ".cm-line": {
-    boxSizing: "border-box",
-    lineHeight: "var(--mn-document-line-height, var(--mn-editor-line-height, 1.75))",
-    paddingTop: "0",
-    paddingBottom: "0",
-  },
-  ".cm-gutters": {
-    backgroundColor: "transparent",
-    border: "none",
-    color: "var(--mn-ink-3, #a08f78)",
-    paddingTop: "var(--mn-document-pad-top, 24px)",
-    paddingRight: "var(--mn-document-gutter-gap, 8px)",
-  },
-  "&[data-view-mode='hybrid'] .cm-gutters, &[data-view-mode='preview'] .cm-gutters": {
-    display: "none",
-  },
-  ".cm-activeLine": { backgroundColor: "var(--mn-active-line, rgba(178,75,47,.05))" },
-  ".cm-activeLineGutter": {
-    backgroundColor: "var(--mn-active-line-gutter, rgba(178,75,47,.08))",
-    color: "var(--mn-ink-2, #564c41)",
-  },
-  ".cm-cursor, .cm-dropCursor": {
-    borderLeftColor: "var(--mn-accent, #b24b2f)",
-    borderLeftWidth: "2px",
-  },
-  "&.cm-focused .cm-cursor, &.cm-focused .cm-dropCursor": {
-    borderLeftColor: "var(--mn-caret, var(--mn-accent, #b24b2f))",
-    boxShadow: "0 0 0 1px var(--mn-caret-halo, transparent)",
-  },
-  "&.cm-composition-active .cm-cursor, &.cm-composition-active .cm-dropCursor": {
-    borderLeftColor: "var(--mn-caret-composing, var(--mn-warning, #9f6a3a))",
-    boxShadow: "0 0 0 2px var(--mn-composition-halo, rgba(159, 106, 58, .18))",
-  },
-  "&.cm-composition-active .cm-activeLine": {
-    backgroundColor: "var(--mn-composition-line, rgba(159, 106, 58, .10))",
-  },
-  ".cm-selectionBackground, &.cm-focused .cm-selectionBackground": {
-    background: "var(--mn-editor-selection, rgba(100, 116, 139, .26))",
-    backgroundColor: "var(--mn-editor-selection, rgba(100, 116, 139, .26))",
-    color: "var(--mn-ink)",
-  },
-  ".cm-selectionBackground": {
-    borderRadius: "2px",
-  },
-  "&[data-view-mode='hybrid'] .cm-activeLine, &[data-view-mode='preview'] .cm-activeLine": {
-    backgroundColor: "transparent",
-  },
-  ".cm-focused": { outline: "none" },
-  ".cm-panels": {
-    backgroundColor: "var(--mn-surface, #fbf6ea)",
-    color: "var(--mn-ink, #25211a)",
-  },
-  ".cm-search": {
-    display: "flex",
-    flexWrap: "wrap",
-    alignItems: "center",
-    gap: "var(--mn-action-gap, 6px)",
-    padding: "var(--mn-command-row-pad, 8px 10px)",
-    borderBottom: "var(--mn-border-default, 1px solid var(--mn-border))",
-    fontFamily: "var(--mn-font-ui, system-ui, sans-serif)",
-    fontSize: "var(--mn-type-small, 12px)",
-  },
-  ".cm-search input": {
-    minWidth: "120px",
-    border: "var(--mn-border-default, 1px solid var(--mn-border))",
-    borderRadius: "var(--mn-radius-sm, 6px)",
-    backgroundColor: "var(--mn-surface-raised)",
-    color: "var(--mn-ink)",
-    padding: "4px 7px",
-  },
-  ".cm-search button, .cm-search label": {
-    borderRadius: "var(--mn-radius-sm, 6px)",
-    color: "var(--mn-ink-2)",
-  },
-  ".cm-search button": {
-    border: "var(--mn-border-default, 1px solid var(--mn-border))",
-    backgroundColor: "var(--mn-surface-raised)",
-    padding: "4px 8px",
-  },
-  ".cm-search button:hover": {
-    color: "var(--mn-ink)",
-    borderColor: "var(--mn-border-strong)",
-  },
-  ".cm-searchMatch": {
-    backgroundColor: "var(--mn-accent-dim)",
-  },
-  ".cm-searchMatch-selected": {
-    backgroundColor: "var(--mn-selection, rgba(178,75,47,.15))",
-    outline: "var(--mn-border-accent, 1px solid var(--mn-accent))",
-  },
-  ".cm-selectionMatch": {
-    backgroundColor: "var(--mn-accent-wash)",
-  },
-  ".cm-line.cm-hybrid-heading-line": {
-    letterSpacing: "0",
-  },
-  ".cm-line.cm-hybrid-blockquote-line": {
-    borderLeft: "var(--mn-markdown-quote-border, 2px) solid var(--mn-border-strong, var(--mn-border))",
-    backgroundColor: "var(--mn-markdown-quote-bg, transparent)",
-    color: "var(--mn-markdown-quote-color, var(--mn-ink-2))",
-    paddingLeft: "var(--mn-markdown-quote-pad-x, 1.1em)",
-    paddingTop: "var(--mn-markdown-quote-pad-y, .48em)",
-    paddingBottom: "var(--mn-markdown-quote-pad-y, .48em)",
-  },
-  ".cm-line.cm-hybrid-code-block-line": {
-    backgroundColor: "var(--mn-hybrid-code-block-bg, rgba(100, 116, 139, .09))",
-    color: "var(--mn-ink)",
-    fontFamily: 'var(--mn-markdown-mono-font, var(--mn-editor-font, "Cascadia Code", monospace))',
-    paddingLeft: "var(--mn-markdown-code-block-pad-x, 22px)",
-    paddingRight: "var(--mn-markdown-code-block-pad-x, 22px)",
-  },
-  ".cm-line.cm-hybrid-code-block-start": {
-    borderTopLeftRadius: "var(--mn-markdown-code-radius, 6px)",
-    borderTopRightRadius: "var(--mn-markdown-code-radius, 6px)",
-  },
-  ".cm-line.cm-hybrid-code-block-end": {
-    borderBottomLeftRadius: "var(--mn-markdown-code-radius, 6px)",
-    borderBottomRightRadius: "var(--mn-markdown-code-radius, 6px)",
-  },
-  ".cm-line.cm-hybrid-code-block-fence-end": {
-    height: "1px",
-    minHeight: "1px",
-    overflow: "hidden",
-    border: "0",
-    paddingLeft: "0",
-    paddingRight: "0",
-    paddingTop: "0",
-    paddingBottom: "0",
-    lineHeight: "1px",
-  },
-  ".cm-line.cm-hybrid-front-matter-line": {
-    backgroundColor: "var(--mn-surface, #fbf6ea)",
-    color: "var(--mn-ink-3)",
-    fontSize: ".92em",
-    paddingLeft: "var(--mn-markdown-front-matter-pad-x, 12px)",
-    paddingRight: "var(--mn-markdown-front-matter-pad-x, 12px)",
-  },
-  ".cm-line.cm-hybrid-front-matter-start": {
-    borderTop: "var(--mn-border-default, 1px solid var(--mn-border))",
-    borderTopLeftRadius: "var(--mn-markdown-code-radius, 6px)",
-    borderTopRightRadius: "var(--mn-markdown-code-radius, 6px)",
-    paddingTop: "var(--mn-markdown-front-matter-pad-y, .45em)",
-  },
-  ".cm-line.cm-hybrid-front-matter-end": {
-    borderBottom: "var(--mn-border-default, 1px solid var(--mn-border))",
-    borderBottomLeftRadius: "var(--mn-markdown-code-radius, 6px)",
-    borderBottomRightRadius: "var(--mn-markdown-code-radius, 6px)",
-    paddingBottom: "var(--mn-markdown-front-matter-pad-y, .45em)",
-  },
-  ".cm-line.cm-hybrid-table-line": {
-    fontFamily: 'var(--mn-markdown-mono-font, var(--mn-editor-font, "Cascadia Code", monospace))',
-    backgroundColor: "var(--mn-markdown-table-bg, var(--mn-surface-sunken, #fbf6ea))",
-    borderLeft: "var(--mn-markdown-table-border, var(--mn-border-default, 1px solid var(--mn-border)))",
-    borderRight: "var(--mn-markdown-table-border, var(--mn-border-default, 1px solid var(--mn-border)))",
-    paddingLeft: "var(--mn-markdown-table-line-pad-x, 14px)",
-    paddingRight: "var(--mn-markdown-table-line-pad-x, 14px)",
-  },
-  ".cm-line.cm-hybrid-table-header": {
-    backgroundColor: "var(--mn-markdown-table-head-bg, var(--mn-markdown-table-bg, var(--mn-surface-sunken, #fbf6ea)))",
-    color: "var(--mn-ink)",
-    fontWeight: "var(--mn-weight-bold, 700)",
-    borderTop: "var(--mn-markdown-table-border, var(--mn-border-default, 1px solid var(--mn-border)))",
-    borderTopLeftRadius: "var(--mn-markdown-code-radius, 6px)",
-    borderTopRightRadius: "var(--mn-markdown-code-radius, 6px)",
-    paddingTop: "var(--mn-markdown-table-line-pad-y, .55em)",
-  },
-  ".cm-line.cm-hybrid-table-separator": {
-    color: "var(--mn-ink-3)",
-    fontSize: ".85em",
-  },
-  ".cm-line.cm-hybrid-table-end": {
-    borderBottom: "var(--mn-markdown-table-border, var(--mn-border-default, 1px solid var(--mn-border)))",
-    borderBottomLeftRadius: "var(--mn-markdown-code-radius, 6px)",
-    borderBottomRightRadius: "var(--mn-markdown-code-radius, 6px)",
-    paddingBottom: "var(--mn-markdown-table-line-pad-y, .55em)",
-  },
-  ".cm-hybrid-table-widget": {
-    display: "block",
-    overflowX: "auto",
-    margin: "var(--mn-markdown-block-gap, 14px) 0",
-  },
-  ".cm-hybrid-table-toolbar": {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: "6px",
-    marginBottom: "6px",
-    userSelect: "none",
-    WebkitUserSelect: "none",
-  },
-  ".cm-hybrid-table-toolbar button": {
-    border: "var(--mn-border-subtle, 1px solid var(--mn-divider))",
-    borderRadius: "6px",
-    background: "var(--mn-surface)",
-    color: "var(--mn-ink-2)",
-    font: "inherit",
-    fontSize: ".82em",
-    padding: "4px 8px",
-    cursor: "pointer",
-  },
-  ".cm-hybrid-table-toolbar button:hover": {
-    color: "var(--mn-ink)",
-    borderColor: "var(--mn-accent)",
-  },
-  ".cm-hybrid-table-widget table": {
-    width: "100%",
-    borderCollapse: "collapse",
-    background: "var(--mn-surface)",
-    border: "var(--mn-markdown-table-border, var(--mn-border-default, 1px solid var(--mn-border)))",
-    borderRadius: "var(--mn-markdown-code-radius, 6px)",
-    overflow: "hidden",
-  },
-  ".cm-hybrid-table-widget th, .cm-hybrid-table-widget td": {
-    border: "var(--mn-markdown-table-border, var(--mn-border-default, 1px solid var(--mn-border)))",
-    padding: "0",
-  },
-  ".cm-hybrid-table-widget th": {
-    background: "var(--mn-markdown-table-head-bg, var(--mn-surface-sunken))",
-  },
-  ".cm-hybrid-table-cell-input": {
-    boxSizing: "border-box",
-    width: "100%",
-    minWidth: "96px",
-    border: "0",
-    outline: "none",
-    background: "transparent",
-    color: "var(--mn-ink)",
-    font: "inherit",
-    padding: "var(--mn-markdown-table-cell-pad, 7px 12px)",
-  },
-  ".cm-hybrid-table-cell-input:focus": {
-    background: "var(--mn-selection-soft, color-mix(in srgb, var(--mn-accent) 12%, transparent))",
-    boxShadow: "inset 0 0 0 1px var(--mn-accent)",
-  },
-  ".cm-hybrid-code-info": {
-    display: "inline-flex",
-    width: "fit-content",
-    border: "var(--mn-border-subtle, 1px solid var(--mn-divider))",
-    borderRadius: "var(--mn-radius-xs, 5px)",
-    backgroundColor: "var(--mn-surface, #fff)",
-    color: "var(--mn-ink-3)",
-    fontSize: ".78em",
-    fontWeight: "var(--mn-weight-bold, 700)",
-    lineHeight: "1.6",
-    padding: "0 .55em",
-    textTransform: "uppercase",
-    userSelect: "none",
-    WebkitUserSelect: "none",
-  },
-  ".cm-hybrid-heading": {
-    color: "var(--mn-ink)",
-    fontFamily: "var(--mn-markdown-heading-font, var(--mn-font-display, Georgia, serif))",
-    fontWeight: "var(--mn-weight-bold, 700)",
-    lineHeight: "var(--mn-markdown-heading-line, 1.18)",
-  },
-  ".cm-hybrid-heading-1": { fontSize: "var(--mn-markdown-h1-size, 2.05em)" },
-  ".cm-hybrid-heading-2": { fontSize: "var(--mn-markdown-h2-size, 1.55em)" },
-  ".cm-hybrid-heading-3": { fontSize: "var(--mn-markdown-h3-size, 1.25em)" },
-  ".cm-hybrid-heading-4": { fontSize: "var(--mn-markdown-h4-size, 1.05em)" },
-  ".cm-hybrid-heading-5, .cm-hybrid-heading-6": {
-    fontSize: "var(--mn-markdown-h5-size, .9em)",
-    letterSpacing: "0",
-    textTransform: "uppercase",
-  },
-  ".cm-hybrid-strong": {
-    color: "var(--mn-ink)",
-    fontWeight: "var(--mn-weight-bold, 700)",
-  },
-  ".cm-hybrid-emphasis": {
-    color: "var(--mn-ink)",
-    fontStyle: "italic",
-  },
-  ".cm-hybrid-strikethrough": {
-    color: "var(--mn-ink-3)",
-    textDecoration: "line-through",
-  },
-  ".cm-hybrid-inline-code": {
-    borderRadius: "var(--mn-radius-xs, 5px)",
-    background: "transparent",
-    backgroundColor: "transparent",
-    boxDecorationBreak: "clone",
-    WebkitBoxDecorationBreak: "clone",
-    boxShadow: "0 0 0 .14em color-mix(in srgb, var(--mn-markdown-code-bg, #f6f8fb) 72%, transparent)",
-    color: "var(--mn-markdown-code-color, var(--mn-accent-strong))",
-    fontFamily: 'var(--mn-markdown-mono-font, var(--mn-editor-font, "Cascadia Code", monospace))',
-    fontSize: ".92em",
-    lineHeight: "inherit",
-    padding: "0",
-  },
-  ".cm-hybrid-inline-code-selected": {
-    background: "transparent",
-    backgroundColor: "transparent",
-    boxShadow: "none",
-  },
-  ".cm-hybrid-inline-code::selection, .cm-hybrid-inline-code *::selection": {
-    background: "transparent !important",
-    backgroundColor: "transparent !important",
-    color: "inherit !important",
-  },
-  ".cm-hybrid-inline-math": {
-    display: "inline-flex",
-    alignItems: "baseline",
-    color: "var(--mn-ink)",
-    fontFamily: "var(--mn-markdown-inline-math-font, Georgia, 'Times New Roman', serif)",
-    padding: "var(--mn-markdown-inline-math-pad, 0 2px)",
-    verticalAlign: "baseline",
-  },
-  ".cm-hybrid-inline-math math": {
-    fontSize: "1.05em",
-  },
-  ".cm-hybrid-inline-math-error": {
-    color: "var(--mn-accent-strong)",
-    fontFamily: 'var(--mn-markdown-mono-font, var(--mn-editor-font, "Cascadia Code", monospace))',
-  },
-  ".cm-hybrid-math-block": {
-    display: "block",
-    width: "100%",
-    boxSizing: "border-box",
-    margin: "var(--mn-markdown-block-gap, .95em) 0",
-    padding: "var(--mn-markdown-code-block-pad-y, 18px) var(--mn-markdown-code-block-pad-x, 22px)",
-    border: "var(--mn-border-subtle, 1px solid var(--mn-divider))",
-    borderRadius: "var(--mn-markdown-code-radius, 6px)",
-    backgroundColor: "var(--mn-markdown-code-block-bg, var(--mn-surface-sunken, #fbf6ea))",
-    color: "var(--mn-ink)",
-    overflowX: "auto",
-    textAlign: "center",
-  },
-  ".cm-hybrid-math-block, .cm-hybrid-mermaid-block": {
-    cursor: "pointer",
-  },
-  ".cm-hybrid-math-block, .cm-hybrid-image-preview, .cm-hybrid-mermaid-block:not(.cm-hybrid-mermaid-split), .cm-hybrid-mermaid-preview, .cm-hybrid-code-info, .cm-hybrid-list-marker, .cm-hybrid-task-checkbox, .cm-hybrid-footnote-ref, .cm-hybrid-footnote-label, .cm-hybrid-horizontal-rule": {
-    userSelect: "none",
-    WebkitUserSelect: "none",
-  },
-  ".cm-hybrid-mermaid-split": {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(min(240px, 100%), 1fr))",
-    gap: "10px",
-    cursor: "default",
-    alignItems: "stretch",
-    minHeight: "0",
-  },
-  ".cm-hybrid-mermaid-source-pane, .cm-hybrid-mermaid-preview-pane": {
-    display: "grid",
-    gridTemplateRows: "minmax(0, 1fr)",
-    minWidth: "0",
-    minHeight: "0",
-  },
-  ".cm-hybrid-mermaid-source-editor": {
-    boxSizing: "border-box",
-    height: "100%",
-    width: "100%",
-    minWidth: "0",
-    minHeight: "0",
-    overflow: "hidden",
-    borderRadius: "var(--mn-markdown-code-radius, 6px)",
-    background: "var(--mn-markdown-code-block-bg, var(--mn-surface-sunken, #f6f8fb))",
-    cursor: "text",
-    userSelect: "text",
-    WebkitUserSelect: "text",
-  },
-  ".cm-hybrid-mermaid-source-editor *": {
-    userSelect: "text",
-    WebkitUserSelect: "text",
-  },
-  ".cm-hybrid-mermaid-source-editor .cm-editor": {
-    boxSizing: "border-box",
-    height: "100%",
-    width: "100%",
-    minWidth: "0",
-    background: "transparent",
-    color: "var(--mn-ink)",
-    cursor: "text",
-  },
-  ".cm-hybrid-mermaid-source-editor .cm-scroller": {
-    overflowX: "hidden",
-    cursor: "text",
-    fontFamily: "var(--mn-markdown-mono-font)",
-    fontSize: "var(--mn-markdown-code-block-size)",
-    lineHeight: "var(--mn-markdown-code-block-line)",
-    padding: "var(--mn-markdown-code-block-pad-y, 18px) var(--mn-markdown-code-block-pad-x, 22px)",
-  },
-  ".cm-hybrid-mermaid-source-editor .cm-content": {
-    minWidth: "0",
-    width: "100%",
-    whiteSpace: "pre-wrap",
-    overflowWrap: "anywhere",
-    cursor: "text",
-    caretColor: "var(--mn-caret, var(--mn-accent))",
-  },
-  ".cm-hybrid-mermaid-source-editor .cm-line": {
-    cursor: "text",
-  },
-  ".cm-hybrid-mermaid-source-editor .cm-gutters": {
-    display: "none",
-  },
-  ".cm-hybrid-mermaid-source-editor .cm-activeLine": {
-    background: "transparent",
-  },
-  ".cm-hybrid-mermaid-source-editor .cm-selectionBackground, .cm-hybrid-mermaid-source-editor .cm-focused .cm-selectionBackground": {
-    background: "var(--mn-editor-selection, rgba(100, 116, 139, .26))",
-    backgroundColor: "var(--mn-editor-selection, rgba(100, 116, 139, .26))",
-    color: "var(--mn-ink)",
-  },
-  ".cm-hybrid-mermaid-source-editor::selection, .cm-hybrid-mermaid-source-editor ::selection, .cm-hybrid-mermaid-source-editor .cm-content::selection, .cm-hybrid-mermaid-source-editor .cm-content:focus::selection, .cm-hybrid-mermaid-source-editor .cm-content:focus ::selection, .cm-hybrid-mermaid-source-editor .cm-line::selection, .cm-hybrid-mermaid-source-editor .cm-line *::selection": {
-    background: "transparent !important",
-    backgroundColor: "transparent !important",
-    color: "inherit !important",
-  },
-  ".cm-hybrid-mermaid-preview": {
-    boxSizing: "border-box",
-    height: "100%",
-    minHeight: "0",
-    minWidth: "0",
-    display: "grid",
-    alignItems: "center",
-    borderRadius: "var(--mn-radius-sm, 6px)",
-    background: "var(--mn-surface, #fff)",
-    padding: "10px",
-    overflow: "auto",
-  },
-  ".cm-hybrid-math-block:focus-visible, .cm-hybrid-image-preview:focus-visible, .cm-hybrid-mermaid-block:focus-visible": {
-    outline: "2px solid var(--mn-accent)",
-    outlineOffset: "2px",
-  },
-  ".cm-hybrid-math-block math": {
-    fontSize: "1.15em",
-  },
-  ".cm-hybrid-math-block-error": {
-    color: "var(--mn-danger, var(--mn-accent-strong))",
-    fontFamily: 'var(--mn-markdown-mono-font, var(--mn-editor-font, "Cascadia Code", monospace))',
-    textAlign: "left",
-    whiteSpace: "pre-wrap",
-  },
-  ".cm-line.cm-hybrid-footnote-line": {
-    color: "var(--mn-ink-2)",
-    paddingLeft: "var(--mn-markdown-footnote-indent, 1.4em)",
-    textIndent: "calc(var(--mn-markdown-footnote-indent, 1.4em) * -1)",
-  },
-  ".cm-hybrid-footnote-label": {
-    color: "var(--mn-accent)",
-    fontVariantNumeric: "tabular-nums",
-    fontWeight: "var(--mn-weight-bold, 700)",
-    marginRight: "0.4em",
-  },
-  ".cm-hybrid-footnote-ref": {
-    color: "var(--mn-accent)",
-    fontSize: ".72em",
-    fontWeight: "var(--mn-weight-bold, 700)",
-    verticalAlign: "super",
-  },
-  ".cm-hybrid-link": {
-    color: "var(--mn-accent)",
-    textDecoration: "underline",
-    textUnderlineOffset: "var(--mn-markdown-link-underline-offset, 3px)",
-  },
-  ".cm-hybrid-image-preview": {
-    display: "inline-flex",
-    alignItems: "center",
-    maxWidth: "100%",
-    verticalAlign: "middle",
-  },
-  ".cm-hybrid-image-preview img": {
-    display: "block",
-    maxWidth: "100%",
-    maxHeight: "var(--mn-markdown-image-max-height, 260px)",
-    borderRadius: "var(--mn-markdown-image-radius, 6px)",
-    border: "var(--mn-markdown-image-border, var(--mn-border-default, 1px solid var(--mn-border)))",
-    backgroundColor: "var(--mn-markdown-image-bg, var(--mn-surface))",
-    boxShadow: "none",
-  },
-  ".cm-hybrid-image-block": {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "flex-start",
-    width: "fit-content",
-    maxWidth: "100%",
-    margin: "var(--mn-markdown-block-gap, .95em) 0",
-    cursor: "pointer",
-  },
-  ".cm-hybrid-image-caption": {
-    marginTop: "6px",
-    color: "var(--mn-ink-3)",
-    fontFamily: "var(--mn-font-ui)",
-    fontSize: "var(--mn-type-small)",
-  },
-  ".cm-hybrid-image-preview-error": {
-    border: "var(--mn-border-subtle, 1px solid var(--mn-divider))",
-    borderRadius: "var(--mn-markdown-image-radius, 6px)",
-    backgroundColor: "var(--mn-markdown-code-block-bg, var(--mn-surface-sunken))",
-    color: "var(--mn-accent-strong)",
-    padding: "var(--mn-markdown-code-block-pad-y, 14px) var(--mn-markdown-code-block-pad-x, 18px)",
-    fontFamily: "var(--mn-markdown-mono-font)",
-    fontSize: "var(--mn-markdown-code-block-size)",
-  },
-  ".cm-hybrid-task-checkbox": {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    width: "var(--mn-markdown-list-marker-width, 1.4em)",
-    marginRight: "var(--mn-markdown-list-marker-gap, .45em)",
-    verticalAlign: "middle",
-  },
-  ".cm-hybrid-task-checkbox input": {
-    width: "var(--mn-markdown-task-box-size, 14px)",
-    height: "var(--mn-markdown-task-box-size, 14px)",
-    accentColor: "var(--mn-accent)",
-    cursor: "default",
-  },
-  ".cm-hybrid-list-marker": {
-    display: "inline-block",
-    boxSizing: "content-box",
-    minWidth: "var(--mn-markdown-list-marker-width, 1.4em)",
-    paddingRight: "var(--mn-markdown-list-marker-gap, .45em)",
-    color: "var(--mn-ink-3)",
-    cursor: "text",
-    fontVariantNumeric: "tabular-nums",
-    fontSize: "inherit",
-    lineHeight: "inherit",
-    textAlign: "right",
-    userSelect: "none",
-    WebkitUserSelect: "none",
-    verticalAlign: "baseline",
-  },
-  ".cm-hybrid-horizontal-rule": {
-    display: "block",
-    width: "100%",
-    height: "var(--mn-markdown-hr-height, 1px)",
-    margin: "var(--mn-markdown-hr-margin, .9em 0)",
-    backgroundColor: "var(--mn-border)",
-  },
-});
-
-const markdownHighlightStyle = HighlightStyle.define([
-  { tag: t.heading1, color: "var(--mn-ink)", fontWeight: "var(--mn-weight-bold, 700)" },
-  { tag: t.heading2, color: "var(--mn-ink)", fontWeight: "var(--mn-weight-bold, 700)" },
-  { tag: t.heading3, color: "var(--mn-ink)", fontWeight: "var(--mn-weight-semibold, 600)" },
-  { tag: [t.heading4, t.heading5, t.heading6], color: "var(--mn-ink)", fontWeight: "var(--mn-weight-semibold, 600)" },
-
-  { tag: t.strong, color: "var(--mn-ink)", fontWeight: "var(--mn-weight-bold, 700)" },
-  { tag: t.emphasis, color: "var(--mn-ink)", fontStyle: "italic" },
-  { tag: t.strikethrough, textDecoration: "line-through", color: "var(--mn-ink-3)" },
-
-  { tag: t.link, color: "var(--mn-accent)", textDecoration: "underline" },
-  { tag: t.url, color: "var(--mn-accent)" },
-
-  { tag: [t.monospace, t.labelName], color: "var(--mn-accent-strong)" },
-  { tag: t.comment, color: "var(--mn-ink-3)", fontStyle: "italic" },
-  { tag: t.quote, color: "var(--mn-ink-2)", fontStyle: "italic" },
-
-  { tag: t.list, color: "inherit" },
-  { tag: t.meta, color: "var(--mn-ink-3)" },
-  { tag: t.processingInstruction, color: "var(--mn-ink-3)" },
-  { tag: t.contentSeparator, color: "var(--mn-ink-3)" },
-
-  { tag: t.keyword, color: "var(--mn-accent)", fontWeight: "var(--mn-weight-medium, 500)" },
-  { tag: [t.atom, t.bool, t.number], color: "var(--mn-accent-strong)" },
-  { tag: t.string, color: "var(--mn-ink-2)" },
-  { tag: t.regexp, color: "var(--mn-accent-strong)" },
-  { tag: [t.variableName, t.propertyName], color: "var(--mn-ink)" },
-  { tag: [t.function(t.variableName), t.function(t.propertyName)], color: "var(--mn-ink)", fontWeight: "var(--mn-weight-medium, 500)" },
-  { tag: [t.typeName, t.className], color: "var(--mn-accent-strong)" },
-  { tag: [t.operator, t.punctuation], color: "var(--mn-ink-2)" },
-  { tag: t.definition(t.variableName), color: "var(--mn-ink)" },
-]);
 
 function selectionLineRanges(state) {
   return state.selection.ranges.map((range) => {
@@ -1267,7 +679,7 @@ function addListDecorations(decorations, atomicRanges, line) {
     line.from + list.markerLength,
     {
       widget: new ListMarkerWidget(
-        list.ordered ? list.marker : "•",
+        list.ordered ? list.marker : "\u2022",
         line.from + list.markerLength,
       ),
     },
@@ -1868,7 +1280,7 @@ const compositionClassPlugin = ViewPlugin.fromClass(
 
 /* Extensions read the current tab id from `view.dom.dataset.tabId` instead of
  * closure-capturing it. That lets a single view be recycled across tabs
- * without rebuilding all its extensions — the hot path for pool reuse. */
+ * without rebuilding all its extensions 闁?the hot path for pool reuse. */
 function shouldUseRelaxedPointerHit(event, view) {
   if (event.button !== 0 || event.detail !== 1) return false;
   const target = event.target;
@@ -2071,7 +1483,7 @@ function buildExtensions() {
     editorTheme,
     EditorView.updateListener.of((update) => {
       const tabId = update.view.dom.dataset.tabId;
-      if (!tabId) return; // unrouted (in pool) — swallow
+      if (!tabId) return; // unrouted (in pool) 闁?swallow
       const entry = editorRegistry.get(tabId);
       if (!entry || entry.suppressChange) return;
       if (update.selectionSet || update.docChanged || update.viewportChanged) {
@@ -2088,19 +1500,19 @@ function buildExtensions() {
   ];
 }
 
-/* ── Spare pool ────────────────────────────────────────────────────────────
+/* 闁冲厜鍋撻柍鍏夊亾 Spare pool 闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾闁冲厜鍋撻柍鍏夊亾
  *
  * Creating an EditorView is the single most expensive operation in the open
- * path — building the syntax tree, wiring listeners, constructing the DOM.
+ * path 闁?building the syntax tree, wiring listeners, constructing the DOM.
  * We hide that cost behind a spare pool:
  *
  *   startup:        build one spare in a detached parent, during idle time.
- *   open tab:       adopt the spare (set content, move DOM) → instant.
+ *   open tab:       adopt the spare (set content, move DOM) 闁?instant.
  *                   queue next spare creation so the *next* open is also fast.
  *   close tab:      recycle the view back into the pool instead of destroying.
  *
  * The spare parent is visually hidden but stays in the layout tree so
- * CodeMirror's size caches stay valid — moving the DOM into a visible
+ * CodeMirror's size caches stay valid 闁?moving the DOM into a visible
  * container later doesn't trigger a re-measure storm.
  */
 const spareParent = document.createElement("div");
@@ -2139,7 +1551,7 @@ function scheduleWarmSpare() {
   // The script now loads synchronously via <script defer> in custom_head, so
   // we run well before the user can click anything. `queueMicrotask` yields
   // once to let the current task finish (letting Dioxus start its mount),
-  // then warms immediately — not `requestIdleCallback`, whose 300ms timeout
+  // then warms immediately 闁?not `requestIdleCallback`, whose 300ms timeout
   // risks firing AFTER the user's first click.
   queueMicrotask(() => warmSpare());
 }
@@ -2608,7 +2020,7 @@ function ensureEditor({ tabId, containerId, instanceId = "", initialContent, vie
     // Warm the next spare so a subsequent open is also instant.
     scheduleWarmSpare();
   } else {
-    // Pool miss — fall back to a fresh view. Happens only on the very first
+    // Pool miss 闁?fall back to a fresh view. Happens only on the very first
     // open if the warm-up hasn't finished yet, or under rapid-fire opens.
     const state = EditorState.create({
       doc: initialContent ?? "",
@@ -2654,7 +2066,7 @@ function releaseEditor(tabId) {
     }
     spareViews.push(view);
   } else {
-    // Pool already full — really destroy.
+    // Pool already full 闁?really destroy.
     spareViews.push(view);
   }
 }
