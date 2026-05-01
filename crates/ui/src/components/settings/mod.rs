@@ -2,7 +2,7 @@ use crate::commands::{
     AppCommands, DeleteTagRequest, RenameTagRequest, SetTagColorRequest, UpsertTagRequest,
 };
 use crate::components::primitives::{
-    Button, ButtonVariant, Dropdown, DropdownOption, Modal, SegmentedControl,
+    Button, ButtonVariant, Dropdown, DropdownOption, FormField, Modal, SegmentedControl,
     SegmentedControlOption, Slider, Toggle,
 };
 use crate::context::use_app_context;
@@ -137,8 +137,9 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
                                     SettingSection {
                                         label: i18n.text("Interface", "界面").to_string(),
                                         class_name: "mn-setting-section-card".to_string(),
-                                        SettingRow {
+                                        FormField {
                                             label: i18n.text("Language", "语言").to_string(),
+                                            class_name: String::new(),
                                             Dropdown {
                                                 label: i18n.text("App language", "应用语言").to_string(),
                                                 options: language_options,
@@ -150,8 +151,9 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
                                                 },
                                             }
                                         }
-                                        SettingRow {
+                                        FormField {
                                             label: i18n.text("Theme", "主题").to_string(),
+                                            class_name: String::new(),
                                             SegmentedControl {
                                                 label: i18n.text("Theme", "主题").to_string(),
                                                 options: theme_options,
@@ -168,8 +170,9 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
                                     SettingSection {
                                         label: i18n.text("Editor", "编辑器").to_string(),
                                         class_name: "mn-setting-section-card".to_string(),
-                                        SettingRow {
+                                        FormField {
                                             label: i18n.text("Font family", "字体").to_string(),
+                                            class_name: String::new(),
                                             Dropdown {
                                                 label: i18n.text("Font family", "字体").to_string(),
                                                 options: font_options,
@@ -177,12 +180,13 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
                                                 on_change: move |value: String| font_family.set(value),
                                             }
                                         }
-                                        SettingRow {
+                                        FormField {
                                             label: format!(
                                                 "{} ({}px)",
                                                 i18n.text("Font size", "字号"),
                                                 font_size()
                                             ),
+                                            class_name: String::new(),
                                             Slider {
                                                 label: i18n.text("Font size", "字号").to_string(),
                                                 value: font_size().to_string(),
@@ -196,12 +200,13 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
                                                 },
                                             }
                                         }
-                                        SettingRow {
+                                        FormField {
                                             label: format!(
                                                 "{} ({:.1})",
                                                 i18n.text("Line height", "行高"),
                                                 line_height()
                                             ),
+                                            class_name: String::new(),
                                             Slider {
                                                 label: i18n.text("Line height", "行高").to_string(),
                                                 value: format!("{:.1}", line_height()),
@@ -215,8 +220,9 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
                                                 },
                                             }
                                         }
-                                        SettingRow {
+                                        FormField {
                                             label: i18n.text("Paste URL as link", "粘贴 URL 时转成链接").to_string(),
+                                            class_name: String::new(),
                                             Toggle {
                                                 label: i18n.text("Paste URL as link", "粘贴 URL 时转成链接").to_string(),
                                                 checked: auto_link_paste(),
@@ -227,12 +233,13 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
                                     SettingSection {
                                         label: i18n.text("Saving", "保存").to_string(),
                                         class_name: "mn-setting-section-card".to_string(),
-                                        SettingRow {
+                                        FormField {
                                             label: format!(
                                                 "{} ({}ms)",
                                                 i18n.text("Auto-save delay", "自动保存延迟"),
                                                 auto_save_ms()
                                             ),
+                                            class_name: String::new(),
                                             Slider {
                                                 label: i18n.text("Auto-save delay", "自动保存延迟").to_string(),
                                                 value: auto_save_ms().to_string(),
@@ -370,16 +377,6 @@ fn SettingSection(label: String, class_name: String, children: Element) -> Eleme
         div { class: "{class}",
             h3 { class: "mn-setting-section-label", "{label}" }
             {children}
-        }
-    }
-}
-
-#[component]
-fn SettingRow(label: String, children: Element) -> Element {
-    rsx! {
-        div { class: "mn-setting-row",
-            label { class: "mn-setting-label", "{label}" }
-            div { class: "mn-setting-control", {children} }
         }
     }
 }

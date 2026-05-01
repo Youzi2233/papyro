@@ -131,6 +131,15 @@ fn status_tone_class(tone: StatusTone) -> &'static str {
     }
 }
 
+fn form_field_class(class_name: &str) -> String {
+    let trimmed = class_name.trim();
+    if trimmed.is_empty() {
+        "mn-form-field mn-setting-row".to_string()
+    } else {
+        format!("mn-form-field mn-setting-row {trimmed}")
+    }
+}
+
 #[component]
 pub fn Button(
     label: String,
@@ -161,6 +170,18 @@ pub fn StatusMessage(message: String) -> Element {
 pub fn StatusIndicator(label: String, tone: StatusTone) -> Element {
     rsx! {
         span { class: status_tone_class(tone), "{label}" }
+    }
+}
+
+#[component]
+pub fn FormField(label: String, class_name: String, children: Element) -> Element {
+    let class = form_field_class(&class_name);
+
+    rsx! {
+        div { class,
+            label { class: "mn-form-label mn-setting-label", "{label}" }
+            div { class: "mn-form-control mn-setting-control", {children} }
+        }
     }
 }
 
@@ -489,6 +510,15 @@ mod tests {
         assert_eq!(
             status_tone_class(StatusTone::Attention),
             "mn-status-unsaved"
+        );
+    }
+
+    #[test]
+    fn form_field_class_adds_optional_extension_class() {
+        assert_eq!(form_field_class(""), "mn-form-field mn-setting-row");
+        assert_eq!(
+            form_field_class("wide"),
+            "mn-form-field mn-setting-row wide"
         );
     }
 }
