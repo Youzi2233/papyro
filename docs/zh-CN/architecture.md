@@ -774,6 +774,7 @@ flowchart TD
 | 任务 | 先看 | 通常还要看 |
 | --- | --- | --- |
 | 改按钮、布局、样式 | `crates/ui/src/components` | `assets/main.css`, `apps/*/assets/main.css` |
+| 改主题 token 或 Markdown 视觉样式 | [theme-system.md](theme-system.md) | `assets/main.css`, `js/src/editor-theme.js` |
 | 新增 UI 命令 | `crates/ui/src/commands.rs` | `crates/app/src/actions.rs` |
 | 新增应用行为 | `crates/app/src/dispatcher.rs` | `handlers/*`, `workspace_flow/*` |
 | 新增文件操作 | `crates/app/src/workspace_flow` | `crates/storage/src/fs` |

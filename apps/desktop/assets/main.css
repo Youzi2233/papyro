@@ -124,6 +124,42 @@
     --mn-composition-halo:   rgba(159, 106, 58, 0.18);
     --mn-composition-line:   rgba(159, 106, 58, 0.08);
 
+    /* Semantic theme contracts */
+    --mn-chrome-bg:              var(--mn-bg);
+    --mn-chrome-surface:         var(--mn-surface);
+    --mn-chrome-surface-raised:  var(--mn-surface-raised);
+    --mn-chrome-surface-sunken:  var(--mn-surface-sunken);
+    --mn-chrome-sidebar-bg:      var(--mn-sidebar-bg);
+    --mn-chrome-border:          var(--mn-border);
+    --mn-chrome-divider:         var(--mn-divider);
+    --mn-chrome-ink:             var(--mn-ink);
+    --mn-chrome-ink-muted:       var(--mn-ink-2);
+    --mn-chrome-ink-subtle:      var(--mn-ink-3);
+    --mn-editor-canvas-bg:       var(--mn-editor-bg);
+    --mn-editor-canvas-ink:      var(--mn-editor-ink);
+    --mn-editor-active-line-bg:  var(--mn-active-line);
+    --mn-editor-active-gutter-bg: var(--mn-active-line-gutter);
+    --mn-markdown-ink:           var(--mn-editor-ink);
+    --mn-markdown-muted-ink:     var(--mn-ink-2);
+    --mn-markdown-subtle-ink:    var(--mn-ink-3);
+    --mn-markdown-border:        var(--mn-border-default);
+    --mn-markdown-link:          var(--mn-accent);
+    --mn-markdown-link-hover:    var(--mn-accent-strong);
+    --mn-code-surface:           var(--mn-markdown-code-bg);
+    --mn-code-block-surface:     var(--mn-markdown-code-block-bg);
+    --mn-code-ink:               var(--mn-markdown-code-color);
+    --mn-code-border:            var(--mn-border-subtle);
+    --mn-selection-bg:           var(--mn-selection);
+    --mn-selection-ink:          var(--mn-ink);
+    --mn-focus-ring:             var(--mn-ring-focus);
+    --mn-focus-ring-sm:          var(--mn-ring-focus-sm);
+    --mn-status-danger:          var(--mn-danger);
+    --mn-status-danger-ink:      var(--mn-danger-ink);
+    --mn-status-warning:         var(--mn-warning);
+    --mn-status-warning-ink:     var(--mn-warning-ink);
+    --mn-status-success:         var(--mn-success);
+    --mn-status-success-ink:     var(--mn-success-ink);
+
     /* Document rhythm shared by Source, Hybrid, and Preview */
     --mn-document-measure:      1080px;
     --mn-document-pad-x:        clamp(12px, 2vw, 32px);
@@ -347,8 +383,8 @@ html, body, #main {
 }
 
 body {
-    background: var(--mn-bg);
-    color: var(--mn-ink);
+    background: var(--mn-chrome-bg);
+    color: var(--mn-chrome-ink);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
@@ -363,8 +399,8 @@ button, input, textarea, select {
 button { border: 0; cursor: pointer; background: transparent; }
 
 ::selection {
-    background: var(--mn-selection);
-    color: var(--mn-ink);
+    background: var(--mn-selection-bg);
+    color: var(--mn-selection-ink);
 }
 
 /* Scrollbars 閳?subtle, warm */
@@ -1800,7 +1836,7 @@ button { border: 0; cursor: pointer; background: transparent; }
     font-family: var(--mn-markdown-font);
     font-size: var(--mn-markdown-body-size);
     line-height: var(--mn-markdown-line-height);
-    color: var(--mn-ink);
+    color: var(--mn-markdown-ink);
 }
 
 .mn-preview-paused {
@@ -1819,7 +1855,7 @@ button { border: 0; cursor: pointer; background: transparent; }
 .mn-preview h4, .mn-preview h5, .mn-preview h6 {
     font-family: var(--mn-markdown-heading-font);
     line-height: var(--mn-markdown-heading-line);
-    color: var(--mn-ink);
+    color: var(--mn-markdown-ink);
 }
 .mn-preview h1 {
     font-size: var(--mn-markdown-h1-size);
@@ -1836,7 +1872,7 @@ button { border: 0; cursor: pointer; background: transparent; }
     font-weight: var(--mn-weight-bold);
     text-transform: uppercase;
     letter-spacing: var(--mn-letter-normal);
-    color: var(--mn-ink-2);
+    color: var(--mn-markdown-muted-ink);
     margin: 1em 0 .3em;
 }
 
@@ -1861,27 +1897,27 @@ button { border: 0; cursor: pointer; background: transparent; }
 .mn-preview blockquote > :last-child { margin-bottom: 0; }
 
 /* preview: inline */
-.mn-preview strong { font-weight: var(--mn-weight-bold); color: var(--mn-ink); }
+.mn-preview strong { font-weight: var(--mn-weight-bold); color: var(--mn-markdown-ink); }
 .mn-preview em { font-style: italic; }
-.mn-preview del { text-decoration: line-through; color: var(--mn-ink-3); }
+.mn-preview del { text-decoration: line-through; color: var(--mn-markdown-subtle-ink); }
 
 .mn-preview a {
-    color: var(--mn-accent);
+    color: var(--mn-markdown-link);
     text-decoration: underline;
     text-decoration-thickness: 1px;
     text-underline-offset: var(--mn-markdown-link-underline-offset);
     transition: color 0.14s;
 }
-.mn-preview a:hover { color: var(--mn-accent-strong); }
+.mn-preview a:hover { color: var(--mn-markdown-link-hover); }
 
 .mn-preview code {
     font-family: var(--mn-markdown-mono-font);
     font-size: .88em;
-    background: var(--mn-markdown-code-bg);
-    border: var(--mn-border-subtle);
+    background: var(--mn-code-surface);
+    border: var(--mn-code-border);
     border-radius: var(--mn-radius-xs);
     padding: var(--mn-markdown-inline-code-pad);
-    color: var(--mn-markdown-code-color);
+    color: var(--mn-code-ink);
 }
 
 /* preview: code blocks from syntect */
@@ -1895,8 +1931,8 @@ button { border: 0; cursor: pointer; background: transparent; }
     font-size: var(--mn-markdown-code-block-size);
     line-height: var(--mn-markdown-code-block-line);
     box-shadow: none;
-    border: var(--mn-border-subtle);
-    background: var(--mn-markdown-code-block-bg);
+    border: var(--mn-code-border);
+    background: var(--mn-code-block-surface);
 }
 
 .mn-preview pre code, .mn-preview .mn-code-block code {

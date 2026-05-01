@@ -12,6 +12,7 @@ This directory is intentionally small. Older phase notes, duplicated design draf
 | Understand the codebase | [Architecture](architecture.md) |
 | Start coding safely | [Development standards](development-standards.md) |
 | Work on Markdown editing | [Editor guide](editor.md) |
+| Change themes or Markdown styles | [Theme system](theme-system.md) |
 | Keep interactions fast | [Performance budget](performance-budget.md) |
 | Use AI helpers | [AI skills](ai-skills.md) |
 
@@ -24,10 +25,12 @@ flowchart LR
     architecture["Architecture<br/>how code is shaped"]
     development["Development standards<br/>how to change it"]
     editor["Editor guide<br/>if touching Markdown"]
+    themes["Theme system<br/>if touching visual tokens"]
     performance["Performance budget<br/>if touching render paths"]
 
     readme --> roadmap --> architecture --> development
     development --> editor
+    development --> themes
     development --> performance
 ```
 
@@ -40,6 +43,7 @@ If you are unsure where a change belongs:
 - Platform dialogs and shell integration: `crates/platform`
 - Markdown summary, render, protocol structs: `crates/editor`
 - CodeMirror runtime behavior: `js/src/editor.js` or `js/src/editor-core.js`
+- Theme tokens or Markdown visual language: `assets/main.css`, `apps/*/assets/main.css`, and [theme-system.md](theme-system.md)
 
 ## Documentation Maintenance Rules
 

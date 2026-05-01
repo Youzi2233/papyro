@@ -687,6 +687,7 @@ This reduces editor distraction and prepares the app for multi-window mode.
 | Task | Start here | Also check |
 | --- | --- | --- |
 | UI layout/style | `crates/ui/src/components` | `assets/main.css`, `apps/*/assets/main.css` |
+| Theme tokens or Markdown visual style | [theme-system.md](theme-system.md) | `assets/main.css`, `js/src/editor-theme.js` |
 | New UI command | `crates/ui/src/commands.rs` | `crates/app/src/actions.rs` |
 | New app behavior | `crates/app/src/dispatcher.rs` | `handlers/*`, `workspace_flow/*` |
 | File operation | `crates/app/src/workspace_flow` | `crates/storage/src/fs` |

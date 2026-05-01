@@ -12,6 +12,7 @@
 | 理解代码结构 | [架构导览](architecture.md) |
 | 安全地开始开发 | [开发规范](development-standards.md) |
 | 修改 Markdown 编辑器 | [编辑器指南](editor.md) |
+| 修改主题或 Markdown 样式 | [主题系统](theme-system.md) |
 | 保持交互性能 | [性能预算](performance-budget.md) |
 | 让 AI 快速理解项目 | [AI skills](ai-skills.md) |
 
@@ -24,10 +25,12 @@ flowchart LR
     architecture["架构<br/>代码如何分层"]
     development["开发规范<br/>如何安全修改"]
     editor["编辑器指南<br/>Markdown 相关"]
+    themes["主题系统<br/>视觉 token 相关"]
     performance["性能预算<br/>渲染路径相关"]
 
     readme --> roadmap --> architecture --> development
     development --> editor
+    development --> themes
     development --> performance
 ```
 
@@ -40,6 +43,7 @@ flowchart LR
 - 平台对话框和系统集成：`crates/platform`
 - Markdown 统计、渲染、协议结构：`crates/editor`
 - CodeMirror runtime 行为：`js/src/editor.js` 或 `js/src/editor-core.js`
+- 主题 token 或 Markdown 视觉语言：`assets/main.css`、`apps/*/assets/main.css` 和 [theme-system.md](theme-system.md)
 
 ## 文档维护规则
 

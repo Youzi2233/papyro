@@ -5,8 +5,8 @@ export const editorTheme = EditorView.theme({
   "&": {
     height: "100%",
     fontSize: "var(--mn-document-body-size, var(--mn-editor-font-size, 15px))",
-    backgroundColor: "var(--mn-editor-bg, #fffdf8)",
-    color: "var(--mn-editor-ink, var(--mn-ink, #25211a))",
+    backgroundColor: "var(--mn-editor-canvas-bg, var(--mn-editor-bg, #fffdf8))",
+    color: "var(--mn-editor-canvas-ink, var(--mn-editor-ink, var(--mn-ink, #25211a)))",
   },
   ".cm-scroller": {
     overflow: "auto",
@@ -24,7 +24,7 @@ export const editorTheme = EditorView.theme({
     caretColor: "var(--mn-accent, #b24b2f)",
     maxWidth: "var(--mn-document-measure, 860px)",
     marginInline: "auto",
-    color: "var(--mn-editor-ink, var(--mn-ink, #25211a))",
+    color: "var(--mn-editor-canvas-ink, var(--mn-editor-ink, var(--mn-ink, #25211a)))",
   },
   ".cm-line": {
     boxSizing: "border-box",
@@ -42,9 +42,9 @@ export const editorTheme = EditorView.theme({
   "&[data-view-mode='hybrid'] .cm-gutters, &[data-view-mode='preview'] .cm-gutters": {
     display: "none",
   },
-  ".cm-activeLine": { backgroundColor: "var(--mn-active-line, rgba(178,75,47,.05))" },
+  ".cm-activeLine": { backgroundColor: "var(--mn-editor-active-line-bg, var(--mn-active-line, rgba(178,75,47,.05)))" },
   ".cm-activeLineGutter": {
-    backgroundColor: "var(--mn-active-line-gutter, rgba(178,75,47,.08))",
+    backgroundColor: "var(--mn-editor-active-gutter-bg, var(--mn-active-line-gutter, rgba(178,75,47,.08)))",
     color: "var(--mn-ink-2, #564c41)",
   },
   ".cm-cursor, .cm-dropCursor": {
@@ -63,9 +63,9 @@ export const editorTheme = EditorView.theme({
     backgroundColor: "var(--mn-composition-line, rgba(159, 106, 58, .10))",
   },
   ".cm-selectionBackground, &.cm-focused .cm-selectionBackground": {
-    background: "var(--mn-hybrid-selection, var(--mn-selection, rgba(100, 116, 139, .26)))",
-    backgroundColor: "var(--mn-hybrid-selection, var(--mn-selection, rgba(100, 116, 139, .26)))",
-    color: "var(--mn-ink)",
+    background: "var(--mn-hybrid-selection, var(--mn-selection-bg, var(--mn-selection, rgba(100, 116, 139, .26))))",
+    backgroundColor: "var(--mn-hybrid-selection, var(--mn-selection-bg, var(--mn-selection, rgba(100, 116, 139, .26))))",
+    color: "var(--mn-selection-ink, var(--mn-ink))",
   },
   ".cm-selectionBackground": {
     borderRadius: "2px",
@@ -113,7 +113,7 @@ export const editorTheme = EditorView.theme({
     backgroundColor: "var(--mn-accent-dim)",
   },
   ".cm-searchMatch-selected": {
-    backgroundColor: "var(--mn-selection, rgba(178,75,47,.15))",
+    backgroundColor: "var(--mn-selection-bg, var(--mn-selection, rgba(178,75,47,.15)))",
     outline: "var(--mn-border-accent, 1px solid var(--mn-accent))",
   },
   ".cm-selectionMatch": {
@@ -260,8 +260,8 @@ export const editorTheme = EditorView.theme({
     boxShadow: "inset 0 0 0 1px var(--mn-accent)",
   },
   ".cm-hybrid-table-cell-input::selection": {
-    background: "var(--mn-hybrid-selection, var(--mn-selection, rgba(100, 116, 139, .26)))",
-    backgroundColor: "var(--mn-hybrid-selection, var(--mn-selection, rgba(100, 116, 139, .26)))",
+    background: "var(--mn-hybrid-selection, var(--mn-selection-bg, var(--mn-selection, rgba(100, 116, 139, .26))))",
+    backgroundColor: "var(--mn-hybrid-selection, var(--mn-selection-bg, var(--mn-selection, rgba(100, 116, 139, .26))))",
   },
   ".cm-hybrid-code-info": {
     display: "inline-flex",
@@ -311,8 +311,8 @@ export const editorTheme = EditorView.theme({
     backgroundColor: "transparent",
     boxDecorationBreak: "clone",
     WebkitBoxDecorationBreak: "clone",
-    boxShadow: "0 0 0 .14em color-mix(in srgb, var(--mn-markdown-code-bg, #f6f8fb) 72%, transparent)",
-    color: "var(--mn-markdown-code-color, var(--mn-accent-strong))",
+    boxShadow: "0 0 0 .14em color-mix(in srgb, var(--mn-code-surface, var(--mn-markdown-code-bg, #f6f8fb)) 72%, transparent)",
+    color: "var(--mn-code-ink, var(--mn-markdown-code-color, var(--mn-accent-strong)))",
     fontFamily: 'var(--mn-markdown-mono-font, var(--mn-editor-font, "Cascadia Code", monospace))',
     fontSize: ".92em",
     lineHeight: "inherit",
@@ -356,7 +356,7 @@ export const editorTheme = EditorView.theme({
     padding: "var(--mn-markdown-code-block-pad-y, 18px) var(--mn-markdown-code-block-pad-x, 22px)",
     border: "var(--mn-border-subtle, 1px solid var(--mn-divider))",
     borderRadius: "var(--mn-markdown-code-radius, 6px)",
-    backgroundColor: "var(--mn-markdown-code-block-bg, var(--mn-surface-sunken, #fbf6ea))",
+    backgroundColor: "var(--mn-code-block-surface, var(--mn-markdown-code-block-bg, var(--mn-surface-sunken, #fbf6ea)))",
     color: "var(--mn-ink)",
     overflowX: "auto",
     textAlign: "center",
@@ -390,7 +390,7 @@ export const editorTheme = EditorView.theme({
     minHeight: "0",
     overflow: "hidden",
     borderRadius: "var(--mn-markdown-code-radius, 6px)",
-    background: "var(--mn-markdown-code-block-bg, var(--mn-surface-sunken, #f6f8fb))",
+    background: "var(--mn-code-block-surface, var(--mn-markdown-code-block-bg, var(--mn-surface-sunken, #f6f8fb)))",
     cursor: "text",
     userSelect: "text",
     WebkitUserSelect: "text",
@@ -434,8 +434,8 @@ export const editorTheme = EditorView.theme({
     background: "transparent",
   },
   ".cm-hybrid-mermaid-source-editor .cm-selectionBackground, .cm-hybrid-mermaid-source-editor .cm-focused .cm-selectionBackground": {
-    background: "var(--mn-hybrid-selection, var(--mn-selection, rgba(100, 116, 139, .26)))",
-    backgroundColor: "var(--mn-hybrid-selection, var(--mn-selection, rgba(100, 116, 139, .26)))",
+    background: "var(--mn-hybrid-selection, var(--mn-selection-bg, var(--mn-selection, rgba(100, 116, 139, .26))))",
+    backgroundColor: "var(--mn-hybrid-selection, var(--mn-selection-bg, var(--mn-selection, rgba(100, 116, 139, .26))))",
     color: "var(--mn-ink)",
   },
   ".cm-hybrid-mermaid-source-editor::selection, .cm-hybrid-mermaid-source-editor ::selection, .cm-hybrid-mermaid-source-editor .cm-content::selection, .cm-hybrid-mermaid-source-editor .cm-content:focus::selection, .cm-hybrid-mermaid-source-editor .cm-content:focus ::selection, .cm-hybrid-mermaid-source-editor .cm-line::selection, .cm-hybrid-mermaid-source-editor .cm-line *::selection": {
@@ -463,7 +463,7 @@ export const editorTheme = EditorView.theme({
     fontSize: "1.15em",
   },
   ".cm-hybrid-math-block-error": {
-    color: "var(--mn-danger, var(--mn-accent-strong))",
+    color: "var(--mn-status-danger, var(--mn-danger, var(--mn-accent-strong)))",
     fontFamily: 'var(--mn-markdown-mono-font, var(--mn-editor-font, "Cascadia Code", monospace))',
     textAlign: "left",
     whiteSpace: "pre-wrap",
@@ -523,7 +523,7 @@ export const editorTheme = EditorView.theme({
   ".cm-hybrid-image-preview-error": {
     border: "var(--mn-border-subtle, 1px solid var(--mn-divider))",
     borderRadius: "var(--mn-markdown-image-radius, 6px)",
-    backgroundColor: "var(--mn-markdown-code-block-bg, var(--mn-surface-sunken))",
+    backgroundColor: "var(--mn-code-block-surface, var(--mn-markdown-code-block-bg, var(--mn-surface-sunken)))",
     color: "var(--mn-accent-strong)",
     padding: "var(--mn-markdown-code-block-pad-y, 14px) var(--mn-markdown-code-block-pad-x, 18px)",
     fontFamily: "var(--mn-markdown-mono-font)",
