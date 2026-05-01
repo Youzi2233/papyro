@@ -4,8 +4,8 @@ use crate::open_requests::{
 };
 use crate::runtime::{use_app_runtime, AppShell};
 use dioxus::prelude::*;
-use papyro_core::models::{AppSettings, Theme};
-use papyro_core::{NoteStorage, WorkspaceBootstrap};
+use papyro_core::models::{AppSettings, Theme, Workspace};
+use papyro_core::{FileState, NoteStorage, WorkspaceBootstrap};
 use papyro_platform::{DesktopPlatform, PlatformApi};
 use std::ffi::OsString;
 use std::fmt::Display;
@@ -160,19 +160,35 @@ pub fn DesktopApp() -> Element {
 }
 
 fn desktop_bootstrap(startup_open_request: &DesktopStartupOpenRequest) -> WorkspaceBootstrap {
-    let recent_workspaces = papyro_storage::list_recent_workspaces(10).unwrap_or_else(|error| {
-        tracing::warn!(%error, "failed to resolve recent workspaces for startup markdown path");
+    let storage = papyro_storage::SqliteStorage::shared().expect("default storage is initialized");
+    let recent_workspaces = storage.list_recent_workspaces(10).unwrap_or_else(|error| {
+        tracing::warn!(%error, "failed to resolve recent workspaces for desktop startup");
         Vec::new()
     });
-    let default_workspace_path = desktop_default_workspace_path();
+    let configured_workspace_path = desktop_configured_workspace_path();
 
-    match startup_workspace_path(
+    let workspace_path = startup_workspace_path(
         startup_open_request,
         &recent_workspaces,
-        default_workspace_path.as_deref(),
-    ) {
-        Some(workspace_path) => papyro_storage::bootstrap_from_workspace(&workspace_path),
-        None => papyro_storage::bootstrap_from_env_or_current_dir(),
+        configured_workspace_path.as_deref(),
+    )
+    .or_else(|| resume_workspace_path(&recent_workspaces, configured_workspace_path.as_deref()));
+
+    match workspace_path {
+        Some(workspace_path) => {
+            let mut bootstrap = storage.bootstrap_from_workspace(&workspace_path);
+            if bootstrap.file_state.current_workspace.is_none()
+                && bootstrap.file_state.workspaces.is_empty()
+            {
+                bootstrap.file_state.workspaces = recent_workspaces;
+            }
+            bootstrap
+        }
+        None => desktop_onboarding_bootstrap(
+            storage.load_settings(),
+            Some(storage.db_path().to_path_buf()),
+            recent_workspaces,
+        ),
     }
 }
 
@@ -198,10 +214,39 @@ fn startup_workspace_path(
         .filter(|path| !path.as_os_str().is_empty())
 }
 
-fn desktop_default_workspace_path() -> Option<PathBuf> {
-    std::env::var_os("PAPYRO_WORKSPACE")
-        .map(PathBuf::from)
-        .or_else(|| std::env::current_dir().ok())
+fn resume_workspace_path(
+    recent_workspaces: &[Workspace],
+    configured_workspace_path: Option<&Path>,
+) -> Option<PathBuf> {
+    configured_workspace_path
+        .map(Path::to_path_buf)
+        .or_else(|| {
+            recent_workspaces
+                .first()
+                .map(|workspace| workspace.path.clone())
+        })
+}
+
+fn desktop_configured_workspace_path() -> Option<PathBuf> {
+    std::env::var_os("PAPYRO_WORKSPACE").map(PathBuf::from)
+}
+
+fn desktop_onboarding_bootstrap(
+    settings: AppSettings,
+    db_path: Option<PathBuf>,
+    recent_workspaces: Vec<Workspace>,
+) -> WorkspaceBootstrap {
+    WorkspaceBootstrap {
+        file_state: FileState {
+            workspaces: recent_workspaces,
+            ..FileState::default()
+        },
+        db_path,
+        status_message: "Choose a workspace to begin".to_string(),
+        settings: settings.clone(),
+        global_settings: settings,
+        ..WorkspaceBootstrap::default()
+    }
 }
 
 fn absolutize_startup_path(path: &Path) -> PathBuf {
@@ -371,5 +416,62 @@ mod tests {
             startup_workspace_path(&request, &[], Some(&default_workspace)),
             Some(default_workspace)
         );
+    }
+
+    #[test]
+    fn resume_workspace_path_prefers_configured_workspace() {
+        let configured = PathBuf::from("configured");
+        let recent = Workspace {
+            id: "recent".to_string(),
+            name: "Recent".to_string(),
+            path: PathBuf::from("recent"),
+            created_at: 0,
+            last_opened: Some(1),
+            sort_order: 0,
+        };
+
+        assert_eq!(
+            resume_workspace_path(&[recent], Some(&configured)),
+            Some(configured)
+        );
+    }
+
+    #[test]
+    fn resume_workspace_path_uses_most_recent_workspace() {
+        let recent = Workspace {
+            id: "recent".to_string(),
+            name: "Recent".to_string(),
+            path: PathBuf::from("recent"),
+            created_at: 0,
+            last_opened: Some(1),
+            sort_order: 0,
+        };
+
+        assert_eq!(
+            resume_workspace_path(&[recent], None),
+            Some(PathBuf::from("recent"))
+        );
+    }
+
+    #[test]
+    fn onboarding_bootstrap_keeps_recent_workspaces_without_current_workspace() {
+        let recent = Workspace {
+            id: "recent".to_string(),
+            name: "Recent".to_string(),
+            path: PathBuf::from("recent"),
+            created_at: 0,
+            last_opened: Some(1),
+            sort_order: 0,
+        };
+        let bootstrap = desktop_onboarding_bootstrap(
+            AppSettings::default(),
+            Some(PathBuf::from("papyro.db")),
+            vec![recent.clone()],
+        );
+
+        assert_eq!(bootstrap.file_state.current_workspace, None);
+        assert_eq!(bootstrap.file_state.workspaces, vec![recent]);
+        assert_eq!(bootstrap.workspace_root, None);
+        assert_eq!(bootstrap.db_path, Some(PathBuf::from("papyro.db")));
     }
 }

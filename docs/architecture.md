@@ -75,6 +75,16 @@ sequenceDiagram
     JS-->>UI: runtime_ready
 ```
 
+Desktop workspace selection is explicit:
+
+- a startup Markdown file wins, and Papyro picks the deepest known workspace that contains it
+- `PAPYRO_WORKSPACE` is the only environment-provided default workspace
+- without a startup file or environment default, Papyro resumes the most recent workspace
+- on a true first run, Papyro starts with no workspace and shows the onboarding empty state
+
+The desktop app intentionally does not scan the process current directory as an implicit workspace.
+This keeps `cargo run` and packaged launches from accidentally indexing a large project folder.
+
 Key files:
 
 | Step | File |

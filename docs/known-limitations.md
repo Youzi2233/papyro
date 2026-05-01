@@ -9,7 +9,6 @@ Papyro is usable for development and dogfooding, but it is not a finished end-us
 - Desktop builds are the primary target today.
 - Mobile shares the runtime and assets, but it is not production-ready.
 - Basic desktop zip packaging exists; native installers are not finalized.
-- First-run onboarding is not implemented yet.
 - The app is local-first only; cloud sync, accounts, and collaboration are intentionally out of scope for now.
 
 ## Markdown Editing
@@ -31,7 +30,7 @@ Papyro is usable for development and dogfooding, but it is not a finished end-us
 
 - Settings still runs in the main window experience. A process-level tool window is planned.
 - Multi-window document editing is modeled in core, but not available as a user-facing mode.
-- Some release polish remains open: native installers, demo media, and first-run workspace onboarding.
+- Some release polish remains open: native installers and demo media.
 
 ## Performance
 

@@ -12,7 +12,9 @@ use crate::perf::{
     perf_timer, trace_editor_host_lifecycle, trace_editor_pane_render_prep,
     trace_editor_stale_bridge_cleanup,
 };
-use crate::view_model::{EditorHostItemViewModel, EditorSurfaceViewModel, EditorTabItemViewModel};
+use crate::view_model::{
+    EditorHostItemViewModel, EditorSurfaceViewModel, EditorTabItemViewModel, WorkspaceViewModel,
+};
 use dioxus::prelude::*;
 use papyro_core::models::{AppLanguage, Theme, ViewMode};
 use papyro_core::DocumentSnapshot;
@@ -386,6 +388,7 @@ pub fn EditorPane(
             } else {
                 EditorEmptyState {
                     commands: commands.clone(),
+                    workspace: workspace.clone(),
                 }
                 if !pane.host_items.is_empty() {
                     div { class: "mn-editor-retired-hosts",
@@ -516,28 +519,63 @@ fn EditorChrome(
 }
 
 #[component]
-fn EditorEmptyState(commands: AppCommands) -> Element {
+fn EditorEmptyState(commands: AppCommands, workspace: WorkspaceViewModel) -> Element {
     let i18n = use_i18n();
     let create_commands = commands.clone();
     let open_commands = commands.clone();
+    let onboarding_open_commands = commands.clone();
+    let has_workspace = workspace.path.is_some();
+    let recent_workspaces = workspace.recent_workspaces.clone();
 
     rsx! {
         section { class: "mn-empty",
-            div { class: "mn-empty-card",
-                h1 { {i18n.text("Open a note", "打开一篇笔记")} }
-                p { {i18n.text("Pick a Markdown file from the sidebar or start a new note.", "从侧边栏选择 Markdown 文件，或新建一篇笔记。")} }
-                div { class: "mn-empty-actions",
-                    Button {
-                        label: i18n.text("New note", "新建笔记").to_string(),
-                        variant: ButtonVariant::Primary,
-                        disabled: false,
-                        on_click: move |_| create_commands.create_note.call("Untitled".to_string()),
+            div { class: if has_workspace { "mn-empty-card" } else { "mn-empty-card onboarding" },
+                if has_workspace {
+                    h1 { {i18n.text("Open a note", "打开一篇笔记")} }
+                    p { {i18n.text("Pick a Markdown file from the sidebar or start a new note.", "从侧边栏选择 Markdown 文件，或新建一篇笔记。")} }
+                    div { class: "mn-empty-actions",
+                        Button {
+                            label: i18n.text("New note", "新建笔记").to_string(),
+                            variant: ButtonVariant::Primary,
+                            disabled: false,
+                            on_click: move |_| create_commands.create_note.call("Untitled".to_string()),
+                        }
+                        Button {
+                            label: i18n.text("Open workspace", "打开工作区").to_string(),
+                            variant: ButtonVariant::Default,
+                            disabled: false,
+                            on_click: move |_| open_commands.open_workspace.call(()),
+                        }
                     }
+                } else {
+                    h1 { {i18n.text("Choose a workspace", "选择工作区")} }
+                    p { {i18n.text("Open a folder of Markdown notes to begin.", "打开一个 Markdown 笔记目录即可开始。")} }
                     Button {
                         label: i18n.text("Open workspace", "打开工作区").to_string(),
-                        variant: ButtonVariant::Default,
+                        variant: ButtonVariant::Primary,
                         disabled: false,
-                        on_click: move |_| open_commands.open_workspace.call(()),
+                        on_click: move |_| onboarding_open_commands.open_workspace.call(()),
+                    }
+                    if !recent_workspaces.is_empty() {
+                        div { class: "mn-empty-recent",
+                            p { class: "mn-empty-recent-title", {i18n.text("Recent workspaces", "最近工作区")} }
+                            div { class: "mn-empty-recent-list",
+                                for item in recent_workspaces.iter().take(4).cloned() {
+                                    button {
+                                        key: "{item.path.display()}",
+                                        class: "mn-empty-recent-item",
+                                        title: "{item.path.display()}",
+                                        onclick: {
+                                            let commands = commands.clone();
+                                            let path = item.path.clone();
+                                            move |_| commands.open_workspace_path.call(path.clone())
+                                        },
+                                        span { class: "mn-empty-recent-name", "{item.name}" }
+                                        span { class: "mn-empty-recent-path", "{item.path.display()}" }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }

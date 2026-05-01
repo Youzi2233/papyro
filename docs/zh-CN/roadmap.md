@@ -193,7 +193,7 @@ flowchart TD
 - [x] 明确 license。
 - [x] 增加桌面端 release packaging。
 - [x] 增加目标平台 app icons。
-- [ ] 增加首次启动 workspace onboarding。
+- [x] 增加首次启动 workspace onboarding。
 - [x] 增加 release build 手工 QA checklist。
 - [ ] README 增加截图或短 demo。
 - [x] 文档化 known limitations。

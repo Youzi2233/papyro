@@ -2245,6 +2245,85 @@ button { border: 0; cursor: pointer; background: transparent; }
     margin-top: 18px;
 }
 
+.mn-empty-card.onboarding {
+    width: min(560px, 100%);
+    padding: 28px;
+    border: var(--mn-border-default);
+    border-radius: var(--mn-radius-lg);
+    background: var(--mn-surface);
+    box-shadow: var(--mn-shadow-sm);
+    text-align: left;
+}
+
+.mn-empty-card.onboarding h1,
+.mn-empty-card.onboarding p {
+    text-align: left;
+}
+
+.mn-empty-card.onboarding .mn-button {
+    margin-top: 8px;
+}
+
+.mn-empty-recent {
+    margin-top: 26px;
+}
+
+.mn-empty-recent-title {
+    margin: 0 0 10px;
+    color: var(--mn-ink-3);
+    font-family: var(--mn-font-ui);
+    font-size: var(--mn-type-caption);
+    font-weight: var(--mn-weight-semibold);
+    text-transform: uppercase;
+}
+
+.mn-empty-recent-list {
+    display: grid;
+    gap: 8px;
+}
+
+.mn-empty-recent-item {
+    display: grid;
+    gap: 2px;
+    width: 100%;
+    padding: 10px 12px;
+    border: var(--mn-border-default);
+    border-radius: var(--mn-radius-md);
+    background: var(--mn-surface-raised);
+    color: var(--mn-ink);
+    cursor: pointer;
+    font-family: var(--mn-font-ui);
+    text-align: left;
+    box-shadow: var(--mn-shadow-xs);
+}
+
+.mn-empty-recent-item:hover {
+    border-color: var(--mn-border-strong);
+    background: var(--mn-surface-sunken);
+}
+
+.mn-empty-recent-item:focus-visible {
+    outline: 0;
+    box-shadow: var(--mn-ring-focus);
+}
+
+.mn-empty-recent-name,
+.mn-empty-recent-path {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mn-empty-recent-name {
+    font-size: var(--mn-type-ui);
+    font-weight: var(--mn-weight-medium);
+}
+
+.mn-empty-recent-path {
+    color: var(--mn-ink-3);
+    font-size: var(--mn-type-caption);
+}
+
 /* 閳光偓閳光偓 Status bar 閳光偓閳光偓 */
 .mn-status-bar {
     display: flex;

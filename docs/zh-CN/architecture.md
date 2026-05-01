@@ -77,6 +77,16 @@ sequenceDiagram
     JS-->>UI: runtime_ready
 ```
 
+桌面端 workspace 选择是显式的：
+
+- 如果启动参数里有 Markdown 文件，优先选择包含它的最深已知 workspace。
+- `PAPYRO_WORKSPACE` 是唯一的环境变量默认 workspace。
+- 如果没有启动文件和环境变量默认值，就恢复最近一次打开的 workspace。
+- 真正首次启动时不打开任何 workspace，而是进入 onboarding 空状态。
+
+桌面端不会再把进程当前目录当作隐式 workspace 扫描。
+这样可以避免 `cargo run` 或打包后启动时意外索引一个很大的项目目录。
+
 对应代码：
 
 | 步骤 | 关键文件 |
