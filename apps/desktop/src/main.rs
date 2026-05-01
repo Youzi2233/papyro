@@ -58,6 +58,7 @@ fn main() {
         .with_context(external_open_receiver)
         .with_cfg(
             Config::new()
+                .with_menu(None)
                 .with_window(window)
                 .with_background_color(chrome.background_color)
                 .with_custom_head(chrome.custom_head)
