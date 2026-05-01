@@ -62,6 +62,59 @@ fn segmented_option_class(is_selected: bool) -> &'static str {
     }
 }
 
+fn dropdown_class(is_open: bool) -> &'static str {
+    if is_open {
+        "mn-select open"
+    } else {
+        "mn-select"
+    }
+}
+
+fn dropdown_option_class(is_selected: bool) -> &'static str {
+    if is_selected {
+        "mn-select-option active"
+    } else {
+        "mn-select-option"
+    }
+}
+
+fn dropdown_selected_label(options: &[DropdownOption], selected: &str) -> String {
+    options
+        .iter()
+        .find(|option| option.value == selected)
+        .map(|option| option.label.clone())
+        .unwrap_or_else(|| selected.to_string())
+}
+
+fn dropdown_id_suffix(value: &str) -> String {
+    let suffix = value
+        .chars()
+        .map(|ch| {
+            if ch.is_ascii_alphanumeric() {
+                ch.to_ascii_lowercase()
+            } else {
+                '-'
+            }
+        })
+        .collect::<String>()
+        .trim_matches('-')
+        .to_string();
+
+    if suffix.is_empty() {
+        "value".to_string()
+    } else {
+        suffix
+    }
+}
+
+fn dropdown_list_id(label: &str, selected: &str) -> String {
+    format!(
+        "mn-select-{}-{}",
+        dropdown_id_suffix(label),
+        dropdown_id_suffix(selected)
+    )
+}
+
 fn menu_item_class(danger: bool) -> &'static str {
     if danger {
         "mn-menu-item danger"
@@ -154,17 +207,46 @@ pub fn Dropdown(
     selected: String,
     on_change: EventHandler<String>,
 ) -> Element {
+    let mut is_open = use_signal(|| false);
+    let selected_label = dropdown_selected_label(&options, &selected);
+    let list_id = dropdown_list_id(&label, &selected);
+
     rsx! {
-        select {
-            class: "mn-input",
-            "aria-label": "{label}",
-            value: "{selected}",
-            onchange: move |event| on_change.call(event.value()),
-            for option in options {
-                option {
-                    value: "{option.value}",
-                    selected: option.value == selected,
-                    "{option.label}"
+        div {
+            class: dropdown_class(is_open()),
+            button {
+                class: "mn-select-trigger",
+                r#type: "button",
+                "aria-label": "{label}",
+                "aria-haspopup": "listbox",
+                "aria-expanded": if is_open() { "true" } else { "false" },
+                "aria-controls": "{list_id}",
+                onclick: move |_| is_open.set(!is_open()),
+                span { class: "mn-select-value", "{selected_label}" }
+                span { class: "mn-select-caret", "aria-hidden": "true" }
+            }
+            if is_open() {
+                div {
+                    id: "{list_id}",
+                    class: "mn-select-list",
+                    role: "listbox",
+                    "aria-label": "{label}",
+                    for option in options {
+                        button {
+                            class: dropdown_option_class(option.value == selected),
+                            r#type: "button",
+                            role: "option",
+                            "aria-selected": if option.value == selected { "true" } else { "false" },
+                            onclick: {
+                                let value = option.value.clone();
+                                move |_| {
+                                    on_change.call(value.clone());
+                                    is_open.set(false);
+                                }
+                            },
+                            "{option.label}"
+                        }
+                    }
                 }
             }
         }
@@ -350,6 +432,48 @@ mod tests {
     fn segmented_option_class_marks_active_option() {
         assert_eq!(segmented_option_class(false), "mn-segmented-option");
         assert_eq!(segmented_option_class(true), "mn-segmented-option active");
+    }
+
+    #[test]
+    fn dropdown_helpers_track_open_and_selected_state() {
+        assert_eq!(dropdown_class(false), "mn-select");
+        assert_eq!(dropdown_class(true), "mn-select open");
+        assert_eq!(dropdown_option_class(false), "mn-select-option");
+        assert_eq!(dropdown_option_class(true), "mn-select-option active");
+    }
+
+    #[test]
+    fn dropdown_selected_label_uses_matching_option_label() {
+        let options = vec![
+            DropdownOption::new("English", "english"),
+            DropdownOption::new("Chinese", "chinese"),
+        ];
+
+        assert_eq!(
+            dropdown_selected_label(&options, "chinese"),
+            "Chinese".to_string()
+        );
+        assert_eq!(
+            dropdown_selected_label(&options, "missing"),
+            "missing".to_string()
+        );
+    }
+
+    #[test]
+    fn dropdown_id_suffix_normalizes_arbitrary_values() {
+        assert_eq!(
+            dropdown_id_suffix("\"Cascadia Code\", monospace"),
+            "cascadia-code---monospace"
+        );
+        assert_eq!(dropdown_id_suffix(""), "value");
+    }
+
+    #[test]
+    fn dropdown_list_id_combines_label_and_value() {
+        assert_eq!(
+            dropdown_list_id("Font family", "\"Cascadia Code\", monospace"),
+            "mn-select-font-family-cascadia-code---monospace"
+        );
     }
 
     #[test]
