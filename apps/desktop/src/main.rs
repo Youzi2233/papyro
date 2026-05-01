@@ -1,10 +1,14 @@
 use dioxus::desktop::tao::dpi::LogicalSize;
 use dioxus::desktop::tao::event::Event;
+use dioxus::desktop::tao::window::Icon;
 use dioxus::desktop::{Config, WindowBuilder};
 use dioxus::prelude::*;
+use std::fs;
 use std::io;
+use std::path::Path;
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
+const BRAND_LOGO_SRC: &str = "/assets/logo.png";
 const MAIN_CSS: &str = concat!(
     include_str!("../assets/styles/modal.css"),
     "\n",
@@ -21,8 +25,8 @@ fn main() {
         )
         .try_init();
 
-    if let Err(error) = sync_desktop_editor_asset() {
-        tracing::warn!(%error, "failed to sync desktop editor runtime asset");
+    if let Err(error) = sync_desktop_runtime_assets() {
+        tracing::warn!(%error, "failed to sync desktop runtime assets");
     }
 
     let startup_open_request = papyro_app::desktop::desktop_startup_open_request_from_env();
@@ -52,6 +56,11 @@ fn main() {
         .with_inner_size(LogicalSize::new(1440.0, 920.0))
         .with_min_inner_size(LogicalSize::new(880.0, 600.0))
         .with_always_on_top(false);
+    let window = if let Some(icon) = load_window_icon() {
+        window.with_window_icon(Some(icon))
+    } else {
+        window
+    };
 
     dioxus::LaunchBuilder::new()
         .with_context(startup_open_request)
@@ -87,26 +96,62 @@ fn main() {
                     }
                 }),
         )
-        .launch(papyro_app::desktop::DesktopApp);
+        .launch(DesktopRoot);
 }
 
-fn sync_desktop_editor_asset() -> io::Result<()> {
+fn sync_desktop_runtime_assets() -> io::Result<()> {
     let exe_dir = std::env::current_exe()?
         .parent()
         .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "executable directory not found"))?
         .to_path_buf();
+    let source_asset_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("assets");
     let asset_dir = exe_dir.join("assets");
-    let editor_path = asset_dir.join("editor.js");
 
-    if std::fs::read(&editor_path)
-        .map(|current| current == EDITOR_JS.as_bytes())
+    fs::create_dir_all(&asset_dir)?;
+    sync_runtime_asset_bytes(&asset_dir.join("editor.js"), EDITOR_JS.as_bytes())?;
+    sync_runtime_asset_file(
+        &source_asset_dir.join("favicon.ico"),
+        &asset_dir.join("favicon.ico"),
+    )?;
+    sync_runtime_asset_file(
+        &source_asset_dir.join("logo.png"),
+        &asset_dir.join("logo.png"),
+    )?;
+
+    Ok(())
+}
+
+fn sync_runtime_asset_file(source: &Path, target: &Path) -> io::Result<()> {
+    let bytes = fs::read(source)?;
+    sync_runtime_asset_bytes(target, &bytes)
+}
+
+fn sync_runtime_asset_bytes(target: &Path, bytes: &[u8]) -> io::Result<()> {
+    if fs::read(target)
+        .map(|current| current == bytes)
         .unwrap_or(false)
     {
         return Ok(());
     }
 
-    std::fs::create_dir_all(&asset_dir)?;
-    std::fs::write(editor_path, EDITOR_JS.as_bytes())
+    fs::write(target, bytes)
+}
+
+#[component]
+fn DesktopRoot() -> Element {
+    use_context_provider(|| BRAND_LOGO_SRC.to_string());
+
+    rsx! {
+        papyro_app::desktop::DesktopApp {}
+    }
+}
+
+fn load_window_icon() -> Option<Icon> {
+    let image = image::load_from_memory(include_bytes!("../assets/logo.png"))
+        .ok()?
+        .into_rgba8();
+    let (width, height) = image.dimensions();
+    Icon::from_rgba(image.into_raw(), width, height).ok()
 }
 
 fn editor_runtime_head(editor_js_src: &str) -> String {

@@ -48,6 +48,8 @@ pub fn Sidebar(on_search: EventHandler<()>, on_settings: EventHandler<()>) -> El
     let app = use_app_context();
     let i18n = use_i18n();
     let commands = app.commands;
+    let brand_logo_src =
+        try_use_context::<String>().unwrap_or_else(|| "/assets/logo.png".to_string());
     let sidebar_model = app.sidebar_model.read().clone();
     let resize_commands = commands.clone();
     let theme_commands = commands.clone();
@@ -98,7 +100,11 @@ pub fn Sidebar(on_search: EventHandler<()>, on_settings: EventHandler<()>) -> El
 
             div { class: "mn-sidebar-header",
                 div { class: "mn-sidebar-brand",
-                    div { class: "mn-sidebar-brand-mark", "P" }
+                    img {
+                        class: "mn-sidebar-brand-logo",
+                        src: brand_logo_src,
+                        alt: "Papyro logo",
+                    }
                     div { class: "mn-sidebar-brand-copy",
                         p { class: "mn-sidebar-brand-title", "papyro" }
                     }

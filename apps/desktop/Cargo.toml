@@ -9,3 +9,4 @@ dioxus = { workspace = true, features = ["desktop"] }
 papyro-app = { path = "../../crates/app", features = ["desktop-shell"] }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
+image = { version = "0.25", default-features = false, features = ["png"] }

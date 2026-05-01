@@ -399,6 +399,22 @@ button { border: 0; cursor: pointer; background: transparent; }
     backdrop-filter: saturate(140%);
 }
 
+.mn-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.mn-brand-logo {
+    display: block;
+    width: 32px;
+    height: 32px;
+    flex: 0 0 32px;
+    border-radius: 10px;
+    object-fit: contain;
+}
+
 .mn-brand-title {
     font-family: var(--mn-font-heading);
     font-weight: var(--mn-weight-semibold);
@@ -663,17 +679,14 @@ button { border: 0; cursor: pointer; background: transparent; }
     min-width: 0;
 }
 
-.mn-sidebar-brand-mark {
-    display: grid;
-    place-items: center;
-    width: 30px;
-    height: 30px;
-    flex: 0 0 30px;
-    border-radius: var(--mn-radius-sm);
-    background: var(--mn-ink);
-    color: var(--mn-ink-inverse);
-    font-size: var(--mn-type-control);
-    font-weight: var(--mn-weight-bold);
+.mn-sidebar-brand-logo {
+    display: block;
+    width: 32px;
+    height: 32px;
+    flex: 0 0 32px;
+    border-radius: 10px;
+    object-fit: contain;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
 }
 
 .mn-sidebar-brand-copy {

@@ -9,6 +9,8 @@ pub fn AppHeader(on_settings: EventHandler<()>) -> Element {
     let app = use_app_context();
     let i18n = use_i18n();
     let commands = app.commands;
+    let brand_logo_src =
+        try_use_context::<String>().unwrap_or_else(|| "/assets/logo.png".to_string());
     let sidebar_commands = commands.clone();
     let theme_commands = commands.clone();
 
@@ -26,7 +28,14 @@ pub fn AppHeader(on_settings: EventHandler<()>) -> Element {
                     crate::chrome::toggle_sidebar(sidebar_commands.clone(), "header");
                 },
             }
-            span { class: "mn-brand-title", "Papyro" }
+            div { class: "mn-brand",
+                img {
+                    class: "mn-brand-logo",
+                    src: brand_logo_src,
+                    alt: "Papyro logo",
+                }
+                span { class: "mn-brand-title", "Papyro" }
+            }
             div { class: "mn-header-spacer" }
             div { class: "mn-header-actions",
                 IconButton {
