@@ -145,7 +145,7 @@ Goal: make Hybrid mode useful for real writing, not just decorated source text.
 - [x] Improve paste replacement and Markdown input commands.
 - [x] Add Mermaid rendered/editing behavior.
 - [ ] Make Hybrid selection, cursor hit testing, and inline decorations feel consistent.
-- [ ] Make code block, inline code, links, lists, and Mermaid editing share consistent selection colors.
+- [x] Make code block, inline code, links, lists, and Mermaid editing share consistent selection colors.
 - [ ] Treat cursor offset, wrong-line hit testing, missing selection background, accidental source reveal, and selection leaking into whitespace as architecture-level Hybrid defects, not isolated CSS bugs.
 - [x] Review mainstream editor architecture patterns before continuing Hybrid patches: CodeMirror decorations/widgets, ProseMirror/Tiptap node views, Lexical decorators, Slate void/inline nodes, and Typora-like source/render switching. See [Hybrid Editor Architecture Review](editor-hybrid-architecture.md).
 - [x] Decide a stable selection and hit-testing strategy for inline elements, code blocks, tables, math, Mermaid, and links before adding more Markdown block features.

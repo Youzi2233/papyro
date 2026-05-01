@@ -112,6 +112,8 @@ The command palette includes insertion commands for common writing structures: t
 
 Hybrid table widgets support direct cell editing, Tab/Shift+Tab cell navigation, and row/column actions relative to the focused cell. The Markdown source remains the storage format, but normal table edits should not require hand-aligning pipe syntax.
 
+Hybrid selection color is driven by the shared `--mn-hybrid-selection` token. Code blocks, inline code, links, table inputs, and Mermaid source editors should therefore use the same selection tone as normal editor text instead of mixing native browser blue with CodeMirror selection layers.
+
 ## Markdown Rendering
 
 Current Rust-side stack:

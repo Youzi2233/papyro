@@ -122,7 +122,7 @@ flowchart LR
 - [x] 优化粘贴替换和 Markdown 输入命令。
 - [x] 增加 Mermaid 渲染/编辑态。
 - [ ] 统一 Hybrid selection、cursor hit testing 和 inline decoration 行为。
-- [ ] 统一代码块、inline code、链接、列表、Mermaid 的选中背景和编辑体验。
+- [x] 统一代码块、inline code、链接、列表、Mermaid 的选中背景颜色。
 - [ ] 把光标错位、命中到错误行、选中背景缺失、意外恢复源码、选区影响空白区域等问题视为 Hybrid 架构级缺陷，而不是零散 CSS bug。
 - [x] 继续修补 Hybrid 前先调研行业通用编辑器架构：CodeMirror decorations/widgets、ProseMirror/Tiptap node views、Lexical decorators、Slate void/inline nodes、Typora 类源码/渲染切换策略。见 [Hybrid 编辑器架构评审](editor-hybrid-architecture.md)。
 - [x] 在新增更多 Markdown block 能力前，先确定 inline 元素、代码块、表格、公式、Mermaid、链接的稳定 selection 和 hit-testing 策略。

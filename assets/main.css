@@ -118,6 +118,8 @@
     --mn-active-line:        rgba(37, 99, 235, 0.055);
     --mn-active-line-gutter: rgba(37, 99, 235, 0.09);
     --mn-selection:          rgba(37, 99, 235, 0.18);
+    --mn-editor-selection:   var(--mn-selection);
+    --mn-hybrid-selection:   var(--mn-editor-selection);
     --mn-caret:              var(--mn-accent);
     --mn-caret-halo:         rgba(37, 99, 235, 0.18);
     --mn-caret-composing:    var(--mn-warning);

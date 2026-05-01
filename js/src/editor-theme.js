@@ -63,8 +63,8 @@ export const editorTheme = EditorView.theme({
     backgroundColor: "var(--mn-composition-line, rgba(159, 106, 58, .10))",
   },
   ".cm-selectionBackground, &.cm-focused .cm-selectionBackground": {
-    background: "var(--mn-editor-selection, rgba(100, 116, 139, .26))",
-    backgroundColor: "var(--mn-editor-selection, rgba(100, 116, 139, .26))",
+    background: "var(--mn-hybrid-selection, var(--mn-selection, rgba(100, 116, 139, .26)))",
+    backgroundColor: "var(--mn-hybrid-selection, var(--mn-selection, rgba(100, 116, 139, .26)))",
     color: "var(--mn-ink)",
   },
   ".cm-selectionBackground": {
@@ -259,6 +259,10 @@ export const editorTheme = EditorView.theme({
     background: "var(--mn-selection-soft, color-mix(in srgb, var(--mn-accent) 12%, transparent))",
     boxShadow: "inset 0 0 0 1px var(--mn-accent)",
   },
+  ".cm-hybrid-table-cell-input::selection": {
+    background: "var(--mn-hybrid-selection, var(--mn-selection, rgba(100, 116, 139, .26)))",
+    backgroundColor: "var(--mn-hybrid-selection, var(--mn-selection, rgba(100, 116, 139, .26)))",
+  },
   ".cm-hybrid-code-info": {
     display: "inline-flex",
     width: "fit-content",
@@ -320,6 +324,11 @@ export const editorTheme = EditorView.theme({
     boxShadow: "none",
   },
   ".cm-hybrid-inline-code::selection, .cm-hybrid-inline-code *::selection": {
+    background: "transparent !important",
+    backgroundColor: "transparent !important",
+    color: "inherit !important",
+  },
+  ".cm-hybrid-link::selection, .cm-hybrid-link *::selection, .cm-hybrid-inline-math::selection, .cm-hybrid-inline-math *::selection": {
     background: "transparent !important",
     backgroundColor: "transparent !important",
     color: "inherit !important",
@@ -425,8 +434,8 @@ export const editorTheme = EditorView.theme({
     background: "transparent",
   },
   ".cm-hybrid-mermaid-source-editor .cm-selectionBackground, .cm-hybrid-mermaid-source-editor .cm-focused .cm-selectionBackground": {
-    background: "var(--mn-editor-selection, rgba(100, 116, 139, .26))",
-    backgroundColor: "var(--mn-editor-selection, rgba(100, 116, 139, .26))",
+    background: "var(--mn-hybrid-selection, var(--mn-selection, rgba(100, 116, 139, .26)))",
+    backgroundColor: "var(--mn-hybrid-selection, var(--mn-selection, rgba(100, 116, 139, .26)))",
     color: "var(--mn-ink)",
   },
   ".cm-hybrid-mermaid-source-editor::selection, .cm-hybrid-mermaid-source-editor ::selection, .cm-hybrid-mermaid-source-editor .cm-content::selection, .cm-hybrid-mermaid-source-editor .cm-content:focus::selection, .cm-hybrid-mermaid-source-editor .cm-content:focus ::selection, .cm-hybrid-mermaid-source-editor .cm-line::selection, .cm-hybrid-mermaid-source-editor .cm-line *::selection": {

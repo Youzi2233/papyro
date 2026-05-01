@@ -97,6 +97,8 @@ Hybrid 不是“把 Markdown 标记藏起来”就完成了。它需要对齐 Ty
 
 Hybrid 表格 widget 支持直接编辑单元格、用 Tab/Shift+Tab 在单元格之间移动，并且行列操作会围绕当前聚焦的单元格执行。Markdown 源码仍然是存储格式，但常规表格编辑不应要求用户手动对齐 pipe 语法。
 
+Hybrid 选区颜色由共享的 `--mn-hybrid-selection` token 驱动。代码块、inline code、链接、表格输入框和 Mermaid 源码编辑区都应该使用与普通编辑器文本一致的选区色，避免浏览器原生蓝色和 CodeMirror 选区层混在一起。
+
 ## 渲染栈
 
 Rust 侧：

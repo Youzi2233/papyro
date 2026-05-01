@@ -114,8 +114,8 @@ function mermaidSourceEditorExtensions(onChange, onCommit) {
         background: "transparent",
       },
       ".cm-selectionBackground, &.cm-focused .cm-selectionBackground": {
-        background: "var(--mn-editor-selection, rgba(100, 116, 139, .26))",
-        backgroundColor: "var(--mn-editor-selection, rgba(100, 116, 139, .26))",
+        background: "var(--mn-hybrid-selection, var(--mn-selection, rgba(100, 116, 139, .26)))",
+        backgroundColor: "var(--mn-hybrid-selection, var(--mn-selection, rgba(100, 116, 139, .26)))",
         color: "var(--mn-ink)",
       },
       "&::selection, & ::selection, .cm-content::selection, .cm-content:focus::selection, .cm-content:focus ::selection, .cm-line::selection, .cm-line *::selection": {
