@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Result};
-use papyro_core::models::{FileNode, FileNodeKind, Workspace};
+use papyro_core::models::{FileNode, FileNodeKind, RecentFile, Workspace};
 use papyro_core::storage::NoteStorage;
 use papyro_core::{rewrite_moved_note_image_links, EditorTabs, FileState, TabContentsMap};
 use papyro_editor::parser::summarize_markdown;
@@ -36,6 +36,63 @@ pub(super) fn current_workspace(file_state: &FileState) -> Result<Workspace> {
         .current_workspace
         .clone()
         .ok_or_else(|| anyhow!("No workspace is currently open"))
+}
+
+pub(super) fn workspace_for_markdown_path(
+    file_state: &FileState,
+    path: &Path,
+) -> Result<Workspace> {
+    let mut candidates = file_state.workspaces.clone();
+    if let Some(workspace) = &file_state.current_workspace {
+        candidates.push(workspace.clone());
+    }
+    candidates.extend(file_state.recent_files.iter().map(workspace_from_recent));
+
+    candidates
+        .into_iter()
+        .filter(|workspace| path.starts_with(&workspace.path))
+        .max_by_key(|workspace| workspace.path.components().count())
+        .or_else(|| workspace_from_external_markdown_path(path))
+        .ok_or_else(|| anyhow!("No workspace contains {}", path.display()))
+}
+
+pub(super) fn is_markdown_path(path: &Path) -> bool {
+    path.extension()
+        .and_then(|extension| extension.to_str())
+        .is_some_and(|extension| {
+            extension.eq_ignore_ascii_case("md") || extension.eq_ignore_ascii_case("markdown")
+        })
+}
+
+fn workspace_from_recent(recent: &RecentFile) -> Workspace {
+    Workspace {
+        id: recent.workspace_id.clone(),
+        name: recent.workspace_name.clone(),
+        path: recent.workspace_path.clone(),
+        created_at: 0,
+        last_opened: None,
+        sort_order: 0,
+    }
+}
+
+fn workspace_from_external_markdown_path(path: &Path) -> Option<Workspace> {
+    if !is_markdown_path(path) {
+        return None;
+    }
+
+    let workspace_path = path.parent()?.to_path_buf();
+    Some(Workspace {
+        id: format!("external:{}", workspace_path.display()),
+        name: workspace_path
+            .file_name()
+            .and_then(|name| name.to_str())
+            .unwrap_or("Workspace")
+            .to_string(),
+        path: workspace_path,
+        created_at: 0,
+        last_opened: None,
+        sort_order: 0,
+    })
 }
 
 pub(super) fn tree_contains_path(nodes: &[FileNode], target: &Path) -> bool {

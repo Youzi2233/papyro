@@ -1,4 +1,4 @@
-use super::utils::current_workspace;
+use super::utils::{is_markdown_path, workspace_for_markdown_path};
 use anyhow::{anyhow, bail, Result};
 use papyro_core::models::{EditorTab, RecentFile, SaveStatus, Workspace};
 use papyro_core::storage::{NoteStorage, SavedAsNote, SavedNote};
@@ -40,7 +40,7 @@ pub(crate) fn begin_save_tab(
     tab_contents: &TabContentsMap,
     tab_id: &str,
 ) -> Result<SaveTabSnapshot> {
-    let workspace = current_workspace(file_state)?;
+    let workspace = workspace_for_tab(file_state, editor_tabs, tab_id)?;
     let revision = begin_tab_save(editor_tabs, tab_contents, tab_id)
         .ok_or_else(|| anyhow!("Tab not found: {tab_id}"))?;
     let tab = editor_tabs
@@ -66,7 +66,6 @@ pub(crate) fn begin_conflict_overwrite_tab(
     tab_contents: &TabContentsMap,
     tab_id: &str,
 ) -> Result<SaveTabSnapshot> {
-    let workspace = current_workspace(file_state)?;
     let tab = editor_tabs
         .tab_by_id(tab_id)
         .ok_or_else(|| anyhow!("Tab not found: {tab_id}"))?;
@@ -74,6 +73,7 @@ pub(crate) fn begin_conflict_overwrite_tab(
         bail!("Tab is not in a save conflict: {tab_id}");
     }
 
+    let workspace = workspace_for_markdown_path(file_state, &tab.path)?;
     let revision = begin_tab_save(editor_tabs, tab_contents, tab_id)
         .ok_or_else(|| anyhow!("Tab not found: {tab_id}"))?;
     let tab = editor_tabs
@@ -100,7 +100,7 @@ pub(crate) fn begin_conflict_save_as_tab(
     tab_id: &str,
     target_path: PathBuf,
 ) -> Result<SaveAsTabSnapshot> {
-    let workspace = current_workspace(file_state)?;
+    let workspace = workspace_for_tab(file_state, editor_tabs, tab_id)?;
     ensure_save_as_target(&workspace, editor_tabs, tab_id, &target_path)?;
     let tab = editor_tabs
         .tab_by_id(tab_id)
@@ -138,7 +138,7 @@ fn ensure_save_as_target(
     target_path: &Path,
 ) -> Result<()> {
     if !target_path.starts_with(&workspace.path) {
-        bail!("Save as target must stay inside the current workspace");
+        bail!("Save as target must stay inside the note's workspace");
     }
     if !is_markdown_path(target_path) {
         bail!("Save as target must be a Markdown file");
@@ -161,12 +161,15 @@ fn ensure_save_as_target(
     Ok(())
 }
 
-fn is_markdown_path(path: &Path) -> bool {
-    path.extension()
-        .and_then(|extension| extension.to_str())
-        .is_some_and(|extension| {
-            extension.eq_ignore_ascii_case("md") || extension.eq_ignore_ascii_case("markdown")
-        })
+fn workspace_for_tab(
+    file_state: &FileState,
+    editor_tabs: &EditorTabs,
+    tab_id: &str,
+) -> Result<Workspace> {
+    let tab = editor_tabs
+        .tab_by_id(tab_id)
+        .ok_or_else(|| anyhow!("Tab not found: {tab_id}"))?;
+    workspace_for_markdown_path(file_state, &tab.path)
 }
 
 pub(crate) fn write_save_snapshot(

@@ -736,6 +736,55 @@ fn save_tab_flow_marks_conflict_when_storage_reports_conflict() {
 }
 
 #[test]
+fn save_tab_flow_uses_tab_workspace_after_external_workspace_switch() {
+    let storage = MockStorage {
+        save_result: Some(SavedNote {
+            tab_id: "tab-a".to_string(),
+            title: "Saved".to_string(),
+            disk_content_hash: Some(99),
+        }),
+        ..MockStorage::default()
+    };
+    let mut file_state = file_state_with_tree(vec![note_node("workspace/notes/a.md", "note-a")]);
+    file_state.workspaces = vec![workspace()];
+    file_state.current_workspace = Some(workspace_at("external", "External", "external"));
+    let mut editor_tabs = EditorTabs::default();
+    let mut tab = tab("tab-a", "note-a", "workspace/notes/a.md");
+    tab.is_dirty = true;
+    tab.save_status = SaveStatus::Dirty;
+    editor_tabs.open_tab(tab);
+    let mut tab_contents = TabContentsMap::default();
+    tab_contents.insert_tab(
+        "tab-a".to_string(),
+        "body".to_string(),
+        DocumentStats::default(),
+    );
+    tab_contents.update_tab_content("tab-a", "body updated".to_string());
+
+    save_tab_to_storage(
+        &storage,
+        &mut file_state,
+        &mut editor_tabs,
+        &tab_contents,
+        "tab-a",
+    )
+    .unwrap();
+
+    assert_eq!(
+        storage.save_workspace_paths.lock().unwrap().clone(),
+        vec![PathBuf::from("workspace")]
+    );
+    assert_eq!(
+        editor_tabs.tab_by_id("tab-a").map(|tab| (
+            tab.is_dirty,
+            tab.save_status.clone(),
+            tab.disk_content_hash
+        )),
+        Some((false, SaveStatus::Saved, Some(99)))
+    );
+}
+
+#[test]
 fn overwrite_tab_flow_saves_conflicted_content_explicitly() {
     let storage = MockStorage {
         save_result: Some(SavedNote {
@@ -796,6 +845,47 @@ fn overwrite_tab_flow_saves_conflicted_content_explicitly() {
 }
 
 #[test]
+fn overwrite_tab_flow_uses_tab_workspace_after_external_workspace_switch() {
+    let storage = MockStorage {
+        save_result: Some(SavedNote {
+            tab_id: "tab-a".to_string(),
+            title: "Saved".to_string(),
+            disk_content_hash: Some(99),
+        }),
+        ..MockStorage::default()
+    };
+    let mut file_state = file_state_with_tree(vec![note_node("workspace/notes/a.md", "note-a")]);
+    file_state.workspaces = vec![workspace()];
+    file_state.current_workspace = Some(workspace_at("external", "External", "external"));
+    let mut editor_tabs = EditorTabs::default();
+    let mut tab = tab("tab-a", "note-a", "workspace/notes/a.md");
+    tab.is_dirty = true;
+    tab.save_status = SaveStatus::Conflict;
+    editor_tabs.open_tab(tab);
+    let mut tab_contents = TabContentsMap::default();
+    tab_contents.insert_tab(
+        "tab-a".to_string(),
+        "body".to_string(),
+        DocumentStats::default(),
+    );
+    tab_contents.update_tab_content("tab-a", "body updated".to_string());
+
+    overwrite_tab_to_storage(
+        &storage,
+        &mut file_state,
+        &mut editor_tabs,
+        &tab_contents,
+        "tab-a",
+    )
+    .unwrap();
+
+    assert_eq!(
+        storage.overwrite_workspace_paths.lock().unwrap().clone(),
+        vec![PathBuf::from("workspace")]
+    );
+}
+
+#[test]
 fn overwrite_tab_flow_requires_conflict_state() {
     let storage = MockStorage {
         save_result: Some(SavedNote {
@@ -834,6 +924,40 @@ fn overwrite_tab_flow_requires_conflict_state() {
             .tab_by_id("tab-a")
             .map(|tab| (tab.is_dirty, tab.save_status.clone())),
         Some((true, SaveStatus::Dirty))
+    );
+}
+
+#[test]
+fn conflict_reload_reads_from_tab_workspace_after_external_workspace_switch() {
+    let note_path = PathBuf::from("workspace/notes/a.md");
+    let storage = MockStorage {
+        opened_notes: HashMap::from([(
+            note_path.clone(),
+            OpenedNote {
+                tab: tab("tab-a", "note-a", "workspace/notes/a.md"),
+                content: "# Disk".to_string(),
+                recent_files: vec![recent_file("note-a", "notes/a.md")],
+            },
+        )]),
+        ..MockStorage::default()
+    };
+    let mut file_state = file_state_with_tree(vec![note_node("workspace/notes/a.md", "note-a")]);
+    file_state.workspaces = vec![workspace()];
+    file_state.current_workspace = Some(workspace_at("external", "External", "external"));
+
+    let (_opened_note, stats) =
+        read_conflict_reload_from_storage(&storage, &file_state, &note_path, |content| {
+            DocumentStats {
+                char_count: content.len(),
+                ..DocumentStats::default()
+            }
+        })
+        .unwrap();
+
+    assert_eq!(stats.char_count, "# Disk".len());
+    assert_eq!(
+        storage.opened_workspace_paths.lock().unwrap().clone(),
+        vec![PathBuf::from("workspace")]
     );
 }
 
@@ -910,6 +1034,53 @@ fn save_as_tab_flow_rebinds_conflicted_tab_to_target_path() {
 }
 
 #[test]
+fn save_as_tab_flow_uses_tab_workspace_after_external_workspace_switch() {
+    let target_path = PathBuf::from("workspace/notes/copy.md");
+    let storage = MockStorage {
+        save_as_result: Some(SavedAsNote {
+            tab_id: "tab-a".to_string(),
+            note_id: "note-copy".to_string(),
+            title: "Copy".to_string(),
+            path: target_path.clone(),
+            disk_content_hash: Some(101),
+        }),
+        recent_files: vec![recent_file("note-copy", "notes/copy.md")],
+        ..MockStorage::default()
+    };
+    let mut file_state = file_state_with_tree(vec![note_node("workspace/notes/a.md", "note-a")]);
+    file_state.workspaces = vec![workspace()];
+    file_state.current_workspace = Some(workspace_at("external", "External", "external"));
+    let mut editor_tabs = EditorTabs::default();
+    let mut tab = tab("tab-a", "note-a", "workspace/notes/a.md");
+    tab.is_dirty = true;
+    tab.save_status = SaveStatus::Conflict;
+    editor_tabs.open_tab(tab);
+    let mut tab_contents = TabContentsMap::default();
+    tab_contents.insert_tab(
+        "tab-a".to_string(),
+        "# Copy".to_string(),
+        DocumentStats::default(),
+    );
+    tab_contents.update_tab_content("tab-a", "# Copy\n\nlocal".to_string());
+
+    save_as_tab_to_storage(
+        &storage,
+        &mut file_state,
+        &mut editor_tabs,
+        &tab_contents,
+        "tab-a",
+        target_path.clone(),
+    )
+    .unwrap();
+
+    assert_eq!(
+        storage.save_as_workspace_paths.lock().unwrap().clone(),
+        vec![PathBuf::from("workspace")]
+    );
+    assert_eq!(file_state.selected_path, Some(target_path));
+}
+
+#[test]
 fn save_as_tab_flow_rejects_non_conflict_and_invalid_targets() {
     let mut file_state = file_state_with_tree(vec![note_node("workspace/notes/a.md", "note-a")]);
     let storage = MockStorage {
@@ -955,7 +1126,7 @@ fn save_as_tab_flow_rejects_non_conflict_and_invalid_targets() {
         PathBuf::from("outside/copy.md"),
     )
     .unwrap_err();
-    assert!(error.to_string().contains("inside the current workspace"));
+    assert!(error.to_string().contains("inside the note's workspace"));
     assert!(storage.saved_as_payloads.lock().unwrap().is_empty());
 }
 

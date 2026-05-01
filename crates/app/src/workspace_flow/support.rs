@@ -34,6 +34,11 @@ pub(super) struct MockStorage {
     pub saved_payloads: Mutex<Vec<(String, String)>>,
     pub overwritten_payloads: Mutex<Vec<(String, String)>>,
     pub saved_as_payloads: Mutex<Vec<(String, PathBuf, String)>>,
+    pub opened_workspace_paths: Mutex<Vec<PathBuf>>,
+    pub read_workspace_paths: Mutex<Vec<PathBuf>>,
+    pub save_workspace_paths: Mutex<Vec<PathBuf>>,
+    pub overwrite_workspace_paths: Mutex<Vec<PathBuf>>,
+    pub save_as_workspace_paths: Mutex<Vec<PathBuf>>,
     pub saved_tree_states: Mutex<Vec<(String, WorkspaceTreeState)>>,
     pub created_note_requests: Mutex<Vec<(PathBuf, String)>>,
     pub created_folder_requests: Mutex<Vec<(PathBuf, String)>>,
@@ -42,14 +47,22 @@ pub(super) struct MockStorage {
 }
 
 impl NoteStorage for MockStorage {
-    fn open_note(&self, _workspace: &Workspace, path: &Path) -> Result<OpenedNote> {
+    fn open_note(&self, workspace: &Workspace, path: &Path) -> Result<OpenedNote> {
+        self.opened_workspace_paths
+            .lock()
+            .unwrap()
+            .push(workspace.path.clone());
         self.opened_notes
             .get(path)
             .cloned()
             .ok_or_else(|| anyhow!("Missing opened note for {}", path.display()))
     }
 
-    fn read_note_content(&self, _workspace: &Workspace, path: &Path) -> Result<String> {
+    fn read_note_content(&self, workspace: &Workspace, path: &Path) -> Result<String> {
+        self.read_workspace_paths
+            .lock()
+            .unwrap()
+            .push(workspace.path.clone());
         self.opened_notes
             .get(path)
             .map(|note| note.content.clone())
@@ -58,10 +71,14 @@ impl NoteStorage for MockStorage {
 
     fn save_note(
         &self,
-        _workspace: &Workspace,
+        workspace: &Workspace,
         tab: &EditorTab,
         content: &str,
     ) -> Result<SavedNote> {
+        self.save_workspace_paths
+            .lock()
+            .unwrap()
+            .push(workspace.path.clone());
         self.saved_payloads
             .lock()
             .unwrap()
@@ -79,10 +96,14 @@ impl NoteStorage for MockStorage {
 
     fn overwrite_note(
         &self,
-        _workspace: &Workspace,
+        workspace: &Workspace,
         tab: &EditorTab,
         content: &str,
     ) -> Result<SavedNote> {
+        self.overwrite_workspace_paths
+            .lock()
+            .unwrap()
+            .push(workspace.path.clone());
         self.overwritten_payloads
             .lock()
             .unwrap()
@@ -94,11 +115,15 @@ impl NoteStorage for MockStorage {
 
     fn save_note_as(
         &self,
-        _workspace: &Workspace,
+        workspace: &Workspace,
         tab: &EditorTab,
         content: &str,
         target_path: &Path,
     ) -> Result<SavedAsNote> {
+        self.save_as_workspace_paths
+            .lock()
+            .unwrap()
+            .push(workspace.path.clone());
         self.saved_as_payloads.lock().unwrap().push((
             tab.id.clone(),
             target_path.to_path_buf(),
@@ -349,10 +374,14 @@ impl NoteStorage for MockStorage {
 }
 
 pub(super) fn workspace() -> Workspace {
+    workspace_at("workspace-1", "Workspace", "workspace")
+}
+
+pub(super) fn workspace_at(id: &str, name: &str, path: &str) -> Workspace {
     Workspace {
-        id: "workspace-1".to_string(),
-        name: "Workspace".to_string(),
-        path: PathBuf::from("workspace"),
+        id: id.to_string(),
+        name: name.to_string(),
+        path: PathBuf::from(path),
         created_at: 0,
         last_opened: None,
         sort_order: 0,

@@ -1,6 +1,6 @@
-use super::utils::current_workspace;
+use super::utils::{current_workspace, is_markdown_path, workspace_for_markdown_path};
 use anyhow::{bail, Result};
-use papyro_core::models::{DocumentStats, RecentFile, SaveStatus, Workspace};
+use papyro_core::models::{DocumentStats, SaveStatus, Workspace};
 use papyro_core::storage::{NoteStorage, OpenedNote, WorkspaceBootstrap};
 use papyro_core::{open_note, EditorTabs, FileState, TabContentsMap, UiState};
 use std::path::{Path, PathBuf};
@@ -35,7 +35,7 @@ where
     S: FnOnce(&str) -> DocumentStats,
 {
     ensure_markdown_path(&path)?;
-    let target_workspace = workspace_for_path(file_state, &path)?;
+    let target_workspace = workspace_for_markdown_path(file_state, &path)?;
     let already_loaded = file_state
         .current_workspace
         .as_ref()
@@ -154,7 +154,7 @@ pub(crate) fn read_clean_open_tab_refresh_from_storage<S>(
 where
     S: FnOnce(&str) -> DocumentStats,
 {
-    let workspace = current_workspace(file_state)?;
+    let workspace = workspace_for_markdown_path(file_state, path)?;
     load_opened_markdown(storage, &workspace, path, summarize)
 }
 
@@ -227,7 +227,7 @@ pub(crate) fn read_conflict_reload_from_storage<S>(
 where
     S: FnOnce(&str) -> DocumentStats,
 {
-    let workspace = current_workspace(file_state)?;
+    let workspace = workspace_for_markdown_path(file_state, path)?;
     load_opened_markdown(storage, &workspace, path, summarize)
 }
 
@@ -271,63 +271,6 @@ pub(crate) struct OpenMarkdownOutcome {
     pub ui_state: Option<UiState>,
     pub watch_path: Option<PathBuf>,
     pub recovery_drafts: Option<Vec<papyro_core::models::RecoveryDraft>>,
-}
-
-fn workspace_for_path(file_state: &FileState, path: &Path) -> Result<Workspace> {
-    let mut candidates = file_state.workspaces.clone();
-    candidates.extend(file_state.recent_files.iter().map(workspace_from_recent));
-
-    candidates
-        .into_iter()
-        .filter(|workspace| path.starts_with(&workspace.path))
-        .max_by_key(|workspace| workspace.path.components().count())
-        .or_else(|| {
-            file_state
-                .current_workspace
-                .clone()
-                .filter(|workspace| path.starts_with(&workspace.path))
-        })
-        .or_else(|| workspace_from_external_markdown_path(path))
-        .ok_or_else(|| anyhow::anyhow!("No workspace contains {}", path.display()))
-}
-
-fn workspace_from_recent(recent: &RecentFile) -> Workspace {
-    Workspace {
-        id: recent.workspace_id.clone(),
-        name: recent.workspace_name.clone(),
-        path: recent.workspace_path.clone(),
-        created_at: 0,
-        last_opened: None,
-        sort_order: 0,
-    }
-}
-
-fn workspace_from_external_markdown_path(path: &Path) -> Option<Workspace> {
-    if !is_markdown_path(path) {
-        return None;
-    }
-
-    let workspace_path = path.parent()?.to_path_buf();
-    Some(Workspace {
-        id: format!("external:{}", workspace_path.display()),
-        name: workspace_path
-            .file_name()
-            .and_then(|name| name.to_str())
-            .unwrap_or("Workspace")
-            .to_string(),
-        path: workspace_path,
-        created_at: 0,
-        last_opened: None,
-        sort_order: 0,
-    })
-}
-
-fn is_markdown_path(path: &Path) -> bool {
-    path.extension()
-        .and_then(|extension| extension.to_str())
-        .is_some_and(|extension| {
-            extension.eq_ignore_ascii_case("md") || extension.eq_ignore_ascii_case("markdown")
-        })
 }
 
 fn ensure_markdown_path(path: &Path) -> Result<()> {
