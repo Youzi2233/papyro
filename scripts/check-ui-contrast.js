@@ -20,6 +20,9 @@ const CONTRAST_PAIRS = [
   ["--mn-ink-2", "--mn-surface", 4.5],
   ["--mn-ink-3", "--mn-surface", 4.5],
   ["--mn-editor-ink", "--mn-editor-bg", 7],
+  ["--mn-markdown-ink", "--mn-editor-bg", 7],
+  ["--mn-markdown-code-color", "--mn-markdown-code-bg", 4.5],
+  ["--mn-markdown-code-color", "--mn-markdown-code-block-bg", 4.5],
   ["--mn-accent", "--mn-surface", 4.5],
   ["--mn-danger", "--mn-surface", 4.5],
   ["--mn-warning", "--mn-surface", 4.5],
@@ -75,8 +78,12 @@ themes.`);
 
 function checkCssText(source) {
   const failures = [];
+  const rootTokens = parseCustomProperties(ruleBlock(source, ":root"));
   for (const theme of THEMES) {
-    const tokens = parseCustomProperties(ruleBlock(source, theme.selector));
+    const tokens =
+      theme.selector === ":root"
+        ? rootTokens
+        : mergeTokens(rootTokens, parseCustomProperties(ruleBlock(source, theme.selector)));
     for (const [foreground, background, minimum] of CONTRAST_PAIRS) {
       const foregroundColor = resolveColor(tokens, foreground);
       const backgroundColor = resolveColor(tokens, background);
@@ -91,6 +98,10 @@ function checkCssText(source) {
     }
   }
   return failures;
+}
+
+function mergeTokens(base, override) {
+  return new Map([...base.entries(), ...override.entries()]);
 }
 
 function ruleBlock(source, selector) {
@@ -194,6 +205,10 @@ function runSelfTest() {
   --mn-ink-3: #555555;
   --mn-editor-bg: #ffffff;
   --mn-editor-ink: var(--mn-ink);
+  --mn-markdown-ink: var(--mn-editor-ink);
+  --mn-markdown-code-bg: #f4f4f4;
+  --mn-markdown-code-block-bg: #f4f4f4;
+  --mn-markdown-code-color: #005f5f;
   --mn-accent: #005f5f;
   --mn-danger: #9b2f2f;
   --mn-warning: #815000;
@@ -206,6 +221,10 @@ function runSelfTest() {
   --mn-ink-3: #b8b8b8;
   --mn-editor-bg: #111111;
   --mn-editor-ink: #f6f6f6;
+  --mn-markdown-ink: var(--mn-editor-ink);
+  --mn-markdown-code-bg: #202020;
+  --mn-markdown-code-block-bg: #202020;
+  --mn-markdown-code-color: #7dd8d8;
   --mn-accent: #7dd8d8;
   --mn-danger: #ff9a9a;
   --mn-warning: #e3b66e;

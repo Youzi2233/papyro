@@ -34,6 +34,12 @@ node scripts/check-ui-contrast.js
 echo "=== UI contrast check self-test ==="
 node scripts/check-ui-contrast.js --self-test
 
+echo "=== Markdown style smoke check ==="
+node scripts/check-markdown-style-smoke.js
+
+echo "=== Markdown style smoke check self-test ==="
+node scripts/check-markdown-style-smoke.js --self-test
+
 echo "=== performance fixture generator self-test ==="
 node scripts/generate-perf-fixtures.js --self-test
 
