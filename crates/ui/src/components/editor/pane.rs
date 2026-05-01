@@ -377,6 +377,7 @@ pub fn EditorPane(
                         if outline_visible {
                             OutlinePane {
                                 active_document: pane.active_document.clone(),
+                                view_mode: view_mode.clone(),
                             }
                         }
                     }
@@ -501,7 +502,7 @@ fn EditorChrome(
                     }
                 }
                 button {
-                    class: outline_class,
+                    class: "{outline_class} mn-editor-outline-toggle",
                     title: "{outline_label}",
                     "aria-label": "{outline_label}",
                     disabled: !has_active_tab,

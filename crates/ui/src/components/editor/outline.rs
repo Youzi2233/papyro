@@ -2,16 +2,19 @@
 use super::document_cache::DocumentDerivedCacheState;
 use super::document_cache::{DocumentCacheKey, DocumentDerivedCache};
 use crate::i18n::use_i18n;
+use crate::perf::{perf_timer, trace_outline_extract};
 use dioxus::prelude::*;
+use papyro_core::models::ViewMode;
 use papyro_core::DocumentSnapshot;
 use papyro_editor::parser::{extract_outline, OutlineItem};
 use papyro_editor::performance::should_extract_outline;
 use std::sync::Arc;
 
-use crate::perf::{perf_timer, trace_outline_extract};
-
 #[component]
-pub(super) fn OutlinePane(active_document: Option<DocumentSnapshot>) -> Element {
+pub(super) fn OutlinePane(
+    active_document: Option<DocumentSnapshot>,
+    view_mode: ViewMode,
+) -> Element {
     let i18n = use_i18n();
     let document_cache = use_context::<DocumentDerivedCache>();
     let mut outline_state = use_signal(|| None::<OutlineRenderState>);
@@ -56,20 +59,55 @@ pub(super) fn OutlinePane(active_document: Option<DocumentSnapshot>) -> Element 
         .as_ref()
         .map(DocumentCacheKey::from_snapshot);
     let outline = resolve_outline(&document_cache, key.as_ref(), outline_state.read().as_ref());
+    let tab_id = active_document
+        .as_ref()
+        .map(|document| document.tab_id.clone())
+        .unwrap_or_default();
+    let outline_items = outline.clone();
+
+    use_effect(use_reactive(
+        (&tab_id, &view_mode, &outline_items),
+        move |(tab_id, view_mode, _outline_items)| {
+            if tab_id.is_empty() {
+                return;
+            }
+
+            document::eval(&sync_outline_script(tab_id.as_str(), &view_mode));
+        },
+    ));
 
     if outline.is_empty() {
         return rsx! {};
     }
 
     rsx! {
-        aside { class: "mn-outline", "aria-label": i18n.text("Document outline", "文档大纲"),
+        aside {
+            class: "mn-outline",
+            "data-tab-id": "{tab_id}",
+            "data-view-mode": "{view_mode:?}",
+            "aria-label": i18n.text("Document outline", "文档大纲"),
             div { class: "mn-outline-title", {i18n.text("Outline", "大纲")} }
             nav { class: "mn-outline-list",
-                for item in outline.iter() {
-                    div {
+                for (heading_index, item) in outline.iter().enumerate() {
+                    button {
                         key: "{item.line_number}",
+                        r#type: "button",
                         class: "mn-outline-item level-{item.level}",
+                        "data-tab-id": "{tab_id}",
+                        "data-line-number": "{item.line_number}",
+                        "data-heading-index": "{heading_index}",
                         title: format!("{} {}", i18n.text("Line", "第"), item.line_number),
+                        onclick: {
+                            let script = navigate_outline_script(
+                                &tab_id,
+                                item.line_number,
+                                heading_index,
+                                &view_mode,
+                            );
+                            move |_| {
+                                document::eval(&script);
+                            }
+                        },
                         "{item.title}"
                     }
                 }
@@ -173,6 +211,46 @@ fn outline_result_matches_current(
     state.and_then(|state| state.key.as_ref()) == Some(key)
 }
 
+fn sync_outline_script(tab_id: &str, view_mode: &ViewMode) -> String {
+    let tab_id_json = serde_json::to_string(tab_id).unwrap_or_else(|_| "\"\"".to_string());
+    let view_mode_json =
+        serde_json::to_string(view_mode).unwrap_or_else(|_| "\"Hybrid\"".to_string());
+
+    format!(
+        r#"
+        window.papyroEditor?.syncOutline?.(
+            {tab_id_json},
+            {view_mode_json},
+        );
+        "#,
+    )
+}
+
+fn navigate_outline_script(
+    tab_id: &str,
+    line_number: usize,
+    heading_index: usize,
+    view_mode: &ViewMode,
+) -> String {
+    let tab_id_json = serde_json::to_string(tab_id).unwrap_or_else(|_| "\"\"".to_string());
+    let line_number_json = serde_json::to_string(&line_number).unwrap_or_else(|_| "1".to_string());
+    let heading_index_json =
+        serde_json::to_string(&heading_index).unwrap_or_else(|_| "0".to_string());
+    let view_mode_json =
+        serde_json::to_string(view_mode).unwrap_or_else(|_| "\"Hybrid\"".to_string());
+
+    format!(
+        r#"
+        window.papyroEditor?.navigateOutline?.(
+            {tab_id_json},
+            {view_mode_json},
+            {line_number_json},
+            {heading_index_json},
+        );
+        "#,
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -261,5 +339,25 @@ mod tests {
                 },
             ]
         );
+    }
+
+    #[test]
+    fn sync_outline_script_targets_runtime_sync_hook() {
+        let script = sync_outline_script("tab-a", &ViewMode::Preview);
+
+        assert!(script.contains("syncOutline"));
+        assert!(script.contains("\"tab-a\""));
+        assert!(script.contains("\"Preview\""));
+    }
+
+    #[test]
+    fn navigate_outline_script_targets_navigation_hook() {
+        let script = navigate_outline_script("tab-a", 12, 3, &ViewMode::Hybrid);
+
+        assert!(script.contains("navigateOutline"));
+        assert!(script.contains("\"tab-a\""));
+        assert!(script.contains("\"Hybrid\""));
+        assert!(script.contains("12"));
+        assert!(script.contains("3"));
     }
 }

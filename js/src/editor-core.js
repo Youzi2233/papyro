@@ -1794,6 +1794,167 @@ export function restoreScrollSnapshot(scroller, snapshot) {
   return true;
 }
 
+function docText(doc) {
+  return typeof doc?.toString === "function" ? doc.toString() : null;
+}
+
+function docLineCount(doc) {
+  if (Number.isSafeInteger(doc?.lines) && doc.lines >= 1) {
+    return doc.lines;
+  }
+
+  const text = docText(doc);
+  if (typeof text !== "string") return null;
+  return text.length === 0 ? 1 : text.split(/\r\n|\n/).length;
+}
+
+function docLineAtNumber(doc, lineNumber) {
+  if (typeof doc?.line === "function") {
+    try {
+      return doc.line(lineNumber);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  const text = docText(doc);
+  const target = safeInteger(lineNumber);
+  if (typeof text !== "string" || target === null || target < 1) {
+    return null;
+  }
+
+  let currentLine = 1;
+  let lineStart = 0;
+  for (let index = 0; index < text.length; index += 1) {
+    if (text[index] !== "\n") continue;
+
+    if (currentLine === target) {
+      const lineEnd = index > 0 && text[index - 1] === "\r" ? index - 1 : index;
+      return {
+        number: currentLine,
+        from: lineStart,
+        to: lineEnd,
+        text: text.slice(lineStart, lineEnd),
+      };
+    }
+
+    currentLine += 1;
+    lineStart = index + 1;
+  }
+
+  if (currentLine === target) {
+    return {
+      number: currentLine,
+      from: lineStart,
+      to: text.length,
+      text: text.slice(lineStart),
+    };
+  }
+
+  return null;
+}
+
+export function scrollEditorViewToLine(view, lineNumber, options = {}) {
+  if (!view || typeof view.dispatch !== "function") return false;
+
+  const lineCount = docLineCount(view.state?.doc);
+  if (lineCount === null) return false;
+
+  const requested = safeInteger(lineNumber) ?? 1;
+  const clamped = clampNumber(requested, 1, Math.max(1, lineCount));
+  const line = docLineAtNumber(view.state?.doc, clamped);
+  if (!line) return false;
+
+  const scrollEffect =
+    typeof options.scrollEffect === "function"
+      ? options.scrollEffect(line.from)
+      : null;
+  const transaction = {
+    selection: { anchor: line.from },
+  };
+  if (scrollEffect) {
+    transaction.effects = scrollEffect;
+  }
+
+  view.dispatch(transaction);
+  if (options.focus !== false && typeof view.focus === "function") {
+    view.focus();
+  }
+  return true;
+}
+
+const PREVIEW_HEADING_SELECTOR =
+  ".mn-preview h1, .mn-preview h2, .mn-preview h3, .mn-preview h4, .mn-preview h5, .mn-preview h6";
+
+export function scrollPreviewToHeading(scroller, headingIndex, options = {}) {
+  if (!scroller || typeof scroller.querySelectorAll !== "function") return false;
+
+  const index = safeInteger(headingIndex);
+  if (index === null || index < 0) return false;
+
+  const headings = Array.from(scroller.querySelectorAll(PREVIEW_HEADING_SELECTOR));
+  const heading = headings[index];
+  if (
+    !heading ||
+    typeof heading.getBoundingClientRect !== "function" ||
+    typeof scroller.getBoundingClientRect !== "function"
+  ) {
+    return false;
+  }
+
+  const scrollerRect = scroller.getBoundingClientRect();
+  const headingRect = heading.getBoundingClientRect();
+  const offset = Math.max(0, finiteNumber(options.offset) ?? 12);
+  const top = Math.max(
+    0,
+    headingRect.top - scrollerRect.top + scroller.scrollTop - offset,
+  );
+
+  if (typeof scroller.scrollTo === "function") {
+    scroller.scrollTo({
+      top,
+      behavior: options.behavior ?? "smooth",
+    });
+  } else {
+    scroller.scrollTop = top;
+  }
+  return true;
+}
+
+export function activeOutlineHeadingIndex(lineNumbers, activeLine) {
+  const targetLine = safeInteger(activeLine);
+  if (targetLine === null || targetLine < 1) return -1;
+
+  let activeIndex = -1;
+  for (let index = 0; index < (lineNumbers?.length ?? 0); index += 1) {
+    const lineNumber = safeInteger(lineNumbers[index]);
+    if (lineNumber === null || lineNumber < 1) continue;
+    if (lineNumber > targetLine) break;
+    activeIndex = index;
+  }
+
+  return activeIndex;
+}
+
+export function activePreviewHeadingIndex(headingOffsets, scrollTop, threshold = 24) {
+  const top = finiteNumber(scrollTop);
+  if (top === null || !Array.isArray(headingOffsets) || headingOffsets.length === 0) {
+    return -1;
+  }
+
+  const targetOffset = top + Math.max(0, finiteNumber(threshold) ?? 0);
+  let activeIndex = 0;
+
+  for (let index = 0; index < headingOffsets.length; index += 1) {
+    const offset = finiteNumber(headingOffsets[index]);
+    if (offset === null) continue;
+    if (offset > targetOffset) break;
+    activeIndex = index;
+  }
+
+  return activeIndex;
+}
+
 export function saveModeScrollSnapshot(store, tabId, mode, snapshot) {
   if (!(store instanceof Map)) return null;
   if (typeof tabId !== "string" || tabId.length === 0) return null;

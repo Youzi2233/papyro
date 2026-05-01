@@ -268,7 +268,8 @@ function ensureMermaidInitialized() {
   if (mermaidInitialized) return;
   mermaid.initialize({
     startOnLoad: false,
-    securityLevel: "strict",
+    securityLevel: "loose",
+    suppressErrorRendering: true,
     theme: "base",
     htmlLabels: false,
   });
@@ -284,23 +285,76 @@ function withRenderTimeout(promise, timeoutMs, label) {
   ]);
 }
 
-function createMermaidStatus(message, source, error = false) {
+export function friendlyMermaidErrorMessage(message) {
+  const text = String(message ?? "").trim();
+  if (!text) return "Mermaid diagram could not be rendered.";
+  if (/syntax error in text/i.test(text)) return "Mermaid syntax error.";
+  if (/parse error|lexical error/i.test(text)) return "Mermaid syntax error.";
+  if (/dompurify\.sanitize is not a function|purify\.sanitize is not a function/i.test(text)) {
+    return "Mermaid render is unavailable in this runtime.";
+  }
+  if (/timed out/i.test(text)) return "Mermaid render timed out.";
+  return text;
+}
+
+function createMermaidStatus(message, error = false, rawMessage = "") {
   const wrapper = document.createElement("div");
   wrapper.className = error
     ? "mn-mermaid-status mn-mermaid-status-error"
     : "mn-mermaid-status";
+  if (rawMessage) {
+    wrapper.title = rawMessage;
+    wrapper.dataset.mermaidError = rawMessage;
+  }
   const label = document.createElement("div");
   label.className = "mn-mermaid-label";
   label.textContent = error ? "Mermaid render failed" : message;
   wrapper.append(label);
-
-  if (source) {
-    const pre = document.createElement("pre");
-    pre.className = "mn-mermaid-source";
-    pre.textContent = source;
-    wrapper.append(pre);
+  if (error && message) {
+    const detail = document.createElement("div");
+    detail.className = "mn-mermaid-detail";
+    detail.textContent = friendlyMermaidErrorMessage(message);
+    wrapper.append(detail);
   }
   return wrapper;
+}
+
+export function mermaidSvgErrorMessage(svg) {
+  const markup = String(svg ?? "").trim();
+  if (!markup) return "Mermaid diagram could not be rendered.";
+
+  const directMatch = markup.match(/syntax error in text|parse error|lexical error/i);
+  if (directMatch) {
+    return directMatch[0];
+  }
+
+  if (/class=(['"])[^'"]*error-(?:text|icon)\1/i.test(markup)) {
+    if (typeof DOMParser !== "function") {
+      return "Mermaid diagram could not be rendered.";
+    }
+  }
+
+  if (typeof DOMParser !== "function") return "";
+
+  try {
+    const document = new DOMParser().parseFromString(markup, "image/svg+xml");
+    const explicitErrorText = Array.from(document.querySelectorAll(".error-text"))
+      .map((node) => node.textContent?.replace(/\s+/g, " ").trim() ?? "")
+      .find(Boolean);
+    if (explicitErrorText) {
+      return explicitErrorText;
+    }
+
+    if (document.querySelector(".error-icon")) {
+      return "Mermaid diagram could not be rendered.";
+    }
+
+    const text = document.documentElement?.textContent?.replace(/\s+/g, " ").trim() ?? "";
+    const textMatch = text.match(/syntax error in text|parse error|lexical error/i);
+    return textMatch ? textMatch[0] : "";
+  } catch {
+    return "";
+  }
 }
 
 async function renderMermaidSvg(source) {
@@ -324,11 +378,15 @@ async function renderMermaidIntoElement(element, source) {
   element.dataset.mermaidRenderToken = token;
   element.dataset.mermaidSource = normalizedSource;
   element.dataset.mermaidState = "pending";
-  element.replaceChildren(createMermaidStatus("Rendering Mermaid diagram...", "", false));
+  element.replaceChildren(createMermaidStatus("Rendering Mermaid diagram..."));
 
   try {
     const result = await renderMermaidSvg(normalizedSource);
     if (element.dataset.mermaidRenderToken !== token) return false;
+    const renderError = mermaidSvgErrorMessage(result.svg);
+    if (renderError) {
+      throw new Error(renderError);
+    }
 
     const svgWrapper = document.createElement("div");
     svgWrapper.className = "mn-mermaid-svg";
@@ -343,7 +401,7 @@ async function renderMermaidIntoElement(element, source) {
 
     const message = error instanceof Error ? error.message : String(error);
     element.dataset.mermaidState = "error";
-    element.replaceChildren(createMermaidStatus(message, normalizedSource, true));
+    element.replaceChildren(createMermaidStatus(message, true, message));
     return false;
   }
 }

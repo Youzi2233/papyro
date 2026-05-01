@@ -2,6 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
+  activeOutlineHeadingIndex,
+  activePreviewHeadingIndex,
   applyFormatToView,
   appendMarkdownTableColumn,
   appendMarkdownTableRow,
@@ -66,6 +68,8 @@ import {
   readScrollSnapshot,
   requestSaveForView,
   restoreScrollSnapshot,
+  scrollEditorViewToLine,
+  scrollPreviewToHeading,
   rewriteMarkdownTableCell,
   saveModeScrollSnapshot,
   selectionOverlapsTextRange,
@@ -95,6 +99,24 @@ function fakeView(initialDoc = "", selection = { from: 0, to: 0 }, onDispatch = 
   let doc = initialDoc;
   let main = { ...selection };
 
+  const lineForNumber = (text, number) => {
+    const lines = text.split(/\r\n|\n/);
+    const target = Math.min(Math.max(number, 1), lines.length || 1);
+    let from = 0;
+
+    for (let index = 0; index < target - 1; index += 1) {
+      from += lines[index].length + 1;
+    }
+
+    const textForLine = lines[target - 1] ?? "";
+    return {
+      number: target,
+      from,
+      to: from + textForLine.length,
+      text: textForLine,
+    };
+  };
+
   const view = {
     dom: { dataset: {}, parentElement: null },
     focused: false,
@@ -102,7 +124,15 @@ function fakeView(initialDoc = "", selection = { from: 0, to: 0 }, onDispatch = 
     requestMeasureCalled: false,
     get state() {
       return {
-        doc: { toString: () => doc },
+        doc: {
+          toString: () => doc,
+          get lines() {
+            return doc.length === 0 ? 1 : doc.split(/\r\n|\n/).length;
+          },
+          line(number) {
+            return lineForNumber(doc, number);
+          },
+        },
         selection: { main },
         sliceDoc: (from, to) => doc.slice(from, to),
       };
@@ -1309,6 +1339,80 @@ test("mode scroll snapshots share latest position across view modes", () => {
     readScrollSnapshot(fakeScroller({ scrollTop: 420, scrollHeight: 1500, clientHeight: 100 })),
   );
   assert.equal(latestModeScrollSnapshot(store, "tab-a").top, 420);
+});
+
+test("scroll_editor_view_to_line moves the cursor to the requested line", () => {
+  const dispatched = [];
+  const view = fakeView("alpha\nbeta\ngamma", { from: 0, to: 0 }, (_view, spec) => {
+    dispatched.push(spec);
+  });
+
+  assert.equal(
+    scrollEditorViewToLine(view, 2, {
+      scrollEffect: (position) => ({ type: "scroll", position }),
+    }),
+    true,
+  );
+  assert.deepEqual(view.state.selection.main, { from: 6, to: 6 });
+  assert.equal(view.focused, true);
+  assert.deepEqual(dispatched.at(-1)?.effects, { type: "scroll", position: 6 });
+});
+
+test("scroll_preview_to_heading targets the requested heading", () => {
+  const calls = [];
+  const headings = [
+    {
+      getBoundingClientRect() {
+        return { top: 60 };
+      },
+    },
+    {
+      getBoundingClientRect() {
+        return { top: 220 };
+      },
+    },
+  ];
+  const scroller = {
+    scrollTop: 40,
+    getBoundingClientRect() {
+      return { top: 20 };
+    },
+    scrollTo(options) {
+      calls.push(options);
+    },
+    querySelectorAll(selector) {
+      assert.match(selector, /h1/);
+      return headings;
+    },
+  };
+
+  assert.equal(scrollPreviewToHeading(scroller, 1, { behavior: "auto" }), true);
+  assert.deepEqual(calls, [{ top: 228, behavior: "auto" }]);
+});
+
+test("scroll_preview_to_heading rejects invalid targets", () => {
+  const scroller = {
+    querySelectorAll() {
+      return [];
+    },
+  };
+
+  assert.equal(scrollPreviewToHeading(scroller, -1), false);
+  assert.equal(scrollPreviewToHeading(scroller, 0), false);
+});
+
+test("active_outline_heading_index tracks the latest heading at or above the cursor", () => {
+  assert.equal(activeOutlineHeadingIndex([1, 4, 9], 1), 0);
+  assert.equal(activeOutlineHeadingIndex([1, 4, 9], 7), 1);
+  assert.equal(activeOutlineHeadingIndex([1, 4, 9], 99), 2);
+  assert.equal(activeOutlineHeadingIndex([4, 9], 2), -1);
+});
+
+test("active_preview_heading_index tracks the nearest heading above the viewport", () => {
+  assert.equal(activePreviewHeadingIndex([20, 140, 320], 0), 0);
+  assert.equal(activePreviewHeadingIndex([20, 140, 320], 150), 1);
+  assert.equal(activePreviewHeadingIndex([20, 140, 320], 330), 2);
+  assert.equal(activePreviewHeadingIndex([], 0), -1);
 });
 
 test("set_preferences stores editor preferences on entry", () => {

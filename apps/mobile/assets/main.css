@@ -554,6 +554,8 @@ small {
 }
 
 .mn-mermaid-block {
+    min-width: 0;
+    max-width: 100%;
     margin: 0 0 16px;
     padding: 14px;
     border: 1px solid var(--mn-border);
@@ -576,13 +578,16 @@ small {
 
 .mn-mermaid-status {
     display: grid;
-    gap: 8px;
+    gap: 6px;
     color: var(--mn-muted);
     font-size: 12px;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
 }
 
 .mn-mermaid-status-error { color: var(--mn-accent-dark); }
 .mn-mermaid-label { font-weight: 700; }
+.mn-mermaid-detail { color: var(--mn-text); }
 .mn-mermaid-source { margin: 0; white-space: pre-wrap; }
 
 .mn-editor-retired-hosts {

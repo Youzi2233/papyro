@@ -21,6 +21,8 @@ import {
 } from "@codemirror/search";
 import { tags as t } from "@lezer/highlight";
 import {
+  activeOutlineHeadingIndex,
+  activePreviewHeadingIndex,
   applyFormatToView,
   attachViewToTab as attachViewToTabCore,
   collapsedSelectionTouchesTextRange,
@@ -43,6 +45,7 @@ import {
   markdownTaskCheckboxToggleChange,
   modeSupportsEditorScroll,
   normalizeEditorPreferences,
+  normalizeViewMode,
   nextLayoutSize,
   parseMarkdownBlockquoteLine,
   parseMarkdownFootnoteDefinitionLine,
@@ -59,6 +62,8 @@ import {
   requestSaveForView,
   restoreScrollSnapshot,
   saveModeScrollSnapshot,
+  scrollEditorViewToLine,
+  scrollPreviewToHeading,
   selectionOverlapsTextRange,
   shouldUseFullDocumentHybridScan,
   blockHintsEqual,
@@ -80,6 +85,7 @@ import {
 // tabId → { view, dioxus, suppressChange }
 const editorRegistry = new Map();
 const modeScrollSnapshots = new Map();
+const editorScrollListeners = new WeakMap();
 const previewScrollListeners = new WeakMap();
 
 function isVisibleElement(element) {
@@ -144,6 +150,7 @@ const EDITOR_COMPOSITION_CLASS = "cm-composition-active";
 const HYBRID_NEAR_BLOCK_DISTANCE = 2;
 const HYBRID_TABLE_WIDGET_MAX_BYTES = 32 * 1024;
 const HYBRID_TABLE_WIDGET_MAX_CELLS = 400;
+const OUTLINE_MOBILE_MEDIA_QUERY = "(max-width: 1280px)";
 const viewModeField = StateField.define({
   create() {
     return "hybrid";
@@ -2063,11 +2070,14 @@ function buildExtensions() {
     EditorView.lineWrapping,
     editorTheme,
     EditorView.updateListener.of((update) => {
-      if (!update.docChanged) return;
       const tabId = update.view.dom.dataset.tabId;
       if (!tabId) return; // unrouted (in pool) — swallow
       const entry = editorRegistry.get(tabId);
       if (!entry || entry.suppressChange) return;
+      if (update.selectionSet || update.docChanged || update.viewportChanged) {
+        syncOutline(tabId, entry.viewMode);
+      }
+      if (!update.docChanged) return;
       entry.dioxus?.send({
         type: "content_changed",
         tab_id: tabId,
@@ -2214,6 +2224,85 @@ function restoreEditorScrollSnapshot(entry) {
   );
 }
 
+function editorTopLineNumber(entry, scroller = editorScroller(entry)) {
+  const view = entry?.view;
+  if (!view || !(scroller instanceof HTMLElement)) return null;
+  if (typeof view.lineBlockAtHeight !== "function") return null;
+  if (typeof view.state?.doc?.lineAt !== "function") return null;
+
+  const top = Math.max(
+    0,
+    scroller.scrollTop + Math.min(24, Math.max(8, Number(view.defaultLineHeight ?? 0) * 0.75)),
+  );
+  const block = view.lineBlockAtHeight(top);
+  if (!Number.isSafeInteger(block?.from)) return null;
+
+  const line = view.state.doc.lineAt(block.from);
+  return Number.isSafeInteger(line?.number) ? line.number : null;
+}
+
+function detachEditorScroll(entry) {
+  const scroller = editorScroller(entry);
+  if (!(scroller instanceof HTMLElement)) return false;
+
+  const previous = editorScrollListeners.get(scroller);
+  if (!previous) return false;
+
+  scroller.removeEventListener("scroll", previous.onScroll);
+  editorScrollListeners.delete(scroller);
+  return true;
+}
+
+function attachEditorScroll(tabId, entry = editorRegistry.get(tabId)) {
+  if (!modeSupportsEditorScroll(entry?.viewMode)) {
+    detachEditorScroll(entry);
+    return false;
+  }
+
+  const scroller = editorScroller(entry);
+  if (!(scroller instanceof HTMLElement)) return false;
+
+  const previous = editorScrollListeners.get(scroller);
+  if (previous?.tabId === tabId) {
+    scheduleScrollRestore(
+      scroller,
+      latestModeScrollSnapshot(modeScrollSnapshots, tabId),
+      () => {
+        saveModeScrollSnapshot(
+          modeScrollSnapshots,
+          tabId,
+          entry.viewMode,
+          readScrollSnapshot(scroller),
+        );
+        syncOutlineForEditorScroll(tabId, entry, scroller);
+      },
+    );
+    return true;
+  }
+  if (previous) {
+    scroller.removeEventListener("scroll", previous.onScroll);
+  }
+
+  const save = () => {
+    saveModeScrollSnapshot(
+      modeScrollSnapshots,
+      tabId,
+      entry.viewMode,
+      readScrollSnapshot(scroller),
+    );
+    syncOutlineForEditorScroll(tabId, entry, scroller);
+  };
+  const onScroll = () => save();
+  scroller.addEventListener("scroll", onScroll, { passive: true });
+  editorScrollListeners.set(scroller, { tabId, onScroll });
+
+  const snapshot = latestModeScrollSnapshot(modeScrollSnapshots, tabId);
+  if (!scheduleScrollRestore(scroller, snapshot, save)) {
+    save();
+  }
+  return true;
+}
+
 function attachPreviewScroll(tabId, scroller) {
   if (!(scroller instanceof HTMLElement)) return false;
 
@@ -2222,12 +2311,15 @@ function attachPreviewScroll(tabId, scroller) {
     scheduleScrollRestore(
       scroller,
       latestModeScrollSnapshot(modeScrollSnapshots, tabId),
-      () => saveModeScrollSnapshot(
-        modeScrollSnapshots,
-        tabId,
-        "preview",
-        readScrollSnapshot(scroller),
-      ),
+      () => {
+        saveModeScrollSnapshot(
+          modeScrollSnapshots,
+          tabId,
+          "preview",
+          readScrollSnapshot(scroller),
+        );
+        syncOutlineForPreview(tabId, scroller);
+      },
     );
     return true;
   }
@@ -2242,6 +2334,7 @@ function attachPreviewScroll(tabId, scroller) {
       "preview",
       readScrollSnapshot(scroller),
     );
+    syncOutlineForPreview(tabId, scroller);
   };
   const onScroll = () => save();
   scroller.addEventListener("scroll", onScroll, { passive: true });
@@ -2252,6 +2345,144 @@ function attachPreviewScroll(tabId, scroller) {
     save();
   }
   return true;
+}
+
+function previewScrollerForTab(tabId) {
+  return Array.from(document.querySelectorAll(".mn-preview-scroll[data-tab-id]")).find(
+    (element) => element.dataset.tabId === tabId,
+  ) ?? null;
+}
+
+function outlineItemsForTab(tabId) {
+  return Array.from(document.querySelectorAll(".mn-outline-item[data-tab-id]")).filter(
+    (element) => element.dataset.tabId === tabId,
+  );
+}
+
+function setActiveOutlineItem(tabId, headingIndex) {
+  const activeIndex = Number.isSafeInteger(Number(headingIndex)) ? Number(headingIndex) : -1;
+
+  outlineItemsForTab(tabId).forEach((element, index) => {
+    const active = index === activeIndex;
+    element.classList.toggle("active", active);
+    if (active) {
+      element.setAttribute("aria-current", "location");
+    } else {
+      element.removeAttribute("aria-current");
+    }
+  });
+}
+
+function outlineLineNumbersForTab(tabId) {
+  return outlineItemsForTab(tabId).map((element) => Number(element.dataset.lineNumber ?? 0));
+}
+
+function editorActiveLineNumber(entry) {
+  const head = entry?.view?.state?.selection?.main?.head;
+  if (!Number.isSafeInteger(head)) return null;
+
+  return entry.view.state.doc.lineAt(head).number;
+}
+
+function previewHeadingOffsets(scroller) {
+  if (!(scroller instanceof HTMLElement)) return [];
+
+  const scrollerTop = scroller.getBoundingClientRect().top;
+  return Array.from(
+    scroller.querySelectorAll(".mn-preview h1, .mn-preview h2, .mn-preview h3, .mn-preview h4, .mn-preview h5, .mn-preview h6"),
+  ).map((heading) => {
+    if (!(heading instanceof HTMLElement)) return null;
+    return heading.getBoundingClientRect().top - scrollerTop + scroller.scrollTop;
+  }).filter((offset) => Number.isFinite(offset));
+}
+
+function syncOutlineForEditor(tabId, entry = editorRegistry.get(tabId)) {
+  const activeLine = editorActiveLineNumber(entry);
+  if (activeLine === null) return false;
+
+  setActiveOutlineItem(
+    tabId,
+    activeOutlineHeadingIndex(outlineLineNumbersForTab(tabId), activeLine),
+  );
+  return true;
+}
+
+function syncOutlineForEditorScroll(
+  tabId,
+  entry = editorRegistry.get(tabId),
+  scroller = editorScroller(entry),
+) {
+  const activeLine = editorTopLineNumber(entry, scroller) ?? editorActiveLineNumber(entry);
+  if (activeLine === null) return false;
+
+  setActiveOutlineItem(
+    tabId,
+    activeOutlineHeadingIndex(outlineLineNumbersForTab(tabId), activeLine),
+  );
+  return true;
+}
+
+function syncOutlineForPreview(tabId, scroller = previewScrollerForTab(tabId)) {
+  if (!(scroller instanceof HTMLElement)) return false;
+
+  setActiveOutlineItem(
+    tabId,
+    activePreviewHeadingIndex(previewHeadingOffsets(scroller), scroller.scrollTop),
+  );
+  return true;
+}
+
+function syncOutline(tabId, mode) {
+  const normalizedMode = normalizeViewMode(mode);
+  if (normalizedMode === "preview") {
+    return syncOutlineForPreview(tabId);
+  }
+
+  return syncOutlineForEditor(tabId);
+}
+
+function collapseOutlineOverlayIfNeeded() {
+  const media = window.matchMedia?.(OUTLINE_MOBILE_MEDIA_QUERY);
+  if (!media?.matches) return false;
+
+  const toggle = document.querySelector(".mn-editor-outline-toggle");
+  if (!(toggle instanceof HTMLElement)) return false;
+
+  toggle.click();
+  return true;
+}
+
+function navigateOutline(tabId, mode, lineNumber, headingIndex) {
+  const normalizedMode = normalizeViewMode(mode);
+  const navigated = normalizedMode === "preview"
+    ? jumpPreviewToHeading(tabId, headingIndex)
+    : jumpEditorToLine(tabId, lineNumber);
+
+  setActiveOutlineItem(tabId, Number(headingIndex));
+  syncOutline(tabId, normalizedMode);
+  if (navigated) {
+    collapseOutlineOverlayIfNeeded();
+  }
+  return navigated;
+}
+
+function jumpEditorToLine(tabId, lineNumber) {
+  const entry = editorRegistry.get(tabId);
+  if (!entry?.view) return false;
+
+  const jumped = scrollEditorViewToLine(entry.view, lineNumber, {
+    scrollEffect: (position) => EditorView.scrollIntoView(position, { y: "start" }),
+  });
+  if (jumped) {
+    refreshEditorLayout(entry.view);
+  }
+  return jumped;
+}
+
+function jumpPreviewToHeading(tabId, headingIndex) {
+  return scrollPreviewToHeading(previewScrollerForTab(tabId), headingIndex, {
+    behavior: "auto",
+  });
 }
 
 function attachLayoutObserver(tabId, container, dioxus) {
@@ -2314,6 +2545,8 @@ function setEditorViewMode(entry, mode) {
     effects: setViewModeEffect.of(normalized),
   });
   restoreEditorScrollSnapshot(entry);
+  attachEditorScroll(viewTabId(entry), entry);
+  syncOutline(viewTabId(entry), normalized);
   return normalized;
 }
 
@@ -2430,6 +2663,7 @@ function recycleEditor(tabId) {
   const entry = editorRegistry.get(tabId);
   if (entry) {
     saveEditorScrollSnapshot(entry);
+    detachEditorScroll(entry);
     disconnectLayoutObserver(entry);
   }
   recycleEditorCore(editorRegistry, tabId);
@@ -2453,6 +2687,8 @@ window.papyroEditor = {
     if (!entry) return;
 
     entry.dioxus = dioxus;
+    attachEditorScroll(tabId, entry);
+    syncOutline(tabId, entry.viewMode);
     const container = entry.view?.dom?.parentElement;
     if (container instanceof HTMLElement) {
       attachLayoutObserver(tabId, container, dioxus);
@@ -2460,5 +2696,9 @@ window.papyroEditor = {
   },
 
   attachPreviewScroll,
+  navigateOutline,
+  syncOutline,
+  scrollEditorToLine: jumpEditorToLine,
+  scrollPreviewToHeading: jumpPreviewToHeading,
   renderPreviewMermaid,
 };
