@@ -76,7 +76,7 @@ Goal: make common interactions measurable and hard to regress.
 - [x] Add UI accessibility and contrast checks.
 - [x] Keep generated editor bundles synchronized.
 - [ ] Capture manual desktop traces before large editor or chrome changes.
-- [ ] Add automated smoke coverage for the highest-risk editor paths.
+- [x] Add automated smoke coverage for the highest-risk editor paths.
 
 Tracked trace names:
 

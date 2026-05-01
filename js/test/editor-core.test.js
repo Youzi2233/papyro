@@ -1289,6 +1289,78 @@ test("set_view_mode ignores duplicate runtime commands", () => {
   assert.equal(layoutRefreshes, 1);
 });
 
+test("editor smoke covers high risk runtime editing paths", () => {
+  const registry = new Map();
+  const doc = "# Title\n\nReplace me\n\n```mermaid\ngraph TD\nA-->B\n```\n";
+  const selectionStart = doc.indexOf("Replace me");
+  const view = fakeView(doc, {
+    from: selectionStart,
+    to: selectionStart + "Replace me".length,
+  });
+  let layoutRefreshes = 0;
+
+  attachViewToTab({
+    editorRegistry: registry,
+    view,
+    tabId: "tab-a",
+    container: fakeContainer(),
+    initialContent: doc,
+    viewMode: "Source",
+    refreshEditorLayout: () => {
+      layoutRefreshes += 1;
+    },
+  });
+
+  assert.equal(
+    handleRustMessage(registry, "tab-a", {
+      type: "set_view_mode",
+      mode: "Hybrid",
+    }),
+    "mode_updated",
+  );
+  assert.equal(registry.get("tab-a").viewMode, "hybrid");
+  assert.equal(view.dom.dataset.viewMode, "hybrid");
+  assert.equal(layoutRefreshes, 1);
+
+  assert.equal(
+    handleRustMessage(registry, "tab-a", {
+      type: "set_block_hints",
+      hints: {
+        revision: 1,
+        fallback: { type: "none" },
+        blocks: [
+          { kind: "heading", from_line: 1, to_line: 1 },
+          { kind: "mermaid", from_line: 5, to_line: 8 },
+        ],
+      },
+    }),
+    "block_hints_updated",
+  );
+  assert.equal(registry.get("tab-a").blockHints.revision, 1);
+
+  assert.equal(
+    pastePlainTextInView(view, "Pasted text", { autoLinkPaste: false }),
+    true,
+  );
+  assert.match(view.state.doc.toString(), /Pasted text/);
+  assert.doesNotMatch(view.state.doc.toString(), /Replace me/);
+
+  assert.equal(insertMarkdownInView(view, "\n- follow up"), true);
+  assert.match(view.state.doc.toString(), /Pasted text\n- follow up/);
+
+  assert.equal(
+    scrollEditorViewToLine(view, 5, {
+      scrollEffect: (position) => ({ type: "scrollIntoView", position }),
+    }),
+    true,
+  );
+  assert.equal(view.focused, true);
+  assert.equal(view.state.selection.main.from, view.state.doc.line(5).from);
+
+  view.composing = true;
+  assert.equal(viewIsComposing(view), true);
+});
+
 test("scroll snapshots restore by relative document position", () => {
   const source = fakeScroller({
     scrollTop: 250,

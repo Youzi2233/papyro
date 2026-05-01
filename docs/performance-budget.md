@@ -68,6 +68,19 @@ node scripts/check-perf-smoke.js target/perf-smoke.log
 
 Use `node scripts/check-perf-smoke.js --self-test` to validate the checker itself.
 
+## Automated Editor Smoke Coverage
+
+`npm test` in `js/` includes high-risk editor smoke coverage for:
+
+- runtime view-mode commands
+- block hint updates
+- paste replacement
+- Markdown insertion
+- editor outline scroll targets
+- IME composition guards
+
+Add to that smoke path when changing CodeMirror host lifecycle, Rust-to-JS protocol commands, Hybrid block state, selection handling, paste behavior, or outline navigation.
+
 ## Render Path Rules
 
 ```mermaid

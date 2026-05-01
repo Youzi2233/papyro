@@ -64,6 +64,19 @@ cargo run -p papyro-desktop
 node scripts/check-perf-smoke.js target/perf-smoke.log
 ```
 
+## 自动化编辑器 Smoke 覆盖
+
+`js/` 里的 `npm test` 包含高风险编辑器 smoke 覆盖：
+
+- runtime 视图模式命令
+- block hint 更新
+- 粘贴替换
+- Markdown 插入
+- 编辑器大纲滚动目标
+- IME composition 防护
+
+修改 CodeMirror host 生命周期、Rust 到 JS 协议命令、Hybrid block 状态、选区行为、粘贴行为或大纲导航时，要扩展这条 smoke 路径。
+
 ## Render Path 规则
 
 ```mermaid

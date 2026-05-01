@@ -59,7 +59,7 @@ mindmap
 - [x] 增加 UI a11y 和 contrast 检查。
 - [x] 保持 editor bundle 生成物同步。
 - [ ] 大改 editor 或 chrome 前采集桌面端 trace。
-- [ ] 给高风险 editor 路径补自动化 smoke。
+- [x] 给高风险 editor 路径补自动化 smoke。
 
 Trace 名：
 
