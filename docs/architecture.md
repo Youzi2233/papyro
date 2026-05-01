@@ -639,7 +639,7 @@ Current model:
 - `TabContentsMap` stores tab contents.
 - `workspace_watch_path` stores the current watcher path.
 
-Future OS Markdown open flow:
+OS Markdown open flow:
 
 1. desktop receives opened-file event
 2. event becomes `MarkdownOpenRequest`
@@ -648,6 +648,7 @@ Future OS Markdown open flow:
 5. app opens or activates the tab
 6. sidebar file tree follows the tab's workspace
 7. switching tabs also switches visible workspace context
+8. watcher subscriptions follow the active workspace path
 
 ```mermaid
 flowchart TD
@@ -667,6 +668,8 @@ flowchart TD
 ```
 
 This matters for multi-workspace tabs and future multi-window behavior.
+Opening a file in another workspace must preserve existing tabs; the active
+tab path is the source of truth for the sidebar tree and watcher context.
 
 ## 20. Why Settings Should Become A Window
 

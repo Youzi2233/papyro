@@ -177,13 +177,13 @@ Goal: make external Markdown files feel native.
 
 Required behavior:
 
-- [ ] When the OS opens a Markdown file with Papyro, the current window receives the file-open event.
-- [ ] Tabs update to include the opened Markdown file.
-- [ ] The sidebar workspace switches to the opened file's parent workspace when needed.
-- [ ] If several tabs belong to different workspace roots, switching tabs updates the sidebar tree to that tab's workspace.
-- [ ] Dirty tabs are flushed or protected before switching workspace context.
-- [ ] Watcher subscriptions follow the active workspace safely.
-- [ ] Recent workspace/file metadata records this flow.
+- [x] When the OS opens a Markdown file with Papyro, the current window receives the file-open event.
+- [x] Tabs update to include the opened Markdown file.
+- [x] The sidebar workspace switches to the opened file's parent workspace when needed.
+- [x] If several tabs belong to different workspace roots, switching tabs updates the sidebar tree to that tab's workspace.
+- [x] Dirty tabs are flushed or protected before switching workspace context.
+- [x] Watcher subscriptions follow the active workspace safely.
+- [x] Recent workspace/file metadata records this flow.
 
 Recommended architecture:
 

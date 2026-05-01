@@ -126,7 +126,7 @@ impl AppDispatcher {
                 insert_markdown(self.state, action.request);
             }
             AppAction::ActivateTab(action) => {
-                activate_tab(self.state, action.tab_id);
+                activate_tab(self.storage.clone(), self.state, action.tab_id);
             }
             AppAction::SaveActiveNote => {
                 notes::save_active_note(
@@ -603,9 +603,13 @@ impl AppDispatcher {
     }
 }
 
-fn activate_tab(mut state: RuntimeState, tab_id: String) {
+fn activate_tab(storage: Arc<dyn NoteStorage>, mut state: RuntimeState, tab_id: String) {
     let perf_started_at = perf_timer();
-    state.editor_tabs.write().set_active_tab(&tab_id);
+    let active_path = {
+        let mut editor_tabs = state.editor_tabs.write();
+        editor_tabs.set_active_tab(&tab_id);
+        editor_tabs.tab_by_id(&tab_id).map(|tab| tab.path.clone())
+    };
     let view_mode = state.ui_state.read().view_mode.clone();
     let (revision, content_bytes) = tab_revision_and_bytes(&state.tab_contents.read(), &tab_id);
     trace_editor_switch_tab(
@@ -615,6 +619,68 @@ fn activate_tab(mut state: RuntimeState, tab_id: String) {
         content_bytes,
         perf_started_at,
     );
+
+    let Some(active_path) = active_path else {
+        return;
+    };
+
+    let already_loaded = state
+        .file_state
+        .read()
+        .current_workspace
+        .as_ref()
+        .is_some_and(|workspace| active_path.starts_with(&workspace.path));
+
+    if already_loaded {
+        state.file_state.write().select_path(active_path);
+        return;
+    }
+
+    spawn(async move {
+        let mut state = state;
+        let mut next_file_state = state.file_state.read().clone();
+        let active_path_for_io = active_path.clone();
+        let result = tokio::task::spawn_blocking(move || {
+            let outcome = crate::workspace_flow::switch_workspace_context_from_storage(
+                storage.as_ref(),
+                &mut next_file_state,
+                &active_path_for_io,
+            )?;
+
+            Ok::<_, anyhow::Error>((next_file_state, outcome))
+        })
+        .await;
+
+        match result {
+            Ok(Ok((next_file_state, outcome))) => {
+                if state.editor_tabs.read().active_tab_id.as_deref() != Some(tab_id.as_str()) {
+                    return;
+                }
+
+                state.file_state.set(next_file_state);
+                if let Some(next_ui_state) = outcome.ui_state {
+                    state.ui_state.set(next_ui_state);
+                }
+                if let Some(watch_path) = outcome.watch_path {
+                    state.workspace_watch_path.set(Some(watch_path));
+                }
+                if let Some(recovery_drafts) = outcome.recovery_drafts {
+                    state.recovery_drafts.set(recovery_drafts);
+                    state.recovery_comparison.set(None);
+                }
+            }
+            Ok(Err(error)) => {
+                state
+                    .status_message
+                    .set(Some(format!("Switch tab workspace failed: {error}")));
+            }
+            Err(error) => {
+                state
+                    .status_message
+                    .set(Some(format!("Switch tab workspace failed: {error}")));
+            }
+        }
+    });
 }
 
 fn paste_image(mut state: RuntimeState, request: PasteImageRequest) {

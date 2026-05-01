@@ -1,6 +1,6 @@
 use super::utils::{current_workspace, is_markdown_path, workspace_for_markdown_path};
 use anyhow::{bail, Result};
-use papyro_core::models::{DocumentStats, SaveStatus, Workspace};
+use papyro_core::models::{DocumentStats, RecoveryDraft, SaveStatus, Workspace};
 use papyro_core::storage::{NoteStorage, OpenedNote, WorkspaceBootstrap};
 use papyro_core::{open_note, EditorTabs, FileState, TabContentsMap, UiState};
 use std::path::{Path, PathBuf};
@@ -58,19 +58,50 @@ where
     let recovery_drafts = pending_bootstrap
         .as_ref()
         .map(|bootstrap| bootstrap.recovery_drafts.clone());
-    let ui_state = pending_bootstrap
-        .map(|bootstrap| {
-            apply_recent_workspace_bootstrap(file_state, editor_tabs, tab_contents, bootstrap)
-        })
+    let context_outcome = pending_bootstrap
+        .map(|bootstrap| apply_workspace_context_bootstrap(file_state, bootstrap))
         .transpose()?;
 
     apply_opened_markdown(file_state, editor_tabs, tab_contents, opened_note, stats);
 
     Ok(OpenMarkdownOutcome {
-        ui_state,
+        ui_state: context_outcome
+            .as_ref()
+            .and_then(|outcome| outcome.ui_state.clone()),
         watch_path,
         recovery_drafts,
     })
+}
+
+pub(crate) fn switch_workspace_context_from_storage(
+    storage: &dyn NoteStorage,
+    file_state: &mut FileState,
+    path: &Path,
+) -> Result<WorkspaceContextOutcome> {
+    ensure_markdown_path(path)?;
+    let target_workspace = workspace_for_markdown_path(file_state, path)?;
+    let already_loaded = file_state
+        .current_workspace
+        .as_ref()
+        .is_some_and(|workspace| workspace.path == target_workspace.path);
+
+    if already_loaded {
+        file_state.select_path(path.to_path_buf());
+        return Ok(WorkspaceContextOutcome {
+            workspace: target_workspace,
+            ui_state: None,
+            watch_path: None,
+            recovery_drafts: None,
+        });
+    }
+
+    let bootstrap = storage.bootstrap_from_workspace(&target_workspace.path);
+    let workspace = workspace_from_bootstrap(&bootstrap, &target_workspace)?;
+    let mut outcome = apply_workspace_context_bootstrap(file_state, bootstrap)?;
+    outcome.workspace = workspace;
+    file_state.select_path(path.to_path_buf());
+
+    Ok(outcome)
 }
 
 fn load_opened_markdown<S>(
@@ -270,7 +301,15 @@ pub(crate) fn apply_conflict_reload(
 pub(crate) struct OpenMarkdownOutcome {
     pub ui_state: Option<UiState>,
     pub watch_path: Option<PathBuf>,
-    pub recovery_drafts: Option<Vec<papyro_core::models::RecoveryDraft>>,
+    pub recovery_drafts: Option<Vec<RecoveryDraft>>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) struct WorkspaceContextOutcome {
+    pub workspace: Workspace,
+    pub ui_state: Option<UiState>,
+    pub watch_path: Option<PathBuf>,
+    pub recovery_drafts: Option<Vec<RecoveryDraft>>,
 }
 
 fn ensure_markdown_path(path: &Path) -> Result<()> {
@@ -281,25 +320,40 @@ fn ensure_markdown_path(path: &Path) -> Result<()> {
     }
 }
 
-fn apply_recent_workspace_bootstrap(
+fn apply_workspace_context_bootstrap(
     file_state: &mut FileState,
-    editor_tabs: &mut EditorTabs,
-    tab_contents: &mut TabContentsMap,
     bootstrap: WorkspaceBootstrap,
-) -> Result<UiState> {
+) -> Result<WorkspaceContextOutcome> {
     if let Some(error) = bootstrap.error_message {
         bail!("{} ({error})", bootstrap.status_message);
     }
 
+    let previous_file_state = file_state.clone();
     let ui_state = UiState::from_settings_with_overrides(
-        bootstrap.global_settings,
-        bootstrap.workspace_settings,
+        bootstrap.global_settings.clone(),
+        bootstrap.workspace_settings.clone(),
     );
-    *file_state = bootstrap.file_state;
-    *editor_tabs = EditorTabs::default();
-    *tab_contents = TabContentsMap::default();
+    let workspace = bootstrap
+        .file_state
+        .current_workspace
+        .clone()
+        .ok_or_else(|| anyhow::anyhow!("Workspace bootstrap did not include a workspace"))?;
+    let watch_path = bootstrap
+        .workspace_root
+        .clone()
+        .or_else(|| Some(workspace.path.clone()));
+    let recovery_drafts = bootstrap.recovery_drafts.clone();
+    let mut next_file_state = bootstrap.file_state;
+    next_file_state.workspaces = merged_workspaces(&previous_file_state, &next_file_state);
 
-    Ok(ui_state)
+    *file_state = next_file_state;
+
+    Ok(WorkspaceContextOutcome {
+        workspace,
+        ui_state: Some(ui_state),
+        watch_path,
+        recovery_drafts: Some(recovery_drafts),
+    })
 }
 
 fn workspace_from_bootstrap(
@@ -315,4 +369,22 @@ fn workspace_from_bootstrap(
         .current_workspace
         .clone()
         .unwrap_or_else(|| fallback.clone()))
+}
+
+fn merged_workspaces(previous: &FileState, next: &FileState) -> Vec<Workspace> {
+    let mut workspaces = next.workspaces.clone();
+    for workspace in previous
+        .workspaces
+        .iter()
+        .chain(previous.current_workspace.iter())
+    {
+        if !workspaces
+            .iter()
+            .any(|item| item.id == workspace.id || item.path == workspace.path)
+        {
+            workspaces.push(workspace.clone());
+        }
+    }
+
+    workspaces
 }

@@ -20,6 +20,7 @@ pub(crate) use open::{
     apply_clean_open_tab_refresh, apply_conflict_reload, begin_clean_open_tab_refresh,
     begin_conflict_reload_tab, open_markdown_target_from_storage,
     read_clean_open_tab_refresh_from_storage, read_conflict_reload_from_storage,
+    switch_workspace_context_from_storage,
 };
 #[cfg(test)]
 pub(crate) use open::{open_markdown_from_storage, open_note_from_storage};

@@ -148,13 +148,13 @@ flowchart LR
 
 目标行为：
 
-- [ ] 系统用 Papyro 打开 Markdown 文件时，当前窗口接收文件打开事件。
-- [ ] Tabs 更新到当前打开的 Markdown 文件。
-- [ ] 左侧文件树根据打开文件所在目录切换 workspace。
-- [ ] 多个 tab 属于不同 workspace 时，切换 tab 会同步左侧文件树到当前 tab 的 workspace。
-- [ ] 切换 workspace context 前保护 dirty tabs。
-- [ ] watcher subscription 安全跟随 active workspace。
-- [ ] recent workspace/file 元数据记录该流程。
+- [x] 系统用 Papyro 打开 Markdown 文件时，当前窗口接收文件打开事件。
+- [x] Tabs 更新到当前打开的 Markdown 文件。
+- [x] 左侧文件树根据打开文件所在目录切换 workspace。
+- [x] 多个 tab 属于不同 workspace 时，切换 tab 会同步左侧文件树到当前 tab 的 workspace。
+- [x] 切换 workspace context 前保护 dirty tabs。
+- [x] watcher subscription 安全跟随 active workspace。
+- [x] recent workspace/file 元数据记录该流程。
 
 推荐链路：
 

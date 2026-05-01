@@ -722,7 +722,7 @@ Hybrid mode：
 - `TabContentsMap` 保存 tab 内容。
 - `workspace_watch_path` 保存当前 watcher 路径。
 
-未来目标：
+系统打开 Markdown 的当前链路：
 
 当系统用 Papyro 打开某个 Markdown 文件时：
 
@@ -733,6 +733,7 @@ Hybrid mode：
 5. 打开或激活对应 tab。
 6. 左侧文件树切换到该 tab 的 workspace。
 7. 切换 tab 时，文件树也跟随 active tab 的 workspace。
+8. watcher subscription 跟随当前 active workspace。
 
 目标链路：
 
@@ -754,6 +755,7 @@ flowchart TD
 ```
 
 这块是 roadmap 里的重点，因为它会影响多 workspace、多 tab 和未来多窗口。
+打开另一个 workspace 里的文件时不能丢掉已有 tab；active tab 的路径是左侧文件树和 watcher context 的事实来源。
 
 ## 20. Settings 为什么未来要变成独立窗口
 

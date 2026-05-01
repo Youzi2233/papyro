@@ -434,13 +434,74 @@ fn open_markdown_target_flow_bootstraps_target_workspace_before_opening_note() {
         Some(PathBuf::from("archive"))
     );
     assert_eq!(file_state.selected_path, Some(note_path));
-    assert_eq!(editor_tabs.tabs.len(), 1);
+    assert_eq!(editor_tabs.tabs.len(), 2);
+    assert!(editor_tabs.tab_by_id("old-tab").is_some());
     assert_eq!(editor_tabs.active_tab_id.as_deref(), Some("tab-a"));
     assert_eq!(tab_contents.content_for_tab("tab-a"), Some("# Archive"));
-    assert_eq!(tab_contents.content_for_tab("old-tab"), None);
+    assert_eq!(tab_contents.content_for_tab("old-tab"), Some("old"));
     assert_eq!(outcome.watch_path, Some(PathBuf::from("archive")));
     assert_eq!(ui_state.settings.theme, Theme::Dark);
     assert_eq!(ui_state.settings.font_size, 19);
+    assert_eq!(ui_state.view_mode, ViewMode::Preview);
+}
+
+#[test]
+fn switch_workspace_context_from_storage_follows_active_tab_workspace() {
+    let archive_workspace = workspace_at("archive", "Archive", "archive");
+    let note_path = PathBuf::from("workspace/notes/a.md");
+    let storage = MockStorage {
+        bootstrap_result: Some(WorkspaceBootstrap {
+            file_state: FileState {
+                workspaces: vec![workspace()],
+                current_workspace: Some(workspace()),
+                file_tree: vec![note_node("workspace/notes/a.md", "note-a")],
+                ..FileState::default()
+            },
+            workspace_root: Some(PathBuf::from("workspace")),
+            status_message: "Loaded workspace".to_string(),
+            global_settings: AppSettings {
+                theme: Theme::Light,
+                font_size: 16,
+                view_mode: ViewMode::Hybrid,
+                ..AppSettings::default()
+            },
+            workspace_settings: WorkspaceSettingsOverrides {
+                theme: Some(Theme::GitHubDark),
+                view_mode: Some(ViewMode::Preview),
+                ..WorkspaceSettingsOverrides::default()
+            },
+            ..WorkspaceBootstrap::default()
+        }),
+        ..MockStorage::default()
+    };
+    let mut file_state = FileState {
+        workspaces: vec![archive_workspace.clone(), workspace()],
+        current_workspace: Some(archive_workspace.clone()),
+        file_tree: vec![note_node("archive/old.md", "old-note")],
+        ..FileState::default()
+    };
+
+    let outcome =
+        switch_workspace_context_from_storage(&storage, &mut file_state, &note_path).unwrap();
+
+    assert_eq!(
+        file_state
+            .current_workspace
+            .as_ref()
+            .map(|workspace| workspace.path.clone()),
+        Some(PathBuf::from("workspace"))
+    );
+    assert_eq!(file_state.selected_path, Some(note_path));
+    assert!(file_state
+        .node_for_path(PathBuf::from("workspace/notes/a.md").as_path())
+        .is_some());
+    assert!(file_state
+        .workspaces
+        .iter()
+        .any(|workspace| workspace.path == archive_workspace.path));
+    assert_eq!(outcome.watch_path, Some(PathBuf::from("workspace")));
+    let ui_state = outcome.ui_state.expect("workspace settings are applied");
+    assert_eq!(ui_state.settings.theme, Theme::GitHubDark);
     assert_eq!(ui_state.view_mode, ViewMode::Preview);
 }
 
