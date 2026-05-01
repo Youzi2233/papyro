@@ -77,6 +77,8 @@ The app layer owns:
 
 Hybrid is not complete when it merely hides Markdown markers. It should compare well with modern Markdown and document tools such as Typora and Feishu Docs.
 
+For the architecture review behind the next Hybrid stabilization pass, see [Hybrid Editor Architecture Review](editor-hybrid-architecture.md).
+
 Expected capabilities:
 
 - headings render after confirmation and remain directly editable

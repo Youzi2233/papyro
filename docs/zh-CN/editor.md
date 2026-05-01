@@ -62,6 +62,8 @@ JS 负责：
 
 Hybrid 不是“把 Markdown 标记藏起来”就完成了。它需要对齐 Typora、飞书文档这类现代 Markdown/文档工具。
 
+下一轮 Hybrid 稳定化的架构评审见 [Hybrid 编辑器架构评审](editor-hybrid-architecture.md)。
+
 期望能力：
 
 - 标题确认后渲染，同时仍能直接编辑。
