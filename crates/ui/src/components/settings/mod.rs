@@ -20,6 +20,17 @@ enum SettingsPanel {
     About,
 }
 
+#[derive(Debug, Clone)]
+struct SettingsDraft {
+    language: AppLanguage,
+    theme: Theme,
+    font_family: String,
+    font_size: u8,
+    line_height: f32,
+    auto_link_paste: bool,
+    auto_save_delay_ms: u64,
+}
+
 #[component]
 pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
     let app = use_app_context();
@@ -66,16 +77,16 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
 
     let save = move |_| {
         let base = save_settings_form_model.read().global_settings.clone();
-        let new_settings = form_settings(
-            &base,
-            language(),
-            theme(),
-            font_family(),
-            font_size(),
-            line_height(),
-            auto_link_paste(),
-            auto_save_ms(),
-        );
+        let draft = SettingsDraft {
+            language: language(),
+            theme: theme(),
+            font_family: font_family(),
+            font_size: font_size(),
+            line_height: line_height(),
+            auto_link_paste: auto_link_paste(),
+            auto_save_delay_ms: auto_save_ms(),
+        };
+        let new_settings = form_settings(&base, &draft);
 
         save_commands.save_settings.call(new_settings);
         if has_workspace {
@@ -606,24 +617,15 @@ fn language_from_value(value: &str) -> Option<AppLanguage> {
     }
 }
 
-fn form_settings(
-    base: &AppSettings,
-    language: AppLanguage,
-    theme: Theme,
-    font_family: String,
-    font_size: u8,
-    line_height: f32,
-    auto_link_paste: bool,
-    auto_save_delay_ms: u64,
-) -> AppSettings {
+fn form_settings(base: &AppSettings, draft: &SettingsDraft) -> AppSettings {
     AppSettings {
-        theme,
-        language,
-        font_family,
-        font_size,
-        line_height,
-        auto_link_paste,
-        auto_save_delay_ms,
+        theme: draft.theme.clone(),
+        language: draft.language,
+        font_family: draft.font_family.clone(),
+        font_size: draft.font_size,
+        line_height: draft.line_height,
+        auto_link_paste: draft.auto_link_paste,
+        auto_save_delay_ms: draft.auto_save_delay_ms,
         show_word_count: base.show_word_count,
         sidebar_width: base.sidebar_width,
         sidebar_collapsed: base.sidebar_collapsed,
