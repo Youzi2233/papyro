@@ -16,6 +16,7 @@ This directory is intentionally small. Older phase notes, duplicated design draf
 | Choose Markdown style references | [Markdown style references](markdown-style-references.md) |
 | Update app icons | [App icons](app-icons.md) |
 | Keep interactions fast | [Performance budget](performance-budget.md) |
+| Build desktop release packages | [Desktop release packaging](release-packaging.md) |
 | Prepare a desktop release | [Release QA checklist](release-qa.md) |
 | Check current rough edges | [Known limitations](known-limitations.md) |
 | Use AI helpers | [AI skills](ai-skills.md) |

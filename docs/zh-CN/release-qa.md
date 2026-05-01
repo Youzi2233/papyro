@@ -29,8 +29,9 @@ flowchart LR
 
 ## 2. 桌面端构建
 
-- [ ] 运行 `cargo build -p papyro-desktop --release`。
-- [ ] 从 `target/release` 启动 release 二进制。
+- [ ] 运行 `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package-desktop.ps1` 构建桌面端包。
+- [ ] 从生成的 `target/dist/papyro-desktop-<os>-<arch>-v<version>/` 目录启动 release 二进制。
+- [ ] 确认 `papyro-release-manifest.json` 记录了预期版本和 commit。
 - [ ] 确认窗口标题、图标、favicon 和侧边栏 logo 都使用当前 Papyro 资源。
 - [ ] 确认原生 `Window`、`Edit`、`Help` 菜单栏不可见。
 

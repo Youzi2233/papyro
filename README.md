@@ -134,6 +134,7 @@ Read the full guide in [docs/architecture.md](docs/architecture.md).
 | Markdown editor | [docs/editor.md](docs/editor.md) | [docs/zh-CN/editor.md](docs/zh-CN/editor.md) |
 | App icons | [docs/app-icons.md](docs/app-icons.md) | [docs/zh-CN/app-icons.md](docs/zh-CN/app-icons.md) |
 | Performance budget | [docs/performance-budget.md](docs/performance-budget.md) | [docs/zh-CN/performance-budget.md](docs/zh-CN/performance-budget.md) |
+| Release packaging | [docs/release-packaging.md](docs/release-packaging.md) | [docs/zh-CN/release-packaging.md](docs/zh-CN/release-packaging.md) |
 | Release QA | [docs/release-qa.md](docs/release-qa.md) | [docs/zh-CN/release-qa.md](docs/zh-CN/release-qa.md) |
 | Known limitations | [docs/known-limitations.md](docs/known-limitations.md) | [docs/zh-CN/known-limitations.md](docs/zh-CN/known-limitations.md) |
 | AI skills | [docs/ai-skills.md](docs/ai-skills.md) | [docs/zh-CN/ai-skills.md](docs/zh-CN/ai-skills.md) |

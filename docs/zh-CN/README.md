@@ -16,6 +16,7 @@
 | 选择 Markdown 样式参考 | [Markdown 样式参考调研](markdown-style-references.md) |
 | 更新 app 图标 | [App icons](app-icons.md) |
 | 保持交互性能 | [性能预算](performance-budget.md) |
+| 构建桌面端发布包 | [桌面端 Release Packaging](release-packaging.md) |
 | 准备桌面端发布 | [Release QA 检查清单](release-qa.md) |
 | 查看当前已知限制 | [Known limitations](known-limitations.md) |
 | 让 AI 快速理解项目 | [AI skills](ai-skills.md) |

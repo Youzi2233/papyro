@@ -29,8 +29,9 @@ Do not continue if any earlier step fails.
 
 ## 2. Desktop Build
 
-- [ ] Build the desktop app with `cargo build -p papyro-desktop --release`.
-- [ ] Launch the release binary from `target/release`.
+- [ ] Build the desktop package with `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package-desktop.ps1`.
+- [ ] Launch the release binary from the generated `target/dist/papyro-desktop-<os>-<arch>-v<version>/` folder.
+- [ ] Confirm `papyro-release-manifest.json` records the expected version and commit.
 - [ ] Confirm the window title, icon, favicon, and sidebar logo use the current Papyro assets.
 - [ ] Confirm the native `Window`, `Edit`, and `Help` menu bar is not visible.
 

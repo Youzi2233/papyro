@@ -231,7 +231,7 @@ Multi-window should not be rushed. It is a reliability feature, not just a UI fe
 Goal: make Papyro installable and understandable for non-developers.
 
 - [x] Define license.
-- [ ] Add release packaging for desktop.
+- [x] Add release packaging for desktop.
 - [x] Add app icons for target platforms.
 - [ ] Add first-run workspace onboarding.
 - [x] Add manual QA checklist for release builds.
