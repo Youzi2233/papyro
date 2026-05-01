@@ -1,4 +1,4 @@
-use crate::commands::{AppCommands, OpenMarkdownTarget};
+use crate::commands::{AppCommands, InsertMarkdownRequest, OpenMarkdownTarget};
 use crate::components::primitives::{Modal, TextInput};
 use crate::context::use_app_context;
 use crate::i18n::{i18n_for, use_i18n};
@@ -50,6 +50,7 @@ pub(crate) enum CommandPaletteActionKind {
     OpenTrash,
     SetViewMode(ViewMode),
     SetSelectedFavorite(bool),
+    InsertMarkdown(InsertMarkdownRequest),
 }
 
 #[component]
@@ -240,6 +241,9 @@ fn execute_command_action(
         CommandPaletteActionKind::SetSelectedFavorite(favorite) => {
             commands.set_selected_favorite.call(favorite);
         }
+        CommandPaletteActionKind::InsertMarkdown(request) => {
+            commands.insert_markdown.call(request);
+        }
     }
 
     on_close.call(());
@@ -355,6 +359,7 @@ pub(crate) fn command_palette_actions(
                 "FILE",
                 CommandPaletteActionKind::CloseActiveTab(tab_id.to_string()),
             ));
+            actions.extend(markdown_insert_actions(input.language, tab_id));
         }
         if input.active_save_status == SaveStatus::Conflict {
             actions.push(action(
@@ -427,6 +432,53 @@ pub(crate) fn command_palette_actions(
     }
 
     actions
+}
+
+fn markdown_insert_actions(language: AppLanguage, tab_id: &str) -> Vec<CommandPaletteAction> {
+    let i18n = i18n_for(language);
+    [
+        (
+            i18n.text("Insert table", "插入表格"),
+            i18n.text("Add a basic Markdown table", "添加基础 Markdown 表格"),
+            "\n| Column | Value |\n| --- | --- |\n|  |  |\n",
+        ),
+        (
+            i18n.text("Insert code block", "插入代码块"),
+            i18n.text("Add a fenced code block", "添加围栏代码块"),
+            "\n```text\ncode\n```\n",
+        ),
+        (
+            i18n.text("Insert math block", "插入公式块"),
+            i18n.text("Add a display math block", "添加独立数学公式"),
+            "\n$$\nE = mc^2\n$$\n",
+        ),
+        (
+            i18n.text("Insert Mermaid diagram", "插入 Mermaid 图"),
+            i18n.text(
+                "Add a live Mermaid diagram block",
+                "添加可预览的 Mermaid 图表",
+            ),
+            "\n```mermaid\nflowchart TD\n    A[Start] --> B[Finish]\n```\n",
+        ),
+        (
+            i18n.text("Insert task list", "插入任务列表"),
+            i18n.text("Add a Markdown checklist item", "添加 Markdown 待办项"),
+            "\n- [ ] Task\n",
+        ),
+    ]
+    .into_iter()
+    .map(|(title, detail, markdown)| {
+        action(
+            title,
+            detail,
+            "INSERT",
+            CommandPaletteActionKind::InsertMarkdown(InsertMarkdownRequest {
+                tab_id: tab_id.to_string(),
+                markdown: markdown.to_string(),
+            }),
+        )
+    })
+    .collect()
 }
 
 fn action(
@@ -523,6 +575,8 @@ mod tests {
         assert!(titles.contains(&"Favorite selected note"));
         assert!(titles.contains(&"Unfavorite selected note"));
         assert!(titles.contains(&"Use source mode"));
+        assert!(titles.contains(&"Insert table"));
+        assert!(titles.contains(&"Insert Mermaid diagram"));
         assert!(!titles.contains(&"Use hybrid mode"));
     }
 
@@ -543,6 +597,7 @@ mod tests {
         assert!(!titles.contains(&"Refresh workspace"));
         assert!(!titles.contains(&"Open trash"));
         assert!(!titles.contains(&"Save active note"));
+        assert!(!titles.contains(&"Insert table"));
         assert!(!titles.contains(&"Reload conflicted note"));
         assert!(!titles.contains(&"Overwrite conflicted note"));
         assert!(!titles.contains(&"Save conflicted note as..."));
@@ -761,6 +816,34 @@ mod tests {
                 && matches!(
                     action.kind,
                     CommandPaletteActionKind::SetSelectedFavorite(false)
+                )
+        }));
+    }
+
+    #[test]
+    fn command_palette_insert_actions_target_active_tab() {
+        let actions = command_palette_actions(CommandPaletteActionInput {
+            has_active_tab: true,
+            active_tab_id: Some("tab-a"),
+            ..test_input()
+        });
+
+        assert!(actions.iter().any(|action| {
+            action.title == "Insert table"
+                && action.group == "INSERT"
+                && matches!(
+                    &action.kind,
+                    CommandPaletteActionKind::InsertMarkdown(request)
+                        if request.tab_id == "tab-a"
+                            && request.markdown.contains("| Column | Value |")
+                )
+        }));
+        assert!(actions.iter().any(|action| {
+            action.title == "Insert math block"
+                && matches!(
+                    &action.kind,
+                    CommandPaletteActionKind::InsertMarkdown(request)
+                        if request.markdown.contains("$$")
                 )
         }));
     }

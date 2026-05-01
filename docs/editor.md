@@ -106,6 +106,10 @@ Expected capabilities:
 | Mermaid | side-by-side edit/render path for complex diagrams |
 | Image | paste/import local asset, render safely, preserve Markdown link |
 
+## Insertion Entry
+
+The command palette includes insertion commands for common blocks: table, fenced code block, display math, Mermaid diagram, and task list. These commands insert Markdown into the active tab through the editor runtime command queue, so they share the same selection replacement path as pasted snippets.
+
 ## Markdown Rendering
 
 Current Rust-side stack:

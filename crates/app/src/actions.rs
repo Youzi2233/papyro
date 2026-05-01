@@ -1,8 +1,8 @@
 use papyro_core::models::{AppSettings, WorkspaceSettingsOverrides};
 use papyro_ui::commands::{
-    ChromeTrigger, ContentChange, DeleteTagRequest, FileTarget, OpenMarkdownTarget,
-    PasteImageRequest, RenameTagRequest, RestoreTrashedNoteTarget, SetTagColorRequest,
-    SetViewModeRequest, UpsertTagRequest,
+    ChromeTrigger, ContentChange, DeleteTagRequest, FileTarget, InsertMarkdownRequest,
+    OpenMarkdownTarget, PasteImageRequest, RenameTagRequest, RestoreTrashedNoteTarget,
+    SetTagColorRequest, SetViewModeRequest, UpsertTagRequest,
 };
 use std::path::PathBuf;
 
@@ -17,6 +17,7 @@ pub enum AppAction {
     SearchWorkspace(SearchWorkspace),
     ContentChanged(ContentChange),
     PasteImage(PasteImage),
+    InsertMarkdown(InsertMarkdown),
     ActivateTab(ActivateTab),
     SaveActiveNote,
     ReloadConflictedActiveNote,
@@ -86,6 +87,11 @@ pub struct ActivateTab {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PasteImage {
     pub request: PasteImageRequest,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct InsertMarkdown {
+    pub request: InsertMarkdownRequest,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -195,6 +201,7 @@ impl AppAction {
             Self::SearchWorkspace(_) => "search_workspace",
             Self::ContentChanged(_) => "content_changed",
             Self::PasteImage(_) => "paste_image",
+            Self::InsertMarkdown(_) => "insert_markdown",
             Self::ActivateTab(_) => "activate_tab",
             Self::SaveActiveNote => "save_active_note",
             Self::ReloadConflictedActiveNote => "reload_conflicted_active_note",
@@ -252,6 +259,7 @@ impl AppAction {
             Self::SearchWorkspace(_) => "workspace.search",
             Self::ContentChanged(_) => "editor.input",
             Self::PasteImage(_) => "editor.paste_image",
+            Self::InsertMarkdown(_) => "editor.insert_markdown",
             Self::ActivateTab(_) => "editor.tab_switch",
             Self::SaveActiveNote
             | Self::ReloadConflictedActiveNote
@@ -281,6 +289,7 @@ impl AppAction {
         match self {
             Self::ContentChanged(action) => Some(action.tab_id.as_str()),
             Self::PasteImage(action) => Some(action.request.tab_id.as_str()),
+            Self::InsertMarkdown(action) => Some(action.request.tab_id.as_str()),
             Self::ActivateTab(action) => Some(action.tab_id.as_str()),
             Self::SaveTab(action) => Some(action.tab_id.as_str()),
             Self::CloseTab(action) => Some(action.tab_id.as_str()),
@@ -318,6 +327,10 @@ impl AppAction {
 
     pub fn paste_image(request: PasteImageRequest) -> Self {
         Self::PasteImage(PasteImage { request })
+    }
+
+    pub fn insert_markdown(request: InsertMarkdownRequest) -> Self {
+        Self::InsertMarkdown(InsertMarkdown { request })
     }
 
     pub fn save_tab(tab_id: String) -> Self {

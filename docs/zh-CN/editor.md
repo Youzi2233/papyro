@@ -91,6 +91,10 @@ Hybrid 不是“把 Markdown 标记藏起来”就完成了。它需要对齐 Ty
 | Mermaid | 复杂图表支持源码和渲染并行 |
 | Image | 粘贴/导入本地附件、安全渲染、保留 Markdown 链接 |
 
+## 插入入口
+
+命令面板提供常见 block 插入命令：表格、围栏代码块、独立数学公式、Mermaid 图和任务列表。这些命令会通过 editor runtime command queue 插入到当前 tab，因此和粘贴片段共用同一条 selection replacement 路径。
+
 ## 渲染栈
 
 Rust 侧：

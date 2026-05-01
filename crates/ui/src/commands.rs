@@ -20,6 +20,12 @@ pub struct PasteImageRequest {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct InsertMarkdownRequest {
+    pub tab_id: String,
+    pub markdown: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum EditorRuntimeCommand {
     InsertMarkdown { tab_id: String, markdown: String },
 }
@@ -154,6 +160,7 @@ pub struct AppCommands {
     pub search_workspace: EventHandler<String>,
     pub content_changed: EventHandler<ContentChange>,
     pub paste_image: EventHandler<PasteImageRequest>,
+    pub insert_markdown: EventHandler<InsertMarkdownRequest>,
     pub activate_tab: EventHandler<String>,
     pub save_active_note: EventHandler<()>,
     pub reload_conflicted_active_note: EventHandler<()>,

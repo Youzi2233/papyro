@@ -19,7 +19,8 @@ use papyro_core::{
 };
 use papyro_platform::PlatformApi;
 use papyro_ui::commands::{
-    AppCommands, ContentChange, OpenMarkdownTarget, PasteImageRequest, SetViewModeRequest,
+    AppCommands, ContentChange, InsertMarkdownRequest, OpenMarkdownTarget, PasteImageRequest,
+    SetViewModeRequest,
 };
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -120,6 +121,9 @@ impl AppDispatcher {
             }
             AppAction::PasteImage(action) => {
                 paste_image(self.state, action.request);
+            }
+            AppAction::InsertMarkdown(action) => {
+                insert_markdown(self.state, action.request);
             }
             AppAction::ActivateTab(action) => {
                 activate_tab(self.state, action.tab_id);
@@ -426,6 +430,7 @@ impl AppDispatcher {
         let search_workspace = self.clone();
         let content_changed = self.clone();
         let paste_image = self.clone();
+        let insert_markdown = self.clone();
         let activate_tab = self.clone();
         let save_active_note = self.clone();
         let reload_conflicted_active_note = self.clone();
@@ -488,6 +493,9 @@ impl AppDispatcher {
             }),
             paste_image: EventHandler::new(move |request| {
                 paste_image.dispatch(AppAction::paste_image(request));
+            }),
+            insert_markdown: EventHandler::new(move |request| {
+                insert_markdown.dispatch(AppAction::insert_markdown(request));
             }),
             activate_tab: EventHandler::new(move |tab_id| {
                 activate_tab.dispatch(AppAction::activate_tab(tab_id));
@@ -636,6 +644,19 @@ fn paste_image(mut state: RuntimeState, request: PasteImageRequest) {
             }
         }
     });
+}
+
+fn insert_markdown(mut state: RuntimeState, request: InsertMarkdownRequest) {
+    if request.markdown.is_empty() {
+        return;
+    }
+
+    state.editor_runtime_commands.with_mut(|commands| {
+        commands.push_insert_markdown(request.tab_id, request.markdown);
+    });
+    state
+        .status_message
+        .set(Some("Inserted Markdown block".to_string()));
 }
 
 fn close_tab(shell: AppShell, mut state: RuntimeState, tab_id: String) {
@@ -941,8 +962,9 @@ mod tests {
     use super::*;
     use papyro_core::models::{Theme, ViewMode, Workspace, WorkspaceSettingsOverrides};
     use papyro_ui::commands::{
-        ChromeTrigger, DeleteTagRequest, OpenMarkdownTarget, RenameTagRequest,
-        RestoreTrashedNoteTarget, SetTagColorRequest, SetViewModeRequest, UpsertTagRequest,
+        ChromeTrigger, DeleteTagRequest, InsertMarkdownRequest, OpenMarkdownTarget,
+        RenameTagRequest, RestoreTrashedNoteTarget, SetTagColorRequest, SetViewModeRequest,
+        UpsertTagRequest,
     };
 
     #[test]
@@ -1010,6 +1032,18 @@ mod tests {
                     tab_id: "tab-a".to_string(),
                     mime_type: "image/png".to_string(),
                     data: "YWJj".to_string(),
+                }
+            })
+        );
+        assert_eq!(
+            AppAction::insert_markdown(InsertMarkdownRequest {
+                tab_id: "tab-a".to_string(),
+                markdown: "\n| A | B |\n| --- | --- |\n".to_string(),
+            }),
+            AppAction::InsertMarkdown(crate::actions::InsertMarkdown {
+                request: InsertMarkdownRequest {
+                    tab_id: "tab-a".to_string(),
+                    markdown: "\n| A | B |\n| --- | --- |\n".to_string(),
                 }
             })
         );

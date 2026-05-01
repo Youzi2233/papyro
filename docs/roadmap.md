@@ -151,7 +151,7 @@ Goal: make Hybrid mode useful for real writing, not just decorated source text.
 - [x] Decide a stable selection and hit-testing strategy for inline elements, code blocks, tables, math, Mermaid, and links before adding more Markdown block features.
 - [x] Add regression coverage or repeatable smoke scripts for cursor placement, text selection, IME composition, paste replacement, and block edit/render transitions.
 - [ ] Align Hybrid editing with modern Markdown writing tools such as Typora and Feishu Docs: inserting tables, math, code blocks, callouts, links, images, and Mermaid should be discoverable and fast.
-- [ ] Add editor insertion affordances for common blocks instead of requiring users to remember Markdown syntax for every task.
+- [x] Add editor insertion affordances for common blocks instead of requiring users to remember Markdown syntax for every task.
 - [ ] Make table creation and editing feel document-native: add rows/columns, move between cells, preserve alignment, and avoid layout jumps.
 - [ ] Make math insertion and editing first-class, including inline math, display math, preview feedback, and error states.
 - [ ] Treat enterprise-grade editing as the bar: predictable paste, undo, selection, IME, keyboard navigation, accessibility, and stable layout are required before calling Hybrid complete.
