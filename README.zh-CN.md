@@ -130,6 +130,7 @@ flowchart TD
 | Markdown 编辑器 | [docs/zh-CN/editor.md](docs/zh-CN/editor.md) | [docs/editor.md](docs/editor.md) |
 | 性能预算 | [docs/zh-CN/performance-budget.md](docs/zh-CN/performance-budget.md) | [docs/performance-budget.md](docs/performance-budget.md) |
 | Release QA | [docs/zh-CN/release-qa.md](docs/zh-CN/release-qa.md) | [docs/release-qa.md](docs/release-qa.md) |
+| Known limitations | [docs/zh-CN/known-limitations.md](docs/zh-CN/known-limitations.md) | [docs/known-limitations.md](docs/known-limitations.md) |
 | AI skills | [docs/zh-CN/ai-skills.md](docs/zh-CN/ai-skills.md) | [docs/ai-skills.md](docs/ai-skills.md) |
 
 ## AI 协作

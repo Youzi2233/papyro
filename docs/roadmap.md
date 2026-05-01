@@ -236,7 +236,7 @@ Goal: make Papyro installable and understandable for non-developers.
 - [ ] Add first-run workspace onboarding.
 - [x] Add manual QA checklist for release builds.
 - [ ] Add screenshots or short demo media to README.
-- [ ] Document known limitations.
+- [x] Document known limitations.
 
 ## Ongoing Product Principles
 

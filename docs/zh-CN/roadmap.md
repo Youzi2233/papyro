@@ -196,7 +196,7 @@ flowchart TD
 - [ ] 增加首次启动 workspace onboarding。
 - [x] 增加 release build 手工 QA checklist。
 - [ ] README 增加截图或短 demo。
-- [ ] 文档化 known limitations。
+- [x] 文档化 known limitations。
 
 ## 长期原则
 

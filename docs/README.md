@@ -16,6 +16,7 @@ This directory is intentionally small. Older phase notes, duplicated design draf
 | Choose Markdown style references | [Markdown style references](markdown-style-references.md) |
 | Keep interactions fast | [Performance budget](performance-budget.md) |
 | Prepare a desktop release | [Release QA checklist](release-qa.md) |
+| Check current rough edges | [Known limitations](known-limitations.md) |
 | Use AI helpers | [AI skills](ai-skills.md) |
 
 ## Recommended Path For New Contributors
@@ -31,6 +32,7 @@ flowchart LR
     references["Style references<br/>before adopting external CSS"]
     performance["Performance budget<br/>if touching render paths"]
     release["Release QA<br/>before publishing builds"]
+    limitations["Known limitations<br/>before writing release notes"]
 
     readme --> roadmap --> architecture --> development
     development --> editor
@@ -38,6 +40,7 @@ flowchart LR
     themes --> references
     development --> performance
     development --> release
+    release --> limitations
 ```
 
 If you are unsure where a change belongs:
