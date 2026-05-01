@@ -2,10 +2,11 @@ use super::bridge::perf_enabled;
 use crate::action_labels::open_note_label;
 use crate::commands::AppCommands;
 use crate::context::use_app_context;
+use crate::i18n::{i18n_for, use_i18n};
 use crate::perf::trace_tab_close_trigger;
 use crate::view_model::EditorTabItemViewModel;
 use dioxus::prelude::*;
-use papyro_core::models::SaveStatus;
+use papyro_core::models::{AppLanguage, SaveStatus};
 use std::time::Instant;
 
 fn request_tab_close(commands: AppCommands, close_tab_id: String, trigger: &'static str) {
@@ -24,33 +25,35 @@ struct TabSaveStatusIndicator {
 }
 
 fn tab_save_status_indicator(
+    language: AppLanguage,
     save_status: &SaveStatus,
     is_dirty: bool,
 ) -> Option<TabSaveStatusIndicator> {
+    let i18n = i18n_for(language);
     match save_status {
         SaveStatus::Saving => Some(TabSaveStatusIndicator {
             class_name: "saving",
-            label: "Saving",
+            label: i18n.save_status(&SaveStatus::Saving),
             marker: "...",
         }),
         SaveStatus::Failed => Some(TabSaveStatusIndicator {
             class_name: "failed",
-            label: "Save failed",
+            label: i18n.save_status(&SaveStatus::Failed),
             marker: "!",
         }),
         SaveStatus::Conflict => Some(TabSaveStatusIndicator {
             class_name: "conflict",
-            label: "File changed outside Papyro",
+            label: i18n.file_changed_outside(),
             marker: "!",
         }),
         SaveStatus::Dirty => Some(TabSaveStatusIndicator {
             class_name: "dirty",
-            label: "Unsaved changes",
+            label: i18n.unsaved_changes(),
             marker: "*",
         }),
         SaveStatus::Saved if is_dirty => Some(TabSaveStatusIndicator {
             class_name: "dirty",
-            label: "Unsaved changes",
+            label: i18n.unsaved_changes(),
             marker: "*",
         }),
         SaveStatus::Saved => None,
@@ -60,6 +63,7 @@ fn tab_save_status_indicator(
 #[component]
 pub(super) fn EditorTabButton(item: EditorTabItemViewModel) -> Element {
     let app = use_app_context();
+    let i18n = use_i18n();
     let commands = app.commands;
     let activate_tab_id = item.id.clone();
     let close_tab_id = item.id.clone();
@@ -69,7 +73,7 @@ pub(super) fn EditorTabButton(item: EditorTabItemViewModel) -> Element {
     let commands_for_keyboard = commands.clone();
     let save_status = item.save_status.clone();
     let save_status_attr = save_status_attr(&save_status);
-    let status_indicator = tab_save_status_indicator(&save_status, item.is_dirty);
+    let status_indicator = tab_save_status_indicator(i18n.language(), &save_status, item.is_dirty);
     let has_status_indicator = status_indicator.is_some();
     let status_class = status_indicator
         .as_ref()
@@ -83,8 +87,8 @@ pub(super) fn EditorTabButton(item: EditorTabItemViewModel) -> Element {
         .as_ref()
         .map(|indicator| indicator.marker)
         .unwrap_or_default();
-    let open_label = open_note_label(&item.title);
-    let close_label = tab_close_label(&item.title);
+    let open_label = open_note_label(i18n.language(), &item.title);
+    let close_label = i18n.close_label(&item.title);
 
     rsx! {
         div {
@@ -141,10 +145,6 @@ pub(super) fn EditorTabButton(item: EditorTabItemViewModel) -> Element {
     }
 }
 
-fn tab_close_label(title: &str) -> String {
-    format!("Close {title}")
-}
-
 fn save_status_attr(save_status: &SaveStatus) -> &'static str {
     match save_status {
         SaveStatus::Saved => "saved",
@@ -158,12 +158,16 @@ fn save_status_attr(save_status: &SaveStatus) -> &'static str {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use papyro_core::models::AppLanguage;
 
     #[test]
     fn tab_save_status_indicator_prefers_explicit_save_state() {
-        assert_eq!(tab_save_status_indicator(&SaveStatus::Saved, false), None);
         assert_eq!(
-            tab_save_status_indicator(&SaveStatus::Saved, true),
+            tab_save_status_indicator(AppLanguage::English, &SaveStatus::Saved, false),
+            None
+        );
+        assert_eq!(
+            tab_save_status_indicator(AppLanguage::English, &SaveStatus::Saved, true),
             Some(TabSaveStatusIndicator {
                 class_name: "dirty",
                 label: "Unsaved changes",
@@ -171,7 +175,7 @@ mod tests {
             })
         );
         assert_eq!(
-            tab_save_status_indicator(&SaveStatus::Saving, true),
+            tab_save_status_indicator(AppLanguage::English, &SaveStatus::Saving, true),
             Some(TabSaveStatusIndicator {
                 class_name: "saving",
                 label: "Saving",
@@ -179,7 +183,7 @@ mod tests {
             })
         );
         assert_eq!(
-            tab_save_status_indicator(&SaveStatus::Failed, true),
+            tab_save_status_indicator(AppLanguage::English, &SaveStatus::Failed, true),
             Some(TabSaveStatusIndicator {
                 class_name: "failed",
                 label: "Save failed",
@@ -187,7 +191,7 @@ mod tests {
             })
         );
         assert_eq!(
-            tab_save_status_indicator(&SaveStatus::Conflict, true),
+            tab_save_status_indicator(AppLanguage::English, &SaveStatus::Conflict, true),
             Some(TabSaveStatusIndicator {
                 class_name: "conflict",
                 label: "File changed outside Papyro",
@@ -197,7 +201,8 @@ mod tests {
     }
 
     #[test]
-    fn tab_close_label_names_target_tab() {
-        assert_eq!(tab_close_label("Draft"), "Close Draft");
+    fn i18n_close_label_names_target_tab() {
+        assert_eq!(i18n_for(AppLanguage::English).close_label("Draft"), "Close Draft");
+        assert_eq!(i18n_for(AppLanguage::Chinese).close_label("草稿"), "关闭 草稿");
     }
 }

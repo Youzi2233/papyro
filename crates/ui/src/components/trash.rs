@@ -1,12 +1,15 @@
 use crate::commands::{AppCommands, RestoreTrashedNoteTarget};
 use crate::components::primitives::{Button, ButtonVariant, Modal};
 use crate::context::use_app_context;
+use crate::i18n::{i18n_for, use_i18n};
 use crate::view_model::TrashedNoteListItem;
 use dioxus::prelude::*;
+use papyro_core::models::AppLanguage;
 
 #[component]
 pub fn TrashModal(on_close: EventHandler<()>) -> Element {
     let app = use_app_context();
+    let i18n = use_i18n();
     let commands = app.commands.clone();
     let workspace = app.workspace_model.read().clone();
     let notes = workspace.trashed_notes;
@@ -16,20 +19,20 @@ pub fn TrashModal(on_close: EventHandler<()>) -> Element {
 
     rsx! {
         Modal {
-            label: "Trash",
-            class_name: "mn-modal mn-command-modal",
+            label: i18n.text("Trash", "回收站").to_string(),
+            class_name: "mn-modal mn-command-modal".to_string(),
             on_close,
             div { class: "mn-modal-header",
-                h2 { class: "mn-modal-title", "Trash" }
+                h2 { class: "mn-modal-title", {i18n.text("Trash", "回收站")} }
                 button {
                     class: "mn-modal-close",
-                    "aria-label": "Close trash",
+                    "aria-label": i18n.text("Close trash", "关闭回收站"),
                     onclick: move |_| on_close.call(()),
                     "x"
                 }
             }
             if notes.is_empty() {
-                div { class: "mn-command-empty", "Trash is empty" }
+                div { class: "mn-command-empty", {i18n.text("Trash is empty", "回收站为空")} }
             } else {
                 div { class: "mn-command-list",
                     for note in notes {
@@ -45,16 +48,16 @@ pub fn TrashModal(on_close: EventHandler<()>) -> Element {
                 span {
                     class: "mn-command-path",
                     style: "margin-right:auto;",
-                    "{trash_count_label(note_count)}"
+                    "{trash_count_label(i18n.language(), note_count)}"
                 }
                 Button {
-                    label: "Close",
+                    label: i18n.text("Close", "关闭").to_string(),
                     variant: ButtonVariant::Default,
                     disabled: false,
                     on_click: move |_| on_close.call(()),
                 }
                 Button {
-                    label: "Empty trash",
+                    label: i18n.text("Empty trash", "清空回收站").to_string(),
                     variant: ButtonVariant::Danger,
                     disabled: empty_disabled,
                     on_click: move |_| empty_commands.empty_trash.call(()),
@@ -66,6 +69,7 @@ pub fn TrashModal(on_close: EventHandler<()>) -> Element {
 
 #[component]
 fn TrashNoteRow(note: TrashedNoteListItem, commands: AppCommands) -> Element {
+    let i18n = use_i18n();
     let target = RestoreTrashedNoteTarget {
         note_id: note.note_id.clone(),
     };
@@ -80,7 +84,7 @@ fn TrashNoteRow(note: TrashedNoteListItem, commands: AppCommands) -> Element {
                 class: "mn-row-actions",
                 style: "display:flex;gap:6px;align-items:center;justify-content:flex-end;",
                 Button {
-                    label: "Restore",
+                    label: i18n.text("Restore", "恢复").to_string(),
                     variant: ButtonVariant::Primary,
                     disabled: false,
                     on_click: move |_| commands.restore_trashed_note.call(target.clone()),
@@ -90,12 +94,8 @@ fn TrashNoteRow(note: TrashedNoteListItem, commands: AppCommands) -> Element {
     }
 }
 
-fn trash_count_label(count: usize) -> String {
-    match count {
-        0 => "No deleted notes".to_string(),
-        1 => "1 deleted note".to_string(),
-        count => format!("{count} deleted notes"),
-    }
+fn trash_count_label(language: AppLanguage, count: usize) -> String {
+    i18n_for(language).deleted_notes_count(count)
 }
 
 #[cfg(test)]
@@ -104,8 +104,11 @@ mod tests {
 
     #[test]
     fn trash_count_label_names_empty_singular_and_plural_states() {
-        assert_eq!(trash_count_label(0), "No deleted notes");
-        assert_eq!(trash_count_label(1), "1 deleted note");
-        assert_eq!(trash_count_label(3), "3 deleted notes");
+        assert_eq!(
+            trash_count_label(AppLanguage::English, 0),
+            "No deleted notes"
+        );
+        assert_eq!(trash_count_label(AppLanguage::English, 1), "1 deleted note");
+        assert_eq!(trash_count_label(AppLanguage::English, 3), "3 deleted notes");
     }
 }

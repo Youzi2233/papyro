@@ -14,12 +14,14 @@ use crate::components::{
     trash::TrashModal,
 };
 use crate::context::use_app_context;
+use crate::i18n::use_i18n;
 use crate::perf::{perf_timer, trace_chrome_open_modal};
 use crate::theme::ThemeDomEffect;
 
 #[component]
 pub fn MobileLayout() -> Element {
     let app = use_app_context();
+    let i18n = use_i18n();
     let commands = app.commands;
     let sidebar_model = app.sidebar_model.read().clone();
     let open_workspace_commands = commands.clone();
@@ -68,7 +70,11 @@ pub fn MobileLayout() -> Element {
                                 );
                             }
                         },
-                        if has_workspace { "Switch workspace" } else { "Open workspace" }
+                        if has_workspace {
+                            {i18n.text("Switch workspace", "切换工作区")}
+                        } else {
+                            {i18n.text("Open workspace", "打开工作区")}
+                        }
                     }
                     if has_workspace {
                         button {
@@ -79,12 +85,16 @@ pub fn MobileLayout() -> Element {
                                     "mobile_toolbar",
                                 );
                             },
-                            if browser_visible { "Hide browser" } else { "Browse files" }
+                            if browser_visible {
+                                {i18n.text("Hide browser", "隐藏文件栏")}
+                            } else {
+                                {i18n.text("Browse files", "浏览文件")}
+                            }
                         }
                         button {
                             class: "mn-button",
                             onclick: move |_| commands.refresh_workspace.call(()),
-                            "Refresh"
+                            {i18n.text("Refresh", "刷新")}
                         }
                     }
                     button {
@@ -92,7 +102,11 @@ pub fn MobileLayout() -> Element {
                         onclick: move |_| {
                             crate::chrome::toggle_theme(commands.clone());
                         },
-                        if theme == Theme::Dark { "Light theme" } else { "Dark theme" }
+                        if theme == Theme::Dark {
+                            {i18n.text("Light theme", "浅色主题")}
+                        } else {
+                            {i18n.text("Dark theme", "深色主题")}
+                        }
                     }
                     button {
                         class: "mn-button",
@@ -101,7 +115,7 @@ pub fn MobileLayout() -> Element {
                             show_settings.set(true);
                             trace_chrome_open_modal("settings", "mobile_toolbar", started_at);
                         },
-                        "Settings"
+                        {i18n.text("Settings", "设置")}
                     }
                 }
 
@@ -113,8 +127,8 @@ pub fn MobileLayout() -> Element {
                                     p { class: "mn-mobile-browser-title", "{name}" }
                                     p { class: "mn-mobile-browser-path", "{path.display()}" }
                                 } else {
-                                    p { class: "mn-mobile-browser-title", "No workspace" }
-                                    p { class: "mn-mobile-browser-path", "Open a folder to start editing" }
+                                    p { class: "mn-mobile-browser-title", {i18n.text("No workspace", "未打开工作区")} }
+                                    p { class: "mn-mobile-browser-path", {i18n.text("Open a folder to start editing", "打开目录即可开始编辑")} }
                                 }
                             }
                             if has_workspace {
@@ -125,12 +139,16 @@ pub fn MobileLayout() -> Element {
                                             show_create.set(!show_create());
                                             show_rename.set(false);
                                         },
-                                        if show_create() { "Cancel" } else { "New note" }
+                                        if show_create() {
+                                            {i18n.text("Cancel", "取消")}
+                                        } else {
+                                            {i18n.text("New note", "新建笔记")}
+                                        }
                                     }
                                     button {
                                         class: "mn-button",
                                         onclick: move |_| commands.create_folder.call("New Folder".to_string()),
-                                        "New folder"
+                                        {i18n.text("New folder", "新建文件夹")}
                                     }
                                 }
                             }
@@ -140,7 +158,7 @@ pub fn MobileLayout() -> Element {
                             div { class: "mn-mobile-form",
                                 input {
                                     class: "mn-input",
-                                    placeholder: "Note name",
+                                    placeholder: i18n.text("Note name", "笔记名称"),
                                     value: "{create_name}",
                                     autofocus: true,
                                     oninput: move |e| create_name.set(e.value()),
@@ -161,7 +179,7 @@ pub fn MobileLayout() -> Element {
                                         create_name.set(String::new());
                                         show_create.set(false);
                                     },
-                                    "Create"
+                                    {i18n.text("Create", "创建")}
                                 }
                             }
                         }
@@ -170,7 +188,11 @@ pub fn MobileLayout() -> Element {
                             div { class: "mn-mobile-selection",
                                 div { class: "mn-mobile-selection-copy",
                                     p { class: "mn-mobile-selection-title",
-                                        if selected_is_dir { "Selected folder" } else { "Selected note" }
+                                        if selected_is_dir {
+                                            {i18n.text("Selected folder", "已选文件夹")}
+                                        } else {
+                                            {i18n.text("Selected note", "已选笔记")}
+                                        }
                                     }
                                     p { class: "mn-mobile-selection-name", "{selected_name}" }
                                 }
@@ -181,19 +203,19 @@ pub fn MobileLayout() -> Element {
                                             show_rename.set(!show_rename());
                                             rename_name.set(String::new());
                                         },
-                                        "Rename"
+                                        {i18n.text("Rename", "重命名")}
                                     }
                                     button {
                                         class: "mn-button danger",
-                                        title: delete_action_title(selected_delete_pending),
+                                        title: delete_action_title(i18n.language(), selected_delete_pending),
                                         onclick: move |_| commands.delete_selected.call(()),
-                                        "{delete_action_label(selected_delete_pending)}"
+                                        "{delete_action_label(i18n.language(), selected_delete_pending)}"
                                     }
                                     if let Some(target) = selected_target.clone() {
                                         button {
                                             class: "mn-button",
                                             onclick: move |_| commands.reveal_in_explorer.call(target.clone()),
-                                            "Reveal"
+                                            {i18n.text("Reveal", "定位")}
                                         }
                                     }
                                 }
@@ -201,7 +223,7 @@ pub fn MobileLayout() -> Element {
                                     div { class: "mn-mobile-form",
                                         input {
                                             class: "mn-input",
-                                            placeholder: "New name",
+                                            placeholder: i18n.text("New name", "新名称"),
                                             value: "{rename_name}",
                                             autofocus: true,
                                             oninput: move |e| rename_name.set(e.value()),
@@ -224,7 +246,7 @@ pub fn MobileLayout() -> Element {
                                                 }
                                                 show_rename.set(false);
                                             },
-                                            "Apply"
+                                            {i18n.text("Apply", "应用")}
                                         }
                                     }
                                 }
@@ -234,14 +256,18 @@ pub fn MobileLayout() -> Element {
                         div {
                             class: "mn-tree-sortbar",
                             role: "group",
-                            "aria-label": "File tree sort",
+                            "aria-label": i18n.text("File tree sort", "文件树排序"),
                             for mode in FileTreeSortMode::all() {
                                 button {
                                     class: if tree_sort() == mode { "mn-tree-sort-btn active" } else { "mn-tree-sort-btn" },
-                                    title: "Sort by {mode.label()}",
+                                    title: format!(
+                                        "{} {}",
+                                        i18n.text("Sort by", "排序方式"),
+                                        mobile_sort_mode_label(mode, i18n)
+                                    ),
                                     "aria-pressed": "{tree_sort() == mode}",
                                     onclick: move |_| tree_sort.set(mode),
-                                    "{mode.label()}"
+                                    "{mobile_sort_mode_label(mode, i18n)}"
                                 }
                             }
                         }
@@ -288,5 +314,13 @@ pub fn MobileLayout() -> Element {
                 TrashModal { on_close: move |_| show_trash.set(false) }
             }
         }
+    }
+}
+
+fn mobile_sort_mode_label(mode: FileTreeSortMode, i18n: crate::i18n::UiText) -> &'static str {
+    match mode {
+        FileTreeSortMode::Name => i18n.text("Name", "名称"),
+        FileTreeSortMode::Updated => i18n.text("Updated", "更新"),
+        FileTreeSortMode::Created => i18n.text("Created", "创建"),
     }
 }

@@ -1,14 +1,16 @@
 use crate::commands::{AppCommands, OpenMarkdownTarget};
 use crate::components::primitives::{Modal, TextInput};
 use crate::context::use_app_context;
+use crate::i18n::{i18n_for, use_i18n};
 use crate::perf::{perf_timer, trace_chrome_open_modal};
 use dioxus::prelude::*;
-use papyro_core::models::{SaveStatus, Theme, ViewMode};
+use papyro_core::models::{AppLanguage, SaveStatus, Theme, ViewMode};
 use std::path::PathBuf;
 
 const COMMAND_PALETTE_LIMIT: usize = 24;
 
 pub(crate) struct CommandPaletteActionInput<'a> {
+    pub language: AppLanguage,
     pub has_workspace: bool,
     pub recent_workspaces: &'a [crate::view_model::WorkspaceListItem],
     pub recent_files: &'a [crate::view_model::RecentFileListItem],
@@ -57,6 +59,7 @@ pub fn CommandPaletteModal(
     on_trash: EventHandler<()>,
 ) -> Element {
     let app = use_app_context();
+    let i18n = use_i18n();
     let commands = app.commands.clone();
     let workspace_model = app.workspace_model.read().clone();
     let editor_model = app.editor_model.read().clone();
@@ -66,6 +69,7 @@ pub fn CommandPaletteModal(
     let mut active_index = use_signal(|| 0usize);
 
     let actions = command_palette_actions(CommandPaletteActionInput {
+        language: i18n.language(),
         has_workspace: workspace_model.name.is_some(),
         recent_workspaces: &workspace_model.recent_workspaces,
         recent_files: &workspace_model.recent_files,
@@ -90,14 +94,14 @@ pub fn CommandPaletteModal(
 
     rsx! {
         Modal {
-            label: "Command palette",
-            class_name: "mn-modal mn-command-modal",
+            label: i18n.text("Command palette", "命令面板").to_string(),
+            class_name: "mn-modal mn-command-modal".to_string(),
             on_close,
                 div { class: "mn-command-search",
                     TextInput {
-                        class_name: "mn-command-input",
+                        class_name: "mn-command-input".to_string(),
                         autofocus: true,
-                        placeholder: "Run command",
+                        placeholder: i18n.text("Run command", "执行命令").to_string(),
                         value: query_value,
                         on_input: move |value| {
                             query.set(value);
@@ -138,7 +142,7 @@ pub fn CommandPaletteModal(
                 }
                 div { class: "mn-command-list",
                     if filtered.is_empty() {
-                        div { class: "mn-command-empty", "No matching commands" }
+                        div { class: "mn-command-empty", {i18n.text("No matching commands", "没有匹配的命令")} }
                     } else {
                         for index in 0..filtered.len().min(COMMAND_PALETTE_LIMIT) {
                             CommandPaletteRow {
@@ -244,48 +248,49 @@ fn execute_command_action(
 pub(crate) fn command_palette_actions(
     input: CommandPaletteActionInput<'_>,
 ) -> Vec<CommandPaletteAction> {
+    let i18n = i18n_for(input.language);
     let workspace_title = if input.has_workspace {
-        "Switch workspace"
+        i18n.text("Switch workspace", "切换工作区")
     } else {
-        "Open workspace"
+        i18n.text("Open workspace", "打开工作区")
     };
     let next_theme = match input.theme {
-        Theme::Dark => "Light",
-        Theme::Light | Theme::System => "Dark",
+        Theme::Dark => i18n.text("Light", "浅色"),
+        Theme::Light | Theme::System => i18n.text("Dark", "深色"),
     };
 
     let mut actions = vec![
         action(
             workspace_title,
-            "Choose a workspace folder",
+            i18n.text("Choose a workspace folder", "选择工作区目录"),
             "APP",
             CommandPaletteActionKind::OpenWorkspace,
         ),
         action(
-            "Toggle sidebar",
-            "Show or hide the workspace browser",
+            i18n.text("Toggle sidebar", "切换侧边栏"),
+            i18n.text("Show or hide the workspace browser", "显示或隐藏工作区文件栏"),
             "VIEW",
             CommandPaletteActionKind::ToggleSidebar,
         ),
         action(
             if input.outline_visible {
-                "Hide outline"
+                i18n.text("Hide outline", "隐藏大纲")
             } else {
-                "Show outline"
+                i18n.text("Show outline", "显示大纲")
             },
-            "Toggle the active note heading outline",
+            i18n.text("Toggle the active note heading outline", "切换当前笔记的大纲面板"),
             "VIEW",
             CommandPaletteActionKind::ToggleOutline,
         ),
         action(
-            "Toggle theme",
+            i18n.text("Toggle theme", "切换主题"),
             &format!("Switch to {next_theme}"),
             "VIEW",
             CommandPaletteActionKind::ToggleTheme,
         ),
         action(
-            "Open settings",
-            "Edit app preferences",
+            i18n.text("Open settings", "打开设置"),
+            i18n.text("Edit app preferences", "修改应用偏好"),
             "APP",
             CommandPaletteActionKind::OpenSettings,
         ),
@@ -297,7 +302,7 @@ pub(crate) fn command_palette_actions(
         .filter(|workspace| !workspace.is_current)
     {
         actions.push(action(
-            &format!("Open {}", workspace.name),
+            &format!("{} {}", i18n.text("Open", "打开"), workspace.name),
             &workspace.path.display().to_string(),
             "WS",
             CommandPaletteActionKind::OpenWorkspacePath(workspace.path.clone()),
@@ -306,7 +311,7 @@ pub(crate) fn command_palette_actions(
 
     for file in input.recent_files {
         actions.push(action(
-            &format!("Open {}", file.title),
+            &format!("{} {}", i18n.text("Open", "打开"), file.title),
             &format!("{} / {}", file.workspace_name, file.relative_path.display()),
             "REC",
             CommandPaletteActionKind::OpenMarkdown(OpenMarkdownTarget {
@@ -317,14 +322,14 @@ pub(crate) fn command_palette_actions(
 
     if input.has_workspace {
         actions.push(action(
-            "Open trash",
-            &trash_action_detail(input.trashed_notes.len()),
+            i18n.text("Open trash", "打开回收站"),
+            &trash_action_detail(input.language, input.trashed_notes.len()),
             "APP",
             CommandPaletteActionKind::OpenTrash,
         ));
         actions.push(action(
-            "Refresh workspace",
-            "Reload the file tree",
+            i18n.text("Refresh workspace", "刷新工作区"),
+            i18n.text("Reload the file tree", "重新加载文件树"),
             "APP",
             CommandPaletteActionKind::RefreshWorkspace,
         ));
@@ -332,35 +337,44 @@ pub(crate) fn command_palette_actions(
 
     if input.has_active_tab {
         actions.push(action(
-            "Save active note",
-            "Write current note changes",
+            i18n.text("Save active note", "保存当前笔记"),
+            i18n.text("Write current note changes", "写入当前笔记的更改"),
             "FILE",
             CommandPaletteActionKind::SaveActiveNote,
         ));
         if let Some(tab_id) = input.active_tab_id {
             actions.push(action(
-                "Close active note",
-                "Close the current tab",
+                i18n.text("Close active note", "关闭当前笔记"),
+                i18n.text("Close the current tab", "关闭当前标签页"),
                 "FILE",
                 CommandPaletteActionKind::CloseActiveTab(tab_id.to_string()),
             ));
         }
         if input.active_save_status == SaveStatus::Conflict {
             actions.push(action(
-                "Reload conflicted note",
-                "Discard editor content and load the disk version",
+                i18n.text("Reload conflicted note", "重新加载冲突笔记"),
+                i18n.text(
+                    "Discard editor content and load the disk version",
+                    "丢弃编辑器内容并加载磁盘版本",
+                ),
                 "FILE",
                 CommandPaletteActionKind::ReloadConflictedActiveNote,
             ));
             actions.push(action(
-                "Overwrite conflicted note",
-                "Replace the disk version with editor content",
+                i18n.text("Overwrite conflicted note", "覆盖冲突笔记"),
+                i18n.text(
+                    "Replace the disk version with editor content",
+                    "用编辑器内容替换磁盘版本",
+                ),
                 "FILE",
                 CommandPaletteActionKind::OverwriteActiveNote,
             ));
             actions.push(action(
-                "Save conflicted note as...",
-                "Write editor content to another workspace Markdown file",
+                i18n.text("Save conflicted note as...", "将冲突笔记另存为..."),
+                i18n.text(
+                    "Write editor content to another workspace Markdown file",
+                    "将编辑器内容写入另一个工作区 Markdown 文件",
+                ),
                 "FILE",
                 CommandPaletteActionKind::SaveConflictedActiveNoteAs,
             ));
@@ -369,13 +383,13 @@ pub(crate) fn command_palette_actions(
 
     if let Some(name) = input.selected_note_name {
         actions.push(action(
-            "Favorite selected note",
+            i18n.text("Favorite selected note", "收藏所选笔记"),
             name,
             "FILE",
             CommandPaletteActionKind::SetSelectedFavorite(true),
         ));
         actions.push(action(
-            "Unfavorite selected note",
+            i18n.text("Unfavorite selected note", "取消收藏所选笔记"),
             name,
             "FILE",
             CommandPaletteActionKind::SetSelectedFavorite(false),
@@ -383,14 +397,23 @@ pub(crate) fn command_palette_actions(
     }
 
     for (mode, title) in [
-        (ViewMode::Hybrid, "Use hybrid mode"),
-        (ViewMode::Source, "Use source mode"),
-        (ViewMode::Preview, "Use preview mode"),
+        (
+            ViewMode::Hybrid,
+            i18n.text("Use hybrid mode", "切换到混合模式"),
+        ),
+        (
+            ViewMode::Source,
+            i18n.text("Use source mode", "切换到源码模式"),
+        ),
+        (
+            ViewMode::Preview,
+            i18n.text("Use preview mode", "切换到预览模式"),
+        ),
     ] {
         if mode != input.view_mode {
             actions.push(action(
                 title,
-                "Change editor rendering mode",
+                i18n.text("Change editor rendering mode", "切换编辑器渲染模式"),
                 "VIEW",
                 CommandPaletteActionKind::SetViewMode(mode),
             ));
@@ -422,12 +445,8 @@ fn selected_note_name(workspace: &crate::view_model::WorkspaceViewModel) -> Opti
     }
 }
 
-fn trash_action_detail(count: usize) -> String {
-    match count {
-        0 => "No deleted notes".to_string(),
-        1 => "Review 1 deleted note".to_string(),
-        count => format!("Review {count} deleted notes"),
-    }
+fn trash_action_detail(language: AppLanguage, count: usize) -> String {
+    i18n_for(language).deleted_notes_review(count)
 }
 
 pub(crate) fn filter_command_palette_actions(
@@ -461,6 +480,7 @@ mod tests {
 
     fn test_input() -> CommandPaletteActionInput<'static> {
         CommandPaletteActionInput {
+            language: AppLanguage::English,
             has_workspace: true,
             recent_workspaces: &[],
             recent_files: &[],
@@ -700,9 +720,18 @@ mod tests {
 
     #[test]
     fn trash_action_detail_names_empty_singular_and_plural_states() {
-        assert_eq!(trash_action_detail(0), "No deleted notes");
-        assert_eq!(trash_action_detail(1), "Review 1 deleted note");
-        assert_eq!(trash_action_detail(4), "Review 4 deleted notes");
+        assert_eq!(
+            trash_action_detail(AppLanguage::English, 0),
+            "No deleted notes"
+        );
+        assert_eq!(
+            trash_action_detail(AppLanguage::English, 1),
+            "Review 1 deleted note"
+        );
+        assert_eq!(
+            trash_action_detail(AppLanguage::English, 4),
+            "Review 4 deleted notes"
+        );
     }
 
     #[test]

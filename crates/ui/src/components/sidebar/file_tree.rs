@@ -2,6 +2,7 @@ use crate::action_labels::{delete_action_label, open_note_label};
 use crate::commands::{AppCommands, FileTarget, OpenMarkdownTarget};
 use crate::components::primitives::{Menu, MenuItem, MenuSeparator};
 use crate::context::use_app_context;
+use crate::i18n::use_i18n;
 use dioxus::prelude::*;
 use papyro_core::models::{FileNode, FileNodeKind};
 use std::cmp::Ordering;
@@ -33,6 +34,7 @@ impl FileTreeSortMode {
 #[component]
 pub fn FileTree(sort_mode: FileTreeSortMode) -> Element {
     let app = use_app_context();
+    let i18n = use_i18n();
     let commands = app.commands;
     let file_tree_model = app.file_tree_model.read().clone();
     let keyboard_commands = commands.clone();
@@ -63,7 +65,7 @@ pub fn FileTree(sort_mode: FileTreeSortMode) -> Element {
             class: "mn-file-tree",
             tabindex: "0",
             role: "tree",
-            "aria-label": "Workspace files",
+            "aria-label": i18n.text("Workspace files", "工作区文件"),
             onclick: move |_| context_menu.set(None),
             onkeydown: move |event| {
                 if event.key() == Key::Escape {
@@ -111,7 +113,7 @@ pub fn FileTree(sort_mode: FileTreeSortMode) -> Element {
                 }
             },
             if nodes.is_empty() {
-                div { class: "mn-sidebar-empty", "No Markdown files found" }
+                div { class: "mn-sidebar-empty", {i18n.text("No Markdown files found", "未找到 Markdown 文件")} }
             } else {
                 for item in render_items {
                     FileTreeNode {
@@ -163,6 +165,7 @@ fn FileTreeNode(
     on_context_menu: EventHandler<FileTreeContextMenu>,
 ) -> Element {
     let app = use_app_context();
+    let i18n = use_i18n();
     let commands = app.commands;
     let mut rename_draft_for_change = rename_draft;
     let rename_draft_for_commit = rename_draft;
@@ -301,7 +304,7 @@ fn FileTreeNode(
             let node_title = node.name.trim_end_matches(".md").to_string();
             let open_node = node.clone();
             let open_commands = commands.clone();
-            let open_label = open_note_label(&node_title);
+            let open_label = open_note_label(i18n.language(), &node_title);
             let menu_node = node.clone();
             let menu_path = node_path.clone();
             let drag_node = node.clone();
@@ -570,6 +573,7 @@ fn FileTreeContextMenuView(
     on_rename_start: EventHandler<FileNode>,
 ) -> Element {
     let app = use_app_context();
+    let i18n = use_i18n();
     let commands = app.commands;
     let style = context_menu_style(menu.position);
     let is_directory = menu.is_directory();
@@ -582,16 +586,16 @@ fn FileTreeContextMenuView(
         .read()
         .as_deref()
         .is_some_and(|path| path == menu.node.path.as_path());
-    let delete_label = delete_action_label(delete_pending);
+    let delete_label = delete_action_label(i18n.language(), delete_pending);
 
     rsx! {
         Menu {
-            label: "File actions",
-            class_name: "mn-tree-context-menu",
+            label: i18n.text("File actions", "文件操作").to_string(),
+            class_name: "mn-tree-context-menu".to_string(),
             style,
             if !is_directory {
                 MenuItem {
-                    label: "Open",
+                    label: i18n.text("Open", "打开").to_string(),
                     danger: false,
                     on_select: move |_| {
                         commands.select_path.call(open_node.path.clone());
@@ -604,7 +608,7 @@ fn FileTreeContextMenuView(
             }
             if is_directory {
                 MenuItem {
-                    label: "Expand / collapse",
+                    label: i18n.text("Expand / collapse", "展开 / 收起").to_string(),
                     danger: false,
                     on_select: move |_| {
                         commands.toggle_expanded_path.call(toggle_path.clone());
@@ -613,7 +617,7 @@ fn FileTreeContextMenuView(
                 }
             }
             MenuItem {
-                label: "Rename",
+                label: i18n.text("Rename", "重命名").to_string(),
                 danger: false,
                 on_select: move |_| {
                     on_rename_start.call(rename_node.clone());
@@ -621,7 +625,7 @@ fn FileTreeContextMenuView(
                 },
             }
             MenuItem {
-                label: "New note",
+                label: i18n.text("New note", "新建笔记").to_string(),
                 danger: false,
                 on_select: move |_| {
                     commands.create_note.call("Untitled".to_string());
@@ -629,7 +633,7 @@ fn FileTreeContextMenuView(
                 },
             }
             MenuItem {
-                label: "New folder",
+                label: i18n.text("New folder", "新建文件夹").to_string(),
                 danger: false,
                 on_select: move |_| {
                     commands.create_folder.call("New Folder".to_string());
@@ -637,7 +641,7 @@ fn FileTreeContextMenuView(
                 },
             }
             MenuItem {
-                label: "Reveal",
+                label: i18n.text("Reveal", "定位").to_string(),
                 danger: false,
                 on_select: move |_| {
                     commands.reveal_in_explorer.call(reveal_target.clone());
@@ -646,7 +650,7 @@ fn FileTreeContextMenuView(
             }
             MenuSeparator {}
             MenuItem {
-                label: delete_label,
+                label: delete_label.to_string(),
                 danger: true,
                 on_select: move |_| {
                     commands.delete_selected.call(());

@@ -7,13 +7,14 @@ use super::tabbar::EditorTabButton;
 use crate::commands::AppCommands;
 use crate::components::primitives::{Button, ButtonVariant};
 use crate::context::use_app_context;
+use crate::i18n::{i18n_for, use_i18n, UiText};
 use crate::perf::{
     perf_timer, trace_editor_host_lifecycle, trace_editor_pane_render_prep,
     trace_editor_stale_bridge_cleanup,
 };
 use crate::view_model::{EditorHostItemViewModel, EditorSurfaceViewModel, EditorTabItemViewModel};
 use dioxus::prelude::*;
-use papyro_core::models::{Theme, ViewMode};
+use papyro_core::models::{AppLanguage, Theme, ViewMode};
 use papyro_core::DocumentSnapshot;
 use papyro_editor::parser::{
     analyze_markdown_block_snapshot_with_options, MarkdownBlockAnalysisOptions,
@@ -124,12 +125,8 @@ fn code_highlight_theme(theme: &Theme) -> CodeHighlightTheme {
     }
 }
 
-fn view_mode_label(mode: &ViewMode) -> &'static str {
-    match mode {
-        ViewMode::Source => "Source",
-        ViewMode::Hybrid => "Hybrid",
-        ViewMode::Preview => "Preview",
-    }
+fn view_mode_label(language: AppLanguage, mode: &ViewMode) -> &'static str {
+    i18n_for(language).view_mode_label(mode)
 }
 
 fn view_mode_option_class(current: &ViewMode, mode: &ViewMode) -> &'static str {
@@ -140,11 +137,11 @@ fn view_mode_option_class(current: &ViewMode, mode: &ViewMode) -> &'static str {
     }
 }
 
-fn sidebar_toggle_label(collapsed: bool) -> &'static str {
+fn sidebar_toggle_label(i18n: UiText, collapsed: bool) -> &'static str {
     if collapsed {
-        "Show sidebar (Ctrl+\\)"
+        i18n.text("Show sidebar (Ctrl+\\)", "显示侧边栏 (Ctrl+\\)")
     } else {
-        "Hide sidebar (Ctrl+\\)"
+        i18n.text("Hide sidebar (Ctrl+\\)", "隐藏侧边栏 (Ctrl+\\)")
     }
 }
 
@@ -424,16 +421,17 @@ fn EditorChrome(
     sidebar_collapsed: bool,
     commands: AppCommands,
 ) -> Element {
+    let i18n = use_i18n();
     let sidebar_commands = commands.clone();
     let outline_commands = commands.clone();
     let mode_commands = commands.clone();
-    let sidebar_label = sidebar_toggle_label(sidebar_collapsed);
+    let sidebar_label = sidebar_toggle_label(i18n, sidebar_collapsed);
     let sidebar_icon_class = sidebar_toggle_icon_class(sidebar_collapsed);
     let outline_class = outline_tool_class(outline_visible);
     let outline_label = if outline_visible {
-        "Hide outline"
+        i18n.text("Hide outline", "隐藏大纲")
     } else {
-        "Show outline"
+        i18n.text("Show outline", "显示大纲")
     };
 
     rsx! {
@@ -450,14 +448,14 @@ fn EditorChrome(
                 }
                 button {
                     class: "mn-tab-scroll-btn",
-                    title: "Scroll tabs left",
-                    "aria-label": "Scroll tabs left",
+                    title: i18n.text("Scroll tabs left", "向左滚动标签"),
+                    "aria-label": i18n.text("Scroll tabs left", "向左滚动标签"),
                     onclick: move |_| scroll_editor_tabs(-220),
                     span { class: "mn-tool-icon tab-left", "aria-hidden": "true" }
                 }
                 div { class: "mn-tabbar",
                     if tab_items.is_empty() {
-                        span { class: "mn-tabbar-placeholder", "No open note" }
+                        span { class: "mn-tabbar-placeholder", {i18n.text("No open note", "没有打开的笔记")} }
                     } else {
                         for item in tab_items.iter().cloned() {
                             EditorTabButton {
@@ -469,8 +467,8 @@ fn EditorChrome(
                 }
                 button {
                     class: "mn-tab-scroll-btn",
-                    title: "Scroll tabs right",
-                    "aria-label": "Scroll tabs right",
+                    title: i18n.text("Scroll tabs right", "向右滚动标签"),
+                    "aria-label": i18n.text("Scroll tabs right", "向右滚动标签"),
                     onclick: move |_| scroll_editor_tabs(220),
                     span { class: "mn-tool-icon tab-right", "aria-hidden": "true" }
                 }
@@ -479,7 +477,7 @@ fn EditorChrome(
                 div {
                     class: "mn-view-mode-switch",
                     role: "radiogroup",
-                    "aria-label": "Editor view mode",
+                    "aria-label": i18n.text("Editor view mode", "编辑器视图模式"),
                     for mode in editor_view_modes() {
                         button {
                             class: view_mode_option_class(&view_mode, &mode),
@@ -498,7 +496,7 @@ fn EditorChrome(
                                     );
                                 }
                             },
-                            "{view_mode_label(&mode)}"
+                            "{view_mode_label(i18n.language(), &mode)}"
                         }
                     }
                 }
@@ -517,23 +515,24 @@ fn EditorChrome(
 
 #[component]
 fn EditorEmptyState(commands: AppCommands) -> Element {
+    let i18n = use_i18n();
     let create_commands = commands.clone();
     let open_commands = commands.clone();
 
     rsx! {
         section { class: "mn-empty",
             div { class: "mn-empty-card",
-                h1 { "Open a note" }
-                p { "Pick a Markdown file from the sidebar or start a new note." }
+                h1 { {i18n.text("Open a note", "打开一篇笔记")} }
+                p { {i18n.text("Pick a Markdown file from the sidebar or start a new note.", "从侧边栏选择 Markdown 文件，或新建一篇笔记。")} }
                 div { class: "mn-empty-actions",
                     Button {
-                        label: "New note",
+                        label: i18n.text("New note", "新建笔记").to_string(),
                         variant: ButtonVariant::Primary,
                         disabled: false,
                         on_click: move |_| create_commands.create_note.call("Untitled".to_string()),
                     }
                     Button {
-                        label: "Open workspace",
+                        label: i18n.text("Open workspace", "打开工作区").to_string(),
                         variant: ButtonVariant::Default,
                         disabled: false,
                         on_click: move |_| open_commands.open_workspace.call(()),
@@ -742,9 +741,18 @@ mod tests {
     #[test]
     fn editor_chrome_view_mode_helpers_keep_visible_labels() {
         assert_eq!(editor_view_modes().len(), 3);
-        assert_eq!(view_mode_label(&ViewMode::Source), "Source");
-        assert_eq!(view_mode_label(&ViewMode::Hybrid), "Hybrid");
-        assert_eq!(view_mode_label(&ViewMode::Preview), "Preview");
+        assert_eq!(
+            view_mode_label(AppLanguage::English, &ViewMode::Source),
+            "Source"
+        );
+        assert_eq!(
+            view_mode_label(AppLanguage::English, &ViewMode::Hybrid),
+            "Hybrid"
+        );
+        assert_eq!(
+            view_mode_label(AppLanguage::Chinese, &ViewMode::Preview),
+            "预览"
+        );
         assert_eq!(
             view_mode_option_class(&ViewMode::Hybrid, &ViewMode::Hybrid),
             "mn-view-mode-option active"
@@ -757,8 +765,9 @@ mod tests {
 
     #[test]
     fn editor_chrome_icon_helpers_reflect_panel_state() {
-        assert_eq!(sidebar_toggle_label(false), "Hide sidebar (Ctrl+\\)");
-        assert_eq!(sidebar_toggle_label(true), "Show sidebar (Ctrl+\\)");
+        let i18n = i18n_for(AppLanguage::English);
+        assert_eq!(sidebar_toggle_label(i18n, false), "Hide sidebar (Ctrl+\\)");
+        assert_eq!(sidebar_toggle_label(i18n, true), "Show sidebar (Ctrl+\\)");
         assert_eq!(
             sidebar_toggle_icon_class(false),
             "mn-tool-icon sidebar-open"

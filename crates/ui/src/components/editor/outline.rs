@@ -1,6 +1,7 @@
 #[cfg(test)]
 use super::document_cache::DocumentDerivedCacheState;
 use super::document_cache::{DocumentCacheKey, DocumentDerivedCache};
+use crate::i18n::use_i18n;
 use dioxus::prelude::*;
 use papyro_core::DocumentSnapshot;
 use papyro_editor::parser::{extract_outline, OutlineItem};
@@ -11,6 +12,7 @@ use crate::perf::{perf_timer, trace_outline_extract};
 
 #[component]
 pub(super) fn OutlinePane(active_document: Option<DocumentSnapshot>) -> Element {
+    let i18n = use_i18n();
     let document_cache = use_context::<DocumentDerivedCache>();
     let mut outline_state = use_signal(|| None::<OutlineRenderState>);
     let effect_cache = document_cache.clone();
@@ -60,14 +62,14 @@ pub(super) fn OutlinePane(active_document: Option<DocumentSnapshot>) -> Element 
     }
 
     rsx! {
-        aside { class: "mn-outline", "aria-label": "Document outline",
-            div { class: "mn-outline-title", "Outline" }
+        aside { class: "mn-outline", "aria-label": i18n.text("Document outline", "文档大纲"),
+            div { class: "mn-outline-title", {i18n.text("Outline", "大纲")} }
             nav { class: "mn-outline-list",
                 for item in outline.iter() {
                     div {
                         key: "{item.line_number}",
                         class: "mn-outline-item level-{item.level}",
-                        title: "Line {item.line_number}",
+                        title: format!("{} {}", i18n.text("Line", "第"), item.line_number),
                         "{item.title}"
                     }
                 }

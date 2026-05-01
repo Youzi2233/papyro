@@ -1,11 +1,13 @@
 use crate::components::primitives::IconButton;
 use crate::context::use_app_context;
+use crate::i18n::use_i18n;
 use dioxus::prelude::*;
 use papyro_core::models::Theme;
 
 #[component]
 pub fn AppHeader(on_settings: EventHandler<()>) -> Element {
     let app = use_app_context();
+    let i18n = use_i18n();
     let commands = app.commands;
     let sidebar_commands = commands.clone();
     let theme_commands = commands.clone();
@@ -18,7 +20,7 @@ pub fn AppHeader(on_settings: EventHandler<()>) -> Element {
     rsx! {
         header { class: "mn-header",
             IconButton {
-                label: "Toggle sidebar (Ctrl+\\)",
+                label: i18n.text("Toggle sidebar (Ctrl+\\)", "切换侧边栏 (Ctrl+\\)").to_string(),
                 icon: sidebar_icon,
                 on_click: move |_| {
                     crate::chrome::toggle_sidebar(sidebar_commands.clone(), "header");
@@ -28,14 +30,14 @@ pub fn AppHeader(on_settings: EventHandler<()>) -> Element {
             div { class: "mn-header-spacer" }
             div { class: "mn-header-actions",
                 IconButton {
-                    label: "Toggle theme",
+                    label: i18n.text("Toggle theme", "切换主题").to_string(),
                     icon: theme_icon,
                     on_click: move |_| {
                         crate::chrome::toggle_theme(theme_commands.clone());
                     },
                 }
                 IconButton {
-                    label: "Settings",
+                    label: i18n.text("Settings", "设置").to_string(),
                     icon: "\u{2699}",
                     on_click: move |_| on_settings.call(()),
                 }

@@ -1,24 +1,26 @@
 use crate::components::primitives::{Button, ButtonVariant, Modal};
 use crate::context::use_app_context;
+use crate::i18n::use_i18n;
 use crate::view_model::{RecoveryDraftComparisonViewModel, RecoveryDraftItemViewModel};
 use dioxus::prelude::*;
 
 #[component]
 pub fn RecoveryDraftsModal(on_close: EventHandler<()>) -> Element {
     let app = use_app_context();
+    let i18n = use_i18n();
     let commands = app.commands.clone();
     let model = app.recovery_model.read().clone();
 
     rsx! {
         Modal {
-            label: "Recovery drafts",
-            class_name: "mn-modal mn-command-modal",
+            label: i18n.text("Recovery drafts", "恢复草稿").to_string(),
+            class_name: "mn-modal mn-command-modal".to_string(),
             on_close,
             div { class: "mn-modal-header",
-                h2 { class: "mn-modal-title", "Recovery drafts" }
+                h2 { class: "mn-modal-title", {i18n.text("Recovery drafts", "恢复草稿")} }
                 button {
                     class: "mn-modal-close",
-                    "aria-label": "Close recovery drafts",
+                    "aria-label": i18n.text("Close recovery drafts", "关闭恢复草稿"),
                     onclick: move |_| on_close.call(()),
                     "x"
                 }
@@ -33,7 +35,7 @@ pub fn RecoveryDraftsModal(on_close: EventHandler<()>) -> Element {
             }
             div { class: "mn-modal-footer",
                 Button {
-                    label: "Later",
+                    label: i18n.text("Later", "稍后").to_string(),
                     variant: ButtonVariant::Default,
                     disabled: false,
                     on_click: move |_| on_close.call(()),
@@ -48,6 +50,7 @@ fn RecoveryDraftRow(
     draft: RecoveryDraftItemViewModel,
     commands: crate::commands::AppCommands,
 ) -> Element {
+    let i18n = use_i18n();
     let compare_note_id = draft.note_id.clone();
     let restore_note_id = draft.note_id.clone();
     let discard_note_id = draft.note_id.clone();
@@ -66,7 +69,7 @@ fn RecoveryDraftRow(
                 class: "mn-row-actions",
                 style: "display:flex;gap:6px;align-items:center;justify-content:flex-end;flex-wrap:wrap;",
                 Button {
-                    label: "Compare",
+                    label: i18n.text("Compare", "比较").to_string(),
                     variant: ButtonVariant::Default,
                     disabled: false,
                     on_click: move |_| {
@@ -74,7 +77,7 @@ fn RecoveryDraftRow(
                     },
                 }
                 Button {
-                    label: "Restore",
+                    label: i18n.text("Restore", "恢复").to_string(),
                     variant: ButtonVariant::Primary,
                     disabled: false,
                     on_click: move |_| {
@@ -82,7 +85,7 @@ fn RecoveryDraftRow(
                     },
                 }
                 Button {
-                    label: "Discard",
+                    label: i18n.text("Discard", "丢弃").to_string(),
                     variant: ButtonVariant::Danger,
                     disabled: false,
                     on_click: move |_| {
@@ -97,6 +100,7 @@ fn RecoveryDraftRow(
 #[component]
 pub fn RecoveryDraftCompareModal() -> Element {
     let app = use_app_context();
+    let i18n = use_i18n();
     let commands = app.commands.clone();
     let comparison = app.recovery_comparison.read().clone();
     let Some(comparison) = comparison else {
@@ -110,23 +114,23 @@ pub fn RecoveryDraftCompareModal() -> Element {
     let close_commands = commands.clone();
     let footer_close_commands = commands.clone();
     let compare_status = if model.disk_error.is_some() {
-        "Disk content unavailable"
+        i18n.text("Disk content unavailable", "磁盘内容不可用")
     } else if model.is_identical {
-        "Recovery draft matches disk"
+        i18n.text("Recovery draft matches disk", "恢复草稿与磁盘内容一致")
     } else {
-        "Recovery draft differs from disk"
+        i18n.text("Recovery draft differs from disk", "恢复草稿与磁盘内容不同")
     };
 
     rsx! {
         Modal {
-            label: "Compare recovery draft",
-            class_name: "mn-modal mn-recovery-compare-modal",
+            label: i18n.text("Compare recovery draft", "比较恢复草稿").to_string(),
+            class_name: "mn-modal mn-recovery-compare-modal".to_string(),
             on_close: move |_| commands.close_recovery_comparison.call(()),
             div { class: "mn-modal-header",
-                h2 { class: "mn-modal-title", "Compare recovery draft" }
+                h2 { class: "mn-modal-title", {i18n.text("Compare recovery draft", "比较恢复草稿")} }
                 button {
                     class: "mn-modal-close",
-                    "aria-label": "Close recovery comparison",
+                    "aria-label": i18n.text("Close recovery comparison", "关闭恢复比较"),
                     onclick: move |_| close_commands.close_recovery_comparison.call(()),
                     "x"
                 }
@@ -138,13 +142,13 @@ pub fn RecoveryDraftCompareModal() -> Element {
             }
             div { class: "mn-recovery-compare-grid",
                 RecoveryComparePanel {
-                    title: "Recovery draft",
+                    title: i18n.text("Recovery draft", "恢复草稿").to_string(),
                     line_count: model.draft_line_count,
                     content: model.draft_content.clone(),
                     error: None,
                 }
                 RecoveryComparePanel {
-                    title: "Disk",
+                    title: i18n.text("Disk", "磁盘").to_string(),
                     line_count: model.disk_line_count,
                     content: model.disk_content.clone(),
                     error: model.disk_error.clone(),
@@ -152,13 +156,13 @@ pub fn RecoveryDraftCompareModal() -> Element {
             }
             div { class: "mn-modal-footer",
                 Button {
-                    label: "Close",
+                    label: i18n.text("Close", "关闭").to_string(),
                     variant: ButtonVariant::Default,
                     disabled: false,
                     on_click: move |_| footer_close_commands.close_recovery_comparison.call(()),
                 }
                 Button {
-                    label: "Restore",
+                    label: i18n.text("Restore", "恢复").to_string(),
                     variant: ButtonVariant::Primary,
                     disabled: false,
                     on_click: move |_| {
@@ -166,7 +170,7 @@ pub fn RecoveryDraftCompareModal() -> Element {
                     },
                 }
                 Button {
-                    label: "Discard",
+                    label: i18n.text("Discard", "丢弃").to_string(),
                     variant: ButtonVariant::Danger,
                     disabled: false,
                     on_click: move |_| {
@@ -185,11 +189,12 @@ fn RecoveryComparePanel(
     content: String,
     error: Option<String>,
 ) -> Element {
+    let i18n = use_i18n();
     rsx! {
         section { class: "mn-recovery-compare-panel",
             div { class: "mn-recovery-compare-panel-header",
                 h3 { "{title}" }
-                span { "{line_count} lines" }
+                span { "{i18n.line_count(line_count)}" }
             }
             if let Some(error) = error {
                 p { class: "mn-recovery-compare-error", "{error}" }

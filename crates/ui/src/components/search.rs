@@ -2,9 +2,10 @@ use crate::action_labels::open_note_label;
 use crate::commands::{AppCommands, OpenMarkdownTarget};
 use crate::components::primitives::{Modal, TextInput};
 use crate::context::use_app_context;
+use crate::i18n::{i18n_for, use_i18n};
 use crate::view_model::SearchResultRowViewModel;
 use dioxus::prelude::*;
-use papyro_core::{SearchField, SearchHighlight};
+use papyro_core::{models::AppLanguage, SearchField, SearchHighlight};
 use std::path::PathBuf;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -16,6 +17,7 @@ pub(crate) struct HighlightSegment {
 #[component]
 pub fn SearchModal(on_close: EventHandler<()>) -> Element {
     let app = use_app_context();
+    let i18n = use_i18n();
     let commands = app.commands.clone();
     let workspace_search_model = app.workspace_search_model.read().clone();
     let mut active_index = use_signal(|| 0usize);
@@ -30,6 +32,7 @@ pub fn SearchModal(on_close: EventHandler<()>) -> Element {
     let results_for_keys = results.clone();
     let commands_for_keys = commands.clone();
     let empty_message = empty_search_message(
+        i18n.language(),
         query_value.as_str(),
         workspace_search_model.is_loading,
         workspace_search_model.error.as_deref(),
@@ -37,14 +40,14 @@ pub fn SearchModal(on_close: EventHandler<()>) -> Element {
 
     rsx! {
         Modal {
-            label: "Workspace search",
-            class_name: "mn-modal mn-command-modal",
+            label: i18n.text("Workspace search", "工作区搜索").to_string(),
+            class_name: "mn-modal mn-command-modal".to_string(),
             on_close,
                 div { class: "mn-command-search",
                     TextInput {
-                        class_name: "mn-command-input",
+                        class_name: "mn-command-input".to_string(),
                         autofocus: true,
-                        placeholder: "Search notes",
+                        placeholder: i18n.text("Search notes", "搜索笔记").to_string(),
                         value: query_value,
                         on_input: move |value| {
                             active_index.set(0);
@@ -108,12 +111,13 @@ fn SearchResultRow(
     commands: AppCommands,
     on_close: EventHandler<()>,
 ) -> Element {
+    let i18n = use_i18n();
     let path_for_click = result.path.clone();
     let preview = result.preview.clone();
-    let open_label = open_note_label(&result.title);
+    let open_label = open_note_label(i18n.language(), &result.title);
     let badge = preview
         .as_ref()
-        .map(|result_match| field_label(result_match.field))
+        .map(|result_match| field_label(i18n.language(), result_match.field))
         .unwrap_or("MD");
 
     rsx! {
@@ -179,28 +183,30 @@ fn open_search_result(commands: AppCommands, on_close: EventHandler<()>, path: P
     on_close.call(());
 }
 
-fn empty_search_message(query: &str, is_loading: bool, error: Option<&str>) -> String {
+fn empty_search_message(
+    language: AppLanguage,
+    query: &str,
+    is_loading: bool,
+    error: Option<&str>,
+) -> String {
+    let i18n = i18n_for(language);
     if query.trim().is_empty() {
-        return "Ready".to_string();
+        return i18n.text("Ready", "就绪").to_string();
     }
 
     if is_loading {
-        return "Searching notes...".to_string();
+        return i18n.text("Searching notes...", "正在搜索笔记...").to_string();
     }
 
     if let Some(error) = error {
         return error.to_string();
     }
 
-    "No matching notes".to_string()
+    i18n.text("No matching notes", "没有匹配的笔记").to_string()
 }
 
-fn field_label(field: SearchField) -> &'static str {
-    match field {
-        SearchField::Title => "TITLE",
-        SearchField::Path => "PATH",
-        SearchField::Body => "BODY",
-    }
+fn field_label(language: AppLanguage, field: SearchField) -> &'static str {
+    i18n_for(language).search_field_label(field)
 }
 
 pub(crate) fn highlighted_segments(
@@ -268,6 +274,7 @@ pub(crate) fn highlighted_segments(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use papyro_core::models::AppLanguage;
 
     #[test]
     fn highlighted_segments_split_plain_and_matched_text() {
@@ -330,6 +337,7 @@ mod tests {
 
     #[test]
     fn field_label_names_search_match_sources() {
-        assert_eq!(field_label(SearchField::Body), "BODY");
+        assert_eq!(field_label(AppLanguage::English, SearchField::Body), "BODY");
+        assert_eq!(field_label(AppLanguage::Chinese, SearchField::Title), "标题");
     }
 }

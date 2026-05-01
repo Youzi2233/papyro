@@ -1,6 +1,7 @@
 pub mod file_tree;
 
 use crate::context::use_app_context;
+use crate::i18n::use_i18n;
 use crate::perf::{perf_timer, trace_sidebar_resize};
 use dioxus::prelude::*;
 use std::path::Path;
@@ -21,11 +22,12 @@ struct SidebarResizeDrag {
 #[component]
 pub fn Sidebar(on_search: EventHandler<()>, on_settings: EventHandler<()>) -> Element {
     let app = use_app_context();
+    let i18n = use_i18n();
     let commands = app.commands;
     let sidebar_model = app.sidebar_model.read().clone();
     let resize_commands = commands.clone();
     let theme_commands = commands.clone();
-    let workspace_path_text = sidebar_workspace_path_text(sidebar_model.path.as_deref());
+    let workspace_path_text = sidebar_workspace_path_text(sidebar_model.path.as_deref(), i18n);
 
     let mut create_name = use_signal(String::new);
     let mut show_create = use_signal(|| false);
@@ -41,16 +43,20 @@ pub fn Sidebar(on_search: EventHandler<()>, on_settings: EventHandler<()>) -> El
         "mn-sidebar"
     };
     let has_workspace = sidebar_model.name.is_some();
-    let create_action_label = if show_create() { "Cancel" } else { "New note" };
+    let create_action_label = if show_create() {
+        i18n.text("Cancel", "取消")
+    } else {
+        i18n.text("New note", "新建笔记")
+    };
     let create_action_icon_class = if show_create() {
         "mn-button-icon cancel"
     } else {
         "mn-button-icon note"
     };
     let workspace_action_label = if has_workspace {
-        "Switch"
+        i18n.text("Switch", "切换")
     } else {
-        "Open workspace"
+        i18n.text("Open workspace", "打开工作区")
     };
 
     rsx! {
@@ -68,8 +74,8 @@ pub fn Sidebar(on_search: EventHandler<()>, on_settings: EventHandler<()>) -> El
                     div { class: "mn-sidebar-brand-actions",
                         button {
                             class: "mn-sidebar-icon-btn",
-                            title: "Toggle theme",
-                            "aria-label": "Toggle theme",
+                            title: i18n.text("Toggle theme", "切换主题"),
+                            "aria-label": i18n.text("Toggle theme", "切换主题"),
                             onclick: move |_| {
                                 crate::chrome::toggle_theme(theme_commands.clone());
                             },
@@ -77,8 +83,8 @@ pub fn Sidebar(on_search: EventHandler<()>, on_settings: EventHandler<()>) -> El
                         }
                         button {
                             class: "mn-sidebar-icon-btn",
-                            title: "Settings",
-                            "aria-label": "Settings",
+                            title: i18n.text("Settings", "设置"),
+                            "aria-label": i18n.text("Settings", "设置"),
                             onclick: move |_| on_settings.call(()),
                             span { class: "mn-tool-icon settings", "aria-hidden": "true" }
                         }
@@ -87,14 +93,18 @@ pub fn Sidebar(on_search: EventHandler<()>, on_settings: EventHandler<()>) -> El
                 button {
                     class: "mn-sidebar-search",
                     disabled: !has_workspace,
-                    title: if has_workspace { "Search workspace" } else { "Open a workspace to search" },
+                    title: if has_workspace {
+                        i18n.text("Search workspace", "搜索工作区")
+                    } else {
+                        i18n.text("Open a workspace to search", "打开工作区后即可搜索")
+                    },
                     onclick: move |_| on_search.call(()),
                     span { class: "mn-sidebar-search-icon", "⌕" }
-                    span { class: "mn-sidebar-search-label", "Search notes" }
+                    span { class: "mn-sidebar-search-label", {i18n.text("Search notes", "搜索笔记")} }
                     span { class: "mn-sidebar-search-shortcut", "Ctrl Shift F" }
                 }
                 div { class: "mn-sidebar-workspace", title: "{workspace_path_text}",
-                    span { class: "mn-sidebar-workspace-label", "Folder" }
+                    span { class: "mn-sidebar-workspace-label", {i18n.text("Folder", "目录")} }
                     span { class: "mn-sidebar-workspace-path", "{workspace_path_text}" }
                 }
 
@@ -103,7 +113,7 @@ pub fn Sidebar(on_search: EventHandler<()>, on_settings: EventHandler<()>) -> El
                     div { class: "mn-sidebar-create",
                         input {
                             class: "mn-input",
-                            placeholder: "Note name",
+                            placeholder: i18n.text("Note name", "笔记名称"),
                             value: "{create_name}",
                             autofocus: true,
                             oninput: move |e| create_name.set(e.value()),
@@ -126,7 +136,7 @@ pub fn Sidebar(on_search: EventHandler<()>, on_settings: EventHandler<()>) -> El
                                 create_name.set(String::new());
                                 show_create.set(false);
                             },
-                            "Create"
+                            {i18n.text("Create", "创建")}
                         }
                     }
                 }
@@ -139,10 +149,14 @@ pub fn Sidebar(on_search: EventHandler<()>, on_settings: EventHandler<()>) -> El
                 for mode in FileTreeSortMode::all() {
                     button {
                         class: if tree_sort() == mode { "mn-tree-sort-btn active" } else { "mn-tree-sort-btn" },
-                        title: "Sort by {mode.label()}",
+                        title: format!(
+                            "{} {}",
+                            i18n.text("Sort by", "排序方式"),
+                            sort_mode_label(mode, i18n)
+                        ),
                         "aria-pressed": "{tree_sort() == mode}",
                         onclick: move |_| tree_sort.set(mode),
-                        "{mode.label()}"
+                        "{sort_mode_label(mode, i18n)}"
                     }
                 }
             }
@@ -153,7 +167,7 @@ pub fn Sidebar(on_search: EventHandler<()>, on_settings: EventHandler<()>) -> El
             div { class: "mn-sidebar-footer",
                 button {
                     class: "mn-button primary mn-sidebar-new",
-                    title: "New note in current folder",
+                    title: i18n.text("New note in current folder", "在当前目录中新建笔记"),
                     disabled: !has_workspace,
                     onclick: move |_| {
                         show_create.set(!show_create());
@@ -164,11 +178,11 @@ pub fn Sidebar(on_search: EventHandler<()>, on_settings: EventHandler<()>) -> El
                 div { class: "mn-sidebar-footer-tools",
                     button {
                         class: "mn-button",
-                        title: "Reload workspace",
+                        title: i18n.text("Reload workspace", "重新加载工作区"),
                         disabled: !has_workspace,
                         onclick: move |_| commands.refresh_workspace.call(()),
                         span { class: "mn-button-icon refresh", "aria-hidden": "true" }
-                        span { "Refresh" }
+                        span { {i18n.text("Refresh", "刷新")} }
                     }
                     button {
                         class: "mn-button",
@@ -181,8 +195,8 @@ pub fn Sidebar(on_search: EventHandler<()>, on_settings: EventHandler<()>) -> El
 
             div {
                 class: "mn-sidebar-resize-handle",
-                title: "Resize sidebar",
-                "aria-label": "Resize sidebar",
+                title: i18n.text("Resize sidebar", "调整侧边栏宽度"),
+                "aria-label": i18n.text("Resize sidebar", "调整侧边栏宽度"),
                 role: "separator",
                 "aria-orientation": "vertical",
                 onmousedown: move |event| {
@@ -224,15 +238,23 @@ fn sidebar_width_from_drag(drag: SidebarResizeDrag, current_x: f64) -> u32 {
     clamp_sidebar_width(drag.start_width as f64 + current_x - drag.start_x)
 }
 
+fn sort_mode_label(mode: FileTreeSortMode, i18n: crate::i18n::UiText) -> &'static str {
+    match mode {
+        FileTreeSortMode::Name => i18n.text("Name", "名称"),
+        FileTreeSortMode::Updated => i18n.text("Updated", "更新"),
+        FileTreeSortMode::Created => i18n.text("Created", "创建"),
+    }
+}
+
 fn clamp_sidebar_width(width: f64) -> u32 {
     width
         .round()
         .clamp(SIDEBAR_MIN_WIDTH as f64, SIDEBAR_MAX_WIDTH as f64) as u32
 }
 
-fn sidebar_workspace_path_text(path: Option<&Path>) -> String {
+fn sidebar_workspace_path_text(path: Option<&Path>, i18n: crate::i18n::UiText) -> String {
     path.map(|path| path.display().to_string())
-        .unwrap_or_else(|| "Open a folder to start".to_string())
+        .unwrap_or_else(|| i18n.text("Open a folder to start", "打开目录即可开始").to_string())
 }
 
 #[cfg(test)]
@@ -261,9 +283,18 @@ mod tests {
     #[test]
     fn sidebar_workspace_path_text_describes_current_folder() {
         assert_eq!(
-            sidebar_workspace_path_text(Some(Path::new("workspace"))),
+            sidebar_workspace_path_text(
+                Some(Path::new("workspace")),
+                crate::i18n::i18n_for(papyro_core::models::AppLanguage::English)
+            ),
             "workspace"
         );
-        assert_eq!(sidebar_workspace_path_text(None), "Open a folder to start");
+        assert_eq!(
+            sidebar_workspace_path_text(
+                None,
+                crate::i18n::i18n_for(papyro_core::models::AppLanguage::English)
+            ),
+            "Open a folder to start"
+        );
     }
 }

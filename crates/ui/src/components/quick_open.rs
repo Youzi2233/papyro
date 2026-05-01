@@ -2,6 +2,7 @@ use crate::action_labels::open_note_label;
 use crate::commands::{AppCommands, OpenMarkdownTarget};
 use crate::components::primitives::{Modal, TextInput};
 use crate::context::use_app_context;
+use crate::i18n::use_i18n;
 use crate::view_model::QuickOpenItemViewModel;
 use dioxus::prelude::*;
 
@@ -10,6 +11,7 @@ const QUICK_OPEN_LIMIT: usize = 24;
 #[component]
 pub fn QuickOpenModal(on_close: EventHandler<()>) -> Element {
     let app = use_app_context();
+    let i18n = use_i18n();
     let quick_open_items = app.quick_open_items;
     let commands = app.commands.clone();
     let mut query = use_signal(String::new);
@@ -28,14 +30,14 @@ pub fn QuickOpenModal(on_close: EventHandler<()>) -> Element {
 
     rsx! {
         Modal {
-            label: "Quick open",
-            class_name: "mn-modal mn-command-modal",
+            label: i18n.text("Quick open", "快速打开").to_string(),
+            class_name: "mn-modal mn-command-modal".to_string(),
             on_close,
                 div { class: "mn-command-search",
                     TextInput {
-                        class_name: "mn-command-input",
+                        class_name: "mn-command-input".to_string(),
                         autofocus: true,
-                        placeholder: "Open note",
+                        placeholder: i18n.text("Open note", "打开笔记").to_string(),
                         value: query_value,
                         on_input: move |value| {
                             query.set(value);
@@ -76,9 +78,9 @@ pub fn QuickOpenModal(on_close: EventHandler<()>) -> Element {
                     if filtered.is_empty() {
                         div { class: "mn-command-empty",
                             if all_items.is_empty() {
-                                "No notes in this workspace"
+                                {i18n.text("No notes in this workspace", "当前工作区没有笔记")}
                             } else {
-                                "No matching notes"
+                                {i18n.text("No matching notes", "没有匹配的笔记")}
                             }
                         }
                     } else {
@@ -103,8 +105,9 @@ fn QuickOpenRow(
     commands: AppCommands,
     on_close: EventHandler<()>,
 ) -> Element {
+    let i18n = use_i18n();
     let item_for_click = item.clone();
-    let open_label = open_note_label(&item.title);
+    let open_label = open_note_label(i18n.language(), &item.title);
 
     rsx! {
         button {

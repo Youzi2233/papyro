@@ -114,6 +114,8 @@ pub struct RecoveryDraftComparison {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct AppSettings {
     pub theme: Theme,
+    #[serde(default)]
+    pub language: AppLanguage,
     pub font_family: String,
     pub font_size: u8,
     pub line_height: f32,
@@ -164,6 +166,7 @@ impl Default for AppSettings {
     fn default() -> Self {
         Self {
             theme: Theme::System,
+            language: AppLanguage::English,
             font_family:
                 "\"Aptos\", \"Segoe UI Variable Text\", \"Segoe UI\", system-ui, sans-serif"
                     .to_string(),
@@ -187,6 +190,7 @@ impl AppSettings {
                 .theme
                 .clone()
                 .unwrap_or_else(|| self.theme.clone()),
+            language: self.language,
             font_family: overrides
                 .font_family
                 .clone()
@@ -257,6 +261,22 @@ pub enum Theme {
     System,
     Light,
     Dark,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
+pub enum AppLanguage {
+    #[default]
+    English,
+    Chinese,
+}
+
+impl AppLanguage {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::English => "english",
+            Self::Chinese => "chinese",
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
@@ -393,6 +413,16 @@ mod tests {
         let settings: AppSettings = serde_json::from_value(serialized).unwrap();
 
         assert_eq!(settings.note_open_mode, NoteOpenMode::Tabs);
+    }
+
+    #[test]
+    fn language_defaults_to_english_for_existing_settings() {
+        let mut serialized = serde_json::to_value(AppSettings::default()).unwrap();
+        serialized.as_object_mut().unwrap().remove("language");
+
+        let settings: AppSettings = serde_json::from_value(serialized).unwrap();
+
+        assert_eq!(settings.language, AppLanguage::English);
     }
 
     #[test]

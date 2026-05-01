@@ -5,9 +5,10 @@ use super::document_cache::{
 };
 use crate::commands::AppCommands;
 use crate::context::EditorServices;
+use crate::i18n::{i18n_for, use_i18n};
 use crate::perf::{perf_timer, trace_preview_render};
 use dioxus::prelude::*;
-use papyro_core::DocumentSnapshot;
+use papyro_core::{models::AppLanguage, DocumentSnapshot};
 use papyro_editor::performance::PreviewPolicy;
 use papyro_editor::renderer::CodeHighlightTheme;
 use std::path::{Component, Path, PathBuf};
@@ -53,6 +54,7 @@ pub(super) fn PreviewPane(
     editor_services: EditorServices,
     highlight_theme: CodeHighlightTheme,
 ) -> Element {
+    let i18n = use_i18n();
     let document_cache = use_context::<DocumentDerivedCache>();
     let mut preview_state = use_signal(|| None::<PreviewRenderState>);
     let effect_cache = document_cache.clone();
@@ -117,7 +119,7 @@ pub(super) fn PreviewPane(
         active_document.as_ref(),
     );
 
-    let notice = preview_notice(&rendered_preview);
+    let notice = preview_notice(i18n.language(), &rendered_preview);
     let preview_scroll_key = active_document.as_ref().map(|document| {
         (
             document.tab_id.clone(),
@@ -469,15 +471,24 @@ fn preview_failed(byte_len: usize) -> CachedPreview {
     }
 }
 
-fn preview_notice(preview: &CachedPreview) -> Option<&'static str> {
+fn preview_notice(language: AppLanguage, preview: &CachedPreview) -> Option<&'static str> {
+    let i18n = i18n_for(language);
     match preview.status {
-        CachedPreviewStatus::Pending => Some("Rendering preview..."),
-        CachedPreviewStatus::Failed => Some("Preview could not be rendered."),
+        CachedPreviewStatus::Pending => Some(i18n.text("Rendering preview...", "正在渲染预览...")),
+        CachedPreviewStatus::Failed => {
+            Some(i18n.text("Preview could not be rendered.", "无法渲染预览。"))
+        }
         CachedPreviewStatus::Ready if !preview.policy.live_preview_enabled => {
-            Some("Large document mode keeps editing responsive by pausing live preview.")
+            Some(i18n.text(
+                "Large document mode keeps editing responsive by pausing live preview.",
+                "大文档模式会暂停实时预览，以保持编辑流畅。",
+            ))
         }
         CachedPreviewStatus::Ready if !preview.policy.code_highlighting_enabled => {
-            Some("Large document mode keeps editing responsive by disabling code highlighting.")
+            Some(i18n.text(
+                "Large document mode keeps editing responsive by disabling code highlighting.",
+                "大文档模式会关闭代码高亮，以保持编辑流畅。",
+            ))
         }
         CachedPreviewStatus::Ready => None,
     }
@@ -493,6 +504,7 @@ fn preview_result_matches_current(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use papyro_core::models::AppLanguage;
     use std::sync::Arc;
 
     fn snapshot(tab_id: &str, revision: u64, content: &str) -> DocumentSnapshot {
@@ -648,9 +660,12 @@ mod tests {
         let pending = preview_pending(&document);
         let failed = preview_failed(document.content.len());
 
-        assert_eq!(preview_notice(&pending), Some("Rendering preview..."));
         assert_eq!(
-            preview_notice(&failed),
+            preview_notice(AppLanguage::English, &pending),
+            Some("Rendering preview...")
+        );
+        assert_eq!(
+            preview_notice(AppLanguage::English, &failed),
             Some("Preview could not be rendered.")
         );
         assert_eq!(failed.policy.byte_len, document.content.len());
