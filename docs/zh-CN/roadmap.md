@@ -49,7 +49,7 @@ mindmap
 - [x] 增加 settings 持久化队列。
 - [x] 增加 workspace 依赖检查。
 - [ ] 审计外部文件变化和系统打开 Markdown 文件的保存/冲突路径。
-- [ ] 把文件关联打开请求做成一等 use case 并补测试。
+- [x] 把文件关联打开请求做成一等 use case 并补测试。
 
 ## Phase 2 - 性能契约
 

@@ -33,7 +33,7 @@ impl DesktopStartupOpenRequest {
 impl From<MarkdownOpenRequest> for DesktopStartupOpenRequest {
     fn from(request: MarkdownOpenRequest) -> Self {
         Self {
-            markdown_paths: request.markdown_paths,
+            markdown_paths: request.into_paths(),
         }
     }
 }
@@ -289,7 +289,7 @@ mod tests {
             .unwrap()
             .block_on(receiver.recv())
             .unwrap();
-        assert_eq!(request.markdown_paths, vec![markdown_path]);
+        assert_eq!(request.paths(), vec![markdown_path]);
     }
 
     #[test]

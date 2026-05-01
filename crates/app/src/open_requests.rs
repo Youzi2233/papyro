@@ -1,13 +1,51 @@
 use std::path::{Path, PathBuf};
 
+use papyro_ui::commands::OpenMarkdownTarget;
+
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct MarkdownOpenRequest {
-    pub markdown_paths: Vec<PathBuf>,
+    markdown_paths: Vec<PathBuf>,
 }
 
 impl MarkdownOpenRequest {
+    pub fn from_paths<I, P>(paths: I) -> Self
+    where
+        I: IntoIterator<Item = P>,
+        P: AsRef<Path>,
+    {
+        let mut markdown_paths = Vec::new();
+        for path in paths {
+            let path = path.as_ref();
+            if !is_markdown_path(path) {
+                continue;
+            }
+
+            let path = absolutize_open_path(path);
+            if !markdown_paths.iter().any(|seen| seen == &path) {
+                markdown_paths.push(path);
+            }
+        }
+
+        Self { markdown_paths }
+    }
+
     pub fn is_empty(&self) -> bool {
         self.markdown_paths.is_empty()
+    }
+
+    pub fn paths(&self) -> &[PathBuf] {
+        &self.markdown_paths
+    }
+
+    pub fn into_paths(self) -> Vec<PathBuf> {
+        self.markdown_paths
+    }
+
+    pub(crate) fn into_targets(self) -> Vec<OpenMarkdownTarget> {
+        self.markdown_paths
+            .into_iter()
+            .map(|path| OpenMarkdownTarget { path })
+            .collect()
     }
 }
 
@@ -35,7 +73,7 @@ impl MarkdownOpenRequestSender {
         I: IntoIterator<Item = P>,
         P: AsRef<Path>,
     {
-        self.send(markdown_open_request_from_paths(paths))
+        self.send(MarkdownOpenRequest::from_paths(paths))
     }
 
     pub fn send(&self, request: MarkdownOpenRequest) -> bool {
@@ -58,14 +96,7 @@ where
     I: IntoIterator<Item = P>,
     P: AsRef<Path>,
 {
-    let markdown_paths = paths
-        .into_iter()
-        .map(|path| path.as_ref().to_path_buf())
-        .filter(|path| is_markdown_path(path))
-        .map(|path| absolutize_open_path(&path))
-        .collect();
-
-    MarkdownOpenRequest { markdown_paths }
+    MarkdownOpenRequest::from_paths(paths)
 }
 
 pub(crate) fn is_markdown_path(path: &Path) -> bool {
@@ -100,11 +131,42 @@ mod tests {
         ]);
 
         assert_eq!(
-            request.markdown_paths,
+            request.paths(),
             vec![
                 current_dir.join("notes/a.md"),
                 current_dir.join("notes/b.MARKDOWN")
             ]
+        );
+    }
+
+    #[test]
+    fn markdown_open_request_deduplicates_paths_in_order() {
+        let current_dir = std::env::current_dir().unwrap();
+        let request = MarkdownOpenRequest::from_paths([
+            PathBuf::from("notes/a.md"),
+            PathBuf::from("notes/a.md"),
+            PathBuf::from("notes/b.md"),
+        ]);
+
+        assert_eq!(
+            request.paths(),
+            vec![
+                current_dir.join("notes/a.md"),
+                current_dir.join("notes/b.md")
+            ]
+        );
+    }
+
+    #[test]
+    fn markdown_open_request_exports_targets() {
+        let current_dir = std::env::current_dir().unwrap();
+        let targets = MarkdownOpenRequest::from_paths([PathBuf::from("notes/a.md")]).into_targets();
+
+        assert_eq!(
+            targets,
+            vec![OpenMarkdownTarget {
+                path: current_dir.join("notes/a.md")
+            }]
         );
     }
 
@@ -124,6 +186,6 @@ mod tests {
         assert!(sender.send_paths([PathBuf::from("notes/a.md")]));
 
         let request = receiver.receiver.try_recv().unwrap();
-        assert_eq!(request.markdown_paths, vec![current_dir.join("notes/a.md")]);
+        assert_eq!(request.paths(), vec![current_dir.join("notes/a.md")]);
     }
 }

@@ -64,7 +64,7 @@ Goal: make workspace, tab, settings, save, and recovery flows reliable.
 - [x] Add settings persistence queue.
 - [x] Add workspace dependency checks.
 - [ ] Audit save/conflict paths for external file changes and OS-opened Markdown files.
-- [ ] Make file association open requests a first-class use case with tests.
+- [x] Make file association open requests a first-class use case with tests.
 
 ## Phase 2 - Performance As A Contract
 

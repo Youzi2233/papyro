@@ -394,15 +394,15 @@ impl AppDispatcher {
     }
 
     pub(crate) fn dispatch_startup_markdown_paths(&self, markdown_paths: Vec<PathBuf>) {
-        self.dispatch_markdown_paths(markdown_paths);
+        self.dispatch_markdown_open_request(MarkdownOpenRequest::from_paths(markdown_paths));
     }
 
     pub(crate) fn dispatch_external_markdown_request(&self, request: MarkdownOpenRequest) {
-        self.dispatch_markdown_paths(request.markdown_paths);
+        self.dispatch_markdown_open_request(request);
     }
 
-    fn dispatch_markdown_paths(&self, markdown_paths: Vec<PathBuf>) {
-        let targets = open_markdown_targets_from_paths(markdown_paths);
+    fn dispatch_markdown_open_request(&self, request: MarkdownOpenRequest) {
+        let targets = request.into_targets();
         if targets.is_empty() {
             return;
         }
@@ -929,13 +929,6 @@ async fn run_open_markdown(
     notes::open_markdown(storage, state, target).await;
 }
 
-fn open_markdown_targets_from_paths(markdown_paths: Vec<PathBuf>) -> Vec<OpenMarkdownTarget> {
-    markdown_paths
-        .into_iter()
-        .map(|path| OpenMarkdownTarget { path })
-        .collect()
-}
-
 fn open_markdown_requires_dirty_flush(file_state: &FileState, path: &Path) -> bool {
     file_state
         .current_workspace
@@ -1208,17 +1201,20 @@ mod tests {
 
     #[test]
     fn startup_markdown_paths_map_to_open_markdown_targets() {
+        let current_dir = std::env::current_dir().unwrap();
         assert_eq!(
-            open_markdown_targets_from_paths(vec![
+            MarkdownOpenRequest::from_paths([
                 std::path::PathBuf::from("workspace/a.md"),
                 std::path::PathBuf::from("workspace/b.markdown"),
-            ]),
+                std::path::PathBuf::from("workspace/image.png"),
+            ])
+            .into_targets(),
             vec![
                 OpenMarkdownTarget {
-                    path: std::path::PathBuf::from("workspace/a.md"),
+                    path: current_dir.join("workspace/a.md"),
                 },
                 OpenMarkdownTarget {
-                    path: std::path::PathBuf::from("workspace/b.markdown"),
+                    path: current_dir.join("workspace/b.markdown"),
                 },
             ]
         );
