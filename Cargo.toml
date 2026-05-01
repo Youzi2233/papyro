@@ -15,6 +15,7 @@ resolver = "2"
 version = "0.1.0"
 authors = ["Youzi2233 <www.1348502923@qq.com>"]
 edition = "2021"
+license = "MIT"
 
 [workspace.dependencies]
 # UI

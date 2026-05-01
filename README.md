@@ -30,7 +30,7 @@ Papyro is in active product and architecture development.
 | Search and quick open | Basic workspace search and recent files |
 | Recovery | Autosave/recovery draft flow exists |
 | Packaging | Not finalized |
-| License | No license file has been published yet |
+| License | MIT |
 
 ## Quick Start
 
@@ -168,4 +168,4 @@ Papyro is not trying to be a cloud note service, team wiki, or plugin platform y
 
 ## License
 
-No license file is currently published. Treat the code as all rights reserved until a license is added.
+Papyro is licensed under the [MIT License](LICENSE).

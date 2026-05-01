@@ -190,7 +190,7 @@ flowchart TD
 
 ## Phase 7 - 打包和发布
 
-- [ ] 明确 license。
+- [x] 明确 license。
 - [ ] 增加桌面端 release packaging。
 - [ ] 增加目标平台 app icons。
 - [ ] 增加首次启动 workspace onboarding。
