@@ -31,7 +31,7 @@ Papyro is usable for development and dogfooding, but it is not a finished end-us
 
 - Settings still runs in the main window experience. A process-level tool window is planned.
 - Multi-window document editing is modeled in core, but not available as a user-facing mode.
-- Some release polish remains open: platform installers, platform-specific app icon sets, demo media, and first-run workspace onboarding.
+- Some release polish remains open: platform installers, demo media, and first-run workspace onboarding.
 
 ## Performance
 

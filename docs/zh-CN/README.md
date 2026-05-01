@@ -14,6 +14,7 @@
 | 修改 Markdown 编辑器 | [编辑器指南](editor.md) |
 | 修改主题或 Markdown 样式 | [主题系统](theme-system.md) |
 | 选择 Markdown 样式参考 | [Markdown 样式参考调研](markdown-style-references.md) |
+| 更新 app 图标 | [App icons](app-icons.md) |
 | 保持交互性能 | [性能预算](performance-budget.md) |
 | 准备桌面端发布 | [Release QA 检查清单](release-qa.md) |
 | 查看当前已知限制 | [Known limitations](known-limitations.md) |

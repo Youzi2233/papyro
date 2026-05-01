@@ -128,6 +128,7 @@ flowchart TD
 | 开发规范 | [docs/zh-CN/development-standards.md](docs/zh-CN/development-standards.md) | [docs/development-standards.md](docs/development-standards.md) |
 | 产品路线图 | [docs/zh-CN/roadmap.md](docs/zh-CN/roadmap.md) | [docs/roadmap.md](docs/roadmap.md) |
 | Markdown 编辑器 | [docs/zh-CN/editor.md](docs/zh-CN/editor.md) | [docs/editor.md](docs/editor.md) |
+| App icons | [docs/zh-CN/app-icons.md](docs/zh-CN/app-icons.md) | [docs/app-icons.md](docs/app-icons.md) |
 | 性能预算 | [docs/zh-CN/performance-budget.md](docs/zh-CN/performance-budget.md) | [docs/performance-budget.md](docs/performance-budget.md) |
 | Release QA | [docs/zh-CN/release-qa.md](docs/zh-CN/release-qa.md) | [docs/release-qa.md](docs/release-qa.md) |
 | Known limitations | [docs/zh-CN/known-limitations.md](docs/zh-CN/known-limitations.md) | [docs/known-limitations.md](docs/known-limitations.md) |

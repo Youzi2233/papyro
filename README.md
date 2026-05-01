@@ -132,6 +132,7 @@ Read the full guide in [docs/architecture.md](docs/architecture.md).
 | Development rules | [docs/development-standards.md](docs/development-standards.md) | [docs/zh-CN/development-standards.md](docs/zh-CN/development-standards.md) |
 | Product roadmap | [docs/roadmap.md](docs/roadmap.md) | [docs/zh-CN/roadmap.md](docs/zh-CN/roadmap.md) |
 | Markdown editor | [docs/editor.md](docs/editor.md) | [docs/zh-CN/editor.md](docs/zh-CN/editor.md) |
+| App icons | [docs/app-icons.md](docs/app-icons.md) | [docs/zh-CN/app-icons.md](docs/zh-CN/app-icons.md) |
 | Performance budget | [docs/performance-budget.md](docs/performance-budget.md) | [docs/zh-CN/performance-budget.md](docs/zh-CN/performance-budget.md) |
 | Release QA | [docs/release-qa.md](docs/release-qa.md) | [docs/zh-CN/release-qa.md](docs/zh-CN/release-qa.md) |
 | Known limitations | [docs/known-limitations.md](docs/known-limitations.md) | [docs/zh-CN/known-limitations.md](docs/zh-CN/known-limitations.md) |
