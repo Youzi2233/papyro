@@ -1,5 +1,7 @@
-use super::reload::reload_current_workspace_tree;
-use super::utils::{current_workspace, normalized_name, refresh_open_note_after_path_change};
+use super::utils::{
+    current_workspace, normalized_name, rebase_file_node, refresh_open_note_after_path_change,
+    refresh_recent_files, remove_file_node,
+};
 use anyhow::{anyhow, Result};
 use papyro_core::models::FileNodeKind;
 use papyro_core::storage::NoteStorage;
@@ -37,7 +39,20 @@ pub(crate) fn rename_selected_path(
         }
     }
 
-    reload_current_workspace_tree(storage, file_state)?;
+    if let Some(mut node) = remove_file_node(&mut file_state.file_tree, &old_path) {
+        rebase_file_node(&mut node, &workspace.path, &old_path, &new_path);
+        let parent = new_path
+            .parent()
+            .map(PathBuf::from)
+            .unwrap_or_else(|| workspace.path.clone());
+        if parent == workspace.path {
+            file_state.file_tree.push(node);
+        } else {
+            super::utils::insert_file_node(&mut file_state.file_tree, &parent, node);
+            file_state.expanded_paths.insert(parent);
+        }
+    }
+    refresh_recent_files(storage, file_state)?;
     file_state.select_path(new_path.clone());
 
     Ok(new_path)

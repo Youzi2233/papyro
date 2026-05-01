@@ -10,13 +10,7 @@ fn rename_selected_note_updates_tree_selection_and_tab_path() {
     let new_path = PathBuf::from("workspace/notes/renamed.md");
     let storage = MockStorage {
         rename_result: Some(new_path.clone()),
-        reload_result: Some((
-            vec![directory_node(
-                "workspace/notes",
-                vec![note_node("workspace/notes/renamed.md", "note-a")],
-            )],
-            vec![recent_file("note-a", "notes/renamed.md")],
-        )),
+        recent_files: vec![recent_file("note-a", "notes/renamed.md")],
         ..MockStorage::default()
     };
     let mut file_state = file_state_with_tree(vec![directory_node(
@@ -45,6 +39,15 @@ fn rename_selected_note_updates_tree_selection_and_tab_path() {
 
     assert_eq!(renamed, new_path.clone());
     assert_eq!(file_state.selected_path, Some(new_path.clone()));
+    assert!(file_state.node_for_path(&new_path).is_some());
+    assert!(file_state.node_for_path(&old_path).is_none());
+    assert_eq!(file_state.file_tree.len(), 1);
+    let papyro_core::models::FileNodeKind::Directory { children } = &file_state.file_tree[0].kind
+    else {
+        panic!("renamed note should remain nested in its parent directory");
+    };
+    assert_eq!(children.len(), 1);
+    assert_eq!(children[0].path, new_path);
     assert_eq!(
         file_state.recent_files,
         vec![recent_file("note-a", "notes/renamed.md")]
@@ -83,13 +86,7 @@ fn move_selected_note_updates_tree_selection_and_tab_path() {
     let new_path = PathBuf::from("workspace/archive/a.md");
     let storage = MockStorage {
         move_result: Some(new_path.clone()),
-        reload_result: Some((
-            vec![directory_node(
-                "workspace/archive",
-                vec![note_node("workspace/archive/a.md", "note-a")],
-            )],
-            vec![recent_file("note-a", "archive/a.md")],
-        )),
+        recent_files: vec![recent_file("note-a", "archive/a.md")],
         ..MockStorage::default()
     };
     let mut file_state = file_state_with_tree(vec![
@@ -128,6 +125,20 @@ fn move_selected_note_updates_tree_selection_and_tab_path() {
         vec![(old_path.clone(), target_dir)]
     );
     assert_eq!(file_state.selected_path, Some(new_path.clone()));
+    assert!(file_state.node_for_path(&new_path).is_some());
+    assert!(file_state.node_for_path(&old_path).is_none());
+    assert_eq!(file_state.file_tree.len(), 2);
+    let archive = file_state
+        .file_tree
+        .iter()
+        .find(|node| node.path == Path::new("workspace/archive"))
+        .expect("archive directory should remain in the tree");
+    let papyro_core::models::FileNodeKind::Directory { children } = &archive.kind else {
+        panic!("archive should still be a directory");
+    };
+    assert!(children
+        .iter()
+        .any(|child| child.path == Path::new("workspace/archive/a.md")));
     assert_eq!(
         file_state.recent_files,
         vec![recent_file("note-a", "archive/a.md")]
@@ -194,13 +205,7 @@ fn delete_selected_directory_closes_nested_tabs_and_selects_parent() {
     let target = PathBuf::from("workspace/notes");
     let outside_tab = tab("tab-b", "note-b", "workspace/archive/b.md");
     let storage = MockStorage {
-        reload_result: Some((
-            vec![directory_node(
-                "workspace/archive",
-                vec![note_node("workspace/archive/b.md", "note-b")],
-            )],
-            vec![recent_file("note-b", "archive/b.md")],
-        )),
+        recent_files: vec![recent_file("note-b", "archive/b.md")],
         ..MockStorage::default()
     };
     let mut file_state = file_state_with_tree(vec![
@@ -248,6 +253,7 @@ fn delete_selected_directory_closes_nested_tabs_and_selects_parent() {
     assert!(tab_contents.content_for_tab("tab-a").is_none());
     assert!(editor_tabs.tab_by_id("tab-b").is_some());
     assert_eq!(file_state.selected_path, Some(PathBuf::from("workspace")));
+    assert!(file_state.node_for_path(&target).is_none());
     assert_eq!(
         file_state.recent_files,
         vec![recent_file("note-b", "archive/b.md")]
@@ -262,7 +268,6 @@ fn delete_selected_path_keeps_orphan_assets_for_trash() {
         delete_preview: papyro_core::DeletePreview {
             orphaned_assets: vec![orphan.clone()],
         },
-        reload_result: Some((Vec::new(), Vec::new())),
         ..MockStorage::default()
     };
     let mut file_state = file_state_with_tree(vec![directory_node(

@@ -323,6 +323,17 @@ impl AppDispatcher {
                     self.state.pending_delete_path,
                 );
             }
+            AppAction::DeletePath(action) => {
+                file_ops::delete_path_immediately(
+                    self.storage.clone(),
+                    self.state.file_state,
+                    self.state.editor_tabs,
+                    self.state.tab_contents,
+                    self.state.status_message,
+                    self.state.pending_delete_path,
+                    action.path,
+                );
+            }
             AppAction::SelectPath(action) => {
                 let mut file_state = self.state.file_state;
                 file_state.write().select_path(action.path);
@@ -441,6 +452,7 @@ impl AppDispatcher {
         let set_tag_color = self.clone();
         let delete_tag = self.clone();
         let delete_selected = self.clone();
+        let delete_path = self.clone();
         let select_path = self.clone();
         let toggle_expanded_path = self.clone();
         let reveal_in_explorer = self.clone();
@@ -554,6 +566,9 @@ impl AppDispatcher {
             }),
             delete_selected: EventHandler::new(move |_| {
                 delete_selected.dispatch(AppAction::DeleteSelected);
+            }),
+            delete_path: EventHandler::new(move |path| {
+                delete_path.dispatch(AppAction::delete_path(path));
             }),
             select_path: EventHandler::new(move |path| {
                 select_path.dispatch(AppAction::select_path(path));

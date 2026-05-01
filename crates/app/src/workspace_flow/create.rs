@@ -1,6 +1,8 @@
 use super::open::open_note_from_storage;
-use super::reload::reload_current_workspace_tree;
-use super::utils::{current_workspace, normalized_name, selected_directory_or_workspace};
+use super::utils::{
+    current_workspace, file_node_from_path, insert_file_node, normalized_name,
+    selected_directory_or_workspace,
+};
 use anyhow::Result;
 use papyro_core::models::DocumentStats;
 use papyro_core::storage::NoteStorage;
@@ -23,7 +25,19 @@ where
     let note_name = normalized_name(name, "Untitled");
     let path = storage.create_note(&parent, &note_name)?;
 
-    reload_current_workspace_tree(storage, file_state)?;
+    let inserted = insert_file_node(
+        &mut file_state.file_tree,
+        &parent,
+        file_node_from_path(&workspace.path, &path),
+    );
+    if !inserted && parent == workspace.path {
+        file_state
+            .file_tree
+            .push(file_node_from_path(&workspace.path, &path));
+    }
+    if parent != workspace.path {
+        file_state.expanded_paths.insert(parent.clone());
+    }
     open_note_from_storage(
         storage,
         file_state,
@@ -46,7 +60,20 @@ pub(crate) fn create_folder_in_storage(
     let folder_name = normalized_name(name, "New Folder");
     let path = storage.create_folder(&parent, &folder_name)?;
 
-    reload_current_workspace_tree(storage, file_state)?;
+    let inserted = insert_file_node(
+        &mut file_state.file_tree,
+        &parent,
+        file_node_from_path(&workspace.path, &path),
+    );
+    if !inserted && parent == workspace.path {
+        file_state
+            .file_tree
+            .push(file_node_from_path(&workspace.path, &path));
+    }
+    file_state.expanded_paths.insert(path.clone());
+    if parent != workspace.path {
+        file_state.expanded_paths.insert(parent);
+    }
     file_state.select_path(path.clone());
 
     Ok(path)

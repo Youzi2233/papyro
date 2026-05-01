@@ -1,4 +1,4 @@
-use crate::action_labels::{delete_action_label, open_note_label};
+use crate::action_labels::open_note_label;
 use crate::commands::{AppCommands, FileTarget, OpenMarkdownTarget};
 use crate::components::primitives::{Menu, MenuItem, MenuSeparator};
 use crate::context::use_app_context;
@@ -580,13 +580,9 @@ fn FileTreeContextMenuView(
     let open_node = menu.node.clone();
     let rename_node = menu.node.clone();
     let toggle_path = menu.node.path.clone();
+    let delete_path = menu.node.path.clone();
     let reveal_target = menu.file_target();
-    let delete_pending = app
-        .pending_delete_path
-        .read()
-        .as_deref()
-        .is_some_and(|path| path == menu.node.path.as_path());
-    let delete_label = delete_action_label(i18n.language(), delete_pending);
+    let delete_label = i18n.text("Move to trash", "移到回收站");
 
     rsx! {
         Menu {
@@ -624,6 +620,7 @@ fn FileTreeContextMenuView(
                     on_close.call(());
                 },
             }
+            if is_directory {
             MenuItem {
                 label: i18n.text("New note", "新建笔记").to_string(),
                 danger: false,
@@ -632,13 +629,16 @@ fn FileTreeContextMenuView(
                     on_close.call(());
                 },
             }
-            MenuItem {
-                label: i18n.text("New folder", "新建文件夹").to_string(),
-                danger: false,
-                on_select: move |_| {
-                    commands.create_folder.call("New Folder".to_string());
-                    on_close.call(());
-                },
+            }
+            if is_directory {
+                MenuItem {
+                    label: i18n.text("New folder", "新建文件夹").to_string(),
+                    danger: false,
+                    on_select: move |_| {
+                        commands.create_folder.call("New Folder".to_string());
+                        on_close.call(());
+                    },
+                }
             }
             MenuItem {
                 label: i18n.text("Reveal", "定位").to_string(),
@@ -653,7 +653,7 @@ fn FileTreeContextMenuView(
                 label: delete_label.to_string(),
                 danger: true,
                 on_select: move |_| {
-                    commands.delete_selected.call(());
+                    commands.delete_path.call(delete_path.clone());
                     on_close.call(());
                 },
             }

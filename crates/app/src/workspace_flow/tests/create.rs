@@ -11,13 +11,6 @@ fn create_note_flow_uses_selected_directory_reloads_tree_and_opens_tab() {
     let created_path = PathBuf::from("workspace/notes/new.md");
     let storage = MockStorage {
         create_note_result: Some(created_path.clone()),
-        reload_result: Some((
-            vec![directory_node(
-                "workspace/notes",
-                vec![note_node("workspace/notes/new.md", "note-new")],
-            )],
-            vec![recent_file("note-new", "notes/new.md")],
-        )),
         opened_notes: HashMap::from([(
             created_path.clone(),
             OpenedNote {
@@ -55,6 +48,18 @@ fn create_note_flow_uses_selected_directory_reloads_tree_and_opens_tab() {
         vec![(PathBuf::from("workspace/notes"), "new.md".to_string())]
     );
     assert_eq!(file_state.selected_path, Some(created_path));
+    assert!(file_state
+        .node_for_path(PathBuf::from("workspace/notes/new.md").as_path())
+        .is_some());
+    assert_eq!(file_state.file_tree.len(), 1);
+    let papyro_core::models::FileNodeKind::Directory { children } = &file_state.file_tree[0].kind
+    else {
+        panic!("notes should remain nested under the workspace tree");
+    };
+    assert_eq!(children.len(), 2);
+    assert!(children
+        .iter()
+        .any(|child| child.path == std::path::Path::new("workspace/notes/new.md")));
     assert_eq!(editor_tabs.active_tab_id.as_deref(), Some("tab-new"));
     assert_eq!(tab_contents.content_for_tab("tab-new"), Some("# New"));
 }
@@ -64,16 +69,6 @@ fn create_folder_flow_uses_note_parent_and_selects_new_folder() {
     let created_path = PathBuf::from("workspace/notes/folder");
     let storage = MockStorage {
         create_folder_result: Some(created_path.clone()),
-        reload_result: Some((
-            vec![directory_node(
-                "workspace/notes",
-                vec![
-                    note_node("workspace/notes/old.md", "note-old"),
-                    directory_node("workspace/notes/folder", Vec::new()),
-                ],
-            )],
-            Vec::new(),
-        )),
         ..MockStorage::default()
     };
     let mut file_state = file_state_with_tree(vec![directory_node(
@@ -90,6 +85,18 @@ fn create_folder_flow_uses_note_parent_and_selects_new_folder() {
         vec![(PathBuf::from("workspace/notes"), "New Folder".to_string())]
     );
     assert_eq!(file_state.selected_path, Some(created_path));
+    assert!(file_state
+        .node_for_path(PathBuf::from("workspace/notes/folder").as_path())
+        .is_some());
+    assert_eq!(file_state.file_tree.len(), 1);
+    let papyro_core::models::FileNodeKind::Directory { children } = &file_state.file_tree[0].kind
+    else {
+        panic!("folder should remain nested under the selected directory");
+    };
+    assert_eq!(children.len(), 2);
+    assert!(children
+        .iter()
+        .any(|child| child.path == std::path::Path::new("workspace/notes/folder")));
 }
 
 #[test]

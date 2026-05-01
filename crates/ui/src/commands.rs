@@ -180,6 +180,7 @@ pub struct AppCommands {
     pub set_tag_color: EventHandler<SetTagColorRequest>,
     pub delete_tag: EventHandler<DeleteTagRequest>,
     pub delete_selected: EventHandler<()>,
+    pub delete_path: EventHandler<PathBuf>,
     pub select_path: EventHandler<PathBuf>,
     pub toggle_expanded_path: EventHandler<PathBuf>,
     pub reveal_in_explorer: EventHandler<FileTarget>,

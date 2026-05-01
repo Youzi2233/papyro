@@ -1,5 +1,6 @@
 use anyhow::{anyhow, Result};
 use papyro_core::models::{FileNode, FileNodeKind, Workspace};
+use papyro_core::storage::NoteStorage;
 use papyro_core::{rewrite_moved_note_image_links, EditorTabs, FileState, TabContentsMap};
 use papyro_editor::parser::summarize_markdown;
 use std::path::{Path, PathBuf};
@@ -83,4 +84,122 @@ pub(super) fn refresh_open_note_after_path_change(
     }
 
     Ok(())
+}
+
+pub(super) fn file_node_from_path(workspace_root: &Path, path: &Path) -> FileNode {
+    let metadata = std::fs::metadata(path).ok();
+    let created_at = metadata
+        .as_ref()
+        .and_then(|metadata| metadata.created().ok())
+        .and_then(system_time_to_millis)
+        .unwrap_or(0);
+    let updated_at = metadata
+        .as_ref()
+        .and_then(|metadata| metadata.modified().ok())
+        .and_then(system_time_to_millis)
+        .unwrap_or(created_at);
+    let relative_path = path
+        .strip_prefix(workspace_root)
+        .unwrap_or(path)
+        .to_path_buf();
+    let kind = if path.is_dir() {
+        FileNodeKind::Directory {
+            children: Vec::new(),
+        }
+    } else {
+        FileNodeKind::Note { note_id: None }
+    };
+
+    FileNode {
+        name: path
+            .file_name()
+            .and_then(|name| name.to_str())
+            .unwrap_or_default()
+            .to_string(),
+        path: path.to_path_buf(),
+        relative_path,
+        created_at,
+        updated_at,
+        kind,
+    }
+}
+
+pub(super) fn insert_file_node(nodes: &mut Vec<FileNode>, parent: &Path, node: FileNode) -> bool {
+    for current in nodes {
+        if current.path == parent {
+            if let FileNodeKind::Directory { children } = &mut current.kind {
+                children.push(node);
+                return true;
+            }
+            return false;
+        }
+
+        if let FileNodeKind::Directory { children } = &mut current.kind {
+            if insert_file_node(children, parent, node.clone()) {
+                return true;
+            }
+        }
+    }
+
+    false
+}
+
+pub(super) fn remove_file_node(nodes: &mut Vec<FileNode>, target: &Path) -> Option<FileNode> {
+    if let Some(index) = nodes.iter().position(|node| node.path == target) {
+        return Some(nodes.remove(index));
+    }
+
+    for node in nodes {
+        if let FileNodeKind::Directory { children } = &mut node.kind {
+            if let Some(removed) = remove_file_node(children, target) {
+                return Some(removed);
+            }
+        }
+    }
+
+    None
+}
+
+pub(super) fn rebase_file_node(
+    node: &mut FileNode,
+    workspace_root: &Path,
+    old_root: &Path,
+    new_root: &Path,
+) {
+    if let Ok(suffix) = node.path.strip_prefix(old_root) {
+        node.path = new_root.join(suffix);
+    } else {
+        node.path = new_root.to_path_buf();
+    }
+    node.relative_path = node
+        .path
+        .strip_prefix(workspace_root)
+        .unwrap_or(&node.path)
+        .to_path_buf();
+    node.name = node
+        .path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or_default()
+        .to_string();
+
+    if let FileNodeKind::Directory { children } = &mut node.kind {
+        for child in children {
+            rebase_file_node(child, workspace_root, old_root, new_root);
+        }
+    }
+}
+
+pub(super) fn refresh_recent_files(
+    storage: &dyn NoteStorage,
+    file_state: &mut FileState,
+) -> Result<()> {
+    file_state.recent_files = storage.list_recent(10)?;
+    Ok(())
+}
+
+fn system_time_to_millis(time: std::time::SystemTime) -> Option<i64> {
+    time.duration_since(std::time::UNIX_EPOCH)
+        .ok()
+        .map(|duration| duration.as_millis() as i64)
 }

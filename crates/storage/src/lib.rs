@@ -21,6 +21,7 @@ use papyro_core::{
     local_markdown_image_targets, rewrite_moved_note_image_links, workspace_assets_dir, FileState,
     NoteStorage, SaveConflict, SearchResult, WorkspaceSearchQuery,
 };
+use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
@@ -1003,7 +1004,19 @@ fn sync_workspace_notes(
     root: &Path,
     nodes: &[FileNode],
 ) -> Result<()> {
+    let existing_notes = db::notes::list_note_sync_states(pool, &workspace.id)?
+        .into_iter()
+        .map(|note| (note.relative_path, note.updated_at))
+        .collect::<HashMap<_, _>>();
+
     for note in flatten_notes(nodes) {
+        if existing_notes
+            .get(&note.relative_path)
+            .is_some_and(|updated_at| *updated_at == note.updated_at)
+        {
+            continue;
+        }
+
         let content = fs::read_note(&note.path)?;
         let note_meta = build_note_meta(workspace, root, &note.path, &content)?;
         db::notes::upsert_note(pool, &note_meta)?;

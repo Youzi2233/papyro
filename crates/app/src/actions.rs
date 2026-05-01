@@ -43,6 +43,7 @@ pub enum AppAction {
     SetTagColor(SetTagColor),
     DeleteTag(DeleteTag),
     DeleteSelected,
+    DeletePath(DeletePath),
     SelectPath(SelectPath),
     ToggleExpandedPath(ToggleExpandedPath),
     RevealInExplorer(RevealInExplorer),
@@ -153,6 +154,11 @@ pub struct SelectPath {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DeletePath {
+    pub path: PathBuf,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ToggleExpandedPath {
     pub path: PathBuf,
 }
@@ -215,6 +221,7 @@ impl AppAction {
             Self::SetTagColor(_) => "set_tag_color",
             Self::DeleteTag(_) => "delete_tag",
             Self::DeleteSelected => "delete_selected",
+            Self::DeletePath(_) => "delete_path",
             Self::SelectPath(_) => "select_path",
             Self::ToggleExpandedPath(_) => "toggle_expanded_path",
             Self::RevealInExplorer(_) => "reveal_in_explorer",
@@ -238,6 +245,7 @@ impl AppAction {
             | Self::RestoreTrashedNote(_)
             | Self::EmptyTrash
             | Self::DeleteSelected
+            | Self::DeletePath(_)
             | Self::ToggleExpandedPath(_) => "workspace.file_ops",
             Self::SelectPath(_) => "workspace.selection",
             Self::OpenMarkdown(_) => "editor.open_markdown",
@@ -382,6 +390,10 @@ impl AppAction {
 
     pub fn select_path(path: PathBuf) -> Self {
         Self::SelectPath(SelectPath { path })
+    }
+
+    pub fn delete_path(path: PathBuf) -> Self {
+        Self::DeletePath(DeletePath { path })
     }
 
     pub fn toggle_expanded_path(path: PathBuf) -> Self {

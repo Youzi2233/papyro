@@ -2,6 +2,13 @@ use crate::db::schema::DbPool;
 use anyhow::anyhow;
 use anyhow::Result;
 use papyro_core::models::{NoteMeta, TrashedNote};
+use std::path::PathBuf;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NoteSyncState {
+    pub relative_path: PathBuf,
+    pub updated_at: i64,
+}
 
 pub fn upsert_note(pool: &DbPool, note: &NoteMeta) -> Result<()> {
     let mut conn = pool.get()?;
@@ -63,6 +70,21 @@ pub fn list_notes_in_workspace(pool: &DbPool, workspace_id: &str) -> Result<Vec<
     let mut notes = rows.collect::<Result<Vec<_>, _>>()?;
     hydrate_note_tags(pool, &mut notes)?;
     Ok(notes)
+}
+
+pub fn list_note_sync_states(pool: &DbPool, workspace_id: &str) -> Result<Vec<NoteSyncState>> {
+    let conn = pool.get()?;
+    let mut stmt = conn.prepare(
+        "SELECT relative_path, updated_at
+         FROM notes WHERE workspace_id = ?1 AND is_trashed = 0",
+    )?;
+    let rows = stmt.query_map(rusqlite::params![workspace_id], |row| {
+        Ok(NoteSyncState {
+            relative_path: PathBuf::from(row.get::<_, String>(0)?),
+            updated_at: row.get(1)?,
+        })
+    })?;
+    rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
 }
 
 pub fn list_trashed_notes(pool: &DbPool, workspace_id: &str) -> Result<Vec<TrashedNote>> {

@@ -1,49 +1,44 @@
 use anyhow::Context;
 use anyhow::Result;
 use papyro_core::models::{FileNode, FileNodeKind};
+use papyro_core::WORKSPACE_ASSETS_DIR_NAME;
 use std::path::{Path, PathBuf};
 
-/// 递归扫描目录，返回文件树
+const IGNORED_DIRECTORY_NAMES: &[&str] = &["target", "node_modules"];
+
 pub fn scan_workspace(root: &Path) -> Result<Vec<FileNode>> {
     let mut nodes = scan_dir(root, root)?;
-    nodes.sort_by(|a, b| {
-        let a_is_dir = matches!(a.kind, FileNodeKind::Directory { .. });
-        let b_is_dir = matches!(b.kind, FileNodeKind::Directory { .. });
-        b_is_dir
-            .cmp(&a_is_dir)
-            .then(a.name.to_lowercase().cmp(&b.name.to_lowercase()))
-    });
+    sort_nodes(&mut nodes);
     Ok(nodes)
 }
 
 fn scan_dir(root: &Path, dir: &Path) -> Result<Vec<FileNode>> {
     let mut nodes = Vec::new();
     let entries = match std::fs::read_dir(dir) {
-        Ok(e) => e,
+        Ok(entries) => entries,
         Err(_) => return Ok(nodes),
     };
 
     for entry in entries.flatten() {
         let path = entry.path();
         let name = entry.file_name().to_string_lossy().to_string();
+        let Ok(file_type) = entry.file_type() else {
+            continue;
+        };
 
-        // 跳过隐藏文件和 assets 目录
-        if name.starts_with('.') {
+        if should_skip_entry(&name, file_type.is_dir()) {
             continue;
         }
 
         let relative_path = path.strip_prefix(root).unwrap_or(&path).to_path_buf();
-        let (created_at, updated_at) = file_node_timestamps(&path);
+        let (created_at, updated_at) = entry
+            .metadata()
+            .map(|metadata| file_node_timestamps(&metadata))
+            .unwrap_or((0, 0));
 
-        if path.is_dir() {
+        if file_type.is_dir() {
             let mut children = scan_dir(root, &path)?;
-            children.sort_by(|a, b| {
-                let a_is_dir = matches!(a.kind, FileNodeKind::Directory { .. });
-                let b_is_dir = matches!(b.kind, FileNodeKind::Directory { .. });
-                b_is_dir
-                    .cmp(&a_is_dir)
-                    .then(a.name.to_lowercase().cmp(&b.name.to_lowercase()))
-            });
+            sort_nodes(&mut children);
             nodes.push(FileNode {
                 name,
                 path,
@@ -52,7 +47,7 @@ fn scan_dir(root: &Path, dir: &Path) -> Result<Vec<FileNode>> {
                 updated_at,
                 kind: FileNodeKind::Directory { children },
             });
-        } else if path.extension().and_then(|e| e.to_str()) == Some("md") {
+        } else if path.extension().and_then(|ext| ext.to_str()) == Some("md") {
             nodes.push(FileNode {
                 name,
                 path,
@@ -63,14 +58,30 @@ fn scan_dir(root: &Path, dir: &Path) -> Result<Vec<FileNode>> {
             });
         }
     }
+
     Ok(nodes)
 }
 
-fn file_node_timestamps(path: &Path) -> (i64, i64) {
-    let Ok(metadata) = std::fs::metadata(path) else {
-        return (0, 0);
-    };
+fn should_skip_entry(name: &str, is_dir: bool) -> bool {
+    name.starts_with('.')
+        || (is_dir
+            && (name.eq_ignore_ascii_case(WORKSPACE_ASSETS_DIR_NAME)
+                || IGNORED_DIRECTORY_NAMES
+                    .iter()
+                    .any(|ignored| name.eq_ignore_ascii_case(ignored))))
+}
 
+fn sort_nodes(nodes: &mut [FileNode]) {
+    nodes.sort_by(|a, b| {
+        let a_is_dir = matches!(a.kind, FileNodeKind::Directory { .. });
+        let b_is_dir = matches!(b.kind, FileNodeKind::Directory { .. });
+        b_is_dir
+            .cmp(&a_is_dir)
+            .then(a.name.to_lowercase().cmp(&b.name.to_lowercase()))
+    });
+}
+
+fn file_node_timestamps(metadata: &std::fs::Metadata) -> (i64, i64) {
     let created_at = metadata
         .created()
         .ok()
@@ -91,7 +102,6 @@ fn system_time_to_millis(time: std::time::SystemTime) -> Option<i64> {
         .map(|duration| duration.as_millis() as i64)
 }
 
-/// 获取工作空间的数据库存储路径
 pub fn get_db_path() -> Result<PathBuf> {
     let data_dir = dirs::data_local_dir()
         .unwrap_or_else(|| PathBuf::from("."))
@@ -121,6 +131,32 @@ mod tests {
         let message = error.to_string();
         assert!(message.contains("create app data directory"));
         assert!(message.contains("not-a-directory"));
+
+        Ok(())
+    }
+
+    #[test]
+    fn scan_workspace_skips_assets_and_build_directories() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let root = temp.path();
+        std::fs::create_dir_all(root.join("notes"))?;
+        std::fs::create_dir_all(root.join("assets"))?;
+        std::fs::create_dir_all(root.join("target"))?;
+        std::fs::create_dir_all(root.join("node_modules"))?;
+        std::fs::write(root.join("notes").join("keep.md"), "# keep")?;
+        std::fs::write(root.join("assets").join("ignore.md"), "# ignore")?;
+        std::fs::write(root.join("target").join("ignore.md"), "# ignore")?;
+        std::fs::write(root.join("node_modules").join("ignore.md"), "# ignore")?;
+
+        let tree = scan_workspace(root)?;
+
+        assert_eq!(tree.len(), 1);
+        assert_eq!(tree[0].name, "notes");
+        let FileNodeKind::Directory { children } = &tree[0].kind else {
+            panic!("notes should be a directory");
+        };
+        assert_eq!(children.len(), 1);
+        assert_eq!(children[0].name, "keep.md");
 
         Ok(())
     }

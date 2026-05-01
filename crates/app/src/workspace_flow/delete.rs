@@ -1,5 +1,5 @@
 use super::reload::reload_current_workspace_tree;
-use super::utils::current_workspace;
+use super::utils::{current_workspace, refresh_recent_files, remove_file_node};
 use anyhow::{anyhow, Result};
 use papyro_core::storage::NoteStorage;
 use papyro_core::{
@@ -28,7 +28,9 @@ pub(crate) fn delete_selected_path(
 
     storage.trash_path(&workspace, &target)?;
     close_tabs_under_path(editor_tabs, tab_contents, &target);
-    reload_current_workspace_tree(storage, file_state)?;
+    remove_file_node(&mut file_state.file_tree, &target);
+    file_state.trashed_notes = storage.list_trashed_notes(&workspace)?;
+    refresh_recent_files(storage, file_state)?;
     file_state.selected_path = target.parent().map(Path::to_path_buf);
 
     Ok(DeleteOutcome {

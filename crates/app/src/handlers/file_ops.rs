@@ -160,9 +160,9 @@ pub fn rename_selected(
 pub fn delete_selected(
     shell: AppShell,
     storage: Arc<dyn NoteStorage>,
-    mut file_state: Signal<FileState>,
-    mut editor_tabs: Signal<EditorTabs>,
-    mut tab_contents: Signal<TabContentsMap>,
+    file_state: Signal<FileState>,
+    editor_tabs: Signal<EditorTabs>,
+    tab_contents: Signal<TabContentsMap>,
     mut status_message: Signal<Option<String>>,
     mut pending_delete_path: Signal<Option<PathBuf>>,
 ) {
@@ -193,6 +193,61 @@ pub fn delete_selected(
 
     pending_delete_path.set(None);
 
+    perform_delete(
+        storage,
+        file_state,
+        editor_tabs,
+        tab_contents,
+        status_message,
+        workspace,
+        node_name,
+    );
+}
+
+pub fn delete_path_immediately(
+    storage: Arc<dyn NoteStorage>,
+    mut file_state: Signal<FileState>,
+    editor_tabs: Signal<EditorTabs>,
+    tab_contents: Signal<TabContentsMap>,
+    mut status_message: Signal<Option<String>>,
+    mut pending_delete_path: Signal<Option<PathBuf>>,
+    path: PathBuf,
+) {
+    let workspace = file_state.read().current_workspace.clone();
+    pending_delete_path.set(None);
+
+    let Some(workspace) = workspace else {
+        status_message.set(Some("Open a workspace before deleting files".to_string()));
+        return;
+    };
+
+    let Some(selected_node) = file_state.read().node_for_path(&path) else {
+        status_message.set(Some("Select a note or folder to delete".to_string()));
+        return;
+    };
+
+    file_state.write().select_path(path);
+
+    perform_delete(
+        storage,
+        file_state,
+        editor_tabs,
+        tab_contents,
+        status_message,
+        workspace,
+        selected_node.name,
+    );
+}
+
+fn perform_delete(
+    storage: Arc<dyn NoteStorage>,
+    mut file_state: Signal<FileState>,
+    mut editor_tabs: Signal<EditorTabs>,
+    mut tab_contents: Signal<TabContentsMap>,
+    mut status_message: Signal<Option<String>>,
+    workspace: papyro_core::models::Workspace,
+    node_name: String,
+) {
     let mut next_file_state = file_state.read().clone();
     next_file_state.current_workspace = Some(workspace);
     let mut next_editor_tabs = editor_tabs.read().clone();
