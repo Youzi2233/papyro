@@ -1,167 +1,102 @@
-# Papyro 开发规范
+# Papyro Development Standards
 
-本文定义 Papyro 的开发、评审、提交和发布前检查规范。目标是让每次改动都能追踪、能回滚、能被后续维护者快速理解。
+[简体中文](zh-CN/development-standards.md) | [Documentation](README.md)
 
-## 基本原则
+These rules keep Papyro easy to change, review, and recover. They apply to humans and AI coding agents.
 
-- 先读 `docs/roadmap.md`，再开始实现。任何偏离路线图的架构调整，都要同步更新相关文档。
-- 一次只解决一个最小任务。每个任务应该有清晰边界、可验证结果和独立提交。
-- 优先沿用现有代码风格、模块边界和工具链。只有在确实降低复杂度时，才新增抽象。
-- 不混入无关重构。格式化、依赖调整、生成文件更新都要服务于当前任务。
-- 保持工作区可解释。提交前确认 `git status` 中没有意外文件。
+## Working Principles
 
-## 分支与协作流程
+- Read [roadmap.md](roadmap.md) before starting roadmap work.
+- Keep one task to one minimal behavioral goal.
+- Prefer existing module boundaries and helper APIs.
+- Avoid unrelated refactors, formatting churn, dependency changes, and generated file drift.
+- Keep `git status` explainable before every commit.
+- Never revert work you did not make unless explicitly asked.
 
-- `main` 代表可继续开发的稳定线。常规团队协作应通过短生命周期分支和 Pull Request 合入。
-- 分支命名建议使用 `type/scope-summary`，例如 `feat/editor-tabs`、`fix/save-state`、`docs/dev-standards`。
-- 每个 PR 聚焦一个目标：一个功能、一个缺陷修复、一次文档更新或一次明确的架构整理。
-- 合入前必须解决评审意见，不能留下未解释的失败检查。
-- 如需连续推进 roadmap 阶段，仍按最小任务拆提交，避免一个提交承载整阶段变化。
+## Architecture Boundaries
 
-## 架构边界
+| Area | Owns | Must not own |
+| --- | --- | --- |
+| `apps/*` | platform shell, launch config, assets | shared business flow |
+| `crates/app` | runtime, dispatcher, handlers, effects, workspace flows | low-level persistence details |
+| `crates/core` | models, state structs, traits, pure rules | Dioxus, filesystem, SQLite |
+| `crates/ui` | Dioxus components, layouts, view models, i18n | direct file writes |
+| `crates/storage` | SQLite, files, workspace scan, watcher | UI behavior |
+| `crates/platform` | dialogs, app data, reveal, external links | app state mutation |
+| `crates/editor` | Markdown summary, render, protocol | storage writes |
+| `js/` | CodeMirror runtime behavior | Rust state truth |
 
-- `apps/*` 只做宿主入口、窗口或平台启动配置，不承载共享业务流程。
-- `crates/app` 负责应用运行时、命令分发、effects、workspace flow 和跨平台用例编排。
-- `crates/core` 只放纯模型、状态结构、trait 边界和无 UI 依赖的规则。
-- `crates/ui` 只放 Dioxus 0.7 组件、布局和交互表现。UI 通过 `AppContext` 和应用动作消费状态，不直接成为业务事实源。
-- `crates/storage` 负责 SQLite、文件系统、workspace 扫描和 watcher 适配。
-- `crates/platform` 负责 desktop / mobile 平台能力适配。
-- `crates/editor` 负责 Markdown、编辑器协议、文档统计和渲染相关能力。
-- 新增模块时，必须说明 owner、scope、validation 和 dependency rule。优先更新 `docs/module-ownership.md`。
-- 调整 crate 依赖后，必须运行 `node scripts/check-workspace-deps.js`。
-
-## Dioxus 规范
-
-- 只使用 Dioxus 0.7 API。不要使用已经移除的 `cx`、`Scope`、`use_state`。
-- 组件使用 `#[component]`，返回 `Element`。
-- Props 必须是 owned value，并实现 `PartialEq + Clone`。需要响应式 props 时使用 `ReadOnlySignal`。
-- 本地状态使用 `use_signal`，派生状态使用 `use_memo`，异步数据使用 `use_resource` 或全栈场景下的 `use_server_future`。
-- SSR 或 hydration 相关代码中，首屏客户端渲染必须与服务端输出一致。浏览器专属 API 放进 `use_effect`。
-
-## 代码质量
-
-- Rust 代码必须通过 `cargo fmt --check`，并避免引入 clippy warning。
-- 错误处理要保留上下文。不要用静默失败掩盖数据丢失、保存失败或 watcher 异常。
-- 状态写入失败时，不得错误清除 dirty 标记。
-- 避免在渲染路径做大文档 clone、阻塞 IO 或无界计算。确需这样做时，必须给出理由并更新性能预算。
-- 修改编辑器 JS 时，只手动改 `js/src/editor.js` 与 `js/src/editor-core.js`，再运行 `npm --prefix js run build` 同步生成物。
-- 生成文件必须和源文件同提交，不能让构建产物处于未同步状态。
-
-## 测试策略
-
-- 纯规则和状态迁移优先写单元测试。
-- workspace、storage、watcher 和保存流程优先写集成测试或端到端式用例。
-- UI 结构性改动至少运行对应 crate 的 `cargo check`。复杂交互应补 smoke test 或后续测试任务。
-- 缺陷修复应先用测试或可重复验证步骤描述问题，再修复。
-- 无法自动化验证时，PR 中必须写明手动验证步骤和剩余风险。
-
-## 提交规范
-
-- 一个提交只对应一个最小任务。
-- 提交标题采用英文 Conventional Commits，格式为 `type: summary`。
-- 标题使用祈使句或结果导向短句，例如 `feat: render hybrid headings`。
-- 标题建议控制在 50 字符以内，最多 72 字符。不要为了极短而牺牲可读性。
-- `scope` 可选，只有能显著提升检索价值时才使用：`type(scope): summary`。
-- 提交正文统一使用英文，但正文是可选项。标题已能说明本意时，不要硬写正文。
-- 正文只写和本次 diff 直接对应的内容：为什么改、改了哪些代码事实、用户或模块行为如何变化、有什么风险或回滚点。
-- 正文每句话都应该能指向本次改动的文件、函数、样式或测试。不能对应到代码意图的句子必须删除。
-- 不要用正文堆砌泛泛描述、roadmap 口号、工具流程、检查命令清单或与主要修改无关的背景。
-- 验证命令优先写在 PR 描述或交付说明中。只有迁移、生成物同步、已知测试缺口或回归风险需要解释时，才在正文里写一行简短的 `Validation:`。
-- 正文建议每行 72 字符左右，最多 1-3 个短段落或 bullet。
-- 简单文档、注释或机械变更可以不写正文；涉及架构、协议、存储、数据安全或多模块协作时建议写正文。
-- 不把无关格式化、依赖升级、生成文件和功能改动混在同一提交。
-- 提交前确认源码、测试、文档和生成文件处于一致状态。
-
-常用 type：
-
-| type | 用途 |
-| --- | --- |
-| `feat` | 新功能或新增用户可感知能力 |
-| `fix` | 缺陷修复或错误状态修正 |
-| `docs` | 文档、规范或注释说明 |
-| `refactor` | 不改变行为的结构整理 |
-| `test` | 测试新增或测试修正 |
-| `perf` | 性能优化 |
-| `build` | 构建、依赖、打包或生成流程 |
-| `ci` | CI、检查脚本或自动化流程 |
-| `style` | 纯格式、样式或无行为变化调整 |
-| `chore` | 维护性杂项 |
-
-推荐示例：
-
-```text
-docs: update commit standards
-fix: preserve dirty save state
-feat: render hybrid headings
-refactor: move autosave effects
-test: cover save retry flow
-```
-
-正文示例：
-
-```text
-fix: preserve dirty save state
-
-Keep SaveStatus::Dirty when storage rejects a write so the tab still
-prompts before close.
-
-Refresh recent files only after a successful save to avoid presenting a
-failed path as clean.
-```
-
-不推荐示例：
-
-```text
-update code
-fix things
-finish all refactors
-wip
-misc changes
-feat: add everything
-```
-
-不推荐正文示例：
-
-```text
-style: overhaul desktop workspace UI
-
-- Improve many UI files and keep existing architecture boundaries.
-- Update things according to roadmap and run all expected checks.
-- Make the app cleaner, safer, and more professional.
-```
-
-## PR 规范
-
-每个 PR 必须说明：
-
-- 本次改动解决了什么问题。
-- 改动范围包含哪些模块。
-- 运行了哪些检查命令。
-- 是否有迁移、数据安全、性能或回滚风险。
-- UI 变化需提供截图或说明验证方式。
-
-PR 合入前必须满足：
-
-- 没有红色检查。
-- 没有无关文件变更。
-- 没有违反模块依赖方向。
-- 文档、测试和生成物与代码行为一致。
-- commit title 和 body 都使用英文。
-- commit title 符合 `type: summary`，建议 50 字符以内，最多 72 字符。
-
-## 标准检查命令
-
-完整检查以 `scripts/check.sh` 或 `scripts/check.ps1` 为准：
+When dependency direction changes, run:
 
 ```bash
-bash scripts/check.sh
+node scripts/check-workspace-deps.js
 ```
+
+## Dioxus 0.7 Rules
+
+- Use `#[component] fn Name(...) -> Element`.
+- Use `Signal<T>`, `ReadOnlySignal<T>`, `use_signal`, `use_memo`, and `use_resource`.
+- Props must be owned values and implement `PartialEq + Clone`.
+- Use `document::Stylesheet`, `document::Script`, and `asset!` for resources.
+- Do not use removed APIs: `cx`, `Scope`, or `use_state`.
+
+## Rust Rules
+
+- Run `cargo fmt --check`.
+- Keep clippy warning-free.
+- Preserve error context with `anyhow`, `thiserror`, or explicit messages.
+- Never hide save, watcher, or filesystem failures.
+- Never mark a dirty tab clean after a failed write.
+- Avoid blocking IO and large clones in Dioxus render paths.
+- Add tests for pure rules, state transitions, storage flows, and bug fixes.
+
+## Editor JS Rules
+
+Only edit these source files by hand:
+
+- `js/src/editor.js`
+- `js/src/editor-core.js`
+
+Then run:
+
+```bash
+npm --prefix js run build
+npm --prefix js test
+```
+
+Generated files must be committed with the source change:
+
+- `assets/editor.js`
+- `apps/desktop/assets/editor.js`
+- `apps/mobile/assets/editor.js`
+
+## Documentation Rules
+
+- README is for visitors and quick start.
+- [architecture.md](architecture.md) is the current code map.
+- [roadmap.md](roadmap.md) is the current product and engineering priority.
+- [editor.md](editor.md) is the Markdown/editor contract.
+- [performance-budget.md](performance-budget.md) must mention every trace checked by `scripts/check-perf-docs.js`.
+- Keep Chinese docs aligned when contributor-facing behavior changes.
+- Finishing a task includes updating existing documentation that the task changes. Do not leave roadmap, architecture, editor, performance, README, or skills documents describing the old behavior.
+- Architecture-affecting roadmap work must update [architecture.md](architecture.md) in the same task or explicitly explain why no architecture document change is needed.
+- Editor behavior changes must update [editor.md](editor.md) when protocol, Hybrid behavior, Preview behavior, Markdown rendering, or JS/Rust responsibilities change.
+- Performance-sensitive changes must update [performance-budget.md](performance-budget.md) when trace names, budgets, large-document policy, or render-path ownership changes.
+- AI workflow changes must update [ai-skills.md](ai-skills.md) and the relevant `skills/*/SKILL.md` file.
+
+## Validation
+
+Use the full script before broad changes:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/check.ps1
 ```
 
-等价命令如下：
+```bash
+bash scripts/check.sh
+```
+
+The full suite includes:
 
 ```bash
 cargo fmt --check
@@ -181,24 +116,86 @@ node scripts/check-perf-docs.js
 node scripts/check-perf-docs.js --self-test
 npm --prefix js run build
 npm --prefix js test
-diff assets/editor.js apps/desktop/assets/editor.js
-diff assets/editor.js apps/mobile/assets/editor.js
 ```
 
-`node scripts/report-file-lines.js` 不只是报告文件体量，也会检查非生成文件的单文件行数预算。默认预算是 2500 行，可用 `PAPYRO_FILE_LINE_LIMIT` 临时调整；`PAPYRO_LINE_REPORT_TOP` 可调整输出的最大文件数量。
+The script also verifies generated editor bundles stay synchronized.
 
-在 Windows 环境缺少 Bash 或 `diff` 时，优先运行 `scripts/check.ps1`。
+## Commit Standards
 
-## 文档维护
+- Use English Conventional Commits: `type: summary`.
+- One commit should represent one minimal task.
+- Keep the title readable, ideally under 50 characters and never over 72.
+- `scope` is optional. Use it only when it improves search.
+- Body is optional. Do not write a body when the title is enough.
+- If a body is needed, keep it directly tied to the diff.
+- Do not pad commit messages with roadmap slogans, tool logs, or generic praise.
+- Do not mix unrelated formatting, dependency updates, generated files, and behavior changes.
 
-- 行为变化要更新 README 或对应 docs。
-- 架构边界变化要更新 `docs/architecture.md`、`docs/directory-structure.md` 或 `docs/module-ownership.md`。
-- roadmap 阶段完成、拆分或改序时，要同步更新 `docs/roadmap.md`。
-- 文档不要追求“大而全”，要让下一位开发者能做出正确下一步。
+Common types:
 
-## 安全与数据
+| Type | Use |
+| --- | --- |
+| `feat` | user-visible capability |
+| `fix` | bug fix or incorrect state correction |
+| `docs` | documentation or explanatory comments |
+| `refactor` | structural change without behavior change |
+| `test` | test additions or fixes |
+| `perf` | performance improvement |
+| `build` | build, dependency, packaging, generated flow |
+| `ci` | CI or automation |
+| `style` | CSS or formatting-only change |
+| `chore` | maintenance |
 
-- 不提交密钥、令牌、本地路径或个人环境配置。
-- 涉及文件写入、删除、重命名、导出和同步时，必须优先保证用户内容不丢失。
-- 删除类能力必须有明确入口和确认策略。批量删除或隐式删除不得绕过应用层用例。
-- 出现数据安全疑问时，先降低风险，再推进功能。
+Good titles:
+
+```text
+docs: update architecture guide
+fix: preserve dirty save state
+feat: render hybrid headings
+refactor: move autosave effects
+test: cover save retry flow
+```
+
+Good body:
+
+```text
+fix: preserve dirty save state
+
+Keep SaveStatus::Dirty when storage rejects a write so the tab still
+prompts before close.
+```
+
+Bad titles:
+
+```text
+update code
+fix things
+wip
+misc changes
+feat: add everything
+```
+
+Bad body:
+
+```text
+- Improve many files and keep existing architecture boundaries.
+- Update according to roadmap and run checks.
+- Make the app cleaner, safer, and more professional.
+```
+
+## PR Checklist
+
+- The change solves one clear problem.
+- The module boundary is respected.
+- Generated files are in sync.
+- Relevant English and Chinese docs are updated.
+- Tests or manual validation are listed.
+- Data safety, performance, or rollback risk is called out when relevant.
+- `git status` contains no accidental files.
+
+## Safety Rules
+
+- Do not commit secrets, tokens, local-only paths, or personal environment files.
+- File write, delete, rename, export, and sync changes must prioritize user content safety.
+- Delete flows need explicit UI entry and confirmation strategy.
+- If data safety is uncertain, reduce risk before adding capability.

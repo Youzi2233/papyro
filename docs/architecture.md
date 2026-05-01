@@ -1,290 +1,783 @@
-# Papyro 当前架构
+# Papyro Architecture Onboarding
 
-本文描述的是当前代码库的真实结构，不是长期愿景草图。
+[简体中文](zh-CN/architecture.md) | [Documentation](README.md)
 
-如果你是第一次接触这个项目，建议先看更详细的新手版：[architecture-beginner-guide.md](architecture-beginner-guide.md)。
+This guide is meant to teach the project, not just list folders. After reading it, a new contributor should understand:
 
-如果你只是想启动项目，先看 [README.md](../README.md)。  
-如果你想看重构推进计划，继续看 [docs/refactoring-plan.md](refactoring-plan.md)。
-如果你想看模块 owner 和拆分优先级，继续看 [docs/module-ownership.md](module-ownership.md)。
-如果你想看进程、窗口、workspace、document 和 editor runtime 的边界，继续看 [docs/session-model.md](session-model.md)。
-如果你想看 `crates/app` use case 的输入、输出和状态更新范围，继续看 [docs/use-case-contracts.md](use-case-contracts.md)。
-如果你想看 runtime signal 的状态域拆分目标，继续看 [docs/runtime-state-domains.md](runtime-state-domains.md)。
-如果你想看 metadata 数据库备份和恢复策略，继续看 [docs/metadata-backup-recovery.md](metadata-backup-recovery.md)。
+- what kind of app Papyro is
+- why the project uses Rust, Dioxus, and JavaScript together
+- how clicks, typing, saving, previewing, and editor events move through the system
+- what each crate owns
+- how Rust and the CodeMirror JavaScript runtime communicate
+- where future work such as file association, multi-window mode, theming, and Hybrid editing belongs
 
-## 总览
+If this is your first time in the repository, read this guide in order. Then use [development standards](development-standards.md), [roadmap](roadmap.md), [editor guide](editor.md), and [performance budget](performance-budget.md) for task-specific work.
 
-Papyro 是一个基于 Rust 和 Dioxus 0.7 的跨端 Markdown 笔记项目。
+## 1. One Sentence
 
-当前架构已经从“根包承载 desktop 运行时”调整为：
+Papyro is a local-first Markdown workspace app.
 
-- `apps/desktop` 是 desktop 宿主入口
-- `apps/mobile` 是 mobile 宿主入口
-- `crates/app` 是共享应用层
-- `crates/core` 保留核心模型、状态结构和 trait 边界
-- `crates/ui` 提供 Dioxus 组件和布局
-- `crates/storage` 提供 SQLite、文件系统和 watcher
-- `crates/platform` 提供平台能力适配
-- `crates/editor` 提供 Markdown 和编辑器相关能力
+More concretely:
 
-根目录现在是纯 Cargo workspace，不再包含 `src/` 应用入口源码。
+- user notes are real `.md` files in real folders
+- SQLite stores metadata such as workspaces, recent files, tags, settings, and recovery drafts
+- Rust owns application state, file operations, storage, safety, and user flows
+- Dioxus 0.7 lets us write UI components in Rust and render them into a desktop WebView
+- CodeMirror owns complex browser editing behavior such as input, selection, IME, undo, highlighting, and decorations
+- JavaScript owns the editor runtime because CodeMirror, Mermaid, KaTeX, and DOM editing APIs live in the browser ecosystem
 
-## 启动链路
+```mermaid
+flowchart TD
+    product["Product experience<br/>local Markdown notes"]
+    rust["Rust application core<br/>state, flows, storage, safety"]
+    webview["WebView layer<br/>Dioxus UI + CodeMirror JS runtime"]
 
-### Desktop
-
-```text
-cargo run -p papyro-desktop
--> apps/desktop/src/main.rs
--> papyro_app::desktop::DesktopApp
--> crates/app runtime
--> crates/ui DesktopLayout
+    product --> rust --> webview
+    webview --> rust --> product
 ```
 
-`apps/desktop` 负责 desktop 壳层职责：
+## 2. Vocabulary
 
-- 初始化日志
-- 配置窗口
-- 注入首帧 CSS / JS / favicon
-- 读取启动主题
-- 挂载共享 desktop app
+| Term | Meaning |
+| --- | --- |
+| Workspace | A folder selected by the user. File tree, search, and watcher state center on it. |
+| Note | A Markdown file, usually `.md` or `.markdown`. |
+| Tab | An open document in the current window. It tracks path, dirty state, and save state. |
+| Content | The current text for a tab. It may not be saved to disk yet. |
+| Dirty | The tab has unsaved changes. Failed writes must keep the tab dirty. |
+| Shell | A platform entry point such as `apps/desktop` or `apps/mobile`. |
+| Runtime | The shared signals, commands, effects, and context created by `crates/app`. |
+| View model | A UI-friendly projection of state from `crates/ui/src/view_model.rs`. |
+| Editor runtime | The CodeMirror runtime built from `js/src/editor.js`. |
+| Protocol | The command/event structs passed between Rust and JavaScript. |
 
-### Mobile
+## 3. Startup Flow
 
-```text
-cargo run -p papyro-mobile
--> apps/mobile/src/main.rs
--> papyro_app::mobile::MobileApp
--> crates/app runtime
--> crates/ui MobileLayout
+Desktop startup:
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Desktop as apps/desktop
+    participant App as crates/app
+    participant Storage as crates/storage
+    participant UI as crates/ui
+    participant JS as js/editor bundle
+
+    User->>Desktop: cargo run -p papyro-desktop
+    Desktop->>Desktop: configure window, icon, menu, assets
+    Desktop->>Desktop: inject /assets/editor.js
+    Desktop->>App: launch DesktopApp
+    App->>Storage: bootstrap workspace/settings/recovery
+    Storage-->>App: WorkspaceBootstrap
+    App->>UI: provide AppContext
+    UI->>JS: create EditorHost when a tab is visible
+    JS-->>UI: runtime_ready
 ```
 
-`apps/mobile` 负责 mobile 壳层职责：
+Key files:
 
-- 初始化日志
-- 注入 mobile 静态资源
-- 挂载共享 mobile app
+| Step | File |
+| --- | --- |
+| Desktop launch | `apps/desktop/src/main.rs` |
+| Desktop app entry | `crates/app/src/desktop.rs` |
+| Runtime and context | `crates/app/src/runtime.rs` |
+| Initial state | `crates/app/src/state.rs` |
+| Desktop layout | `crates/ui/src/layouts/desktop_layout.rs` |
+| Editor pane | `crates/ui/src/components/editor/pane.rs` |
+| Editor host bridge | `crates/ui/src/components/editor/host.rs` |
 
-## 分层结构
+Mobile also uses `crates/app` and `crates/ui`, but today it is a shared-runtime development entry, not a production mobile product.
+
+## 4. Why Rust + Dioxus + JavaScript?
+
+This is the most important architectural choice in Papyro. It is not accidental mixing. It is a boundary decision.
+
+### Rust owns trusted application behavior
+
+Rust owns:
+
+- filesystem reads and writes
+- SQLite metadata
+- workspace scanning
+- save, rename, move, delete flows
+- recovery drafts
+- dirty/save/conflict state
+- testable Markdown-derived logic
+- safe wrappers around platform APIs
+
+These areas need reliability, strong tests, and clear ownership.
+
+### Dioxus owns Rust-authored UI
+
+Dioxus lets the project write UI in Rust while rendering into a WebView.
+
+Papyro uses Dioxus 0.7:
+
+- components are Rust functions returning `Element`
+- local state uses `Signal<T>`
+- derived state uses `use_memo`
+- side effects use `use_effect`
+- UI talks to the app layer through `AppContext` and `AppCommands`
+
+This keeps the UI close to Rust state without turning the whole app into a JavaScript frontend.
+
+### JavaScript owns browser editor mechanics
+
+Complex text editing is a browser ecosystem strength.
+
+CodeMirror already solves hard problems:
+
+- cursor and selection behavior
+- IME composition
+- undo/redo history
+- syntax parsing and highlighting
+- layout and scroll behavior
+- decorations and widgets
+- search UI
+- paste and keyboard handling
+
+Mermaid, KaTeX, and many Markdown editor integrations also live naturally in JS/DOM.
+
+Writing all of this from scratch in Rust would be expensive and unlikely to match mature editor behavior. Papyro therefore uses:
+
+- Rust for application truth and data safety
+- JavaScript for browser editor interaction
+- a typed JSON protocol between them
+
+## 5. Repository Map
 
 ```text
-apps/desktop
-apps/mobile
-    |
-    v
-crates/app
-    |
-    +--> crates/ui
-    +--> crates/core
-    +--> crates/storage
-    +--> crates/platform
-    +--> crates/editor
-
-crates/storage  -> crates/core
-crates/platform -> crates/core
-crates/editor   -> crates/core
-crates/ui       -> crates/core
-crates/ui       -> crates/editor (protocol and Markdown UI helpers only)
+.
+├─ apps/
+│  ├─ desktop/             # desktop shell: window, launch args, assets, system events
+│  └─ mobile/              # mobile shell: mobile assets and shared runtime mount
+├─ crates/
+│  ├─ app/                 # runtime, dispatcher, handlers, effects, use cases
+│  ├─ core/                # models, state structs, traits, pure rules
+│  ├─ ui/                  # Dioxus components, layouts, view models, i18n
+│  ├─ storage/             # SQLite, filesystem, watcher, workspace scan
+│  ├─ platform/            # dialogs, app data, reveal, external links
+│  └─ editor/              # Markdown summary, HTML render, protocol structs
+├─ js/                     # CodeMirror runtime source, tests, build script
+├─ assets/                 # shared generated/static assets
+├─ scripts/                # CI and local validation scripts
+├─ skills/                 # project-local AI skills
+└─ docs/                   # current documentation
 ```
 
-## 每层职责
+## 6. Dependency Direction
+
+```mermaid
+flowchart TD
+    desktop["apps/desktop"]
+    mobile["apps/mobile"]
+    app["crates/app"]
+    ui["crates/ui"]
+    core["crates/core"]
+    storage["crates/storage"]
+    platform["crates/platform"]
+    editor["crates/editor"]
+    js["js"]
+
+    desktop --> app
+    mobile --> app
+    app --> ui
+    app --> core
+    app --> storage
+    app --> platform
+    app --> editor
+    ui --> core
+    ui --> editor
+    storage --> core
+    platform --> core
+    editor --> core
+    js -. build output .-> assets
+```
+
+Rules:
+
+- `core` must not depend on Dioxus, storage, platform, or JS.
+- `ui` must not write files directly.
+- `storage` must not know UI layout.
+- `platform` must not mutate app state directly.
+- `js` must not save files directly.
+- After dependency direction changes, run `node scripts/check-workspace-deps.js`.
+
+## 7. Layer Responsibilities
 
 ### `apps/desktop`
 
-Desktop 宿主入口。
+The desktop shell owns:
 
-负责：
+- logging setup
+- native window title, size, icon, and menu configuration
+- runtime asset sync
+- `/assets/editor.js` injection
+- startup Markdown path collection
+- system opened-file event handling
+- mounting `papyro_app::desktop::DesktopApp`
 
-- desktop 启动
-- 窗口大小、标题、背景色
-- 首帧资源注入
-- desktop 专属 Dioxus launch 配置
-
-不负责：
-
-- 业务命令
-- workspace flow
-- 文件操作流程
-- UI 组件实现
+It must not own shared workspace flow, save logic, file tree state, or tab content state.
 
 ### `apps/mobile`
 
-Mobile 宿主入口。
+The mobile shell owns:
 
-负责：
+- mobile CSS and asset injection
+- brand asset context
+- mounting `papyro_app::mobile::MobileApp`
 
-- mobile 启动
-- mobile 静态资源注入
-- mobile 专属 Dioxus launch
-
-不负责：
-
-- 复用 desktop 源码
-- 定义独立的一套业务 flow
+It should not fork desktop business logic.
 
 ### `crates/app`
 
-共享应用层。
+The application layer is the orchestration center.
 
-这是当前最重要的组合层。desktop 和 mobile 都通过这里复用主要运行时。
+| File | Role |
+| --- | --- |
+| `runtime.rs` | creates runtime signals, memos, context, and effects |
+| `state.rs` | defines runtime signal groups |
+| `actions.rs` | defines app-level actions |
+| `dispatcher.rs` | routes actions to handlers and effects |
+| `handlers/*` | connects actions, state, storage, and platform |
+| `workspace_flow/*` | owns file/workspace/tab use cases |
+| `effects.rs` | owns autosave, watcher, flush-on-close, runtime side effects |
+| `settings_persistence.rs` | batches settings writes |
+| `open_requests.rs` | normalizes external Markdown open requests |
 
-负责：
-
-- 创建共享 runtime
-- 注入 Dioxus context
-- 组装 app commands
-- 协调 workspace flow
-- 协调 watcher 生命周期
-- 对接 storage / platform / editor / core / ui
-
-当前关键文件：
-
-- `crates/app/src/runtime.rs`：共享 runtime 和 context 注入
-- `crates/app/src/state.rs`：运行时 Dioxus signal 聚合
-- `crates/app/src/actions.rs`：UI command 转入应用层后的 action 类型
-- `crates/app/src/dispatcher.rs`：action 分发和 handler 路由
-- `crates/app/src/effects.rs`：autosave、watcher、退出前 flush 等副作用
-- `crates/app/src/settings_persistence.rs`：settings 后台持久化队列和合并策略
-- `crates/app/src/workspace_flow.rs` + `workspace_flow/*`：workspace 打开、刷新、创建、重命名、移动、删除、保存等应用流程
-- `crates/app/src/desktop.rs`：desktop app 组件入口和 desktop 启动 chrome 配置
-- `crates/app/src/mobile.rs`：mobile app 组件入口
-- `crates/app/src/handlers/*`：UI command 到 app flow 的连接层
+The app layer keeps UI away from storage and keeps storage away from UI.
 
 ### `crates/core`
 
-核心层。
+The core layer owns stable data and pure rules:
 
-负责：
+- `Workspace`
+- `NoteMeta`
+- `FileNode`
+- `EditorTab`
+- `AppSettings`
+- `FileState`
+- `EditorTabs`
+- `TabContentsMap`
+- `UiState`
+- `NoteStorage`
+- `ProcessRuntimeSession`
 
-- 数据模型
-- 编辑器状态结构
-- 文件树状态结构
-- UI 偏好状态结构
-- storage trait 和数据传输结构
-- 与具体平台和 Dioxus runtime 无关的纯规则
-
-`core` 不应该承载启动流程、watcher 生命周期、平台初始化和 UI context 注入。
+If logic can be tested without Dioxus, filesystem APIs, or platform APIs, it may belong in `core`.
 
 ### `crates/ui`
 
-Dioxus UI 层。
+The UI layer owns Dioxus rendering:
 
-负责：
+- layouts
+- header, sidebar, editor, settings, search, command palette, recovery, trash
+- theme classes and primitives
+- `AppContext`
+- `AppCommands`
+- view models
+- i18n text
 
-- desktop layout
-- mobile layout
-- sidebar、header、editor、settings 等组件
-- command 接口类型
-- 统一的 `AppContext` UI 入口
-
-当前 UI 仍在收敛中。`AppContext` 已经提供 `workspace_model`、`editor_model`、
-`editor_surface_model`、`theme`、`sidebar_collapsed`、`sidebar_width` 等窄
-memo，组件应优先消费这些派生入口。raw signal 仍保留给尚未迁出的组件，但后续
-应继续减少 layout 和 leaf component 对底层 signal 的直接读写。
+Good UI code reads view models, renders components, and sends commands.
 
 ### `crates/storage`
 
-存储层。
+Storage owns persistence:
 
-负责：
+- SQLite schema and migrations
+- workspace metadata
+- note metadata
+- recent files
+- tags
+- settings
+- recovery drafts
+- Markdown file reads and writes
+- workspace scanning
+- watcher event mapping
+- search helpers
 
-- SQLite 数据库
-- schema migration
-- `.md` 文件读写
-- workspace 扫描
-- 文件 watcher
-- `NoteStorage` 的具体实现
+Data safety rule: failed writes must not clear dirty state.
 
 ### `crates/platform`
 
-平台适配层。
+Platform owns system integration:
 
-负责：
+- app data directory
+- folder and file dialogs
+- reveal in explorer
+- external URL opening
+- desktop opened URL extraction
 
-- desktop 平台能力实现
-- mobile 平台能力实现
-- app data dir
-- 文件选择
-- reveal/open in explorer 等系统能力
+These APIs are wrapped so app flows can be tested.
 
 ### `crates/editor`
 
-编辑器能力层。
+Editor owns Rust-side Markdown capability:
 
-负责：
+- document statistics
+- outline extraction
+- Hybrid block analysis
+- Preview HTML rendering
+- code highlighting theme decisions
+- Rust/JS protocol structs
 
-- Markdown 统计
-- Markdown 渲染
-- 编辑器桥接相关能力
+`crates/editor` is not the CodeMirror runtime. The CodeMirror runtime lives in `js/`.
 
-## 依赖规则
+### `js/`
 
-允许：
+The JS directory owns browser editor runtime code.
 
-- `apps/* -> crates/app`
-- `crates/app -> crates/ui`
-- `crates/app -> crates/core`
-- `crates/app -> crates/storage`
-- `crates/app -> crates/platform`
-- `crates/app -> crates/editor`
-- `crates/storage -> crates/core`
-- `crates/platform -> crates/core`
-- `crates/editor -> crates/core`
-- `crates/ui -> crates/core`
-- `crates/ui -> crates/editor` for editor protocol and Markdown UI helpers only
+| File | Role |
+| --- | --- |
+| `js/src/editor.js` | runtime entry, registers `window.papyroEditor` |
+| `js/src/editor-core.js` | testable editor core functions |
+| `js/src/editor-media.js` | Mermaid, KaTeX, image, and table widgets |
+| `js/src/editor-theme.js` | CodeMirror theme and highlight style |
+| `js/test/editor-core.test.js` | JS unit tests |
+| `js/build.js` | builds and syncs generated editor assets |
 
-禁止：
+Only edit `js/src/*` by hand. Do not edit generated `assets/editor.js` directly.
 
-- `apps/mobile` 依赖 `apps/desktop` 源码
-- `apps/desktop` 承载共享业务流程
-- `crates/core` 依赖 Dioxus runtime 装配
-- `crates/ui` 直接依赖 concrete storage
-- `crates/ui` 依赖 editor runtime 业务真相
-- `crates/storage` 直接修改 Dioxus signal
+## 8. Runtime State
 
-## 当前数据流
-
-以打开笔记为例：
+`crates/app/src/state.rs` defines `RuntimeState` as a group of Dioxus signals:
 
 ```text
-User action
--> crates/ui command callback
--> crates/app runtime command
--> crates/app handler
--> crates/app workspace_flow
--> crates/storage NoteStorage implementation
--> crates/core state structures updated
--> Dioxus rerender
+RuntimeState
+├─ file_state              # workspace, tree, selection, recent files
+├─ process_runtime         # process session and open mode
+├─ editor_tabs             # open tabs and active tab
+├─ tab_contents            # tab content and revision
+├─ ui_state                # theme, settings, view mode, chrome state
+├─ workspace_search        # workspace search
+├─ recovery_drafts         # recovery draft list
+├─ status_message          # visible status text
+├─ workspace_watch_path    # current watcher path
+├─ pending_close_tab       # close confirmation
+├─ pending_delete_path     # delete confirmation
+├─ editor_runtime_commands # Rust-to-JS editor command queue
+└─ settings_persistence    # background settings save queue
 ```
 
-## 当前状态
+The state is split so unrelated UI areas do not invalidate each other:
 
-已经完成：
+- file tree changes should not rebuild CodeMirror
+- typing should not rerender the whole sidebar
+- theme changes should not recompute Markdown preview
+- tab switching should not rescan the whole workspace
 
-- `src/` 根包入口已移除
-- desktop 宿主迁入 `apps/desktop`
-- desktop 首帧 settings / chrome 装配已从 `apps/desktop` 收进 `crates/app`
-- mobile 不再通过 `#[path]` 复用 desktop handler
-- 共享 runtime 已进入 `crates/app`
-- workspace 应用编排已从 `crates/core` 迁入 `crates/app`
-- `crates/app` 已拆出 state、actions、dispatcher、effects、export 和 settings persistence
-- workspace flow 已拆为 `workspace_flow/*` 用例模块
-- editor surface 已拆为 pane、tabbar、host、bridge、preview、outline、fallback 等模块
-- Rust/JS 编辑器协议已固化到 `crates/editor/src/protocol.rs`
-- editor layout refresh 已从 Rust/JS 协议中移除，改由 JS runtime 本地处理
+## 9. UI-To-App Data Flow
 
-仍在推进：
+```mermaid
+flowchart LR
+    component["Dioxus component"]
+    command["AppCommands"]
+    action["AppAction"]
+    dispatcher["AppDispatcher"]
+    handler["handler"]
+    flow["workspace_flow"]
+    storage["storage/platform"]
+    state["RuntimeState"]
+    viewmodel["view model memo"]
+    rerender["UI rerender"]
 
-- 继续收紧 `core` 边界
-- 继续减少 UI layout 中的流程编排
-- 让 `crates/app` 的 public API 更适合未来跨端复用
-- 按 [module-ownership.md](module-ownership.md) 继续收窄 raw signal 和 dispatcher 热点
+    component --> command --> action --> dispatcher --> handler --> flow
+    flow --> storage
+    flow --> state
+    state --> viewmodel --> rerender
+```
 
-## 目标架构
+Example: create a new note.
 
-详见 [roadmap.md](roadmap.md) 中的目标架构章节。核心演进方向：
+1. UI calls `commands.create_note.call(name)`.
+2. `AppCommands` reaches `AppDispatcher`.
+3. Dispatcher routes `AppAction::CreateNote`.
+4. Handler calls `file_ops::create_note`.
+5. Workspace flow asks storage to create the file.
+6. Success updates `FileState`, `EditorTabs`, and `TabContentsMap`.
+7. View models recompute.
+8. UI shows the new tab and file tree entry.
 
-- `AppContext` 收敛为更小的 view model + action facade，UI 不再直接操作原始 Signal
-- `crates/app` 继续把 dispatcher 变薄，把领域细节下沉到 handlers/effects/workspace flow
-- editor surface 继续把 preview/outline 派生任务化，并保持活跃 CodeMirror host 有上限
-- 未来按需新增 `search/`、`export/` crate
+## 10. Save Flow
+
+```mermaid
+sequenceDiagram
+    participant JS as CodeMirror JS
+    participant Host as EditorHost
+    participant Commands as AppCommands
+    participant App as AppDispatcher
+    participant Flow as workspace_flow/save
+    participant Storage as crates/storage
+    participant State as RuntimeState
+
+    JS->>Host: content_changed
+    Host->>Commands: content_changed.call(...)
+    Commands->>App: AppAction::ContentChanged
+    App->>State: update tab content and dirty state
+    App->>Flow: autosave or manual save
+    Flow->>Storage: write_note(...)
+    alt success
+        Storage-->>Flow: SavedNote
+        Flow->>State: mark saved, refresh metadata
+    else conflict or failure
+        Storage-->>Flow: error/conflict
+        Flow->>State: keep dirty, mark conflict/failed
+    end
+```
+
+The important boundary:
+
+- JS reports content changes.
+- Rust decides when to save.
+- storage writes to disk.
+- failed saves keep dirty state.
+
+## 11. Why The Editor Protocol Exists
+
+Rust and JavaScript should not know each other's internal objects. They communicate through explicit message types in `crates/editor/src/protocol.rs`:
+
+- `EditorCommand`: Rust sends this to JS.
+- `EditorEvent`: JS sends this to Rust.
+
+Benefits:
+
+- JSON structure is testable.
+- Fields stay stable.
+- new capabilities have a clear change point.
+- JS does not know Rust state internals.
+- Rust does not know CodeMirror object internals.
+
+## 12. How Rust Starts The JS Editor
+
+The key file is `crates/ui/src/components/editor/host.rs`.
+
+Each editable tab gets an `EditorHost`. It:
+
+1. creates a DOM container id such as `mn-editor-{tab_id}`
+2. runs a bridge script with `document::eval`
+3. waits for `window.papyroEditor`
+4. calls `window.papyroEditor.ensureEditor(...)`
+5. calls `window.papyroEditor.attachChannel(tabId, dioxus)`
+6. receives `runtime_ready`
+7. listens for JS events
+8. sends commands with `eval.send(EditorCommand::...)`
+
+```mermaid
+sequenceDiagram
+    participant Rust as EditorHost Rust
+    participant Eval as Dioxus document::eval
+    participant JS as window.papyroEditor
+    participant CM as CodeMirror EditorView
+
+    Rust->>Eval: inject bridge script
+    Eval->>JS: ensureEditor(tabId, containerId, content, mode)
+    JS->>CM: create or reuse EditorView
+    Eval->>JS: attachChannel(tabId, dioxus)
+    JS-->>Rust: dioxus.send(runtime_ready)
+    Rust->>JS: eval.send(set_view_mode)
+    JS-->>Rust: dioxus.send(content_changed)
+```
+
+The `dioxus` object is provided by Dioxus eval:
+
+- JS calls `dioxus.send(value)`, Rust receives with `eval.recv::<EditorEvent>().await`.
+- Rust calls `eval.send(command)`, JS receives with `await dioxus.recv()`.
+
+## 13. How JS Registers The Runtime
+
+`js/src/editor.js` registers:
+
+```javascript
+window.papyroEditor = {
+  ensureEditor,
+  handleRustMessage(tabId, message) { ... },
+  attachChannel(tabId, dioxus) { ... },
+  attachPreviewScroll,
+  navigateOutline,
+  syncOutline,
+  scrollEditorToLine,
+  scrollPreviewToHeading,
+  renderPreviewMermaid,
+};
+```
+
+| Function | Purpose |
+| --- | --- |
+| `ensureEditor` | create or reuse a CodeMirror `EditorView` |
+| `attachChannel` | store the Dioxus communication object |
+| `handleRustMessage` | handle Rust commands |
+| `syncOutline` | sync active heading state |
+| `navigateOutline` | jump to an outline heading |
+| `renderPreviewMermaid` | render Mermaid in Preview |
+
+## 14. Rust-To-JS Commands
+
+`EditorCommand` includes:
+
+| Command | Purpose |
+| --- | --- |
+| `SetContent` | replace editor content from Rust |
+| `SetViewMode` | update Source / Hybrid / Preview runtime mode |
+| `SetBlockHints` | send Rust-derived Markdown block hints |
+| `SetPreferences` | update editor preferences |
+| `InsertMarkdown` | insert Markdown at the current selection |
+| `ApplyFormat` | apply bold, italic, link, heading, etc. |
+| `Focus` | focus the editor |
+| `Destroy` | destroy or recycle the editor host |
+
+Commands are usually sent from:
+
+- `crates/ui/src/components/editor/host.rs`
+- `crates/ui/src/commands.rs`
+- `crates/app/src/dispatcher.rs`
+
+## 15. JS-To-Rust Events
+
+`EditorEvent` includes:
+
+| Event | Trigger |
+| --- | --- |
+| `RuntimeReady` | CodeMirror runtime is ready |
+| `RuntimeError` | JS runtime failed |
+| `ContentChanged` | user input changed document text |
+| `SaveRequested` | JS captured a save shortcut |
+| `PasteImageRequested` | user pasted or dropped an image |
+
+Most input follows this path:
+
+```mermaid
+sequenceDiagram
+    participant CM as CodeMirror updateListener
+    participant JS as editor.js
+    participant Rust as EditorHost
+    participant App as AppCommands
+
+    CM->>JS: docChanged
+    JS->>Rust: dioxus.send(content_changed)
+    Rust->>App: commands.content_changed.call(...)
+    App->>App: mark dirty + update content
+```
+
+## 16. Why Hybrid Needs Rust Block Hints
+
+Hybrid mode is not just CSS.
+
+It needs to know the source ranges for:
+
+- heading
+- list
+- task list
+- blockquote
+- code fence
+- table
+- math
+- Mermaid
+
+Rust analyzes these in `crates/editor/src/parser/blocks.rs` and produces `MarkdownBlockHintSet`.
+
+Flow:
+
+```text
+active document snapshot
+-> analyze_markdown_block_snapshot_with_options
+-> MarkdownBlockHintSet
+-> EditorHost
+-> EditorCommand::SetBlockHints
+-> JS decorations/widgets
+```
+
+Why not all JS?
+
+- Rust already needs Markdown stats, Preview, Outline, and large-document policy.
+- block hints can align with Rust document revisions.
+- large-document fallback is easier to centralize.
+
+Why not all Rust?
+
+- CodeMirror decorations, selection, widgets, DOM hit testing, and scroll live in JS.
+- Browser editor behavior would be awkward to drive directly from Rust.
+
+Hybrid is therefore Rust analysis plus JS presentation.
+
+## 17. Preview Versus Hybrid
+
+| Capability | Preview | Hybrid |
+| --- | --- | --- |
+| Editable | no | yes |
+| Primary rendering | Rust HTML | CodeMirror decorations/widgets |
+| Mermaid | JS-assisted render | JS widget/edit state |
+| Truth source | Rust tab content | Rust tab content plus JS input events |
+
+Preview uses `pulldown-cmark` and `syntect` on the Rust side, then JS helps with Mermaid and scroll/outline behavior.
+
+Hybrid keeps CodeMirror as the editor and uses Rust block hints to make Markdown feel more document-like.
+
+## 18. Why Editor Hosts Are Reused
+
+Creating a CodeMirror `EditorView` is expensive. It builds DOM, syntax state, plugins, listeners, and layout caches.
+
+Papyro therefore keeps a host lifecycle and spare pool:
+
+- opening a tab tries to reuse an existing editor view
+- hidden tabs keep their host
+- closed tabs are destroyed or recycled after a delay
+- sidebar, theme, and status changes should not rebuild the editor
+
+Relevant files:
+
+- `crates/ui/src/components/editor/pane.rs`
+- `crates/ui/src/components/editor/host.rs`
+- `js/src/editor.js`
+- `js/src/editor-core.js`
+
+## 19. Workspace, Tabs, And File Association
+
+Current model:
+
+- `FileState` stores current workspace, file tree, selected path.
+- `EditorTabs` stores open tabs and active tab.
+- `TabContentsMap` stores tab contents.
+- `workspace_watch_path` stores the current watcher path.
+
+Future OS Markdown open flow:
+
+1. desktop receives opened-file event
+2. event becomes `MarkdownOpenRequest`
+3. app determines the target workspace
+4. app bootstraps or reloads that workspace if needed
+5. app opens or activates the tab
+6. sidebar file tree follows the tab's workspace
+7. switching tabs also switches visible workspace context
+
+```mermaid
+flowchart TD
+    os["OS opens file.md"]
+    desktop["apps/desktop event"]
+    request["MarkdownOpenRequest"]
+    dispatcher["AppDispatcher"]
+    flow["open_markdown_target flow"]
+    file_state["FileState workspace/tree"]
+    tabs["EditorTabs active tab"]
+    watcher["workspace watcher"]
+
+    os --> desktop --> request --> dispatcher --> flow
+    flow --> file_state
+    flow --> tabs
+    flow --> watcher
+```
+
+This matters for multi-workspace tabs and future multi-window behavior.
+
+## 20. Why Settings Should Become A Window
+
+Today settings still live in the main UI chrome.
+
+The target design:
+
+- main window focuses on writing and workspace navigation
+- Settings becomes an independent tool window
+- settings update a process-level `ProcessRuntime`
+- the main window reacts live without remounting the editor
+- settings sections keep a stable window size
+
+This reduces editor distraction and prepares the app for multi-window mode.
+
+## 21. Where To Start For Common Tasks
+
+| Task | Start here | Also check |
+| --- | --- | --- |
+| UI layout/style | `crates/ui/src/components` | `assets/main.css`, `apps/*/assets/main.css` |
+| New UI command | `crates/ui/src/commands.rs` | `crates/app/src/actions.rs` |
+| New app behavior | `crates/app/src/dispatcher.rs` | `handlers/*`, `workspace_flow/*` |
+| File operation | `crates/app/src/workspace_flow` | `crates/storage/src/fs` |
+| Save behavior | `workspace_flow/save.rs` | `crates/storage/src/lib.rs` |
+| File tree behavior | `crates/ui/src/components/sidebar` | `crates/core/src/file_state.rs` |
+| Markdown Preview | `crates/editor/src/renderer/html.rs` | `crates/ui/src/components/editor/preview.rs` |
+| Hybrid editing | `crates/editor/src/parser/blocks.rs` | `js/src/editor.js`, `js/src/editor-core.js` |
+| Paste/selection/IME | `js/src/editor-core.js` | `js/test/editor-core.test.js` |
+| Settings field | `crates/core/src/models.rs` | settings UI and storage settings |
+| OS file open | `apps/desktop/src/main.rs` | `crates/app/src/open_requests.rs`, `dispatcher.rs` |
+
+## 22. Standard Feature Path
+
+Example: adding a callout block.
+
+1. Define the product behavior in roadmap or an issue.
+2. Pick the UI entry, such as toolbar, command palette, or shortcut.
+3. Extend `AppCommands` if Rust must route the action.
+4. Extend `AppAction` and dispatcher if this is app behavior.
+5. Use `EditorRuntimeCommandQueue` if Rust needs JS to insert Markdown.
+6. Handle the command in JS.
+7. Add JS core tests when behavior changes.
+8. Update [editor guide](editor.md).
+9. Run relevant validation.
+
+Do not make UI components write files directly.
+
+## 23. Standard Protocol Change Path
+
+When Rust and JS need a new message:
+
+1. update `crates/editor/src/protocol.rs`
+2. add serde JSON tests
+3. update Rust sender or receiver in `EditorHost`
+4. handle the message in `js/src/editor-core.js` or `js/src/editor.js`
+5. send JS events with `dioxus.send(...)`
+6. handle events in the Rust `EditorHost` match
+7. add Rust or JS tests
+8. update this guide and [editor.md](editor.md)
+
+Protocol messages should use stable data. Do not pass CodeMirror internal objects.
+
+## 24. Performance Boundaries
+
+High-risk paths:
+
+- typing
+- paste
+- tab switch
+- Source/Hybrid/Preview switch
+- Preview render
+- outline extraction
+- file tree refresh
+- workspace search
+- sidebar resize
+
+Before changing these paths, read [performance budget](performance-budget.md).
+
+Ask:
+
+- will this rebuild CodeMirror?
+- will this clone large document text?
+- will this do IO in a render path?
+- will this make sidebar and editor subscribe to each other?
+- will this parse the whole document on every keystroke?
+
+## 25. Project Health
+
+Papyro tries to keep these habits:
+
+- docs describe current facts
+- README is visitor-facing
+- roadmap describes priority, not diary entries
+- skills help AI load focused context
+- each commit does one minimal task
+
+Full check:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/check.ps1
+```
+
+Docs-only minimum:
+
+```bash
+node scripts/check-perf-docs.js
+node scripts/report-file-lines.js
+```
+
+## 26. Summary
+
+Papyro's core boundary is: Rust owns application truth, Dioxus owns UI composition, CodeMirror JavaScript owns complex editor interaction, and both sides communicate through an explicit protocol.
+
+If you preserve that boundary, features, UI work, Hybrid improvements, file association, and future multi-window work all have clear homes.
