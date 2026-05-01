@@ -168,6 +168,61 @@ small {
     box-shadow: var(--mn-ring-focus);
 }
 
+.mn-tooltip {
+    position: relative;
+    display: inline-flex;
+}
+
+.mn-tooltip::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 8px);
+    z-index: 24;
+    max-width: 220px;
+    padding: 5px 8px;
+    border: 1px solid var(--mn-border);
+    border-radius: 9px;
+    background: var(--mn-panel-strong);
+    color: var(--mn-panel);
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.35;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, 4px);
+    transition: opacity 0.12s ease, transform 0.12s ease;
+    white-space: nowrap;
+}
+
+.mn-tooltip::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 3px);
+    z-index: 25;
+    width: 8px;
+    height: 8px;
+    background: var(--mn-panel-strong);
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, 4px) rotate(45deg);
+    transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+.mn-tooltip:hover::after,
+.mn-tooltip:hover::before,
+.mn-tooltip:focus-within::after,
+.mn-tooltip:focus-within::before {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
+.mn-tooltip:hover::before,
+.mn-tooltip:focus-within::before {
+    transform: translate(-50%, 0) rotate(45deg);
+}
+
 .mn-workbench {
     display: flex;
     min-height: 0;

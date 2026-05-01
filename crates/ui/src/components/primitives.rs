@@ -318,7 +318,6 @@ pub fn IconButton(label: String, icon: String, on_click: EventHandler<()>) -> El
         Tooltip { label: label.clone(),
             button {
                 class: "mn-icon-btn",
-                title: "{label}",
                 "aria-label": "{label}",
                 onclick: move |_| on_click.call(()),
                 "{icon}"
