@@ -7,14 +7,17 @@ use crate::components::primitives::{
 };
 use crate::context::use_app_context;
 use crate::i18n::use_i18n;
-use crate::view_model::{SettingsFormViewModel, TagListItem};
+use crate::view_model::TagListItem;
 use dioxus::prelude::*;
 use papyro_core::models::{AppLanguage, AppSettings, Theme, WorkspaceSettingsOverrides};
 
+const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
+const DEFAULT_TAG_COLOR: &str = "#6B7280";
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum SettingsScope {
-    Global,
-    Workspace,
+enum SettingsPanel {
+    General,
+    About,
 }
 
 #[component]
@@ -23,50 +26,33 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
     let i18n = use_i18n();
     let commands = app.commands.clone();
     let settings_form_model = app.settings_form_model;
-    let settings_form = settings_form_model.read().clone();
     let settings_workspace = app.settings_workspace_model.read().clone();
+    let settings_form = settings_form_model.read().clone();
+    let effective_settings = settings_form.workspace_settings.clone();
+    let workspace_overrides = settings_form.workspace_overrides.clone();
     let has_workspace = settings_form.has_workspace;
-    let initial_scope = if has_workspace
-        && settings_form.workspace_overrides != WorkspaceSettingsOverrides::default()
-    {
-        SettingsScope::Workspace
-    } else {
-        SettingsScope::Global
-    };
-    let settings = settings_for_scope(&settings_form, initial_scope);
 
-    let mut save_scope = use_signal(|| initial_scope);
-    let mut font_family = use_signal(|| settings.font_family.clone());
-    let mut font_size = use_signal(|| settings.font_size);
-    let mut line_height = use_signal(|| settings.line_height);
-    let mut auto_link_paste = use_signal(|| settings.auto_link_paste);
-    let mut auto_save_ms = use_signal(|| settings.auto_save_delay_ms);
-    let mut theme = use_signal(|| settings.theme.clone());
+    let mut active_panel = use_signal(|| SettingsPanel::General);
+    let mut language = use_signal(|| effective_settings.language);
+    let mut theme = use_signal(|| effective_settings.theme.clone());
+    let mut font_family = use_signal(|| effective_settings.font_family.clone());
+    let mut font_size = use_signal(|| effective_settings.font_size);
+    let mut line_height = use_signal(|| effective_settings.line_height);
+    let mut auto_link_paste = use_signal(|| effective_settings.auto_link_paste);
+    let mut auto_save_ms = use_signal(|| effective_settings.auto_save_delay_ms);
+
     let save_commands = commands.clone();
     let save_settings_form_model = settings_form_model;
-    let scope_settings_form_model = settings_form_model;
-    let language_settings_form_model = settings_form_model;
     let tag_commands = commands.clone();
 
-    let scope_options = if has_workspace {
-        vec![
-            SegmentedControlOption::new(i18n.text("Global", "全局"), "global"),
-            SegmentedControlOption::new(i18n.text("Workspace", "工作区"), "workspace"),
-        ]
-    } else {
-        vec![SegmentedControlOption::new(
-            i18n.text("Global", "全局"),
-            "global",
-        )]
-    };
     let theme_options = vec![
         SegmentedControlOption::new(i18n.text("System", "跟随系统"), "system"),
         SegmentedControlOption::new(i18n.text("Light", "浅色"), "light"),
         SegmentedControlOption::new(i18n.text("Dark", "深色"), "dark"),
     ];
     let language_options = vec![
-        SegmentedControlOption::new("English", "english"),
-        SegmentedControlOption::new("中文", "chinese"),
+        DropdownOption::new("English", "english"),
+        DropdownOption::new("中文", "chinese"),
     ];
     let font_options = vec![
         DropdownOption::new(
@@ -79,206 +65,235 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
     ];
 
     let save = move |_| {
-        let settings_form = save_settings_form_model.read();
-        let base = settings_for_scope(&settings_form, save_scope());
+        let base = save_settings_form_model.read().global_settings.clone();
         let new_settings = form_settings(
             &base,
-            theme.read().clone(),
-            font_family.read().clone(),
-            *font_size.read(),
-            *line_height.read(),
-            *auto_link_paste.read(),
-            *auto_save_ms.read(),
+            language(),
+            theme(),
+            font_family(),
+            font_size(),
+            line_height(),
+            auto_link_paste(),
+            auto_save_ms(),
         );
 
-        if save_scope() == SettingsScope::Workspace {
-            let overrides = WorkspaceSettingsOverrides::from_settings_delta(
-                &settings_form.global_settings,
-                &new_settings,
-            );
-            save_commands.save_workspace_settings.call(overrides);
-        } else {
-            save_commands.save_settings.call(new_settings);
+        save_commands.save_settings.call(new_settings);
+        if has_workspace {
+            let next_overrides = clear_global_managed_workspace_overrides(&workspace_overrides);
+            if next_overrides != workspace_overrides {
+                save_commands.save_workspace_settings.call(next_overrides);
+            }
         }
         on_close.call(());
     };
 
-    let save_label = if save_scope() == SettingsScope::Workspace {
-        i18n.text("Save Workspace", "保存工作区设置")
-    } else {
-        i18n.text("Save Global", "保存全局设置")
-    };
-
     rsx! {
         div { class: "mn-modal-overlay", onclick: move |_| on_close.call(()),
-            div { class: "mn-modal mn-settings-modal", onclick: move |e| e.stop_propagation(),
+            div { class: "mn-modal mn-settings-modal", onclick: move |event| event.stop_propagation(),
                 div { class: "mn-modal-header",
                     h2 { class: "mn-modal-title", {i18n.text("Settings", "设置")} }
                     button {
                         class: "mn-modal-close",
                         "aria-label": i18n.text("Close settings", "关闭设置"),
                         onclick: move |_| on_close.call(()),
-                        "×"
+                        "x"
                     }
                 }
                 div { class: "mn-modal-body mn-settings-body",
                     div { class: "mn-settings-layout",
                         nav {
                             class: "mn-settings-nav",
-                            "aria-label": i18n.text("Settings sections", "设置分区"),
-                            a { class: "mn-settings-nav-item", href: "#mn-settings-scope", {i18n.text("Scope", "范围")} }
-                            a { class: "mn-settings-nav-item", href: "#mn-settings-appearance", {i18n.text("Appearance", "外观")} }
-                            a { class: "mn-settings-nav-item", href: "#mn-settings-editor", {i18n.text("Editor", "编辑器")} }
-                            a { class: "mn-settings-nav-item", href: "#mn-settings-saving", {i18n.text("Saving", "保存")} }
-                            a { class: "mn-settings-nav-item", href: "#mn-settings-tags", {i18n.text("Tags", "标签")} }
+                            "aria-label": i18n.text("Settings navigation", "设置导航"),
+                            div { class: "mn-settings-nav-list",
+                                SettingsNavButton {
+                                    label: i18n.text("General", "通用设置").to_string(),
+                                    active: active_panel() == SettingsPanel::General,
+                                    on_click: move |_| active_panel.set(SettingsPanel::General),
+                                }
+                                SettingsNavButton {
+                                    label: i18n.text("About Papyro", "关于 Papyro").to_string(),
+                                    active: active_panel() == SettingsPanel::About,
+                                    on_click: move |_| active_panel.set(SettingsPanel::About),
+                                }
+                            }
                         }
                         div { class: "mn-settings-content",
-                            SettingSection {
-                                section_id: "mn-settings-scope",
-                                label: i18n.text("Scope", "范围").to_string(),
-                                SettingRow {
-                                    label: i18n.text("Save target", "保存目标").to_string(),
-                                    SegmentedControl {
-                                        label: i18n.text("Settings save target", "设置保存目标").to_string(),
-                                        options: scope_options,
-                                        selected: settings_scope_value(save_scope()).to_string(),
-                                        class_name: String::new(),
-                                        on_change: move |value: String| {
-                                            if let Some(next_scope) = settings_scope_from_value(&value) {
-                                                if next_scope == SettingsScope::Workspace && !has_workspace {
-                                                    return;
-                                                }
-
-                                                let settings_form = scope_settings_form_model.read();
-                                                let next_settings = settings_for_scope(&settings_form, next_scope);
-                                                set_form_values(
-                                                    &next_settings,
-                                                    font_family,
-                                                    font_size,
-                                                    line_height,
-                                                    auto_link_paste,
-                                                    auto_save_ms,
-                                                    theme,
-                                                );
-                                                save_scope.set(next_scope);
-                                            }
-                                        },
-                                    }
-                                }
-                            }
-                            SettingSection {
-                                section_id: "mn-settings-appearance",
-                                label: i18n.text("Appearance", "外观").to_string(),
-                                SettingRow {
-                                    label: i18n.text("Language", "语言").to_string(),
-                                    SegmentedControl {
-                                        label: i18n.text("App language", "应用语言").to_string(),
-                                        options: language_options,
-                                        selected: language_value((app.language)()).to_string(),
-                                        class_name: String::new(),
-                                        on_change: move |value: String| {
-                                            if let Some(next_language) = language_from_value(&value) {
-                                                let mut settings = language_settings_form_model.read().global_settings.clone();
-                                                if settings.language != next_language {
-                                                    settings.language = next_language;
-                                                    save_commands.save_settings.call(settings);
+                            if active_panel() == SettingsPanel::General {
+                                div { class: "mn-settings-panel",
+                                    div { class: "mn-settings-panel-body mn-settings-grid",
+                                        SettingSection {
+                                            label: i18n.text("Interface", "界面").to_string(),
+                                            class_name: "mn-setting-section-card".to_string(),
+                                            SettingRow {
+                                                label: i18n.text("Language", "语言").to_string(),
+                                                Dropdown {
+                                                    label: i18n.text("App language", "应用语言").to_string(),
+                                                    options: language_options,
+                                                    selected: language_value(language()).to_string(),
+                                                    on_change: move |value: String| {
+                                                        if let Some(next_language) = language_from_value(&value) {
+                                                            language.set(next_language);
+                                                        }
+                                                    },
                                                 }
                                             }
-                                        },
-                                    }
-                                }
-                                SettingRow {
-                                    label: i18n.text("Theme", "主题").to_string(),
-                                    SegmentedControl {
-                                        label: i18n.text("Theme", "主题").to_string(),
-                                        options: theme_options,
-                                        selected: theme_value(&theme()).to_string(),
-                                        class_name: String::new(),
-                                        on_change: move |value: String| {
-                                            if let Some(next_theme) = theme_from_value(&value) {
-                                                theme.set(next_theme);
+                                            SettingRow {
+                                                label: i18n.text("Theme", "主题").to_string(),
+                                                SegmentedControl {
+                                                    label: i18n.text("Theme", "主题").to_string(),
+                                                    options: theme_options,
+                                                    selected: theme_value(&theme()).to_string(),
+                                                    class_name: "mn-settings-theme-segmented".to_string(),
+                                                    on_change: move |value: String| {
+                                                        if let Some(next_theme) = theme_from_value(&value) {
+                                                            theme.set(next_theme);
+                                                        }
+                                                    },
+                                                }
                                             }
-                                        },
-                                    }
-                                }
-                            }
-                            SettingSection {
-                                section_id: "mn-settings-editor",
-                                label: i18n.text("Editor", "编辑器").to_string(),
-                                SettingRow {
-                                    label: i18n.text("Font family", "字体").to_string(),
-                                    Dropdown {
-                                        label: i18n.text("Font family", "字体").to_string(),
-                                        options: font_options,
-                                        selected: font_family(),
-                                        on_change: move |value: String| font_family.set(value),
-                                    }
-                                }
-                                SettingRow {
-                                    label: format!("{} ({font_size}px)", i18n.text("Font size", "字号")),
-                                    Slider {
-                                        label: i18n.text("Font size", "字号").to_string(),
-                                        value: font_size().to_string(),
-                                        min: "12".to_string(),
-                                        max: "24".to_string(),
-                                        step: "1".to_string(),
-                                        on_input: move |value: String| {
-                                            if let Ok(v) = value.parse::<u8>() {
-                                                font_size.set(v);
+                                        }
+                                        SettingSection {
+                                            label: i18n.text("Editor", "编辑器").to_string(),
+                                            class_name: "mn-setting-section-card".to_string(),
+                                            SettingRow {
+                                                label: i18n.text("Font family", "字体").to_string(),
+                                                Dropdown {
+                                                    label: i18n.text("Font family", "字体").to_string(),
+                                                    options: font_options,
+                                                    selected: font_family(),
+                                                    on_change: move |value: String| font_family.set(value),
+                                                }
                                             }
-                                        },
-                                    }
-                                }
-                                SettingRow {
-                                    label: format!("{} ({line_height:.1})", i18n.text("Line height", "行高")),
-                                    Slider {
-                                        label: i18n.text("Line height", "行高").to_string(),
-                                        value: format!("{:.1}", line_height()),
-                                        min: "1.2".to_string(),
-                                        max: "2.4".to_string(),
-                                        step: "0.1".to_string(),
-                                        on_input: move |value: String| {
-                                            if let Ok(v) = value.parse::<f32>() {
-                                                line_height.set(v);
+                                            SettingRow {
+                                                label: format!(
+                                                    "{} ({}px)",
+                                                    i18n.text("Font size", "字号"),
+                                                    font_size()
+                                                ),
+                                                Slider {
+                                                    label: i18n.text("Font size", "字号").to_string(),
+                                                    value: font_size().to_string(),
+                                                    min: "12".to_string(),
+                                                    max: "24".to_string(),
+                                                    step: "1".to_string(),
+                                                    on_input: move |value: String| {
+                                                        if let Ok(v) = value.parse::<u8>() {
+                                                            font_size.set(v);
+                                                        }
+                                                    },
+                                                }
                                             }
-                                        },
-                                    }
-                                }
-                                SettingRow {
-                                    label: i18n.text("Paste URL as link", "粘贴 URL 时转为链接").to_string(),
-                                    Toggle {
-                                        label: i18n.text("Paste URL as link", "粘贴 URL 时转为链接").to_string(),
-                                        checked: auto_link_paste(),
-                                        on_change: move |checked| auto_link_paste.set(checked),
-                                    }
-                                }
-                            }
-                            SettingSection {
-                                section_id: "mn-settings-saving",
-                                label: i18n.text("Saving", "保存").to_string(),
-                                SettingRow {
-                                    label: format!(
-                                        "{} ({auto_save_ms}ms)",
-                                        i18n.text("Auto-save delay", "自动保存延迟")
-                                    ),
-                                    Slider {
-                                        label: i18n.text("Auto-save delay", "自动保存延迟").to_string(),
-                                        value: auto_save_ms().to_string(),
-                                        min: "200".to_string(),
-                                        max: "3000".to_string(),
-                                        step: "100".to_string(),
-                                        on_input: move |value: String| {
-                                            if let Ok(v) = value.parse::<u64>() {
-                                                auto_save_ms.set(v);
+                                            SettingRow {
+                                                label: format!(
+                                                    "{} ({:.1})",
+                                                    i18n.text("Line height", "行高"),
+                                                    line_height()
+                                                ),
+                                                Slider {
+                                                    label: i18n.text("Line height", "行高").to_string(),
+                                                    value: format!("{:.1}", line_height()),
+                                                    min: "1.2".to_string(),
+                                                    max: "2.4".to_string(),
+                                                    step: "0.1".to_string(),
+                                                    on_input: move |value: String| {
+                                                        if let Ok(v) = value.parse::<f32>() {
+                                                            line_height.set(v);
+                                                        }
+                                                    },
+                                                }
                                             }
-                                        },
+                                            SettingRow {
+                                                label: i18n.text("Paste URL as link", "粘贴 URL 时转成链接").to_string(),
+                                                Toggle {
+                                                    label: i18n.text("Paste URL as link", "粘贴 URL 时转成链接").to_string(),
+                                                    checked: auto_link_paste(),
+                                                    on_change: move |checked| auto_link_paste.set(checked),
+                                                }
+                                            }
+                                        }
+                                        SettingSection {
+                                            label: i18n.text("Saving", "保存").to_string(),
+                                            class_name: "mn-setting-section-card".to_string(),
+                                            SettingRow {
+                                                label: format!(
+                                                    "{} ({}ms)",
+                                                    i18n.text("Auto-save delay", "自动保存延迟"),
+                                                    auto_save_ms()
+                                                ),
+                                                Slider {
+                                                    label: i18n.text("Auto-save delay", "自动保存延迟").to_string(),
+                                                    value: auto_save_ms().to_string(),
+                                                    min: "200".to_string(),
+                                                    max: "3000".to_string(),
+                                                    step: "100".to_string(),
+                                                    on_input: move |value: String| {
+                                                        if let Ok(v) = value.parse::<u64>() {
+                                                            auto_save_ms.set(v);
+                                                        }
+                                                    },
+                                                }
+                                            }
+                                        }
+                                        TagManagementSection {
+                                            tags: settings_workspace.tags.clone(),
+                                            has_workspace,
+                                            commands: tag_commands,
+                                        }
                                     }
                                 }
-                            }
-                            TagManagementSection {
-                                tags: settings_workspace.tags.clone(),
-                                has_workspace,
-                                commands: tag_commands,
+                            } else {
+                                div { class: "mn-settings-panel",
+                                    div { class: "mn-about-card",
+                                        div { class: "mn-about-hero",
+                                            div { class: "mn-about-brand",
+                                                div { class: "mn-about-app", "Papyro" }
+                                                p { class: "mn-about-summary",
+                                                    {i18n.text(
+                                                        "Built for people who want their notes to stay readable, portable, and pleasant to work in every day.",
+                                                        "为那些希望笔记始终可读、可迁移、并且每天都用得顺手的人而设计。",
+                                                    )}
+                                                }
+                                            }
+                                            div { class: "mn-about-version-badge", "v{APP_VERSION}" }
+                                        }
+                                        div { class: "mn-about-grid",
+                                            AboutMetaItem {
+                                                label: i18n.text("Editor", "编辑器").to_string(),
+                                                value: i18n.text(
+                                                    "Markdown editing with source, hybrid, and preview workflows",
+                                                    "支持源码、混合与预览工作流的 Markdown 编辑体验",
+                                                ).to_string(),
+                                            }
+                                            AboutMetaItem {
+                                                label: i18n.text("Storage", "存储").to_string(),
+                                                value: i18n.text(
+                                                    "Local-first files and workspace organization",
+                                                    "本地优先的文件存储与工作区组织方式",
+                                                ).to_string(),
+                                            }
+                                            AboutMetaItem {
+                                                label: i18n.text("Runtime", "运行时").to_string(),
+                                                value: i18n.text(
+                                                    "Rust application shell with a Dioxus-based interface",
+                                                    "基于 Rust 应用壳与 Dioxus 界面层构建",
+                                                ).to_string(),
+                                            }
+                                            AboutMetaItem {
+                                                label: i18n.text("Focus", "定位").to_string(),
+                                                value: i18n.text(
+                                                    "Calm note-taking, quick navigation, and durable Markdown output",
+                                                    "强调沉浸式记录、快速导航与稳定的 Markdown 产出",
+                                                ).to_string(),
+                                            }
+                                        }
+                                        div { class: "mn-about-note",
+                                            {i18n.text(
+                                                "Papyro keeps the content format open, so your notes stay usable outside the app as plain Markdown files.",
+                                                "Papyro 保持内容格式开放，你的笔记始终可以作为普通 Markdown 文件在应用之外继续使用。",
+                                            )}
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -291,7 +306,7 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
                         on_click: move |_| on_close.call(()),
                     }
                     Button {
-                        label: save_label.to_string(),
+                        label: i18n.text("Save settings", "保存设置").to_string(),
                         variant: ButtonVariant::Primary,
                         disabled: false,
                         on_click: save,
@@ -303,9 +318,44 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
 }
 
 #[component]
-fn SettingSection(section_id: &'static str, label: String, children: Element) -> Element {
+fn SettingsNavButton(label: String, active: bool, on_click: EventHandler<MouseEvent>) -> Element {
+    let class_name = if active {
+        "mn-settings-nav-button active"
+    } else {
+        "mn-settings-nav-button"
+    };
+
     rsx! {
-        div { id: "{section_id}", class: "mn-setting-section",
+        button {
+            r#type: "button",
+            class: "{class_name}",
+            "aria-pressed": if active { "true" } else { "false" },
+            onclick: move |event| on_click.call(event),
+            span { class: "mn-settings-nav-button-title", "{label}" }
+        }
+    }
+}
+
+#[component]
+fn AboutMetaItem(label: String, value: String) -> Element {
+    rsx! {
+        div { class: "mn-about-item",
+            div { class: "mn-about-label", "{label}" }
+            div { class: "mn-about-value", "{value}" }
+        }
+    }
+}
+
+#[component]
+fn SettingSection(label: String, class_name: String, children: Element) -> Element {
+    let class = if class_name.trim().is_empty() {
+        "mn-setting-section".to_string()
+    } else {
+        format!("mn-setting-section {class_name}")
+    };
+
+    rsx! {
+        div { class: "{class}",
             h3 { class: "mn-setting-section-label", "{label}" }
             {children}
         }
@@ -337,8 +387,8 @@ fn TagManagementSection(
 
     rsx! {
         SettingSection {
-            section_id: "mn-settings-tags",
             label: i18n.text("Tags", "标签").to_string(),
+            class_name: "mn-setting-section-card mn-setting-section-wide".to_string(),
             if has_workspace {
                 div { class: "mn-tag-manager",
                     div { class: "mn-tag-create-row",
@@ -406,7 +456,9 @@ fn TagManagementSection(
                     }
                 }
             } else {
-                div { class: "mn-tag-empty", {i18n.text("Open a workspace to manage tags", "打开工作区后即可管理标签")} }
+                div { class: "mn-tag-empty",
+                    {i18n.text("Open a workspace to manage tags", "打开工作区后即可管理标签")}
+                }
             }
         }
     }
@@ -525,30 +577,6 @@ fn TagEditorRow(tag: TagListItem, has_workspace: bool, commands: AppCommands) ->
     }
 }
 
-const DEFAULT_TAG_COLOR: &str = "#6B7280";
-
-fn settings_for_scope(model: &SettingsFormViewModel, scope: SettingsScope) -> AppSettings {
-    match scope {
-        SettingsScope::Global => model.global_settings.clone(),
-        SettingsScope::Workspace => model.workspace_settings.clone(),
-    }
-}
-
-fn settings_scope_value(scope: SettingsScope) -> &'static str {
-    match scope {
-        SettingsScope::Global => "global",
-        SettingsScope::Workspace => "workspace",
-    }
-}
-
-fn settings_scope_from_value(value: &str) -> Option<SettingsScope> {
-    match value {
-        "global" => Some(SettingsScope::Global),
-        "workspace" => Some(SettingsScope::Workspace),
-        _ => None,
-    }
-}
-
 fn theme_value(theme: &Theme) -> &'static str {
     match theme {
         Theme::System => "system",
@@ -580,6 +608,7 @@ fn language_from_value(value: &str) -> Option<AppLanguage> {
 
 fn form_settings(
     base: &AppSettings,
+    language: AppLanguage,
     theme: Theme,
     font_family: String,
     font_size: u8,
@@ -589,7 +618,7 @@ fn form_settings(
 ) -> AppSettings {
     AppSettings {
         theme,
-        language: base.language,
+        language,
         font_family,
         font_size,
         line_height,
@@ -603,29 +632,25 @@ fn form_settings(
     }
 }
 
-fn set_form_values(
-    settings: &AppSettings,
-    mut font_family: Signal<String>,
-    mut font_size: Signal<u8>,
-    mut line_height: Signal<f32>,
-    mut auto_link_paste: Signal<bool>,
-    mut auto_save_ms: Signal<u64>,
-    mut theme: Signal<Theme>,
-) {
-    font_family.set(settings.font_family.clone());
-    font_size.set(settings.font_size);
-    line_height.set(settings.line_height);
-    auto_link_paste.set(settings.auto_link_paste);
-    auto_save_ms.set(settings.auto_save_delay_ms);
-    theme.set(settings.theme.clone());
-}
-
 fn cleaned_tag_name(value: &str) -> String {
     value.trim().trim_start_matches('#').trim().to_string()
 }
 
 fn normalized_tag_color(value: &str) -> String {
     value.trim().to_ascii_uppercase()
+}
+
+fn clear_global_managed_workspace_overrides(
+    overrides: &WorkspaceSettingsOverrides,
+) -> WorkspaceSettingsOverrides {
+    let mut next = overrides.clone();
+    next.theme = None;
+    next.font_family = None;
+    next.font_size = None;
+    next.line_height = None;
+    next.auto_link_paste = None;
+    next.auto_save_delay_ms = None;
+    next
 }
 
 fn is_tag_color(value: &str) -> bool {
@@ -649,17 +674,41 @@ mod tests {
 
     #[test]
     fn segmented_setting_values_round_trip() {
-        assert_eq!(settings_scope_value(SettingsScope::Global), "global");
-        assert_eq!(
-            settings_scope_from_value("workspace"),
-            Some(SettingsScope::Workspace)
-        );
-        assert_eq!(settings_scope_from_value("missing"), None);
         assert_eq!(theme_value(&Theme::Dark), "dark");
         assert_eq!(theme_from_value("system"), Some(Theme::System));
         assert_eq!(theme_from_value("missing"), None);
         assert_eq!(language_value(AppLanguage::Chinese), "chinese");
         assert_eq!(language_from_value("english"), Some(AppLanguage::English));
         assert_eq!(language_from_value("missing"), None);
+    }
+
+    #[test]
+    fn clearing_global_managed_workspace_overrides_preserves_unrelated_fields() {
+        let overrides = WorkspaceSettingsOverrides {
+            theme: Some(Theme::Dark),
+            font_family: Some("Fira Code".to_string()),
+            font_size: Some(18),
+            line_height: Some(1.8),
+            auto_link_paste: Some(false),
+            auto_save_delay_ms: Some(900),
+            sidebar_width: Some(320),
+            sidebar_collapsed: Some(true),
+            view_mode: Some(papyro_core::models::ViewMode::Preview),
+            ..WorkspaceSettingsOverrides::default()
+        };
+
+        let cleared = clear_global_managed_workspace_overrides(&overrides);
+        assert_eq!(cleared.theme, None);
+        assert_eq!(cleared.font_family, None);
+        assert_eq!(cleared.font_size, None);
+        assert_eq!(cleared.line_height, None);
+        assert_eq!(cleared.auto_link_paste, None);
+        assert_eq!(cleared.auto_save_delay_ms, None);
+        assert_eq!(cleared.sidebar_width, Some(320));
+        assert_eq!(cleared.sidebar_collapsed, Some(true));
+        assert_eq!(
+            cleared.view_mode,
+            Some(papyro_core::models::ViewMode::Preview)
+        );
     }
 }

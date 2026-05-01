@@ -163,6 +163,7 @@ pub fn Dropdown(
             for option in options {
                 option {
                     value: "{option.value}",
+                    selected: option.value == selected,
                     "{option.label}"
                 }
             }

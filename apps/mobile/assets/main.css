@@ -841,10 +841,137 @@ small {
     padding: 18px 20px;
 }
 
+.mn-settings-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    min-height: 0;
+}
+
+.mn-settings-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--mn-border);
+}
+
+.mn-settings-nav-header {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.mn-settings-nav-title {
+    color: var(--mn-muted);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.mn-settings-nav-copy {
+    margin: 0;
+    color: var(--mn-muted);
+    font-size: 13px;
+    line-height: 1.55;
+}
+
+.mn-settings-nav-list {
+    display: flex;
+    gap: 10px;
+}
+
+.mn-settings-nav-button {
+    position: relative;
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 12px 14px;
+    border: 1px solid var(--mn-border);
+    border-radius: 18px;
+    background: var(--mn-bg);
+    color: inherit;
+    text-align: left;
+}
+
+.mn-settings-nav-button.active {
+    background: var(--mn-accent-wash);
+    border-color: rgba(40, 89, 201, 0.18);
+}
+
+.mn-settings-nav-button::before {
+    content: "";
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    bottom: 0;
+    height: 3px;
+    border-radius: 999px;
+    background: transparent;
+}
+
+.mn-settings-nav-button.active::before {
+    background: var(--mn-accent);
+}
+
+.mn-settings-nav-button-title {
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.mn-settings-nav-button-copy {
+    color: var(--mn-muted);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.mn-settings-content,
+.mn-settings-panel,
+.mn-settings-panel-body {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.mn-settings-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.mn-settings-panel-header {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.mn-settings-panel-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 800;
+}
+
+.mn-settings-panel-copy {
+    margin: 0;
+    color: var(--mn-muted);
+    font-size: 13px;
+    line-height: 1.6;
+}
+
 .mn-setting-section {
     display: flex;
     flex-direction: column;
     gap: 12px;
+}
+
+.mn-setting-section-card {
+    padding: 16px;
+    border: 1px solid var(--mn-border);
+    border-radius: 22px;
+    background: var(--mn-bg);
 }
 
 .mn-setting-section-label {
@@ -871,6 +998,113 @@ small {
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
+}
+
+.mn-settings-panel .mn-segmented-control {
+    width: 100%;
+    padding: 3px;
+    border-radius: 16px;
+    background: var(--mn-panel);
+}
+
+.mn-settings-theme-segmented {
+    display: inline-flex;
+    width: fit-content;
+    max-width: 100%;
+}
+
+.mn-settings-panel .mn-segmented-option {
+    min-height: 34px;
+    font-weight: 700;
+}
+
+.mn-settings-panel .mn-segmented-option.active {
+    background: var(--mn-accent);
+    color: var(--mn-accent-ink);
+}
+
+.mn-settings-panel .mn-button:not(.primary):not(.danger) {
+    border-color: var(--mn-border);
+    background: var(--mn-bg);
+    color: inherit;
+}
+
+.mn-about-card {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px;
+    border: 1px solid var(--mn-border);
+    border-radius: 22px;
+    background: var(--mn-bg);
+}
+
+.mn-about-hero,
+.mn-about-brand {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.mn-about-app {
+    font-size: 24px;
+    font-weight: 800;
+    line-height: 1.1;
+}
+
+.mn-about-summary {
+    margin: 0;
+    color: var(--mn-muted);
+    font-size: 13px;
+    line-height: 1.65;
+}
+
+.mn-about-version-badge {
+    align-self: flex-start;
+    padding: 6px 10px;
+    border: 1px solid var(--mn-border);
+    border-radius: 999px;
+    background: var(--mn-panel);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.mn-about-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.mn-about-item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px 14px;
+    border: 1px solid var(--mn-border);
+    border-radius: 18px;
+    background: var(--mn-panel);
+}
+
+.mn-about-label {
+    color: var(--mn-muted);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.mn-about-value {
+    font-size: 14px;
+    line-height: 1.55;
+}
+
+.mn-about-note {
+    padding: 12px 14px;
+    border-radius: 18px;
+    background: var(--mn-accent-wash);
+    color: var(--mn-accent-dark);
+    font-size: 13px;
+    line-height: 1.6;
 }
 
 .mn-setting-radio-group {
