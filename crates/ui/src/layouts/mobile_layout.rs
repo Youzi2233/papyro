@@ -1,5 +1,4 @@
 use dioxus::prelude::*;
-use papyro_core::models::Theme;
 
 use crate::action_labels::{delete_action_label, delete_action_title};
 use crate::commands::FileTarget;
@@ -102,7 +101,7 @@ pub fn MobileLayout() -> Element {
                         onclick: move |_| {
                             crate::chrome::toggle_theme(commands.clone());
                         },
-                        if theme == Theme::Dark {
+                        if theme.is_dark() {
                             {i18n.text("Light theme", "浅色主题")}
                         } else {
                             {i18n.text("Dark theme", "深色主题")}

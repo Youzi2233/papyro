@@ -119,9 +119,10 @@ fn editor_view_modes() -> Vec<ViewMode> {
 }
 
 fn code_highlight_theme(theme: &Theme) -> CodeHighlightTheme {
-    match theme {
-        Theme::Dark => CodeHighlightTheme::Dark,
-        Theme::Light | Theme::System => CodeHighlightTheme::Light,
+    if theme.is_dark() {
+        CodeHighlightTheme::Dark
+    } else {
+        CodeHighlightTheme::Light
     }
 }
 

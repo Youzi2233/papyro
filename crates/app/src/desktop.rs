@@ -95,10 +95,12 @@ fn build_startup_chrome(
     let light_bg = (243, 245, 248, 255);
     let dark_bg = (15, 17, 23, 255);
 
-    let (background_color, forced_theme_attr) = match settings.theme {
-        Theme::Light => (light_bg, "light"),
-        Theme::Dark => (dark_bg, "dark"),
+    let (background_color, forced_theme_attr) = match &settings.theme {
         Theme::System => (dark_bg, ""),
+        Theme::Light | Theme::GitHubLight | Theme::WarmReading => {
+            (light_bg, settings.theme.as_str())
+        }
+        Theme::Dark | Theme::GitHubDark | Theme::HighContrast => (dark_bg, settings.theme.as_str()),
     };
 
     let theme_script = if forced_theme_attr.is_empty() {
@@ -115,7 +117,11 @@ fn build_startup_chrome(
 html,body{{margin:0;padding:0;overflow:hidden;background:#f3f5f8;color:#111827;
 font-family:"SF Pro Text",-apple-system,BlinkMacSystemFont,"Segoe UI Variable","Segoe UI",system-ui,sans-serif;}}
 :root[data-theme="dark"] html,:root[data-theme="dark"] body{{background:#0f1117;color:#f3f4f6;}}
-@media(prefers-color-scheme:dark){{:root:not([data-theme="light"]) html,:root:not([data-theme="light"]) body{{background:#0f1117;color:#f3f4f6;}}}}
+:root[data-theme="github_light"] html,:root[data-theme="github_light"] body{{background:#f6f8fa;color:#24292f;}}
+:root[data-theme="github_dark"] html,:root[data-theme="github_dark"] body{{background:#0d1117;color:#e6edf3;}}
+:root[data-theme="high_contrast"] html,:root[data-theme="high_contrast"] body{{background:#000000;color:#ffffff;}}
+:root[data-theme="warm_reading"] html,:root[data-theme="warm_reading"] body{{background:#f4f1e8;color:#202124;}}
+@media(prefers-color-scheme:dark){{:root:not([data-theme]) html,:root:not([data-theme]) body{{background:#0f1117;color:#f3f4f6;}}}}
 </style>
 <style>{main_css}</style>"#,
         favicon = favicon,
@@ -241,6 +247,21 @@ mod tests {
         assert_eq!(chrome.background_color, (15, 17, 23, 255));
         assert!(!chrome.custom_head.contains("setAttribute('data-theme'"));
         assert!(chrome.custom_head.contains("prefers-color-scheme:dark"));
+    }
+
+    #[test]
+    fn startup_chrome_forces_curated_theme_when_configured() {
+        let settings = AppSettings {
+            theme: Theme::GitHubDark,
+            ..AppSettings::default()
+        };
+
+        let chrome = build_startup_chrome(&settings, "/favicon.ico", "");
+
+        assert_eq!(chrome.background_color, (15, 17, 23, 255));
+        assert!(chrome.custom_head.contains("data-theme','github_dark'"));
+        assert!(chrome.custom_head.contains("github_dark"));
+        assert!(chrome.custom_head.contains(":root:not([data-theme])"));
     }
 
     #[test]

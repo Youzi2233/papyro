@@ -529,37 +529,6 @@
     font-size: 0.9em;
 }
 
-.mn-settings-theme-segmented {
-    display: inline-flex;
-    width: fit-content;
-    max-width: 100%;
-    padding: 3px;
-    border: var(--mn-border-default);
-    border-radius: 10px;
-    background: var(--mn-surface-sunken);
-    gap: 2px;
-}
-
-.mn-settings-theme-segmented .mn-segmented-option {
-    min-width: 78px;
-    min-height: 36px;
-    padding: 0 14px;
-    border-radius: 8px;
-    font-size: var(--mn-type-control);
-    font-weight: var(--mn-weight-semibold);
-    color: var(--mn-ink-2);
-}
-
-.mn-settings-theme-segmented .mn-segmented-option:hover {
-    color: var(--mn-ink);
-}
-
-.mn-settings-theme-segmented .mn-segmented-option.active {
-    background: var(--mn-accent);
-    color: var(--mn-accent-ink);
-    box-shadow: var(--mn-shadow-xs), var(--mn-shadow-accent-inset);
-}
-
 .mn-select {
     position: relative;
     display: flex;

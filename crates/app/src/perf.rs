@@ -258,11 +258,7 @@ pub(crate) fn trace_editor_view_mode_change(
 }
 
 fn theme_name(theme: &Theme) -> &'static str {
-    match theme {
-        Theme::System => "system",
-        Theme::Light => "light",
-        Theme::Dark => "dark",
-    }
+    theme.as_str()
 }
 
 fn trace_tab_id(tab_id: Option<&str>) -> &str {
@@ -363,5 +359,9 @@ mod tests {
         assert_eq!(theme_name(&Theme::System), "system");
         assert_eq!(theme_name(&Theme::Light), "light");
         assert_eq!(theme_name(&Theme::Dark), "dark");
+        assert_eq!(theme_name(&Theme::GitHubLight), "github_light");
+        assert_eq!(theme_name(&Theme::GitHubDark), "github_dark");
+        assert_eq!(theme_name(&Theme::HighContrast), "high_contrast");
+        assert_eq!(theme_name(&Theme::WarmReading), "warm_reading");
     }
 }

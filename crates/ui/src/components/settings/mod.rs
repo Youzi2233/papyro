@@ -2,8 +2,7 @@ use crate::commands::{
     AppCommands, DeleteTagRequest, RenameTagRequest, SetTagColorRequest, UpsertTagRequest,
 };
 use crate::components::primitives::{
-    Button, ButtonVariant, Dropdown, DropdownOption, FormField, Modal, SegmentedControl,
-    SegmentedControlOption, Slider, Toggle,
+    Button, ButtonVariant, Dropdown, DropdownOption, FormField, Modal, Slider, Toggle,
 };
 use crate::context::use_app_context;
 use crate::i18n::{use_i18n, UiText};
@@ -61,11 +60,7 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
     let save_settings_form_model = settings_form_model;
     let tag_commands = commands.clone();
 
-    let theme_options = vec![
-        SegmentedControlOption::new(i18n.text("System", "跟随系统"), "system"),
-        SegmentedControlOption::new(i18n.text("Light", "浅色"), "light"),
-        SegmentedControlOption::new(i18n.text("Dark", "深色"), "dark"),
-    ];
+    let theme_options = theme_options(i18n);
     let language_options = vec![
         DropdownOption::new("English", "english"),
         DropdownOption::new("中文", "chinese"),
@@ -151,11 +146,10 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
                                         FormField {
                                             label: i18n.text("Theme", "主题").to_string(),
                                             class_name: String::new(),
-                                            SegmentedControl {
+                                            Dropdown {
                                                 label: i18n.text("Theme", "主题").to_string(),
                                                 options: theme_options,
                                                 selected: theme_value(&theme()).to_string(),
-                                                class_name: "mn-settings-theme-segmented".to_string(),
                                                 on_change: move |value: String| {
                                                     if let Some(next_theme) = theme_from_value(&value) {
                                                         theme.set(next_theme);
@@ -591,11 +585,7 @@ fn TagEditorRow(tag: TagListItem, has_workspace: bool, commands: AppCommands) ->
 }
 
 fn theme_value(theme: &Theme) -> &'static str {
-    match theme {
-        Theme::System => "system",
-        Theme::Light => "light",
-        Theme::Dark => "dark",
-    }
+    theme.as_str()
 }
 
 fn theme_from_value(value: &str) -> Option<Theme> {
@@ -603,8 +593,36 @@ fn theme_from_value(value: &str) -> Option<Theme> {
         "system" => Some(Theme::System),
         "light" => Some(Theme::Light),
         "dark" => Some(Theme::Dark),
+        "github_light" => Some(Theme::GitHubLight),
+        "github_dark" => Some(Theme::GitHubDark),
+        "high_contrast" => Some(Theme::HighContrast),
+        "warm_reading" => Some(Theme::WarmReading),
         _ => None,
     }
+}
+
+fn theme_options(i18n: UiText) -> Vec<DropdownOption> {
+    vec![
+        DropdownOption::new(i18n.text("System", "跟随系统"), Theme::System.as_str()),
+        DropdownOption::new(i18n.text("Light", "浅色"), Theme::Light.as_str()),
+        DropdownOption::new(i18n.text("Dark", "深色"), Theme::Dark.as_str()),
+        DropdownOption::new(
+            i18n.text("GitHub Light", "GitHub 浅色"),
+            Theme::GitHubLight.as_str(),
+        ),
+        DropdownOption::new(
+            i18n.text("GitHub Dark", "GitHub 深色"),
+            Theme::GitHubDark.as_str(),
+        ),
+        DropdownOption::new(
+            i18n.text("High Contrast", "高对比度"),
+            Theme::HighContrast.as_str(),
+        ),
+        DropdownOption::new(
+            i18n.text("Warm Reading", "暖色阅读"),
+            Theme::WarmReading.as_str(),
+        ),
+    ]
 }
 
 fn font_family_options(i18n: UiText) -> Vec<DropdownOption> {
@@ -699,11 +717,35 @@ mod tests {
     #[test]
     fn segmented_setting_values_round_trip() {
         assert_eq!(theme_value(&Theme::Dark), "dark");
+        assert_eq!(theme_value(&Theme::GitHubLight), "github_light");
         assert_eq!(theme_from_value("system"), Some(Theme::System));
+        assert_eq!(theme_from_value("warm_reading"), Some(Theme::WarmReading));
         assert_eq!(theme_from_value("missing"), None);
         assert_eq!(language_value(AppLanguage::Chinese), "chinese");
         assert_eq!(language_from_value("english"), Some(AppLanguage::English));
         assert_eq!(language_from_value("missing"), None);
+    }
+
+    #[test]
+    fn theme_options_include_curated_themes() {
+        let options = theme_options(UiText::new(AppLanguage::English));
+        let values = options
+            .iter()
+            .map(|option| option.value.as_str())
+            .collect::<Vec<_>>();
+
+        assert_eq!(
+            values,
+            vec![
+                "system",
+                "light",
+                "dark",
+                "github_light",
+                "github_dark",
+                "high_contrast",
+                "warm_reading"
+            ]
+        );
     }
 
     #[test]

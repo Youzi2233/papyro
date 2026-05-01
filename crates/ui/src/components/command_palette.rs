@@ -5,6 +5,7 @@ use crate::i18n::{i18n_for, use_i18n};
 use crate::perf::{perf_timer, trace_chrome_open_modal};
 use dioxus::prelude::*;
 use papyro_core::models::{AppLanguage, SaveStatus, Theme, ViewMode};
+use papyro_core::next_theme;
 use std::path::PathBuf;
 
 const COMMAND_PALETTE_LIMIT: usize = 24;
@@ -258,10 +259,7 @@ pub(crate) fn command_palette_actions(
     } else {
         i18n.text("Open workspace", "打开工作区")
     };
-    let next_theme = match input.theme {
-        Theme::Dark => i18n.text("Light", "浅色"),
-        Theme::Light | Theme::System => i18n.text("Dark", "深色"),
-    };
+    let next_theme_label = theme_label(input.language, &next_theme(&input.theme));
 
     let mut actions = vec![
         action(
@@ -294,7 +292,7 @@ pub(crate) fn command_palette_actions(
         ),
         action(
             i18n.text("Toggle theme", "切换主题"),
-            &format!("Switch to {next_theme}"),
+            &format!("Switch to {next_theme_label}"),
             "VIEW",
             CommandPaletteActionKind::ToggleTheme,
         ),
@@ -530,6 +528,19 @@ fn action(
         detail: detail.to_string(),
         group: group.to_string(),
         kind,
+    }
+}
+
+fn theme_label(language: AppLanguage, theme: &Theme) -> &'static str {
+    let i18n = i18n_for(language);
+    match theme {
+        Theme::System => i18n.text("System", "跟随系统"),
+        Theme::Light => i18n.text("Light", "浅色"),
+        Theme::Dark => i18n.text("Dark", "深色"),
+        Theme::GitHubLight => i18n.text("GitHub Light", "GitHub 浅色"),
+        Theme::GitHubDark => i18n.text("GitHub Dark", "GitHub 深色"),
+        Theme::HighContrast => i18n.text("High Contrast", "高对比度"),
+        Theme::WarmReading => i18n.text("Warm Reading", "暖色阅读"),
     }
 }
 

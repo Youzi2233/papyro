@@ -12,11 +12,13 @@ pub fn ThemeDomEffect() -> Element {
 
     use_effect(use_reactive((&theme,), move |(theme,)| {
         let script = match theme {
-            Theme::Dark => "document.documentElement.setAttribute('data-theme','dark');",
-            Theme::Light => "document.documentElement.setAttribute('data-theme','light');",
-            Theme::System => "document.documentElement.removeAttribute('data-theme');",
+            Theme::System => "document.documentElement.removeAttribute('data-theme');".to_string(),
+            _ => format!(
+                "document.documentElement.setAttribute('data-theme','{}');",
+                theme.as_str()
+            ),
         };
-        document::eval(script);
+        document::eval(&script);
     }));
 
     rsx! {}

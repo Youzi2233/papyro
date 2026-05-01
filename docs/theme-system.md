@@ -49,5 +49,4 @@ When changing a token that is mirrored in an app asset, update both copies in th
 
 ## Current Themes
 
-Papyro currently ships System, Light, and Dark. Future curated themes should override palette tokens first, then only override semantic tokens when the theme needs a deliberate behavior difference.
-
+Papyro currently ships System, Light, Dark, GitHub Light, GitHub Dark, High Contrast, and Warm Reading. Curated themes should override palette tokens first, then only override semantic tokens when the theme needs a deliberate behavior difference.

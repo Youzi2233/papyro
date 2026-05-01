@@ -268,6 +268,28 @@ pub enum Theme {
     System,
     Light,
     Dark,
+    GitHubLight,
+    GitHubDark,
+    HighContrast,
+    WarmReading,
+}
+
+impl Theme {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::System => "system",
+            Self::Light => "light",
+            Self::Dark => "dark",
+            Self::GitHubLight => "github_light",
+            Self::GitHubDark => "github_dark",
+            Self::HighContrast => "high_contrast",
+            Self::WarmReading => "warm_reading",
+        }
+    }
+
+    pub fn is_dark(&self) -> bool {
+        matches!(self, Self::Dark | Self::GitHubDark | Self::HighContrast)
+    }
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
@@ -412,6 +434,18 @@ mod tests {
         assert_eq!(overrides.line_height, None);
         assert_eq!(overrides.view_mode, None);
         assert_eq!(global.with_workspace_overrides(&overrides), scoped);
+    }
+
+    #[test]
+    fn theme_helpers_cover_curated_theme_set() {
+        assert_eq!(Theme::System.as_str(), "system");
+        assert_eq!(Theme::GitHubLight.as_str(), "github_light");
+        assert_eq!(Theme::GitHubDark.as_str(), "github_dark");
+        assert_eq!(Theme::HighContrast.as_str(), "high_contrast");
+        assert_eq!(Theme::WarmReading.as_str(), "warm_reading");
+        assert!(Theme::GitHubDark.is_dark());
+        assert!(Theme::HighContrast.is_dark());
+        assert!(!Theme::WarmReading.is_dark());
     }
 
     #[test]

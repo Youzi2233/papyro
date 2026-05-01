@@ -5,9 +5,13 @@ const DEFAULT_PATHS = ["assets/main.css", "apps/desktop/assets/main.css"];
 const THEMES = [
   { name: "light", selector: ":root" },
   { name: "dark", selector: ':root[data-theme="dark"]' },
+  { name: "github-light", selector: ':root[data-theme="github_light"]' },
+  { name: "github-dark", selector: ':root[data-theme="github_dark"]' },
+  { name: "high-contrast", selector: ':root[data-theme="high_contrast"]' },
+  { name: "warm-reading", selector: ':root[data-theme="warm_reading"]' },
   {
     name: "system-dark",
-    selector: ':root:not([data-theme="light"]):not([data-theme="dark"])',
+    selector: ":root:not([data-theme])",
   },
 ];
 const CONTRAST_PAIRS = [
@@ -207,7 +211,55 @@ function runSelfTest() {
   --mn-warning: #e3b66e;
 }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]):not([data-theme="dark"]) {
+  :root[data-theme="github_light"] {
+    --mn-bg: #ffffff;
+    --mn-surface: #ffffff;
+    --mn-ink: #111111;
+    --mn-ink-2: #333333;
+    --mn-ink-3: #555555;
+    --mn-editor-bg: #ffffff;
+    --mn-editor-ink: #111111;
+    --mn-accent: #005f5f;
+    --mn-danger: #9b2f2f;
+    --mn-warning: #815000;
+  }
+  :root[data-theme="github_dark"] {
+    --mn-bg: #111111;
+    --mn-surface: #181818;
+    --mn-ink: #f6f6f6;
+    --mn-ink-2: #d6d6d6;
+    --mn-ink-3: #b8b8b8;
+    --mn-editor-bg: #111111;
+    --mn-editor-ink: #f6f6f6;
+    --mn-accent: #7dd8d8;
+    --mn-danger: #ff9a9a;
+    --mn-warning: #e3b66e;
+  }
+  :root[data-theme="high_contrast"] {
+    --mn-bg: #000000;
+    --mn-surface: #111111;
+    --mn-ink: #ffffff;
+    --mn-ink-2: #f6f6f6;
+    --mn-ink-3: #d6d6d6;
+    --mn-editor-bg: #000000;
+    --mn-editor-ink: #ffffff;
+    --mn-accent: #f6d84a;
+    --mn-danger: #ff9a9a;
+    --mn-warning: #f6d84a;
+  }
+  :root[data-theme="warm_reading"] {
+    --mn-bg: #ffffff;
+    --mn-surface: #ffffff;
+    --mn-ink: #111111;
+    --mn-ink-2: #333333;
+    --mn-ink-3: #555555;
+    --mn-editor-bg: #ffffff;
+    --mn-editor-ink: #111111;
+    --mn-accent: #005f5f;
+    --mn-danger: #9b2f2f;
+    --mn-warning: #815000;
+  }
+  :root:not([data-theme]) {
     --mn-bg: #111111;
     --mn-surface: #181818;
     --mn-ink: #f6f6f6;

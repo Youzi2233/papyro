@@ -49,5 +49,4 @@ flowchart TD
 
 ## 当前主题
 
-Papyro 当前提供 System、Light 和 Dark。后续增加高质量主题时，优先覆盖基础色板；只有主题确实需要表达不同语义时，才覆盖语义 token。
-
+Papyro 当前提供 System、Light、Dark、GitHub Light、GitHub Dark、High Contrast 和 Warm Reading。后续增加高质量主题时，优先覆盖基础色板；只有主题确实需要表达不同语义时，才覆盖语义 token。

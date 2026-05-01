@@ -56,9 +56,10 @@ pub fn AppHeader(on_settings: EventHandler<()>) -> Element {
 }
 
 fn theme_icon(theme: &Theme) -> &'static str {
-    match theme {
-        Theme::Dark => "\u{2600}",
-        Theme::Light | Theme::System => "\u{263E}",
+    if theme.is_dark() {
+        "\u{2600}"
+    } else {
+        "\u{263E}"
     }
 }
 
@@ -79,6 +80,8 @@ mod tests {
         assert_eq!(theme_icon(&Theme::Dark), "\u{2600}");
         assert_eq!(theme_icon(&Theme::Light), "\u{263E}");
         assert_eq!(theme_icon(&Theme::System), "\u{263E}");
+        assert_eq!(theme_icon(&Theme::GitHubDark), "\u{2600}");
+        assert_eq!(theme_icon(&Theme::WarmReading), "\u{263E}");
     }
 
     #[test]

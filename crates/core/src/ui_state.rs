@@ -165,9 +165,10 @@ pub fn settings_target_theme(target: &ChromeSettingsTarget) -> Theme {
 }
 
 pub fn next_theme(theme: &Theme) -> Theme {
-    match theme {
-        Theme::Light | Theme::System => Theme::Dark,
-        Theme::Dark => Theme::Light,
+    if theme.is_dark() {
+        Theme::Light
+    } else {
+        Theme::Dark
     }
 }
 
@@ -180,6 +181,10 @@ mod tests {
         assert_eq!(next_theme(&Theme::System), Theme::Dark);
         assert_eq!(next_theme(&Theme::Light), Theme::Dark);
         assert_eq!(next_theme(&Theme::Dark), Theme::Light);
+        assert_eq!(next_theme(&Theme::GitHubLight), Theme::Dark);
+        assert_eq!(next_theme(&Theme::GitHubDark), Theme::Light);
+        assert_eq!(next_theme(&Theme::HighContrast), Theme::Light);
+        assert_eq!(next_theme(&Theme::WarmReading), Theme::Dark);
     }
 
     #[test]
