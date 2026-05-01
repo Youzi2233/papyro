@@ -2140,11 +2140,16 @@ button { border: 0; cursor: pointer; background: transparent; }
     background: transparent;
 }
 
-.mn-settings-nav-button:hover,
-.mn-settings-nav-button.active {
-    background: rgba(255, 255, 255, 0.82);
+.mn-settings-nav-button:hover {
+    background: var(--mn-surface);
     color: var(--mn-ink);
-    border-color: rgba(37, 99, 235, 0.14);
+    border-color: var(--mn-divider);
+}
+
+.mn-settings-nav-button.active {
+    background: color-mix(in srgb, var(--mn-accent) 12%, var(--mn-surface));
+    color: var(--mn-ink);
+    border-color: color-mix(in srgb, var(--mn-accent) 28%, var(--mn-border));
     box-shadow: var(--mn-shadow-xs);
 }
 
