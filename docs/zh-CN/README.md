@@ -15,6 +15,7 @@
 | 修改主题或 Markdown 样式 | [主题系统](theme-system.md) |
 | 选择 Markdown 样式参考 | [Markdown 样式参考调研](markdown-style-references.md) |
 | 保持交互性能 | [性能预算](performance-budget.md) |
+| 准备桌面端发布 | [Release QA 检查清单](release-qa.md) |
 | 让 AI 快速理解项目 | [AI skills](ai-skills.md) |
 
 ## 新人推荐阅读路径
@@ -29,12 +30,14 @@ flowchart LR
     themes["主题系统<br/>视觉 token 相关"]
     references["样式参考<br/>采用外部 CSS 前"]
     performance["性能预算<br/>渲染路径相关"]
+    release["Release QA<br/>发布构建前"]
 
     readme --> roadmap --> architecture --> development
     development --> editor
     development --> themes
     themes --> references
     development --> performance
+    development --> release
 ```
 
 如果你不知道代码该放哪里：

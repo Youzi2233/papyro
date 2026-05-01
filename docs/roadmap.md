@@ -234,7 +234,7 @@ Goal: make Papyro installable and understandable for non-developers.
 - [ ] Add release packaging for desktop.
 - [ ] Add app icons for target platforms.
 - [ ] Add first-run workspace onboarding.
-- [ ] Add manual QA checklist for release builds.
+- [x] Add manual QA checklist for release builds.
 - [ ] Add screenshots or short demo media to README.
 - [ ] Document known limitations.
 

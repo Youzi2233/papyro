@@ -133,6 +133,7 @@ Read the full guide in [docs/architecture.md](docs/architecture.md).
 | Product roadmap | [docs/roadmap.md](docs/roadmap.md) | [docs/zh-CN/roadmap.md](docs/zh-CN/roadmap.md) |
 | Markdown editor | [docs/editor.md](docs/editor.md) | [docs/zh-CN/editor.md](docs/zh-CN/editor.md) |
 | Performance budget | [docs/performance-budget.md](docs/performance-budget.md) | [docs/zh-CN/performance-budget.md](docs/zh-CN/performance-budget.md) |
+| Release QA | [docs/release-qa.md](docs/release-qa.md) | [docs/zh-CN/release-qa.md](docs/zh-CN/release-qa.md) |
 | AI skills | [docs/ai-skills.md](docs/ai-skills.md) | [docs/zh-CN/ai-skills.md](docs/zh-CN/ai-skills.md) |
 
 ## AI-Assisted Development

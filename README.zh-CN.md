@@ -129,6 +129,7 @@ flowchart TD
 | 产品路线图 | [docs/zh-CN/roadmap.md](docs/zh-CN/roadmap.md) | [docs/roadmap.md](docs/roadmap.md) |
 | Markdown 编辑器 | [docs/zh-CN/editor.md](docs/zh-CN/editor.md) | [docs/editor.md](docs/editor.md) |
 | 性能预算 | [docs/zh-CN/performance-budget.md](docs/zh-CN/performance-budget.md) | [docs/performance-budget.md](docs/performance-budget.md) |
+| Release QA | [docs/zh-CN/release-qa.md](docs/zh-CN/release-qa.md) | [docs/release-qa.md](docs/release-qa.md) |
 | AI skills | [docs/zh-CN/ai-skills.md](docs/zh-CN/ai-skills.md) | [docs/ai-skills.md](docs/ai-skills.md) |
 
 ## AI 协作
