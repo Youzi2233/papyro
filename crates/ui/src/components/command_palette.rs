@@ -461,6 +461,24 @@ fn markdown_insert_actions(language: AppLanguage, tab_id: &str) -> Vec<CommandPa
             "\n```text\n{|cursor|}\n```\n",
         ),
         (
+            i18n.text("Insert link", "插入链接"),
+            i18n.text("Add Markdown link syntax", "添加 Markdown 链接语法"),
+            "[link text]({|cursor|}https://example.com)",
+        ),
+        (
+            i18n.text("Insert image", "插入图片"),
+            i18n.text("Add Markdown image syntax", "添加 Markdown 图片语法"),
+            "![alt text]({|cursor|}assets/image.png)",
+        ),
+        (
+            i18n.text("Insert callout", "插入提示块"),
+            i18n.text(
+                "Add a portable Markdown callout",
+                "添加可移植的 Markdown 提示块",
+            ),
+            "\n> [!NOTE]\n> {|cursor|}\n",
+        ),
+        (
             i18n.text("Insert inline math", "插入行内公式"),
             i18n.text("Add an inline KaTeX expression", "添加行内 KaTeX 公式"),
             "${|cursor|}$",
@@ -596,6 +614,9 @@ mod tests {
         assert!(titles.contains(&"Unfavorite selected note"));
         assert!(titles.contains(&"Use source mode"));
         assert!(titles.contains(&"Insert table"));
+        assert!(titles.contains(&"Insert link"));
+        assert!(titles.contains(&"Insert image"));
+        assert!(titles.contains(&"Insert callout"));
         assert!(titles.contains(&"Insert inline math"));
         assert!(titles.contains(&"Insert Mermaid diagram"));
         assert!(!titles.contains(&"Use hybrid mode"));
@@ -867,6 +888,15 @@ mod tests {
                     CommandPaletteActionKind::InsertMarkdown(request)
                         if request.markdown == "$$"
                             && request.cursor_offset == Some(1)
+                )
+        }));
+        assert!(actions.iter().any(|action| {
+            action.title == "Insert callout"
+                && matches!(
+                    &action.kind,
+                    CommandPaletteActionKind::InsertMarkdown(request)
+                        if request.markdown.contains("> [!NOTE]")
+                            && request.cursor_offset.is_some()
                 )
         }));
         assert!(actions.iter().any(|action| {
