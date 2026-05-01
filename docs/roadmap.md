@@ -112,7 +112,7 @@ Goal: make the app look and behave like a professional note editor.
 - [x] Improve settings layout and dark-mode contrast.
 - [x] Replace app shell branding assets.
 - [ ] Move Settings into an independent desktop window.
-- [ ] Keep settings window size stable across sections.
+- [x] Keep settings window size stable across sections.
 - [ ] Replace native-looking `select`, modal, message, menu, and tooltip surfaces with Papyro design-system components.
 - [ ] Define component primitives for `Button`, `IconButton`, `Select`, `SegmentedControl`, `Modal/Dialog`, `Message/Toast`, `ContextMenu`, `Tooltip`, `Tabs`, and `FormField`.
 - [ ] Use proven open-source component systems as references, not direct React dependencies. [Radix Primitives](https://github.com/radix-ui/primitives) is a strong behavior/accessibility reference, and [shadcn/ui](https://github.com/shadcn-ui/ui) is a strong copy-and-own visual/component composition reference.

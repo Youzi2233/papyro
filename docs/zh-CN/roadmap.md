@@ -93,7 +93,7 @@ Trace 名：
 - [x] 优化设置界面和暗色模式对比度。
 - [x] 替换应用品牌资源。
 - [ ] 设置改为独立桌面窗口。
-- [ ] 设置窗口切换分区时大小稳定。
+- [x] 设置窗口切换分区时大小稳定。
 - [ ] 用 Papyro 设计系统组件替换原生感强的 `select`、modal、message、menu、tooltip。
 - [ ] 建立 `Button`、`IconButton`、`Select`、`SegmentedControl`、`Modal/Dialog`、`Message/Toast`、`ContextMenu`、`Tooltip`、`Tabs`、`FormField` 等基础组件。
 - [ ] 参考成熟开源组件系统的行为和可访问性，例如 [Radix Primitives](https://github.com/radix-ui/primitives)；参考 [shadcn/ui](https://github.com/shadcn-ui/ui) 的二次封装思路，但不直接引入 React 依赖。
