@@ -69,6 +69,15 @@ Sources: [Slate nodes](https://docs.slatejs.org/concepts/02-nodes), [Slate Eleme
 
 Keep CodeMirror for the next Hybrid stabilization pass, but stop treating each visual defect as an isolated CSS bug.
 
+Stable selection and hit testing strategy:
+
+- CodeMirror remains the owner of document position, cursor, selection, IME, paste, and undo.
+- Hybrid decorations may improve visual reading, but ordinary text clicks must resolve to CodeMirror text positions.
+- Single-click hit testing gets a small previous-line hysteresis near the top edge of the raw target line, because rendered widgets can make low clicks on the previous visual line map to the next source line.
+- Drag selection uses raw CodeMirror coordinates after movement starts, so the hysteresis does not distort range selection.
+- Interactive islands such as Mermaid editors and table widgets own their inner pointer behavior and are excluded from relaxed pointer correction.
+- Inline syntax markers stay hidden unless the collapsed cursor is directly on the marker range; selecting text must not reveal unrelated source.
+
 Short-term rules:
 
 - Use one block-decoration pipeline that decides `source`, `rendered`, `editing`, and `error` states.

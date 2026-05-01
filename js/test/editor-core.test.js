@@ -67,6 +67,7 @@ import {
   recycleEditor,
   readScrollSnapshot,
   requestSaveForView,
+  relaxedPointerCoordsAdjustment,
   restoreScrollSnapshot,
   scrollEditorViewToLine,
   scrollPreviewToHeading,
@@ -999,6 +1000,54 @@ test("inline decoration only exposes markers for collapsed cursor edits", () => 
   );
   assert.equal(hybridDecorationLevel("emphasis", "current"), "full");
   assert.equal(hybridDecorationLevel("link", "remote"), "full");
+});
+
+test("relaxed pointer hit testing keeps near-top clicks on the previous line", () => {
+  const adjusted = relaxedPointerCoordsAdjustment({
+    rawPos: 24,
+    rawLineNumber: 2,
+    rawLineFrom: 18,
+    previousBlockTo: 18,
+    eventX: 120,
+    eventY: 103,
+    rawLineTop: 100,
+    previousBlockBottom: 98,
+    documentTop: 10,
+    defaultLineHeight: 24,
+  });
+
+  assert.equal(adjusted.x, 120);
+  assert.ok(Math.abs(adjusted.y - 98.44) < 0.001);
+
+  assert.equal(
+    relaxedPointerCoordsAdjustment({
+      rawPos: 24,
+      rawLineNumber: 2,
+      rawLineFrom: 18,
+      previousBlockTo: 18,
+      eventX: 120,
+      eventY: 112,
+      rawLineTop: 100,
+      previousBlockBottom: 98,
+      documentTop: 10,
+      defaultLineHeight: 24,
+    }),
+    null,
+  );
+  assert.equal(
+    relaxedPointerCoordsAdjustment({
+      rawPos: 24,
+      rawLineNumber: 1,
+      rawLineFrom: 0,
+      previousBlockTo: 0,
+      eventX: 120,
+      eventY: 3,
+      rawLineTop: 0,
+      previousBlockBottom: 0,
+      defaultLineHeight: 24,
+    }),
+    null,
+  );
 });
 
 test("current code table and mermaid blocks stay rendered", () => {

@@ -61,6 +61,7 @@ import {
   pastePlainTextInView,
   readScrollSnapshot,
   recycleEditor as recycleEditorCore,
+  relaxedPointerCoordsAdjustment,
   requestSaveForView,
   restoreScrollSnapshot,
   saveModeScrollSnapshot,
@@ -1302,21 +1303,22 @@ function pointerCoordsAdjustment(view, event) {
   const lineStart = view.coordsAtPos(rawLine.from, 1);
   if (!lineStart) return null;
 
-  const topLeadingSlack = Math.min(
-    5,
-    Math.max(2, view.defaultLineHeight * 0.14),
-  );
-  if (event.clientY >= lineStart.top + topLeadingSlack) return null;
-
   const rawBlock = view.lineBlockAt(rawLine.from);
   const previousBlock = view.lineBlockAtHeight(Math.max(0, rawBlock.top - 1));
   if (!previousBlock || previousBlock.to > rawBlock.from) return null;
 
-  const previousBottom = view.documentTop + previousBlock.bottom;
-  return {
-    x: event.clientX,
-    y: Math.min(previousBottom - 1, event.clientY - topLeadingSlack),
-  };
+  return relaxedPointerCoordsAdjustment({
+    rawPos,
+    rawLineNumber: rawLine.number,
+    rawLineFrom: rawLine.from,
+    previousBlockTo: previousBlock.to,
+    eventX: event.clientX,
+    eventY: event.clientY,
+    rawLineTop: lineStart.top,
+    previousBlockBottom: previousBlock.bottom,
+    documentTop: view.documentTop,
+    defaultLineHeight: view.defaultLineHeight,
+  });
 }
 
 function pointerPositionAt(view, coords) {

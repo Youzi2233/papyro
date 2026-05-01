@@ -282,6 +282,43 @@ export function collapsedSelectionTouchesTextRange(selectionRanges, textRange) {
   });
 }
 
+export function relaxedPointerCoordsAdjustment(input = {}) {
+  const rawPos = safeInteger(input.rawPos);
+  const rawLineNumber = safeInteger(input.rawLineNumber);
+  const rawLineFrom = safeInteger(input.rawLineFrom);
+  const previousBlockTo = safeInteger(input.previousBlockTo);
+  const eventX = finiteNumber(input.eventX);
+  const eventY = finiteNumber(input.eventY);
+  const rawLineTop = finiteNumber(input.rawLineTop);
+  const previousBlockBottom = finiteNumber(input.previousBlockBottom);
+  const documentTop = finiteNumber(input.documentTop) ?? 0;
+  const defaultLineHeight = finiteNumber(input.defaultLineHeight) ?? 18;
+
+  if (
+    rawPos === null ||
+    rawLineNumber === null ||
+    rawLineFrom === null ||
+    previousBlockTo === null ||
+    eventX === null ||
+    eventY === null ||
+    rawLineTop === null ||
+    previousBlockBottom === null
+  ) {
+    return null;
+  }
+  if (rawPos <= 0 || rawLineNumber <= 1) return null;
+
+  const topLeadingSlack = clampNumber(defaultLineHeight * 0.38, 6, 14);
+  if (eventY >= rawLineTop + topLeadingSlack) return null;
+  if (previousBlockTo > rawLineFrom) return null;
+
+  const previousBottom = documentTop + previousBlockBottom;
+  return {
+    x: eventX,
+    y: Math.min(previousBottom - 1, eventY - Math.max(2, topLeadingSlack * 0.5)),
+  };
+}
+
 export function hybridHeadingDecorationLevel(tier, markerRange, selectionRanges) {
   const level = hybridDecorationLevel("heading", tier);
   return level;

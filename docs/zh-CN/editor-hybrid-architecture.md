@@ -69,6 +69,15 @@ Slate 很灵活，但相比 ProseMirror/Tiptap，Papyro 需要自己实现更多
 
 下一轮 Hybrid 稳定化仍然保留 CodeMirror，但不要再把每个视觉问题当成孤立 CSS bug。
 
+稳定 selection 和 hit testing 策略：
+
+- CodeMirror 仍然负责文档位置、光标、选区、IME、粘贴和 undo。
+- Hybrid decoration 可以改善阅读观感，但普通文本点击必须解析回 CodeMirror 文本位置。
+- 单击命中在“原始目标行顶部”保留一小段上一行滞后区，因为渲染 widget 会让上一行视觉下半部分错误映射到下一行源码。
+- 拖拽选区一旦开始移动，就使用 CodeMirror 原始坐标，避免滞后区扭曲范围选择。
+- Mermaid 编辑器和表格 widget 这类交互式岛屿自己处理内部 pointer 行为，并排除 relaxed pointer correction。
+- inline 语法标记只在 collapsed cursor 直接落到 marker 范围时暴露；选中文本不能让无关源码恢复显示。
+
 短期规则：
 
 - 建立一个统一的 `HybridBlockViewState` 决策点，负责 `source`、`rendered`、`editing` 和 `error` 状态。
