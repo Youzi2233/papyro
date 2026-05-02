@@ -28,8 +28,8 @@ Papyro is usable for development and dogfooding, but it is not a finished end-us
 
 ## Desktop Shell
 
-- Settings still runs in the main window experience. A process-level tool window is planned.
-- Multi-window document editing is modeled in core, but not available as a user-facing mode.
+- Settings runs in a process-level tool window, but document windows still need the same production routing and state ownership work.
+- Multi-window document editing is modeled in core and partially routed, but not complete as a user-facing editing mode.
 - Some release polish remains open: native installers and demo media.
 
 ## Performance

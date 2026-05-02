@@ -28,11 +28,18 @@ pub(crate) struct RuntimeState {
     pub settings_persistence: Signal<SettingsPersistenceQueue>,
 }
 
-pub(crate) fn use_runtime_state(bootstrap: WorkspaceBootstrap) -> RuntimeState {
+pub(crate) fn use_runtime_state(
+    bootstrap: WorkspaceBootstrap,
+    multi_window_available: bool,
+) -> RuntimeState {
     let initial_file_state = bootstrap.file_state;
     let initial_global_settings = bootstrap.global_settings;
     let initial_workspace_overrides = bootstrap.workspace_settings;
-    let initial_process_runtime = ProcessRuntimeSession::tabs_only(&initial_global_settings);
+    let initial_process_runtime = if multi_window_available {
+        ProcessRuntimeSession::with_multi_window_available(&initial_global_settings)
+    } else {
+        ProcessRuntimeSession::tabs_only(&initial_global_settings)
+    };
     let initial_status_message = bootstrap.status_message;
     let initial_workspace_root = bootstrap.workspace_root;
     let initial_recovery_drafts = bootstrap.recovery_drafts;

@@ -693,8 +693,10 @@ tab path is the source of truth for the sidebar tree and watcher context.
 - `WindowSessionKind::Settings` is a process-level tool window and must not receive document tabs.
 - `WindowSessionKind::Document { path }` is the only window kind that owns one explicit document path.
 - Workspace paths on a window are context metadata; they do not imply document ownership.
+- `ProcessRuntimeSession::prepare_markdown_open` is the mutating route used by app code. In `MultiWindow` mode it registers a new document session the first time a path is opened, or focuses the existing document session for that path.
 
 This means future settings windows and document windows can share one routing model instead of special desktop shortcuts.
+The current product still opens document content in the main runtime until the next roadmap item gives each document window its own tab/content/selection state.
 
 ## 20. How The Settings Tool Window Works
 

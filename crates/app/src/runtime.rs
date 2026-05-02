@@ -20,6 +20,10 @@ pub enum AppShell {
 }
 
 impl AppShell {
+    pub(crate) fn supports_multi_window(self) -> bool {
+        matches!(self, Self::Desktop)
+    }
+
     pub(crate) fn close_confirmation(self, title: &str) -> String {
         match self {
             Self::Desktop => format!("{title} has unsaved changes. Click close again to discard."),
@@ -54,7 +58,7 @@ pub fn use_app_runtime(
     startup_markdown_paths: Vec<PathBuf>,
     external_open_requests: Option<MarkdownOpenRequestReceiver>,
 ) -> Signal<Option<String>> {
-    let state = use_runtime_state(bootstrap);
+    let state = use_runtime_state(bootstrap, shell.supports_multi_window());
     let watch_storage = storage.clone();
     let flush_storage = storage.clone();
     #[cfg(feature = "desktop-shell")]
@@ -207,5 +211,11 @@ mod tests {
             AppShell::Mobile.delete_confirmation("Draft", 0),
             "Draft will be moved to trash. Tap Delete again to confirm."
         );
+    }
+
+    #[test]
+    fn only_desktop_shell_enables_multi_window_routing() {
+        assert!(AppShell::Desktop.supports_multi_window());
+        assert!(!AppShell::Mobile.supports_multi_window());
     }
 }

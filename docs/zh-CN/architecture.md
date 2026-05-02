@@ -779,8 +779,10 @@ flowchart TD
 - `WindowSessionKind::Settings` 是进程级工具窗口，不能接收文档 tab。
 - `WindowSessionKind::Document { path }` 是唯一拥有明确文档路径的窗口类型。
 - 窗口上的 workspace path 只是上下文元数据，不代表拥有某个文档。
+- `ProcessRuntimeSession::prepare_markdown_open` 是 app 层使用的可变路由入口。`MultiWindow` 模式下，它会在第一次打开某个路径时注册 document session，或者聚焦已拥有该路径的 document session。
 
 这样后续设置窗口和文档窗口可以共用一套路由模型，而不是靠桌面端临时分支实现。
+当前产品仍会把文档内容打开到主 runtime，直到下一项 roadmap 为每个 document window 提供独立的 tab/content/selection state。
 
 ## 20. Settings 工具窗口如何工作
 

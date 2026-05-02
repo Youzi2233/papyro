@@ -120,13 +120,14 @@ impl WindowSession {
 pub enum WindowRouteTarget {
     CurrentWindow(WindowSessionId),
     ExistingDocumentWindow(WindowSessionId),
-    NewDocumentWindow,
+    NewDocumentWindow(WindowSessionId),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProcessRuntimeSession {
     pub configured_note_open_mode: NoteOpenMode,
     pub effective_note_open_mode: NoteOpenMode,
+    pub multi_window_available: bool,
     pub window_registry: WindowSessionRegistry,
 }
 
@@ -135,6 +136,7 @@ impl ProcessRuntimeSession {
         Self {
             configured_note_open_mode: settings.note_open_mode.clone(),
             effective_note_open_mode: NoteOpenMode::Tabs,
+            multi_window_available: false,
             window_registry: WindowSessionRegistry::default(),
         }
     }
@@ -143,14 +145,31 @@ impl ProcessRuntimeSession {
         Self {
             configured_note_open_mode: settings.note_open_mode.clone(),
             effective_note_open_mode: settings.note_open_mode.clone(),
+            multi_window_available: true,
             window_registry: WindowSessionRegistry::default(),
         }
+    }
+
+    pub fn apply_settings(&mut self, settings: &AppSettings) {
+        self.configured_note_open_mode = settings.note_open_mode.clone();
+        self.effective_note_open_mode = if self.multi_window_available {
+            settings.note_open_mode.clone()
+        } else {
+            NoteOpenMode::Tabs
+        };
     }
 
     pub fn route_markdown_open(&self, path: &Path) -> WindowRouteTarget {
         match self.effective_note_open_mode {
             NoteOpenMode::Tabs => self.window_registry.route_tabs_open(),
             NoteOpenMode::MultiWindow => self.window_registry.route_multi_window_open(path),
+        }
+    }
+
+    pub fn prepare_markdown_open(&mut self, path: &Path) -> WindowRouteTarget {
+        match self.effective_note_open_mode {
+            NoteOpenMode::Tabs => self.window_registry.route_tabs_open(),
+            NoteOpenMode::MultiWindow => self.window_registry.prepare_multi_window_open(path),
         }
     }
 }
@@ -218,7 +237,33 @@ impl WindowSessionRegistry {
         self.window_for_document(path)
             .cloned()
             .map(WindowRouteTarget::ExistingDocumentWindow)
-            .unwrap_or(WindowRouteTarget::NewDocumentWindow)
+            .unwrap_or_else(|| WindowRouteTarget::NewDocumentWindow(self.next_document_window_id()))
+    }
+
+    pub fn prepare_multi_window_open(&mut self, path: &Path) -> WindowRouteTarget {
+        if let Some(window_id) = self.window_for_document(path).cloned() {
+            self.focus(&window_id);
+            return WindowRouteTarget::ExistingDocumentWindow(window_id);
+        }
+
+        let window_id = self.next_document_window_id();
+        self.register(WindowSession::document(
+            window_id.clone(),
+            path.to_path_buf(),
+        ));
+        self.focus(&window_id);
+        WindowRouteTarget::NewDocumentWindow(window_id)
+    }
+
+    fn next_document_window_id(&self) -> WindowSessionId {
+        for index in 1.. {
+            let window_id = WindowSessionId::new(format!("document-{index}"));
+            if !self.sessions.contains_key(&window_id) {
+                return window_id;
+            }
+        }
+
+        unreachable!("document window id allocation cannot exhaust usize")
     }
 }
 
@@ -296,7 +341,34 @@ mod tests {
 
         assert_eq!(
             registry.route_multi_window_open(Path::new("workspace/notes/new.md")),
-            WindowRouteTarget::NewDocumentWindow
+            WindowRouteTarget::NewDocumentWindow(WindowSessionId::from("document-1"))
+        );
+    }
+
+    #[test]
+    fn prepare_multi_window_open_registers_and_focuses_new_document() {
+        let mut registry = WindowSessionRegistry::default();
+        let note_path = PathBuf::from("workspace/notes/new.md");
+
+        assert_eq!(
+            registry.prepare_multi_window_open(&note_path),
+            WindowRouteTarget::NewDocumentWindow(WindowSessionId::from("document-1"))
+        );
+        assert_eq!(
+            registry.focused_window_id(),
+            &WindowSessionId::from("document-1")
+        );
+        assert!(registry
+            .get(&WindowSessionId::from("document-1"))
+            .is_some_and(|session| session.owns_document(&note_path)));
+
+        assert_eq!(
+            registry.prepare_multi_window_open(&note_path),
+            WindowRouteTarget::ExistingDocumentWindow(WindowSessionId::from("document-1"))
+        );
+        assert_eq!(
+            registry.focused_window_id(),
+            &WindowSessionId::from("document-1")
         );
     }
 
@@ -310,7 +382,7 @@ mod tests {
 
         assert_eq!(
             registry.route_multi_window_open(Path::new("workspace/notes/a.md")),
-            WindowRouteTarget::NewDocumentWindow
+            WindowRouteTarget::NewDocumentWindow(WindowSessionId::from("document-1"))
         );
     }
 
@@ -353,6 +425,7 @@ mod tests {
 
         assert_eq!(runtime.configured_note_open_mode, NoteOpenMode::MultiWindow);
         assert_eq!(runtime.effective_note_open_mode, NoteOpenMode::Tabs);
+        assert!(!runtime.multi_window_available);
         assert_eq!(
             runtime.route_markdown_open(Path::new("workspace/notes/a.md")),
             WindowRouteTarget::CurrentWindow(WindowSessionId::main())
@@ -376,6 +449,47 @@ mod tests {
         assert_eq!(
             runtime.route_markdown_open(&note_path),
             WindowRouteTarget::ExistingDocumentWindow(document_window)
+        );
+    }
+
+    #[test]
+    fn process_runtime_updates_effective_mode_from_settings() {
+        let mut runtime = ProcessRuntimeSession::tabs_only(&AppSettings::default());
+        runtime.apply_settings(&AppSettings {
+            note_open_mode: NoteOpenMode::MultiWindow,
+            ..AppSettings::default()
+        });
+
+        assert_eq!(runtime.configured_note_open_mode, NoteOpenMode::MultiWindow);
+        assert_eq!(runtime.effective_note_open_mode, NoteOpenMode::Tabs);
+
+        let mut runtime =
+            ProcessRuntimeSession::with_multi_window_available(&AppSettings::default());
+        runtime.apply_settings(&AppSettings {
+            note_open_mode: NoteOpenMode::MultiWindow,
+            ..AppSettings::default()
+        });
+
+        assert_eq!(runtime.configured_note_open_mode, NoteOpenMode::MultiWindow);
+        assert_eq!(runtime.effective_note_open_mode, NoteOpenMode::MultiWindow);
+    }
+
+    #[test]
+    fn process_runtime_prepares_multi_window_route_when_available() {
+        let settings = AppSettings {
+            note_open_mode: NoteOpenMode::MultiWindow,
+            ..AppSettings::default()
+        };
+        let note_path = PathBuf::from("workspace/notes/a.md");
+        let mut runtime = ProcessRuntimeSession::with_multi_window_available(&settings);
+
+        assert_eq!(
+            runtime.prepare_markdown_open(&note_path),
+            WindowRouteTarget::NewDocumentWindow(WindowSessionId::from("document-1"))
+        );
+        assert_eq!(
+            runtime.prepare_markdown_open(&note_path),
+            WindowRouteTarget::ExistingDocumentWindow(WindowSessionId::from("document-1"))
         );
     }
 }

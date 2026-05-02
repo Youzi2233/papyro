@@ -368,13 +368,7 @@ impl AppDispatcher {
                 export_html(self.shell, self.state);
             }
             AppAction::SaveSettings(action) => {
-                apply_settings(
-                    self.storage.clone(),
-                    self.state.ui_state,
-                    self.state.status_message,
-                    self.state.settings_persistence,
-                    action.settings,
-                );
+                apply_settings(self.storage.clone(), self.state, action.settings);
             }
             AppAction::SaveWorkspaceSettings(action) => {
                 apply_workspace_settings(
@@ -825,15 +819,18 @@ fn export_html(shell: AppShell, mut state: RuntimeState) {
         .set(Some("Export is not available in this build".to_string()));
 }
 
-fn apply_settings(
-    storage: Arc<dyn NoteStorage>,
-    mut ui_state: Signal<UiState>,
-    status_message: Signal<Option<String>>,
-    settings_persistence: Signal<crate::settings_persistence::SettingsPersistenceQueue>,
-    settings: AppSettings,
-) {
-    ui_state.write().apply_global_settings(settings.clone());
-    enqueue_global_settings_save(storage, settings_persistence, status_message, settings);
+fn apply_settings(storage: Arc<dyn NoteStorage>, mut state: RuntimeState, settings: AppSettings) {
+    state
+        .ui_state
+        .write()
+        .apply_global_settings(settings.clone());
+    state.process_runtime.write().apply_settings(&settings);
+    enqueue_global_settings_save(
+        storage,
+        state.settings_persistence,
+        state.status_message,
+        settings,
+    );
 }
 
 fn apply_workspace_settings(
@@ -931,13 +928,7 @@ fn apply_chrome_settings_target(
 ) {
     match target {
         ChromeSettingsTarget::Global(settings) => {
-            apply_settings(
-                storage,
-                state.ui_state,
-                state.status_message,
-                state.settings_persistence,
-                settings,
-            );
+            apply_settings(storage, state, settings);
         }
         ChromeSettingsTarget::Workspace(overrides) => {
             apply_workspace_settings(
@@ -986,24 +977,25 @@ fn toggle_expanded_path(
 
 async fn run_open_markdown(
     storage: Arc<dyn NoteStorage>,
-    state: RuntimeState,
+    mut state: RuntimeState,
     target: OpenMarkdownTarget,
 ) {
-    let route_target = {
-        let process_runtime = state.process_runtime.read();
-        process_runtime.route_markdown_open(&target.path)
-    };
+    let route_target = state
+        .process_runtime
+        .write()
+        .prepare_markdown_open(&target.path);
     match route_target {
         WindowRouteTarget::CurrentWindow(_) => {}
         WindowRouteTarget::ExistingDocumentWindow(window_id) => {
-            tracing::warn!(
+            tracing::info!(
                 window_id = window_id.as_str(),
-                "multi-window document focus route is not implemented; falling back to current tabs"
+                "multi-window document focus route prepared; opening in current runtime until document surfaces own state"
             );
         }
-        WindowRouteTarget::NewDocumentWindow => {
-            tracing::warn!(
-                "multi-window document creation route is not implemented; falling back to current tabs"
+        WindowRouteTarget::NewDocumentWindow(window_id) => {
+            tracing::info!(
+                window_id = window_id.as_str(),
+                "multi-window document creation route prepared; opening in current runtime until document surfaces own state"
             );
         }
     }
