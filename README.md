@@ -132,6 +132,7 @@ Read the full guide in [docs/architecture.md](docs/architecture.md).
 | Development rules | [docs/development-standards.md](docs/development-standards.md) | [docs/zh-CN/development-standards.md](docs/zh-CN/development-standards.md) |
 | Product roadmap | [docs/roadmap.md](docs/roadmap.md) | [docs/zh-CN/roadmap.md](docs/zh-CN/roadmap.md) |
 | Markdown editor | [docs/editor.md](docs/editor.md) | [docs/zh-CN/editor.md](docs/zh-CN/editor.md) |
+| UI/UX redesign | [docs/ui-information-architecture.md](docs/ui-information-architecture.md) | [docs/zh-CN/ui-information-architecture.md](docs/zh-CN/ui-information-architecture.md) |
 | App icons | [docs/app-icons.md](docs/app-icons.md) | [docs/zh-CN/app-icons.md](docs/zh-CN/app-icons.md) |
 | Performance budget | [docs/performance-budget.md](docs/performance-budget.md) | [docs/zh-CN/performance-budget.md](docs/zh-CN/performance-budget.md) |
 | Release packaging | [docs/release-packaging.md](docs/release-packaging.md) | [docs/zh-CN/release-packaging.md](docs/zh-CN/release-packaging.md) |

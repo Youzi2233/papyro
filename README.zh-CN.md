@@ -128,6 +128,7 @@ flowchart TD
 | 开发规范 | [docs/zh-CN/development-standards.md](docs/zh-CN/development-standards.md) | [docs/development-standards.md](docs/development-standards.md) |
 | 产品路线图 | [docs/zh-CN/roadmap.md](docs/zh-CN/roadmap.md) | [docs/roadmap.md](docs/roadmap.md) |
 | Markdown 编辑器 | [docs/zh-CN/editor.md](docs/zh-CN/editor.md) | [docs/editor.md](docs/editor.md) |
+| UI/UX 重构 | [docs/zh-CN/ui-information-architecture.md](docs/zh-CN/ui-information-architecture.md) | [docs/ui-information-architecture.md](docs/ui-information-architecture.md) |
 | App icons | [docs/zh-CN/app-icons.md](docs/zh-CN/app-icons.md) | [docs/app-icons.md](docs/app-icons.md) |
 | 性能预算 | [docs/zh-CN/performance-budget.md](docs/zh-CN/performance-budget.md) | [docs/performance-budget.md](docs/performance-budget.md) |
 | Release packaging | [docs/zh-CN/release-packaging.md](docs/zh-CN/release-packaging.md) | [docs/release-packaging.md](docs/release-packaging.md) |

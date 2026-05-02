@@ -17,6 +17,7 @@ This directory is intentionally small. Older phase notes, duplicated design draf
 | Redesign UI/UX systems | [UI/UX benchmark](ui-ux-benchmark.md) |
 | Define visual design rules | [UI visual brief](ui-visual-brief.md) |
 | Understand UI architecture | [UI architecture](ui-architecture.md) |
+| Understand UI information architecture | [UI information architecture](ui-information-architecture.md) |
 | Audit CSS tokens | [UI token audit](ui-token-audit.md) |
 | Update app icons | [App icons](app-icons.md) |
 | Keep interactions fast | [Performance budget](performance-budget.md) |
