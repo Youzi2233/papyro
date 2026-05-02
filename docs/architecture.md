@@ -707,6 +707,8 @@ The implementation path is:
 - `crates/ui/src/components/settings/mod.rs` exposes `SettingsSurface`, so the modal and tool window reuse one settings form.
 - `crates/ui/src/layouts/desktop_layout.rs` asks a `SettingsWindowLauncher` context to open the tool window, with the old modal kept as a fallback.
 - The tool window receives the same app context as the main window, so settings changes still flow through normal commands and update the main editor live.
+- The tool window is created hidden, then shown and focused after the desktop context resolves. This avoids a visible blank white window during webview startup.
+- Window title text is localized through the shared app context, and the native window icon is loaded from the Papyro logo asset so secondary windows match the main app chrome.
 
 This keeps the main window focused on writing and prepares the same process-level
 window pattern for future document windows.

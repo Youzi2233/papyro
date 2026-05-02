@@ -3234,6 +3234,7 @@ dependencies = [
  "base64",
  "dioxus",
  "flume",
+ "image",
  "papyro-core",
  "papyro-editor",
  "papyro-platform",

@@ -792,6 +792,8 @@ flowchart TD
 - `crates/ui/src/components/settings/mod.rs` 暴露 `SettingsSurface`，让 modal 和工具窗口复用同一份设置表单。
 - `crates/ui/src/layouts/desktop_layout.rs` 通过 `SettingsWindowLauncher` context 打开工具窗口，同时保留旧 modal 作为兜底。
 - 工具窗口接收和主窗口相同的 app context，因此设置修改仍走正常 command，并能实时更新主编辑器。
+- 工具窗口会先以隐藏状态创建，等 desktop context 就绪后再显示并聚焦，避免 webview 初始化阶段出现一闪而过的白屏。
+- 窗口标题会跟随共享 app context 的当前语言更新，原生窗口图标也会从 Papyro 的 logo 资源加载，保证次级窗口和主窗口的品牌与语言一致。
 
 这样主窗口可以继续专注写作，也为后续 document window 复用同一套进程级窗口模式打基础。
 

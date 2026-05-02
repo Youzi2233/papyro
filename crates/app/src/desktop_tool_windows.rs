@@ -1,9 +1,10 @@
 use crate::runtime::AppShell;
 use dioxus::desktop::tao::dpi::LogicalSize;
 use dioxus::desktop::tao::event::{Event, WindowEvent};
+use dioxus::desktop::tao::window::Icon;
 use dioxus::desktop::{window, Config, DesktopContext, WindowBuilder};
 use dioxus::prelude::*;
-use papyro_core::models::Theme;
+use papyro_core::models::{AppLanguage, Theme};
 use papyro_ui::context::{AppContext, SettingsWindowLauncher};
 
 const SETTINGS_TOOL_WINDOW_CSS: &str = concat!(
@@ -11,6 +12,7 @@ const SETTINGS_TOOL_WINDOW_CSS: &str = concat!(
     "\n",
     include_str!("../../../assets/main.css")
 );
+const PAPYRO_WINDOW_ICON: &[u8] = include_bytes!("../../../assets/logo.png");
 
 #[derive(Clone, PartialEq)]
 struct SettingsToolWindowProps {
@@ -44,15 +46,18 @@ pub(crate) fn use_settings_window_launcher(
                 app_context: app_context.clone(),
                 on_closed,
             };
-            let theme = app_context.ui_state.read().settings.theme.clone();
+            let settings = app_context.ui_state.read().settings.clone();
             let pending = window().new_window(
                 VirtualDom::new_with_props(SettingsToolWindowRoot, props),
-                settings_tool_window_config(&theme),
+                settings_tool_window_config(&settings.theme, settings.language),
             );
 
             let mut settings_window_for_open = settings_window;
             spawn(async move {
-                settings_window_for_open.set(Some(pending.await));
+                let opened_window = pending.await;
+                opened_window.set_visible(true);
+                opened_window.set_focus();
+                settings_window_for_open.set(Some(opened_window));
             });
         }),
     }
@@ -86,9 +91,11 @@ fn SettingsToolWindowRoot(props: SettingsToolWindowProps) -> Element {
         close_button.call(());
         window().close();
     });
+    let i18n = papyro_ui::i18n::use_i18n();
 
     rsx! {
         div { class: "mn-modal mn-settings-modal mn-settings-window-shell",
+            document::Title { "{settings_window_title(i18n.language())}" }
             papyro_ui::theme::ThemeDomEffect {}
             papyro_ui::components::settings::SettingsSurface {
                 on_close: close_settings,
@@ -97,11 +104,13 @@ fn SettingsToolWindowRoot(props: SettingsToolWindowProps) -> Element {
     }
 }
 
-fn settings_tool_window_config(theme: &Theme) -> Config {
+fn settings_tool_window_config(theme: &Theme, language: AppLanguage) -> Config {
     let window = WindowBuilder::new()
-        .with_title("Papyro Settings")
+        .with_title(settings_window_title(language))
         .with_inner_size(LogicalSize::new(980.0, 720.0))
         .with_min_inner_size(LogicalSize::new(720.0, 560.0))
+        .with_visible(false)
+        .with_window_icon(settings_window_icon())
         .with_always_on_top(false);
 
     Config::new()
@@ -109,6 +118,13 @@ fn settings_tool_window_config(theme: &Theme) -> Config {
         .with_window(window)
         .with_background_color(settings_window_background(theme))
         .with_custom_head(settings_tool_window_head(theme))
+}
+
+fn settings_window_title(language: AppLanguage) -> &'static str {
+    match language {
+        AppLanguage::English => "Papyro Settings",
+        AppLanguage::Chinese => "Papyro 设置",
+    }
 }
 
 fn settings_tool_window_head(theme: &Theme) -> String {
@@ -143,6 +159,14 @@ fn settings_window_background(theme: &Theme) -> (u8, u8, u8, u8) {
     }
 }
 
+fn settings_window_icon() -> Option<Icon> {
+    let image = image::load_from_memory(PAPYRO_WINDOW_ICON)
+        .ok()?
+        .into_rgba8();
+    let (width, height) = image.dimensions();
+    Icon::from_rgba(image.into_raw(), width, height).ok()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -162,5 +186,19 @@ mod tests {
             settings_window_background(&Theme::GitHubLight),
             (243, 245, 248, 255)
         );
+    }
+
+    #[test]
+    fn settings_tool_window_title_is_localized() {
+        assert_eq!(
+            settings_window_title(AppLanguage::English),
+            "Papyro Settings"
+        );
+        assert_eq!(settings_window_title(AppLanguage::Chinese), "Papyro 设置");
+    }
+
+    #[test]
+    fn settings_tool_window_icon_loads_papyro_asset() {
+        assert!(settings_window_icon().is_some());
     }
 }
