@@ -666,6 +666,30 @@ pub fn SkeletonRows(label: String, rows: usize, class_name: String) -> Element {
 }
 
 #[component]
+pub fn ErrorState(
+    title: String,
+    message: String,
+    detail: Option<String>,
+    class_name: String,
+) -> Element {
+    let class = append_class("mn-error-state", &class_name);
+
+    rsx! {
+        section {
+            class,
+            role: "alert",
+            h2 { class: "mn-error-state-title", "{title}" }
+            p { class: "mn-error-state-message", "{message}" }
+            if let Some(detail) = detail {
+                pre { class: "mn-error-state-detail",
+                    code { "{detail}" }
+                }
+            }
+        }
+    }
+}
+
+#[component]
 pub fn StatusIndicator(label: String, tone: StatusTone) -> Element {
     rsx! {
         span { class: status_tone_class(tone), "{label}" }

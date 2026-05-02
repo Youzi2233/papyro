@@ -35,7 +35,7 @@ flowchart TD
 
 | 区域 | 当前组件 | 说明 |
 | --- | --- | --- |
-| 基础组件 | `Button`、`ActionButton`、`RowActionButton`、`IconButton`、`Select`、`Dropdown`、`SegmentedControl`、`Tabs`、`Modal`、`Menu`、`ContextMenu`、`MenuItem`、`Tooltip`、`Message`、`StatusStrip`、`StatusMessage`、`StatusIndicator`、`FormField`、`Toggle`、`Slider`、`TextInput`、`ResultRow`、`RowActions`、`ModalFooterMeta`、`ComparePanel`、`SkeletonRows`、`SettingsLayout`、`SettingsNav`、`SettingsRow`、`DialogSection`、`TreeItemButton`、`TreeItemEditRow`、`EmptyState` | 已经有基础，但还需要更强的状态契约、variant、键盘行为和文档。 |
+| 基础组件 | `Button`、`ActionButton`、`RowActionButton`、`IconButton`、`Select`、`Dropdown`、`SegmentedControl`、`Tabs`、`Modal`、`Menu`、`ContextMenu`、`MenuItem`、`Tooltip`、`Message`、`StatusStrip`、`StatusMessage`、`StatusIndicator`、`FormField`、`Toggle`、`Slider`、`TextInput`、`ResultRow`、`RowActions`、`ModalFooterMeta`、`ComparePanel`、`SkeletonRows`、`ErrorState`、`SettingsLayout`、`SettingsNav`、`SettingsRow`、`DialogSection`、`TreeItemButton`、`TreeItemEditRow`、`EmptyState` | 已经有基础，但还需要更强的状态契约、variant、键盘行为和文档。 |
 | App chrome | `Sidebar`、`FileTree`、`AppHeader`、`StatusBar`、`DesktopLayout`、`MobileLayout` | 文件树行已经使用 `TreeItem` 基础组件承载视觉状态；侧边栏 footer/workspace 行还需要共享 `SidebarItem`。 |
 | 编辑器 | `EditorPane`、`EditorChrome`、`EditorTabButton`、`OutlinePane`、`PreviewPane`、`EditorHost`、`FallbackEditor` | 需要稳定 chrome 分区、tab overflow 规则、大纲行为和共享 Markdown 视觉 token。 |
 | 弹窗界面 | `SettingsModal`、`QuickOpenModal`、`CommandPaletteModal`、`SearchModal`、`TrashModal`、`RecoveryDraftsModal`、`RecoveryDraftCompareModal` | 应共享 dialog shell、结果行、空状态、加载态和键盘焦点行为。 |
@@ -65,7 +65,7 @@ flowchart TD
 | `Toolbar` / `ToolbarZone` | 部分已有 | `EditorToolbar` 和 `ToolbarZone` 已包住编辑器 chrome 的弹性 tabs 区和固定工具区；split panes、可调整 rail 和通用滚动容器还需要继续接入。 |
 | `EmptyState` | 已有 | 增加 compact、onboarding、error 和 action variant。 |
 | `SkeletonRows` | 部分已有 | 工作区搜索加载态已使用可复用 skeleton 行；workspace 加载和未来异步窗口还需要继续接入。 |
-| `InlineAlert` / `ErrorState` | 部分已有 | `InlineAlert` 已用于预览提示和命令/搜索空态；较大的阻断错误仍需要 `ErrorState`。 |
+| `InlineAlert` / `ErrorState` | 部分已有 | `InlineAlert` 已用于预览提示和命令/搜索空态；`ErrorState` 已覆盖编辑器 runtime 失败，后续较大的阻断错误也应复用它。 |
 | `SettingsLayout` / `SettingsRow` | 部分已有 | 设置导航、面板、section 和行已经进入基础组件；helper text、错误态和更丰富的表单状态还需要继续接入。 |
 
 ## 产品 Pattern
@@ -80,6 +80,7 @@ flowchart TD
 | `ModalFooterMeta` | 回收站、恢复、破坏性操作弹窗 | footer 左侧元信息，长文本会在操作按钮前安全截断。 |
 | `ComparePanel` | 恢复对比、未来冲突处理 | 标题、元信息、可选错误、可滚动预格式内容和稳定的左右对比尺寸。 |
 | `SkeletonRows` | 搜索、workspace 加载、异步窗口 | 可访问的加载行，保持稳定高度、克制动效，并避免结果到达时布局跳动。 |
+| `ErrorState` | 编辑器 runtime、workspace 加载、阻断失败 | 标题、面向用户的说明、可选技术详情，以及用于不可恢复行内失败的 alert role。 |
 | `TreeRow` | 文件树 | 缩进、展开图标、文件/文件夹图标、selected/editing/drag/drop 状态、右键菜单、键盘目标。 |
 | `ToolbarZone` | 编辑器 chrome、app header | 固定或弹性区域，并显式定义 overflow 行为。 |
 | `DialogSection` | 设置、恢复、回收站 | 标题、正文、可选 footer、稳定间距。 |
@@ -113,7 +114,7 @@ flowchart TD
 2. **结果行：** 对齐命令面板、快速打开和搜索结果行。
 3. **文件树行：** 继续基于 `TreeItemButton` 和 `TreeItemEditRow` 推进；下一步补 focus/current variants，并共享带作用域的菜单 item model。
 4. **编辑器 chrome：** 继续基于 `EditorToolbar` 和 `ToolbarZone` 完善 tab overflow、模式切换、大纲按钮和未来更多菜单规则。
-5. **空/加载/错误态：** 继续扩展 `InlineAlert` 和 `SkeletonRows`，并在下一个大范围异步 UI 前补 `ErrorState`。
+5. **空/加载/错误态：** 继续把 `InlineAlert`、`SkeletonRows` 和 `ErrorState` 接入剩余异步与阻断错误界面。
 6. **Markdown surface：** 等 Hybrid selection 和 hit testing 稳定后，再统一 Markdown token。
 
 ## Review Checklist

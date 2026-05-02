@@ -1944,6 +1944,51 @@ button { border: 0; cursor: pointer; background: transparent; }
     text-overflow: ellipsis;
 }
 
+.mn-error-state {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 10px;
+    border: var(--mn-border-subtle);
+    border-radius: var(--mn-radius-md);
+    background: color-mix(in srgb, var(--mn-danger) 7%, var(--mn-surface));
+    color: var(--mn-ink);
+    padding: 16px;
+}
+
+.mn-error-state-title {
+    margin: 0;
+    color: var(--mn-danger);
+    font-size: var(--mn-type-title-sm);
+    font-weight: var(--mn-weight-semibold);
+}
+
+.mn-error-state-message {
+    margin: 0;
+    color: var(--mn-ink-2);
+    font-size: var(--mn-type-control);
+    line-height: var(--mn-line-body);
+}
+
+.mn-error-state-detail {
+    max-height: 180px;
+    margin: 0;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+    border-radius: var(--mn-radius-sm);
+    background: var(--mn-surface);
+    color: var(--mn-ink);
+    padding: 10px;
+    font-family: var(--mn-font-code);
+    font-size: var(--mn-type-caption);
+    line-height: var(--mn-line-code);
+}
+
+.mn-editor-error-state {
+    margin: var(--mn-document-pad-top) var(--mn-document-pad-x);
+}
+
 .mn-editor-fallback-input {
     flex: 1;
     min-height: 0;

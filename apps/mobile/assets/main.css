@@ -1000,6 +1000,51 @@ small {
     color: var(--mn-muted);
 }
 
+.mn-error-state {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 10px;
+    border: 1px solid rgba(47, 111, 108, 0.22);
+    border-radius: 18px;
+    background: rgba(47, 111, 108, 0.07);
+    color: var(--mn-text);
+    padding: 16px;
+}
+
+.mn-error-state-title {
+    margin: 0;
+    color: var(--mn-accent-dark);
+    font-size: 16px;
+    font-weight: 800;
+}
+
+.mn-error-state-message {
+    margin: 0;
+    color: var(--mn-muted);
+    font-size: 13px;
+    line-height: 1.55;
+}
+
+.mn-error-state-detail {
+    max-height: 180px;
+    margin: 0;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+    border-radius: 12px;
+    background: var(--mn-panel);
+    color: var(--mn-text);
+    padding: 10px;
+    font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.mn-editor-error-state {
+    margin: 18px;
+}
+
 .mn-mermaid-block {
     min-width: 0;
     max-width: 100%;
