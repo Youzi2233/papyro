@@ -20,7 +20,7 @@ The audit is intentionally practical: every row names the owner, the current cod
 | Search | `components/search.rs` | Result rows mostly resemble command rows but are not a shared pattern. | Adopt shared `ResultRow`, highlight, loading, and error primitives. |
 | Quick open | `components/quick_open.rs` | Shares command row classes without a semantic reusable row. | Move to `ResultRow` with document metadata slots. |
 | Command palette | `components/command_palette.rs` | Strong action model, but row styling and grouping should be reusable. | Split command data from `CommandRow` rendering pattern. |
-| Trash | `components/trash.rs` | Uses command-modal styling for a destructive management surface; empty state now uses `InlineAlert`. | Use `DialogSection`, `ResultRow`, and destructive footer rules. |
+| Trash | `components/trash.rs` | Uses command-modal styling for a destructive management surface; empty state and rows now use shared primitives. | Add `DialogSection` and destructive footer rules. |
 | Recovery | `components/recovery.rs` | Dense rows and compare panels rely on ad hoc inline layout; empty drafts now use `InlineAlert`. | Use `RecoveryListRow`, `ComparePanel`, and conflict/error status primitives. |
 | Empty/loading/error states | scattered | `InlineAlert` now covers preview notices and command/search/trash/recovery empty states, but larger blocking failures still need structure. | Add `Skeleton`, `ErrorState`, and compact/onboarding `EmptyState` variants. |
 
@@ -196,12 +196,13 @@ Redesign decision:
 What works:
 
 - Trash supports restore and empty-trash flows.
+- Trash empty state uses `InlineAlert`, and trashed-note rows now use `ResultRow`.
 - Recovery supports compare, restore, and discard.
 - Recovery compare exposes disk-vs-draft state.
 
 Gaps:
 
-- Trash borrows command-modal layout even though it is a destructive management surface.
+- Trash still borrows command-modal layout even though it is a destructive management surface.
 - Recovery rows and compare panels use inline layout strings.
 - Destructive actions need stronger confirmation and visual hierarchy rules.
 

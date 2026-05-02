@@ -1,5 +1,7 @@
 use crate::commands::{AppCommands, RestoreTrashedNoteTarget};
-use crate::components::primitives::{Button, ButtonVariant, InlineAlert, InlineAlertTone, Modal};
+use crate::components::primitives::{
+    Button, ButtonVariant, InlineAlert, InlineAlertTone, Modal, ResultRow, ResultRowKind,
+};
 use crate::context::use_app_context;
 use crate::i18n::{i18n_for, use_i18n};
 use crate::view_model::TrashedNoteListItem;
@@ -77,21 +79,28 @@ fn TrashNoteRow(note: TrashedNoteListItem, commands: AppCommands) -> Element {
     let target = RestoreTrashedNoteTarget {
         note_id: note.note_id.clone(),
     };
+    let row_target = target.clone();
+    let row_commands = commands.clone();
 
     rsx! {
-        div { class: "mn-command-row",
-            span { class: "mn-command-row-main",
-                span { class: "mn-command-title", "{note.title}" }
-                span { class: "mn-command-path", "{note.relative_path.display()}" }
-            }
+        ResultRow {
+            label: note.title.clone(),
+            metadata: "TRASH".to_string(),
+            is_active: false,
+            kind: ResultRowKind::Default,
+            on_select: move |_| row_commands.restore_trashed_note.call(row_target.clone()),
+            span { class: "mn-command-title", "{note.title}" }
+            span { class: "mn-command-path", "{note.relative_path.display()}" }
             span {
                 class: "mn-row-actions",
                 style: "display:flex;gap:6px;align-items:center;justify-content:flex-end;",
-                Button {
-                    label: i18n.text("Restore", "恢复").to_string(),
-                    variant: ButtonVariant::Primary,
-                    disabled: false,
-                    on_click: move |_| commands.restore_trashed_note.call(target.clone()),
+                button {
+                    class: "mn-button primary",
+                    onclick: move |event| {
+                        event.stop_propagation();
+                        commands.restore_trashed_note.call(target.clone());
+                    },
+                    {i18n.text("Restore", "恢复")}
                 }
             }
         }
