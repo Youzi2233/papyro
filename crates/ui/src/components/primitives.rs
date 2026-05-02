@@ -271,6 +271,15 @@ fn settings_inline_row_class(kind: SettingsInlineRowKind, class_name: &str) -> S
     append_class(base, class_name)
 }
 
+fn sidebar_item_class(selected: bool, class_name: &str) -> String {
+    let base = if selected {
+        "mn-sidebar-workspace active"
+    } else {
+        "mn-sidebar-workspace"
+    };
+    append_class(base, class_name)
+}
+
 fn tree_item_class(
     kind: TreeItemKind,
     is_selected: bool,
@@ -465,6 +474,45 @@ pub fn SettingsInlineRow(
 
     rsx! {
         div { class, {children} }
+    }
+}
+
+#[component]
+pub fn SidebarItem(
+    label: String,
+    value: String,
+    title: String,
+    selected: bool,
+    class_name: String,
+    on_click: Option<EventHandler<MouseEvent>>,
+    on_context_menu: Option<EventHandler<MouseEvent>>,
+) -> Element {
+    let class = sidebar_item_class(selected, &class_name);
+
+    if let Some(on_click) = on_click {
+        rsx! {
+            button {
+                r#type: "button",
+                class,
+                title,
+                "aria-pressed": if selected { "true" } else { "false" },
+                onclick: move |event| on_click.call(event),
+                oncontextmenu: move |event| {
+                    if let Some(handler) = &on_context_menu {
+                        handler.call(event);
+                    }
+                },
+                span { class: "mn-sidebar-workspace-label", "{label}" }
+                span { class: "mn-sidebar-workspace-path", "{value}" }
+            }
+        }
+    } else {
+        rsx! {
+            div { class, title,
+                span { class: "mn-sidebar-workspace-label", "{label}" }
+                span { class: "mn-sidebar-workspace-path", "{value}" }
+            }
+        }
     }
 }
 

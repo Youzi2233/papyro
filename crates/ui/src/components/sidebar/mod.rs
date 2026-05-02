@@ -2,7 +2,7 @@ pub mod file_tree;
 
 use crate::commands::FileTarget;
 use crate::components::primitives::{
-    ActionButton, ButtonState, ButtonVariant, ContextMenu, MenuItem,
+    ActionButton, ButtonState, ButtonVariant, ContextMenu, MenuItem, SidebarItem,
 };
 use crate::context::use_app_context;
 use crate::i18n::use_i18n;
@@ -143,28 +143,27 @@ pub fn Sidebar(on_search: EventHandler<()>, on_settings: EventHandler<()>) -> El
                     span { class: "mn-sidebar-search-shortcut", "Ctrl Shift F" }
                 }
                 if let Some(root_path) = workspace_root_path.clone() {
-                    button {
-                        r#type: "button",
-                        class: if workspace_root_selected {
-                            "mn-sidebar-workspace active"
-                        } else {
-                            "mn-sidebar-workspace"
-                        },
+                    SidebarItem {
+                        label: i18n.text("Folder", "目录").to_string(),
+                        value: workspace_path_text.clone(),
                         title: i18n.text(
                             "Use the workspace root for new notes and folders",
                             "将工作区根目录作为新建笔记和文件夹的位置",
-                        ),
-                        "aria-pressed": if workspace_root_selected { "true" } else { "false" },
-                        onclick: {
+                        ).to_string(),
+                        selected: workspace_root_selected,
+                        class_name: String::new(),
+                        on_click: Some(EventHandler::new({
                             let commands = commands.clone();
                             let root_path = root_path.clone();
-                            move |_| commands.select_path.call(root_path.clone())
-                        },
-                        oncontextmenu: {
+                            move |_event: MouseEvent| {
+                                commands.select_path.call(root_path.clone());
+                            }
+                        })),
+                        on_context_menu: Some(EventHandler::new({
                             let commands = commands.clone();
                             let root_path = root_path.clone();
                             let target_name = workspace_root_target_name.clone();
-                            move |event| {
+                            move |event: MouseEvent| {
                                 event.prevent_default();
                                 event.stop_propagation();
                                 commands.select_path.call(root_path.clone());
@@ -176,14 +175,17 @@ pub fn Sidebar(on_search: EventHandler<()>, on_settings: EventHandler<()>) -> El
                                     },
                                 }));
                             }
-                        },
-                        span { class: "mn-sidebar-workspace-label", {i18n.text("Folder", "目录")} }
-                        span { class: "mn-sidebar-workspace-path", "{workspace_path_text}" }
+                        })),
                     }
                 } else {
-                    div { class: "mn-sidebar-workspace", title: "{workspace_path_text}",
-                        span { class: "mn-sidebar-workspace-label", {i18n.text("Folder", "目录")} }
-                        span { class: "mn-sidebar-workspace-path", "{workspace_path_text}" }
+                    SidebarItem {
+                        label: i18n.text("Folder", "目录").to_string(),
+                        value: workspace_path_text.clone(),
+                        title: workspace_path_text.clone(),
+                        selected: false,
+                        class_name: String::new(),
+                        on_click: None::<EventHandler<MouseEvent>>,
+                        on_context_menu: None::<EventHandler<MouseEvent>>,
                     }
                 }
 

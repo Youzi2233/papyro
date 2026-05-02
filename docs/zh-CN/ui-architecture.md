@@ -35,8 +35,8 @@ flowchart TD
 
 | 区域 | 当前组件 | 说明 |
 | --- | --- | --- |
-| 基础组件 | `Button`、`ActionButton`、`RowActionButton`、`IconButton`、`Select`、`Dropdown`、`SegmentedControl`、`Tabs`、`Modal`、`Menu`、`ContextMenu`、`MenuItem`、`Tooltip`、`Message`、`StatusStrip`、`StatusMessage`、`StatusIndicator`、`FormField`、`Toggle`、`Slider`、`TextInput`、`ResultRow`、`RowActions`、`ModalFooterMeta`、`ComparePanel`、`SkeletonRows`、`ErrorState`、`SettingsLayout`、`SettingsNav`、`SettingsRow`、`SettingsInlineRow`、`DialogSection`、`TreeItemButton`、`TreeItemEditRow`、`EmptyState` | 已经有基础，但还需要更强的状态契约、variant、键盘行为和文档。 |
-| App chrome | `Sidebar`、`FileTree`、`AppHeader`、`StatusBar`、`DesktopLayout`、`MobileLayout` | 文件树行已经使用 `TreeItem` 基础组件承载视觉状态；侧边栏 footer/workspace 行还需要共享 `SidebarItem`。 |
+| 基础组件 | `Button`、`ActionButton`、`RowActionButton`、`IconButton`、`Select`、`Dropdown`、`SegmentedControl`、`Tabs`、`Modal`、`Menu`、`ContextMenu`、`MenuItem`、`Tooltip`、`Message`、`StatusStrip`、`StatusMessage`、`StatusIndicator`、`FormField`、`Toggle`、`Slider`、`TextInput`、`ResultRow`、`RowActions`、`ModalFooterMeta`、`ComparePanel`、`SkeletonRows`、`ErrorState`、`SettingsLayout`、`SettingsNav`、`SettingsRow`、`SettingsInlineRow`、`SidebarItem`、`DialogSection`、`TreeItemButton`、`TreeItemEditRow`、`EmptyState` | 已经有基础，但还需要更强的状态契约、variant、键盘行为和文档。 |
+| App chrome | `Sidebar`、`FileTree`、`AppHeader`、`StatusBar`、`DesktopLayout`、`MobileLayout` | 文件树行已使用 `TreeItem` 基础组件，workspace 根目录行已使用 `SidebarItem`；侧边栏 footer 行还需要继续接入基础组件。 |
 | 编辑器 | `EditorPane`、`EditorChrome`、`EditorTabButton`、`OutlinePane`、`PreviewPane`、`EditorHost`、`FallbackEditor` | 需要稳定 chrome 分区、tab overflow 规则、大纲行为和共享 Markdown 视觉 token。 |
 | 弹窗界面 | `SettingsModal`、`QuickOpenModal`、`CommandPaletteModal`、`SearchModal`、`TrashModal`、`RecoveryDraftsModal`、`RecoveryDraftCompareModal` | 应共享 dialog shell、结果行、空状态、加载态和键盘焦点行为。 |
 | 设置 | `SettingsSurface`、`TagManagementSection`、`TagEditorRow`、`AboutMetaItem` | 设置页已经组合共享导航、面板、表单行、内联行和 section 基础组件；标签管理还需要更丰富的校验与 helper 状态。 |
@@ -60,7 +60,7 @@ flowchart TD
 | `Tooltip` | 已有 | 如果 CSS-only tooltip 不够，再补 placement 和 delay 策略。 |
 | `Toast` / `Message` / `StatusStrip` | 部分已有 | `StatusStrip` 已拥有 footer 状态栏布局；transient toast 仍需要单独 primitive。 |
 | `Tabs` | 已有 | 区分 segmented tabs 和文档 tab bar。 |
-| `SidebarItem` | 缺失 | 统一侧边栏按钮、workspace row 和导航 row。 |
+| `SidebarItem` | 部分已有 | workspace 根目录行已接入 `SidebarItem`；侧边栏 footer 按钮和未来导航行还需要继续接入。 |
 | `TreeItem` | 部分已有 | `TreeItemButton`、`TreeItemEditRow` 和 `TreeItemLabel` 已拥有文件/文件夹图标、展开态、选中/编辑/拖拽/放置 class 和行标签布局；键盘模型和右键菜单作用域仍在文件树代码里。 |
 | `Toolbar` / `ToolbarZone` | 部分已有 | `EditorToolbar` 和 `ToolbarZone` 已包住编辑器 chrome 的弹性 tabs 区和固定工具区；split panes、可调整 rail 和通用滚动容器还需要继续接入。 |
 | `EmptyState` | 已有 | 增加 compact、onboarding、error 和 action variant。 |
