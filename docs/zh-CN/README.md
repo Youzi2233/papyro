@@ -15,6 +15,7 @@
 | 修改主题或 Markdown 样式 | [主题系统](theme-system.md) |
 | 选择 Markdown 样式参考 | [Markdown 样式参考调研](markdown-style-references.md) |
 | 重构 UI/UX 体系 | [UI/UX 对标与改版决策](ui-ux-benchmark.md) |
+| 定义视觉设计规则 | [UI 视觉 Brief](ui-visual-brief.md) |
 | 更新 app 图标 | [App icons](app-icons.md) |
 | 保持交互性能 | [性能预算](performance-budget.md) |
 | 构建桌面端发布包 | [桌面端 Release Packaging](release-packaging.md) |

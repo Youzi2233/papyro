@@ -151,7 +151,7 @@ Design work:
 
 - [ ] Audit every primary surface: desktop shell, sidebar, editor header, tab bar, outline, status bar, settings, search, quick open, command palette, trash, recovery, empty states, loading states, and error states.
 - [x] Create a benchmark and gap-analysis document with source links, screenshots, interaction notes, and concrete Papyro redesign decisions before changing the main CSS. See [UI/UX Benchmark And Redesign Decisions](ui-ux-benchmark.md).
-- [ ] Define a new product visual brief: typography, spacing scale, color roles, surface elevation, border radius, icon style, density, motion, focus rings, and copy tone.
+- [x] Define a new product visual brief: typography, spacing scale, color roles, surface elevation, border radius, icon style, density, motion, focus rings, and copy tone. See [Papyro UI Visual Brief](ui-visual-brief.md).
 - [ ] Redesign the app information architecture so workspace navigation, document editing, outline, commands, and settings feel cohesive instead of assembled screen by screen.
 - [ ] Build a Dioxus-first component system over CSS tokens: `Button`, `IconButton`, `Input`, `Select`, `SegmentedControl`, `Switch`, `Dialog`, `Popover`, `DropdownMenu`, `ContextMenu`, `Tooltip`, `Toast/Message`, `Tabs`, `SidebarItem`, `TreeItem`, `Toolbar`, `EmptyState`, and `Skeleton`.
 - [ ] Replace native-looking controls and one-off CSS with reusable primitives that own hover, active, disabled, focus-visible, loading, destructive, and compact states.

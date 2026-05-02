@@ -85,7 +85,7 @@ flowchart TD
 
 ## 立刻跟进的任务
 
-- [ ] 创建 `docs/ui-visual-brief.md` 和 `docs/zh-CN/ui-visual-brief.md`。
+- [x] 创建 `docs/ui-visual-brief.md` 和 `docs/zh-CN/ui-visual-brief.md`。
 - [ ] 盘点现有 Dioxus 组件，并映射到目标基础组件清单。
 - [ ] 增加 CSS token 审计：裸色值、一次性间距、重复组件 selector。
 - [ ] 以设置页作为第一个受控界面，用新基础组件规则重做。
