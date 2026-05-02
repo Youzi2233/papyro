@@ -12,6 +12,7 @@ const SETTINGS_TOOL_WINDOW_CSS: &str = concat!(
     "\n",
     include_str!("../../../assets/main.css")
 );
+const SETTINGS_TOOL_WINDOW_FAVICON: &str = "/assets/favicon.ico";
 const PAPYRO_WINDOW_ICON: &[u8] = include_bytes!("../../../assets/logo.png");
 
 #[derive(Clone, PartialEq)]
@@ -55,8 +56,6 @@ pub(crate) fn use_settings_window_launcher(
             let mut settings_window_for_open = settings_window;
             spawn(async move {
                 let opened_window = pending.await;
-                opened_window.set_visible(true);
-                opened_window.set_focus();
                 settings_window_for_open.set(Some(opened_window));
             });
         }),
@@ -92,10 +91,21 @@ fn SettingsToolWindowRoot(props: SettingsToolWindowProps) -> Element {
         window().close();
     });
     let i18n = papyro_ui::i18n::use_i18n();
+    let language = i18n.language();
+
+    use_effect(move || {
+        let current_window = window();
+        current_window.set_visible(true);
+        current_window.set_focus();
+    });
+
+    use_effect(use_reactive((&language,), move |(language,)| {
+        document::eval(&settings_language_script(language));
+    }));
 
     rsx! {
         div { class: "mn-modal mn-settings-modal mn-settings-window-shell",
-            document::Title { "{settings_window_title(i18n.language())}" }
+            document::Title { "{settings_window_title(language)}" }
             papyro_ui::theme::ThemeDomEffect {}
             papyro_ui::components::settings::SettingsSurface {
                 on_close: close_settings,
@@ -117,7 +127,7 @@ fn settings_tool_window_config(theme: &Theme, language: AppLanguage) -> Config {
         .with_menu(None)
         .with_window(window)
         .with_background_color(settings_window_background(theme))
-        .with_custom_head(settings_tool_window_head(theme))
+        .with_custom_head(settings_tool_window_head(theme, language))
 }
 
 fn settings_window_title(language: AppLanguage) -> &'static str {
@@ -127,7 +137,7 @@ fn settings_window_title(language: AppLanguage) -> &'static str {
     }
 }
 
-fn settings_tool_window_head(theme: &Theme) -> String {
+fn settings_tool_window_head(theme: &Theme, language: AppLanguage) -> String {
     let theme_script = match theme {
         Theme::System => String::new(),
         _ => format!(
@@ -135,9 +145,12 @@ fn settings_tool_window_head(theme: &Theme) -> String {
             theme.as_str()
         ),
     };
+    let lang = settings_window_lang(language);
 
     format!(
-        r#"{theme_script}<style>
+        r#"{theme_script}<script>document.documentElement.lang='{lang}';</script>
+<link rel="icon" href="{SETTINGS_TOOL_WINDOW_FAVICON}">
+<style>
 html,body{{margin:0;padding:0;overflow:hidden;background:#f3f5f8;color:#111827;font-family:"SF Pro Text",-apple-system,BlinkMacSystemFont,"Segoe UI Variable","Segoe UI",system-ui,sans-serif;}}
 :root[data-theme="dark"] html,:root[data-theme="dark"] body{{background:#0f1117;color:#f3f4f6;}}
 :root[data-theme="github_light"] html,:root[data-theme="github_light"] body{{background:#f6f8fa;color:#24292f;}}
@@ -147,6 +160,20 @@ html,body{{margin:0;padding:0;overflow:hidden;background:#f3f5f8;color:#111827;f
 @media(prefers-color-scheme:dark){{:root:not([data-theme]) html,:root:not([data-theme]) body{{background:#0f1117;color:#f3f4f6;}}}}
 </style>
 <style>{SETTINGS_TOOL_WINDOW_CSS}</style>"#
+    )
+}
+
+fn settings_window_lang(language: AppLanguage) -> &'static str {
+    match language {
+        AppLanguage::English => "en",
+        AppLanguage::Chinese => "zh-CN",
+    }
+}
+
+fn settings_language_script(language: AppLanguage) -> String {
+    format!(
+        "document.documentElement.lang='{}';",
+        settings_window_lang(language)
     )
 }
 
@@ -173,10 +200,18 @@ mod tests {
 
     #[test]
     fn settings_tool_window_head_seeds_non_system_theme() {
-        let head = settings_tool_window_head(&Theme::GitHubDark);
+        let head = settings_tool_window_head(&Theme::GitHubDark, AppLanguage::English);
 
         assert!(head.contains("data-theme','github_dark'"));
         assert!(head.contains(".mn-settings-window-shell"));
+    }
+
+    #[test]
+    fn settings_tool_window_head_seeds_language_and_icon() {
+        let head = settings_tool_window_head(&Theme::Light, AppLanguage::Chinese);
+
+        assert!(head.contains("document.documentElement.lang='zh-CN'"));
+        assert!(head.contains(r#"<link rel="icon" href="/assets/favicon.ico">"#));
     }
 
     #[test]
@@ -195,6 +230,16 @@ mod tests {
             "Papyro Settings"
         );
         assert_eq!(settings_window_title(AppLanguage::Chinese), "Papyro 设置");
+    }
+
+    #[test]
+    fn settings_window_language_script_tracks_i18n() {
+        assert_eq!(settings_window_lang(AppLanguage::English), "en");
+        assert_eq!(settings_window_lang(AppLanguage::Chinese), "zh-CN");
+        assert_eq!(
+            settings_language_script(AppLanguage::Chinese),
+            "document.documentElement.lang='zh-CN';"
+        );
     }
 
     #[test]

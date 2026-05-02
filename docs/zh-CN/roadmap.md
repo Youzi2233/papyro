@@ -182,7 +182,7 @@ flowchart TD
 
 - [x] 定义生产级 `ProcessRuntime` 和 `WindowSession`。
 - [x] 先把设置做成进程级工具窗口。
-- [ ] 消除桌面端设置窗口新开时的白屏闪烁，让新窗口完整继承国际化，并改成 Papyro 自己的应用图标而不是默认 Dioxus 图标。
+- [x] 消除桌面端设置窗口新开时的白屏闪烁，让新窗口完整继承国际化，并改成 Papyro 自己的应用图标而不是默认 Dioxus 图标。
 - [ ] 在 `NoteOpenMode::MultiWindow` 后面增加 document window routing。
 - [ ] 每个窗口独立拥有 tab contents、selection 和 dirty state。
 - [ ] storage 和 settings 可安全跨窗口共享。
