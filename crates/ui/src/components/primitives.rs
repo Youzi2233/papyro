@@ -990,7 +990,7 @@ pub fn Tabs(
 }
 
 #[component]
-pub fn Toggle(label: String, checked: bool, on_change: EventHandler<bool>) -> Element {
+pub fn Switch(label: String, checked: bool, on_change: EventHandler<bool>) -> Element {
     rsx! {
         label {
             class: "mn-setting-switch",
@@ -1004,6 +1004,17 @@ pub fn Toggle(label: String, checked: bool, on_change: EventHandler<bool>) -> El
             span { class: "mn-setting-switch-track",
                 span { class: "mn-setting-switch-thumb" }
             }
+        }
+    }
+}
+
+#[component]
+pub fn Toggle(label: String, checked: bool, on_change: EventHandler<bool>) -> Element {
+    rsx! {
+        Switch {
+            label,
+            checked,
+            on_change,
         }
     }
 }

@@ -4,7 +4,7 @@ use crate::commands::{
 use crate::components::primitives::{
     ActionButton, Button, ButtonState, ButtonVariant, DialogSection, DropdownOption, Modal, Select,
     SettingsContent, SettingsInlineRow, SettingsInlineRowKind, SettingsLayout, SettingsNav,
-    SettingsNavItem, SettingsPanel, SettingsRow, Slider, Toggle,
+    SettingsNavItem, SettingsPanel, SettingsRow, Slider, Switch,
 };
 use crate::context::use_app_context;
 use crate::i18n::{use_i18n, UiText};
@@ -237,7 +237,7 @@ pub fn SettingsSurface(on_close: EventHandler<()>) -> Element {
                                         label: i18n.text("Paste URL as link", "粘贴 URL 时转成链接").to_string(),
                                         description: None::<String>,
                                         class_name: String::new(),
-                                        Toggle {
+                                        Switch {
                                             label: i18n.text("Paste URL as link", "粘贴 URL 时转成链接").to_string(),
                                             checked: auto_link_paste(),
                                             on_change: move |checked| auto_link_paste.set(checked),
