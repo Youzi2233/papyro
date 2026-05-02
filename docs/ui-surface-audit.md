@@ -21,7 +21,7 @@ The audit is intentionally practical: every row names the owner, the current cod
 | Quick open | `components/quick_open.rs` | Shares command row classes without a semantic reusable row. | Move to `ResultRow` with document metadata slots. |
 | Command palette | `components/command_palette.rs` | Strong action model, but row styling and grouping should be reusable. | Split command data from `CommandRow` rendering pattern. |
 | Trash | `components/trash.rs` | Uses command-modal styling for a destructive management surface; empty state and rows now use shared primitives. | Add `DialogSection` and destructive footer rules. |
-| Recovery | `components/recovery.rs` | Draft rows and empty state now use shared primitives; compare panels still rely on ad hoc inline layout. | Use `ComparePanel` and conflict/error status primitives. |
+| Recovery | `components/recovery.rs` | Draft rows, empty state, and comparison panels now use shared primitives; conflict/error status hierarchy still needs a data-safety pattern. | Add conflict/error status primitives and destructive footer rules. |
 | Empty/loading/error states | scattered | `InlineAlert` now covers preview notices and command/search/trash/recovery empty states, but larger blocking failures still need structure. | Add `Skeleton`, `ErrorState`, and compact/onboarding `EmptyState` variants. |
 
 ## Surface Findings
@@ -199,12 +199,11 @@ What works:
 - Trash empty state uses `InlineAlert`, and trashed-note rows now use `ResultRow`.
 - Recovery supports compare, restore, and discard.
 - Recovery empty state uses `InlineAlert`, and draft rows now use `ResultRow`.
-- Recovery compare exposes disk-vs-draft state.
+- Recovery compare exposes disk-vs-draft state through `ComparePanel`.
 
 Gaps:
 
 - Trash still borrows command-modal layout even though it is a destructive management surface.
-- Recovery compare panels still use inline layout strings.
 - Destructive actions need stronger confirmation and visual hierarchy rules.
 
 Redesign decision:

@@ -950,6 +950,32 @@ pub fn ResultRow(
 }
 
 #[component]
+pub fn ComparePanel(
+    title: String,
+    metadata: String,
+    content: String,
+    error: Option<String>,
+    class_name: String,
+) -> Element {
+    let class = append_class("mn-compare-panel", &class_name);
+
+    rsx! {
+        section { class,
+            div { class: "mn-compare-panel-header",
+                h3 { "{title}" }
+                span { "{metadata}" }
+            }
+            if let Some(error) = error {
+                p { class: "mn-compare-panel-error", "{error}" }
+            }
+            pre { class: "mn-compare-panel-content",
+                code { "{content}" }
+            }
+        }
+    }
+}
+
+#[component]
 pub fn EmptyState(title: String, description: String) -> Element {
     rsx! {
         section { class: "mn-empty",

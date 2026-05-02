@@ -1,5 +1,6 @@
 use crate::components::primitives::{
-    Button, ButtonVariant, InlineAlert, InlineAlertTone, Modal, ResultRow, ResultRowKind,
+    Button, ButtonVariant, ComparePanel, InlineAlert, InlineAlertTone, Modal, ResultRow,
+    ResultRowKind,
 };
 use crate::context::use_app_context;
 use crate::i18n::use_i18n;
@@ -159,17 +160,19 @@ pub fn RecoveryDraftCompareModal() -> Element {
                 span { class: "mn-command-path", "{compare_status}" }
             }
             div { class: "mn-recovery-compare-grid",
-                RecoveryComparePanel {
+                ComparePanel {
                     title: i18n.text("Recovery draft", "恢复草稿").to_string(),
-                    line_count: model.draft_line_count,
+                    metadata: i18n.line_count(model.draft_line_count),
                     content: model.draft_content.clone(),
                     error: None,
+                    class_name: String::new(),
                 }
-                RecoveryComparePanel {
+                ComparePanel {
                     title: i18n.text("Disk", "磁盘").to_string(),
-                    line_count: model.disk_line_count,
+                    metadata: i18n.line_count(model.disk_line_count),
                     content: model.disk_content.clone(),
                     error: model.disk_error.clone(),
+                    class_name: String::new(),
                 }
             }
             div { class: "mn-modal-footer",
@@ -195,30 +198,6 @@ pub fn RecoveryDraftCompareModal() -> Element {
                         discard_commands.discard_recovery_draft.call(discard_note_id.clone());
                     },
                 }
-            }
-        }
-    }
-}
-
-#[component]
-fn RecoveryComparePanel(
-    title: String,
-    line_count: usize,
-    content: String,
-    error: Option<String>,
-) -> Element {
-    let i18n = use_i18n();
-    rsx! {
-        section { class: "mn-recovery-compare-panel",
-            div { class: "mn-recovery-compare-panel-header",
-                h3 { "{title}" }
-                span { "{i18n.line_count(line_count)}" }
-            }
-            if let Some(error) = error {
-                p { class: "mn-recovery-compare-error", "{error}" }
-            }
-            pre { class: "mn-recovery-compare-content",
-                code { "{content}" }
             }
         }
     }

@@ -345,6 +345,7 @@
     overflow: auto;
 }
 
+.mn-compare-panel,
 .mn-recovery-compare-panel {
     display: flex;
     min-width: 0;
@@ -355,6 +356,7 @@
     background: var(--mn-surface);
 }
 
+.mn-compare-panel-header,
 .mn-recovery-compare-panel-header {
     display: flex;
     align-items: center;
@@ -364,23 +366,27 @@
     border-bottom: var(--mn-border-subtle);
 }
 
+.mn-compare-panel-header h3,
 .mn-recovery-compare-panel-header h3 {
     margin: 0;
     font-size: var(--mn-type-control);
 }
 
+.mn-compare-panel-header span,
 .mn-recovery-compare-panel-header span {
     color: var(--mn-ink-3);
     font-family: var(--mn-font-code);
     font-size: var(--mn-type-caption);
 }
 
+.mn-compare-panel-error,
 .mn-recovery-compare-error {
     margin: 10px 12px 0;
     color: var(--mn-accent);
     font-size: var(--mn-type-small);
 }
 
+.mn-compare-panel-content,
 .mn-recovery-compare-content {
     flex: 1;
     min-height: 0;
