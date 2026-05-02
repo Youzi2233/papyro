@@ -17,7 +17,8 @@ pub use editor_service::{
     mark_tab_saved_if_current, open_note, should_auto_save,
 };
 pub use editor_state::{
-    DocumentSnapshot, DocumentStatsSnapshot, EditorTabs, TabContentSnapshot, TabContentsMap,
+    DocumentSnapshot, DocumentStatsSnapshot, EditorSelectionSnapshot, EditorTabs,
+    TabContentSnapshot, TabContentsMap, WindowEditorState, WindowEditorStateMap,
 };
 pub use file_state::FileState;
 pub use models::*;

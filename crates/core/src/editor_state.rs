@@ -1,4 +1,5 @@
 use crate::models::{DocumentStats, EditorTab, SaveStatus};
+use crate::session::WindowSessionId;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -17,6 +18,27 @@ pub struct TabContentsMap {
     pub tab_revisions: HashMap<String, u64>,
     /// tab_id -> cached document stats for a specific content revision
     pub tab_stats: HashMap<String, DocumentStatsSnapshot>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct EditorSelectionSnapshot {
+    pub tab_id: String,
+    pub anchor: usize,
+    pub head: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct WindowEditorState {
+    pub tabs: EditorTabs,
+    pub contents: TabContentsMap,
+    pub pending_close_tab: Option<String>,
+    pub selection: Option<EditorSelectionSnapshot>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct WindowEditorStateMap {
+    focused_window_id: WindowSessionId,
+    windows: HashMap<WindowSessionId, WindowEditorState>,
 }
 
 #[derive(Debug, Clone)]
@@ -61,6 +83,122 @@ impl PartialEq for DocumentSnapshot {
 }
 
 impl Eq for DocumentSnapshot {}
+
+impl Default for WindowEditorStateMap {
+    fn default() -> Self {
+        Self::with_main_window()
+    }
+}
+
+impl WindowEditorStateMap {
+    pub fn with_main_window() -> Self {
+        let focused_window_id = WindowSessionId::main();
+        let windows = HashMap::from([(focused_window_id.clone(), WindowEditorState::default())]);
+        Self {
+            focused_window_id,
+            windows,
+        }
+    }
+
+    pub fn focused_window_id(&self) -> &WindowSessionId {
+        &self.focused_window_id
+    }
+
+    pub fn focus_window(&mut self, window_id: impl Into<WindowSessionId>) {
+        let window_id = window_id.into();
+        self.ensure_window(window_id.clone());
+        self.focused_window_id = window_id;
+    }
+
+    pub fn ensure_window(
+        &mut self,
+        window_id: impl Into<WindowSessionId>,
+    ) -> &mut WindowEditorState {
+        self.windows.entry(window_id.into()).or_default()
+    }
+
+    pub fn focused(&self) -> &WindowEditorState {
+        self.windows
+            .get(&self.focused_window_id)
+            .expect("focused editor window state must exist")
+    }
+
+    pub fn focused_mut(&mut self) -> &mut WindowEditorState {
+        self.windows
+            .get_mut(&self.focused_window_id)
+            .expect("focused editor window state must exist")
+    }
+
+    pub fn get(&self, window_id: &WindowSessionId) -> Option<&WindowEditorState> {
+        self.windows.get(window_id)
+    }
+
+    pub fn get_mut(&mut self, window_id: &WindowSessionId) -> Option<&mut WindowEditorState> {
+        self.windows.get_mut(window_id)
+    }
+
+    pub fn remove_window(&mut self, window_id: &WindowSessionId) -> Option<WindowEditorState> {
+        if window_id == &WindowSessionId::main() {
+            return None;
+        }
+
+        let removed = self.windows.remove(window_id);
+        if self.focused_window_id == *window_id {
+            self.focused_window_id = WindowSessionId::main();
+            self.ensure_window(WindowSessionId::main());
+        }
+        removed
+    }
+}
+
+impl WindowEditorState {
+    pub fn open_tab(
+        &mut self,
+        tab: EditorTab,
+        content: String,
+        stats: DocumentStats,
+    ) -> Option<String> {
+        let tab_id = tab.id.clone();
+        let opened = self.tabs.open_tab(tab);
+        if opened.is_some() {
+            self.contents.insert_tab(tab_id, content, stats);
+        }
+        opened
+    }
+
+    pub fn close_tab(&mut self, tab_id: &str) -> bool {
+        let closed = self.tabs.close_tab(tab_id);
+        if closed {
+            self.contents.close_tab(tab_id);
+            self.pending_close_tab = None;
+            if self
+                .selection
+                .as_ref()
+                .is_some_and(|selection| selection.tab_id == tab_id)
+            {
+                self.selection = None;
+            }
+        }
+        closed
+    }
+
+    pub fn change_content(&mut self, tab_id: &str, content: String) -> Option<u64> {
+        let revision = self.contents.update_tab_content(tab_id, content)?;
+        if !self.tabs.mark_tab_dirty(tab_id) {
+            return None;
+        }
+        Some(revision)
+    }
+
+    pub fn set_selection(&mut self, selection: EditorSelectionSnapshot) -> bool {
+        if self.tabs.tab_by_id(&selection.tab_id).is_none() {
+            return false;
+        }
+
+        self.selection = Some(selection);
+        true
+    }
+}
 
 impl EditorTabs {
     pub fn active_tab(&self) -> Option<&EditorTab> {
@@ -493,6 +631,105 @@ mod tests {
         contents.close_tab(&tab_id);
         assert!(tabs.active_tab().is_none());
         assert!(contents.content_for_tab(&tab_id).is_none());
+    }
+
+    #[test]
+    fn window_editor_state_keeps_tabs_contents_dirty_and_selection_together() {
+        let mut state = WindowEditorState::default();
+        let tab = tab("a");
+        let tab_id = tab.id.clone();
+
+        assert_eq!(
+            state.open_tab(tab, "old".to_string(), DocumentStats::default()),
+            Some(tab_id.clone())
+        );
+        assert_eq!(state.contents.content_for_tab(&tab_id), Some("old"));
+
+        assert_eq!(state.change_content(&tab_id, "new".to_string()), Some(1));
+        assert!(state
+            .tabs
+            .tab_by_id(&tab_id)
+            .is_some_and(|tab| tab.is_dirty && tab.save_status == SaveStatus::Dirty));
+
+        assert!(state.set_selection(EditorSelectionSnapshot {
+            tab_id: tab_id.clone(),
+            anchor: 1,
+            head: 4,
+        }));
+        assert_eq!(
+            state
+                .selection
+                .as_ref()
+                .map(|selection| (selection.anchor, selection.head)),
+            Some((1, 4))
+        );
+
+        assert!(state.close_tab(&tab_id));
+        assert!(state.contents.content_for_tab(&tab_id).is_none());
+        assert!(state.selection.is_none());
+    }
+
+    #[test]
+    fn window_editor_state_rejects_selection_for_missing_tab() {
+        let mut state = WindowEditorState::default();
+
+        assert!(!state.set_selection(EditorSelectionSnapshot {
+            tab_id: "missing".to_string(),
+            anchor: 0,
+            head: 1,
+        }));
+        assert!(state.selection.is_none());
+    }
+
+    #[test]
+    fn window_editor_state_map_isolates_document_windows() {
+        let mut windows = WindowEditorStateMap::default();
+        let document_window = WindowSessionId::from("document-1");
+
+        windows
+            .focused_mut()
+            .open_tab(tab("main"), "# Main".to_string(), DocumentStats::default());
+        windows.focus_window(document_window.clone());
+        windows
+            .focused_mut()
+            .open_tab(tab("doc"), "# Doc".to_string(), DocumentStats::default());
+
+        assert_eq!(windows.focused_window_id(), &document_window);
+        assert_eq!(
+            windows
+                .focused()
+                .contents
+                .active_content(windows.focused().tabs.active_tab_id.as_deref()),
+            Some("# Doc")
+        );
+        assert_eq!(
+            windows
+                .get(&WindowSessionId::main())
+                .and_then(|state| state.contents.content_for_tab("main")),
+            Some("# Main")
+        );
+        assert!(windows
+            .get(&WindowSessionId::main())
+            .and_then(|state| state.contents.content_for_tab("doc"))
+            .is_none());
+    }
+
+    #[test]
+    fn window_editor_state_map_removes_secondary_windows_but_keeps_main() {
+        let mut windows = WindowEditorStateMap::default();
+        let document_window = WindowSessionId::from("document-1");
+        windows.focus_window(document_window.clone());
+        windows
+            .focused_mut()
+            .open_tab(tab("doc"), "# Doc".to_string(), DocumentStats::default());
+
+        let removed = windows.remove_window(&document_window);
+
+        assert!(removed.is_some());
+        assert_eq!(windows.focused_window_id(), &WindowSessionId::main());
+        assert!(windows.get(&document_window).is_none());
+        assert!(windows.remove_window(&WindowSessionId::main()).is_none());
+        assert!(windows.get(&WindowSessionId::main()).is_some());
     }
 
     #[test]
