@@ -35,7 +35,7 @@ Rules:
 
 | Area | Current Components | Notes |
 | --- | --- | --- |
-| Primitives | `Button`, `IconButton`, `Select`, `Dropdown`, `SegmentedControl`, `Tabs`, `Modal`, `Menu`, `ContextMenu`, `MenuItem`, `Tooltip`, `Message`, `StatusStrip`, `StatusMessage`, `StatusIndicator`, `FormField`, `Toggle`, `Slider`, `TextInput`, `ResultRow`, `RowActions`, `ModalFooterMeta`, `ComparePanel`, `SettingsLayout`, `SettingsNav`, `SettingsRow`, `DialogSection`, `TreeItemButton`, `TreeItemEditRow`, `EmptyState` | Good foundation, but still needs stronger state contracts, variants, keyboard behavior, and docs. |
+| Primitives | `Button`, `ActionButton`, `RowActionButton`, `IconButton`, `Select`, `Dropdown`, `SegmentedControl`, `Tabs`, `Modal`, `Menu`, `ContextMenu`, `MenuItem`, `Tooltip`, `Message`, `StatusStrip`, `StatusMessage`, `StatusIndicator`, `FormField`, `Toggle`, `Slider`, `TextInput`, `ResultRow`, `RowActions`, `ModalFooterMeta`, `ComparePanel`, `SettingsLayout`, `SettingsNav`, `SettingsRow`, `DialogSection`, `TreeItemButton`, `TreeItemEditRow`, `EmptyState` | Good foundation, but still needs stronger state contracts, variants, keyboard behavior, and docs. |
 | App chrome | `Sidebar`, `FileTree`, `AppHeader`, `StatusBar`, `DesktopLayout`, `MobileLayout` | File-tree rows now use `TreeItem` primitives for visual state; sidebar footer/workspace rows still need a shared `SidebarItem`. |
 | Editor | `EditorPane`, `EditorChrome`, `EditorTabButton`, `OutlinePane`, `PreviewPane`, `EditorHost`, `FallbackEditor` | Needs stable chrome zones, tab overflow rules, outline behavior, and shared Markdown visual tokens. |
 | Modal surfaces | `SettingsModal`, `QuickOpenModal`, `CommandPaletteModal`, `SearchModal`, `TrashModal`, `RecoveryDraftsModal`, `RecoveryDraftCompareModal` | Should share dialog shells, result rows, empty states, loading states, and keyboard focus behavior. |
@@ -47,7 +47,7 @@ Rules:
 
 | Primitive | Status | Required Work |
 | --- | --- | --- |
-| `Button` / `ActionButton` | Partial | `ActionButton` adds reusable icon and loading/disabled state support; settings tag delete now uses it. Next work should add size variants and migrate remaining raw button markup. |
+| `Button` / `ActionButton` / `RowActionButton` | Partial | `ActionButton` adds reusable icon and loading/disabled state support; `RowActionButton` keeps result-row actions from triggering row selection. Next work should add size variants and migrate remaining raw button markup. |
 | `IconButton` | Exists | Add selected/current, disabled, destructive, compact, and tooltip placement support. |
 | `Input` / `TextInput` | Partial | Rename into one primitive family with label, error, disabled, and inline action support. |
 | `Select` | Exists | Add keyboard navigation, option groups when needed, and size variants. |
@@ -76,7 +76,7 @@ Build these patterns from primitives before redesigning more screens:
 | --- | --- | --- |
 | `SettingsRow` | Settings, future preferences windows | One-column label, optional description, control, and future helper/error slots. |
 | `ResultRow` | Search, quick open, command palette, trash, recovery | Icon, primary text, secondary text, metadata, highlight, keyboard-current state. |
-| `RowActions` | Result rows, destructive management rows | Right-aligned row actions with shared spacing and optional wrapping. |
+| `RowActions` / `RowActionButton` | Result rows, destructive management rows | Right-aligned row actions with shared spacing, optional wrapping, and scoped click handling. |
 | `ModalFooterMeta` | Trash, recovery, destructive dialogs | Leading footer metadata that truncates safely before action buttons. |
 | `ComparePanel` | Recovery comparisons, future conflicts | Title, metadata, optional error, scrollable preformatted content, and stable side-by-side sizing. |
 | `TreeRow` | File tree | Indent, disclosure, file/folder icon, selected/editing/drag/drop state, context menu, keyboard target. |

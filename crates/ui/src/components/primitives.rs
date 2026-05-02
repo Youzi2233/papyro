@@ -570,6 +570,31 @@ pub fn ActionButton(
 }
 
 #[component]
+pub fn RowActionButton(
+    label: String,
+    variant: ButtonVariant,
+    state: ButtonState,
+    class_name: String,
+    on_click: EventHandler<()>,
+) -> Element {
+    let class = action_button_class(variant, &class_name);
+    let is_loading = state == ButtonState::Loading;
+
+    rsx! {
+        button {
+            class,
+            disabled: state.is_disabled(),
+            "aria-busy": if is_loading { "true" } else { "false" },
+            onclick: move |event| {
+                event.stop_propagation();
+                on_click.call(());
+            },
+            "{label}"
+        }
+    }
+}
+
+#[component]
 pub fn StatusMessage(message: String) -> Element {
     rsx! {
         span { class: "mn-status-message", "{message}" }

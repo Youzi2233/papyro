@@ -1,6 +1,6 @@
 use crate::components::primitives::{
-    Button, ButtonVariant, ComparePanel, InlineAlert, InlineAlertTone, Modal, ResultRow,
-    ResultRowKind, RowActions,
+    Button, ButtonState, ButtonVariant, ComparePanel, InlineAlert, InlineAlertTone, Modal,
+    ResultRow, ResultRowKind, RowActionButton, RowActions,
 };
 use crate::context::use_app_context;
 use crate::i18n::use_i18n;
@@ -86,29 +86,26 @@ fn RecoveryDraftRow(
             span { class: "mn-command-path", "{draft.preview}" }
             RowActions {
                 class_name: "wrap".to_string(),
-                button {
-                    class: "mn-button",
-                    onclick: move |event| {
-                        event.stop_propagation();
-                        compare_commands.compare_recovery_draft.call(compare_note_id.clone());
-                    },
-                    {i18n.text("Compare", "比较")}
+                RowActionButton {
+                    label: i18n.text("Compare", "比较").to_string(),
+                    variant: ButtonVariant::Default,
+                    state: ButtonState::Enabled,
+                    class_name: String::new(),
+                    on_click: move |_| compare_commands.compare_recovery_draft.call(compare_note_id.clone()),
                 }
-                button {
-                    class: "mn-button primary",
-                    onclick: move |event| {
-                        event.stop_propagation();
-                        restore_commands.restore_recovery_draft.call(restore_note_id.clone());
-                    },
-                    {i18n.text("Restore", "恢复")}
+                RowActionButton {
+                    label: i18n.text("Restore", "恢复").to_string(),
+                    variant: ButtonVariant::Primary,
+                    state: ButtonState::Enabled,
+                    class_name: String::new(),
+                    on_click: move |_| restore_commands.restore_recovery_draft.call(restore_note_id.clone()),
                 }
-                button {
-                    class: "mn-button danger",
-                    onclick: move |event| {
-                        event.stop_propagation();
-                        discard_commands.discard_recovery_draft.call(discard_note_id.clone());
-                    },
-                    {i18n.text("Discard", "丢弃")}
+                RowActionButton {
+                    label: i18n.text("Discard", "丢弃").to_string(),
+                    variant: ButtonVariant::Danger,
+                    state: ButtonState::Enabled,
+                    class_name: String::new(),
+                    on_click: move |_| discard_commands.discard_recovery_draft.call(discard_note_id.clone()),
                 }
             }
         }

@@ -1,7 +1,7 @@
 use crate::commands::{AppCommands, RestoreTrashedNoteTarget};
 use crate::components::primitives::{
-    Button, ButtonVariant, InlineAlert, InlineAlertTone, Modal, ModalFooterMeta, ResultRow,
-    ResultRowKind, RowActions,
+    Button, ButtonState, ButtonVariant, InlineAlert, InlineAlertTone, Modal, ModalFooterMeta,
+    ResultRow, ResultRowKind, RowActionButton, RowActions,
 };
 use crate::context::use_app_context;
 use crate::i18n::{i18n_for, use_i18n};
@@ -93,13 +93,12 @@ fn TrashNoteRow(note: TrashedNoteListItem, commands: AppCommands) -> Element {
             span { class: "mn-command-path", "{note.relative_path.display()}" }
             RowActions {
                 class_name: String::new(),
-                button {
-                    class: "mn-button primary",
-                    onclick: move |event| {
-                        event.stop_propagation();
-                        commands.restore_trashed_note.call(target.clone());
-                    },
-                    {i18n.text("Restore", "恢复")}
+                RowActionButton {
+                    label: i18n.text("Restore", "恢复").to_string(),
+                    variant: ButtonVariant::Primary,
+                    state: ButtonState::Enabled,
+                    class_name: String::new(),
+                    on_click: move |_| commands.restore_trashed_note.call(target.clone()),
                 }
             }
         }
