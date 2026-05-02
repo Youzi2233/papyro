@@ -6,7 +6,7 @@ use crate::components::{
     command_palette::CommandPaletteModal,
     editor::EditorPane,
     header::AppHeader,
-    primitives::TextInput,
+    primitives::{Button, ButtonVariant, TextInput},
     quick_open::QuickOpenModal,
     settings::SettingsModal,
     sidebar::{FileTree, FileTreeSortMode},
@@ -26,6 +26,10 @@ pub fn MobileLayout() -> Element {
     let sidebar_model = app.sidebar_model.read().clone();
     let open_workspace_commands = commands.clone();
     let browser_toggle_commands = commands.clone();
+    let refresh_commands = commands.clone();
+    let theme_commands = commands.clone();
+    let create_folder_commands = commands.clone();
+    let reveal_commands = commands.clone();
     let mut show_settings = use_signal(|| false);
     let mut show_quick_open = use_signal(|| false);
     let mut show_command_palette = use_signal(|| false);
@@ -59,9 +63,15 @@ pub fn MobileLayout() -> Element {
             }
             div { class: "mn-mobile-stack",
                 div { class: "mn-mobile-toolbar",
-                    button {
-                        class: "mn-button primary",
-                        onclick: move |_| {
+                    Button {
+                        label: if has_workspace {
+                            i18n.text("Switch workspace", "切换工作区").to_string()
+                        } else {
+                            i18n.text("Open workspace", "打开工作区").to_string()
+                        },
+                        variant: ButtonVariant::Primary,
+                        disabled: false,
+                        on_click: move |_| {
                             commands.open_workspace.call(());
                             if sidebar_collapsed {
                                 crate::chrome::toggle_sidebar(
@@ -70,52 +80,51 @@ pub fn MobileLayout() -> Element {
                                 );
                             }
                         },
-                        if has_workspace {
-                            {i18n.text("Switch workspace", "切换工作区")}
-                        } else {
-                            {i18n.text("Open workspace", "打开工作区")}
-                        }
                     }
                     if has_workspace {
-                        button {
-                            class: "mn-button",
-                            onclick: move |_| {
+                        Button {
+                            label: if browser_visible {
+                                i18n.text("Hide browser", "隐藏文件栏").to_string()
+                            } else {
+                                i18n.text("Browse files", "浏览文件").to_string()
+                            },
+                            variant: ButtonVariant::Default,
+                            disabled: false,
+                            on_click: move |_| {
                                 crate::chrome::toggle_sidebar(
                                     browser_toggle_commands.clone(),
                                     "mobile_toolbar",
                                 );
                             },
-                            if browser_visible {
-                                {i18n.text("Hide browser", "隐藏文件栏")}
-                            } else {
-                                {i18n.text("Browse files", "浏览文件")}
-                            }
                         }
-                        button {
-                            class: "mn-button",
-                            onclick: move |_| commands.refresh_workspace.call(()),
-                            {i18n.text("Refresh", "刷新")}
+                        Button {
+                            label: i18n.text("Refresh", "刷新").to_string(),
+                            variant: ButtonVariant::Default,
+                            disabled: false,
+                            on_click: move |_| refresh_commands.refresh_workspace.call(()),
                         }
                     }
-                    button {
-                        class: "mn-button",
-                        onclick: move |_| {
-                            crate::chrome::toggle_theme(commands.clone());
-                        },
-                        if theme.is_dark() {
-                            {i18n.text("Light theme", "浅色主题")}
+                    Button {
+                        label: if theme.is_dark() {
+                            i18n.text("Light theme", "浅色主题").to_string()
                         } else {
-                            {i18n.text("Dark theme", "深色主题")}
-                        }
+                            i18n.text("Dark theme", "深色主题").to_string()
+                        },
+                        variant: ButtonVariant::Default,
+                        disabled: false,
+                        on_click: move |_| {
+                            crate::chrome::toggle_theme(theme_commands.clone());
+                        },
                     }
-                    button {
-                        class: "mn-button",
-                        onclick: move |_| {
+                    Button {
+                        label: i18n.text("Settings", "设置").to_string(),
+                        variant: ButtonVariant::Default,
+                        disabled: false,
+                        on_click: move |_| {
                             let started_at = perf_timer();
                             show_settings.set(true);
                             trace_chrome_open_modal("settings", "mobile_toolbar", started_at);
                         },
-                        {i18n.text("Settings", "设置")}
                     }
                 }
 
@@ -133,22 +142,24 @@ pub fn MobileLayout() -> Element {
                             }
                             if has_workspace {
                                 div { class: "mn-mobile-inline-actions",
-                                    button {
-                                        class: "mn-button",
-                                        onclick: move |_| {
+                                    Button {
+                                        label: if show_create() {
+                                            i18n.text("Cancel", "取消").to_string()
+                                        } else {
+                                            i18n.text("New note", "新建笔记").to_string()
+                                        },
+                                        variant: ButtonVariant::Default,
+                                        disabled: false,
+                                        on_click: move |_| {
                                             show_create.set(!show_create());
                                             show_rename.set(false);
                                         },
-                                        if show_create() {
-                                            {i18n.text("Cancel", "取消")}
-                                        } else {
-                                            {i18n.text("New note", "新建笔记")}
-                                        }
                                     }
-                                    button {
-                                        class: "mn-button",
-                                        onclick: move |_| commands.create_folder.call("New Folder".to_string()),
-                                        {i18n.text("New folder", "新建文件夹")}
+                                    Button {
+                                        label: i18n.text("New folder", "新建文件夹").to_string(),
+                                        variant: ButtonVariant::Default,
+                                        disabled: false,
+                                        on_click: move |_| create_folder_commands.create_folder.call("New Folder".to_string()),
                                     }
                                 }
                             }
@@ -171,15 +182,16 @@ pub fn MobileLayout() -> Element {
                                         }
                                     },
                                 }
-                                button {
-                                    class: "mn-button primary",
-                                    onclick: move |_| {
+                                Button {
+                                    label: i18n.text("Create", "创建").to_string(),
+                                    variant: ButtonVariant::Primary,
+                                    disabled: false,
+                                    on_click: move |_| {
                                         let name = create_name().trim().to_string();
                                         commands.create_note.call(if name.is_empty() { "Untitled".to_string() } else { name });
                                         create_name.set(String::new());
                                         show_create.set(false);
                                     },
-                                    {i18n.text("Create", "创建")}
                                 }
                             }
                         }
@@ -197,13 +209,14 @@ pub fn MobileLayout() -> Element {
                                     p { class: "mn-mobile-selection-name", "{selected_name}" }
                                 }
                                 div { class: "mn-mobile-inline-actions",
-                                    button {
-                                        class: "mn-button",
-                                        onclick: move |_| {
+                                    Button {
+                                        label: i18n.text("Rename", "重命名").to_string(),
+                                        variant: ButtonVariant::Default,
+                                        disabled: false,
+                                        on_click: move |_| {
                                             show_rename.set(!show_rename());
                                             rename_name.set(String::new());
                                         },
-                                        {i18n.text("Rename", "重命名")}
                                     }
                                     button {
                                         class: "mn-button danger",
@@ -212,10 +225,11 @@ pub fn MobileLayout() -> Element {
                                         "{delete_action_label(i18n.language(), selected_delete_pending)}"
                                     }
                                     if let Some(target) = selected_target.clone() {
-                                        button {
-                                            class: "mn-button",
-                                            onclick: move |_| commands.reveal_in_explorer.call(target.clone()),
-                                            {i18n.text("Reveal", "定位")}
+                                        Button {
+                                            label: i18n.text("Reveal", "定位").to_string(),
+                                            variant: ButtonVariant::Default,
+                                            disabled: false,
+                                            on_click: move |_| reveal_commands.reveal_in_explorer.call(target.clone()),
                                         }
                                     }
                                 }
@@ -237,16 +251,17 @@ pub fn MobileLayout() -> Element {
                                                 }
                                             },
                                         }
-                                        button {
-                                            class: "mn-button primary",
-                                            onclick: move |_| {
+                                        Button {
+                                            label: i18n.text("Apply", "应用").to_string(),
+                                            variant: ButtonVariant::Primary,
+                                            disabled: false,
+                                            on_click: move |_| {
                                                 let name = rename_name().trim().to_string();
                                                 if !name.is_empty() {
                                                     commands.rename_selected.call(name);
                                                 }
                                                 show_rename.set(false);
                                             },
-                                            {i18n.text("Apply", "应用")}
                                         }
                                     }
                                 }

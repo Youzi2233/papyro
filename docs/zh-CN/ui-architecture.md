@@ -47,7 +47,7 @@ flowchart TD
 
 | 基础组件 | 状态 | 需要补齐 |
 | --- | --- | --- |
-| `Button` / `ActionButton` / `RowActionButton` | 部分已有 | `ActionButton` 已支持复用图标和 loading/disabled 状态；`RowActionButton` 让结果行内按钮不会触发行选择。下一步补尺寸 variant 并迁移剩余原生按钮。 |
+| `Button` / `ActionButton` / `RowActionButton` | 部分已有 | `Button` 已覆盖普通 dialog、空状态、编辑器空状态、设置、恢复、回收站和移动端 action 按钮；`ActionButton` 已支持复用图标和 loading/disabled 状态；`RowActionButton` 让结果行内按钮不会触发行选择。下一步补尺寸 variant，并迁移仍带特殊 `title`、`aria` 或键盘契约的原生按钮。 |
 | `IconButton` | 已有 | 增加 selected/current、disabled、destructive、compact 和 tooltip placement。 |
 | `Input` / `TextInput` | 部分已有 | `TextInput` 已覆盖命令/搜索/快速打开输入框，以及普通侧边栏、移动端、设置标签文本输入。文件树 inline rename 仍保留专用路径，等 blur/context-menu 契约迁入组件族后再统一。下一步补 label、error、disabled、inline action。 |
 | `Select` | 已有 | 增加键盘导航、必要时支持 option group、增加尺寸 variant。 |
