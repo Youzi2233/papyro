@@ -1,5 +1,7 @@
 mod actions;
 mod assets;
+#[cfg(feature = "desktop-shell")]
+mod desktop_tool_windows;
 mod dispatcher;
 mod effects;
 mod export;

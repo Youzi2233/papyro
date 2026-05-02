@@ -114,7 +114,7 @@ pub fn use_app_runtime(
     let sidebar_collapsed = use_memo(move || state.ui_state.read().sidebar_collapsed());
     let sidebar_width = use_memo(move || state.ui_state.read().settings.sidebar_width);
     let outline_visible = use_memo(move || state.ui_state.read().outline_visible());
-    use_context_provider(|| AppContext {
+    let app_context = AppContext {
         file_state: state.file_state,
         editor_tabs: state.editor_tabs,
         tab_contents: state.tab_contents,
@@ -152,7 +152,13 @@ pub fn use_app_runtime(
         sidebar_collapsed,
         sidebar_width,
         outline_visible,
-    });
+    };
+    #[cfg(feature = "desktop-shell")]
+    let settings_window_launcher =
+        crate::desktop_tool_windows::use_settings_window_launcher(shell, app_context.clone());
+    use_context_provider(|| app_context);
+    #[cfg(feature = "desktop-shell")]
+    use_context_provider(|| settings_window_launcher);
 
     crate::effects::use_workspace_watcher(state, watch_storage);
     #[cfg(feature = "desktop-shell")]

@@ -92,7 +92,7 @@ Trace 名：
 - [x] 增加中英文 UI 国际化。
 - [x] 优化设置界面和暗色模式对比度。
 - [x] 替换应用品牌资源。
-- [ ] 设置改为独立桌面窗口。
+- [x] 设置改为独立桌面窗口。
 - [x] 设置窗口切换分区时大小稳定。
 - [x] 用 Papyro 设计系统组件替换原生感强的 `select`、modal、message、menu、tooltip。
 - [x] 建立 `Button`、`IconButton`、`Select`、`SegmentedControl`、`Modal/Dialog`、`Message/Toast`、`ContextMenu`、`Tooltip`、`Tabs`、`FormField` 等基础组件。
@@ -180,7 +180,7 @@ flowchart TD
 ## Phase 6 - 多窗口模式
 
 - [x] 定义生产级 `ProcessRuntime` 和 `WindowSession`。
-- [ ] 先把设置做成进程级工具窗口。
+- [x] 先把设置做成进程级工具窗口。
 - [ ] 在 `NoteOpenMode::MultiWindow` 后面增加 document window routing。
 - [ ] 每个窗口独立拥有 tab contents、selection 和 dirty state。
 - [ ] storage 和 settings 可安全跨窗口共享。

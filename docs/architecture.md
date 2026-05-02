@@ -696,19 +696,20 @@ tab path is the source of truth for the sidebar tree and watcher context.
 
 This means future settings windows and document windows can share one routing model instead of special desktop shortcuts.
 
-## 20. Why Settings Should Become A Window
+## 20. How The Settings Tool Window Works
 
-Today settings still live in the main UI chrome.
+Desktop settings now open in an independent Dioxus desktop window instead of
+as a modal inside the main editor chrome.
 
-The target design:
+The implementation path is:
 
-- main window focuses on writing and workspace navigation
-- Settings becomes an independent tool window
-- settings update a process-level `ProcessRuntime`
-- the main window reacts live without remounting the editor
-- settings sections keep a stable window size
+- `crates/app/src/desktop_tool_windows.rs` creates the settings tool window with `dioxus::desktop::window().new_window(...)`.
+- `crates/ui/src/components/settings/mod.rs` exposes `SettingsSurface`, so the modal and tool window reuse one settings form.
+- `crates/ui/src/layouts/desktop_layout.rs` asks a `SettingsWindowLauncher` context to open the tool window, with the old modal kept as a fallback.
+- The tool window receives the same app context as the main window, so settings changes still flow through normal commands and update the main editor live.
 
-This reduces editor distraction and prepares the app for multi-window mode.
+This keeps the main window focused on writing and prepares the same process-level
+window pattern for future document windows.
 
 ## 21. Where To Start For Common Tasks
 

@@ -111,7 +111,7 @@ Goal: make the app look and behave like a professional note editor.
 - [x] Add i18n support for English and Chinese UI text.
 - [x] Improve settings layout and dark-mode contrast.
 - [x] Replace app shell branding assets.
-- [ ] Move Settings into an independent desktop window.
+- [x] Move Settings into an independent desktop window.
 - [x] Keep settings window size stable across sections.
 - [x] Replace native-looking `select`, modal, message, menu, and tooltip surfaces with Papyro design-system components.
 - [x] Define component primitives for `Button`, `IconButton`, `Select`, `SegmentedControl`, `Modal/Dialog`, `Message/Toast`, `ContextMenu`, `Tooltip`, `Tabs`, and `FormField`.
@@ -218,7 +218,7 @@ Professional constraints:
 Goal: support advanced workflows after single-window routing is reliable.
 
 - [x] Define production `ProcessRuntime` and `WindowSession` ownership.
-- [ ] Move settings to a process-level tool window first.
+- [x] Move settings to a process-level tool window first.
 - [ ] Add document window routing behind `NoteOpenMode::MultiWindow`.
 - [ ] Ensure each window owns its own tab contents, selection, and dirty state.
 - [ ] Share storage and settings safely across windows.

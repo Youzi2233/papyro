@@ -113,6 +113,11 @@ pub struct AppContext {
     pub outline_visible: Memo<bool>,
 }
 
+#[derive(Clone, PartialEq)]
+pub struct SettingsWindowLauncher {
+    pub open: EventHandler<()>,
+}
+
 pub fn use_app_context() -> AppContext {
     use_context::<AppContext>()
 }

@@ -9,7 +9,7 @@ use crate::components::{
     status_bar::StatusBar,
     trash::TrashModal,
 };
-use crate::context::use_app_context;
+use crate::context::{use_app_context, SettingsWindowLauncher};
 use crate::perf::{perf_timer, trace_chrome_open_modal};
 use crate::theme::ThemeDomEffect;
 use dioxus::prelude::*;
@@ -24,6 +24,9 @@ pub fn DesktopLayout() -> Element {
     let mut show_command_palette = use_signal(|| false);
     let mut show_search = use_signal(|| false);
     let show_trash = use_signal(|| false);
+    let settings_window_launcher = try_use_context::<SettingsWindowLauncher>();
+    let sidebar_settings_launcher = settings_window_launcher.clone();
+    let editor_settings_launcher = settings_window_launcher.clone();
 
     let sidebar_collapsed = (app.sidebar_collapsed)();
 
@@ -139,7 +142,11 @@ pub fn DesktopLayout() -> Element {
                         },
                         on_settings: move |_| {
                             let started_at = perf_timer();
-                            show_settings.set(true);
+                            if let Some(launcher) = sidebar_settings_launcher.clone() {
+                                launcher.open.call(());
+                            } else {
+                                show_settings.set(true);
+                            }
                             trace_chrome_open_modal("settings", "sidebar", started_at);
                         },
                     }
@@ -148,7 +155,11 @@ pub fn DesktopLayout() -> Element {
                     EditorPane {
                         on_settings: move |_| {
                             let started_at = perf_timer();
-                            show_settings.set(true);
+                            if let Some(launcher) = editor_settings_launcher.clone() {
+                                launcher.open.call(());
+                            } else {
+                                show_settings.set(true);
+                            }
                             trace_chrome_open_modal("settings", "editor", started_at);
                         },
                         on_quick_open: move |_| {
@@ -171,6 +182,7 @@ pub fn DesktopLayout() -> Element {
                 show_command_palette,
                 show_search,
                 show_trash,
+                settings_window_launcher,
             }
         }
     }
@@ -207,6 +219,7 @@ fn DesktopModalLayer(
     mut show_command_palette: Signal<bool>,
     mut show_search: Signal<bool>,
     mut show_trash: Signal<bool>,
+    settings_window_launcher: Option<SettingsWindowLauncher>,
 ) -> Element {
     let app = use_app_context();
     let recovery_model = app.recovery_model.read().clone();
@@ -235,7 +248,13 @@ fn DesktopModalLayer(
         if *show_command_palette.read() {
             CommandPaletteModal {
                 on_close: move |_| show_command_palette.set(false),
-                on_settings: move |_| show_settings.set(true),
+                on_settings: move |_| {
+                    if let Some(launcher) = settings_window_launcher.clone() {
+                        launcher.open.call(());
+                    } else {
+                        show_settings.set(true);
+                    }
+                },
                 on_trash: move |_| show_trash.set(true),
             }
         }

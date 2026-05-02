@@ -33,6 +33,18 @@
     flex: 0 0 auto;
 }
 
+.mn-settings-window-shell {
+    width: 100vw;
+    min-width: 0;
+    height: 100vh;
+    min-height: 0;
+    max-height: none;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    animation: none;
+}
+
 @keyframes mn-fade-in {
     from { opacity: 0; }
     to { opacity: 1; }

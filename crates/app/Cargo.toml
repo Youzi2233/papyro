@@ -6,7 +6,7 @@ edition.workspace = true
 
 [features]
 default = []
-desktop-shell = ["dep:rfd", "dioxus/desktop"]
+desktop-shell = ["dep:rfd", "dioxus/desktop", "papyro-ui/desktop-shell"]
 
 [dependencies]
 dioxus = { workspace = true }

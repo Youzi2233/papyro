@@ -782,19 +782,18 @@ flowchart TD
 
 这样后续设置窗口和文档窗口可以共用一套路由模型，而不是靠桌面端临时分支实现。
 
-## 20. Settings 为什么未来要变成独立窗口
+## 20. Settings 工具窗口如何工作
 
-现在 settings 仍在主 UI chrome 中。
+桌面端 settings 现在会打开独立的 Dioxus desktop 工具窗口，不再作为主编辑器 chrome 内的 modal 展示。
 
-未来更专业的做法是：
+实现路径：
 
-- 主窗口专注写作和 workspace。
-- Settings 是独立工具窗口。
-- settings 修改写入进程级 `ProcessRuntime`。
-- 主窗口实时响应设置变化。
-- settings 窗口切换分区时尺寸稳定。
+- `crates/app/src/desktop_tool_windows.rs` 通过 `dioxus::desktop::window().new_window(...)` 创建设置工具窗口。
+- `crates/ui/src/components/settings/mod.rs` 暴露 `SettingsSurface`，让 modal 和工具窗口复用同一份设置表单。
+- `crates/ui/src/layouts/desktop_layout.rs` 通过 `SettingsWindowLauncher` context 打开工具窗口，同时保留旧 modal 作为兜底。
+- 工具窗口接收和主窗口相同的 app context，因此设置修改仍走正常 command，并能实时更新主编辑器。
 
-这样做可以减少主编辑区的视觉干扰，也为未来多窗口打基础。
+这样主窗口可以继续专注写作，也为后续 document window 复用同一套进程级窗口模式打基础。
 
 ## 21. 常见开发任务应该从哪里下手
 
