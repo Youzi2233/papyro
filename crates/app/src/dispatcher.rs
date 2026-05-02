@@ -989,14 +989,26 @@ async fn run_open_markdown(
         WindowRouteTarget::ExistingDocumentWindow(window_id) => {
             tracing::info!(
                 window_id = window_id.as_str(),
-                "multi-window document focus route prepared; opening in current runtime until document surfaces own state"
+                path = %target.path.display(),
+                "multi-window document focus requested"
             );
+            state
+                .document_window_requests
+                .write()
+                .push(window_id, target.path);
+            return;
         }
         WindowRouteTarget::NewDocumentWindow(window_id) => {
             tracing::info!(
                 window_id = window_id.as_str(),
-                "multi-window document creation route prepared; opening in current runtime until document surfaces own state"
+                path = %target.path.display(),
+                "multi-window document window requested"
             );
+            state
+                .document_window_requests
+                .write()
+                .push(window_id, target.path);
+            return;
         }
     }
 

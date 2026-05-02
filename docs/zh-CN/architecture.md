@@ -780,10 +780,12 @@ flowchart TD
 - `WindowSessionKind::Document { path }` 是唯一拥有明确文档路径的窗口类型。
 - 窗口上的 workspace path 只是上下文元数据，不代表拥有某个文档。
 - `ProcessRuntimeSession::prepare_markdown_open` 是 app 层使用的可变路由入口。`MultiWindow` 模式下，它会在第一次打开某个路径时注册 document session，或者聚焦已拥有该路径的 document session。
-- `WindowEditorStateMap` 是下一步编辑器所有权模型：每个窗口都会拥有自己的 `EditorTabs`、`TabContentsMap`、pending close tab 和 selection snapshot。
+- `crates/app/src/state.rs` 会在路由后排入 `DocumentWindowRequest`，让桌面层负责打开或聚焦原生文档窗口。
+- `crates/app/src/desktop_tool_windows.rs` 拥有原生桌面窗口 registry。再次打开同一路径时会聚焦已有的 `WindowSessionId`，而不是重复创建文档窗口。
 
-这样后续设置窗口和文档窗口可以共用一套路由模型，而不是靠桌面端临时分支实现。
-当前产品仍会把文档内容打开到主 runtime，直到下一项 roadmap 为每个 document window 提供独立的 tab/content/selection state。
+Document window 会运行自己的 Dioxus runtime，并设置 `multi_window_available: false`。
+这样它的 `EditorTabs`、`TabContentsMap`、pending close tab、selection、command queue 和 dirty state 都留在该窗口本地，而不是通过主窗口状态投影。
+Storage 和 settings 仍然是进程级依赖，后续扩展跨窗口保存冲突处理时必须谨慎共享。
 
 ## 20. Settings 工具窗口如何工作
 
@@ -798,7 +800,7 @@ flowchart TD
 - 工具窗口会先以隐藏状态创建，等 desktop context 就绪后再显示并聚焦，避免 webview 初始化阶段出现一闪而过的白屏。
 - 窗口标题会跟随共享 app context 的当前语言更新，原生窗口图标也会从 Papyro 的 logo 资源加载，保证次级窗口和主窗口的品牌与语言一致。
 
-这样主窗口可以继续专注写作，也为后续 document window 复用同一套进程级窗口模式打基础。
+Document window 复用同一套进程级窗口模式，但和 settings 不同，它会创建新的 app runtime，而不是共享主窗口的 `AppContext`。
 
 ## 21. 常见开发任务应该从哪里下手
 

@@ -58,11 +58,43 @@ pub fn use_app_runtime(
     startup_markdown_paths: Vec<PathBuf>,
     external_open_requests: Option<MarkdownOpenRequestReceiver>,
 ) -> Signal<Option<String>> {
-    let state = use_runtime_state(bootstrap, shell.supports_multi_window());
+    use_app_runtime_with_options(
+        RuntimeOptions {
+            shell,
+            multi_window_available: shell.supports_multi_window(),
+        },
+        bootstrap,
+        storage,
+        platform,
+        startup_markdown_paths,
+        external_open_requests,
+    )
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub struct RuntimeOptions {
+    pub shell: AppShell,
+    pub multi_window_available: bool,
+}
+
+pub fn use_app_runtime_with_options(
+    options: RuntimeOptions,
+    bootstrap: WorkspaceBootstrap,
+    storage: Arc<dyn NoteStorage>,
+    platform: Arc<dyn PlatformApi>,
+    startup_markdown_paths: Vec<PathBuf>,
+    external_open_requests: Option<MarkdownOpenRequestReceiver>,
+) -> Signal<Option<String>> {
+    let shell = options.shell;
+    let state = use_runtime_state(bootstrap, options.multi_window_available);
     let watch_storage = storage.clone();
     let flush_storage = storage.clone();
     #[cfg(feature = "desktop-shell")]
     let close_flush_storage = storage.clone();
+    #[cfg(feature = "desktop-shell")]
+    let document_window_storage = storage.clone();
+    #[cfg(feature = "desktop-shell")]
+    let document_window_platform = platform.clone();
     let dispatcher = AppDispatcher::new(shell, state, storage, platform);
     use_startup_markdown_paths(dispatcher.clone(), startup_markdown_paths);
     use_external_markdown_open_requests(dispatcher.clone(), external_open_requests);
@@ -164,6 +196,13 @@ pub fn use_app_runtime(
     #[cfg(feature = "desktop-shell")]
     use_context_provider(|| settings_window_launcher);
 
+    #[cfg(feature = "desktop-shell")]
+    crate::desktop_tool_windows::use_document_window_requests(
+        shell,
+        state,
+        document_window_storage,
+        document_window_platform,
+    );
     crate::effects::use_workspace_watcher(state, watch_storage);
     #[cfg(feature = "desktop-shell")]
     crate::effects::use_desktop_close_flush(state, close_flush_storage);

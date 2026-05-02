@@ -161,6 +161,18 @@ pub fn DesktopApp() -> Element {
 
 fn desktop_bootstrap(startup_open_request: &DesktopStartupOpenRequest) -> WorkspaceBootstrap {
     let storage = papyro_storage::SqliteStorage::shared().expect("default storage is initialized");
+    desktop_bootstrap_from_storage(
+        &storage,
+        startup_open_request,
+        Some(storage.db_path().to_path_buf()),
+    )
+}
+
+pub(crate) fn desktop_bootstrap_from_storage(
+    storage: &dyn NoteStorage,
+    startup_open_request: &DesktopStartupOpenRequest,
+    db_path: Option<PathBuf>,
+) -> WorkspaceBootstrap {
     let recent_workspaces = storage.list_recent_workspaces(10).unwrap_or_else(|error| {
         tracing::warn!(%error, "failed to resolve recent workspaces for desktop startup");
         Vec::new()
@@ -184,11 +196,7 @@ fn desktop_bootstrap(startup_open_request: &DesktopStartupOpenRequest) -> Worksp
             }
             bootstrap
         }
-        None => desktop_onboarding_bootstrap(
-            storage.load_settings(),
-            Some(storage.db_path().to_path_buf()),
-            recent_workspaces,
-        ),
+        None => desktop_onboarding_bootstrap(storage.load_settings(), db_path, recent_workspaces),
     }
 }
 

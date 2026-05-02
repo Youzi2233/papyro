@@ -694,10 +694,12 @@ tab path is the source of truth for the sidebar tree and watcher context.
 - `WindowSessionKind::Document { path }` is the only window kind that owns one explicit document path.
 - Workspace paths on a window are context metadata; they do not imply document ownership.
 - `ProcessRuntimeSession::prepare_markdown_open` is the mutating route used by app code. In `MultiWindow` mode it registers a new document session the first time a path is opened, or focuses the existing document session for that path.
-- `WindowEditorStateMap` is the editor ownership model for the next step: every window gets its own `EditorTabs`, `TabContentsMap`, pending close tab, and selection snapshot.
+- `crates/app/src/state.rs` queues `DocumentWindowRequest` values after routing so desktop code can open or focus the native document window.
+- `crates/app/src/desktop_tool_windows.rs` owns the native desktop window registry. Reopening the same path focuses the existing `WindowSessionId` instead of duplicating the document.
 
-This means future settings windows and document windows can share one routing model instead of special desktop shortcuts.
-The current product still opens document content in the main runtime until the next roadmap item gives each document window its own tab/content/selection state.
+Document windows run their own Dioxus runtime with `multi_window_available: false`.
+That keeps their `EditorTabs`, `TabContentsMap`, pending close tab, selection, command queue, and dirty state local to that window instead of projecting through the main window state.
+Storage and settings are still process-level dependencies and must be treated carefully when cross-window save conflict handling is expanded.
 
 ## 20. How The Settings Tool Window Works
 
@@ -713,8 +715,8 @@ The implementation path is:
 - The tool window is created hidden, then shown and focused after the desktop context resolves. This avoids a visible blank white window during webview startup.
 - Window title text is localized through the shared app context, and the native window icon is loaded from the Papyro logo asset so secondary windows match the main app chrome.
 
-This keeps the main window focused on writing and prepares the same process-level
-window pattern for future document windows.
+Document windows reuse the same process-level window pattern, but unlike settings
+they create a fresh app runtime rather than sharing the main `AppContext`.
 
 ## 21. Where To Start For Common Tasks
 

@@ -1,8 +1,8 @@
 use dioxus::prelude::*;
 use papyro_core::{
     models::{RecoveryDraft, RecoveryDraftComparison},
-    EditorTabs, FileState, ProcessRuntimeSession, TabContentsMap, UiState, WorkspaceBootstrap,
-    WorkspaceSearchState,
+    EditorTabs, FileState, ProcessRuntimeSession, TabContentsMap, UiState, WindowSessionId,
+    WorkspaceBootstrap, WorkspaceSearchState,
 };
 use papyro_ui::commands::EditorRuntimeCommandQueue;
 use std::path::PathBuf;
@@ -25,7 +25,35 @@ pub(crate) struct RuntimeState {
     pub pending_delete_path: Signal<Option<PathBuf>>,
     pub pending_empty_trash: Signal<bool>,
     pub editor_runtime_commands: Signal<EditorRuntimeCommandQueue>,
+    pub document_window_requests: Signal<DocumentWindowRequestQueue>,
     pub settings_persistence: Signal<SettingsPersistenceQueue>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct DocumentWindowRequest {
+    pub window_id: WindowSessionId,
+    pub path: PathBuf,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub(crate) struct DocumentWindowRequestQueue {
+    revision: u64,
+    pending: Vec<DocumentWindowRequest>,
+}
+
+impl DocumentWindowRequestQueue {
+    pub fn revision(&self) -> u64 {
+        self.revision
+    }
+
+    pub fn push(&mut self, window_id: WindowSessionId, path: PathBuf) {
+        self.revision = self.revision.saturating_add(1);
+        self.pending.push(DocumentWindowRequest { window_id, path });
+    }
+
+    pub fn drain(&mut self) -> Vec<DocumentWindowRequest> {
+        self.pending.drain(..).collect()
+    }
 }
 
 pub(crate) fn use_runtime_state(
@@ -64,6 +92,46 @@ pub(crate) fn use_runtime_state(
         pending_delete_path: use_signal(|| None::<PathBuf>),
         pending_empty_trash: use_signal(|| false),
         editor_runtime_commands: use_signal(EditorRuntimeCommandQueue::default),
+        document_window_requests: use_signal(DocumentWindowRequestQueue::default),
         settings_persistence: use_signal(SettingsPersistenceQueue::default),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn document_window_request_queue_tracks_revision_and_drains_pending_requests() {
+        let mut queue = DocumentWindowRequestQueue::default();
+
+        assert_eq!(queue.revision(), 0);
+        assert!(queue.drain().is_empty());
+
+        queue.push(
+            WindowSessionId::from("document-1"),
+            PathBuf::from("notes/a.md"),
+        );
+        queue.push(
+            WindowSessionId::from("document-2"),
+            PathBuf::from("notes/b.md"),
+        );
+
+        assert_eq!(queue.revision(), 2);
+        assert_eq!(
+            queue.drain(),
+            vec![
+                DocumentWindowRequest {
+                    window_id: WindowSessionId::from("document-1"),
+                    path: PathBuf::from("notes/a.md"),
+                },
+                DocumentWindowRequest {
+                    window_id: WindowSessionId::from("document-2"),
+                    path: PathBuf::from("notes/b.md"),
+                },
+            ]
+        );
+        assert!(queue.drain().is_empty());
+        assert_eq!(queue.revision(), 2);
     }
 }

@@ -222,7 +222,7 @@ Goal: support advanced workflows after single-window routing is reliable.
 - [x] Move settings to a process-level tool window first.
 - [x] Remove desktop settings-window white flash, carry full i18n into newly opened windows, and use the Papyro app icon instead of the default Dioxus icon.
 - [x] Add document window routing behind `NoteOpenMode::MultiWindow`.
-- [ ] Ensure each window owns its own tab contents, selection, and dirty state.
+- [x] Ensure each window owns its own tab contents, selection, and dirty state.
 - [ ] Share storage and settings safely across windows.
 - [ ] Add save-conflict tests across windows.
 
