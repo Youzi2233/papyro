@@ -14,6 +14,7 @@ This directory is intentionally small. Older phase notes, duplicated design draf
 | Work on Markdown editing | [Editor guide](editor.md) |
 | Change themes or Markdown styles | [Theme system](theme-system.md) |
 | Choose Markdown style references | [Markdown style references](markdown-style-references.md) |
+| Redesign UI/UX systems | [UI/UX benchmark](ui-ux-benchmark.md) |
 | Update app icons | [App icons](app-icons.md) |
 | Keep interactions fast | [Performance budget](performance-budget.md) |
 | Build desktop release packages | [Desktop release packaging](release-packaging.md) |
