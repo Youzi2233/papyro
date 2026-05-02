@@ -15,6 +15,21 @@ Papyro 现在使用 CodeMirror 6 作为交互式编辑器运行时：
 
 这种方案能保持 Markdown 文件可移植，但也意味着 Hybrid 的每个渲染界面都必须遵守 CodeMirror 的文档、选区和布局规则。
 
+## 决策记录
+
+决策：下一轮 Hybrid 稳定化继续基于 CodeMirror decorations 和 widgets。
+
+暂时不迁移到 ProseMirror、Tiptap、Lexical、Slate，也不自研 Typora 式编辑器。当前优先级是把现有 source-first 架构打磨到足够可靠：统一 selection、cursor mapping、widget measurement，并补齐回归覆盖。
+
+只有当 CodeMirror 稳定化后仍有明确证据表明以下风险不可接受时，才重新评估：
+
+- 普通文本点击仍然会把光标映射到错误源码行。
+- 选区仍然会泄漏到无关空白或渲染 widget。
+- IME、粘贴、undo 或键盘导航无法做到可预测。
+- 文档原生表格、数学公式、Mermaid 或图片在 decorations 之上需要过多定制行为。
+
+如果触发重新评估，下一候选方案应优先做 ProseMirror/Tiptap 原型，因为它在文档模型和 node view 上最适合 Markdown 式结构化内容。
+
 ## 架构选项
 
 | 方案 | 优势 | 对 Papyro 的风险 |

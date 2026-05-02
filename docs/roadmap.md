@@ -155,7 +155,7 @@ Goal: make Hybrid mode useful for real writing, not just decorated source text.
 - [x] Make table creation and editing feel document-native: add rows/columns, move between cells, preserve alignment, and avoid layout jumps.
 - [x] Make math insertion and editing first-class, including inline math, display math, preview feedback, and error states.
 - [ ] Treat enterprise-grade editing as the bar: predictable paste, undo, selection, IME, keyboard navigation, accessibility, and stable layout are required before calling Hybrid complete.
-- [ ] Decide whether long-term Hybrid remains CodeMirror decoration-based or moves toward a richer document model.
+- [x] Decide whether long-term Hybrid remains CodeMirror decoration-based or moves toward a richer document model.
 
 See [editor.md](editor.md).
 

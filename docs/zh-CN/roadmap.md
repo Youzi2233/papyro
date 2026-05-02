@@ -132,7 +132,7 @@ flowchart LR
 - [x] 表格编辑要文档化：新增行列、单元格导航、对齐、避免布局跳动。
 - [x] 数学公式要一等支持：inline/display 插入、实时预览、错误反馈。
 - [ ] 以企业级编辑体验为标准：粘贴、撤销、选区、IME、键盘导航、可访问性和布局稳定性都要可靠。
-- [ ] 评估 Hybrid 长期是否继续基于 CodeMirror decoration，还是引入更丰富的文档模型。
+- [x] 评估 Hybrid 长期是否继续基于 CodeMirror decoration，还是引入更丰富的文档模型。
 
 ## Phase 4.5 - 主题、字体和 Markdown 样式
 

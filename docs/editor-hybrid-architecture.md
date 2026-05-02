@@ -15,6 +15,21 @@ Papyro currently uses CodeMirror 6 as the interactive editor runtime:
 
 This keeps Markdown portable, but it also means every rendered Hybrid surface must respect CodeMirror's document, selection, and layout rules.
 
+## Decision Record
+
+Decision: keep Hybrid on CodeMirror decorations and widgets for the next stabilization milestone.
+
+Do not migrate to ProseMirror, Tiptap, Lexical, Slate, or a custom Typora-style editor yet. The current priority is to make the existing source-first architecture reliable enough for daily writing by tightening selection, cursor mapping, widget measurement, and regression coverage.
+
+Revisit the decision only after the CodeMirror stabilization pass has measurable evidence that one of these risks remains unacceptable:
+
+- cursor placement still maps to the wrong source line in normal text
+- selection still leaks into unrelated whitespace or rendered widgets
+- IME, paste, undo, or keyboard navigation cannot be made predictable
+- document-native tables, math, Mermaid, or images require too much custom behavior on top of decorations
+
+If that happens, the next candidate should be a ProseMirror/Tiptap prototype because it provides the strongest document model and node view story for Markdown-like structured content.
+
 ## Architecture Options
 
 | Option | Strength | Risk for Papyro |
