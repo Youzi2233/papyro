@@ -494,6 +494,50 @@
     color: var(--mn-accent-strong);
 }
 
+.mn-skeleton-list {
+    display: flex;
+    width: 100%;
+    flex-direction: column;
+    gap: var(--mn-menu-gap);
+}
+
+.mn-skeleton-row {
+    display: grid;
+    min-height: var(--mn-command-row-min-height);
+    align-content: center;
+    gap: 8px;
+    padding: var(--mn-command-row-pad);
+    border-radius: var(--mn-radius-sm);
+    background: var(--mn-surface-sunken);
+}
+
+.mn-skeleton-line {
+    display: block;
+    height: 10px;
+    border-radius: var(--mn-radius-pill);
+    background: linear-gradient(
+        90deg,
+        var(--mn-surface-sunken),
+        color-mix(in srgb, var(--mn-accent) 12%, var(--mn-surface)),
+        var(--mn-surface-sunken)
+    );
+    background-size: 180% 100%;
+    animation: mn-skeleton-shimmer 1.2s ease-in-out infinite;
+}
+
+.mn-skeleton-line.primary {
+    width: min(68%, 360px);
+}
+
+.mn-skeleton-line.secondary {
+    width: min(46%, 260px);
+}
+
+@keyframes mn-skeleton-shimmer {
+    from { background-position: 120% 0; }
+    to { background-position: -80% 0; }
+}
+
 .mn-command-empty {
     margin: 18px 12px;
     padding: 14px 16px;

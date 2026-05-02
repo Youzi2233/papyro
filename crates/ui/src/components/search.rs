@@ -1,7 +1,7 @@
 use crate::action_labels::open_note_label;
 use crate::commands::{AppCommands, OpenMarkdownTarget};
 use crate::components::primitives::{
-    InlineAlert, InlineAlertTone, Modal, ResultRow, ResultRowKind, TextInput,
+    InlineAlert, InlineAlertTone, Modal, ResultRow, ResultRowKind, SkeletonRows, TextInput,
 };
 use crate::context::use_app_context;
 use crate::i18n::{i18n_for, use_i18n};
@@ -44,6 +44,9 @@ pub fn SearchModal(on_close: EventHandler<()>) -> Element {
         workspace_search_model.is_loading,
         workspace_search_model.error.as_deref(),
     );
+    let show_loading_skeleton = workspace_search_model.is_loading
+        && !query_value.trim().is_empty()
+        && workspace_search_model.error.is_none();
 
     rsx! {
         Modal {
@@ -92,7 +95,13 @@ pub fn SearchModal(on_close: EventHandler<()>) -> Element {
                     }
                 }
                 div { class: "mn-command-list",
-                    if results.is_empty() {
+                    if results.is_empty() && show_loading_skeleton {
+                        SkeletonRows {
+                            label: empty_message,
+                            rows: 4,
+                            class_name: "mn-command-skeleton".to_string(),
+                        }
+                    } else if results.is_empty() {
                         InlineAlert {
                             message: empty_message,
                             tone: empty_tone,

@@ -642,6 +642,30 @@ pub fn InlineAlert(message: String, tone: InlineAlertTone, class_name: String) -
 }
 
 #[component]
+pub fn SkeletonRows(label: String, rows: usize, class_name: String) -> Element {
+    let class = append_class("mn-skeleton-list", &class_name);
+    let row_count = rows.max(1);
+
+    rsx! {
+        div {
+            class,
+            role: "status",
+            "aria-label": "{label}",
+            "aria-live": "polite",
+            for row in 0..row_count {
+                div {
+                    key: "{row}",
+                    class: "mn-skeleton-row",
+                    "aria-hidden": "true",
+                    span { class: "mn-skeleton-line primary" }
+                    span { class: "mn-skeleton-line secondary" }
+                }
+            }
+        }
+    }
+}
+
+#[component]
 pub fn StatusIndicator(label: String, tone: StatusTone) -> Element {
     rsx! {
         span { class: status_tone_class(tone), "{label}" }
