@@ -122,6 +122,7 @@ flowchart LR
 - [x] 优化粘贴替换和 Markdown 输入命令。
 - [x] 增加 Mermaid 渲染/编辑态。
 - [ ] 统一 Hybrid selection、cursor hit testing 和 inline decoration 行为。
+- [ ] 明确 pointer 行为：鼠标 hover 到文字时进入编辑态，hover 到行高空隙时保持普通态；在空隙里选中应命中下一行文字，在当前行文字区域选中应命中当前行；选中背景只覆盖文字字形区域，不要把行高空隙整块染色。
 - [x] 统一代码块、inline code、链接、列表、Mermaid 的选中背景颜色。
 - [ ] 把光标错位、命中到错误行、选中背景缺失、意外恢复源码、选区影响空白区域等问题视为 Hybrid 架构级缺陷，而不是零散 CSS bug。
 - [x] 继续修补 Hybrid 前先调研行业通用编辑器架构：CodeMirror decorations/widgets、ProseMirror/Tiptap node views、Lexical decorators、Slate void/inline nodes、Typora 类源码/渲染切换策略。见 [Hybrid 编辑器架构评审](editor-hybrid-architecture.md)。
@@ -181,6 +182,7 @@ flowchart TD
 
 - [x] 定义生产级 `ProcessRuntime` 和 `WindowSession`。
 - [x] 先把设置做成进程级工具窗口。
+- [ ] 消除桌面端设置窗口新开时的白屏闪烁，让新窗口完整继承国际化，并改成 Papyro 自己的应用图标而不是默认 Dioxus 图标。
 - [ ] 在 `NoteOpenMode::MultiWindow` 后面增加 document window routing。
 - [ ] 每个窗口独立拥有 tab contents、selection 和 dirty state。
 - [ ] storage 和 settings 可安全跨窗口共享。
