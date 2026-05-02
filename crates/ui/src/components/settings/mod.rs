@@ -2,8 +2,9 @@ use crate::commands::{
     AppCommands, DeleteTagRequest, RenameTagRequest, SetTagColorRequest, UpsertTagRequest,
 };
 use crate::components::primitives::{
-    Button, ButtonVariant, DialogSection, DropdownOption, Modal, Select, SettingsContent,
-    SettingsLayout, SettingsNav, SettingsNavItem, SettingsPanel, SettingsRow, Slider, Toggle,
+    ActionButton, Button, ButtonState, ButtonVariant, DialogSection, DropdownOption, Modal, Select,
+    SettingsContent, SettingsLayout, SettingsNav, SettingsNavItem, SettingsPanel, SettingsRow,
+    Slider, Toggle,
 };
 use crate::context::use_app_context;
 use crate::i18n::{use_i18n, UiText};
@@ -469,6 +470,16 @@ fn TagEditorRow(tag: TagListItem, has_workspace: bool, commands: AppCommands) ->
     } else {
         i18n.text("Delete", "删除")
     };
+    let delete_button_class = if confirm_delete() {
+        "active".to_string()
+    } else {
+        String::new()
+    };
+    let delete_button_state = if has_workspace {
+        ButtonState::Enabled
+    } else {
+        ButtonState::Disabled
+    };
 
     rsx! {
         div { class: "mn-tag-row",
@@ -543,10 +554,13 @@ fn TagEditorRow(tag: TagListItem, has_workspace: bool, commands: AppCommands) ->
                     }
                 },
             }
-            button {
-                class: if confirm_delete() { "mn-button danger active" } else { "mn-button danger" },
-                disabled: !has_workspace,
-                onclick: {
+            ActionButton {
+                label: delete_label.to_string(),
+                variant: ButtonVariant::Danger,
+                state: delete_button_state,
+                icon_class: None,
+                class_name: delete_button_class,
+                on_click: {
                     let commands = commands.clone();
                     let tag_id = tag.id.clone();
                     move |_| {
@@ -558,7 +572,6 @@ fn TagEditorRow(tag: TagListItem, has_workspace: bool, commands: AppCommands) ->
                         }
                     }
                 },
-                "{delete_label}"
             }
         }
     }
