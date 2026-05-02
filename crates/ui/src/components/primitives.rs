@@ -959,6 +959,15 @@ pub fn RowActions(class_name: String, children: Element) -> Element {
 }
 
 #[component]
+pub fn ModalFooterMeta(label: String, class_name: String) -> Element {
+    let class = append_class("mn-modal-footer-meta", &class_name);
+
+    rsx! {
+        span { class, "{label}" }
+    }
+}
+
+#[component]
 pub fn ComparePanel(
     title: String,
     metadata: String,

@@ -35,13 +35,13 @@ flowchart TD
 
 | 区域 | 当前组件 | 说明 |
 | --- | --- | --- |
-| 基础组件 | `Button`、`IconButton`、`Select`、`Dropdown`、`SegmentedControl`、`Tabs`、`Modal`、`Menu`、`ContextMenu`、`MenuItem`、`Tooltip`、`Message`、`StatusStrip`、`StatusMessage`、`StatusIndicator`、`FormField`、`Toggle`、`Slider`、`TextInput`、`ResultRow`、`RowActions`、`ComparePanel`、`SettingsLayout`、`SettingsNav`、`SettingsRow`、`DialogSection`、`TreeItemButton`、`TreeItemEditRow`、`EmptyState` | 已经有基础，但还需要更强的状态契约、variant、键盘行为和文档。 |
+| 基础组件 | `Button`、`IconButton`、`Select`、`Dropdown`、`SegmentedControl`、`Tabs`、`Modal`、`Menu`、`ContextMenu`、`MenuItem`、`Tooltip`、`Message`、`StatusStrip`、`StatusMessage`、`StatusIndicator`、`FormField`、`Toggle`、`Slider`、`TextInput`、`ResultRow`、`RowActions`、`ModalFooterMeta`、`ComparePanel`、`SettingsLayout`、`SettingsNav`、`SettingsRow`、`DialogSection`、`TreeItemButton`、`TreeItemEditRow`、`EmptyState` | 已经有基础，但还需要更强的状态契约、variant、键盘行为和文档。 |
 | App chrome | `Sidebar`、`FileTree`、`AppHeader`、`StatusBar`、`DesktopLayout`、`MobileLayout` | 文件树行已经使用 `TreeItem` 基础组件承载视觉状态；侧边栏 footer/workspace 行还需要共享 `SidebarItem`。 |
 | 编辑器 | `EditorPane`、`EditorChrome`、`EditorTabButton`、`OutlinePane`、`PreviewPane`、`EditorHost`、`FallbackEditor` | 需要稳定 chrome 分区、tab overflow 规则、大纲行为和共享 Markdown 视觉 token。 |
 | 弹窗界面 | `SettingsModal`、`QuickOpenModal`、`CommandPaletteModal`、`SearchModal`、`TrashModal`、`RecoveryDraftsModal`、`RecoveryDraftCompareModal` | 应共享 dialog shell、结果行、空状态、加载态和键盘焦点行为。 |
 | 设置 | `SettingsSurface`、`TagManagementSection`、`TagEditorRow`、`AboutMetaItem` | 设置页已经组合共享导航、面板、表单行和 section 基础组件；标签管理还需要更丰富的行组件。 |
 | 搜索/命令 | `ResultRow`、`RowActions`、`CommandPaletteRow`、`QuickOpenRow`、`SearchResultRow`、`HighlightedText` | 命令、快速打开、搜索、回收站和恢复行已经共享行壳和动作槽位；下一步补图标、快捷键、更丰富元信息和分组状态。 |
-| 恢复/回收站 | `RecoveryDraftRow`、`ComparePanel`、`TrashNoteRow` | 恢复和回收站列表行已使用 `ResultRow`，恢复对比已使用 `ComparePanel`；destructive footer 和冲突/错误状态仍需要专门的数据安全 pattern。 |
+| 恢复/回收站 | `RecoveryDraftRow`、`ComparePanel`、`TrashNoteRow` | 恢复和回收站列表行已使用 `ResultRow`，恢复对比已使用 `ComparePanel`，回收站 footer 元信息已使用 `ModalFooterMeta`；冲突/错误状态仍需要专门的数据安全 pattern。 |
 
 ## 目标基础组件
 
@@ -77,6 +77,7 @@ flowchart TD
 | `SettingsRow` | 设置、未来偏好设置窗口 | 一列表单：label、可选 description、control、未来 helper/error slots。 |
 | `ResultRow` | 搜索、快速打开、命令面板、回收站、恢复 | 图标、主文本、次文本、元信息、高亮、键盘 current 状态。 |
 | `RowActions` | 结果行、数据安全管理行 | 右对齐行内动作，统一间距，并按需支持换行。 |
+| `ModalFooterMeta` | 回收站、恢复、破坏性操作弹窗 | footer 左侧元信息，长文本会在操作按钮前安全截断。 |
 | `ComparePanel` | 恢复对比、未来冲突处理 | 标题、元信息、可选错误、可滚动预格式内容和稳定的左右对比尺寸。 |
 | `TreeRow` | 文件树 | 缩进、展开图标、文件/文件夹图标、selected/editing/drag/drop 状态、右键菜单、键盘目标。 |
 | `ToolbarZone` | 编辑器 chrome、app header | 固定或弹性区域，并显式定义 overflow 行为。 |

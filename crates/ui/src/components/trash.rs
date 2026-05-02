@@ -1,7 +1,7 @@
 use crate::commands::{AppCommands, RestoreTrashedNoteTarget};
 use crate::components::primitives::{
-    Button, ButtonVariant, InlineAlert, InlineAlertTone, Modal, ResultRow, ResultRowKind,
-    RowActions,
+    Button, ButtonVariant, InlineAlert, InlineAlertTone, Modal, ModalFooterMeta, ResultRow,
+    ResultRowKind, RowActions,
 };
 use crate::context::use_app_context;
 use crate::i18n::{i18n_for, use_i18n};
@@ -52,10 +52,9 @@ pub fn TrashModal(on_close: EventHandler<()>) -> Element {
                 }
             }
             div { class: "mn-modal-footer",
-                span {
-                    class: "mn-command-path",
-                    style: "margin-right:auto;",
-                    "{trash_count_label(i18n.language(), note_count)}"
+                ModalFooterMeta {
+                    label: trash_count_label(i18n.language(), note_count),
+                    class_name: String::new(),
                 }
                 Button {
                     label: i18n.text("Close", "关闭").to_string(),

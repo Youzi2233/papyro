@@ -234,6 +234,16 @@
     flex-shrink: 0;
 }
 
+.mn-modal-footer-meta {
+    min-width: 0;
+    margin-right: auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--mn-ink-3);
+    font-size: var(--mn-type-caption);
+}
+
 .mn-command-modal {
     width: min(680px, 92vw);
     max-height: min(620px, 78vh);
