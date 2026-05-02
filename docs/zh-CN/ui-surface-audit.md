@@ -150,17 +150,18 @@
 - 设置分为通用设置和关于 Papyro。
 - 已从可见 UI 中移除全局/工作区保存目标造成的理解成本。
 - 语言和主题属于全局设置，可不重启更新。
+- 当前界面已组合共享的 `SettingsNav`、`SettingsPanel`、`DialogSection` 和 `SettingsRow` 基础组件，不再由业务模块本地拥有全部布局 wrapper。
 
 差距：
 
-- Dialog shell、设置导航、section layout、form row 仍在一个模块里实现。
+- 标签管理行和未来 helper/error 文案还需要可复用 row 契约。
 - 部分控件使用早期 `Dropdown` primitive，仍带一点原生 select 感。
 - 未来独立窗口需要启动、图标、主题、国际化和无白屏规则。
 
 改造决策：
 
 - 设置页作为第一个受控 UI 改造界面。
-- 拆成 `SettingsWindow`、`SettingsNav`、`SettingsPanel`、`SettingsRow` pattern。
+- 继续推进 `SettingsWindow`、`SettingsNav`、`SettingsPanel`、`SettingsRow` pattern。
 - 面板尺寸稳定，内容区内部滚动。
 
 ### 搜索、快速打开和命令面板

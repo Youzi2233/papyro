@@ -150,17 +150,18 @@ What works:
 - Settings are grouped into General and About.
 - Workspace/global save-target confusion is removed from the visible UI.
 - Language and theme are global settings and can update without restart.
+- The surface now composes shared `SettingsNav`, `SettingsPanel`, `DialogSection`, and `SettingsRow` primitives instead of owning every layout wrapper locally.
 
 Gaps:
 
-- Dialog shell, settings navigation, section layout, and form rows are still implemented inside one module.
+- Tag management rows and future helper/error copy still need reusable row contracts.
 - Some controls use native select-like behavior through an early `Dropdown` primitive.
 - Future independent-window behavior needs startup, icon, theme, localization, and no-flash rules.
 
 Redesign decision:
 
 - Use settings as the first controlled UI redesign surface.
-- Split settings into `SettingsWindow`, `SettingsNav`, `SettingsPanel`, and `SettingsRow` patterns.
+- Continue the split toward `SettingsWindow`, `SettingsNav`, `SettingsPanel`, and `SettingsRow` patterns.
 - Keep panel size stable and scroll inside the content region.
 
 ### Search, Quick Open, And Command Palette

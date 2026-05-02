@@ -35,11 +35,11 @@ flowchart TD
 
 | 区域 | 当前组件 | 说明 |
 | --- | --- | --- |
-| 基础组件 | `Button`、`IconButton`、`Select`、`Dropdown`、`SegmentedControl`、`Tabs`、`Modal`、`Menu`、`ContextMenu`、`MenuItem`、`Tooltip`、`Message`、`StatusMessage`、`StatusIndicator`、`FormField`、`Toggle`、`Slider`、`TextInput`、`ResultRow`、`EmptyState` | 已经有基础，但还需要更强的状态契约、variant、键盘行为和文档。 |
+| 基础组件 | `Button`、`IconButton`、`Select`、`Dropdown`、`SegmentedControl`、`Tabs`、`Modal`、`Menu`、`ContextMenu`、`MenuItem`、`Tooltip`、`Message`、`StatusMessage`、`StatusIndicator`、`FormField`、`Toggle`、`Slider`、`TextInput`、`ResultRow`、`SettingsLayout`、`SettingsNav`、`SettingsRow`、`DialogSection`、`EmptyState` | 已经有基础，但还需要更强的状态契约、variant、键盘行为和文档。 |
 | App chrome | `Sidebar`、`FileTree`、`AppHeader`、`StatusBar`、`DesktopLayout`、`MobileLayout` | 应把共享行行为迁移到 `SidebarItem`、`TreeItem` 和布局基础件。 |
 | 编辑器 | `EditorPane`、`EditorChrome`、`EditorTabButton`、`OutlinePane`、`PreviewPane`、`EditorHost`、`FallbackEditor` | 需要稳定 chrome 分区、tab overflow 规则、大纲行为和共享 Markdown 视觉 token。 |
 | 弹窗界面 | `SettingsModal`、`QuickOpenModal`、`CommandPaletteModal`、`SearchModal`、`TrashModal`、`RecoveryDraftsModal`、`RecoveryDraftCompareModal` | 应共享 dialog shell、结果行、空状态、加载态和键盘焦点行为。 |
-| 设置 | `SettingsSurface`、`SettingsNavButton`、`SettingSection`、`TagManagementSection`、`TagEditorRow`、`AboutMetaItem` | 是第一个受控重构候选，因为它覆盖表单、导航和状态绑定。 |
+| 设置 | `SettingsSurface`、`TagManagementSection`、`TagEditorRow`、`AboutMetaItem` | 设置页已经组合共享导航、面板、表单行和 section 基础组件；标签管理还需要更丰富的行组件。 |
 | 搜索/命令 | `ResultRow`、`CommandPaletteRow`、`QuickOpenRow`、`SearchResultRow`、`HighlightedText` | 命令、快速打开和搜索结果已经共享行壳；下一步补图标、快捷键、更丰富元信息和分组状态。 |
 | 恢复/回收站 | `RecoveryDraftRow`、`RecoveryComparePanel`、`TrashNoteRow` | 应复用未来 list-row 和危险动作 pattern。 |
 
@@ -53,7 +53,7 @@ flowchart TD
 | `Select` | 已有 | 增加键盘导航、必要时支持 option group、增加尺寸 variant。 |
 | `SegmentedControl` | 已有 | 继续用于主题、视图模式等小枚举；必要时支持 disabled option。 |
 | `Switch` | 以 `Toggle` 形式存在 | 重命名或 alias 为 `Switch`；文档化 checked、disabled、focus-visible。 |
-| `Dialog` / `Modal` | 已有 | 拆分基础 shell 和产品内容，支持稳定尺寸和焦点管理。 |
+| `Dialog` / `Modal` | 部分已有 | `DialogSection` 已覆盖设置页重复 section；modal shell 还需要稳定尺寸和焦点管理。 |
 | `Popover` | 缺失 | 用于插入菜单、紧凑设置提示和编辑器 affordance。 |
 | `DropdownMenu` | 通过 `Menu` 部分存在 | 补 trigger、对齐、键盘行为、分割线、图标和快捷键。 |
 | `ContextMenu` | 已有 | 保留为 menu shell；和 dropdown menu 共享 item model。 |
@@ -66,6 +66,7 @@ flowchart TD
 | `EmptyState` | 已有 | 增加 compact、onboarding、error 和 action variant。 |
 | `Skeleton` | 缺失 | 服务 workspace 加载、搜索加载和未来异步窗口。 |
 | `InlineAlert` / `ErrorState` | 部分已有 | `InlineAlert` 已用于预览提示和命令/搜索空态；较大的阻断错误仍需要 `ErrorState`。 |
+| `SettingsLayout` / `SettingsRow` | 部分已有 | 设置导航、面板、section 和行已经进入基础组件；helper text、错误态和更丰富的表单状态还需要继续接入。 |
 
 ## 产品 Pattern
 
@@ -73,7 +74,7 @@ flowchart TD
 
 | Pattern | 使用位置 | 契约 |
 | --- | --- | --- |
-| `SettingsRow` | 设置、未来偏好设置窗口 | 一列表单：label、description、control、可选 error/helper text。 |
+| `SettingsRow` | 设置、未来偏好设置窗口 | 一列表单：label、可选 description、control、未来 helper/error slots。 |
 | `ResultRow` | 搜索、快速打开、命令面板 | 图标、主文本、次文本、元信息、高亮、键盘 current 状态。 |
 | `TreeRow` | 文件树 | 缩进、展开图标、文件/文件夹图标、selected/current、右键菜单、键盘目标。 |
 | `ToolbarZone` | 编辑器 chrome、app header | 固定或弹性区域，并显式定义 overflow 行为。 |
@@ -104,7 +105,7 @@ flowchart TD
 
 ## 迁移顺序
 
-1. **设置行：** 把设置迁移到 `SettingsRow`、`DialogSection`、`Switch`、`Select`、`SegmentedControl` 契约。
+1. **设置行：** 继续基于 `SettingsRow`、`DialogSection`、`SettingsNav`、`Switch`、`Select`、`SegmentedControl` 推进；下一步补 helper/error slots 并迁移标签行。
 2. **结果行：** 对齐命令面板、快速打开和搜索结果行。
 3. **文件树行：** 把文件树行行为抽成可复用 `TreeItem` pattern。
 4. **编辑器 chrome：** 继续基于 `EditorToolbar` 和 `ToolbarZone` 完善 tab overflow、模式切换、大纲按钮和未来更多菜单规则。

@@ -2,7 +2,8 @@ use crate::commands::{
     AppCommands, DeleteTagRequest, RenameTagRequest, SetTagColorRequest, UpsertTagRequest,
 };
 use crate::components::primitives::{
-    Button, ButtonVariant, DropdownOption, FormField, Modal, Select, Slider, Toggle,
+    Button, ButtonVariant, DialogSection, DropdownOption, Modal, Select, SettingsContent,
+    SettingsLayout, SettingsNav, SettingsNavItem, SettingsPanel, SettingsRow, Slider, Toggle,
 };
 use crate::context::use_app_context;
 use crate::i18n::{use_i18n, UiText};
@@ -18,7 +19,7 @@ const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 const DEFAULT_TAG_COLOR: &str = "#6B7280";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum SettingsPanel {
+enum SettingsPanelKind {
     General,
     About,
 }
@@ -60,7 +61,7 @@ pub fn SettingsSurface(on_close: EventHandler<()>) -> Element {
     let workspace_overrides = settings_form.workspace_overrides.clone();
     let has_workspace = settings_form.has_workspace;
 
-    let mut active_panel = use_signal(|| SettingsPanel::General);
+    let mut active_panel = use_signal(|| SettingsPanelKind::General);
     let mut language = use_signal(|| effective_settings.language);
     let mut theme = use_signal(|| effective_settings.theme.clone());
     let mut font_family = use_signal(|| effective_settings.font_family.clone());
@@ -115,32 +116,31 @@ pub fn SettingsSurface(on_close: EventHandler<()>) -> Element {
             }
         }
         div { class: "mn-modal-body mn-settings-body",
-            div { class: "mn-settings-layout",
-                nav {
-                    class: "mn-settings-nav",
-                    "aria-label": i18n.text("Settings navigation", "设置导航"),
-                    div { class: "mn-settings-nav-list",
-                        SettingsNavButton {
+            SettingsLayout {
+                SettingsNav { label: i18n.text("Settings navigation", "设置导航").to_string(),
+                    SettingsNavItem {
                             label: i18n.text("General", "通用设置").to_string(),
-                            active: active_panel() == SettingsPanel::General,
-                            on_click: move |_| active_panel.set(SettingsPanel::General),
+                            active: active_panel() == SettingsPanelKind::General,
+                            class_name: String::new(),
+                            on_click: move |_| active_panel.set(SettingsPanelKind::General),
                         }
-                        SettingsNavButton {
+                    SettingsNavItem {
                             label: i18n.text("About Papyro", "关于 Papyro").to_string(),
-                            active: active_panel() == SettingsPanel::About,
-                            on_click: move |_| active_panel.set(SettingsPanel::About),
+                            active: active_panel() == SettingsPanelKind::About,
+                            class_name: String::new(),
+                            on_click: move |_| active_panel.set(SettingsPanelKind::About),
                         }
-                    }
                 }
-                div { class: "mn-settings-content",
-                    if active_panel() == SettingsPanel::General {
-                        div { class: "mn-settings-panel",
+                SettingsContent {
+                    if active_panel() == SettingsPanelKind::General {
+                        SettingsPanel {
                             div { class: "mn-settings-panel-body mn-settings-grid",
-                                SettingSection {
+                                DialogSection {
                                     label: i18n.text("Interface", "界面").to_string(),
                                     class_name: "mn-setting-section-card".to_string(),
-                                    FormField {
+                                    SettingsRow {
                                         label: i18n.text("Language", "语言").to_string(),
+                                        description: None::<String>,
                                         class_name: String::new(),
                                         Select {
                                             label: i18n.text("App language", "应用语言").to_string(),
@@ -153,8 +153,9 @@ pub fn SettingsSurface(on_close: EventHandler<()>) -> Element {
                                             },
                                         }
                                     }
-                                    FormField {
+                                    SettingsRow {
                                         label: i18n.text("Theme", "主题").to_string(),
+                                        description: None::<String>,
                                         class_name: String::new(),
                                         Select {
                                             label: i18n.text("Theme", "主题").to_string(),
@@ -168,11 +169,12 @@ pub fn SettingsSurface(on_close: EventHandler<()>) -> Element {
                                         }
                                     }
                                 }
-                                SettingSection {
+                                DialogSection {
                                     label: i18n.text("Editor", "编辑器").to_string(),
                                     class_name: "mn-setting-section-card".to_string(),
-                                    FormField {
+                                    SettingsRow {
                                         label: i18n.text("Font family", "字体").to_string(),
+                                        description: None::<String>,
                                         class_name: String::new(),
                                         Select {
                                             label: i18n.text("Font family", "字体").to_string(),
@@ -181,12 +183,13 @@ pub fn SettingsSurface(on_close: EventHandler<()>) -> Element {
                                             on_change: move |value: String| font_family.set(value),
                                         }
                                     }
-                                    FormField {
+                                    SettingsRow {
                                         label: format!(
                                             "{} ({}px)",
                                             i18n.text("Font size", "字号"),
                                             font_size()
                                         ),
+                                        description: None::<String>,
                                         class_name: String::new(),
                                         Slider {
                                             label: i18n.text("Font size", "字号").to_string(),
@@ -201,12 +204,13 @@ pub fn SettingsSurface(on_close: EventHandler<()>) -> Element {
                                             },
                                         }
                                     }
-                                    FormField {
+                                    SettingsRow {
                                         label: format!(
                                             "{} ({:.1})",
                                             i18n.text("Line height", "行高"),
                                             line_height()
                                         ),
+                                        description: None::<String>,
                                         class_name: String::new(),
                                         Slider {
                                             label: i18n.text("Line height", "行高").to_string(),
@@ -228,8 +232,9 @@ pub fn SettingsSurface(on_close: EventHandler<()>) -> Element {
                                         p { class: "mn-font-preview-body", {i18n.text("Headings, body text, numbers 123, and 中文内容 should all feel calm and balanced.", "标题、正文、数字 123 和中文内容都应该清楚、平衡。")} }
                                         code { class: "mn-font-preview-code", "inline_code = true" }
                                     }
-                                    FormField {
+                                    SettingsRow {
                                         label: i18n.text("Paste URL as link", "粘贴 URL 时转成链接").to_string(),
+                                        description: None::<String>,
                                         class_name: String::new(),
                                         Toggle {
                                             label: i18n.text("Paste URL as link", "粘贴 URL 时转成链接").to_string(),
@@ -238,15 +243,16 @@ pub fn SettingsSurface(on_close: EventHandler<()>) -> Element {
                                         }
                                     }
                                 }
-                                SettingSection {
+                                DialogSection {
                                     label: i18n.text("Saving", "保存").to_string(),
                                     class_name: "mn-setting-section-card".to_string(),
-                                    FormField {
+                                    SettingsRow {
                                         label: format!(
                                             "{} ({}ms)",
                                             i18n.text("Auto-save delay", "自动保存延迟"),
                                             auto_save_ms()
                                         ),
+                                        description: None::<String>,
                                         class_name: String::new(),
                                         Slider {
                                             label: i18n.text("Auto-save delay", "自动保存延迟").to_string(),
@@ -270,7 +276,7 @@ pub fn SettingsSurface(on_close: EventHandler<()>) -> Element {
                             }
                         }
                     } else {
-                        div { class: "mn-settings-panel",
+                        SettingsPanel {
                             div { class: "mn-about-card",
                                 div { class: "mn-about-hero",
                                     div { class: "mn-about-brand",
@@ -344,46 +350,11 @@ pub fn SettingsSurface(on_close: EventHandler<()>) -> Element {
 }
 
 #[component]
-fn SettingsNavButton(label: String, active: bool, on_click: EventHandler<MouseEvent>) -> Element {
-    let class_name = if active {
-        "mn-settings-nav-button active"
-    } else {
-        "mn-settings-nav-button"
-    };
-
-    rsx! {
-        button {
-            r#type: "button",
-            class: "{class_name}",
-            "aria-pressed": if active { "true" } else { "false" },
-            onclick: move |event| on_click.call(event),
-            span { class: "mn-settings-nav-button-title", "{label}" }
-        }
-    }
-}
-
-#[component]
 fn AboutMetaItem(label: String, value: String) -> Element {
     rsx! {
         div { class: "mn-about-item",
             div { class: "mn-about-label", "{label}" }
             div { class: "mn-about-value", "{value}" }
-        }
-    }
-}
-
-#[component]
-fn SettingSection(label: String, class_name: String, children: Element) -> Element {
-    let class = if class_name.trim().is_empty() {
-        "mn-setting-section".to_string()
-    } else {
-        format!("mn-setting-section {class_name}")
-    };
-
-    rsx! {
-        div { class: "{class}",
-            h3 { class: "mn-setting-section-label", "{label}" }
-            {children}
         }
     }
 }
@@ -402,7 +373,7 @@ fn TagManagementSection(
     let can_create = has_workspace && !cleaned_tag_name(&new_name_value).is_empty();
 
     rsx! {
-        SettingSection {
+        DialogSection {
             label: i18n.text("Tags", "标签").to_string(),
             class_name: "mn-setting-section-card mn-setting-section-wide".to_string(),
             if has_workspace {

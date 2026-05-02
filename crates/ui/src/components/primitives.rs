@@ -187,12 +187,7 @@ fn status_tone_class(tone: StatusTone) -> &'static str {
 }
 
 fn form_field_class(class_name: &str) -> String {
-    let trimmed = class_name.trim();
-    if trimmed.is_empty() {
-        "mn-form-field mn-setting-row".to_string()
-    } else {
-        format!("mn-form-field mn-setting-row {trimmed}")
-    }
+    append_class("mn-form-field mn-setting-row", class_name)
 }
 
 fn result_row_class(kind: ResultRowKind, is_active: bool) -> &'static str {
@@ -236,6 +231,15 @@ fn toolbar_zone_class(kind: ToolbarZoneKind, class_name: &str) -> String {
     let base = match kind {
         ToolbarZoneKind::Flexible => "mn-editor-tabs-row",
         ToolbarZoneKind::Fixed => "mn-editor-tools",
+    };
+    append_class(base, class_name)
+}
+
+fn settings_nav_button_class(active: bool, class_name: &str) -> String {
+    let base = if active {
+        "mn-settings-nav-button active"
+    } else {
+        "mn-settings-nav-button"
     };
     append_class(base, class_name)
 }
@@ -292,6 +296,92 @@ pub fn ToolbarZone(kind: ToolbarZoneKind, class_name: String, children: Element)
 pub fn ScrollContainer(class_name: String, children: Element) -> Element {
     rsx! {
         div { class: "{class_name}", {children} }
+    }
+}
+
+#[component]
+pub fn SettingsLayout(children: Element) -> Element {
+    rsx! {
+        div { class: "mn-settings-layout", {children} }
+    }
+}
+
+#[component]
+pub fn SettingsNav(label: String, children: Element) -> Element {
+    rsx! {
+        nav {
+            class: "mn-settings-nav",
+            "aria-label": "{label}",
+            div { class: "mn-settings-nav-list", {children} }
+        }
+    }
+}
+
+#[component]
+pub fn SettingsNavItem(
+    label: String,
+    active: bool,
+    class_name: String,
+    on_click: EventHandler<MouseEvent>,
+) -> Element {
+    let class = settings_nav_button_class(active, &class_name);
+
+    rsx! {
+        button {
+            r#type: "button",
+            class,
+            "aria-pressed": if active { "true" } else { "false" },
+            onclick: move |event| on_click.call(event),
+            span { class: "mn-settings-nav-button-title", "{label}" }
+        }
+    }
+}
+
+#[component]
+pub fn SettingsContent(children: Element) -> Element {
+    rsx! {
+        div { class: "mn-settings-content", {children} }
+    }
+}
+
+#[component]
+pub fn SettingsPanel(children: Element) -> Element {
+    rsx! {
+        div { class: "mn-settings-panel", {children} }
+    }
+}
+
+#[component]
+pub fn DialogSection(label: String, class_name: String, children: Element) -> Element {
+    let class = append_class("mn-setting-section", &class_name);
+
+    rsx! {
+        section { class,
+            h3 { class: "mn-setting-section-label", "{label}" }
+            {children}
+        }
+    }
+}
+
+#[component]
+pub fn SettingsRow(
+    label: String,
+    description: Option<String>,
+    class_name: String,
+    children: Element,
+) -> Element {
+    let class = form_field_class(&class_name);
+
+    rsx! {
+        div { class,
+            div { class: "mn-setting-label",
+                span { "{label}" }
+                if let Some(description) = description {
+                    span { class: "mn-setting-description", "{description}" }
+                }
+            }
+            div { class: "mn-form-control mn-setting-control", {children} }
+        }
     }
 }
 
@@ -768,6 +858,14 @@ mod tests {
         assert_eq!(
             toolbar_zone_class(ToolbarZoneKind::Fixed, ""),
             "mn-editor-tools"
+        );
+        assert_eq!(
+            settings_nav_button_class(true, "compact"),
+            "mn-settings-nav-button active compact"
+        );
+        assert_eq!(
+            settings_nav_button_class(false, ""),
+            "mn-settings-nav-button"
         );
     }
 
