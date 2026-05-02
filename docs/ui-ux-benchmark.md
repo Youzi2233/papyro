@@ -86,7 +86,7 @@ The redesign should move in this order:
 ## Immediate Follow-Up Tasks
 
 - [x] Create `docs/ui-visual-brief.md` and `docs/zh-CN/ui-visual-brief.md`.
-- [ ] Inventory existing Dioxus components and map them to the target primitive list.
+- [x] Inventory existing Dioxus components and map them to the target primitive list. See [UI Architecture And Component Inventory](ui-architecture.md).
 - [ ] Add a CSS token audit for raw colors, spacing one-offs, and duplicated component selectors.
 - [ ] Redesign settings with the new primitive rules as the first controlled surface.
 - [ ] Redesign editor chrome and tab overflow rules as the second controlled surface.

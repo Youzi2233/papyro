@@ -132,7 +132,7 @@ flowchart LR
 - [x] 在改主 CSS 前先创建 benchmark 和 gap-analysis 文档，包含来源链接、截图、交互记录和 Papyro 的明确改版决策。见 [UI/UX 对标与改版决策](ui-ux-benchmark.md)。
 - [x] 输出新的产品视觉 brief：字体、字号层级、间距比例、语义色、背景层级、边框半径、图标风格、密度、动效、focus ring、文案语气和中英文排版规则。见 [Papyro UI 视觉 Brief](ui-visual-brief.md)。
 - [ ] 重新梳理信息架构，让 workspace 导航、文档编辑、大纲、命令、设置和多窗口体验像一个整体，而不是每个页面各自拼出来。
-- [ ] 设计并落地基于 CSS token 的 Dioxus 组件体系：`Button`、`IconButton`、`Input`、`Select`、`SegmentedControl`、`Switch`、`Dialog`、`Popover`、`DropdownMenu`、`ContextMenu`、`Tooltip`、`Toast/Message`、`Tabs`、`SidebarItem`、`TreeItem`、`Toolbar`、`EmptyState`、`Skeleton`。
+- [x] 盘点基于 CSS token 的 Dioxus 组件体系并定义目标基础组件：`Button`、`IconButton`、`Input`、`Select`、`SegmentedControl`、`Switch`、`Dialog`、`Popover`、`DropdownMenu`、`ContextMenu`、`Tooltip`、`Toast/Message`、`Tabs`、`SidebarItem`、`TreeItem`、`Toolbar`、`EmptyState`、`Skeleton`。见 [UI 架构与组件盘点](ui-architecture.md)。
 - [ ] 用可复用组件替换原生感强或一次性的样式，组件必须覆盖 hover、active、disabled、focus-visible、loading、destructive、compact、selected、checked 等状态。
 - [ ] 建立 app chrome 的布局基础设施：split panes、可调整侧栏、滚动容器、sticky toolbar、固定编辑操作区、窄窗口 overflow 规则和 tab 溢出规则。
 - [ ] 重做 Markdown 写作界面：安静的编辑画布、合理行宽、更成熟的标题/列表/表格/引用/代码/公式/Mermaid 样式，并保证 Preview 与 Hybrid 的视觉一致。

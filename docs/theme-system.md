@@ -49,12 +49,9 @@ When changing a token that is mirrored in an app asset, update both copies in th
 
 ## Component Primitives
 
-Shared UI surfaces live in `crates/ui/src/components/primitives.rs`. Use these before creating one-off controls:
+Shared UI surfaces live in `crates/ui/src/components/primitives.rs`. Use these before creating one-off controls.
 
-- `Button` and `IconButton`
-- `Select` and `SegmentedControl`
-- `Modal`, `ContextMenu`, `Tooltip`, and `Message`
-- `Tabs` and `FormField`
+See [UI Architecture And Component Inventory](ui-architecture.md) for the current primitive inventory, target component set, migration order, and one-off CSS rules.
 
 Behavior and accessibility should use mature open-source systems as references. Radix Primitives is the reference for keyboard and ARIA behavior, while shadcn/ui is the reference for copy-and-own composition and restrained visual hierarchy. Papyro does not depend on either React library directly.
 

@@ -49,12 +49,9 @@ flowchart TD
 
 ## 组件基础件
 
-共享 UI surface 放在 `crates/ui/src/components/primitives.rs`。新增界面前优先复用这些基础件：
+共享 UI surface 放在 `crates/ui/src/components/primitives.rs`。新增界面前优先复用这些基础件。
 
-- `Button` 和 `IconButton`
-- `Select` 和 `SegmentedControl`
-- `Modal`、`ContextMenu`、`Tooltip` 和 `Message`
-- `Tabs` 和 `FormField`
+当前基础组件盘点、目标组件清单、迁移顺序和一次性 CSS 规则见 [UI 架构与组件盘点](ui-architecture.md)。
 
 行为和可访问性参考成熟开源系统：Radix Primitives 用作键盘交互和 ARIA 行为参考，shadcn/ui 用作 copy-and-own 组合方式和克制视觉层级参考。Papyro 不直接依赖这两个 React 库。
 
