@@ -284,7 +284,7 @@ fn FileTreeNode(
                         depth_px: indent,
                         expanded: Some(is_expanded),
                         icon: folder_icon_kind(is_expanded),
-                        aria_label: None::<String>,
+                        accessible_label: None::<String>,
                         on_click: move |_| {
                             toggle_commands.toggle_expanded_path.call(toggle_path.clone());
                         },
@@ -395,7 +395,7 @@ fn FileTreeNode(
                         depth_px: indent + 18,
                         expanded: None::<bool>,
                         icon: TreeItemIconKind::Markdown,
-                        aria_label: Some(open_label),
+                        accessible_label: Some(open_label),
                         on_click: move |_| {
                             open_commands.select_path.call(open_node.path.clone());
                             open_commands.open_markdown.call(OpenMarkdownTarget {
