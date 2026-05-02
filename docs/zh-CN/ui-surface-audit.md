@@ -132,6 +132,7 @@
 
 - 能展示临时状态文本、字数和保存状态。
 - 最近布局调整后，它位于编辑器列下方。
+- footer 布局现在使用共享 `StatusStrip` 基础组件，左侧承载消息，右侧承载文档元信息。
 
 差距：
 
@@ -141,7 +142,7 @@
 
 改造决策：
 
-- 定义 `StatusStrip`：左侧 transient message、右侧文档统计、紧凑换行和优先级排序。
+- 继续完善 `StatusStrip`：紧凑换行和优先级排序。
 - 只有映射到真实产品状态时，才增加 error、warning、success、neutral 等 tone。
 
 ### 设置

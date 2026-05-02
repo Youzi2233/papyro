@@ -577,6 +577,22 @@ pub fn StatusMessage(message: String) -> Element {
 }
 
 #[component]
+pub fn StatusStrip(message: Option<String>, children: Element) -> Element {
+    rsx! {
+        footer { class: "mn-status-bar",
+            div { class: "mn-status-left",
+                if let Some(message) = message {
+                    if !message.is_empty() {
+                        StatusMessage { message }
+                    }
+                }
+            }
+            div { class: "mn-status-right", {children} }
+        }
+    }
+}
+
+#[component]
 pub fn Message(message: String, tone: StatusTone) -> Element {
     rsx! {
         div {

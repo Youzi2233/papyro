@@ -132,6 +132,7 @@ What works:
 
 - It shows transient status text, word count, and save states.
 - It stays under the editor column after the recent layout pass.
+- Footer layout now uses the shared `StatusStrip` primitive with left message and right document metadata slots.
 
 Gaps:
 
@@ -141,7 +142,7 @@ Gaps:
 
 Redesign decision:
 
-- Define `StatusStrip` with left transient message, right document stats, compact wrapping, and priority ordering.
+- Continue refining `StatusStrip` with compact wrapping and priority ordering.
 - Add status tones for error, warning, success, and neutral only when they map to real product states.
 
 ### Settings

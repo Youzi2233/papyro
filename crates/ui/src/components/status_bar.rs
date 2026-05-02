@@ -1,4 +1,4 @@
-use crate::components::primitives::{StatusIndicator, StatusMessage, StatusTone};
+use crate::components::primitives::{StatusIndicator, StatusStrip, StatusTone};
 use crate::context::use_app_context;
 use crate::i18n::{i18n_for, use_i18n};
 use crate::view_model::EditorViewModel;
@@ -20,20 +20,11 @@ pub fn StatusBar() -> Element {
     let items = status_bar_items(&editor_model, i18n.language());
 
     rsx! {
-        footer { class: "mn-status-bar",
-            div { class: "mn-status-left",
-                if let Some(msg) = &status_message {
-                    if !msg.is_empty() {
-                        StatusMessage { message: msg.clone() }
-                    }
-                }
-            }
-            div { class: "mn-status-right",
-                for item in items {
-                    StatusIndicator {
-                        label: item.label,
-                        tone: item.tone,
-                    }
+        StatusStrip { message: status_message,
+            for item in items {
+                StatusIndicator {
+                    label: item.label,
+                    tone: item.tone,
                 }
             }
         }

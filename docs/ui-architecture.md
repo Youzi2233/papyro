@@ -35,7 +35,7 @@ Rules:
 
 | Area | Current Components | Notes |
 | --- | --- | --- |
-| Primitives | `Button`, `IconButton`, `Select`, `Dropdown`, `SegmentedControl`, `Tabs`, `Modal`, `Menu`, `ContextMenu`, `MenuItem`, `Tooltip`, `Message`, `StatusMessage`, `StatusIndicator`, `FormField`, `Toggle`, `Slider`, `TextInput`, `ResultRow`, `SettingsLayout`, `SettingsNav`, `SettingsRow`, `DialogSection`, `TreeItemButton`, `TreeItemEditRow`, `EmptyState` | Good foundation, but still needs stronger state contracts, variants, keyboard behavior, and docs. |
+| Primitives | `Button`, `IconButton`, `Select`, `Dropdown`, `SegmentedControl`, `Tabs`, `Modal`, `Menu`, `ContextMenu`, `MenuItem`, `Tooltip`, `Message`, `StatusStrip`, `StatusMessage`, `StatusIndicator`, `FormField`, `Toggle`, `Slider`, `TextInput`, `ResultRow`, `SettingsLayout`, `SettingsNav`, `SettingsRow`, `DialogSection`, `TreeItemButton`, `TreeItemEditRow`, `EmptyState` | Good foundation, but still needs stronger state contracts, variants, keyboard behavior, and docs. |
 | App chrome | `Sidebar`, `FileTree`, `AppHeader`, `StatusBar`, `DesktopLayout`, `MobileLayout` | File-tree rows now use `TreeItem` primitives for visual state; sidebar footer/workspace rows still need a shared `SidebarItem`. |
 | Editor | `EditorPane`, `EditorChrome`, `EditorTabButton`, `OutlinePane`, `PreviewPane`, `EditorHost`, `FallbackEditor` | Needs stable chrome zones, tab overflow rules, outline behavior, and shared Markdown visual tokens. |
 | Modal surfaces | `SettingsModal`, `QuickOpenModal`, `CommandPaletteModal`, `SearchModal`, `TrashModal`, `RecoveryDraftsModal`, `RecoveryDraftCompareModal` | Should share dialog shells, result rows, empty states, loading states, and keyboard focus behavior. |
@@ -58,7 +58,7 @@ Rules:
 | `DropdownMenu` | Partial through `Menu` | Add trigger, alignment, keyboard handling, separators, icons, and shortcuts. |
 | `ContextMenu` | Exists | Keep as menu shell; share item model with dropdown menu. |
 | `Tooltip` | Exists | Add placement and delay policy if CSS-only tooltip becomes insufficient. |
-| `Toast` / `Message` | Partial | Separate inline status from transient toast. |
+| `Toast` / `Message` / `StatusStrip` | Partial | `StatusStrip` now owns the footer status layout; transient toast still needs a separate primitive. |
 | `Tabs` | Exists | Distinguish segmented tabs from document tab bar. |
 | `SidebarItem` | Missing | Needed to unify sidebar buttons, workspace rows, and navigation rows. |
 | `TreeItem` | Partial | `TreeItemButton`, `TreeItemEditRow`, and `TreeItemLabel` now own file/folder icons, expand state, selected/editing/drag/drop classes, and row label layout; keyboard model and context-menu scoping remain in file-tree code. |
@@ -79,7 +79,7 @@ Build these patterns from primitives before redesigning more screens:
 | `TreeRow` | File tree | Indent, disclosure, file/folder icon, selected/editing/drag/drop state, context menu, keyboard target. |
 | `ToolbarZone` | Editor chrome, app header | Fixed width or flexible zone with explicit overflow behavior. |
 | `DialogSection` | Settings, recovery, trash | Heading, body, optional footer, stable spacing. |
-| `InlineStatus` | Save state, preview policy, errors | Tone, icon/text, compact layout, accessible role. |
+| `InlineStatus` / `StatusStrip` | Save state, preview policy, errors, footer status | Tone, icon/text, compact layout, accessible role. |
 
 ## CSS Token Rules
 

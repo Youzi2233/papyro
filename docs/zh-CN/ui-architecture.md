@@ -35,7 +35,7 @@ flowchart TD
 
 | 区域 | 当前组件 | 说明 |
 | --- | --- | --- |
-| 基础组件 | `Button`、`IconButton`、`Select`、`Dropdown`、`SegmentedControl`、`Tabs`、`Modal`、`Menu`、`ContextMenu`、`MenuItem`、`Tooltip`、`Message`、`StatusMessage`、`StatusIndicator`、`FormField`、`Toggle`、`Slider`、`TextInput`、`ResultRow`、`SettingsLayout`、`SettingsNav`、`SettingsRow`、`DialogSection`、`TreeItemButton`、`TreeItemEditRow`、`EmptyState` | 已经有基础，但还需要更强的状态契约、variant、键盘行为和文档。 |
+| 基础组件 | `Button`、`IconButton`、`Select`、`Dropdown`、`SegmentedControl`、`Tabs`、`Modal`、`Menu`、`ContextMenu`、`MenuItem`、`Tooltip`、`Message`、`StatusStrip`、`StatusMessage`、`StatusIndicator`、`FormField`、`Toggle`、`Slider`、`TextInput`、`ResultRow`、`SettingsLayout`、`SettingsNav`、`SettingsRow`、`DialogSection`、`TreeItemButton`、`TreeItemEditRow`、`EmptyState` | 已经有基础，但还需要更强的状态契约、variant、键盘行为和文档。 |
 | App chrome | `Sidebar`、`FileTree`、`AppHeader`、`StatusBar`、`DesktopLayout`、`MobileLayout` | 文件树行已经使用 `TreeItem` 基础组件承载视觉状态；侧边栏 footer/workspace 行还需要共享 `SidebarItem`。 |
 | 编辑器 | `EditorPane`、`EditorChrome`、`EditorTabButton`、`OutlinePane`、`PreviewPane`、`EditorHost`、`FallbackEditor` | 需要稳定 chrome 分区、tab overflow 规则、大纲行为和共享 Markdown 视觉 token。 |
 | 弹窗界面 | `SettingsModal`、`QuickOpenModal`、`CommandPaletteModal`、`SearchModal`、`TrashModal`、`RecoveryDraftsModal`、`RecoveryDraftCompareModal` | 应共享 dialog shell、结果行、空状态、加载态和键盘焦点行为。 |
@@ -58,7 +58,7 @@ flowchart TD
 | `DropdownMenu` | 通过 `Menu` 部分存在 | 补 trigger、对齐、键盘行为、分割线、图标和快捷键。 |
 | `ContextMenu` | 已有 | 保留为 menu shell；和 dropdown menu 共享 item model。 |
 | `Tooltip` | 已有 | 如果 CSS-only tooltip 不够，再补 placement 和 delay 策略。 |
-| `Toast` / `Message` | 部分已有 | 区分 inline status 和 transient toast。 |
+| `Toast` / `Message` / `StatusStrip` | 部分已有 | `StatusStrip` 已拥有 footer 状态栏布局；transient toast 仍需要单独 primitive。 |
 | `Tabs` | 已有 | 区分 segmented tabs 和文档 tab bar。 |
 | `SidebarItem` | 缺失 | 统一侧边栏按钮、workspace row 和导航 row。 |
 | `TreeItem` | 部分已有 | `TreeItemButton`、`TreeItemEditRow` 和 `TreeItemLabel` 已拥有文件/文件夹图标、展开态、选中/编辑/拖拽/放置 class 和行标签布局；键盘模型和右键菜单作用域仍在文件树代码里。 |
@@ -79,7 +79,7 @@ flowchart TD
 | `TreeRow` | 文件树 | 缩进、展开图标、文件/文件夹图标、selected/editing/drag/drop 状态、右键菜单、键盘目标。 |
 | `ToolbarZone` | 编辑器 chrome、app header | 固定或弹性区域，并显式定义 overflow 行为。 |
 | `DialogSection` | 设置、恢复、回收站 | 标题、正文、可选 footer、稳定间距。 |
-| `InlineStatus` | 保存状态、预览策略、错误 | tone、图标/文本、紧凑布局、可访问 role。 |
+| `InlineStatus` / `StatusStrip` | 保存状态、预览策略、错误、footer 状态栏 | tone、图标/文本、紧凑布局、可访问 role。 |
 
 ## CSS Token 规则
 
