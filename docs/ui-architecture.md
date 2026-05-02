@@ -35,12 +35,12 @@ Rules:
 
 | Area | Current Components | Notes |
 | --- | --- | --- |
-| Primitives | `Button`, `IconButton`, `Select`, `Dropdown`, `SegmentedControl`, `Tabs`, `Modal`, `Menu`, `ContextMenu`, `MenuItem`, `Tooltip`, `Message`, `StatusMessage`, `StatusIndicator`, `FormField`, `Toggle`, `Slider`, `TextInput`, `EmptyState` | Good foundation, but still needs stronger state contracts, variants, keyboard behavior, and docs. |
+| Primitives | `Button`, `IconButton`, `Select`, `Dropdown`, `SegmentedControl`, `Tabs`, `Modal`, `Menu`, `ContextMenu`, `MenuItem`, `Tooltip`, `Message`, `StatusMessage`, `StatusIndicator`, `FormField`, `Toggle`, `Slider`, `TextInput`, `ResultRow`, `EmptyState` | Good foundation, but still needs stronger state contracts, variants, keyboard behavior, and docs. |
 | App chrome | `Sidebar`, `FileTree`, `AppHeader`, `StatusBar`, `DesktopLayout`, `MobileLayout` | Should migrate shared row behavior into `SidebarItem`, `TreeItem`, and layout primitives. |
 | Editor | `EditorPane`, `EditorChrome`, `EditorTabButton`, `OutlinePane`, `PreviewPane`, `EditorHost`, `FallbackEditor` | Needs stable chrome zones, tab overflow rules, outline behavior, and shared Markdown visual tokens. |
 | Modal surfaces | `SettingsModal`, `QuickOpenModal`, `CommandPaletteModal`, `SearchModal`, `TrashModal`, `RecoveryDraftsModal`, `RecoveryDraftCompareModal` | Should share dialog shells, result rows, empty states, loading states, and keyboard focus behavior. |
 | Settings | `SettingsSurface`, `SettingsNavButton`, `SettingSection`, `TagManagementSection`, `TagEditorRow`, `AboutMetaItem` | First candidate for controlled redesign because it exercises forms, navigation, and state binding. |
-| Search/commands | `CommandPaletteRow`, `QuickOpenRow`, `SearchResultRow`, `HighlightedText` | Should converge into a shared `ResultRow` or `CommandRow` pattern. |
+| Search/commands | `ResultRow`, `CommandPaletteRow`, `QuickOpenRow`, `SearchResultRow`, `HighlightedText` | Command, quick-open, and search rows now share the row shell; next work should add icons, shortcuts, richer metadata, and grouped states. |
 | Recovery/trash | `RecoveryDraftRow`, `RecoveryComparePanel`, `TrashNoteRow` | Should reuse future list-row and destructive-action patterns. |
 
 ## Target Primitive Set

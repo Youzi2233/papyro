@@ -35,12 +35,12 @@ flowchart TD
 
 | 区域 | 当前组件 | 说明 |
 | --- | --- | --- |
-| 基础组件 | `Button`、`IconButton`、`Select`、`Dropdown`、`SegmentedControl`、`Tabs`、`Modal`、`Menu`、`ContextMenu`、`MenuItem`、`Tooltip`、`Message`、`StatusMessage`、`StatusIndicator`、`FormField`、`Toggle`、`Slider`、`TextInput`、`EmptyState` | 已经有基础，但还需要更强的状态契约、variant、键盘行为和文档。 |
+| 基础组件 | `Button`、`IconButton`、`Select`、`Dropdown`、`SegmentedControl`、`Tabs`、`Modal`、`Menu`、`ContextMenu`、`MenuItem`、`Tooltip`、`Message`、`StatusMessage`、`StatusIndicator`、`FormField`、`Toggle`、`Slider`、`TextInput`、`ResultRow`、`EmptyState` | 已经有基础，但还需要更强的状态契约、variant、键盘行为和文档。 |
 | App chrome | `Sidebar`、`FileTree`、`AppHeader`、`StatusBar`、`DesktopLayout`、`MobileLayout` | 应把共享行行为迁移到 `SidebarItem`、`TreeItem` 和布局基础件。 |
 | 编辑器 | `EditorPane`、`EditorChrome`、`EditorTabButton`、`OutlinePane`、`PreviewPane`、`EditorHost`、`FallbackEditor` | 需要稳定 chrome 分区、tab overflow 规则、大纲行为和共享 Markdown 视觉 token。 |
 | 弹窗界面 | `SettingsModal`、`QuickOpenModal`、`CommandPaletteModal`、`SearchModal`、`TrashModal`、`RecoveryDraftsModal`、`RecoveryDraftCompareModal` | 应共享 dialog shell、结果行、空状态、加载态和键盘焦点行为。 |
 | 设置 | `SettingsSurface`、`SettingsNavButton`、`SettingSection`、`TagManagementSection`、`TagEditorRow`、`AboutMetaItem` | 是第一个受控重构候选，因为它覆盖表单、导航和状态绑定。 |
-| 搜索/命令 | `CommandPaletteRow`、`QuickOpenRow`、`SearchResultRow`、`HighlightedText` | 应收敛成共享 `ResultRow` 或 `CommandRow` pattern。 |
+| 搜索/命令 | `ResultRow`、`CommandPaletteRow`、`QuickOpenRow`、`SearchResultRow`、`HighlightedText` | 命令、快速打开和搜索结果已经共享行壳；下一步补图标、快捷键、更丰富元信息和分组状态。 |
 | 恢复/回收站 | `RecoveryDraftRow`、`RecoveryComparePanel`、`TrashNoteRow` | 应复用未来 list-row 和危险动作 pattern。 |
 
 ## 目标基础组件

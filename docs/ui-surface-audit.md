@@ -173,7 +173,7 @@ What works:
 
 Gaps:
 
-- Rows share CSS classes but not a reusable `ResultRow`/`CommandRow` component.
+- Rows now share a reusable `ResultRow` shell, but richer grouping, icons, shortcuts, loading, and error states still need one interaction grammar.
 - Empty/loading/error states are inconsistent.
 - Grouping, shortcuts, metadata, and highlight behavior should be standardized.
 
@@ -222,7 +222,7 @@ Redesign decision:
 ## Redesign Order
 
 1. **Settings:** lowest runtime risk, exercises forms, dialog shell, nav rail, controls, and state binding.
-2. **Result rows:** align search, quick open, and command palette before redesigning more modals.
+2. **Result rows:** build on the shared `ResultRow` shell to align icons, shortcuts, grouping, loading, and error states.
 3. **Tree rows:** extract sidebar file/folder/root row behavior.
 4. **Editor toolbar:** lock left/right zones and tab overflow into reusable rules.
 5. **Status and alerts:** normalize save, preview, search, recovery, and storage messages.

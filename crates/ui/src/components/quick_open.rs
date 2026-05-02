@@ -1,6 +1,6 @@
 use crate::action_labels::open_note_label;
 use crate::commands::{AppCommands, OpenMarkdownTarget};
-use crate::components::primitives::{Modal, TextInput};
+use crate::components::primitives::{Modal, ResultRow, ResultRowKind, TextInput};
 use crate::context::use_app_context;
 use crate::i18n::use_i18n;
 use crate::view_model::QuickOpenItemViewModel;
@@ -110,17 +110,16 @@ fn QuickOpenRow(
     let open_label = open_note_label(i18n.language(), &item.title);
 
     rsx! {
-        button {
-            class: if is_active { "mn-command-row active" } else { "mn-command-row" },
-            "aria-label": "{open_label}",
-            onclick: move |_| {
+        ResultRow {
+            label: open_label,
+            metadata: "MD".to_string(),
+            is_active,
+            kind: ResultRowKind::Default,
+            on_select: move |_| {
                 open_quick_item(commands.clone(), on_close, item_for_click.clone());
             },
-            span { class: "mn-command-row-main",
-                span { class: "mn-command-title", "{item.title}" }
-                span { class: "mn-command-path", "{item.path_label}" }
-            }
-            span { class: "mn-command-kind", "MD" }
+            span { class: "mn-command-title", "{item.title}" }
+            span { class: "mn-command-path", "{item.path_label}" }
         }
     }
 }

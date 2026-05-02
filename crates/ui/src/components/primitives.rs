@@ -14,6 +14,12 @@ pub enum StatusTone {
     Attention,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ResultRowKind {
+    Default,
+    Search,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SegmentedControlOption {
     pub label: String,
@@ -160,6 +166,15 @@ fn form_field_class(class_name: &str) -> String {
         "mn-form-field mn-setting-row".to_string()
     } else {
         format!("mn-form-field mn-setting-row {trimmed}")
+    }
+}
+
+fn result_row_class(kind: ResultRowKind, is_active: bool) -> &'static str {
+    match (kind, is_active) {
+        (ResultRowKind::Default, false) => "mn-command-row",
+        (ResultRowKind::Default, true) => "mn-command-row active",
+        (ResultRowKind::Search, false) => "mn-command-row mn-search-row",
+        (ResultRowKind::Search, true) => "mn-command-row mn-search-row active",
     }
 }
 
@@ -514,6 +529,26 @@ pub fn TextInput(
 }
 
 #[component]
+pub fn ResultRow(
+    label: String,
+    metadata: String,
+    is_active: bool,
+    kind: ResultRowKind,
+    on_select: EventHandler<()>,
+    children: Element,
+) -> Element {
+    rsx! {
+        button {
+            class: result_row_class(kind, is_active),
+            "aria-label": "{label}",
+            onclick: move |_| on_select.call(()),
+            span { class: "mn-command-row-main", {children} }
+            span { class: "mn-command-kind", "{metadata}" }
+        }
+    }
+}
+
+#[component]
 pub fn EmptyState(title: String, description: String) -> Element {
     rsx! {
         section { class: "mn-empty",
@@ -545,6 +580,26 @@ mod tests {
         assert_eq!(ButtonVariant::Default.class(), "mn-button");
         assert_eq!(ButtonVariant::Primary.class(), "mn-button primary");
         assert_eq!(ButtonVariant::Danger.class(), "mn-button danger");
+    }
+
+    #[test]
+    fn result_row_class_preserves_existing_row_classes() {
+        assert_eq!(
+            result_row_class(ResultRowKind::Default, false),
+            "mn-command-row"
+        );
+        assert_eq!(
+            result_row_class(ResultRowKind::Default, true),
+            "mn-command-row active"
+        );
+        assert_eq!(
+            result_row_class(ResultRowKind::Search, false),
+            "mn-command-row mn-search-row"
+        );
+        assert_eq!(
+            result_row_class(ResultRowKind::Search, true),
+            "mn-command-row mn-search-row active"
+        );
     }
 
     #[test]

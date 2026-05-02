@@ -1,6 +1,6 @@
 use crate::action_labels::open_note_label;
 use crate::commands::{AppCommands, OpenMarkdownTarget};
-use crate::components::primitives::{Modal, TextInput};
+use crate::components::primitives::{Modal, ResultRow, ResultRowKind, TextInput};
 use crate::context::use_app_context;
 use crate::i18n::{i18n_for, use_i18n};
 use crate::view_model::SearchResultRowViewModel;
@@ -121,44 +121,43 @@ fn SearchResultRow(
         .unwrap_or("MD");
 
     rsx! {
-        button {
-            class: if is_active { "mn-command-row mn-search-row active" } else { "mn-command-row mn-search-row" },
-            "aria-label": "{open_label}",
-            onclick: move |_| {
+        ResultRow {
+            label: open_label,
+            metadata: badge.to_string(),
+            is_active,
+            kind: ResultRowKind::Search,
+            on_select: move |_| {
                 open_search_result(
                     commands.clone(),
                     on_close,
                     path_for_click.clone(),
                 );
             },
-            span { class: "mn-command-row-main",
-                span { class: "mn-command-title",
-                    HighlightedText {
-                        text: result.title.clone(),
-                        highlights: result.title_highlights.clone(),
-                    }
+            span { class: "mn-command-title",
+                HighlightedText {
+                    text: result.title.clone(),
+                    highlights: result.title_highlights.clone(),
                 }
-                span { class: "mn-command-path",
-                    HighlightedText {
-                        text: result.relative_path_label.clone(),
-                        highlights: result.path_highlights.clone(),
-                    }
+            }
+            span { class: "mn-command-path",
+                HighlightedText {
+                    text: result.relative_path_label.clone(),
+                    highlights: result.path_highlights.clone(),
                 }
-                if let Some(result_match) = preview {
-                    span { class: "mn-search-snippet",
-                        if let Some(line) = result_match.line {
-                            span { class: "mn-search-line", "L{line}" }
-                        }
-                        span { class: "mn-search-excerpt",
-                            HighlightedText {
-                                text: result_match.snippet,
-                                highlights: result_match.highlights,
-                            }
+            }
+            if let Some(result_match) = preview {
+                span { class: "mn-search-snippet",
+                    if let Some(line) = result_match.line {
+                        span { class: "mn-search-line", "L{line}" }
+                    }
+                    span { class: "mn-search-excerpt",
+                        HighlightedText {
+                            text: result_match.snippet,
+                            highlights: result_match.highlights,
                         }
                     }
                 }
             }
-            span { class: "mn-command-kind", "{badge}" }
         }
     }
 }

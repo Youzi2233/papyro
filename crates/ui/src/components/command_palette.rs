@@ -1,5 +1,5 @@
 use crate::commands::{AppCommands, InsertMarkdownRequest, OpenMarkdownTarget};
-use crate::components::primitives::{Modal, TextInput};
+use crate::components::primitives::{Modal, ResultRow, ResultRowKind, TextInput};
 use crate::context::use_app_context;
 use crate::i18n::{i18n_for, use_i18n};
 use crate::perf::{perf_timer, trace_chrome_open_modal};
@@ -174,9 +174,12 @@ fn CommandPaletteRow(
     let kind = action.kind.clone();
 
     rsx! {
-        button {
-            class: if is_active { "mn-command-row active" } else { "mn-command-row" },
-            onclick: move |_| {
+        ResultRow {
+            label: action.title.clone(),
+            metadata: action.group.clone(),
+            is_active,
+            kind: ResultRowKind::Default,
+            on_select: move |_| {
                 execute_command_action(
                     commands.clone(),
                     on_settings,
@@ -185,11 +188,8 @@ fn CommandPaletteRow(
                     kind.clone(),
                 );
             },
-            span { class: "mn-command-row-main",
-                span { class: "mn-command-title", "{action.title}" }
-                span { class: "mn-command-path", "{action.detail}" }
-            }
-            span { class: "mn-command-kind", "{action.group}" }
+            span { class: "mn-command-title", "{action.title}" }
+            span { class: "mn-command-path", "{action.detail}" }
         }
     }
 }
