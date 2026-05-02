@@ -53,16 +53,17 @@ What works:
 - The sidebar now explains the current folder, supports root selection, and scopes blank-area behavior.
 - Resize min/max rules exist.
 - Brand, search, workspace root, create flow, file tree, and footer are visually grouped.
+- File and folder rows now share `TreeItemButton`, `TreeItemEditRow`, and `TreeItemLabel` primitives for icons and row state classes.
 
 Gaps:
 
-- File-tree rows, root rows, and footer rows are not a shared `TreeItem`/`SidebarItem` pattern.
+- Root rows and footer rows are not yet covered by a shared `SidebarItem` pattern.
 - Context menus exist but their item grammar is still surface-specific.
 - The tree still carries a lot of behavior in one file, which makes UI polish risky.
 
 Redesign decision:
 
-- Extract a `TreeItem` pattern with disclosure, icon, label, selected/current state, focus state, context-menu target, and row density.
+- Continue extracting the `TreeItem` pattern with current/focus variants, context-menu targets, and row density.
 - Keep root, folder, file, and blank-area menus intentionally different.
 - Sidebar actions should remain scoped to workspace navigation. App-wide actions belong in command palette or editor chrome.
 

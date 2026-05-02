@@ -53,16 +53,17 @@
 - 侧边栏已经说明当前目录、支持根目录选中，并能处理空白区域语义。
 - 已有 resize min/max 规则。
 - 品牌、搜索、workspace 根目录、新建流程、文件树、底部区域有视觉分组。
+- 文件和文件夹行现在共享 `TreeItemButton`、`TreeItemEditRow` 和 `TreeItemLabel` 基础组件来承载图标和行状态 class。
 
 差距：
 
-- 文件树行、根目录行、底部行还不是共享的 `TreeItem`/`SidebarItem` pattern。
+- 根目录行、底部行还没有共享 `SidebarItem` pattern。
 - 右键菜单存在，但菜单项语法仍是界面内定制。
 - 文件树仍承载大量行为，后续视觉微调风险较高。
 
 改造决策：
 
-- 抽出 `TreeItem` pattern，覆盖 disclosure、图标、标签、selected/current、focus、context-menu target 和行密度。
+- 继续抽出 `TreeItem` pattern，补 current/focus variants、context-menu target 和行密度。
 - 根目录、文件夹、文件、空白区域菜单必须刻意不同。
 - 侧边栏动作保持 workspace 导航范围。全局动作放命令面板或编辑器 chrome。
 

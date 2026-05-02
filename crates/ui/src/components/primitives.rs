@@ -40,6 +40,19 @@ pub enum ToolbarZoneKind {
     Fixed,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TreeItemKind {
+    Directory,
+    Note,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TreeItemIconKind {
+    Folder,
+    FolderOpen,
+    Markdown,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SegmentedControlOption {
     pub label: String,
@@ -244,6 +257,49 @@ fn settings_nav_button_class(active: bool, class_name: &str) -> String {
     append_class(base, class_name)
 }
 
+fn tree_item_class(
+    kind: TreeItemKind,
+    is_selected: bool,
+    is_editing: bool,
+    is_dragging: bool,
+    is_drop_target: bool,
+) -> String {
+    let kind_class = match kind {
+        TreeItemKind::Directory => "directory",
+        TreeItemKind::Note => "note",
+    };
+    let mut classes = vec!["mn-tree-row", kind_class];
+    if is_selected {
+        classes.push("active");
+    }
+    if is_editing {
+        classes.push("editing");
+    }
+    if is_dragging {
+        classes.push("dragging");
+    }
+    if is_drop_target {
+        classes.push("drop-target");
+    }
+    classes.join(" ")
+}
+
+fn tree_caret_class(is_expanded: bool) -> &'static str {
+    if is_expanded {
+        "mn-tree-caret expanded"
+    } else {
+        "mn-tree-caret"
+    }
+}
+
+fn tree_icon_class(kind: TreeItemIconKind) -> &'static str {
+    match kind {
+        TreeItemIconKind::Folder => "mn-tree-icon folder",
+        TreeItemIconKind::FolderOpen => "mn-tree-icon folder-open",
+        TreeItemIconKind::Markdown => "mn-tree-icon markdown",
+    }
+}
+
 fn append_class(base: &str, class_name: &str) -> String {
     let trimmed = class_name.trim();
     if trimmed.is_empty() {
@@ -382,6 +438,89 @@ pub fn SettingsRow(
             }
             div { class: "mn-form-control mn-setting-control", {children} }
         }
+    }
+}
+
+#[component]
+pub fn TreeItemButton(
+    kind: TreeItemKind,
+    label: String,
+    selected: bool,
+    dragging: bool,
+    drop_target: bool,
+    depth_px: u32,
+    expanded: Option<bool>,
+    icon: TreeItemIconKind,
+    aria_label: Option<String>,
+    on_click: EventHandler<MouseEvent>,
+    on_context_menu: EventHandler<MouseEvent>,
+    on_drag_start: EventHandler<DragEvent>,
+    on_drag_end: EventHandler<DragEvent>,
+    on_drag_over: EventHandler<DragEvent>,
+    on_drag_leave: EventHandler<DragEvent>,
+    on_drop: EventHandler<DragEvent>,
+    children: Element,
+) -> Element {
+    let class = tree_item_class(kind, selected, false, dragging, drop_target);
+    let style = format!("padding-left: {depth_px}px");
+
+    rsx! {
+        button {
+            class,
+            style,
+            role: "treeitem",
+            "aria-label": aria_label.as_deref().unwrap_or(&label),
+            "aria-selected": "{selected}",
+            "aria-expanded": expanded.map(|value| if value { "true" } else { "false" }),
+            draggable: true,
+            onclick: move |event| on_click.call(event),
+            oncontextmenu: move |event| on_context_menu.call(event),
+            ondragstart: move |event| on_drag_start.call(event),
+            ondragend: move |event| on_drag_end.call(event),
+            ondragover: move |event| on_drag_over.call(event),
+            ondragleave: move |event| on_drag_leave.call(event),
+            ondrop: move |event| on_drop.call(event),
+            if let Some(expanded) = expanded {
+                span { class: tree_caret_class(expanded), "aria-hidden": "true" }
+            }
+            span { class: tree_icon_class(icon), "aria-hidden": "true" }
+            {children}
+        }
+    }
+}
+
+#[component]
+pub fn TreeItemEditRow(
+    kind: TreeItemKind,
+    selected: bool,
+    depth_px: u32,
+    expanded: Option<bool>,
+    icon: TreeItemIconKind,
+    children: Element,
+) -> Element {
+    let class = tree_item_class(kind, selected, true, false, false);
+    let style = format!("padding-left: {depth_px}px");
+
+    rsx! {
+        div {
+            class,
+            style,
+            role: "treeitem",
+            "aria-selected": "{selected}",
+            "aria-expanded": expanded.map(|value| if value { "true" } else { "false" }),
+            if let Some(expanded) = expanded {
+                span { class: tree_caret_class(expanded), "aria-hidden": "true" }
+            }
+            span { class: tree_icon_class(icon), "aria-hidden": "true" }
+            {children}
+        }
+    }
+}
+
+#[component]
+pub fn TreeItemLabel(label: String) -> Element {
+    rsx! {
+        span { class: "mn-tree-label", "{label}" }
     }
 }
 
@@ -866,6 +1005,28 @@ mod tests {
         assert_eq!(
             settings_nav_button_class(false, ""),
             "mn-settings-nav-button"
+        );
+    }
+
+    #[test]
+    fn tree_item_helpers_reflect_visual_state() {
+        assert_eq!(
+            tree_item_class(TreeItemKind::Directory, true, false, true, true),
+            "mn-tree-row directory active dragging drop-target"
+        );
+        assert_eq!(
+            tree_item_class(TreeItemKind::Note, false, true, false, false),
+            "mn-tree-row note editing"
+        );
+        assert_eq!(tree_caret_class(false), "mn-tree-caret");
+        assert_eq!(tree_caret_class(true), "mn-tree-caret expanded");
+        assert_eq!(
+            tree_icon_class(TreeItemIconKind::FolderOpen),
+            "mn-tree-icon folder-open"
+        );
+        assert_eq!(
+            tree_icon_class(TreeItemIconKind::Markdown),
+            "mn-tree-icon markdown"
         );
     }
 

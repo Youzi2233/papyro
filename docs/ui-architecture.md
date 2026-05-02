@@ -35,8 +35,8 @@ Rules:
 
 | Area | Current Components | Notes |
 | --- | --- | --- |
-| Primitives | `Button`, `IconButton`, `Select`, `Dropdown`, `SegmentedControl`, `Tabs`, `Modal`, `Menu`, `ContextMenu`, `MenuItem`, `Tooltip`, `Message`, `StatusMessage`, `StatusIndicator`, `FormField`, `Toggle`, `Slider`, `TextInput`, `ResultRow`, `SettingsLayout`, `SettingsNav`, `SettingsRow`, `DialogSection`, `EmptyState` | Good foundation, but still needs stronger state contracts, variants, keyboard behavior, and docs. |
-| App chrome | `Sidebar`, `FileTree`, `AppHeader`, `StatusBar`, `DesktopLayout`, `MobileLayout` | Should migrate shared row behavior into `SidebarItem`, `TreeItem`, and layout primitives. |
+| Primitives | `Button`, `IconButton`, `Select`, `Dropdown`, `SegmentedControl`, `Tabs`, `Modal`, `Menu`, `ContextMenu`, `MenuItem`, `Tooltip`, `Message`, `StatusMessage`, `StatusIndicator`, `FormField`, `Toggle`, `Slider`, `TextInput`, `ResultRow`, `SettingsLayout`, `SettingsNav`, `SettingsRow`, `DialogSection`, `TreeItemButton`, `TreeItemEditRow`, `EmptyState` | Good foundation, but still needs stronger state contracts, variants, keyboard behavior, and docs. |
+| App chrome | `Sidebar`, `FileTree`, `AppHeader`, `StatusBar`, `DesktopLayout`, `MobileLayout` | File-tree rows now use `TreeItem` primitives for visual state; sidebar footer/workspace rows still need a shared `SidebarItem`. |
 | Editor | `EditorPane`, `EditorChrome`, `EditorTabButton`, `OutlinePane`, `PreviewPane`, `EditorHost`, `FallbackEditor` | Needs stable chrome zones, tab overflow rules, outline behavior, and shared Markdown visual tokens. |
 | Modal surfaces | `SettingsModal`, `QuickOpenModal`, `CommandPaletteModal`, `SearchModal`, `TrashModal`, `RecoveryDraftsModal`, `RecoveryDraftCompareModal` | Should share dialog shells, result rows, empty states, loading states, and keyboard focus behavior. |
 | Settings | `SettingsSurface`, `TagManagementSection`, `TagEditorRow`, `AboutMetaItem` | Settings now composes shared navigation, panel, row, and section primitives; tag management still needs richer row primitives. |
@@ -61,7 +61,7 @@ Rules:
 | `Toast` / `Message` | Partial | Separate inline status from transient toast. |
 | `Tabs` | Exists | Distinguish segmented tabs from document tab bar. |
 | `SidebarItem` | Missing | Needed to unify sidebar buttons, workspace rows, and navigation rows. |
-| `TreeItem` | Missing | Needed to own file/folder icons, expand state, keyboard state, selected state, and context-menu affordance. |
+| `TreeItem` | Partial | `TreeItemButton`, `TreeItemEditRow`, and `TreeItemLabel` now own file/folder icons, expand state, selected/editing/drag/drop classes, and row label layout; keyboard model and context-menu scoping remain in file-tree code. |
 | `Toolbar` / `ToolbarZone` | Partial | `EditorToolbar` and `ToolbarZone` now wrap the editor chrome's flexible tabs zone and fixed tools zone; split panes, resizable rails, and generic scroll containers still need broader adoption. |
 | `EmptyState` | Exists | Add compact, onboarding, error, and action variants. |
 | `Skeleton` | Missing | Needed for workspace load, search load, and future async windows. |
@@ -76,7 +76,7 @@ Build these patterns from primitives before redesigning more screens:
 | --- | --- | --- |
 | `SettingsRow` | Settings, future preferences windows | One-column label, optional description, control, and future helper/error slots. |
 | `ResultRow` | Search, quick open, command palette | Icon, primary text, secondary text, metadata, highlight, keyboard-current state. |
-| `TreeRow` | File tree | Indent, disclosure, file/folder icon, selected/current, context menu, keyboard target. |
+| `TreeRow` | File tree | Indent, disclosure, file/folder icon, selected/editing/drag/drop state, context menu, keyboard target. |
 | `ToolbarZone` | Editor chrome, app header | Fixed width or flexible zone with explicit overflow behavior. |
 | `DialogSection` | Settings, recovery, trash | Heading, body, optional footer, stable spacing. |
 | `InlineStatus` | Save state, preview policy, errors | Tone, icon/text, compact layout, accessible role. |
@@ -107,7 +107,7 @@ Acceptable one-off CSS:
 
 1. **Settings rows:** continue building on `SettingsRow`, `DialogSection`, `SettingsNav`, `Switch`, `Select`, and `SegmentedControl`; next work should add helper/error slots and migrate tag rows.
 2. **Result rows:** align command palette, quick open, and search result rows.
-3. **Tree rows:** extract file-tree row behavior into a reusable `TreeItem` pattern.
+3. **Tree rows:** continue building on `TreeItemButton` and `TreeItemEditRow`; next work should add focus/current variants and share scoped menu item models.
 4. **Editor chrome:** continue building on `EditorToolbar` and `ToolbarZone` for tab overflow, mode switch, outline action, and future overflow menu rules.
 5. **Empty/loading/error:** extend the new `InlineAlert` pattern, then add `Skeleton` and `ErrorState` before the next broad async UI pass.
 6. **Markdown surfaces:** apply shared Markdown tokens only after Hybrid selection and hit testing are stable.
