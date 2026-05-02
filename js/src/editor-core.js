@@ -319,6 +319,77 @@ export function relaxedPointerCoordsAdjustment(input = {}) {
   };
 }
 
+export function hybridPointerHitZone(input = {}) {
+  const eventY = finiteNumber(input.eventY);
+  const textTop = finiteNumber(input.textTop);
+  const textBottom = finiteNumber(input.textBottom);
+  const lineTop = finiteNumber(input.lineTop);
+  const lineBottom = finiteNumber(input.lineBottom);
+
+  if (
+    eventY === null ||
+    textTop === null ||
+    textBottom === null ||
+    lineTop === null ||
+    lineBottom === null ||
+    textBottom <= textTop ||
+    lineBottom <= lineTop
+  ) {
+    return "unknown";
+  }
+
+  if (eventY >= textTop && eventY <= textBottom) return "text";
+  if (eventY >= lineTop && eventY < textTop) return "gap_before_text";
+  if (eventY > textBottom && eventY <= lineBottom) return "gap_after_text";
+  return "outside";
+}
+
+export function hybridPointerSelectionTarget(input = {}) {
+  const zone = input.zone ?? hybridPointerHitZone(input);
+  const line = safeInteger(input.line);
+  const previousLine = safeInteger(input.previousLine);
+  const nextLine = safeInteger(input.nextLine);
+
+  if (zone === "text") return line;
+  if (zone === "gap_after_text") return nextLine ?? line;
+  if (zone === "gap_before_text") return previousLine ?? line;
+  return null;
+}
+
+export function hybridGlyphSelectionRect(input = {}) {
+  const selectionLeft = finiteNumber(input.selectionLeft);
+  const selectionRight = finiteNumber(input.selectionRight);
+  const textLeft = finiteNumber(input.textLeft);
+  const textRight = finiteNumber(input.textRight);
+  const textTop = finiteNumber(input.textTop);
+  const textBottom = finiteNumber(input.textBottom);
+
+  if (
+    selectionLeft === null ||
+    selectionRight === null ||
+    textLeft === null ||
+    textRight === null ||
+    textTop === null ||
+    textBottom === null ||
+    selectionRight <= selectionLeft ||
+    textRight <= textLeft ||
+    textBottom <= textTop
+  ) {
+    return null;
+  }
+
+  const left = Math.max(selectionLeft, textLeft);
+  const right = Math.min(selectionRight, textRight);
+  if (right <= left) return null;
+
+  return {
+    left,
+    right,
+    top: textTop,
+    bottom: textBottom,
+  };
+}
+
 export function hybridHeadingDecorationLevel(tier, markerRange, selectionRanges) {
   const level = hybridDecorationLevel("heading", tier);
   return level;

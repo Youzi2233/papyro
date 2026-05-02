@@ -114,6 +114,8 @@ Hybrid table widgets support direct cell editing, Tab/Shift+Tab cell navigation,
 
 Hybrid selection color is driven by the shared `--mn-hybrid-selection` token. Code blocks, inline code, links, table inputs, and Mermaid source editors should therefore use the same selection tone as normal editor text instead of mixing native browser blue with CodeMirror selection layers.
 
+Hybrid pointer behavior must distinguish glyphs from line-height whitespace. Hovering or clicking directly on text uses edit semantics for that line. Hovering the vertical gap below a glyph run stays in normal semantics and should target the next line when selecting. Hovering the gap above a glyph run should target the previous line. Selection backgrounds should be clipped to glyph/text rectangles and must not paint the whole line-height gap.
+
 ## Markdown Rendering
 
 Current Rust-side stack:

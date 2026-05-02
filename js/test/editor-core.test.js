@@ -28,6 +28,9 @@ import {
   hybridInputTraceContext,
   hybridDecorationPolicy,
   hybridDecorationPolicies,
+  hybridGlyphSelectionRect,
+  hybridPointerHitZone,
+  hybridPointerSelectionTarget,
   indentMarkdownListInView,
   inlineMarkdownMarkersTouched,
   insertMarkdownTableColumnAfter,
@@ -1055,6 +1058,79 @@ test("relaxed pointer hit testing keeps near-top clicks on the previous line", (
       rawLineTop: 0,
       previousBlockBottom: 0,
       defaultLineHeight: 24,
+    }),
+    null,
+  );
+});
+
+test("hybrid pointer hit zones distinguish glyphs from line gaps", () => {
+  const lineBox = {
+    line: 3,
+    previousLine: 2,
+    nextLine: 4,
+    lineTop: 100,
+    textTop: 106,
+    textBottom: 122,
+    lineBottom: 132,
+  };
+
+  assert.equal(
+    hybridPointerHitZone({ ...lineBox, eventY: 112 }),
+    "text",
+  );
+  assert.equal(
+    hybridPointerSelectionTarget({ ...lineBox, eventY: 112 }),
+    3,
+  );
+  assert.equal(
+    hybridPointerHitZone({ ...lineBox, eventY: 126 }),
+    "gap_after_text",
+  );
+  assert.equal(
+    hybridPointerSelectionTarget({ ...lineBox, eventY: 126 }),
+    4,
+  );
+  assert.equal(
+    hybridPointerHitZone({ ...lineBox, eventY: 103 }),
+    "gap_before_text",
+  );
+  assert.equal(
+    hybridPointerSelectionTarget({ ...lineBox, eventY: 103 }),
+    2,
+  );
+  assert.equal(
+    hybridPointerSelectionTarget({ ...lineBox, eventY: 90 }),
+    null,
+  );
+});
+
+test("hybrid glyph selection rect excludes line-height whitespace", () => {
+  assert.deepEqual(
+    hybridGlyphSelectionRect({
+      selectionLeft: 20,
+      selectionRight: 240,
+      textLeft: 48,
+      textRight: 132,
+      textTop: 106,
+      textBottom: 122,
+      lineTop: 100,
+      lineBottom: 132,
+    }),
+    {
+      left: 48,
+      right: 132,
+      top: 106,
+      bottom: 122,
+    },
+  );
+  assert.equal(
+    hybridGlyphSelectionRect({
+      selectionLeft: 140,
+      selectionRight: 240,
+      textLeft: 48,
+      textRight: 132,
+      textTop: 106,
+      textBottom: 122,
     }),
     null,
   );

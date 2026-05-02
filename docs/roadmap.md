@@ -145,7 +145,7 @@ Goal: make Hybrid mode useful for real writing, not just decorated source text.
 - [x] Improve paste replacement and Markdown input commands.
 - [x] Add Mermaid rendered/editing behavior.
 - [ ] Make Hybrid selection, cursor hit testing, and inline decorations feel consistent.
-- [ ] Define pointer behavior precisely: hovering text should enter edit semantics, hovering line-gap whitespace should stay in normal semantics, gap selection should target the next line's text, text-area selection should target the current line, and selection backgrounds should cover glyph runs instead of full line-gap blocks.
+- [x] Define pointer behavior precisely: hovering text should enter edit semantics, hovering line-gap whitespace should stay in normal semantics, gap selection should target the next line's text, text-area selection should target the current line, and selection backgrounds should cover glyph runs instead of full line-gap blocks.
 - [x] Make code block, inline code, links, lists, and Mermaid editing share consistent selection colors.
 - [ ] Treat cursor offset, wrong-line hit testing, missing selection background, accidental source reveal, and selection leaking into whitespace as architecture-level Hybrid defects, not isolated CSS bugs.
 - [x] Review mainstream editor architecture patterns before continuing Hybrid patches: CodeMirror decorations/widgets, ProseMirror/Tiptap node views, Lexical decorators, Slate void/inline nodes, and Typora-like source/render switching. See [Hybrid Editor Architecture Review](editor-hybrid-architecture.md).
