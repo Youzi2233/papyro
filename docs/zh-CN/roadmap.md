@@ -97,7 +97,7 @@ Trace 名：
 - [x] 用 Papyro 设计系统组件替换原生感强的 `select`、modal、message、menu、tooltip。
 - [x] 建立 `Button`、`IconButton`、`Select`、`SegmentedControl`、`Modal/Dialog`、`Message/Toast`、`ContextMenu`、`Tooltip`、`Tabs`、`FormField` 等基础组件。
 - [x] 参考成熟开源组件系统的行为和可访问性，例如 [Radix Primitives](https://github.com/radix-ui/primitives)；参考 [shadcn/ui](https://github.com/shadcn-ui/ui) 的二次封装思路，但不直接引入 React 依赖。
-- [ ] 桌面体验稳定后再做移动端布局 pass。
+- [x] 桌面体验稳定后再做移动端布局 pass。
 
 设置窗口目标：
 

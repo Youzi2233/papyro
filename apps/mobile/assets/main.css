@@ -230,6 +230,32 @@ small {
     gap: 18px;
 }
 
+.mn-shell-mobile .mn-header {
+    display: flex;
+    grid-template-columns: none;
+    min-width: 0;
+    gap: 10px;
+    padding: 10px 12px;
+}
+
+.mn-shell-mobile .mn-brand {
+    min-width: 0;
+}
+
+.mn-shell-mobile .mn-brand-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mn-shell-mobile .mn-header-spacer {
+    flex: 1 1 0;
+}
+
+.mn-shell-mobile .mn-header-actions {
+    flex: 0 0 auto;
+}
+
 .mn-header-spacer {
     min-width: 0;
 }
@@ -582,6 +608,7 @@ small {
 .mn-editor {
     flex: 1;
     min-width: 0;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -591,12 +618,169 @@ small {
     box-shadow: var(--mn-shadow);
 }
 
+.mn-tool-icon {
+    position: relative;
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    color: currentColor;
+}
+
+.mn-tool-icon::before,
+.mn-tool-icon::after {
+    content: "";
+    position: absolute;
+    box-sizing: border-box;
+}
+
+.mn-tool-icon.sidebar-open::before,
+.mn-tool-icon.sidebar-closed::before {
+    inset: 2px;
+    border: 1.5px solid currentColor;
+    border-radius: 3px;
+}
+
+.mn-tool-icon.sidebar-open::after {
+    left: 6px;
+    top: 3px;
+    bottom: 3px;
+    width: 1.5px;
+    border-radius: 999px;
+    background: currentColor;
+}
+
+.mn-tool-icon.sidebar-closed::after {
+    left: 3px;
+    top: 3px;
+    bottom: 3px;
+    width: 4px;
+    border-radius: 2px;
+    background: currentColor;
+    opacity: 0.35;
+}
+
+.mn-tool-icon.outline::before {
+    left: 3px;
+    top: 2px;
+    width: 10px;
+    height: 12px;
+    border: 1.5px solid currentColor;
+    border-radius: 2px;
+}
+
+.mn-tool-icon.outline::after {
+    left: 6px;
+    top: 5px;
+    width: 6px;
+    height: 6px;
+    background:
+        linear-gradient(currentColor, currentColor) 0 0 / 6px 1.5px no-repeat,
+        linear-gradient(currentColor, currentColor) 0 4px / 6px 1.5px no-repeat;
+}
+
+.mn-tool-icon.tab-left::before,
+.mn-tool-icon.tab-right::before {
+    left: 5px;
+    top: 4px;
+    width: 7px;
+    height: 7px;
+    border-left: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    transform: rotate(45deg);
+}
+
+.mn-tool-icon.tab-right::before {
+    left: 3px;
+    transform: rotate(-135deg);
+}
+
+.mn-editor-chrome {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    min-height: 44px;
+    padding: 7px 8px;
+    border-bottom: 1px solid var(--mn-border);
+    background: rgba(255, 255, 255, 0.92);
+    overflow: hidden;
+    container-type: inline-size;
+}
+
+.mn-editor-tabs-row,
+.mn-editor-tools {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.mn-editor-tools {
+    justify-content: flex-end;
+}
+
+.mn-editor-tool,
+.mn-tab-scroll-btn {
+    display: inline-grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 11px;
+    color: var(--mn-muted);
+    background: transparent;
+}
+
+.mn-editor-tool:hover,
+.mn-tab-scroll-btn:hover,
+.mn-editor-tool.active {
+    background: var(--mn-accent-wash);
+    color: var(--mn-accent-dark);
+}
+
+.mn-editor-tool:focus-visible,
+.mn-tab-scroll-btn:focus-visible,
+.mn-view-mode-option:focus-visible {
+    outline: 0;
+    box-shadow: var(--mn-ring-focus);
+}
+
+.mn-editor-tool:disabled,
+.mn-view-mode-option:disabled {
+    opacity: 0.44;
+    cursor: not-allowed;
+}
+
+.mn-tab-scroll-btn {
+    display: none;
+    flex: 0 0 26px;
+}
+
+.mn-editor-tabs-row.overflowing .mn-tab-scroll-btn {
+    display: grid;
+}
+
 .mn-tabbar {
     display: flex;
-    gap: 8px;
-    padding: 12px;
-    border-bottom: 1px solid var(--mn-border);
+    align-items: center;
+    flex: 1 1 0;
+    gap: 5px;
+    min-width: 0;
+    min-height: 30px;
     overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+}
+
+.mn-tabbar::-webkit-scrollbar {
+    display: none;
+}
+
+.mn-tabbar-placeholder {
+    color: var(--mn-muted);
+    font-size: 13px;
+    white-space: nowrap;
 }
 
 .mn-tab {
@@ -606,6 +790,7 @@ small {
     border-radius: 999px;
     background: transparent;
     color: var(--mn-muted);
+    flex: 0 0 auto;
     cursor: pointer;
     padding: 8px 13px;
 }
@@ -649,12 +834,63 @@ small {
     color: var(--mn-panel);
 }
 
+.mn-view-mode-switch {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+    gap: 2px;
+    height: 30px;
+    padding: 2px;
+    border: 1px solid var(--mn-border);
+    border-radius: 12px;
+    background: rgba(247, 247, 244, 0.92);
+}
+
+.mn-view-mode-option {
+    height: 24px;
+    padding: 0 8px;
+    border-radius: 9px;
+    color: var(--mn-muted);
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.mn-view-mode-option.active {
+    background: var(--mn-panel);
+    color: var(--mn-accent-dark);
+    box-shadow: 0 1px 8px rgba(23, 26, 22, 0.08);
+}
+
+@container (max-width: 520px) {
+    .mn-view-mode-option {
+        width: 24px;
+        padding: 0;
+        font-size: 0;
+    }
+
+    .mn-view-mode-option::before {
+        font-size: 12px;
+    }
+
+    .mn-view-mode-option:nth-child(1)::before {
+        content: "S";
+    }
+
+    .mn-view-mode-option:nth-child(2)::before {
+        content: "H";
+    }
+
+    .mn-view-mode-option:nth-child(3)::before {
+        content: "P";
+    }
+}
+
 .mn-document {
     display: flex;
     flex: 1;
     min-height: 0;
     flex-direction: column;
-    padding: 30px clamp(22px, 5vw, 70px);
+    padding: clamp(14px, 4vw, 24px);
 }
 
 .mn-document-main {
@@ -906,6 +1142,7 @@ small {
     min-height: 0;
     gap: 12px;
     padding: 12px;
+    overflow: hidden;
 }
 
 .mn-mobile-toolbar,
@@ -916,10 +1153,29 @@ small {
     gap: 8px;
 }
 
+.mn-mobile-toolbar {
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+}
+
+.mn-mobile-toolbar::-webkit-scrollbar {
+    display: none;
+}
+
+.mn-mobile-toolbar .mn-button {
+    flex: 0 0 auto;
+    white-space: nowrap;
+}
+
 .mn-mobile-browser {
     display: flex;
     flex-direction: column;
+    flex: 0 1 auto;
     min-height: 0;
+    max-height: min(42vh, 380px);
     border: 1px solid var(--mn-border);
     border-radius: 24px;
     background: rgba(255, 255, 255, 0.9);
@@ -973,6 +1229,7 @@ small {
     flex: 1;
     padding: 0;
     min-height: 0;
+    overflow: hidden;
 }
 
 .mn-status-bar {
@@ -1438,6 +1695,10 @@ small {
 
     .mn-workbench {
         padding: 10px;
+    }
+
+    .mn-workbench-mobile {
+        padding: 0;
     }
 
     .mn-mobile-browser-header,
