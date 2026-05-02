@@ -8,6 +8,13 @@ pub enum ButtonVariant {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ButtonState {
+    Enabled,
+    Disabled,
+    Loading,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StatusTone {
     Default,
     Saving,
@@ -79,6 +86,12 @@ impl ButtonVariant {
             Self::Primary => "mn-button primary",
             Self::Danger => "mn-button danger",
         }
+    }
+}
+
+impl ButtonState {
+    fn is_disabled(self) -> bool {
+        matches!(self, Self::Disabled | Self::Loading)
     }
 }
 
@@ -199,6 +212,16 @@ fn inline_alert_class(tone: InlineAlertTone, class_name: &str) -> String {
     }
 }
 
+fn action_button_class(variant: ButtonVariant, class_name: &str) -> String {
+    let base = variant.class();
+    let trimmed = class_name.trim();
+    if trimmed.is_empty() {
+        base.to_string()
+    } else {
+        format!("{base} {trimmed}")
+    }
+}
+
 #[component]
 pub fn Button(
     label: String,
@@ -214,6 +237,32 @@ pub fn Button(
             disabled,
             onclick: move |_| on_click.call(()),
             "{label}"
+        }
+    }
+}
+
+#[component]
+pub fn ActionButton(
+    label: String,
+    variant: ButtonVariant,
+    state: ButtonState,
+    icon_class: Option<String>,
+    class_name: String,
+    on_click: EventHandler<()>,
+) -> Element {
+    let class = action_button_class(variant, &class_name);
+    let is_loading = state == ButtonState::Loading;
+
+    rsx! {
+        button {
+            class,
+            disabled: state.is_disabled(),
+            "aria-busy": if is_loading { "true" } else { "false" },
+            onclick: move |_| on_click.call(()),
+            if let Some(icon_class) = icon_class {
+                span { class: "{icon_class}", "aria-hidden": "true" }
+            }
+            span { "{label}" }
         }
     }
 }
@@ -614,6 +663,22 @@ mod tests {
         assert_eq!(ButtonVariant::Default.class(), "mn-button");
         assert_eq!(ButtonVariant::Primary.class(), "mn-button primary");
         assert_eq!(ButtonVariant::Danger.class(), "mn-button danger");
+    }
+
+    #[test]
+    fn button_state_disables_blocking_states() {
+        assert!(!ButtonState::Enabled.is_disabled());
+        assert!(ButtonState::Disabled.is_disabled());
+        assert!(ButtonState::Loading.is_disabled());
+    }
+
+    #[test]
+    fn action_button_class_extends_variant_class() {
+        assert_eq!(
+            action_button_class(ButtonVariant::Primary, "wide"),
+            "mn-button primary wide"
+        );
+        assert_eq!(action_button_class(ButtonVariant::Default, ""), "mn-button");
     }
 
     #[test]

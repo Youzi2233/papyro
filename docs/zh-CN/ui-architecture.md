@@ -47,7 +47,7 @@ flowchart TD
 
 | 基础组件 | 状态 | 需要补齐 |
 | --- | --- | --- |
-| `Button` | 已有 | 增加 size、loading、前后图标和更清晰的 variant 命名。 |
+| `Button` / `ActionButton` | 部分已有 | `ActionButton` 已支持复用图标和 loading/disabled 状态；下一步补尺寸 variant 并迁移剩余原生按钮。 |
 | `IconButton` | 已有 | 增加 selected/current、disabled、destructive、compact 和 tooltip placement。 |
 | `Input` / `TextInput` | 部分已有 | 收敛成一个组件族，支持 label、error、disabled、inline action。 |
 | `Select` | 已有 | 增加键盘导航、必要时支持 option group、增加尺寸 variant。 |

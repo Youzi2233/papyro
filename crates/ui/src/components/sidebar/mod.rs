@@ -1,7 +1,9 @@
 pub mod file_tree;
 
 use crate::commands::FileTarget;
-use crate::components::primitives::{ContextMenu, MenuItem};
+use crate::components::primitives::{
+    ActionButton, ButtonState, ButtonVariant, ContextMenu, MenuItem,
+};
 use crate::context::use_app_context;
 use crate::i18n::use_i18n;
 use crate::perf::{perf_timer, trace_sidebar_resize};
@@ -240,30 +242,32 @@ pub fn Sidebar(on_search: EventHandler<()>, on_settings: EventHandler<()>) -> El
             FileTree { sort_mode: tree_sort() }
 
             div { class: "mn-sidebar-footer",
-                button {
-                    class: "mn-button primary mn-sidebar-new",
-                    title: i18n.text("New note in current folder", "在当前目录中新建笔记"),
-                    disabled: !has_workspace,
-                    onclick: move |_| {
+                ActionButton {
+                    label: create_action_label.to_string(),
+                    variant: ButtonVariant::Primary,
+                    state: if has_workspace { ButtonState::Enabled } else { ButtonState::Disabled },
+                    icon_class: Some(create_action_icon_class.to_string()),
+                    class_name: "mn-sidebar-new".to_string(),
+                    on_click: move |_| {
                         show_create.set(!show_create());
                     },
-                    span { class: "{create_action_icon_class}", "aria-hidden": "true" }
-                    span { "{create_action_label}" }
                 }
                 div { class: "mn-sidebar-footer-tools",
-                    button {
-                        class: "mn-button",
-                        title: i18n.text("Reload workspace", "重新加载工作区"),
-                        disabled: !has_workspace,
-                        onclick: move |_| commands.refresh_workspace.call(()),
-                        span { class: "mn-button-icon refresh", "aria-hidden": "true" }
-                        span { {i18n.text("Refresh", "刷新")} }
+                    ActionButton {
+                        label: i18n.text("Refresh", "刷新").to_string(),
+                        variant: ButtonVariant::Default,
+                        state: if has_workspace { ButtonState::Enabled } else { ButtonState::Disabled },
+                        icon_class: Some("mn-button-icon refresh".to_string()),
+                        class_name: String::new(),
+                        on_click: move |_| commands.refresh_workspace.call(()),
                     }
-                    button {
-                        class: "mn-button",
-                        onclick: move |_| commands.open_workspace.call(()),
-                        span { class: "mn-button-icon workspace", "aria-hidden": "true" }
-                        span { "{workspace_action_label}" }
+                    ActionButton {
+                        label: workspace_action_label.to_string(),
+                        variant: ButtonVariant::Default,
+                        state: ButtonState::Enabled,
+                        icon_class: Some("mn-button-icon workspace".to_string()),
+                        class_name: String::new(),
+                        on_click: move |_| commands.open_workspace.call(()),
                     }
                 }
             }
