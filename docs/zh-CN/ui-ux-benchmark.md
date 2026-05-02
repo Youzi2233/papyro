@@ -89,6 +89,7 @@ flowchart TD
 - [x] 盘点现有 Dioxus 组件，并映射到目标基础组件清单。见 [UI 架构与组件盘点](ui-architecture.md)。
 - [x] 增加 CSS token 审计：裸色值、一次性间距、重复组件 selector。见 [UI Token 审计](ui-token-audit.md)。
 - [x] 定义 app 信息架构，覆盖 workspace 导航、编辑器 chrome、大纲、命令、设置、响应式行为和后续多窗口流程。见 [UI 信息架构](ui-information-architecture.md)。
+- [x] 审计核心 UI 界面，并把改造风险拆成逐界面的工作清单。见 [UI 界面审计](ui-surface-audit.md)。
 - [ ] 以设置页作为第一个受控界面，用新基础组件规则重做。
 - [ ] 以编辑器 chrome 和 tab overflow 作为第二个受控界面重做。
 - [ ] 在手工 UI smoke checklist 中加入窄窗口和暗色模式截图。

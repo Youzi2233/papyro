@@ -149,7 +149,7 @@ Reference direction:
 
 Design work:
 
-- [ ] Audit every primary surface: desktop shell, sidebar, editor header, tab bar, outline, status bar, settings, search, quick open, command palette, trash, recovery, empty states, loading states, and error states.
+- [x] Audit every primary surface: desktop shell, sidebar, editor header, tab bar, outline, status bar, settings, search, quick open, command palette, trash, recovery, empty states, loading states, and error states. See [UI Surface Audit](ui-surface-audit.md).
 - [x] Create a benchmark and gap-analysis document with source links, screenshots, interaction notes, and concrete Papyro redesign decisions before changing the main CSS. See [UI/UX Benchmark And Redesign Decisions](ui-ux-benchmark.md).
 - [x] Define a new product visual brief: typography, spacing scale, color roles, surface elevation, border radius, icon style, density, motion, focus rings, and copy tone. See [Papyro UI Visual Brief](ui-visual-brief.md).
 - [x] Redesign the app information architecture so workspace navigation, document editing, outline, commands, and settings feel cohesive instead of assembled screen by screen. See [UI Information Architecture](ui-information-architecture.md).

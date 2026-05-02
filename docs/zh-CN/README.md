@@ -18,6 +18,7 @@
 | 定义视觉设计规则 | [UI 视觉 Brief](ui-visual-brief.md) |
 | 理解 UI 架构 | [UI 架构与组件盘点](ui-architecture.md) |
 | 理解 UI 信息架构 | [UI 信息架构](ui-information-architecture.md) |
+| 审计 UI 界面 | [UI 界面审计](ui-surface-audit.md) |
 | 审计 CSS token | [UI Token 审计](ui-token-audit.md) |
 | 更新 app 图标 | [App icons](app-icons.md) |
 | 保持交互性能 | [性能预算](performance-budget.md) |

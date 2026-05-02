@@ -128,7 +128,7 @@ flowchart LR
 
 设计工作：
 
-- [ ] 审计所有核心界面：桌面壳、侧边栏、编辑器头部、tab bar、大纲、状态栏、设置、搜索、快速打开、命令面板、回收站、恢复、空状态、加载态和错误态。
+- [x] 审计所有核心界面：桌面壳、侧边栏、编辑器头部、tab bar、大纲、状态栏、设置、搜索、快速打开、命令面板、回收站、恢复、空状态、加载态和错误态。见 [UI 界面审计](ui-surface-audit.md)。
 - [x] 在改主 CSS 前先创建 benchmark 和 gap-analysis 文档，包含来源链接、截图、交互记录和 Papyro 的明确改版决策。见 [UI/UX 对标与改版决策](ui-ux-benchmark.md)。
 - [x] 输出新的产品视觉 brief：字体、字号层级、间距比例、语义色、背景层级、边框半径、图标风格、密度、动效、focus ring、文案语气和中英文排版规则。见 [Papyro UI 视觉 Brief](ui-visual-brief.md)。
 - [x] 重新梳理信息架构，让 workspace 导航、文档编辑、大纲、命令、设置和多窗口体验像一个整体，而不是每个页面各自拼出来。见 [UI 信息架构](ui-information-architecture.md)。
