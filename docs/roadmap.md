@@ -135,6 +135,38 @@ flowchart LR
 
 The settings window should be a process-level tool window. It should update live settings without forcing the main editor window to remount.
 
+## Phase 3.5 - UI/UX System Redesign
+
+Goal: make Papyro look deliberately designed, not demo-like or AI-generated.
+
+Reference direction:
+
+- Benchmark top Markdown and knowledge products before redesigning: Feishu Docs, Yuque, Notion Docs, Obsidian, and other polished 2026-era enterprise tools.
+- Study modern enterprise UI systems such as Linear and Fluent UI for density, hierarchy, keyboard-first flows, component states, and accessibility discipline.
+- Keep Papyro's own identity: local-first Markdown, calm writing, fast workspace navigation, and professional desktop ergonomics.
+- Use references as quality benchmarks, not direct proprietary copies. Extract principles for navigation, writing flow, component states, density, and accessibility.
+- Produce a comparison matrix before implementation: workspace navigation, editor chrome, block insertion, Markdown rendering, outline, search, command palette, settings, empty/loading/error states, keyboard paths, themes, and narrow-window behavior.
+
+Design work:
+
+- [ ] Audit every primary surface: desktop shell, sidebar, editor header, tab bar, outline, status bar, settings, search, quick open, command palette, trash, recovery, empty states, loading states, and error states.
+- [ ] Create a benchmark and gap-analysis document with source links, screenshots, interaction notes, and concrete Papyro redesign decisions before changing the main CSS.
+- [ ] Define a new product visual brief: typography, spacing scale, color roles, surface elevation, border radius, icon style, density, motion, focus rings, and copy tone.
+- [ ] Redesign the app information architecture so workspace navigation, document editing, outline, commands, and settings feel cohesive instead of assembled screen by screen.
+- [ ] Build a Dioxus-first component system over CSS tokens: `Button`, `IconButton`, `Input`, `Select`, `SegmentedControl`, `Switch`, `Dialog`, `Popover`, `DropdownMenu`, `ContextMenu`, `Tooltip`, `Toast/Message`, `Tabs`, `SidebarItem`, `TreeItem`, `Toolbar`, `EmptyState`, and `Skeleton`.
+- [ ] Replace native-looking controls and one-off CSS with reusable primitives that own hover, active, disabled, focus-visible, loading, destructive, and compact states.
+- [ ] Create layout primitives for app chrome: split panes, resizable rails, scroll containers, sticky toolbars, fixed editor action zones, and responsive overflow rules.
+- [ ] Make Markdown writing surfaces visually match mature editors: quiet canvas, readable measure, balanced margins, polished code/table/callout styles, and consistent Preview/Hybrid typography.
+- [ ] Add design QA artifacts: component inventory, before/after screenshots, desktop narrow-width screenshots, dark-mode screenshots, contrast checks, keyboard navigation checks, and CSS line-budget checks.
+- [ ] Document the new UI architecture so future contributors know where to add components, where tokens live, and when one-off CSS is forbidden.
+
+Acceptance bar:
+
+- Papyro should feel closer to a serious desktop knowledge tool than a prototype.
+- Screens must not rely on generic gradients, noisy cards, random colors, or decorative filler.
+- Components must be reusable, accessible, keyboard-friendly, and visually coherent in light and dark themes.
+- Layout must remain stable when the window narrows, tabs overflow, long filenames appear, or dialogs switch sections.
+
 ## Phase 4 - Markdown Editing Experience
 
 Goal: make Hybrid mode useful for real writing, not just decorated source text.

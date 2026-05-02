@@ -114,6 +114,38 @@ flowchart LR
     storage --> runtime
 ```
 
+## Phase 3.5 - UI/UX 体系重构
+
+目标：让 Papyro 看起来像经过专业设计的桌面知识工具，而不是 demo 级界面或 AI 味很重的拼装界面。
+
+参考方向：
+
+- 重做前先系统对标顶级 Markdown 和知识库产品：飞书文档、语雀、Notion Docs、Obsidian、Typora，以及其它 2026 年仍然有代表性的企业级文档工具。
+- 重点研究现代企业级 UI 系统，例如 Linear 和 Fluent UI：信息密度、视觉层级、键盘优先路径、组件状态、可访问性、深浅色主题和响应式规则。
+- 保持 Papyro 自己的定位：本地优先 Markdown、安静写作、快速 workspace 导航、专业桌面端效率，而不是照搬云协作文档产品。
+- 参考对象只作为质量标尺，不直接复制专有产品。要抽取导航、写作流、组件状态、信息密度和可访问性原则。
+- 实现前先产出对比矩阵：workspace 导航、编辑器 chrome、block 插入、Markdown 渲染、大纲、搜索、命令面板、设置、空/加载/错误态、键盘路径、主题和窄窗口行为。
+
+设计工作：
+
+- [ ] 审计所有核心界面：桌面壳、侧边栏、编辑器头部、tab bar、大纲、状态栏、设置、搜索、快速打开、命令面板、回收站、恢复、空状态、加载态和错误态。
+- [ ] 在改主 CSS 前先创建 benchmark 和 gap-analysis 文档，包含来源链接、截图、交互记录和 Papyro 的明确改版决策。
+- [ ] 输出新的产品视觉 brief：字体、字号层级、间距比例、语义色、背景层级、边框半径、图标风格、密度、动效、focus ring、文案语气和中英文排版规则。
+- [ ] 重新梳理信息架构，让 workspace 导航、文档编辑、大纲、命令、设置和多窗口体验像一个整体，而不是每个页面各自拼出来。
+- [ ] 设计并落地基于 CSS token 的 Dioxus 组件体系：`Button`、`IconButton`、`Input`、`Select`、`SegmentedControl`、`Switch`、`Dialog`、`Popover`、`DropdownMenu`、`ContextMenu`、`Tooltip`、`Toast/Message`、`Tabs`、`SidebarItem`、`TreeItem`、`Toolbar`、`EmptyState`、`Skeleton`。
+- [ ] 用可复用组件替换原生感强或一次性的样式，组件必须覆盖 hover、active、disabled、focus-visible、loading、destructive、compact、selected、checked 等状态。
+- [ ] 建立 app chrome 的布局基础设施：split panes、可调整侧栏、滚动容器、sticky toolbar、固定编辑操作区、窄窗口 overflow 规则和 tab 溢出规则。
+- [ ] 重做 Markdown 写作界面：安静的编辑画布、合理行宽、更成熟的标题/列表/表格/引用/代码/公式/Mermaid 样式，并保证 Preview 与 Hybrid 的视觉一致。
+- [ ] 产出设计 QA 资产：组件清单、改版前后截图、窄窗口截图、暗色模式截图、对比度检查、键盘导航检查、CSS 行数预算检查。
+- [ ] 更新 UI 架构文档，明确组件放在哪里、token 怎么命名、什么情况下禁止新增一次性 CSS、Dioxus 组件如何保持可维护。
+
+验收标准：
+
+- Papyro 应该更接近严肃的桌面知识工具，而不是原型应用。
+- 界面不能依赖泛滥的渐变、噪音卡片、随机色值或装饰性填充来显得“丰富”。
+- 组件必须可复用、可访问、键盘友好，并且在浅色和深色主题下保持一致。
+- 窗口变窄、tab 溢出、长文件名、设置分区切换、对话框内容变化时，布局不能跳动或把操作区挤出可视范围。
+
 ## Phase 4 - Markdown 编辑体验
 
 - [x] 增加 Rust block 分析：标题、列表、表格、代码、数学公式、Mermaid。
