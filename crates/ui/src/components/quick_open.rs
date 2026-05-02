@@ -1,6 +1,8 @@
 use crate::action_labels::open_note_label;
 use crate::commands::{AppCommands, OpenMarkdownTarget};
-use crate::components::primitives::{Modal, ResultRow, ResultRowKind, TextInput};
+use crate::components::primitives::{
+    InlineAlert, InlineAlertTone, Modal, ResultRow, ResultRowKind, TextInput,
+};
 use crate::context::use_app_context;
 use crate::i18n::use_i18n;
 use crate::view_model::QuickOpenItemViewModel;
@@ -76,12 +78,14 @@ pub fn QuickOpenModal(on_close: EventHandler<()>) -> Element {
                 }
                 div { class: "mn-command-list",
                     if filtered.is_empty() {
-                        div { class: "mn-command-empty",
-                            if all_items.is_empty() {
-                                {i18n.text("No notes in this workspace", "当前工作区没有笔记")}
+                        InlineAlert {
+                            message: if all_items.is_empty() {
+                                i18n.text("No notes in this workspace", "当前工作区没有笔记").to_string()
                             } else {
-                                {i18n.text("No matching notes", "没有匹配的笔记")}
-                            }
+                                i18n.text("No matching notes", "没有匹配的笔记").to_string()
+                            },
+                            tone: InlineAlertTone::Neutral,
+                            class_name: "mn-command-empty".to_string(),
                         }
                     } else {
                         for index in 0..filtered.len().min(QUICK_OPEN_LIMIT) {

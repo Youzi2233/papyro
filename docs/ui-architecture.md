@@ -65,7 +65,7 @@ Rules:
 | `Toolbar` | Missing | Needed for editor chrome and fixed action zones. |
 | `EmptyState` | Exists | Add compact, onboarding, error, and action variants. |
 | `Skeleton` | Missing | Needed for workspace load, search load, and future async windows. |
-| `InlineAlert` / `ErrorState` | Missing | Needed for preview errors, settings validation, recovery, and storage failures. |
+| `InlineAlert` / `ErrorState` | Partial | `InlineAlert` now covers preview notices and command/search empty states; `ErrorState` is still needed for larger blocking failures. |
 
 ## Product Patterns
 
@@ -108,7 +108,7 @@ Acceptable one-off CSS:
 2. **Result rows:** align command palette, quick open, and search result rows.
 3. **Tree rows:** extract file-tree row behavior into a reusable `TreeItem` pattern.
 4. **Editor chrome:** split tab overflow, mode switch, outline action, and overflow menu into `ToolbarZone` rules.
-5. **Empty/loading/error:** add `Skeleton`, `InlineAlert`, and `ErrorState` before the next broad async UI pass.
+5. **Empty/loading/error:** extend the new `InlineAlert` pattern, then add `Skeleton` and `ErrorState` before the next broad async UI pass.
 6. **Markdown surfaces:** apply shared Markdown tokens only after Hybrid selection and hit testing are stable.
 
 ## Review Checklist

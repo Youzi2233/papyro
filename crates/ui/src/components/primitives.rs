@@ -15,6 +15,13 @@ pub enum StatusTone {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum InlineAlertTone {
+    Neutral,
+    Attention,
+    Danger,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ResultRowKind {
     Default,
     Search,
@@ -178,6 +185,20 @@ fn result_row_class(kind: ResultRowKind, is_active: bool) -> &'static str {
     }
 }
 
+fn inline_alert_class(tone: InlineAlertTone, class_name: &str) -> String {
+    let tone_class = match tone {
+        InlineAlertTone::Neutral => "mn-inline-alert neutral",
+        InlineAlertTone::Attention => "mn-inline-alert attention",
+        InlineAlertTone::Danger => "mn-inline-alert danger",
+    };
+    let trimmed = class_name.trim();
+    if trimmed.is_empty() {
+        tone_class.to_string()
+    } else {
+        format!("{tone_class} {trimmed}")
+    }
+}
+
 #[component]
 pub fn Button(
     label: String,
@@ -209,6 +230,19 @@ pub fn Message(message: String, tone: StatusTone) -> Element {
     rsx! {
         div {
             class: status_tone_class(tone),
+            role: "status",
+            "{message}"
+        }
+    }
+}
+
+#[component]
+pub fn InlineAlert(message: String, tone: InlineAlertTone, class_name: String) -> Element {
+    let class = inline_alert_class(tone, &class_name);
+
+    rsx! {
+        div {
+            class,
             role: "status",
             "{message}"
         }
@@ -599,6 +633,18 @@ mod tests {
         assert_eq!(
             result_row_class(ResultRowKind::Search, true),
             "mn-command-row mn-search-row active"
+        );
+    }
+
+    #[test]
+    fn inline_alert_class_includes_tone_and_extension_class() {
+        assert_eq!(
+            inline_alert_class(InlineAlertTone::Neutral, ""),
+            "mn-inline-alert neutral"
+        );
+        assert_eq!(
+            inline_alert_class(InlineAlertTone::Danger, "compact"),
+            "mn-inline-alert danger compact"
         );
     }
 

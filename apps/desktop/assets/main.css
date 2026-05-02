@@ -1980,13 +1980,7 @@ button { border: 0; cursor: pointer; background: transparent; }
 
 .mn-preview-notice {
     flex-shrink: 0;
-    border: var(--mn-border-subtle);
-    border-radius: 6px;
-    background: transparent;
-    color: var(--mn-ink-2);
     padding: 10px 14px;
-    font-family: var(--mn-font-ui);
-    font-size: var(--mn-type-small);
 }
 
 .mn-preview-scroll {

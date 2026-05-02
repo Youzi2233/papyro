@@ -22,7 +22,7 @@
 | 命令面板 | `components/command_palette.rs` | action model 较好，但行样式和分组应该可复用。 | 拆分命令数据和 `CommandRow` 渲染 pattern。 |
 | 回收站 | `components/trash.rs` | 使用 command-modal 样式承载破坏性管理界面。 | 使用 `DialogSection`、`ResultRow` 和 destructive footer 规则。 |
 | 恢复 | `components/recovery.rs` | 密集行和对比面板依赖临时 inline layout。 | 使用 `RecoveryListRow`、`ComparePanel` 和冲突/错误状态 primitive。 |
-| 空/加载/错误态 | 分散在多个界面 | 部分状态仍像工程 fallback 文本。 | 增加 `Skeleton`、`InlineAlert`、`ErrorState` 和 `EmptyState` 变体。 |
+| 空/加载/错误态 | 分散在多个界面 | `InlineAlert` 已覆盖预览提示和命令/搜索空态，但较大的阻断失败仍需要结构化。 | 增加 `Skeleton`、`ErrorState` 和 `EmptyState` 变体。 |
 
 ## 界面发现
 
@@ -214,7 +214,7 @@
 | --- | --- | --- |
 | Empty | `EmptyState` 已存在，但很多 modal 仍使用自定义空文本。 | `EmptyState` 变体：compact、onboarding、error、data-safety。 |
 | Loading | 搜索用文本表示加载，workspace scan 也没有统一表现。 | `Skeleton` 和 inline loading row。 |
-| Error | Preview/search/storage 错误使用临时文本。 | `InlineAlert` 和 `ErrorState`。 |
+| Error | Preview/search 已使用 `InlineAlert`；storage 和阻断失败仍需要更强处理。 | `ErrorState`。 |
 | Focus | 部分按钮和自定义控件依赖 CSS，但没有记录 focus contract。 | primitive 级 focus-visible 状态。 |
 | Disabled | 多处存在 disabled，但禁用原因不一致。 | Disabled state 加 helper copy，尤其是阻断用户前进时。 |
 | Destructive | 已有 Danger button，但破坏性 dialog 还需要更强结构。 | Destructive footer 和确认 pattern。 |

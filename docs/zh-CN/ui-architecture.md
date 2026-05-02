@@ -65,7 +65,7 @@ flowchart TD
 | `Toolbar` | 缺失 | 服务编辑器 chrome 和固定操作区。 |
 | `EmptyState` | 已有 | 增加 compact、onboarding、error 和 action variant。 |
 | `Skeleton` | 缺失 | 服务 workspace 加载、搜索加载和未来异步窗口。 |
-| `InlineAlert` / `ErrorState` | 缺失 | 服务预览错误、设置校验、恢复和存储失败。 |
+| `InlineAlert` / `ErrorState` | 部分已有 | `InlineAlert` 已用于预览提示和命令/搜索空态；较大的阻断错误仍需要 `ErrorState`。 |
 
 ## 产品 Pattern
 
@@ -108,7 +108,7 @@ flowchart TD
 2. **结果行：** 对齐命令面板、快速打开和搜索结果行。
 3. **文件树行：** 把文件树行行为抽成可复用 `TreeItem` pattern。
 4. **编辑器 chrome：** 把 tab overflow、模式切换、大纲按钮和更多菜单拆成 `ToolbarZone` 规则。
-5. **空/加载/错误态：** 下一个大范围异步 UI 前先补 `Skeleton`、`InlineAlert`、`ErrorState`。
+5. **空/加载/错误态：** 继续扩展新的 `InlineAlert` pattern，并在下一个大范围异步 UI 前补 `Skeleton`、`ErrorState`。
 6. **Markdown surface：** 等 Hybrid selection 和 hit testing 稳定后，再统一 Markdown token。
 
 ## Review Checklist

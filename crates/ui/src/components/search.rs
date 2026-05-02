@@ -1,6 +1,8 @@
 use crate::action_labels::open_note_label;
 use crate::commands::{AppCommands, OpenMarkdownTarget};
-use crate::components::primitives::{Modal, ResultRow, ResultRowKind, TextInput};
+use crate::components::primitives::{
+    InlineAlert, InlineAlertTone, Modal, ResultRow, ResultRowKind, TextInput,
+};
 use crate::context::use_app_context;
 use crate::i18n::{i18n_for, use_i18n};
 use crate::view_model::SearchResultRowViewModel;
@@ -33,6 +35,11 @@ pub fn SearchModal(on_close: EventHandler<()>) -> Element {
     let commands_for_keys = commands.clone();
     let empty_message = empty_search_message(
         i18n.language(),
+        query_value.as_str(),
+        workspace_search_model.is_loading,
+        workspace_search_model.error.as_deref(),
+    );
+    let empty_tone = empty_search_tone(
         query_value.as_str(),
         workspace_search_model.is_loading,
         workspace_search_model.error.as_deref(),
@@ -86,8 +93,10 @@ pub fn SearchModal(on_close: EventHandler<()>) -> Element {
                 }
                 div { class: "mn-command-list",
                     if results.is_empty() {
-                        div { class: "mn-command-empty",
-                            "{empty_message}"
+                        InlineAlert {
+                            message: empty_message,
+                            tone: empty_tone,
+                            class_name: "mn-command-empty".to_string(),
                         }
                     } else {
                         for index in 0..results.len() {
@@ -204,6 +213,16 @@ fn empty_search_message(
     }
 
     i18n.text("No matching notes", "没有匹配的笔记").to_string()
+}
+
+fn empty_search_tone(query: &str, is_loading: bool, error: Option<&str>) -> InlineAlertTone {
+    if error.is_some() {
+        return InlineAlertTone::Danger;
+    }
+    if is_loading || query.trim().is_empty() {
+        return InlineAlertTone::Neutral;
+    }
+    InlineAlertTone::Attention
 }
 
 fn field_label(language: AppLanguage, field: SearchField) -> &'static str {

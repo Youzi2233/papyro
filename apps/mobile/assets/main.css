@@ -931,12 +931,23 @@ small {
 
 .mn-preview-notice {
     margin-bottom: 12px;
+    padding: 10px 12px;
+}
+
+.mn-inline-alert {
     border: 1px solid var(--mn-border);
     border-radius: 12px;
     background: rgba(255, 255, 255, 0.86);
     color: var(--mn-muted);
-    padding: 10px 12px;
     font-size: 12px;
+    line-height: 1.45;
+}
+
+.mn-inline-alert.attention,
+.mn-inline-alert.danger {
+    border-color: rgba(47, 111, 108, 0.28);
+    background: var(--mn-accent-wash);
+    color: var(--mn-accent-dark);
 }
 
 .mn-preview-paused {

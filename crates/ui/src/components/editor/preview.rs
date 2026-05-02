@@ -4,6 +4,7 @@ use super::document_cache::{
     CachedPreview, CachedPreviewStatus, DocumentCacheKey, DocumentDerivedCache, PreviewCacheKey,
 };
 use crate::commands::AppCommands;
+use crate::components::primitives::{InlineAlert, InlineAlertTone};
 use crate::context::EditorServices;
 use crate::i18n::{i18n_for, use_i18n};
 use crate::perf::{perf_timer, trace_preview_render};
@@ -147,7 +148,11 @@ pub(super) fn PreviewPane(
     rsx! {
         div { class: "mn-preview-shell",
             if let Some(message) = notice {
-                div { class: "mn-preview-notice", "{message}" }
+                InlineAlert {
+                    message: message.to_string(),
+                    tone: preview_notice_tone(&rendered_preview),
+                    class_name: "mn-preview-notice".to_string(),
+                }
             }
             if rendered_preview.policy.live_preview_enabled {
                 div {
@@ -487,6 +492,14 @@ fn preview_notice(language: AppLanguage, preview: &CachedPreview) -> Option<&'st
             "大文档模式会关闭代码高亮，以保持编辑流畅。",
         )),
         CachedPreviewStatus::Ready => None,
+    }
+}
+
+fn preview_notice_tone(preview: &CachedPreview) -> InlineAlertTone {
+    match preview.status {
+        CachedPreviewStatus::Failed => InlineAlertTone::Danger,
+        CachedPreviewStatus::Pending => InlineAlertTone::Neutral,
+        CachedPreviewStatus::Ready => InlineAlertTone::Attention,
     }
 }
 
