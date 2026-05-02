@@ -82,6 +82,7 @@ npm --prefix js test
 - 影响架构的 roadmap 工作必须在同一任务中更新 [architecture.md](architecture.md)，或者明确说明为什么不需要改架构文档。
 - 编辑器行为变化必须在协议、Hybrid 行为、Preview 行为、Markdown 渲染或 JS/Rust 职责变化时更新 [editor.md](editor.md)。
 - 性能敏感改动如果改变 trace 名、预算、大文档策略或 render path 归属，必须更新 [performance-budget.md](performance-budget.md)。
+- 大范围 UI 重构应运行 `node scripts/report-ui-tokens.js`；token 债务明显变化时同步更新 [ui-token-audit.md](ui-token-audit.md)。
 - AI 协作流程变化必须更新 [ai-skills.md](ai-skills.md) 和相关的 `skills/*/SKILL.md`。
 
 ## 验证
@@ -107,6 +108,7 @@ node scripts/check-workspace-deps.js
 node scripts/report-file-lines.js
 node scripts/check-ui-a11y.js
 node scripts/check-ui-contrast.js
+node scripts/report-ui-tokens.js
 node scripts/check-perf-docs.js
 npm --prefix js run build
 npm --prefix js test

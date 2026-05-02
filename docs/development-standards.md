@@ -82,6 +82,7 @@ Generated files must be committed with the source change:
 - Architecture-affecting roadmap work must update [architecture.md](architecture.md) in the same task or explicitly explain why no architecture document change is needed.
 - Editor behavior changes must update [editor.md](editor.md) when protocol, Hybrid behavior, Preview behavior, Markdown rendering, or JS/Rust responsibilities change.
 - Performance-sensitive changes must update [performance-budget.md](performance-budget.md) when trace names, budgets, large-document policy, or render-path ownership changes.
+- Broad UI redesign work should run `node scripts/report-ui-tokens.js` and update [ui-token-audit.md](ui-token-audit.md) when token debt changes materially.
 - AI workflow changes must update [ai-skills.md](ai-skills.md) and the relevant `skills/*/SKILL.md` file.
 
 ## Validation
@@ -110,6 +111,8 @@ node scripts/check-ui-a11y.js
 node scripts/check-ui-a11y.js --self-test
 node scripts/check-ui-contrast.js
 node scripts/check-ui-contrast.js --self-test
+node scripts/report-ui-tokens.js
+node scripts/report-ui-tokens.js --self-test
 node scripts/generate-perf-fixtures.js --self-test
 node scripts/check-perf-smoke.js --self-test
 node scripts/check-perf-docs.js

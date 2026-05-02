@@ -154,6 +154,7 @@ Design work:
 - [x] Define a new product visual brief: typography, spacing scale, color roles, surface elevation, border radius, icon style, density, motion, focus rings, and copy tone. See [Papyro UI Visual Brief](ui-visual-brief.md).
 - [ ] Redesign the app information architecture so workspace navigation, document editing, outline, commands, and settings feel cohesive instead of assembled screen by screen.
 - [x] Inventory the Dioxus-first component system over CSS tokens and define the target primitives: `Button`, `IconButton`, `Input`, `Select`, `SegmentedControl`, `Switch`, `Dialog`, `Popover`, `DropdownMenu`, `ContextMenu`, `Tooltip`, `Toast/Message`, `Tabs`, `SidebarItem`, `TreeItem`, `Toolbar`, `EmptyState`, and `Skeleton`. See [UI Architecture And Component Inventory](ui-architecture.md).
+- [x] Add a CSS token audit for raw colors, spacing one-offs, and duplicated component selectors before broad visual rewrites. See [UI Token Audit](ui-token-audit.md).
 - [ ] Replace native-looking controls and one-off CSS with reusable primitives that own hover, active, disabled, focus-visible, loading, destructive, and compact states.
 - [ ] Create layout primitives for app chrome: split panes, resizable rails, scroll containers, sticky toolbars, fixed editor action zones, and responsive overflow rules.
 - [ ] Make Markdown writing surfaces visually match mature editors: quiet canvas, readable measure, balanced margins, polished code/table/callout styles, and consistent Preview/Hybrid typography.
