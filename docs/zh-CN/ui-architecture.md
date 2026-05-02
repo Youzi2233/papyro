@@ -41,7 +41,7 @@ flowchart TD
 | 弹窗界面 | `SettingsModal`、`QuickOpenModal`、`CommandPaletteModal`、`SearchModal`、`TrashModal`、`RecoveryDraftsModal`、`RecoveryDraftCompareModal` | 应共享 dialog shell、结果行、空状态、加载态和键盘焦点行为。 |
 | 设置 | `SettingsSurface`、`TagManagementSection`、`TagEditorRow`、`AboutMetaItem` | 设置页已经组合共享导航、面板、表单行和 section 基础组件；标签管理还需要更丰富的行组件。 |
 | 搜索/命令 | `ResultRow`、`CommandPaletteRow`、`QuickOpenRow`、`SearchResultRow`、`HighlightedText` | 命令、快速打开和搜索结果已经共享行壳；下一步补图标、快捷键、更丰富元信息和分组状态。 |
-| 恢复/回收站 | `RecoveryDraftRow`、`RecoveryComparePanel`、`TrashNoteRow` | 应复用未来 list-row 和危险动作 pattern。 |
+| 恢复/回收站 | `RecoveryDraftRow`、`RecoveryComparePanel`、`TrashNoteRow` | 恢复和回收站列表行已使用 `ResultRow`；compare panel 和 destructive footer 仍需要专门的数据安全 pattern。 |
 
 ## 目标基础组件
 
@@ -75,7 +75,7 @@ flowchart TD
 | Pattern | 使用位置 | 契约 |
 | --- | --- | --- |
 | `SettingsRow` | 设置、未来偏好设置窗口 | 一列表单：label、可选 description、control、未来 helper/error slots。 |
-| `ResultRow` | 搜索、快速打开、命令面板 | 图标、主文本、次文本、元信息、高亮、键盘 current 状态。 |
+| `ResultRow` | 搜索、快速打开、命令面板、回收站、恢复 | 图标、主文本、次文本、元信息、高亮、键盘 current 状态。 |
 | `TreeRow` | 文件树 | 缩进、展开图标、文件/文件夹图标、selected/editing/drag/drop 状态、右键菜单、键盘目标。 |
 | `ToolbarZone` | 编辑器 chrome、app header | 固定或弹性区域，并显式定义 overflow 行为。 |
 | `DialogSection` | 设置、恢复、回收站 | 标题、正文、可选 footer、稳定间距。 |

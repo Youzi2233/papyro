@@ -41,7 +41,7 @@ Rules:
 | Modal surfaces | `SettingsModal`, `QuickOpenModal`, `CommandPaletteModal`, `SearchModal`, `TrashModal`, `RecoveryDraftsModal`, `RecoveryDraftCompareModal` | Should share dialog shells, result rows, empty states, loading states, and keyboard focus behavior. |
 | Settings | `SettingsSurface`, `TagManagementSection`, `TagEditorRow`, `AboutMetaItem` | Settings now composes shared navigation, panel, row, and section primitives; tag management still needs richer row primitives. |
 | Search/commands | `ResultRow`, `CommandPaletteRow`, `QuickOpenRow`, `SearchResultRow`, `HighlightedText` | Command, quick-open, and search rows now share the row shell; next work should add icons, shortcuts, richer metadata, and grouped states. |
-| Recovery/trash | `RecoveryDraftRow`, `RecoveryComparePanel`, `TrashNoteRow` | Should reuse future list-row and destructive-action patterns. |
+| Recovery/trash | `RecoveryDraftRow`, `RecoveryComparePanel`, `TrashNoteRow` | Recovery and trash list rows now use `ResultRow`; compare panels and destructive footers still need dedicated data-safety patterns. |
 
 ## Target Primitive Set
 
@@ -75,7 +75,7 @@ Build these patterns from primitives before redesigning more screens:
 | Pattern | Used By | Contract |
 | --- | --- | --- |
 | `SettingsRow` | Settings, future preferences windows | One-column label, optional description, control, and future helper/error slots. |
-| `ResultRow` | Search, quick open, command palette | Icon, primary text, secondary text, metadata, highlight, keyboard-current state. |
+| `ResultRow` | Search, quick open, command palette, trash, recovery | Icon, primary text, secondary text, metadata, highlight, keyboard-current state. |
 | `TreeRow` | File tree | Indent, disclosure, file/folder icon, selected/editing/drag/drop state, context menu, keyboard target. |
 | `ToolbarZone` | Editor chrome, app header | Fixed width or flexible zone with explicit overflow behavior. |
 | `DialogSection` | Settings, recovery, trash | Heading, body, optional footer, stable spacing. |

@@ -1,4 +1,6 @@
-use crate::components::primitives::{Button, ButtonVariant, InlineAlert, InlineAlertTone, Modal};
+use crate::components::primitives::{
+    Button, ButtonVariant, InlineAlert, InlineAlertTone, Modal, ResultRow, ResultRowKind,
+};
 use crate::context::use_app_context;
 use crate::i18n::use_i18n;
 use crate::view_model::{RecoveryDraftComparisonViewModel, RecoveryDraftItemViewModel};
@@ -63,43 +65,50 @@ fn RecoveryDraftRow(
     let compare_note_id = draft.note_id.clone();
     let restore_note_id = draft.note_id.clone();
     let discard_note_id = draft.note_id.clone();
+    let row_compare_note_id = draft.note_id.clone();
+    let row_commands = commands.clone();
     let compare_commands = commands.clone();
     let restore_commands = commands.clone();
     let discard_commands = commands.clone();
 
     rsx! {
-        div { class: "mn-command-row",
-            span { class: "mn-command-row-main",
-                span { class: "mn-command-title", "{draft.title}" }
-                span { class: "mn-command-path", "{draft.relative_path_label}" }
-                span { class: "mn-command-path", "{draft.preview}" }
-            }
+        ResultRow {
+            label: draft.title.clone(),
+            metadata: "DRAFT".to_string(),
+            is_active: false,
+            kind: ResultRowKind::Default,
+            on_select: move |_| {
+                row_commands.compare_recovery_draft.call(row_compare_note_id.clone());
+            },
+            span { class: "mn-command-title", "{draft.title}" }
+            span { class: "mn-command-path", "{draft.relative_path_label}" }
+            span { class: "mn-command-path", "{draft.preview}" }
             span {
                 class: "mn-row-actions",
                 style: "display:flex;gap:6px;align-items:center;justify-content:flex-end;flex-wrap:wrap;",
-                Button {
-                    label: i18n.text("Compare", "比较").to_string(),
-                    variant: ButtonVariant::Default,
-                    disabled: false,
-                    on_click: move |_| {
+                button {
+                    class: "mn-button",
+                    onclick: move |event| {
+                        event.stop_propagation();
                         compare_commands.compare_recovery_draft.call(compare_note_id.clone());
                     },
+                    {i18n.text("Compare", "比较")}
                 }
-                Button {
-                    label: i18n.text("Restore", "恢复").to_string(),
-                    variant: ButtonVariant::Primary,
-                    disabled: false,
-                    on_click: move |_| {
+                button {
+                    class: "mn-button primary",
+                    onclick: move |event| {
+                        event.stop_propagation();
                         restore_commands.restore_recovery_draft.call(restore_note_id.clone());
                     },
+                    {i18n.text("Restore", "恢复")}
                 }
-                Button {
-                    label: i18n.text("Discard", "丢弃").to_string(),
-                    variant: ButtonVariant::Danger,
-                    disabled: false,
-                    on_click: move |_| {
+                button {
+                    class: "mn-button danger",
+                    onclick: move |event| {
+                        event.stop_propagation();
                         discard_commands.discard_recovery_draft.call(discard_note_id.clone());
                     },
+                    {i18n.text("Discard", "丢弃")}
                 }
             }
         }

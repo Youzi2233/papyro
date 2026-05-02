@@ -21,7 +21,7 @@
 | 快速打开 | `components/quick_open.rs` | 共用 command row class，但没有语义化可复用行。 | 切到带文档元信息槽位的 `ResultRow`。 |
 | 命令面板 | `components/command_palette.rs` | action model 较好，但行样式和分组应该可复用。 | 拆分命令数据和 `CommandRow` 渲染 pattern。 |
 | 回收站 | `components/trash.rs` | 使用 command-modal 样式承载破坏性管理界面；空态和列表行已使用共享基础组件。 | 增加 `DialogSection` 和 destructive footer 规则。 |
-| 恢复 | `components/recovery.rs` | 密集行和对比面板依赖临时 inline layout；空草稿状态已使用 `InlineAlert`。 | 使用 `RecoveryListRow`、`ComparePanel` 和冲突/错误状态 primitive。 |
+| 恢复 | `components/recovery.rs` | 草稿行和空态已使用共享基础组件；compare panel 仍依赖临时 inline layout。 | 使用 `ComparePanel` 和冲突/错误状态 primitive。 |
 | 空/加载/错误态 | 分散在多个界面 | `InlineAlert` 已覆盖预览提示和命令/搜索/回收站/恢复空态，但较大的阻断失败仍需要结构化。 | 增加 `Skeleton`、`ErrorState` 和 `EmptyState` 变体。 |
 
 ## 界面发现
@@ -198,12 +198,13 @@
 - 回收站支持恢复和清空。
 - 回收站空态使用 `InlineAlert`，已删除笔记行现在使用 `ResultRow`。
 - 恢复支持比较、恢复、丢弃。
+- 恢复空态使用 `InlineAlert`，草稿行现在使用 `ResultRow`。
 - 恢复比较能展示磁盘和草稿状态。
 
 差距：
 
 - 回收站仍借用了 command-modal 布局，但它其实是数据安全界面。
-- 恢复行和 compare panel 使用 inline layout 字符串。
+- 恢复 compare panel 仍使用 inline layout 字符串。
 - 破坏性动作需要更强的确认和视觉层级规则。
 
 改造决策：
