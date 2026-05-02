@@ -832,16 +832,18 @@ select.mn-input {
     gap: 8px;
 }
 
-.mn-tag-create-row,
-.mn-tag-row {
+.mn-setting-inline-row {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 38px auto auto auto;
     gap: 8px;
     align-items: center;
 }
 
-.mn-tag-create-row {
+.mn-setting-inline-row.create {
     grid-template-columns: minmax(0, 1fr) 38px auto;
+}
+
+.mn-setting-inline-row.edit {
+    grid-template-columns: minmax(0, 1fr) 38px auto auto auto;
 }
 
 .mn-tag-name-input {

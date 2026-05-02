@@ -3,8 +3,8 @@ use crate::commands::{
 };
 use crate::components::primitives::{
     ActionButton, Button, ButtonState, ButtonVariant, DialogSection, DropdownOption, Modal, Select,
-    SettingsContent, SettingsLayout, SettingsNav, SettingsNavItem, SettingsPanel, SettingsRow,
-    Slider, Toggle,
+    SettingsContent, SettingsInlineRow, SettingsInlineRowKind, SettingsLayout, SettingsNav,
+    SettingsNavItem, SettingsPanel, SettingsRow, Slider, Toggle,
 };
 use crate::context::use_app_context;
 use crate::i18n::{use_i18n, UiText};
@@ -379,7 +379,9 @@ fn TagManagementSection(
             class_name: "mn-setting-section-card mn-setting-section-wide".to_string(),
             if has_workspace {
                 div { class: "mn-tag-manager",
-                    div { class: "mn-tag-create-row",
+                    SettingsInlineRow {
+                        kind: SettingsInlineRowKind::Create,
+                        class_name: String::new(),
                         input {
                             class: "mn-input mn-tag-name-input",
                             placeholder: i18n.text("New tag", "新标签"),
@@ -482,7 +484,9 @@ fn TagEditorRow(tag: TagListItem, has_workspace: bool, commands: AppCommands) ->
     };
 
     rsx! {
-        div { class: "mn-tag-row",
+        SettingsInlineRow {
+            kind: SettingsInlineRowKind::Edit,
+            class_name: String::new(),
             input {
                 class: "mn-input mn-tag-name-input",
                 value: "{name_value}",

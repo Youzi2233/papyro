@@ -53,6 +53,12 @@ pub enum TreeItemIconKind {
     Markdown,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SettingsInlineRowKind {
+    Create,
+    Edit,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SegmentedControlOption {
     pub label: String,
@@ -257,6 +263,14 @@ fn settings_nav_button_class(active: bool, class_name: &str) -> String {
     append_class(base, class_name)
 }
 
+fn settings_inline_row_class(kind: SettingsInlineRowKind, class_name: &str) -> String {
+    let base = match kind {
+        SettingsInlineRowKind::Create => "mn-setting-inline-row create",
+        SettingsInlineRowKind::Edit => "mn-setting-inline-row edit",
+    };
+    append_class(base, class_name)
+}
+
 fn tree_item_class(
     kind: TreeItemKind,
     is_selected: bool,
@@ -438,6 +452,19 @@ pub fn SettingsRow(
             }
             div { class: "mn-form-control mn-setting-control", {children} }
         }
+    }
+}
+
+#[component]
+pub fn SettingsInlineRow(
+    kind: SettingsInlineRowKind,
+    class_name: String,
+    children: Element,
+) -> Element {
+    let class = settings_inline_row_class(kind, &class_name);
+
+    rsx! {
+        div { class, {children} }
     }
 }
 

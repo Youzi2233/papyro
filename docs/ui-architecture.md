@@ -35,11 +35,11 @@ Rules:
 
 | Area | Current Components | Notes |
 | --- | --- | --- |
-| Primitives | `Button`, `ActionButton`, `RowActionButton`, `IconButton`, `Select`, `Dropdown`, `SegmentedControl`, `Tabs`, `Modal`, `Menu`, `ContextMenu`, `MenuItem`, `Tooltip`, `Message`, `StatusStrip`, `StatusMessage`, `StatusIndicator`, `FormField`, `Toggle`, `Slider`, `TextInput`, `ResultRow`, `RowActions`, `ModalFooterMeta`, `ComparePanel`, `SkeletonRows`, `ErrorState`, `SettingsLayout`, `SettingsNav`, `SettingsRow`, `DialogSection`, `TreeItemButton`, `TreeItemEditRow`, `EmptyState` | Good foundation, but still needs stronger state contracts, variants, keyboard behavior, and docs. |
+| Primitives | `Button`, `ActionButton`, `RowActionButton`, `IconButton`, `Select`, `Dropdown`, `SegmentedControl`, `Tabs`, `Modal`, `Menu`, `ContextMenu`, `MenuItem`, `Tooltip`, `Message`, `StatusStrip`, `StatusMessage`, `StatusIndicator`, `FormField`, `Toggle`, `Slider`, `TextInput`, `ResultRow`, `RowActions`, `ModalFooterMeta`, `ComparePanel`, `SkeletonRows`, `ErrorState`, `SettingsLayout`, `SettingsNav`, `SettingsRow`, `SettingsInlineRow`, `DialogSection`, `TreeItemButton`, `TreeItemEditRow`, `EmptyState` | Good foundation, but still needs stronger state contracts, variants, keyboard behavior, and docs. |
 | App chrome | `Sidebar`, `FileTree`, `AppHeader`, `StatusBar`, `DesktopLayout`, `MobileLayout` | File-tree rows now use `TreeItem` primitives for visual state; sidebar footer/workspace rows still need a shared `SidebarItem`. |
 | Editor | `EditorPane`, `EditorChrome`, `EditorTabButton`, `OutlinePane`, `PreviewPane`, `EditorHost`, `FallbackEditor` | Needs stable chrome zones, tab overflow rules, outline behavior, and shared Markdown visual tokens. |
 | Modal surfaces | `SettingsModal`, `QuickOpenModal`, `CommandPaletteModal`, `SearchModal`, `TrashModal`, `RecoveryDraftsModal`, `RecoveryDraftCompareModal` | Should share dialog shells, result rows, empty states, loading states, and keyboard focus behavior. |
-| Settings | `SettingsSurface`, `TagManagementSection`, `TagEditorRow`, `AboutMetaItem` | Settings now composes shared navigation, panel, row, and section primitives; tag management still needs richer row primitives. |
+| Settings | `SettingsSurface`, `TagManagementSection`, `TagEditorRow`, `AboutMetaItem` | Settings now composes shared navigation, panel, row, inline-row, and section primitives; tag management still needs richer validation and helper states. |
 | Search/commands | `ResultRow`, `RowActions`, `CommandPaletteRow`, `QuickOpenRow`, `SearchResultRow`, `HighlightedText` | Command, quick-open, search, trash, and recovery rows now share row shells and action slots; next work should add icons, shortcuts, richer metadata, and grouped states. |
 | Recovery/trash | `RecoveryDraftRow`, `ComparePanel`, `TrashNoteRow` | Recovery and trash list rows use `ResultRow`, recovery comparisons use `ComparePanel`, and trash footer metadata uses `ModalFooterMeta`; conflict/error states still need dedicated data-safety patterns. |
 
@@ -66,7 +66,7 @@ Rules:
 | `EmptyState` | Exists | Add compact, onboarding, error, and action variants. |
 | `SkeletonRows` | Partial | Workspace search loading now uses reusable skeleton rows; workspace load and future async windows still need adoption. |
 | `InlineAlert` / `ErrorState` | Partial | `InlineAlert` covers preview notices and command/search empty states; `ErrorState` now covers editor runtime failures and should be reused for larger blocking failures. |
-| `SettingsLayout` / `SettingsRow` | Partial | Settings navigation, panels, sections, and rows now live in primitives; helper text, errors, and richer form states still need broader use. |
+| `SettingsLayout` / `SettingsRow` / `SettingsInlineRow` | Partial | Settings navigation, panels, sections, rows, and inline control rows now live in primitives; helper text, errors, and richer form states still need broader use. |
 
 ## Product Patterns
 
@@ -75,6 +75,7 @@ Build these patterns from primitives before redesigning more screens:
 | Pattern | Used By | Contract |
 | --- | --- | --- |
 | `SettingsRow` | Settings, future preferences windows | One-column label, optional description, control, and future helper/error slots. |
+| `SettingsInlineRow` | Settings tag management, compact form rows | Inline controls with stable create/edit grid contracts and narrow-width migration path. |
 | `ResultRow` | Search, quick open, command palette, trash, recovery | Icon, primary text, secondary text, metadata, highlight, keyboard-current state. |
 | `RowActions` / `RowActionButton` | Result rows, destructive management rows | Right-aligned row actions with shared spacing, optional wrapping, and scoped click handling. |
 | `ModalFooterMeta` | Trash, recovery, destructive dialogs | Leading footer metadata that truncates safely before action buttons. |
@@ -110,7 +111,7 @@ Acceptable one-off CSS:
 
 ## Migration Order
 
-1. **Settings rows:** continue building on `SettingsRow`, `DialogSection`, `SettingsNav`, `Switch`, `Select`, and `SegmentedControl`; next work should add helper/error slots and migrate tag rows.
+1. **Settings rows:** continue building on `SettingsRow`, `SettingsInlineRow`, `DialogSection`, `SettingsNav`, `Switch`, `Select`, and `SegmentedControl`; next work should add helper/error slots and validation states.
 2. **Result rows:** align command palette, quick open, and search result rows.
 3. **Tree rows:** continue building on `TreeItemButton` and `TreeItemEditRow`; next work should add focus/current variants and share scoped menu item models.
 4. **Editor chrome:** continue building on `EditorToolbar` and `ToolbarZone` for tab overflow, mode switch, outline action, and future overflow menu rules.
