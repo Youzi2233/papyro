@@ -20,9 +20,9 @@
 | 搜索 | `components/search.rs` | 结果行接近命令行，但不是共享 pattern。 | 使用共享 `ResultRow`、高亮、加载和错误 primitive。 |
 | 快速打开 | `components/quick_open.rs` | 共用 command row class，但没有语义化可复用行。 | 切到带文档元信息槽位的 `ResultRow`。 |
 | 命令面板 | `components/command_palette.rs` | action model 较好，但行样式和分组应该可复用。 | 拆分命令数据和 `CommandRow` 渲染 pattern。 |
-| 回收站 | `components/trash.rs` | 使用 command-modal 样式承载破坏性管理界面。 | 使用 `DialogSection`、`ResultRow` 和 destructive footer 规则。 |
-| 恢复 | `components/recovery.rs` | 密集行和对比面板依赖临时 inline layout。 | 使用 `RecoveryListRow`、`ComparePanel` 和冲突/错误状态 primitive。 |
-| 空/加载/错误态 | 分散在多个界面 | `InlineAlert` 已覆盖预览提示和命令/搜索空态，但较大的阻断失败仍需要结构化。 | 增加 `Skeleton`、`ErrorState` 和 `EmptyState` 变体。 |
+| 回收站 | `components/trash.rs` | 使用 command-modal 样式承载破坏性管理界面；空态已使用 `InlineAlert`。 | 使用 `DialogSection`、`ResultRow` 和 destructive footer 规则。 |
+| 恢复 | `components/recovery.rs` | 密集行和对比面板依赖临时 inline layout；空草稿状态已使用 `InlineAlert`。 | 使用 `RecoveryListRow`、`ComparePanel` 和冲突/错误状态 primitive。 |
+| 空/加载/错误态 | 分散在多个界面 | `InlineAlert` 已覆盖预览提示和命令/搜索/回收站/恢复空态，但较大的阻断失败仍需要结构化。 | 增加 `Skeleton`、`ErrorState` 和 `EmptyState` 变体。 |
 
 ## 界面发现
 
@@ -215,7 +215,7 @@
 
 | 状态 | 当前情况 | 需要的 primitive |
 | --- | --- | --- |
-| Empty | `EmptyState` 已存在，但很多 modal 仍使用自定义空文本。 | `EmptyState` 变体：compact、onboarding、error、data-safety。 |
+| Empty | `EmptyState` 已存在，modal 空态文本正逐步由 `InlineAlert` 覆盖。 | `EmptyState` 变体：compact、onboarding、error、data-safety。 |
 | Loading | 搜索用文本表示加载，workspace scan 也没有统一表现。 | `Skeleton` 和 inline loading row。 |
 | Error | Preview/search 已使用 `InlineAlert`；storage 和阻断失败仍需要更强处理。 | `ErrorState`。 |
 | Focus | 部分按钮和自定义控件依赖 CSS，但没有记录 focus contract。 | primitive 级 focus-visible 状态。 |

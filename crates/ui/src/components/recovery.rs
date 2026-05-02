@@ -1,4 +1,4 @@
-use crate::components::primitives::{Button, ButtonVariant, Modal};
+use crate::components::primitives::{Button, ButtonVariant, InlineAlert, InlineAlertTone, Modal};
 use crate::context::use_app_context;
 use crate::i18n::use_i18n;
 use crate::view_model::{RecoveryDraftComparisonViewModel, RecoveryDraftItemViewModel};
@@ -10,6 +10,7 @@ pub fn RecoveryDraftsModal(on_close: EventHandler<()>) -> Element {
     let i18n = use_i18n();
     let commands = app.commands.clone();
     let model = app.recovery_model.read().clone();
+    let drafts = model.drafts;
 
     rsx! {
         Modal {
@@ -25,11 +26,19 @@ pub fn RecoveryDraftsModal(on_close: EventHandler<()>) -> Element {
                     "x"
                 }
             }
-            div { class: "mn-command-list",
-                for draft in model.drafts {
-                    RecoveryDraftRow {
-                        draft,
-                        commands: commands.clone(),
+            if drafts.is_empty() {
+                InlineAlert {
+                    message: i18n.text("No recovery drafts", "没有恢复草稿").to_string(),
+                    tone: InlineAlertTone::Neutral,
+                    class_name: "mn-command-empty".to_string(),
+                }
+            } else {
+                div { class: "mn-command-list",
+                    for draft in drafts {
+                        RecoveryDraftRow {
+                            draft,
+                            commands: commands.clone(),
+                        }
                     }
                 }
             }

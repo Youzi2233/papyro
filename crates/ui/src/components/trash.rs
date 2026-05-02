@@ -1,5 +1,5 @@
 use crate::commands::{AppCommands, RestoreTrashedNoteTarget};
-use crate::components::primitives::{Button, ButtonVariant, Modal};
+use crate::components::primitives::{Button, ButtonVariant, InlineAlert, InlineAlertTone, Modal};
 use crate::context::use_app_context;
 use crate::i18n::{i18n_for, use_i18n};
 use crate::view_model::TrashedNoteListItem;
@@ -32,7 +32,11 @@ pub fn TrashModal(on_close: EventHandler<()>) -> Element {
                 }
             }
             if notes.is_empty() {
-                div { class: "mn-command-empty", {i18n.text("Trash is empty", "回收站为空")} }
+                InlineAlert {
+                    message: i18n.text("Trash is empty", "回收站为空").to_string(),
+                    tone: InlineAlertTone::Neutral,
+                    class_name: "mn-command-empty".to_string(),
+                }
             } else {
                 div { class: "mn-command-list",
                     for note in notes {

@@ -20,9 +20,9 @@ The audit is intentionally practical: every row names the owner, the current cod
 | Search | `components/search.rs` | Result rows mostly resemble command rows but are not a shared pattern. | Adopt shared `ResultRow`, highlight, loading, and error primitives. |
 | Quick open | `components/quick_open.rs` | Shares command row classes without a semantic reusable row. | Move to `ResultRow` with document metadata slots. |
 | Command palette | `components/command_palette.rs` | Strong action model, but row styling and grouping should be reusable. | Split command data from `CommandRow` rendering pattern. |
-| Trash | `components/trash.rs` | Uses command-modal styling for a destructive management surface. | Use `DialogSection`, `ResultRow`, and destructive footer rules. |
-| Recovery | `components/recovery.rs` | Dense rows and compare panels rely on ad hoc inline layout. | Use `RecoveryListRow`, `ComparePanel`, and conflict/error status primitives. |
-| Empty/loading/error states | scattered | `InlineAlert` now covers preview notices and command/search empty states, but larger blocking failures still need structure. | Add `Skeleton`, `ErrorState`, and compact/onboarding `EmptyState` variants. |
+| Trash | `components/trash.rs` | Uses command-modal styling for a destructive management surface; empty state now uses `InlineAlert`. | Use `DialogSection`, `ResultRow`, and destructive footer rules. |
+| Recovery | `components/recovery.rs` | Dense rows and compare panels rely on ad hoc inline layout; empty drafts now use `InlineAlert`. | Use `RecoveryListRow`, `ComparePanel`, and conflict/error status primitives. |
+| Empty/loading/error states | scattered | `InlineAlert` now covers preview notices and command/search/trash/recovery empty states, but larger blocking failures still need structure. | Add `Skeleton`, `ErrorState`, and compact/onboarding `EmptyState` variants. |
 
 ## Surface Findings
 
@@ -215,7 +215,7 @@ Redesign decision:
 
 | State | Current Situation | Required Primitive |
 | --- | --- | --- |
-| Empty | `EmptyState` exists, but many modals still use custom empty text. | `EmptyState` variants: compact, onboarding, error, data-safety. |
+| Empty | `EmptyState` exists and modal empty text is increasingly covered by `InlineAlert`. | `EmptyState` variants: compact, onboarding, error, data-safety. |
 | Loading | Search has text loading; workspace scan has non-unified affordances. | `Skeleton` and inline loading row. |
 | Error | Preview/search now use `InlineAlert`; storage and blocking failures still need stronger treatment. | `ErrorState`. |
 | Focus | Some buttons and custom controls depend on CSS but lack documented focus contracts. | Primitive-level focus-visible state. |
