@@ -1,6 +1,6 @@
 use crate::components::primitives::{
     Button, ButtonVariant, ComparePanel, InlineAlert, InlineAlertTone, Modal, ResultRow,
-    ResultRowKind,
+    ResultRowKind, RowActions,
 };
 use crate::context::use_app_context;
 use crate::i18n::use_i18n;
@@ -84,9 +84,8 @@ fn RecoveryDraftRow(
             span { class: "mn-command-title", "{draft.title}" }
             span { class: "mn-command-path", "{draft.relative_path_label}" }
             span { class: "mn-command-path", "{draft.preview}" }
-            span {
-                class: "mn-row-actions",
-                style: "display:flex;gap:6px;align-items:center;justify-content:flex-end;flex-wrap:wrap;",
+            RowActions {
+                class_name: "wrap".to_string(),
                 button {
                     class: "mn-button",
                     onclick: move |event| {

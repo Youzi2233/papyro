@@ -322,6 +322,17 @@
     color: var(--mn-ink-3);
 }
 
+.mn-row-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--mn-action-gap);
+}
+
+.mn-row-actions.wrap {
+    flex-wrap: wrap;
+}
+
 .mn-recovery-compare-modal {
     width: min(980px, 94vw);
     max-height: min(760px, 86vh);

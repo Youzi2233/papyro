@@ -950,6 +950,15 @@ pub fn ResultRow(
 }
 
 #[component]
+pub fn RowActions(class_name: String, children: Element) -> Element {
+    let class = append_class("mn-row-actions", &class_name);
+
+    rsx! {
+        span { class, {children} }
+    }
+}
+
+#[component]
 pub fn ComparePanel(
     title: String,
     metadata: String,

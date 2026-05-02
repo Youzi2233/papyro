@@ -1335,6 +1335,17 @@ small {
     padding: 18px 20px;
 }
 
+.mn-row-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.mn-row-actions.wrap {
+    flex-wrap: wrap;
+}
+
 .mn-recovery-compare-modal {
     width: min(100%, 980px);
 }

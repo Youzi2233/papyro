@@ -1,6 +1,7 @@
 use crate::commands::{AppCommands, RestoreTrashedNoteTarget};
 use crate::components::primitives::{
     Button, ButtonVariant, InlineAlert, InlineAlertTone, Modal, ResultRow, ResultRowKind,
+    RowActions,
 };
 use crate::context::use_app_context;
 use crate::i18n::{i18n_for, use_i18n};
@@ -91,9 +92,8 @@ fn TrashNoteRow(note: TrashedNoteListItem, commands: AppCommands) -> Element {
             on_select: move |_| row_commands.restore_trashed_note.call(row_target.clone()),
             span { class: "mn-command-title", "{note.title}" }
             span { class: "mn-command-path", "{note.relative_path.display()}" }
-            span {
-                class: "mn-row-actions",
-                style: "display:flex;gap:6px;align-items:center;justify-content:flex-end;",
+            RowActions {
+                class_name: String::new(),
                 button {
                     class: "mn-button primary",
                     onclick: move |event| {
