@@ -5,7 +5,9 @@ use super::outline::OutlinePane;
 use super::preview::{PreviewLinkBridge, PreviewPane};
 use super::tabbar::EditorTabButton;
 use crate::commands::AppCommands;
-use crate::components::primitives::{Button, ButtonVariant};
+use crate::components::primitives::{
+    Button, ButtonVariant, EditorToolbar, ToolbarZone, ToolbarZoneKind,
+};
 use crate::context::use_app_context;
 use crate::i18n::{i18n_for, use_i18n, UiText};
 use crate::perf::{
@@ -440,8 +442,8 @@ fn EditorChrome(
     };
 
     rsx! {
-        div { class: "mn-editor-chrome",
-            div { class: "mn-editor-tabs-row",
+        EditorToolbar {
+            ToolbarZone { kind: ToolbarZoneKind::Flexible, class_name: String::new(),
                 button {
                     class: "mn-editor-tool mn-editor-sidebar-toggle icon-only",
                     title: "{sidebar_label}",
@@ -478,7 +480,7 @@ fn EditorChrome(
                     span { class: "mn-tool-icon tab-right", "aria-hidden": "true" }
                 }
             }
-            div { class: "mn-editor-tools",
+            ToolbarZone { kind: ToolbarZoneKind::Fixed, class_name: String::new(),
                 div {
                     class: "mn-view-mode-switch",
                     role: "radiogroup",

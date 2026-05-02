@@ -34,6 +34,12 @@ pub enum ResultRowKind {
     Search,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ToolbarZoneKind {
+    Flexible,
+    Fixed,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SegmentedControlOption {
     pub label: String,
@@ -219,6 +225,73 @@ fn action_button_class(variant: ButtonVariant, class_name: &str) -> String {
         base.to_string()
     } else {
         format!("{base} {trimmed}")
+    }
+}
+
+fn workbench_class(class_name: &str) -> String {
+    append_class("mn-workbench", class_name)
+}
+
+fn toolbar_zone_class(kind: ToolbarZoneKind, class_name: &str) -> String {
+    let base = match kind {
+        ToolbarZoneKind::Flexible => "mn-editor-tabs-row",
+        ToolbarZoneKind::Fixed => "mn-editor-tools",
+    };
+    append_class(base, class_name)
+}
+
+fn append_class(base: &str, class_name: &str) -> String {
+    let trimmed = class_name.trim();
+    if trimmed.is_empty() {
+        base.to_string()
+    } else {
+        format!("{base} {trimmed}")
+    }
+}
+
+#[component]
+pub fn AppShell(children: Element) -> Element {
+    rsx! {
+        div { class: "mn-shell", {children} }
+    }
+}
+
+#[component]
+pub fn Workbench(class_name: String, children: Element) -> Element {
+    let class = workbench_class(&class_name);
+
+    rsx! {
+        div { class, {children} }
+    }
+}
+
+#[component]
+pub fn MainColumn(children: Element) -> Element {
+    rsx! {
+        div { class: "mn-main-column", {children} }
+    }
+}
+
+#[component]
+pub fn EditorToolbar(children: Element) -> Element {
+    rsx! {
+        div { class: "mn-editor-chrome", {children} }
+    }
+}
+
+#[component]
+pub fn ToolbarZone(kind: ToolbarZoneKind, class_name: String, children: Element) -> Element {
+    let class = toolbar_zone_class(kind, &class_name);
+
+    rsx! {
+        div { class, {children} }
+    }
+}
+
+#[component]
+pub fn ScrollContainer(class_name: String, children: Element) -> Element {
+    rsx! {
+        div { class: "{class_name}", {children} }
     }
 }
 
@@ -679,6 +752,23 @@ mod tests {
             "mn-button primary wide"
         );
         assert_eq!(action_button_class(ButtonVariant::Default, ""), "mn-button");
+    }
+
+    #[test]
+    fn layout_helpers_extend_base_classes() {
+        assert_eq!(workbench_class(""), "mn-workbench");
+        assert_eq!(
+            workbench_class("mn-workbench-mobile"),
+            "mn-workbench mn-workbench-mobile"
+        );
+        assert_eq!(
+            toolbar_zone_class(ToolbarZoneKind::Flexible, "extra"),
+            "mn-editor-tabs-row extra"
+        );
+        assert_eq!(
+            toolbar_zone_class(ToolbarZoneKind::Fixed, ""),
+            "mn-editor-tools"
+        );
     }
 
     #[test]

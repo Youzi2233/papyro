@@ -1,6 +1,7 @@
 use crate::components::{
     command_palette::CommandPaletteModal,
     editor::EditorPane,
+    primitives::{AppShell, MainColumn, Workbench},
     quick_open::QuickOpenModal,
     recovery::{RecoveryDraftCompareModal, RecoveryDraftsModal},
     search::SearchModal,
@@ -129,10 +130,9 @@ pub fn DesktopLayout() -> Element {
     });
 
     rsx! {
-        div {
-            class: "mn-shell",
+        AppShell {
             ThemeDomEffect {}
-            div { class: "mn-workbench",
+            Workbench { class_name: String::new(),
                 if !sidebar_collapsed {
                     Sidebar {
                         on_search: move |_| {
@@ -151,7 +151,7 @@ pub fn DesktopLayout() -> Element {
                         },
                     }
                 }
-                div { class: "mn-main-column",
+                MainColumn {
                     EditorPane {
                         on_settings: move |_| {
                             let started_at = perf_timer();

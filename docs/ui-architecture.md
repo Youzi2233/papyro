@@ -62,7 +62,7 @@ Rules:
 | `Tabs` | Exists | Distinguish segmented tabs from document tab bar. |
 | `SidebarItem` | Missing | Needed to unify sidebar buttons, workspace rows, and navigation rows. |
 | `TreeItem` | Missing | Needed to own file/folder icons, expand state, keyboard state, selected state, and context-menu affordance. |
-| `Toolbar` | Missing | Needed for editor chrome and fixed action zones. |
+| `Toolbar` / `ToolbarZone` | Partial | `EditorToolbar` and `ToolbarZone` now wrap the editor chrome's flexible tabs zone and fixed tools zone; split panes, resizable rails, and generic scroll containers still need broader adoption. |
 | `EmptyState` | Exists | Add compact, onboarding, error, and action variants. |
 | `Skeleton` | Missing | Needed for workspace load, search load, and future async windows. |
 | `InlineAlert` / `ErrorState` | Partial | `InlineAlert` now covers preview notices and command/search empty states; `ErrorState` is still needed for larger blocking failures. |
@@ -107,7 +107,7 @@ Acceptable one-off CSS:
 1. **Settings rows:** move settings sections to `SettingsRow`, `DialogSection`, `Switch`, `Select`, and `SegmentedControl` contracts.
 2. **Result rows:** align command palette, quick open, and search result rows.
 3. **Tree rows:** extract file-tree row behavior into a reusable `TreeItem` pattern.
-4. **Editor chrome:** split tab overflow, mode switch, outline action, and overflow menu into `ToolbarZone` rules.
+4. **Editor chrome:** continue building on `EditorToolbar` and `ToolbarZone` for tab overflow, mode switch, outline action, and future overflow menu rules.
 5. **Empty/loading/error:** extend the new `InlineAlert` pattern, then add `Skeleton` and `ErrorState` before the next broad async UI pass.
 6. **Markdown surfaces:** apply shared Markdown tokens only after Hybrid selection and hit testing are stable.
 
