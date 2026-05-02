@@ -6,6 +6,7 @@ use crate::components::{
     command_palette::CommandPaletteModal,
     editor::EditorPane,
     header::AppHeader,
+    primitives::TextInput,
     quick_open::QuickOpenModal,
     settings::SettingsModal,
     sidebar::{FileTree, FileTreeSortMode},
@@ -155,13 +156,13 @@ pub fn MobileLayout() -> Element {
 
                         if show_create() {
                             div { class: "mn-mobile-form",
-                                input {
-                                    class: "mn-input",
-                                    placeholder: i18n.text("Note name", "笔记名称"),
-                                    value: "{create_name}",
+                                TextInput {
+                                    class_name: "mn-input".to_string(),
+                                    placeholder: i18n.text("Note name", "笔记名称").to_string(),
+                                    value: create_name(),
                                     autofocus: true,
-                                    oninput: move |e| create_name.set(e.value()),
-                                    onkeydown: move |e| {
+                                    on_input: move |value| create_name.set(value),
+                                    on_keydown: move |e: KeyboardEvent| {
                                         if e.key() == Key::Enter {
                                             let name = create_name().trim().to_string();
                                             commands.create_note.call(if name.is_empty() { "Untitled".to_string() } else { name });
@@ -220,13 +221,13 @@ pub fn MobileLayout() -> Element {
                                 }
                                 if show_rename() {
                                     div { class: "mn-mobile-form",
-                                        input {
-                                            class: "mn-input",
-                                            placeholder: i18n.text("New name", "新名称"),
-                                            value: "{rename_name}",
+                                        TextInput {
+                                            class_name: "mn-input".to_string(),
+                                            placeholder: i18n.text("New name", "新名称").to_string(),
+                                            value: rename_name(),
                                             autofocus: true,
-                                            oninput: move |e| rename_name.set(e.value()),
-                                            onkeydown: move |e| {
+                                            on_input: move |value| rename_name.set(value),
+                                            on_keydown: move |e: KeyboardEvent| {
                                                 if e.key() == Key::Enter {
                                                     let name = rename_name().trim().to_string();
                                                     if !name.is_empty() {

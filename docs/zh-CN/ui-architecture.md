@@ -49,7 +49,7 @@ flowchart TD
 | --- | --- | --- |
 | `Button` / `ActionButton` / `RowActionButton` | 部分已有 | `ActionButton` 已支持复用图标和 loading/disabled 状态；`RowActionButton` 让结果行内按钮不会触发行选择。下一步补尺寸 variant 并迁移剩余原生按钮。 |
 | `IconButton` | 已有 | 增加 selected/current、disabled、destructive、compact 和 tooltip placement。 |
-| `Input` / `TextInput` | 部分已有 | 收敛成一个组件族，支持 label、error、disabled、inline action。 |
+| `Input` / `TextInput` | 部分已有 | `TextInput` 已覆盖命令/搜索/快速打开输入框，以及普通侧边栏、移动端、设置标签文本输入。文件树 inline rename 仍保留专用路径，等 blur/context-menu 契约迁入组件族后再统一。下一步补 label、error、disabled、inline action。 |
 | `Select` | 已有 | 增加键盘导航、必要时支持 option group、增加尺寸 variant。 |
 | `SegmentedControl` | 已有 | 继续用于主题、视图模式等小枚举；必要时支持 disabled option。 |
 | `Switch` | 部分已有 | `Switch` 已作为布尔设置控件的首选入口；`Toggle` 保留为兼容封装。下一步补 disabled 和 helper/error 状态。 |

@@ -49,7 +49,7 @@ Rules:
 | --- | --- | --- |
 | `Button` / `ActionButton` / `RowActionButton` | Partial | `ActionButton` adds reusable icon and loading/disabled state support; `RowActionButton` keeps result-row actions from triggering row selection. Next work should add size variants and migrate remaining raw button markup. |
 | `IconButton` | Exists | Add selected/current, disabled, destructive, compact, and tooltip placement support. |
-| `Input` / `TextInput` | Partial | Rename into one primitive family with label, error, disabled, and inline action support. |
+| `Input` / `TextInput` | Partial | `TextInput` now covers command/search/quick-open fields plus ordinary sidebar, mobile, and settings tag text fields. Inline tree rename still needs a dedicated path until blur/context-menu contracts move into the primitive family. Next work should add label, error, disabled, and inline action support. |
 | `Select` | Exists | Add keyboard navigation, option groups when needed, and size variants. |
 | `SegmentedControl` | Exists | Keep for small enumerations such as theme and view mode. Add disabled options if needed. |
 | `Switch` | Partial | `Switch` is now the preferred boolean control; `Toggle` remains as a compatibility wrapper. Next work should add disabled and helper/error states. |

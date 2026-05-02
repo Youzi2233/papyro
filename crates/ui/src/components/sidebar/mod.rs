@@ -2,7 +2,7 @@ pub mod file_tree;
 
 use crate::commands::FileTarget;
 use crate::components::primitives::{
-    ActionButton, ButtonState, ButtonVariant, ContextMenu, MenuItem, SidebarItem,
+    ActionButton, ButtonState, ButtonVariant, ContextMenu, MenuItem, SidebarItem, TextInput,
 };
 use crate::context::use_app_context;
 use crate::i18n::use_i18n;
@@ -191,13 +191,13 @@ pub fn Sidebar(on_search: EventHandler<()>, on_settings: EventHandler<()>) -> El
 
                 if show_create() {
                     div { class: "mn-sidebar-create",
-                        input {
-                            class: "mn-input",
-                            placeholder: i18n.text("Note name", "笔记名称"),
-                            value: "{create_name}",
+                        TextInput {
+                            class_name: "mn-input".to_string(),
+                            placeholder: i18n.text("Note name", "笔记名称").to_string(),
+                            value: create_name(),
                             autofocus: true,
-                            oninput: move |e| create_name.set(e.value()),
-                            onkeydown: move |e| {
+                            on_input: move |value| create_name.set(value),
+                            on_keydown: move |e: KeyboardEvent| {
                                 if e.key() == Key::Enter {
                                     let name = create_name().trim().to_string();
                                     let name = if name.is_empty() { "Untitled".to_string() } else { name };

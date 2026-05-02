@@ -4,7 +4,7 @@ use crate::commands::{
 use crate::components::primitives::{
     ActionButton, Button, ButtonState, ButtonVariant, DialogSection, DropdownOption, Modal, Select,
     SettingsContent, SettingsInlineRow, SettingsInlineRowKind, SettingsLayout, SettingsNav,
-    SettingsNavItem, SettingsPanel, SettingsRow, Slider, Switch,
+    SettingsNavItem, SettingsPanel, SettingsRow, Slider, Switch, TextInput,
 };
 use crate::context::use_app_context;
 use crate::i18n::{use_i18n, UiText};
@@ -382,14 +382,15 @@ fn TagManagementSection(
                     SettingsInlineRow {
                         kind: SettingsInlineRowKind::Create,
                         class_name: String::new(),
-                        input {
-                            class: "mn-input mn-tag-name-input",
-                            placeholder: i18n.text("New tag", "新标签"),
-                            value: "{new_name_value}",
-                            oninput: move |event| new_name.set(event.value()),
-                            onkeydown: {
+                        TextInput {
+                            class_name: "mn-input mn-tag-name-input".to_string(),
+                            placeholder: i18n.text("New tag", "新标签").to_string(),
+                            value: new_name_value,
+                            autofocus: false,
+                            on_input: move |value| new_name.set(value),
+                            on_keydown: {
                                 let commands = commands.clone();
-                                move |event| {
+                                move |event: KeyboardEvent| {
                                     if event.key() == Key::Enter {
                                         let name = cleaned_tag_name(&new_name());
                                         if !name.is_empty() {
@@ -487,18 +488,20 @@ fn TagEditorRow(tag: TagListItem, has_workspace: bool, commands: AppCommands) ->
         SettingsInlineRow {
             kind: SettingsInlineRowKind::Edit,
             class_name: String::new(),
-            input {
-                class: "mn-input mn-tag-name-input",
-                value: "{name_value}",
-                oninput: move |event| {
-                    name.set(event.value());
+            TextInput {
+                class_name: "mn-input mn-tag-name-input".to_string(),
+                placeholder: i18n.text("Tag name", "标签名称").to_string(),
+                value: name_value,
+                autofocus: false,
+                on_input: move |value| {
+                    name.set(value);
                     confirm_delete.set(false);
                 },
-                onkeydown: {
+                on_keydown: {
                     let commands = commands.clone();
                     let tag_id = tag.id.clone();
                     let original_name = tag.name.clone();
-                    move |event| {
+                    move |event: KeyboardEvent| {
                         if event.key() == Key::Enter {
                             let next_name = cleaned_tag_name(&name());
                             if !next_name.is_empty() && next_name != original_name {
