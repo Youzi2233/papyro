@@ -195,7 +195,6 @@ flowchart TD
 - [x] 增加目标平台 app icons。
 - [x] 增加首次启动 workspace onboarding。
 - [x] 增加 release build 手工 QA checklist。
-- [ ] README 增加截图或短 demo。
 - [x] 文档化 known limitations。
 
 ## 长期原则
