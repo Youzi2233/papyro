@@ -24,6 +24,10 @@ pub(super) fn sidebar_item_class(selected: bool, class_name: &str) -> String {
     append_class(base, class_name)
 }
 
+pub(super) fn sidebar_search_button_class(class_name: &str) -> String {
+    append_class("mn-sidebar-search", class_name)
+}
+
 pub(super) fn tree_item_class(
     kind: TreeItemKind,
     is_selected: bool,
@@ -64,6 +68,31 @@ pub(super) fn tree_icon_class(kind: TreeItemIconKind) -> &'static str {
         TreeItemIconKind::Folder => "mn-tree-icon folder",
         TreeItemIconKind::FolderOpen => "mn-tree-icon folder-open",
         TreeItemIconKind::Markdown => "mn-tree-icon markdown",
+    }
+}
+
+#[component]
+pub fn SidebarSearchButton(
+    label: String,
+    title: String,
+    shortcut: String,
+    class_name: String,
+    disabled: bool,
+    on_click: EventHandler<()>,
+) -> Element {
+    let class = sidebar_search_button_class(&class_name);
+
+    rsx! {
+        button {
+            r#type: "button",
+            class,
+            disabled,
+            title,
+            onclick: move |_| on_click.call(()),
+            span { class: "mn-sidebar-search-icon", "⌕" }
+            span { class: "mn-sidebar-search-label", "{label}" }
+            span { class: "mn-sidebar-search-shortcut", "{shortcut}" }
+        }
     }
 }
 

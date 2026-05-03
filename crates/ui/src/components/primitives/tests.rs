@@ -9,7 +9,9 @@ use super::layout::{
     app_shell_class, editor_tab_scroll_button_class, editor_tool_button_class,
     scroll_container_class, toolbar_zone_class, workbench_class,
 };
-use super::navigation::{tree_caret_class, tree_icon_class, tree_item_class};
+use super::navigation::{
+    sidebar_search_button_class, tree_caret_class, tree_icon_class, tree_item_class,
+};
 use super::overlays::menu_item_class;
 use super::results::result_row_class;
 use super::settings::{settings_inline_row_class, settings_nav_button_class};
@@ -106,6 +108,11 @@ fn layout_helpers_extend_base_classes() {
     assert_eq!(
         settings_inline_row_class(SettingsInlineRowKind::Edit, ""),
         "mn-setting-inline-row edit"
+    );
+    assert_eq!(sidebar_search_button_class(""), "mn-sidebar-search");
+    assert_eq!(
+        sidebar_search_button_class("compact"),
+        "mn-sidebar-search compact"
     );
 }
 

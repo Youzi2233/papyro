@@ -3,7 +3,7 @@ pub mod file_tree;
 use crate::commands::FileTarget;
 use crate::components::primitives::{
     ActionButton, Button, ButtonState, ButtonVariant, ContextMenu, IconButton, MenuItem,
-    SegmentedControl, SegmentedControlOption, SidebarItem, TextInput,
+    SegmentedControl, SegmentedControlOption, SidebarItem, SidebarSearchButton, TextInput,
 };
 use crate::context::use_app_context;
 use crate::i18n::use_i18n;
@@ -94,6 +94,11 @@ pub fn Sidebar(on_search: EventHandler<()>, on_settings: EventHandler<()>) -> El
     } else {
         i18n.text("Open workspace", "打开工作区")
     };
+    let search_title = if has_workspace {
+        i18n.text("Search workspace", "搜索工作区")
+    } else {
+        i18n.text("Open a workspace to search", "打开工作区后即可搜索")
+    };
 
     rsx! {
         aside {
@@ -136,18 +141,13 @@ pub fn Sidebar(on_search: EventHandler<()>, on_settings: EventHandler<()>) -> El
                         }
                     }
                 }
-                button {
-                    class: "mn-sidebar-search",
+                SidebarSearchButton {
+                    label: i18n.text("Search notes", "搜索笔记").to_string(),
+                    title: search_title.to_string(),
+                    shortcut: "Ctrl Shift F".to_string(),
+                    class_name: String::new(),
                     disabled: !has_workspace,
-                    title: if has_workspace {
-                        i18n.text("Search workspace", "搜索工作区")
-                    } else {
-                        i18n.text("Open a workspace to search", "打开工作区后即可搜索")
-                    },
-                    onclick: move |_| on_search.call(()),
-                    span { class: "mn-sidebar-search-icon", "⌕" }
-                    span { class: "mn-sidebar-search-label", {i18n.text("Search notes", "搜索笔记")} }
-                    span { class: "mn-sidebar-search-shortcut", "Ctrl Shift F" }
+                    on_click: move |_| on_search.call(()),
                 }
                 if let Some(root_path) = workspace_root_path.clone() {
                     SidebarItem {

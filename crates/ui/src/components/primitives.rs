@@ -24,7 +24,8 @@ pub use layout::{
     ToolbarZone, ToolbarZoneKind, Workbench,
 };
 pub use navigation::{
-    SidebarItem, TreeItemButton, TreeItemEditRow, TreeItemIconKind, TreeItemKind, TreeItemLabel,
+    SidebarItem, SidebarSearchButton, TreeItemButton, TreeItemEditRow, TreeItemIconKind,
+    TreeItemKind, TreeItemLabel,
 };
 pub use overlays::{
     ContextMenu, Menu, MenuItem, MenuSeparator, Modal, ModalCloseButton, ModalHeader, Tooltip,
