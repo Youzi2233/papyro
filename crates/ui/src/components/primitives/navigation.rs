@@ -28,6 +28,10 @@ pub(super) fn sidebar_search_button_class(class_name: &str) -> String {
     append_class("mn-sidebar-search", class_name)
 }
 
+pub(super) fn outline_item_class(level: u8, class_name: &str) -> String {
+    append_class(&format!("mn-outline-item level-{level}"), class_name)
+}
+
 pub(super) fn tree_item_class(
     kind: TreeItemKind,
     is_selected: bool,
@@ -68,6 +72,33 @@ pub(super) fn tree_icon_class(kind: TreeItemIconKind) -> &'static str {
         TreeItemIconKind::Folder => "mn-tree-icon folder",
         TreeItemIconKind::FolderOpen => "mn-tree-icon folder-open",
         TreeItemIconKind::Markdown => "mn-tree-icon markdown",
+    }
+}
+
+#[component]
+pub fn OutlineItemButton(
+    label: String,
+    title: String,
+    tab_id: String,
+    line_number: usize,
+    heading_index: usize,
+    level: u8,
+    class_name: String,
+    on_click: EventHandler<()>,
+) -> Element {
+    let class = outline_item_class(level, &class_name);
+
+    rsx! {
+        button {
+            r#type: "button",
+            class,
+            "data-tab-id": "{tab_id}",
+            "data-line-number": "{line_number}",
+            "data-heading-index": "{heading_index}",
+            title,
+            onclick: move |_| on_click.call(()),
+            "{label}"
+        }
     }
 }
 

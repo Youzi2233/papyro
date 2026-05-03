@@ -1,6 +1,7 @@
 #[cfg(test)]
 use super::document_cache::DocumentDerivedCacheState;
 use super::document_cache::{DocumentCacheKey, DocumentDerivedCache};
+use crate::components::primitives::OutlineItemButton;
 use crate::i18n::use_i18n;
 use crate::perf::{perf_timer, trace_outline_extract};
 use dioxus::prelude::*;
@@ -89,15 +90,16 @@ pub(super) fn OutlinePane(
             div { class: "mn-outline-title", {i18n.text("Outline", "大纲")} }
             nav { class: "mn-outline-list",
                 for (heading_index, item) in outline.iter().enumerate() {
-                    button {
+                    OutlineItemButton {
                         key: "{item.line_number}",
-                        r#type: "button",
-                        class: "mn-outline-item level-{item.level}",
-                        "data-tab-id": "{tab_id}",
-                        "data-line-number": "{item.line_number}",
-                        "data-heading-index": "{heading_index}",
+                        label: item.title.clone(),
+                        tab_id: tab_id.clone(),
+                        line_number: item.line_number,
+                        heading_index,
+                        level: item.level,
+                        class_name: String::new(),
                         title: format!("{} {}", i18n.text("Line", "第"), item.line_number),
-                        onclick: {
+                        on_click: {
                             let script = navigate_outline_script(
                                 &tab_id,
                                 item.line_number,
@@ -108,7 +110,6 @@ pub(super) fn OutlinePane(
                                 document::eval(&script);
                             }
                         },
-                        "{item.title}"
                     }
                 }
             }

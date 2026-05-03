@@ -10,7 +10,8 @@ use super::layout::{
     scroll_container_class, toolbar_zone_class, workbench_class,
 };
 use super::navigation::{
-    sidebar_search_button_class, tree_caret_class, tree_icon_class, tree_item_class,
+    outline_item_class, sidebar_search_button_class, tree_caret_class, tree_icon_class,
+    tree_item_class,
 };
 use super::overlays::menu_item_class;
 use super::results::result_row_class;
@@ -113,6 +114,11 @@ fn layout_helpers_extend_base_classes() {
     assert_eq!(
         sidebar_search_button_class("compact"),
         "mn-sidebar-search compact"
+    );
+    assert_eq!(outline_item_class(1, ""), "mn-outline-item level-1");
+    assert_eq!(
+        outline_item_class(3, "current"),
+        "mn-outline-item level-3 current"
     );
 }
 
