@@ -51,6 +51,7 @@ flowchart TD
 
 - 使用 Dioxus 0.7 组件函数，props 使用 owned value，并实现 `Clone + PartialEq`。
 - 用显式 props 表达语义状态：`selected`、`disabled`、`danger`、`loading`、`compact`、`checked`、`current`、`expanded` 优于临时 class 字符串。
+- primitive 状态 class 应使用内部共享 `ClassBuilder` 组合，避免在每个组件族里重复手拼 `active`、`disabled`、`dragging`、`drop-target` 和扩展 class 顺序。
 - 明确事件边界。行内动作不应触发行选择，右键菜单目标不应触发文件打开，弹窗关闭控件不应依赖父级 DOM 细节。
 - 通用 role 的 ARIA 放在基础组件层。产品组件只负责传入面向用户的 label 和 ID。
 - 产品文案保持国际化。基础组件可以接收 label 字符串，但不拥有具体中英文产品文案。

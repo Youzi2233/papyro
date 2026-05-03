@@ -48,5 +48,38 @@ fn append_class(base: &str, class_name: &str) -> String {
     }
 }
 
+struct ClassBuilder {
+    classes: Vec<&'static str>,
+}
+
+impl ClassBuilder {
+    fn new(base: &'static str) -> Self {
+        Self {
+            classes: vec![base],
+        }
+    }
+
+    fn when(mut self, condition: bool, class_name: &'static str) -> Self {
+        if condition {
+            self.classes.push(class_name);
+        }
+        self
+    }
+
+    fn push(mut self, class_name: &'static str) -> Self {
+        self.classes.push(class_name);
+        self
+    }
+
+    fn extend(self, class_name: &str) -> String {
+        append_class(&self.classes.join(" "), class_name)
+    }
+
+    fn extend_when(self, class_name: &str, condition: bool, state_class: &'static str) -> String {
+        let state_class = if condition { state_class } else { "" };
+        append_class(&self.extend(class_name), state_class)
+    }
+}
+
 #[cfg(test)]
 mod tests;

@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 
-use super::append_class;
+use super::{append_class, ClassBuilder};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SegmentedControlOption {
@@ -37,17 +37,9 @@ pub(super) fn segmented_option_class(
     disabled: bool,
     class_name: &str,
 ) -> String {
-    let base = if is_selected {
-        "mn-segmented-option active"
-    } else {
-        "mn-segmented-option"
-    };
-    let class = append_class(base, class_name);
-    if disabled {
-        append_class(&class, "disabled")
-    } else {
-        class
-    }
+    ClassBuilder::new("mn-segmented-option")
+        .when(is_selected, "active")
+        .extend_when(class_name, disabled, "disabled")
 }
 
 pub(super) fn dropdown_class(is_open: bool) -> &'static str {

@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 
-use super::append_class;
+use super::{append_class, ClassBuilder};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TreeItemKind {
@@ -43,20 +43,13 @@ pub(super) fn tree_item_class(
         TreeItemKind::Directory => "directory",
         TreeItemKind::Note => "note",
     };
-    let mut classes = vec!["mn-tree-row", kind_class];
-    if is_selected {
-        classes.push("active");
-    }
-    if is_editing {
-        classes.push("editing");
-    }
-    if is_dragging {
-        classes.push("dragging");
-    }
-    if is_drop_target {
-        classes.push("drop-target");
-    }
-    classes.join(" ")
+    ClassBuilder::new("mn-tree-row")
+        .push(kind_class)
+        .when(is_selected, "active")
+        .when(is_editing, "editing")
+        .when(is_dragging, "dragging")
+        .when(is_drop_target, "drop-target")
+        .extend("")
 }
 
 pub(super) fn tree_caret_class(is_expanded: bool) -> &'static str {

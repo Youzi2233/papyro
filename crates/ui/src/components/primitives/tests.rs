@@ -20,6 +20,25 @@ use super::tabs::{document_tab_class, tab_option_class};
 use super::*;
 
 #[test]
+fn class_builder_preserves_state_order_and_extension_class() {
+    assert_eq!(
+        ClassBuilder::new("mn-control")
+            .push("primary")
+            .when(true, "active")
+            .when(false, "disabled")
+            .extend("compact"),
+        "mn-control primary active compact"
+    );
+    assert_eq!(
+        ClassBuilder::new("mn-control")
+            .when(true, "active")
+            .extend_when("compact", true, "disabled"),
+        "mn-control active compact disabled"
+    );
+    assert_eq!(ClassBuilder::new("mn-control").extend(""), "mn-control");
+}
+
+#[test]
 fn button_variant_maps_to_existing_classes() {
     assert_eq!(ButtonVariant::Default.class(), "mn-button");
     assert_eq!(ButtonVariant::Primary.class(), "mn-button primary");

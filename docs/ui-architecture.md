@@ -51,6 +51,7 @@ New or changed Dioxus UI components should follow these rules:
 
 - Use Dioxus 0.7 component functions with owned props that implement `Clone + PartialEq`.
 - Prefer explicit props for semantic state: `selected`, `disabled`, `danger`, `loading`, `compact`, `checked`, `current`, and `expanded` are better than ad hoc class strings.
+- Compose primitive state classes through the shared internal `ClassBuilder` helper instead of hand-assembling repeated `active`, `disabled`, `dragging`, `drop-target`, and extension class order in each primitive family.
 - Keep event boundaries clear. Row actions should not trigger row selection, context-menu targets should not trigger file open, and modal close controls should not depend on parent DOM details.
 - Add ARIA at the primitive level when the role is generic. Product components should only supply user-facing labels and IDs.
 - Keep labels internationalized in product components. Primitives may accept label strings, but should not own English or Chinese product copy.
