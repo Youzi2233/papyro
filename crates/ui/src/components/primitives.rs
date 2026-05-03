@@ -1095,6 +1095,18 @@ pub fn Modal(
 }
 
 #[component]
+pub fn ModalCloseButton(label: String, on_close: EventHandler<()>) -> Element {
+    rsx! {
+        button {
+            class: "mn-modal-close",
+            "aria-label": "{label}",
+            onclick: move |_| on_close.call(()),
+            "x"
+        }
+    }
+}
+
+#[component]
 pub fn TextInput(
     class_name: String,
     placeholder: String,

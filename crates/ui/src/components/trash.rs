@@ -1,7 +1,7 @@
 use crate::commands::{AppCommands, RestoreTrashedNoteTarget};
 use crate::components::primitives::{
-    Button, ButtonState, ButtonVariant, InlineAlert, InlineAlertTone, Modal, ModalFooterMeta,
-    ResultRow, ResultRowKind, RowActionButton, RowActions,
+    Button, ButtonState, ButtonVariant, InlineAlert, InlineAlertTone, Modal, ModalCloseButton,
+    ModalFooterMeta, ResultRow, ResultRowKind, RowActionButton, RowActions,
 };
 use crate::context::use_app_context;
 use crate::i18n::{i18n_for, use_i18n};
@@ -27,11 +27,9 @@ pub fn TrashModal(on_close: EventHandler<()>) -> Element {
             on_close,
             div { class: "mn-modal-header",
                 h2 { class: "mn-modal-title", {i18n.text("Trash", "回收站")} }
-                button {
-                    class: "mn-modal-close",
-                    "aria-label": i18n.text("Close trash", "关闭回收站"),
-                    onclick: move |_| on_close.call(()),
-                    "x"
+                ModalCloseButton {
+                    label: i18n.text("Close trash", "关闭回收站").to_string(),
+                    on_close,
                 }
             }
             if notes.is_empty() {
