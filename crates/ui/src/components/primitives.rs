@@ -270,6 +270,15 @@ fn toolbar_zone_class(kind: ToolbarZoneKind, class_name: &str) -> String {
     append_class(base, class_name)
 }
 
+fn editor_tool_button_class(selected: bool, class_name: &str) -> String {
+    let base = if selected {
+        "mn-editor-tool icon-only active"
+    } else {
+        "mn-editor-tool icon-only"
+    };
+    append_class(base, class_name)
+}
+
 fn scroll_container_class(class_name: &str) -> String {
     append_class("mn-scroll-container", class_name)
 }
@@ -390,6 +399,29 @@ pub fn ToolbarZone(kind: ToolbarZoneKind, class_name: String, children: Element)
 
     rsx! {
         div { class, {children} }
+    }
+}
+
+#[component]
+pub fn EditorToolButton(
+    label: String,
+    class_name: String,
+    icon_class: String,
+    disabled: bool,
+    selected: bool,
+    on_click: EventHandler<()>,
+) -> Element {
+    let class = editor_tool_button_class(selected, &class_name);
+
+    rsx! {
+        button {
+            class,
+            title: "{label}",
+            "aria-label": "{label}",
+            disabled,
+            onclick: move |_| on_click.call(()),
+            span { class: "{icon_class}", "aria-hidden": "true" }
+        }
     }
 }
 
@@ -1310,6 +1342,14 @@ mod tests {
         assert_eq!(
             toolbar_zone_class(ToolbarZoneKind::Fixed, ""),
             "mn-editor-tools"
+        );
+        assert_eq!(
+            editor_tool_button_class(false, ""),
+            "mn-editor-tool icon-only"
+        );
+        assert_eq!(
+            editor_tool_button_class(true, "mn-editor-outline-toggle"),
+            "mn-editor-tool icon-only active mn-editor-outline-toggle"
         );
         assert_eq!(scroll_container_class(""), "mn-scroll-container");
         assert_eq!(

@@ -6,7 +6,7 @@ use super::preview::{PreviewLinkBridge, PreviewPane};
 use super::tabbar::EditorTabButton;
 use crate::commands::AppCommands;
 use crate::components::primitives::{
-    Button, ButtonVariant, EditorToolbar, ToolbarZone, ToolbarZoneKind,
+    Button, ButtonVariant, EditorToolButton, EditorToolbar, ToolbarZone, ToolbarZoneKind,
 };
 use crate::context::use_app_context;
 use crate::i18n::{i18n_for, use_i18n, UiText};
@@ -155,14 +155,6 @@ fn sidebar_toggle_icon_class(collapsed: bool) -> &'static str {
         "mn-tool-icon sidebar-closed"
     } else {
         "mn-tool-icon sidebar-open"
-    }
-}
-
-fn outline_tool_class(visible: bool) -> &'static str {
-    if visible {
-        "mn-editor-tool icon-only active"
-    } else {
-        "mn-editor-tool icon-only"
     }
 }
 
@@ -434,7 +426,6 @@ fn EditorChrome(
     let mode_commands = commands.clone();
     let sidebar_label = sidebar_toggle_label(i18n, sidebar_collapsed);
     let sidebar_icon_class = sidebar_toggle_icon_class(sidebar_collapsed);
-    let outline_class = outline_tool_class(outline_visible);
     let outline_label = if outline_visible {
         i18n.text("Hide outline", "隐藏大纲")
     } else {
@@ -444,14 +435,15 @@ fn EditorChrome(
     rsx! {
         EditorToolbar {
             ToolbarZone { kind: ToolbarZoneKind::Flexible, class_name: String::new(),
-                button {
-                    class: "mn-editor-tool mn-editor-sidebar-toggle icon-only",
-                    title: "{sidebar_label}",
-                    "aria-label": "{sidebar_label}",
-                    onclick: move |_| {
+                EditorToolButton {
+                    label: sidebar_label.to_string(),
+                    class_name: "mn-editor-sidebar-toggle".to_string(),
+                    icon_class: sidebar_icon_class.to_string(),
+                    disabled: false,
+                    selected: false,
+                    on_click: move |_| {
                         crate::chrome::toggle_sidebar(sidebar_commands.clone(), "editor");
                     },
-                    span { class: sidebar_icon_class, "aria-hidden": "true" }
                 }
                 button {
                     class: "mn-tab-scroll-btn",
@@ -507,13 +499,13 @@ fn EditorChrome(
                         }
                     }
                 }
-                button {
-                    class: "{outline_class} mn-editor-outline-toggle",
-                    title: "{outline_label}",
-                    "aria-label": "{outline_label}",
+                EditorToolButton {
+                    label: outline_label.to_string(),
+                    class_name: "mn-editor-outline-toggle".to_string(),
+                    icon_class: "mn-tool-icon outline".to_string(),
                     disabled: !has_active_tab,
-                    onclick: move |_| outline_commands.toggle_outline.call(()),
-                    span { class: "mn-tool-icon outline", "aria-hidden": "true" }
+                    selected: outline_visible,
+                    on_click: move |_| outline_commands.toggle_outline.call(()),
                 }
             }
         }
@@ -818,8 +810,6 @@ mod tests {
             sidebar_toggle_icon_class(true),
             "mn-tool-icon sidebar-closed"
         );
-        assert_eq!(outline_tool_class(false), "mn-editor-tool icon-only");
-        assert_eq!(outline_tool_class(true), "mn-editor-tool icon-only active");
     }
 
     #[test]
