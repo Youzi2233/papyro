@@ -31,6 +31,7 @@ Short term:
 
 - Keep `pulldown-cmark` and `syntect`.
 - Align Preview and Hybrid Markdown spacing against GitHub Markdown conventions.
+- Render horizontal rules as quiet tokenized dividers, not decorative glyphs.
 - Use Papyro semantic tokens instead of third-party variable names.
 - Add high-contrast and colorblind-aware checks before shipping new theme variants.
 
@@ -54,4 +55,3 @@ Medium term:
 - [Shiki themes](https://shiki.matsu.io/themes)
 - [`highlight.js` package license and repository metadata](https://licenses.dev/npm/highlight.js/11.11.1)
 - [`catppuccin/catppuccin` README](https://github.com/catppuccin/catppuccin)
-

@@ -31,6 +31,7 @@ Papyro 应该让 Markdown 用户觉得熟悉，但不能变成另一个产品的
 
 - 保持 `pulldown-cmark` 和 `syntect`。
 - 按 GitHub Markdown 的惯例校准 Preview 和 Hybrid 的 Markdown 间距。
+- 水平分割线使用克制的 token 化分隔线，不使用装饰字符。
 - 使用 Papyro 自己的语义 token，不直接沿用第三方变量名。
 - 新增主题变体前，先补高对比度和色盲友好检查。
 
@@ -54,4 +55,3 @@ Papyro 应该让 Markdown 用户觉得熟悉，但不能变成另一个产品的
 - [Shiki themes](https://shiki.matsu.io/themes)
 - [`highlight.js` package license and repository metadata](https://licenses.dev/npm/highlight.js/11.11.1)
 - [`catppuccin/catppuccin` README](https://github.com/catppuccin/catppuccin)
-
