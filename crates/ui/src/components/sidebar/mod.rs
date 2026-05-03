@@ -229,23 +229,9 @@ pub fn Sidebar(on_search: EventHandler<()>, on_settings: EventHandler<()>) -> El
                 }
             }
 
-            div {
-                class: "mn-tree-sortbar",
-                role: "group",
-                "aria-label": "File tree sort",
-                for mode in FileTreeSortMode::all() {
-                    button {
-                        class: if tree_sort() == mode { "mn-tree-sort-btn active" } else { "mn-tree-sort-btn" },
-                        title: format!(
-                            "{} {}",
-                            i18n.text("Sort by", "排序方式"),
-                            sort_mode_label(mode, i18n)
-                        ),
-                        "aria-pressed": "{tree_sort() == mode}",
-                        onclick: move |_| tree_sort.set(mode),
-                        "{sort_mode_label(mode, i18n)}"
-                    }
-                }
+            TreeSortControl {
+                selected: tree_sort(),
+                on_change: move |mode| tree_sort.set(mode),
             }
 
             FileTree { sort_mode: tree_sort() }
@@ -330,6 +316,35 @@ pub fn Sidebar(on_search: EventHandler<()>, on_settings: EventHandler<()>) -> El
                 SidebarWorkspaceMenuView {
                     menu,
                     on_close: move |_| workspace_menu.set(None),
+                }
+            }
+        }
+    }
+}
+
+#[component]
+pub fn TreeSortControl(
+    selected: FileTreeSortMode,
+    on_change: EventHandler<FileTreeSortMode>,
+) -> Element {
+    let i18n = use_i18n();
+
+    rsx! {
+        div {
+            class: "mn-tree-sortbar",
+            role: "group",
+            "aria-label": i18n.text("File tree sort", "文件树排序"),
+            for mode in FileTreeSortMode::all() {
+                button {
+                    class: if selected == mode { "mn-tree-sort-btn active" } else { "mn-tree-sort-btn" },
+                    title: format!(
+                        "{} {}",
+                        i18n.text("Sort by", "排序方式"),
+                        sort_mode_label(mode, i18n)
+                    ),
+                    "aria-pressed": "{selected == mode}",
+                    onclick: move |_| on_change.call(mode),
+                    "{sort_mode_label(mode, i18n)}"
                 }
             }
         }

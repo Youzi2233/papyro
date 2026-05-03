@@ -36,7 +36,7 @@ flowchart TD
 | 区域 | 当前组件 | 说明 |
 | --- | --- | --- |
 | 基础组件 | `Button`、`ActionButton`、`RowActionButton`、`IconButton`、`Select`、`Dropdown`、`SegmentedControl`、`Tabs`、`Modal`、`ModalHeader`、`ModalCloseButton`、`Menu`、`ContextMenu`、`MenuItem`、`Tooltip`、`Message`、`StatusStrip`、`StatusMessage`、`StatusIndicator`、`FormField`、`Switch`、`Toggle`、`Slider`、`TextInput`、`ResultList`、`ResultRow`、`RowActions`、`ModalFooterMeta`、`ComparePanel`、`SkeletonRows`、`ErrorState`、`SettingsLayout`、`SettingsNav`、`SettingsRow`、`SettingsInlineRow`、`SidebarItem`、`DialogSection`、`TreeItemButton`、`TreeItemEditRow`、`EmptyState` | 已经有基础，但还需要更强的状态契约、variant、键盘行为和文档。 |
-| App chrome | `Sidebar`、`FileTree`、`AppHeader`、`StatusBar`、`DesktopLayout`、`MobileLayout` | 文件树行已使用 `TreeItem` 基础组件，workspace 根目录行已使用 `SidebarItem`；侧边栏 footer 行还需要继续接入基础组件。 |
+| App chrome | `Sidebar`、`TreeSortControl`、`FileTree`、`AppHeader`、`StatusBar`、`DesktopLayout`、`MobileLayout` | 文件树行已使用 `TreeItem` 基础组件，workspace 根目录行已使用 `SidebarItem`，桌面/移动端文件排序控件已共享 `TreeSortControl`；侧边栏 footer 行还需要继续接入基础组件。 |
 | 编辑器 | `EditorPane`、`EditorChrome`、`EditorTabButton`、`OutlinePane`、`PreviewPane`、`EditorHost`、`FallbackEditor` | 需要稳定 chrome 分区、tab overflow 规则、大纲行为和共享 Markdown 视觉 token。 |
 | 弹窗界面 | `SettingsModal`、`QuickOpenModal`、`CommandPaletteModal`、`SearchModal`、`TrashModal`、`RecoveryDraftsModal`、`RecoveryDraftCompareModal` | 应共享 dialog shell、结果行、空状态、加载态和键盘焦点行为。 |
 | 设置 | `SettingsSurface`、`TagManagementSection`、`TagEditorRow`、`AboutMetaItem` | 设置页已经组合共享导航、面板、表单行、内联行和 section 基础组件；标签管理还需要更丰富的校验与 helper 状态。 |

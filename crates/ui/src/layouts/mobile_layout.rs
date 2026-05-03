@@ -9,7 +9,7 @@ use crate::components::{
     primitives::{Button, ButtonVariant, TextInput},
     quick_open::QuickOpenModal,
     settings::SettingsModal,
-    sidebar::{FileTree, FileTreeSortMode},
+    sidebar::{FileTree, FileTreeSortMode, TreeSortControl},
     status_bar::StatusBar,
     trash::TrashModal,
 };
@@ -268,23 +268,9 @@ pub fn MobileLayout() -> Element {
                             }
                         }
 
-                        div {
-                            class: "mn-tree-sortbar",
-                            role: "group",
-                            "aria-label": i18n.text("File tree sort", "文件树排序"),
-                            for mode in FileTreeSortMode::all() {
-                                button {
-                                    class: if tree_sort() == mode { "mn-tree-sort-btn active" } else { "mn-tree-sort-btn" },
-                                    title: format!(
-                                        "{} {}",
-                                        i18n.text("Sort by", "排序方式"),
-                                        mobile_sort_mode_label(mode, i18n)
-                                    ),
-                                    "aria-pressed": "{tree_sort() == mode}",
-                                    onclick: move |_| tree_sort.set(mode),
-                                    "{mobile_sort_mode_label(mode, i18n)}"
-                                }
-                            }
+                        TreeSortControl {
+                            selected: tree_sort(),
+                            on_change: move |mode| tree_sort.set(mode),
                         }
 
                         FileTree { sort_mode: tree_sort() }
@@ -329,13 +315,5 @@ pub fn MobileLayout() -> Element {
                 TrashModal { on_close: move |_| show_trash.set(false) }
             }
         }
-    }
-}
-
-fn mobile_sort_mode_label(mode: FileTreeSortMode, i18n: crate::i18n::UiText) -> &'static str {
-    match mode {
-        FileTreeSortMode::Name => i18n.text("Name", "名称"),
-        FileTreeSortMode::Updated => i18n.text("Updated", "更新"),
-        FileTreeSortMode::Created => i18n.text("Created", "创建"),
     }
 }
