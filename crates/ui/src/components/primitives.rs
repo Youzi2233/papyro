@@ -1,11 +1,13 @@
 use dioxus::prelude::*;
 
+mod empty;
 mod feedback;
 mod layout;
 mod navigation;
 mod results;
 mod settings;
 
+pub use empty::{EmptyRecentItem, EmptyState, EmptyStateCopy, EmptyStateSurface};
 pub use feedback::{
     ErrorState, InlineAlert, InlineAlertTone, Message, SkeletonRows, StatusIndicator,
     StatusMessage, StatusStrip, StatusTone,
@@ -201,15 +203,6 @@ fn icon_button_class(selected: bool, danger: bool, class_name: &str) -> String {
     }
     let class = classes.join(" ");
     append_class(&class, class_name)
-}
-
-fn empty_state_card_class(onboarding: bool, class_name: &str) -> String {
-    let base = if onboarding {
-        "mn-empty-card onboarding"
-    } else {
-        "mn-empty-card"
-    };
-    append_class(base, class_name)
 }
 
 fn append_class(base: &str, class_name: &str) -> String {
@@ -648,57 +641,6 @@ pub fn TextInput(
             value: "{value}",
             oninput: move |event| on_input.call(event.value()),
             onkeydown: move |event| on_keydown.call(event),
-        }
-    }
-}
-
-#[component]
-pub fn EmptyState(title: String, description: String) -> Element {
-    rsx! {
-        EmptyStateSurface {
-            onboarding: false,
-            class_name: String::new(),
-            h1 { "{title}" }
-            p { "{description}" }
-        }
-    }
-}
-
-#[component]
-pub fn EmptyStateSurface(onboarding: bool, class_name: String, children: Element) -> Element {
-    let card_class = empty_state_card_class(onboarding, &class_name);
-
-    rsx! {
-        section { class: "mn-empty",
-            div { class: card_class,
-                {children}
-            }
-        }
-    }
-}
-
-#[component]
-pub fn EmptyStateCopy(title: String, description: String) -> Element {
-    rsx! {
-                h1 { "{title}" }
-                p { "{description}" }
-    }
-}
-
-#[component]
-pub fn EmptyRecentItem(
-    name: String,
-    detail: String,
-    title: String,
-    on_click: EventHandler<()>,
-) -> Element {
-    rsx! {
-        button {
-            class: "mn-empty-recent-item",
-            title: "{title}",
-            onclick: move |_| on_click.call(()),
-            span { class: "mn-empty-recent-name", "{name}" }
-            span { class: "mn-empty-recent-path", "{detail}" }
         }
     }
 }

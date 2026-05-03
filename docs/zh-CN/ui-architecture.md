@@ -26,7 +26,7 @@ flowchart TD
 
 - `assets/main.css` 是共享视觉源。
 - `apps/desktop/assets/main.css` 和 `apps/mobile/assets/main.css` 是运行时副本，CSS 改动时必须同步。
-- `crates/ui/src/components/primitives.rs` 拥有可复用 Dioxus 控件，并重新导出 `primitives/feedback.rs`、`primitives/layout.rs`、`primitives/navigation.rs`、`primitives/results.rs`、`primitives/settings.rs` 等聚焦的基础组件子模块。
+- `crates/ui/src/components/primitives.rs` 拥有可复用 Dioxus 控件，并重新导出 `primitives/empty.rs`、`primitives/feedback.rs`、`primitives/layout.rs`、`primitives/navigation.rs`、`primitives/results.rs`、`primitives/settings.rs` 等聚焦的基础组件子模块。
 - 产品组件组合基础组件，不应该重新发明控件行为。
 - layout 模块负责排列产品区域，不拥有按钮、菜单或表单字段样式。
 - `js/src/editor-theme.js` 使用同一批 CSS token 来服务 CodeMirror 和 Hybrid 渲染。
@@ -106,7 +106,7 @@ Token 名称描述语义，而不是描述单个颜色或单个页面：
 
 | 区域 | 当前组件 | 说明 |
 | --- | --- | --- |
-| 基础组件 | `Button`、`ActionButton`、`RowActionButton`、`IconButton`、`EditorToolButton`、`Select`、`Dropdown`、`SegmentedControl`、`Tabs`、`Modal`、`ModalHeader`、`ModalCloseButton`、`Menu`、`ContextMenu`、`MenuItem`、`Tooltip`、`Message`、`StatusStrip`、`StatusMessage`、`StatusIndicator`、`FormField`、`Switch`、`Toggle`、`Slider`、`TextInput`、`ResultList`、`ResultRow`、`RowActions`、`ModalFooterMeta`、`ComparePanel`、`SkeletonRows`、`ErrorState`、`SettingsLayout`、`SettingsNav`、`SettingsRow`、`SettingsInlineRow`、`SidebarItem`、`DialogSection`、`TreeItemButton`、`TreeItemEditRow`、`EmptyState`、`EmptyStateSurface`、`EmptyStateCopy`、`EmptyRecentItem` | 已经有基础，反馈、布局、导航、结果和设置组件族已经进入聚焦子模块；但还需要更强的状态契约、variant、键盘行为和文档。 |
+| 基础组件 | `Button`、`ActionButton`、`RowActionButton`、`IconButton`、`EditorToolButton`、`Select`、`Dropdown`、`SegmentedControl`、`Tabs`、`Modal`、`ModalHeader`、`ModalCloseButton`、`Menu`、`ContextMenu`、`MenuItem`、`Tooltip`、`Message`、`StatusStrip`、`StatusMessage`、`StatusIndicator`、`FormField`、`Switch`、`Toggle`、`Slider`、`TextInput`、`ResultList`、`ResultRow`、`RowActions`、`ModalFooterMeta`、`ComparePanel`、`SkeletonRows`、`ErrorState`、`SettingsLayout`、`SettingsNav`、`SettingsRow`、`SettingsInlineRow`、`SidebarItem`、`DialogSection`、`TreeItemButton`、`TreeItemEditRow`、`EmptyState`、`EmptyStateSurface`、`EmptyStateCopy`、`EmptyRecentItem` | 已经有基础，空状态、反馈、布局、导航、结果和设置组件族已经进入聚焦子模块；但还需要更强的状态契约、variant、键盘行为和文档。 |
 | App chrome | `AppShell`、`Workbench`、`MainColumn`、`Sidebar`、`TreeSortControl`、`FileTree`、`AppHeader`、`StatusBar`、`DesktopLayout`、`MobileLayout` | 桌面和移动端 shell 已共享 `AppShell` 与 `Workbench`，文件树行已使用 `TreeItem` 基础组件，workspace 根目录行已使用 `SidebarItem`，桌面/移动端文件排序控件已共享 `TreeSortControl`；侧边栏 footer 行还需要继续接入基础组件。 |
 | 编辑器 | `EditorPane`、`EditorChrome`、`EditorTabButton`、`OutlinePane`、`PreviewPane`、`EditorHost`、`FallbackEditor` | 需要稳定 chrome 分区、tab overflow 规则、大纲行为和共享 Markdown 视觉 token。 |
 | 弹窗界面 | `SettingsModal`、`QuickOpenModal`、`CommandPaletteModal`、`SearchModal`、`TrashModal`、`RecoveryDraftsModal`、`RecoveryDraftCompareModal` | 应共享 dialog shell、结果行、空状态、加载态和键盘焦点行为。 |
@@ -134,7 +134,7 @@ Token 名称描述语义，而不是描述单个颜色或单个页面：
 | `SidebarItem` | 部分已有 | `primitives/navigation.rs` 通过 `SidebarItem` 拥有 workspace 根目录行；侧边栏 footer 按钮和未来导航行还需要继续接入。 |
 | `TreeItem` | 部分已有 | `primitives/navigation.rs` 拥有 `TreeItemButton`、`TreeItemEditRow` 和 `TreeItemLabel`，覆盖文件/文件夹图标、展开态、选中/编辑/拖拽/放置 class 和行标签布局；键盘模型和右键菜单作用域仍在文件树代码里。 |
 | `Toolbar` / `ToolbarZone` | 部分已有 | `primitives/layout.rs` 拥有 `AppShell`、`Workbench`、`MainColumn`、`EditorToolbar`、`ToolbarZone`、`EditorToolButton` 和 `ScrollContainer`，覆盖共享 shell、设置内容滚动区与编辑器 chrome 分区；split panes、可调整 rail 和更多滚动容器还需要继续接入。 |
-| `EmptyState` | 部分已有 | `EmptyStateSurface`、`EmptyStateCopy`、`EmptyState` 和 `EmptyRecentItem` 已覆盖通用空状态外壳、文案、onboarding 布局与最近工作区入口行；还需要增加 compact、error 和更丰富的 action variant。 |
+| `EmptyState` | 部分已有 | `primitives/empty.rs` 拥有 `EmptyStateSurface`、`EmptyStateCopy`、`EmptyState` 和 `EmptyRecentItem`，覆盖通用空状态外壳、文案、onboarding 布局与最近工作区入口行；还需要增加 compact、error 和更丰富的 action variant。 |
 | `SkeletonRows` | 部分已有 | 工作区搜索加载态已使用可复用 skeleton 行；workspace 加载和未来异步窗口还需要继续接入。 |
 | `InlineAlert` / `ErrorState` | 部分已有 | `primitives/feedback.rs` 拥有预览提示、命令/搜索空态、加载 skeleton、状态指示和编辑器 runtime 失败；后续较大的阻断错误也应复用这个组件族。 |
 | `SettingsLayout` / `SettingsRow` / `SettingsInlineRow` | 部分已有 | `primitives/settings.rs` 拥有设置导航、面板、section、行和内联控制行；helper text、错误态和更丰富的表单状态还需要继续接入。 |
