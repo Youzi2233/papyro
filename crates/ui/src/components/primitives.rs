@@ -37,7 +37,7 @@ pub use settings::{
     DialogSection, SettingsContent, SettingsInlineRow, SettingsInlineRowKind, SettingsLayout,
     SettingsNav, SettingsNavItem, SettingsPanel, SettingsRow,
 };
-pub use tabs::{TabOption, Tabs};
+pub use tabs::{DocumentTab, TabOption, Tabs};
 
 fn append_class(base: &str, class_name: &str) -> String {
     let trimmed = class_name.trim();

@@ -16,7 +16,7 @@ use super::navigation::{
 use super::overlays::menu_item_class;
 use super::results::result_row_class;
 use super::settings::{settings_inline_row_class, settings_nav_button_class};
-use super::tabs::tab_option_class;
+use super::tabs::{document_tab_class, tab_option_class};
 use super::*;
 
 #[test]
@@ -196,6 +196,8 @@ fn segmented_option_class_marks_active_option() {
 fn tab_option_class_marks_active_option() {
     assert_eq!(tab_option_class(false), "mn-tabs-option");
     assert_eq!(tab_option_class(true), "mn-tabs-option active");
+    assert_eq!(document_tab_class(false, ""), "mn-tab");
+    assert_eq!(document_tab_class(true, "pinned"), "mn-tab active pinned");
 }
 
 #[test]

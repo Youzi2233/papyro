@@ -1,6 +1,7 @@
 use super::bridge::perf_enabled;
 use crate::action_labels::open_note_label;
 use crate::commands::AppCommands;
+use crate::components::primitives::DocumentTab;
 use crate::context::use_app_context;
 use crate::i18n::{i18n_for, use_i18n};
 use crate::perf::trace_tab_close_trigger;
@@ -91,56 +92,35 @@ pub(super) fn EditorTabButton(item: EditorTabItemViewModel) -> Element {
     let close_label = i18n.close_label(&item.title);
 
     rsx! {
-        div {
-            "data-tab-id": "{item.id}",
-            "data-save-status": "{save_status_attr}",
-            class: if item.is_active { "mn-tab active" } else { "mn-tab" },
-            button {
-                class: "mn-tab-title",
-                "aria-label": "{open_label}",
-                onclick: move |_| commands.activate_tab.call(activate_tab_id.clone()),
-                "{item.title}"
-                if has_status_indicator {
-                    span {
-                        class: "mn-tab-save-status {status_class}",
-                        title: "{status_label}",
-                        "aria-label": "{status_label}",
-                        "{status_marker}"
-                    }
-                }
-            }
-            button {
-                class: "mn-tab-close",
-                title: "{close_label}",
-                "aria-label": "{close_label}",
-                "data-close-tab-id": "{close_tab_id}",
-                "data-next-active-tab-id": "{item.next_active_tab_id}",
-                "data-immediate-close": if item.should_retire_host_on_close { "true" } else { "false" },
-                onclick: move |event| {
-                    event.prevent_default();
-                    event.stop_propagation();
-                    request_tab_close(
-                        commands_for_click.clone(),
-                        close_tab_id_for_click.clone(),
-                        "click",
-                    );
-                },
-                onkeydown: move |event| {
-                    let key = event.key();
-                    let is_space = matches!(key, Key::Character(ref value) if value == " ");
-                    if key != Key::Enter && !is_space {
-                        return;
-                    }
-                    event.prevent_default();
-                    event.stop_propagation();
-                    request_tab_close(
-                        commands_for_keyboard.clone(),
-                        close_tab_id_for_keyboard.clone(),
-                        "keyboard",
-                    );
-                },
-                "x"
-            }
+        DocumentTab {
+            id: item.id.clone(),
+            save_status: save_status_attr.to_string(),
+            active: item.is_active,
+            title: item.title.clone(),
+            open_label,
+            has_status_indicator,
+            status_class: status_class.to_string(),
+            status_label: status_label.to_string(),
+            status_marker: status_marker.to_string(),
+            close_label,
+            next_active_tab_id: item.next_active_tab_id.clone(),
+            immediate_close: item.should_retire_host_on_close,
+            class_name: String::new(),
+            on_activate: move |_| commands.activate_tab.call(activate_tab_id.clone()),
+            on_close_click: move |_| {
+                request_tab_close(
+                    commands_for_click.clone(),
+                    close_tab_id_for_click.clone(),
+                    "click",
+                );
+            },
+            on_close_keyboard: move |_| {
+                request_tab_close(
+                    commands_for_keyboard.clone(),
+                    close_tab_id_for_keyboard.clone(),
+                    "keyboard",
+                );
+            },
         }
     }
 }
