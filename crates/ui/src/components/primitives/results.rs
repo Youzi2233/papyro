@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 
-use super::append_class;
+use super::{append_class, ClassBuilder, PrimitiveState};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ResultRowKind {
@@ -8,13 +8,14 @@ pub enum ResultRowKind {
     Search,
 }
 
-pub(super) fn result_row_class(kind: ResultRowKind, is_active: bool) -> &'static str {
-    match (kind, is_active) {
-        (ResultRowKind::Default, false) => "mn-command-row",
-        (ResultRowKind::Default, true) => "mn-command-row active",
-        (ResultRowKind::Search, false) => "mn-command-row mn-search-row",
-        (ResultRowKind::Search, true) => "mn-command-row mn-search-row active",
+pub(super) fn result_row_class(kind: ResultRowKind, is_active: bool) -> String {
+    let builder = match kind {
+        ResultRowKind::Default => ClassBuilder::new("mn-command-row"),
+        ResultRowKind::Search => ClassBuilder::new("mn-command-row").push("mn-search-row"),
     }
+    .state_when(is_active, PrimitiveState::Active);
+
+    builder.extend("")
 }
 
 #[component]

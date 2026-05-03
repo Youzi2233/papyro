@@ -51,7 +51,7 @@ flowchart TD
 
 - 使用 Dioxus 0.7 组件函数，props 使用 owned value，并实现 `Clone + PartialEq`。
 - 用显式 props 表达语义状态：`selected`、`disabled`、`danger`、`loading`、`compact`、`checked`、`current`、`expanded` 优于临时 class 字符串。
-- primitive 状态 class 应使用内部共享 `ClassBuilder` 组合，避免在每个组件族里重复手拼 `active`、`disabled`、`dragging`、`drop-target` 和扩展 class 顺序。
+- primitive 状态 class 应使用内部共享 `PrimitiveState` 和 `ClassBuilder` 组合，避免在每个组件族里重复手拼 `active`、`open`、`disabled`、`danger`、`editing`、`dragging`、`drop-target`、`expanded`、`onboarding`、`resizing` 和扩展 class 顺序。
 - 明确事件边界。行内动作不应触发行选择，右键菜单目标不应触发文件打开，弹窗关闭控件不应依赖父级 DOM 细节。
 - 通用 role 的 ARIA 放在基础组件层。产品组件只负责传入面向用户的 label 和 ID。
 - 产品文案保持国际化。基础组件可以接收 label 字符串，但不拥有具体中英文产品文案。
@@ -107,7 +107,7 @@ Token 名称描述语义，而不是描述单个颜色或单个页面：
 
 | 区域 | 当前组件 | 说明 |
 | --- | --- | --- |
-| 基础组件 | `Button`、`ActionButton`、`RowActionButton`、`IconButton`、`EditorToolButton`、`EditorTabScrollButton`、`Select`、`Dropdown`、`SegmentedControl`、`Tabs`、`DocumentTab`、`Modal`、`ModalHeader`、`ModalCloseButton`、`Menu`、`ContextMenu`、`MenuItem`、`Tooltip`、`Message`、`StatusStrip`、`StatusMessage`、`StatusIndicator`、`FormField`、`Switch`、`Toggle`、`Slider`、`TextInput`、`ColorInput`、`ResultList`、`ResultRow`、`RowActions`、`ModalFooterMeta`、`ComparePanel`、`SkeletonRows`、`ErrorState`、`SettingsLayout`、`SettingsNav`、`SettingsRow`、`SettingsInlineRow`、`SidebarItem`、`SidebarSearchButton`、`OutlineItemButton`、`DialogSection`、`TreeItemButton`、`TreeItemEditRow`、`TreeRenameInput`、`EmptyState`、`EmptyStateSurface`、`EmptyStateCopy`、`EmptyRecentItem` | 已经有基础，按钮、空状态、反馈、表单、布局、导航、浮层、结果、设置和 tabs 组件族已经进入聚焦子模块；但还需要更强的状态契约、variant、键盘行为和文档。 |
+| 基础组件 | `Button`、`ActionButton`、`RowActionButton`、`IconButton`、`EditorToolButton`、`EditorTabScrollButton`、`Select`、`Dropdown`、`SegmentedControl`、`Tabs`、`DocumentTab`、`Modal`、`ModalHeader`、`ModalCloseButton`、`Menu`、`ContextMenu`、`MenuItem`、`Tooltip`、`Message`、`StatusStrip`、`StatusMessage`、`StatusIndicator`、`FormField`、`Switch`、`Toggle`、`Slider`、`TextInput`、`ColorInput`、`ResultList`、`ResultRow`、`RowActions`、`ModalFooterMeta`、`ComparePanel`、`SkeletonRows`、`ErrorState`、`SettingsLayout`、`SettingsNav`、`SettingsRow`、`SettingsInlineRow`、`SidebarItem`、`SidebarSearchButton`、`OutlineItemButton`、`DialogSection`、`TreeItemButton`、`TreeItemEditRow`、`TreeRenameInput`、`EmptyState`、`EmptyStateSurface`、`EmptyStateCopy`、`EmptyRecentItem` | 已经有基础，按钮、空状态、反馈、表单、布局、导航、浮层、结果、设置和 tabs 组件族已经进入聚焦子模块；重复的基础组件状态 class 已通过 `PrimitiveState` 和 `ClassBuilder` 集中管理，但还需要更丰富的 variant、键盘行为和文档。 |
 | App chrome | `AppShell`、`Workbench`、`MainColumn`、`ResizeRail`、`Sidebar`、`TreeSortControl`、`FileTree`、`AppHeader`、`StatusBar`、`DesktopLayout`、`MobileLayout` | 桌面和移动端 shell 已共享 `AppShell` 与 `Workbench`，`Workbench` 和 `MainColumn` 已承载 split-pane 契约，侧边栏拖拽调整宽度入口已使用 `ResizeRail`，文件树行已使用 `TreeItem` 基础组件，workspace 根目录行已使用 `SidebarItem`，侧边栏搜索已使用 `SidebarSearchButton`，侧边栏创建和底部操作已使用 button 基础组件，桌面/移动端文件排序控件已共享 `TreeSortControl`，并且树排序控件已组合 `SegmentedControl`；剩余 tab chrome 还需要继续接入基础组件。 |
 | 编辑器 | `EditorPane`、`EditorChrome`、`EditorTabButton`、`OutlinePane`、`PreviewPane`、`EditorHost`、`FallbackEditor` | 编辑器 chrome 已组合 `SegmentedControl` 承载视图模式切换，使用 `EditorTabScrollButton` 承载 tab 溢出滚动按钮，使用 `DocumentTab` 承载打开文档 tab，并使用 `OutlineItemButton` 承载大纲导航行；tab 滚动按钮已复用 editor tool button 的状态契约，不再单独维护 hover/focus 规则；还需要共享 Markdown 视觉 token。 |
 | 弹窗界面 | `SettingsModal`、`QuickOpenModal`、`CommandPaletteModal`、`SearchModal`、`TrashModal`、`RecoveryDraftsModal`、`RecoveryDraftCompareModal` | 应共享 dialog shell、结果行、空状态、加载态和键盘焦点行为。 |

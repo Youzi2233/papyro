@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 
-use super::{append_class, ClassBuilder};
+use super::{append_class, ClassBuilder, PrimitiveState};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TreeItemKind {
@@ -16,12 +16,9 @@ pub enum TreeItemIconKind {
 }
 
 pub(super) fn sidebar_item_class(selected: bool, class_name: &str) -> String {
-    let base = if selected {
-        "mn-sidebar-workspace active"
-    } else {
-        "mn-sidebar-workspace"
-    };
-    append_class(base, class_name)
+    ClassBuilder::new("mn-sidebar-workspace")
+        .state_when(selected, PrimitiveState::Active)
+        .extend(class_name)
 }
 
 pub(super) fn sidebar_search_button_class(class_name: &str) -> String {
@@ -45,19 +42,17 @@ pub(super) fn tree_item_class(
     };
     ClassBuilder::new("mn-tree-row")
         .push(kind_class)
-        .when(is_selected, "active")
-        .when(is_editing, "editing")
-        .when(is_dragging, "dragging")
-        .when(is_drop_target, "drop-target")
+        .state_when(is_selected, PrimitiveState::Active)
+        .state_when(is_editing, PrimitiveState::Editing)
+        .state_when(is_dragging, PrimitiveState::Dragging)
+        .state_when(is_drop_target, PrimitiveState::DropTarget)
         .extend("")
 }
 
-pub(super) fn tree_caret_class(is_expanded: bool) -> &'static str {
-    if is_expanded {
-        "mn-tree-caret expanded"
-    } else {
-        "mn-tree-caret"
-    }
+pub(super) fn tree_caret_class(is_expanded: bool) -> String {
+    ClassBuilder::new("mn-tree-caret")
+        .state_when(is_expanded, PrimitiveState::Expanded)
+        .extend("")
 }
 
 pub(super) fn tree_icon_class(kind: TreeItemIconKind) -> &'static str {

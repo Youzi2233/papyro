@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 
-use super::{append_class, ClassBuilder, Tooltip};
+use super::{append_class, ClassBuilder, PrimitiveState, Tooltip};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ButtonVariant {
@@ -39,8 +39,8 @@ pub(super) fn action_button_class(variant: ButtonVariant, class_name: &str) -> S
 
 pub(super) fn icon_button_class(selected: bool, danger: bool, class_name: &str) -> String {
     ClassBuilder::new("mn-icon-btn")
-        .when(selected, "active")
-        .when(danger, "danger")
+        .state_when(selected, PrimitiveState::Active)
+        .state_when(danger, PrimitiveState::Danger)
         .extend(class_name)
 }
 

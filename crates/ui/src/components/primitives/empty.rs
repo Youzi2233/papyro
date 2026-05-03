@@ -1,14 +1,11 @@
 use dioxus::prelude::*;
 
-use super::append_class;
+use super::{ClassBuilder, PrimitiveState};
 
 pub(super) fn empty_state_card_class(onboarding: bool, class_name: &str) -> String {
-    let base = if onboarding {
-        "mn-empty-card onboarding"
-    } else {
-        "mn-empty-card"
-    };
-    append_class(base, class_name)
+    ClassBuilder::new("mn-empty-card")
+        .state_when(onboarding, PrimitiveState::Onboarding)
+        .extend(class_name)
 }
 
 #[component]

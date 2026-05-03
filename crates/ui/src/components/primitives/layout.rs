@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 
-use super::{append_class, ClassBuilder};
+use super::{append_class, ClassBuilder, PrimitiveState};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ToolbarZoneKind {
@@ -43,12 +43,10 @@ pub(super) fn toolbar_zone_class(kind: ToolbarZoneKind, class_name: &str) -> Str
 }
 
 pub(super) fn editor_tool_button_class(selected: bool, class_name: &str) -> String {
-    let base = if selected {
-        "mn-editor-tool icon-only active"
-    } else {
-        "mn-editor-tool icon-only"
-    };
-    append_class(base, class_name)
+    ClassBuilder::new("mn-editor-tool")
+        .push("icon-only")
+        .state_when(selected, PrimitiveState::Active)
+        .extend(class_name)
 }
 
 pub(super) fn editor_tab_scroll_button_class(class_name: &str) -> String {
@@ -59,12 +57,9 @@ pub(super) fn editor_tab_scroll_button_class(class_name: &str) -> String {
 }
 
 pub(super) fn resize_rail_class(is_resizing: bool, class_name: &str) -> String {
-    let base = if is_resizing {
-        "mn-resize-rail resizing"
-    } else {
-        "mn-resize-rail"
-    };
-    append_class(base, class_name)
+    ClassBuilder::new("mn-resize-rail")
+        .state_when(is_resizing, PrimitiveState::Resizing)
+        .extend(class_name)
 }
 
 pub(super) fn resize_rail_overlay_class(class_name: &str) -> String {

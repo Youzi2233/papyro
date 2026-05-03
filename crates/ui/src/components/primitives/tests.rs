@@ -25,18 +25,19 @@ fn class_builder_preserves_state_order_and_extension_class() {
     assert_eq!(
         ClassBuilder::new("mn-control")
             .push("primary")
-            .when(true, "active")
-            .when(false, "disabled")
+            .state_when(true, PrimitiveState::Active)
+            .state_when(false, PrimitiveState::Disabled)
             .extend("compact"),
         "mn-control primary active compact"
     );
     assert_eq!(
         ClassBuilder::new("mn-control")
-            .when(true, "active")
-            .extend_when("compact", true, "disabled"),
+            .state_when(true, PrimitiveState::Active)
+            .extend_when("compact", true, PrimitiveState::Disabled.class()),
         "mn-control active compact disabled"
     );
     assert_eq!(ClassBuilder::new("mn-control").extend(""), "mn-control");
+    assert_eq!(PrimitiveState::DropTarget.class(), "drop-target");
 }
 
 #[test]

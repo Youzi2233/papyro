@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 
-use super::{append_class, ClassBuilder};
+use super::{append_class, ClassBuilder, PrimitiveState};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SegmentedControlOption {
@@ -38,24 +38,20 @@ pub(super) fn segmented_option_class(
     class_name: &str,
 ) -> String {
     ClassBuilder::new("mn-segmented-option")
-        .when(is_selected, "active")
-        .extend_when(class_name, disabled, "disabled")
+        .state_when(is_selected, PrimitiveState::Active)
+        .extend_when(class_name, disabled, PrimitiveState::Disabled.class())
 }
 
-pub(super) fn dropdown_class(is_open: bool) -> &'static str {
-    if is_open {
-        "mn-select open"
-    } else {
-        "mn-select"
-    }
+pub(super) fn dropdown_class(is_open: bool) -> String {
+    ClassBuilder::new("mn-select")
+        .state_when(is_open, PrimitiveState::Open)
+        .extend("")
 }
 
-pub(super) fn dropdown_option_class(is_selected: bool) -> &'static str {
-    if is_selected {
-        "mn-select-option active"
-    } else {
-        "mn-select-option"
-    }
+pub(super) fn dropdown_option_class(is_selected: bool) -> String {
+    ClassBuilder::new("mn-select-option")
+        .state_when(is_selected, PrimitiveState::Active)
+        .extend("")
 }
 
 pub(super) fn dropdown_selected_label(options: &[DropdownOption], selected: &str) -> String {

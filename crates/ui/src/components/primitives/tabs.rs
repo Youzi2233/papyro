@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 
-use super::append_class;
+use super::{ClassBuilder, PrimitiveState};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TabOption {
@@ -17,17 +17,16 @@ impl TabOption {
     }
 }
 
-pub(super) fn tab_option_class(is_selected: bool) -> &'static str {
-    if is_selected {
-        "mn-tabs-option active"
-    } else {
-        "mn-tabs-option"
-    }
+pub(super) fn tab_option_class(is_selected: bool) -> String {
+    ClassBuilder::new("mn-tabs-option")
+        .state_when(is_selected, PrimitiveState::Active)
+        .extend("")
 }
 
 pub(super) fn document_tab_class(is_active: bool, class_name: &str) -> String {
-    let base = if is_active { "mn-tab active" } else { "mn-tab" };
-    append_class(base, class_name)
+    ClassBuilder::new("mn-tab")
+        .state_when(is_active, PrimitiveState::Active)
+        .extend(class_name)
 }
 
 #[component]

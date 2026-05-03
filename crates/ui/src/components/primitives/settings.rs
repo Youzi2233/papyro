@@ -1,8 +1,8 @@
 use dioxus::prelude::*;
 
-use super::append_class;
 use super::forms::form_field_class;
 use super::layout::ScrollContainer;
+use super::{append_class, ClassBuilder, PrimitiveState};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SettingsInlineRowKind {
@@ -11,12 +11,9 @@ pub enum SettingsInlineRowKind {
 }
 
 pub(super) fn settings_nav_button_class(active: bool, class_name: &str) -> String {
-    let base = if active {
-        "mn-settings-nav-button active"
-    } else {
-        "mn-settings-nav-button"
-    };
-    append_class(base, class_name)
+    ClassBuilder::new("mn-settings-nav-button")
+        .state_when(active, PrimitiveState::Active)
+        .extend(class_name)
 }
 
 pub(super) fn settings_inline_row_class(kind: SettingsInlineRowKind, class_name: &str) -> String {

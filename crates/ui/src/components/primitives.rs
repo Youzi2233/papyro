@@ -52,6 +52,37 @@ struct ClassBuilder {
     classes: Vec<&'static str>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum PrimitiveState {
+    Active,
+    Danger,
+    Disabled,
+    Dragging,
+    DropTarget,
+    Editing,
+    Expanded,
+    Onboarding,
+    Open,
+    Resizing,
+}
+
+impl PrimitiveState {
+    fn class(self) -> &'static str {
+        match self {
+            Self::Active => "active",
+            Self::Danger => "danger",
+            Self::Disabled => "disabled",
+            Self::Dragging => "dragging",
+            Self::DropTarget => "drop-target",
+            Self::Editing => "editing",
+            Self::Expanded => "expanded",
+            Self::Onboarding => "onboarding",
+            Self::Open => "open",
+            Self::Resizing => "resizing",
+        }
+    }
+}
+
 impl ClassBuilder {
     fn new(base: &'static str) -> Self {
         Self {
@@ -69,6 +100,10 @@ impl ClassBuilder {
     fn push(mut self, class_name: &'static str) -> Self {
         self.classes.push(class_name);
         self
+    }
+
+    fn state_when(self, condition: bool, state: PrimitiveState) -> Self {
+        self.when(condition, state.class())
     }
 
     fn extend(self, class_name: &str) -> String {

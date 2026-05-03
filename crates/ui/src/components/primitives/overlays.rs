@@ -1,11 +1,11 @@
 use dioxus::prelude::*;
 
-pub(super) fn menu_item_class(danger: bool) -> &'static str {
-    if danger {
-        "mn-menu-item danger"
-    } else {
-        "mn-menu-item"
-    }
+use super::{ClassBuilder, PrimitiveState};
+
+pub(super) fn menu_item_class(danger: bool) -> String {
+    ClassBuilder::new("mn-menu-item")
+        .state_when(danger, PrimitiveState::Danger)
+        .extend("")
 }
 
 #[component]
