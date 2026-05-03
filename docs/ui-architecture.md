@@ -68,6 +68,7 @@ Token names should describe meaning rather than a single color or screen:
 | Semantic surface | `--mn-chrome-*`, `--mn-editor-*`, `--mn-markdown-*` | `--mn-chrome-border`, `--mn-editor-canvas` | App regions and writing surfaces. |
 | Interaction | `--mn-focus-*`, `--mn-selection-*`, `--mn-status-*` | `--mn-focus-ring`, `--mn-selection-bg` | Shared state feedback. |
 | Component | `--mn-<component>-*` | `--mn-tabbar-min-height`, `--mn-button-pad` | Only when a primitive needs a stable sizing or state contract. |
+| Primitive state | `--mn-primitive-*` | `--mn-primitive-hover-bg`, `--mn-primitive-active-ink`, `--mn-primitive-disabled-opacity` | Local contracts for repeated primitive hover, active, focus, disabled, and destructive feedback. Define them on the primitive selector, then consume them in state selectors. |
 
 Avoid names tied to temporary screens such as `--mn-settings-blue` or `--mn-sidebar-new-bg`. Use role-based names so the same token can survive future layout changes.
 
@@ -119,8 +120,8 @@ Run the narrowest checks that cover the changed layer:
 
 | Primitive | Status | Required Work |
 | --- | --- | --- |
-| `Button` / `ActionButton` / `RowActionButton` | Partial | `primitives/buttons.rs` owns ordinary buttons, icon+text action buttons, loading/disabled state, and result-row-safe action buttons. Next work should add size variants and migrate remaining raw button markup with special `title`, `aria`, or keyboard contracts. |
-| `IconButton` | Partial | `primitives/buttons.rs` owns selected, disabled, destructive, custom class, and icon-class states, and now covers app-header and sidebar brand icon buttons. Next work should add compact size variants and tooltip placement. |
+| `Button` / `ActionButton` / `RowActionButton` | Partial | `primitives/buttons.rs` owns ordinary buttons, icon+text action buttons, loading/disabled state, and result-row-safe action buttons. Button hover, disabled, focus, active, and destructive feedback now flows through local `--mn-primitive-*` state variables. Next work should add size variants and migrate remaining raw button markup with special `title`, `aria`, or keyboard contracts. |
+| `IconButton` | Partial | `primitives/buttons.rs` owns selected, disabled, destructive, custom class, and icon-class states, and now covers app-header and sidebar brand icon buttons. Icon button active, disabled, focus, and destructive feedback now flows through local `--mn-primitive-*` state variables. Next work should add compact size variants and tooltip placement. |
 | `Input` / `TextInput` / `ColorInput` | Partial | `primitives/forms.rs` owns `TextInput` for command/search/quick-open fields plus ordinary sidebar, mobile, and settings tag text fields; it also owns `ColorInput` for native color inputs used by tag management. Next work should add label, error, disabled, and inline action support. |
 | `Select` | Exists | `primitives/forms.rs` owns the current select/dropdown shell. Add keyboard navigation, option groups when needed, and size variants. |
 | `SegmentedControl` | Exists | `primitives/forms.rs` owns small enumerations such as theme, view mode, and file-tree sorting, including disabled state and optional per-option classes for compact product surfaces. Add per-option disabled states if needed. |

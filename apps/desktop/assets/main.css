@@ -617,6 +617,15 @@ button { border: 0; cursor: pointer; background: transparent; }
 
 /* 閳光偓閳光偓 Buttons 閳光偓閳光偓 */
 .mn-button {
+    --mn-primitive-hover-bg: var(--mn-surface);
+    --mn-primitive-hover-border: var(--mn-border-strong);
+    --mn-primitive-hover-shadow: var(--mn-shadow-sm);
+    --mn-primitive-active-shadow: var(--mn-shadow-xs);
+    --mn-primitive-danger-bg: var(--mn-accent-dim);
+    --mn-primitive-danger-border: var(--mn-accent-dim);
+    --mn-primitive-danger-ink: var(--mn-accent-strong);
+    --mn-primitive-focus-ring: var(--mn-ring-focus);
+    --mn-primitive-disabled-opacity: 0.4;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -640,14 +649,14 @@ button { border: 0; cursor: pointer; background: transparent; }
 }
 
 .mn-button:hover {
-    border-color: var(--mn-border-strong);
-    background: var(--mn-surface);
-    box-shadow: var(--mn-shadow-sm);
+    border-color: var(--mn-primitive-hover-border);
+    background: var(--mn-primitive-hover-bg);
+    box-shadow: var(--mn-primitive-hover-shadow);
 }
 
 .mn-button:active {
     transform: translateY(1px);
-    box-shadow: var(--mn-shadow-xs);
+    box-shadow: var(--mn-primitive-active-shadow);
 }
 
 .mn-button.primary {
@@ -663,19 +672,19 @@ button { border: 0; cursor: pointer; background: transparent; }
 }
 
 .mn-button.danger {
-    border-color: var(--mn-accent-dim);
+    border-color: var(--mn-primitive-danger-border);
     color: var(--mn-accent);
 }
 
 .mn-button.danger:hover,
 .mn-button.danger.active {
-    background: var(--mn-accent-dim);
-    border-color: var(--mn-accent-dim);
-    color: var(--mn-accent-strong);
+    background: var(--mn-primitive-danger-bg);
+    border-color: var(--mn-primitive-danger-border);
+    color: var(--mn-primitive-danger-ink);
 }
 
 .mn-button:disabled {
-    opacity: 0.4;
+    opacity: var(--mn-primitive-disabled-opacity);
     cursor: not-allowed;
     pointer-events: none;
 }
@@ -683,10 +692,16 @@ button { border: 0; cursor: pointer; background: transparent; }
 .mn-button:focus-visible,
 .mn-icon-btn:focus-visible {
     outline: 0;
-    box-shadow: var(--mn-ring-focus);
+    box-shadow: var(--mn-primitive-focus-ring);
 }
 
 .mn-icon-btn {
+    --mn-primitive-active-bg: var(--mn-accent-dim);
+    --mn-primitive-active-border: var(--mn-accent-dim);
+    --mn-primitive-active-ink: var(--mn-accent);
+    --mn-primitive-danger-ink: var(--mn-danger);
+    --mn-primitive-focus-ring: var(--mn-ring-focus);
+    --mn-primitive-disabled-opacity: 0.45;
     display: grid;
     place-items: center;
     width: 32px;
@@ -702,13 +717,13 @@ button { border: 0; cursor: pointer; background: transparent; }
 
 .mn-icon-btn:hover,
 .mn-icon-btn.active {
-    background: var(--mn-accent-dim);
-    color: var(--mn-accent);
-    border-color: var(--mn-accent-dim);
+    background: var(--mn-primitive-active-bg);
+    color: var(--mn-primitive-active-ink);
+    border-color: var(--mn-primitive-active-border);
 }
 
-.mn-icon-btn.danger { color: var(--mn-danger); }
-.mn-icon-btn:disabled { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
+.mn-icon-btn.danger { color: var(--mn-primitive-danger-ink); }
+.mn-icon-btn:disabled { opacity: var(--mn-primitive-disabled-opacity); cursor: not-allowed; pointer-events: none; }
 
 .mn-tooltip {
     position: relative;
@@ -1441,6 +1456,14 @@ button { border: 0; cursor: pointer; background: transparent; }
 }
 
 .mn-editor-tool {
+    --mn-primitive-hover-bg: var(--mn-surface-sunken);
+    --mn-primitive-hover-border: var(--mn-border);
+    --mn-primitive-hover-ink: var(--mn-ink);
+    --mn-primitive-active-bg: var(--mn-accent-wash);
+    --mn-primitive-active-border: var(--mn-accent-dim);
+    --mn-primitive-active-ink: var(--mn-accent);
+    --mn-primitive-focus-ring: var(--mn-ring-focus-sm);
+    --mn-primitive-disabled-opacity: 0.45;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -1464,27 +1487,27 @@ button { border: 0; cursor: pointer; background: transparent; }
 }
 
 .mn-editor-tool:hover {
-    border-color: var(--mn-border);
-    background: var(--mn-surface-sunken);
-    color: var(--mn-ink);
+    border-color: var(--mn-primitive-hover-border);
+    background: var(--mn-primitive-hover-bg);
+    color: var(--mn-primitive-hover-ink);
 }
 
 .mn-editor-tool.active {
-    background: var(--mn-accent-wash);
-    border-color: var(--mn-accent-dim);
-    color: var(--mn-accent);
+    background: var(--mn-primitive-active-bg);
+    border-color: var(--mn-primitive-active-border);
+    color: var(--mn-primitive-active-ink);
 }
 
 .mn-editor-tool:disabled,
 .mn-view-mode-switch .mn-view-mode-option:disabled {
-    opacity: 0.45;
+    opacity: var(--mn-primitive-disabled-opacity);
     cursor: not-allowed;
 }
 
 .mn-editor-tool:focus-visible,
 .mn-view-mode-switch .mn-view-mode-option:focus-visible {
     outline: 0;
-    box-shadow: var(--mn-ring-focus-sm);
+    box-shadow: var(--mn-primitive-focus-ring);
 }
 
 .mn-editor-sidebar-toggle {
@@ -1632,6 +1655,11 @@ button { border: 0; cursor: pointer; background: transparent; }
 }
 
 .mn-view-mode-switch .mn-view-mode-option {
+    --mn-primitive-hover-ink: var(--mn-ink);
+    --mn-primitive-active-bg: var(--mn-surface);
+    --mn-primitive-active-ink: var(--mn-accent);
+    --mn-primitive-focus-ring: var(--mn-ring-focus-sm);
+    --mn-primitive-disabled-opacity: 0.45;
     height: 24px;
     padding: 0 9px;
     border-radius: var(--mn-radius-xs);
@@ -1642,12 +1670,12 @@ button { border: 0; cursor: pointer; background: transparent; }
 }
 
 .mn-view-mode-switch .mn-view-mode-option:hover {
-    color: var(--mn-ink);
+    color: var(--mn-primitive-hover-ink);
 }
 
 .mn-view-mode-switch .mn-view-mode-option.active {
-    background: var(--mn-surface);
-    color: var(--mn-accent);
+    background: var(--mn-primitive-active-bg);
+    color: var(--mn-primitive-active-ink);
     box-shadow: var(--mn-shadow-xs);
 }
 

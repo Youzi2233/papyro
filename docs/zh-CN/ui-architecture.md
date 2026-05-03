@@ -68,6 +68,7 @@ Token 名称描述语义，而不是描述单个颜色或单个页面：
 | 语义界面 | `--mn-chrome-*`、`--mn-editor-*`、`--mn-markdown-*` | `--mn-chrome-border`、`--mn-editor-canvas` | App 区域和写作界面。 |
 | 交互反馈 | `--mn-focus-*`、`--mn-selection-*`、`--mn-status-*` | `--mn-focus-ring`、`--mn-selection-bg` | 共享状态反馈。 |
 | 组件 | `--mn-<component>-*` | `--mn-tabbar-min-height`、`--mn-button-pad` | 只有基础组件需要稳定尺寸或状态契约时使用。 |
+| 基础组件状态 | `--mn-primitive-*` | `--mn-primitive-hover-bg`、`--mn-primitive-active-ink`、`--mn-primitive-disabled-opacity` | 用于重复的 hover、active、focus、disabled、destructive 反馈。先在基础组件 selector 上定义，再由状态 selector 消费。 |
 
 避免 `--mn-settings-blue` 或 `--mn-sidebar-new-bg` 这种绑定临时界面的名字。优先使用角色化命名，让 token 在未来布局变化后仍然成立。
 
@@ -119,8 +120,8 @@ Token 名称描述语义，而不是描述单个颜色或单个页面：
 
 | 基础组件 | 状态 | 需要补齐 |
 | --- | --- | --- |
-| `Button` / `ActionButton` / `RowActionButton` | 部分已有 | `primitives/buttons.rs` 拥有普通按钮、图标+文字 action 按钮、loading/disabled 状态和不会触发行选择的行内按钮。下一步补尺寸 variant，并迁移仍带特殊 `title`、`aria` 或键盘契约的原生按钮。 |
-| `IconButton` | 部分已有 | `primitives/buttons.rs` 拥有 selected、disabled、destructive、自定义 class 和 icon-class 状态，并覆盖 app header 与侧边栏品牌区图标按钮。下一步补 compact 尺寸 variant 和 tooltip placement。 |
+| `Button` / `ActionButton` / `RowActionButton` | 部分已有 | `primitives/buttons.rs` 拥有普通按钮、图标+文字 action 按钮、loading/disabled 状态和不会触发行选择的行内按钮。按钮 hover、disabled、focus、active、destructive 反馈已通过局部 `--mn-primitive-*` 状态变量承载。下一步补尺寸 variant，并迁移仍带特殊 `title`、`aria` 或键盘契约的原生按钮。 |
+| `IconButton` | 部分已有 | `primitives/buttons.rs` 拥有 selected、disabled、destructive、自定义 class 和 icon-class 状态，并覆盖 app header 与侧边栏品牌区图标按钮。图标按钮 active、disabled、focus、destructive 反馈已通过局部 `--mn-primitive-*` 状态变量承载。下一步补 compact 尺寸 variant 和 tooltip placement。 |
 | `Input` / `TextInput` / `ColorInput` | 部分已有 | `primitives/forms.rs` 拥有 `TextInput`，已覆盖命令/搜索/快速打开输入框，以及普通侧边栏、移动端、设置标签文本输入；同时拥有用于标签管理原生颜色输入的 `ColorInput`。下一步补 label、error、disabled、inline action。 |
 | `Select` | 已有 | `primitives/forms.rs` 拥有当前 select/dropdown 壳。下一步增加键盘导航、必要时支持 option group、增加尺寸 variant。 |
 | `SegmentedControl` | 已有 | `primitives/forms.rs` 拥有主题、视图模式、文件树排序等小枚举控件，并支持 disabled 状态和紧凑产品界面的 option class；必要时补每个 option 独立 disabled 状态。 |

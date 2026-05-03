@@ -15,19 +15,19 @@ node scripts/report-ui-tokens.js --self-test
 
 ## 当前结果
 
-审计日期：2026 年 5 月 2 日。
+审计日期：2026 年 5 月 4 日。
 
 ```text
-Scanned files: 37
-Raw color values: 570
+Scanned files: 50
+Raw color values: 581
   allowed: 488
-  component: 47
+  component: 58
   fallback: 32
   data: 3
-Literal spacing values: 664
-  component: 587
+Literal spacing values: 693
+  component: 616
   allowed: 77
-UI token audit found 669 migration risks.
+UI token audit found 709 migration risks.
 ```
 
 ## 分类含义
@@ -46,6 +46,7 @@ UI token audit found 669 migration risks.
 - `js/src/editor-theme.js` 在 CodeMirror 样式里有 fallback 色值，短期可接受，但应随着语义 token 稳定逐步减少。
 - Rust UI 里有少量标签色和语言/视图元信息色值。它们属于数据值，除非变成 chrome 样式，否则不需要直接改掉。
 - 重复 selector 显示最需要 primitives 的区域：Preview/Markdown、工具图标、按钮、视图模式控件、tooltip、文件树行、空状态。
+- button、icon button、editor tool 和 view-mode option 的状态反馈已经有第一批局部 `--mn-primitive-*` 契约，覆盖 hover、active、focus、disabled、destructive。后续调整视觉语气前，应继续先把重复状态值迁入这个契约。
 
 ## 迁移目标
 

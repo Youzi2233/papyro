@@ -136,6 +136,7 @@ flowchart LR
 - [x] 大范围视觉重写前增加 CSS token 审计，覆盖裸色值、一次性间距和重复组件 selector。见 [UI Token 审计](ui-token-audit.md)。
 - [x] 用可复用组件替换原生感强或一次性产品控件，已覆盖侧边栏搜索、文件树行、inline rename、编辑器 tab、大纲条目、设置颜色输入和编辑器 chrome 控件。
 - [x] 通过 `PrimitiveState` 和 `ClassBuilder` 集中管理 active、open、disabled、destructive、editing、drag、drop、expanded、onboarding、resizing 等基础组件状态 class。
+- [x] 为 button、icon button、editor tool 和 view-mode option 的 hover、active、focus、disabled、destructive 状态增加第一批 primitive 交互 CSS 变量。
 - [ ] 继续减少一次性 CSS，把重复的 hover、active、disabled、focus-visible、loading、destructive、compact、selected、checked 等状态规则沉淀到可复用 primitive 契约里。
 - [x] 建立 app chrome 的布局基础设施：split panes、可调整侧栏、滚动容器、sticky toolbar、固定编辑操作区、窄窗口 overflow 规则和 tab 溢出规则。
 - [ ] 重做 Markdown 写作界面：安静的编辑画布、合理行宽、更成熟的标题/列表/表格/引用/代码/公式/Mermaid 样式，并保证 Preview 与 Hybrid 的视觉一致。

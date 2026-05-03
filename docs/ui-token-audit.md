@@ -15,19 +15,19 @@ The script is intentionally report-only by default. Use `--strict` locally when 
 
 ## Current Result
 
-Audit date: May 2, 2026.
+Audit date: May 4, 2026.
 
 ```text
-Scanned files: 37
-Raw color values: 570
+Scanned files: 50
+Raw color values: 581
   allowed: 488
-  component: 47
+  component: 58
   fallback: 32
   data: 3
-Literal spacing values: 664
-  component: 587
+Literal spacing values: 693
+  component: 616
   allowed: 77
-UI token audit found 669 migration risks.
+UI token audit found 709 migration risks.
 ```
 
 ## What The Categories Mean
@@ -46,6 +46,7 @@ UI token audit found 669 migration risks.
 - `js/src/editor-theme.js` has fallback colors in CodeMirror styles. These are acceptable short term but should shrink as semantic tokens stabilize.
 - Rust UI still contains a few raw color data defaults for tags and language/view metadata. These should remain data values unless they become visual chrome.
 - Repeated selectors show where primitives are needed most: Preview/Markdown, tool icons, buttons, view mode controls, tooltips, tree rows, and empty states.
+- Button, icon-button, editor-tool, and view-mode option state feedback now has a first local `--mn-primitive-*` contract for hover, active, focus, disabled, and destructive states. Continue moving repeated state values into that contract before changing visual tone.
 
 ## Migration Targets
 
