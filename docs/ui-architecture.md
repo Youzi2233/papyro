@@ -24,7 +24,7 @@ flowchart TD
 
 Rules:
 
-- `assets/main.css` is the shared visual source.
+- `assets/main.css` is the shared visual source; `assets/styles/markdown.css` keeps document surface, outline, Preview, and rendered Markdown styles out of the main chrome budget.
 - `apps/desktop/assets/main.css` and `apps/mobile/assets/main.css` mirror runtime copies and must stay synchronized when CSS changes.
 - `crates/ui/src/components/primitives.rs` owns reusable Dioxus controls and re-exports focused primitive submodules such as `primitives/buttons.rs`, `primitives/empty.rs`, `primitives/feedback.rs`, `primitives/forms.rs`, `primitives/layout.rs`, `primitives/navigation.rs`, `primitives/overlays.rs`, `primitives/results.rs`, `primitives/settings.rs`, and `primitives/tabs.rs`.
 - Product components compose primitives and should avoid inventing control behavior.

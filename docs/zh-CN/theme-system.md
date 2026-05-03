@@ -35,6 +35,7 @@ flowchart TD
 - `assets/main.css` 是共享设计源。
 - `apps/desktop/assets/main.css` 是桌面端 runtime 使用的副本。
 - `assets/styles/modal.css` 和 `apps/desktop/assets/styles/modal.css` 放弹窗相关样式。
+- `assets/styles/markdown.css` 和 `apps/desktop/assets/styles/markdown.css` 放文档 surface、大纲、Preview 与渲染后 Markdown 的排版节奏样式。
 - `js/src/editor-theme.js` 在 CodeMirror 内部消费同一批 token。
 
 如果某个 token 在 app asset 中有副本，同一次提交里必须同步更新。

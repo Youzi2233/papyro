@@ -16,6 +16,8 @@ use std::sync::Arc;
 const TOOL_WINDOW_CSS: &str = concat!(
     include_str!("../../../assets/styles/modal.css"),
     "\n",
+    include_str!("../../../assets/styles/markdown.css"),
+    "\n",
     include_str!("../../../assets/main.css")
 );
 const TOOL_WINDOW_FAVICON: &str = "/assets/favicon.ico";

@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 import { readFileSync } from "node:fs";
 
-const DEFAULT_CSS_PATHS = ["assets/main.css", "apps/desktop/assets/main.css"];
+const DEFAULT_CSS_GROUPS = [
+  ["assets/main.css", "assets/styles/markdown.css"],
+  ["apps/desktop/assets/main.css", "apps/desktop/assets/styles/markdown.css"],
+];
 const DEFAULT_EDITOR_THEME_PATH = "js/src/editor-theme.js";
 
 const REQUIRED_MARKDOWN_TOKENS = [
@@ -92,11 +95,11 @@ function main() {
     return;
   }
 
-  const cssPaths = args.length > 0 ? args : DEFAULT_CSS_PATHS;
+  const cssGroups = args.length > 0 ? args.map((path) => [path]) : DEFAULT_CSS_GROUPS;
   const editorTheme = readFileSync(DEFAULT_EDITOR_THEME_PATH, "utf8");
   const failures = [
-    ...cssPaths.flatMap((path) =>
-      checkCssText(readFileSync(path, "utf8")).map((failure) => `${path}: ${failure}`),
+    ...cssGroups.flatMap((paths) =>
+      checkCssText(readCssGroup(paths)).map((failure) => `${paths.join(" + ")}: ${failure}`),
     ),
     ...checkEditorThemeText(editorTheme).map(
       (failure) => `${DEFAULT_EDITOR_THEME_PATH}: ${failure}`,
@@ -123,6 +126,10 @@ function printUsage() {
 
 Checks that Markdown visual tokens are present and shared by Preview and
 Hybrid styling paths.`);
+}
+
+function readCssGroup(paths) {
+  return paths.map((path) => readFileSync(path, "utf8")).join("\n");
 }
 
 function checkCssText(source) {
@@ -198,4 +205,3 @@ function assert(condition) {
 }
 
 main();
-

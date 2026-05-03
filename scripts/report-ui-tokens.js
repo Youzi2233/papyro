@@ -13,7 +13,9 @@ import { extname, join, relative, sep } from "node:path";
 
 const DEFAULT_PATHS = [
   "assets/main.css",
+  "assets/styles/markdown.css",
   "apps/desktop/assets/main.css",
+  "apps/desktop/assets/styles/markdown.css",
   "apps/mobile/assets/main.css",
   "js/src/editor-theme.js",
   "crates/ui/src",

@@ -35,6 +35,7 @@ flowchart TD
 - `assets/main.css` is the shared design source used by packaged assets.
 - `apps/desktop/assets/main.css` mirrors the desktop runtime copy.
 - `assets/styles/modal.css` and `apps/desktop/assets/styles/modal.css` hold modal-specific styles.
+- `assets/styles/markdown.css` and `apps/desktop/assets/styles/markdown.css` hold the document surface, outline, Preview, and rendered Markdown rhythm.
 - `js/src/editor-theme.js` consumes the same tokens inside CodeMirror.
 
 When changing a token that is mirrored in an app asset, update both copies in the same commit.
