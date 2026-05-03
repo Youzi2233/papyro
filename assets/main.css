@@ -702,11 +702,15 @@ button { border: 0; cursor: pointer; background: transparent; }
     transition: background 0.14s, color 0.14s, border-color 0.14s;
 }
 
-.mn-icon-btn:hover {
+.mn-icon-btn:hover,
+.mn-icon-btn.active {
     background: var(--mn-accent-dim);
     color: var(--mn-accent);
     border-color: var(--mn-accent-dim);
 }
+
+.mn-icon-btn.danger { color: var(--mn-danger); }
+.mn-icon-btn:disabled { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
 
 .mn-tooltip {
     position: relative;
@@ -905,7 +909,13 @@ button { border: 0; cursor: pointer; background: transparent; }
     transition: background 0.14s, color 0.14s, border-color 0.14s;
 }
 
-.mn-sidebar-icon-btn:hover {
+.mn-icon-btn.mn-sidebar-icon-btn {
+    background: transparent;
+    box-shadow: none;
+}
+
+.mn-sidebar-icon-btn:hover,
+.mn-icon-btn.mn-sidebar-icon-btn:hover {
     border-color: var(--mn-border);
     background: var(--mn-surface-sunken);
     color: var(--mn-ink);

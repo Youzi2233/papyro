@@ -24,6 +24,11 @@ pub fn AppHeader(on_settings: EventHandler<()>) -> Element {
             IconButton {
                 label: i18n.text("Toggle sidebar (Ctrl+\\)", "切换侧边栏 (Ctrl+\\)").to_string(),
                 icon: sidebar_icon,
+                icon_class: None::<String>,
+                class_name: String::new(),
+                disabled: false,
+                selected: false,
+                danger: false,
                 on_click: move |_| {
                     crate::chrome::toggle_sidebar(sidebar_commands.clone(), "header");
                 },
@@ -41,6 +46,11 @@ pub fn AppHeader(on_settings: EventHandler<()>) -> Element {
                 IconButton {
                     label: i18n.text("Toggle theme", "切换主题").to_string(),
                     icon: theme_icon,
+                    icon_class: None::<String>,
+                    class_name: String::new(),
+                    disabled: false,
+                    selected: false,
+                    danger: false,
                     on_click: move |_| {
                         crate::chrome::toggle_theme(theme_commands.clone());
                     },
@@ -48,6 +58,11 @@ pub fn AppHeader(on_settings: EventHandler<()>) -> Element {
                 IconButton {
                     label: i18n.text("Settings", "设置").to_string(),
                     icon: "\u{2699}",
+                    icon_class: None::<String>,
+                    class_name: String::new(),
+                    disabled: false,
+                    selected: false,
+                    danger: false,
                     on_click: move |_| on_settings.call(()),
                 }
             }

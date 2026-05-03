@@ -2,7 +2,8 @@ pub mod file_tree;
 
 use crate::commands::FileTarget;
 use crate::components::primitives::{
-    ActionButton, ButtonState, ButtonVariant, ContextMenu, MenuItem, SidebarItem, TextInput,
+    ActionButton, ButtonState, ButtonVariant, ContextMenu, IconButton, MenuItem, SidebarItem,
+    TextInput,
 };
 use crate::context::use_app_context;
 use crate::i18n::use_i18n;
@@ -111,21 +112,27 @@ pub fn Sidebar(on_search: EventHandler<()>, on_settings: EventHandler<()>) -> El
                         p { class: "mn-sidebar-brand-title", "papyro" }
                     }
                     div { class: "mn-sidebar-brand-actions",
-                        button {
-                            class: "mn-sidebar-icon-btn",
-                            title: i18n.text("Toggle theme", "切换主题"),
-                            "aria-label": i18n.text("Toggle theme", "切换主题"),
-                            onclick: move |_| {
+                        IconButton {
+                            label: i18n.text("Toggle theme", "切换主题").to_string(),
+                            icon: String::new(),
+                            icon_class: Some("mn-tool-icon theme".to_string()),
+                            class_name: "mn-sidebar-icon-btn".to_string(),
+                            disabled: false,
+                            selected: false,
+                            danger: false,
+                            on_click: move |_| {
                                 crate::chrome::toggle_theme(theme_commands.clone());
                             },
-                            span { class: "mn-tool-icon theme", "aria-hidden": "true" }
                         }
-                        button {
-                            class: "mn-sidebar-icon-btn",
-                            title: i18n.text("Settings", "设置"),
-                            "aria-label": i18n.text("Settings", "设置"),
-                            onclick: move |_| on_settings.call(()),
-                            span { class: "mn-tool-icon settings", "aria-hidden": "true" }
+                        IconButton {
+                            label: i18n.text("Settings", "设置").to_string(),
+                            icon: String::new(),
+                            icon_class: Some("mn-tool-icon settings".to_string()),
+                            class_name: "mn-sidebar-icon-btn".to_string(),
+                            disabled: false,
+                            selected: false,
+                            danger: false,
+                            on_click: move |_| on_settings.call(()),
                         }
                     }
                 }

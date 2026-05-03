@@ -48,7 +48,7 @@ Rules:
 | Primitive | Status | Required Work |
 | --- | --- | --- |
 | `Button` / `ActionButton` / `RowActionButton` | Partial | `Button` now covers ordinary dialog, empty-state, editor-empty, settings, recovery, trash, and mobile action buttons; `ActionButton` adds reusable icon and loading/disabled state support; `RowActionButton` keeps result-row actions from triggering row selection. Next work should add size variants and migrate remaining raw button markup with special `title`, `aria`, or keyboard contracts. |
-| `IconButton` | Exists | Add selected/current, disabled, destructive, compact, and tooltip placement support. |
+| `IconButton` | Partial | Supports selected, disabled, destructive, custom class, and icon-class states, and now covers app-header and sidebar brand icon buttons. Next work should add compact size variants and tooltip placement. |
 | `Input` / `TextInput` | Partial | `TextInput` now covers command/search/quick-open fields plus ordinary sidebar, mobile, and settings tag text fields. Inline tree rename still needs a dedicated path until blur/context-menu contracts move into the primitive family. Next work should add label, error, disabled, and inline action support. |
 | `Select` | Exists | Add keyboard navigation, option groups when needed, and size variants. |
 | `SegmentedControl` | Exists | Keep for small enumerations such as theme and view mode. Add disabled options if needed. |

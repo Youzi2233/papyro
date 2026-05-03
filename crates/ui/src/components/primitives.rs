@@ -242,6 +242,18 @@ fn action_button_class(variant: ButtonVariant, class_name: &str) -> String {
     }
 }
 
+fn icon_button_class(selected: bool, danger: bool, class_name: &str) -> String {
+    let mut classes = vec!["mn-icon-btn"];
+    if selected {
+        classes.push("active");
+    }
+    if danger {
+        classes.push("danger");
+    }
+    let class = classes.join(" ");
+    append_class(&class, class_name)
+}
+
 fn workbench_class(class_name: &str) -> String {
     append_class("mn-workbench", class_name)
 }
@@ -940,14 +952,31 @@ pub fn MenuSeparator() -> Element {
 }
 
 #[component]
-pub fn IconButton(label: String, icon: String, on_click: EventHandler<()>) -> Element {
+pub fn IconButton(
+    label: String,
+    icon: String,
+    icon_class: Option<String>,
+    class_name: String,
+    disabled: bool,
+    selected: bool,
+    danger: bool,
+    on_click: EventHandler<()>,
+) -> Element {
+    let class = icon_button_class(selected, danger, &class_name);
+
     rsx! {
         Tooltip { label: label.clone(),
             button {
-                class: "mn-icon-btn",
+                class,
+                disabled,
                 "aria-label": "{label}",
+                "aria-pressed": selected.then_some("true"),
                 onclick: move |_| on_click.call(()),
-                "{icon}"
+                if let Some(icon_class) = icon_class {
+                    span { class: "{icon_class}", "aria-hidden": "true" }
+                } else {
+                    "{icon}"
+                }
             }
         }
     }
@@ -1200,6 +1229,15 @@ mod tests {
             "mn-button primary wide"
         );
         assert_eq!(action_button_class(ButtonVariant::Default, ""), "mn-button");
+    }
+
+    #[test]
+    fn icon_button_class_reflects_state_and_extension() {
+        assert_eq!(icon_button_class(false, false, ""), "mn-icon-btn");
+        assert_eq!(
+            icon_button_class(true, true, "compact"),
+            "mn-icon-btn active danger compact"
+        );
     }
 
     #[test]
