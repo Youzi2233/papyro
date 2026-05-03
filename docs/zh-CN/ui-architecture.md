@@ -133,7 +133,7 @@ Token 名称描述语义，而不是描述单个颜色或单个页面：
 | `Tabs` | 已有 | 区分 segmented tabs 和文档 tab bar。 |
 | `SidebarItem` | 部分已有 | workspace 根目录行已接入 `SidebarItem`；侧边栏 footer 按钮和未来导航行还需要继续接入。 |
 | `TreeItem` | 部分已有 | `TreeItemButton`、`TreeItemEditRow` 和 `TreeItemLabel` 已拥有文件/文件夹图标、展开态、选中/编辑/拖拽/放置 class 和行标签布局；键盘模型和右键菜单作用域仍在文件树代码里。 |
-| `Toolbar` / `ToolbarZone` | 部分已有 | `AppShell`、`Workbench`、`MainColumn`、`EditorToolbar` 和 `ToolbarZone` 已覆盖共享 shell 与编辑器 chrome 分区；split panes、可调整 rail 和通用滚动容器还需要继续接入。 |
+| `Toolbar` / `ToolbarZone` | 部分已有 | `AppShell`、`Workbench`、`MainColumn`、`EditorToolbar`、`ToolbarZone` 和 `ScrollContainer` 已覆盖共享 shell、设置内容滚动区与编辑器 chrome 分区；split panes、可调整 rail 和更多滚动容器还需要继续接入。 |
 | `EmptyState` | 已有 | 增加 compact、onboarding、error 和 action variant。 |
 | `SkeletonRows` | 部分已有 | 工作区搜索加载态已使用可复用 skeleton 行；workspace 加载和未来异步窗口还需要继续接入。 |
 | `InlineAlert` / `ErrorState` | 部分已有 | `InlineAlert` 已用于预览提示和命令/搜索空态；`ErrorState` 已覆盖编辑器 runtime 失败，后续较大的阻断错误也应复用它。 |

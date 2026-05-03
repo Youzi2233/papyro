@@ -133,7 +133,7 @@ Run the narrowest checks that cover the changed layer:
 | `Tabs` | Exists | Distinguish segmented tabs from document tab bar. |
 | `SidebarItem` | Partial | Workspace root rows now use `SidebarItem`; sidebar footer buttons and future navigation rows still need adoption. |
 | `TreeItem` | Partial | `TreeItemButton`, `TreeItemEditRow`, and `TreeItemLabel` now own file/folder icons, expand state, selected/editing/drag/drop classes, and row label layout; keyboard model and context-menu scoping remain in file-tree code. |
-| `Toolbar` / `ToolbarZone` | Partial | `AppShell`, `Workbench`, `MainColumn`, `EditorToolbar`, and `ToolbarZone` now cover the shared shell and editor chrome zones; split panes, resizable rails, and generic scroll containers still need broader adoption. |
+| `Toolbar` / `ToolbarZone` | Partial | `AppShell`, `Workbench`, `MainColumn`, `EditorToolbar`, `ToolbarZone`, and `ScrollContainer` now cover the shared shell, settings content scrolling, and editor chrome zones; split panes, resizable rails, and more scroll containers still need broader adoption. |
 | `EmptyState` | Exists | Add compact, onboarding, error, and action variants. |
 | `SkeletonRows` | Partial | Workspace search loading now uses reusable skeleton rows; workspace load and future async windows still need adoption. |
 | `InlineAlert` / `ErrorState` | Partial | `InlineAlert` covers preview notices and command/search empty states; `ErrorState` now covers editor runtime failures and should be reused for larger blocking failures. |

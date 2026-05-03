@@ -270,6 +270,10 @@ fn toolbar_zone_class(kind: ToolbarZoneKind, class_name: &str) -> String {
     append_class(base, class_name)
 }
 
+fn scroll_container_class(class_name: &str) -> String {
+    append_class("mn-scroll-container", class_name)
+}
+
 fn settings_nav_button_class(active: bool, class_name: &str) -> String {
     let base = if active {
         "mn-settings-nav-button active"
@@ -391,8 +395,10 @@ pub fn ToolbarZone(kind: ToolbarZoneKind, class_name: String, children: Element)
 
 #[component]
 pub fn ScrollContainer(class_name: String, children: Element) -> Element {
+    let class = scroll_container_class(&class_name);
+
     rsx! {
-        div { class: "{class_name}", {children} }
+        div { class, {children} }
     }
 }
 
@@ -437,7 +443,7 @@ pub fn SettingsNavItem(
 #[component]
 pub fn SettingsContent(children: Element) -> Element {
     rsx! {
-        div { class: "mn-settings-content", {children} }
+        ScrollContainer { class_name: "mn-settings-content".to_string(), {children} }
     }
 }
 
@@ -1304,6 +1310,11 @@ mod tests {
         assert_eq!(
             toolbar_zone_class(ToolbarZoneKind::Fixed, ""),
             "mn-editor-tools"
+        );
+        assert_eq!(scroll_container_class(""), "mn-scroll-container");
+        assert_eq!(
+            scroll_container_class("mn-settings-content"),
+            "mn-scroll-container mn-settings-content"
         );
         assert_eq!(
             settings_nav_button_class(true, "compact"),
