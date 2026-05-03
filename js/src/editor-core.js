@@ -347,8 +347,8 @@ export function hybridPointerHitZone(input = {}) {
 export function hybridPointerSelectionTarget(input = {}) {
   const zone = input.zone ?? hybridPointerHitZone(input);
   const line = safeInteger(input.line);
-  const previousLine = safeInteger(input.previousLine);
-  const nextLine = safeInteger(input.nextLine);
+  const previousLine = optionalPositiveLine(input.previousLine);
+  const nextLine = optionalPositiveLine(input.nextLine);
 
   if (zone === "text") return line;
   if (zone === "gap_after_text") return nextLine ?? line;
@@ -446,6 +446,12 @@ export function markdownTaskCheckboxToggleChange(doc, checkPosition) {
 function safeInteger(value) {
   const number = Number(value);
   return Number.isSafeInteger(number) ? number : null;
+}
+
+function optionalPositiveLine(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const line = safeInteger(value);
+  return line !== null && line > 0 ? line : null;
 }
 
 function utf8ByteLengthForCodePoint(codePoint) {

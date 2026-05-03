@@ -1104,6 +1104,43 @@ test("hybrid pointer hit zones distinguish glyphs from line gaps", () => {
   );
 });
 
+test("hybrid pointer hit zones keep boundary clicks predictable", () => {
+  const lineBox = {
+    line: 3,
+    previousLine: 2,
+    nextLine: 4,
+    lineTop: 100,
+    textTop: 106,
+    textBottom: 122,
+    lineBottom: 132,
+  };
+
+  assert.equal(hybridPointerHitZone({ ...lineBox, eventY: 100 }), "gap_before_text");
+  assert.equal(hybridPointerSelectionTarget({ ...lineBox, eventY: 100 }), 2);
+  assert.equal(hybridPointerHitZone({ ...lineBox, eventY: 106 }), "text");
+  assert.equal(hybridPointerSelectionTarget({ ...lineBox, eventY: 106 }), 3);
+  assert.equal(hybridPointerHitZone({ ...lineBox, eventY: 122 }), "text");
+  assert.equal(hybridPointerSelectionTarget({ ...lineBox, eventY: 122 }), 3);
+  assert.equal(hybridPointerHitZone({ ...lineBox, eventY: 132 }), "gap_after_text");
+  assert.equal(hybridPointerSelectionTarget({ ...lineBox, eventY: 132 }), 4);
+  assert.equal(
+    hybridPointerSelectionTarget({
+      ...lineBox,
+      previousLine: null,
+      eventY: 102,
+    }),
+    3,
+  );
+  assert.equal(
+    hybridPointerSelectionTarget({
+      ...lineBox,
+      nextLine: null,
+      eventY: 130,
+    }),
+    3,
+  );
+});
+
 test("hybrid glyph selection rect excludes line-height whitespace", () => {
   assert.deepEqual(
     hybridGlyphSelectionRect({
@@ -1129,6 +1166,17 @@ test("hybrid glyph selection rect excludes line-height whitespace", () => {
       selectionRight: 240,
       textLeft: 48,
       textRight: 132,
+      textTop: 106,
+      textBottom: 122,
+    }),
+    null,
+  );
+  assert.equal(
+    hybridGlyphSelectionRect({
+      selectionLeft: 20,
+      selectionRight: 240,
+      textLeft: 48,
+      textRight: 48,
       textTop: 106,
       textBottom: 122,
     }),

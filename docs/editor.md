@@ -116,6 +116,8 @@ Hybrid selection color is driven by the shared `--mn-hybrid-selection` token. Co
 
 Hybrid pointer behavior must distinguish glyphs from line-height whitespace. Hovering or clicking directly on text uses edit semantics for that line. Hovering the vertical gap below a glyph run stays in normal semantics and should target the next line when selecting. Hovering the gap above a glyph run should target the previous line. Selection backgrounds should be clipped to glyph/text rectangles and must not paint the whole line-height gap.
 
+When there is no previous or next line, gap targeting falls back to the current line. This keeps first/last-line clicks from jumping to a synthetic line such as `0` while preserving predictable gap behavior in the middle of a document.
+
 ## Markdown Rendering
 
 Current Rust-side stack:
