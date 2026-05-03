@@ -283,6 +283,15 @@ fn scroll_container_class(class_name: &str) -> String {
     append_class("mn-scroll-container", class_name)
 }
 
+fn empty_state_card_class(onboarding: bool, class_name: &str) -> String {
+    let base = if onboarding {
+        "mn-empty-card onboarding"
+    } else {
+        "mn-empty-card"
+    };
+    append_class(base, class_name)
+}
+
 fn settings_nav_button_class(active: bool, class_name: &str) -> String {
     let base = if active {
         "mn-settings-nav-button active"
@@ -1269,12 +1278,33 @@ pub fn ComparePanel(
 #[component]
 pub fn EmptyState(title: String, description: String) -> Element {
     rsx! {
+        EmptyStateSurface {
+            onboarding: false,
+            class_name: String::new(),
+            h1 { "{title}" }
+            p { "{description}" }
+        }
+    }
+}
+
+#[component]
+pub fn EmptyStateSurface(onboarding: bool, class_name: String, children: Element) -> Element {
+    let card_class = empty_state_card_class(onboarding, &class_name);
+
+    rsx! {
         section { class: "mn-empty",
-            div { class: "mn-empty-card",
-                h1 { "{title}" }
-                p { "{description}" }
+            div { class: card_class,
+                {children}
             }
         }
+    }
+}
+
+#[component]
+pub fn EmptyStateCopy(title: String, description: String) -> Element {
+    rsx! {
+                h1 { "{title}" }
+                p { "{description}" }
     }
 }
 
@@ -1375,6 +1405,11 @@ mod tests {
         assert_eq!(
             scroll_container_class("mn-settings-content"),
             "mn-scroll-container mn-settings-content"
+        );
+        assert_eq!(empty_state_card_class(false, ""), "mn-empty-card");
+        assert_eq!(
+            empty_state_card_class(true, "wide"),
+            "mn-empty-card onboarding wide"
         );
         assert_eq!(
             settings_nav_button_class(true, "compact"),

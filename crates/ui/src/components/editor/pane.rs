@@ -6,8 +6,8 @@ use super::preview::{PreviewLinkBridge, PreviewPane};
 use super::tabbar::EditorTabButton;
 use crate::commands::AppCommands;
 use crate::components::primitives::{
-    Button, ButtonVariant, EditorToolButton, EditorToolbar, EmptyRecentItem, ToolbarZone,
-    ToolbarZoneKind,
+    Button, ButtonVariant, EditorToolButton, EditorToolbar, EmptyRecentItem, EmptyStateCopy,
+    EmptyStateSurface, ToolbarZone, ToolbarZoneKind,
 };
 use crate::context::use_app_context;
 use crate::i18n::{i18n_for, use_i18n, UiText};
@@ -523,11 +523,14 @@ fn EditorEmptyState(commands: AppCommands, workspace: WorkspaceViewModel) -> Ele
     let recent_workspaces = workspace.recent_workspaces.clone();
 
     rsx! {
-        section { class: "mn-empty",
-            div { class: if has_workspace { "mn-empty-card" } else { "mn-empty-card onboarding" },
+        EmptyStateSurface {
+            onboarding: !has_workspace,
+            class_name: String::new(),
                 if has_workspace {
-                    h1 { {i18n.text("Open a note", "打开一篇笔记")} }
-                    p { {i18n.text("Pick a Markdown file from the sidebar or start a new note.", "从侧边栏选择 Markdown 文件，或新建一篇笔记。")} }
+                    EmptyStateCopy {
+                        title: i18n.text("Open a note", "打开一篇笔记").to_string(),
+                        description: i18n.text("Pick a Markdown file from the sidebar or start a new note.", "从侧边栏选择 Markdown 文件，或新建一篇笔记。").to_string(),
+                    }
                     div { class: "mn-empty-actions",
                         Button {
                             label: i18n.text("New note", "新建笔记").to_string(),
@@ -543,8 +546,10 @@ fn EditorEmptyState(commands: AppCommands, workspace: WorkspaceViewModel) -> Ele
                         }
                     }
                 } else {
-                    h1 { {i18n.text("Choose a workspace", "选择工作区")} }
-                    p { {i18n.text("Open a folder of Markdown notes to begin.", "打开一个 Markdown 笔记目录即可开始。")} }
+                    EmptyStateCopy {
+                        title: i18n.text("Choose a workspace", "选择工作区").to_string(),
+                        description: i18n.text("Open a folder of Markdown notes to begin.", "打开一个 Markdown 笔记目录即可开始。").to_string(),
+                    }
                     Button {
                         label: i18n.text("Open workspace", "打开工作区").to_string(),
                         variant: ButtonVariant::Primary,
@@ -572,7 +577,6 @@ fn EditorEmptyState(commands: AppCommands, workspace: WorkspaceViewModel) -> Ele
                         }
                     }
                 }
-            }
         }
     }
 }
