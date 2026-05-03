@@ -26,7 +26,7 @@ Rules:
 
 - `assets/main.css` is the shared visual source.
 - `apps/desktop/assets/main.css` and `apps/mobile/assets/main.css` mirror runtime copies and must stay synchronized when CSS changes.
-- `crates/ui/src/components/primitives.rs` owns reusable Dioxus controls and re-exports focused primitive submodules such as `primitives/buttons.rs`, `primitives/empty.rs`, `primitives/feedback.rs`, `primitives/forms.rs`, `primitives/layout.rs`, `primitives/navigation.rs`, `primitives/results.rs`, and `primitives/settings.rs`.
+- `crates/ui/src/components/primitives.rs` owns reusable Dioxus controls and re-exports focused primitive submodules such as `primitives/buttons.rs`, `primitives/empty.rs`, `primitives/feedback.rs`, `primitives/forms.rs`, `primitives/layout.rs`, `primitives/navigation.rs`, `primitives/overlays.rs`, `primitives/results.rs`, and `primitives/settings.rs`.
 - Product components compose primitives and should avoid inventing control behavior.
 - Layout modules arrange product regions; they should not own button, menu, or field styling.
 - `js/src/editor-theme.js` consumes the same CSS tokens for CodeMirror and Hybrid rendering.
@@ -106,7 +106,7 @@ Run the narrowest checks that cover the changed layer:
 
 | Area | Current Components | Notes |
 | --- | --- | --- |
-| Primitives | `Button`, `ActionButton`, `RowActionButton`, `IconButton`, `EditorToolButton`, `Select`, `Dropdown`, `SegmentedControl`, `Tabs`, `Modal`, `ModalHeader`, `ModalCloseButton`, `Menu`, `ContextMenu`, `MenuItem`, `Tooltip`, `Message`, `StatusStrip`, `StatusMessage`, `StatusIndicator`, `FormField`, `Switch`, `Toggle`, `Slider`, `TextInput`, `ResultList`, `ResultRow`, `RowActions`, `ModalFooterMeta`, `ComparePanel`, `SkeletonRows`, `ErrorState`, `SettingsLayout`, `SettingsNav`, `SettingsRow`, `SettingsInlineRow`, `SidebarItem`, `DialogSection`, `TreeItemButton`, `TreeItemEditRow`, `EmptyState`, `EmptyStateSurface`, `EmptyStateCopy`, `EmptyRecentItem` | Good foundation; button, empty, feedback, form, layout, navigation, results, and settings component families now live in focused submodules, but the system still needs stronger state contracts, variants, keyboard behavior, and docs. |
+| Primitives | `Button`, `ActionButton`, `RowActionButton`, `IconButton`, `EditorToolButton`, `Select`, `Dropdown`, `SegmentedControl`, `Tabs`, `Modal`, `ModalHeader`, `ModalCloseButton`, `Menu`, `ContextMenu`, `MenuItem`, `Tooltip`, `Message`, `StatusStrip`, `StatusMessage`, `StatusIndicator`, `FormField`, `Switch`, `Toggle`, `Slider`, `TextInput`, `ResultList`, `ResultRow`, `RowActions`, `ModalFooterMeta`, `ComparePanel`, `SkeletonRows`, `ErrorState`, `SettingsLayout`, `SettingsNav`, `SettingsRow`, `SettingsInlineRow`, `SidebarItem`, `DialogSection`, `TreeItemButton`, `TreeItemEditRow`, `EmptyState`, `EmptyStateSurface`, `EmptyStateCopy`, `EmptyRecentItem` | Good foundation; button, empty, feedback, form, layout, navigation, overlay, results, and settings component families now live in focused submodules, but the system still needs stronger state contracts, variants, keyboard behavior, and docs. |
 | App chrome | `AppShell`, `Workbench`, `MainColumn`, `Sidebar`, `TreeSortControl`, `FileTree`, `AppHeader`, `StatusBar`, `DesktopLayout`, `MobileLayout` | Desktop and mobile shells now share `AppShell` and `Workbench`, file-tree rows use `TreeItem` primitives, workspace root rows use `SidebarItem`, and desktop/mobile file sort controls share `TreeSortControl`; sidebar footer rows still need broader primitive coverage. |
 | Editor | `EditorPane`, `EditorChrome`, `EditorTabButton`, `OutlinePane`, `PreviewPane`, `EditorHost`, `FallbackEditor` | Needs stable chrome zones, tab overflow rules, outline behavior, and shared Markdown visual tokens. |
 | Modal surfaces | `SettingsModal`, `QuickOpenModal`, `CommandPaletteModal`, `SearchModal`, `TrashModal`, `RecoveryDraftsModal`, `RecoveryDraftCompareModal` | Should share dialog shells, result rows, empty states, loading states, and keyboard focus behavior. |
@@ -124,11 +124,11 @@ Run the narrowest checks that cover the changed layer:
 | `Select` | Exists | `primitives/forms.rs` owns the current select/dropdown shell. Add keyboard navigation, option groups when needed, and size variants. |
 | `SegmentedControl` | Exists | `primitives/forms.rs` owns small enumerations such as theme and view mode. Add disabled options if needed. |
 | `Switch` | Partial | `primitives/forms.rs` owns the preferred boolean control; `Toggle` remains as a compatibility wrapper. Next work should add disabled and helper/error states. |
-| `Dialog` / `Modal` | Partial | `ModalHeader` and `ModalCloseButton` own repeated modal title/close controls, and `DialogSection` covers repeated settings sections; the modal shell still needs stable dimensions and focus management. |
+| `Dialog` / `Modal` | Partial | `primitives/overlays.rs` owns `Modal`, `ModalHeader`, and `ModalCloseButton` for repeated modal title/close controls, and `DialogSection` covers repeated settings sections; the modal shell still needs stable dimensions and focus management. |
 | `Popover` | Missing | Needed for insert menu, compact settings hints, and editor affordances. |
-| `DropdownMenu` | Partial through `Menu` | Add trigger, alignment, keyboard handling, separators, icons, and shortcuts. |
-| `ContextMenu` | Exists | Keep as menu shell; share item model with dropdown menu. |
-| `Tooltip` | Exists | Add placement and delay policy if CSS-only tooltip becomes insufficient. |
+| `DropdownMenu` | Partial through `Menu` | `primitives/overlays.rs` owns the menu shell and menu items. Add trigger, alignment, keyboard handling, separators, icons, and shortcuts. |
+| `ContextMenu` | Exists | `primitives/overlays.rs` owns the context-menu shell; share item model with dropdown menu. |
+| `Tooltip` | Exists | `primitives/overlays.rs` owns the current CSS tooltip. Add placement and delay policy if CSS-only tooltip becomes insufficient. |
 | `Toast` / `Message` / `StatusStrip` | Partial | `primitives/feedback.rs` owns `Message`, `InlineAlert`, `SkeletonRows`, `ErrorState`, `StatusStrip`, `StatusMessage`, and `StatusIndicator`; transient toast still needs a separate primitive. |
 | `Tabs` | Exists | Distinguish segmented tabs from document tab bar. |
 | `SidebarItem` | Partial | `primitives/navigation.rs` owns workspace root rows through `SidebarItem`; sidebar footer buttons and future navigation rows still need adoption. |
