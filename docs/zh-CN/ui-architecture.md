@@ -37,7 +37,7 @@ flowchart TD
 
 | 需求 | 放置位置 | 规则 |
 | --- | --- | --- |
-| 可复用控件行为 | `crates/ui/src/components/primitives.rs` | 组件拥有视觉状态、键盘/焦点行为、ARIA 结构、尺寸或共享 slot 时放这里。 |
+| 可复用控件行为 | `crates/ui/src/components/primitives.rs` 和 `crates/ui/src/components/primitives/*` | 组件拥有视觉状态、键盘/焦点行为、ARIA 结构、尺寸或共享 slot 时放这里。主文件变大后，测试或大型组件族应进入子模块。 |
 | 由基础组件组成的产品界面 | `crates/ui/src/components/<surface>/` | 涉及标签、app 命令、view-model 数据或产品专属回调时放这里。 |
 | 页面或窗口排布 | `crates/ui/src/layouts/` | 只负责区域排列、split pane、rail、滚动容器和响应式 overflow 规则。 |
 | Markdown 编辑器 runtime 行为 | `js/src/editor*.js` | 只有 CodeMirror 或编辑器 hit-testing 拥有该行为时才放这里。Rust 仍是 app 状态事实来源。 |

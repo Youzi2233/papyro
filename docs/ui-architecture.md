@@ -37,7 +37,7 @@ Use the smallest owner that can express the behavior without leaking product-spe
 
 | Need | Put It In | Rule |
 | --- | --- | --- |
-| Reusable control behavior | `crates/ui/src/components/primitives.rs` | Use when the component owns visual states, keyboard/focus behavior, ARIA shape, sizing, or shared slots. |
+| Reusable control behavior | `crates/ui/src/components/primitives.rs` and `crates/ui/src/components/primitives/*` | Use when the component owns visual states, keyboard/focus behavior, ARIA shape, sizing, or shared slots. Keep tests or large component families in submodules once the main file grows. |
 | A product surface made from primitives | `crates/ui/src/components/<surface>/` | Use when labels, app commands, view-model data, or product-specific callbacks are involved. |
 | Page or window arrangement | `crates/ui/src/layouts/` | Use only for region placement, split panes, rails, scroll containers, and responsive overflow rules. |
 | Markdown editor runtime behavior | `js/src/editor*.js` | Use only when CodeMirror or editor hit-testing owns the behavior. Keep Rust as the source of app state truth. |
