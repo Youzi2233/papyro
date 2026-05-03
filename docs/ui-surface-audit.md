@@ -11,10 +11,10 @@ The audit is intentionally practical: every row names the owner, the current cod
 | Surface | Current Code | Main Risk | Next Move |
 | --- | --- | --- | --- |
 | Desktop shell | `crates/ui/src/layouts/desktop_layout.rs` | Layout is functional but not yet expressed as reusable app-shell primitives. | Extract `AppShell`, `WorkspaceRail`, `MainColumn`, and modal/tool-window layer contracts. |
-| Sidebar | `components/sidebar/mod.rs`, `components/sidebar/file_tree.rs` | Workspace, tree, blank-area, and context-menu states are still too coupled to one surface. | Create `WorkspaceRail`, `TreeItem`, and scoped menu patterns. |
-| Editor header | `components/editor/pane.rs` | Toolbar zones have been patched for overflow but are not yet a primitive contract. | Create `EditorToolbar` and `ToolbarZone` rules with fixed right-zone behavior. |
-| Tab bar | `components/editor/tabbar.rs`, `pane.rs` JS bridge | Overflow behavior works but depends on one-off script and CSS classes. | Move overflow rules into a documented `DocumentTabs` pattern and add smoke coverage. |
-| Outline | `components/editor/outline.rs` | Navigation works, but active-heading and narrow-window behavior remain sensitive. | Treat outline as a document navigation primitive with overlay fallback. |
+| Sidebar | `components/sidebar/mod.rs`, `components/sidebar/file_tree.rs` | Workspace, tree, blank-area, and context-menu states are still behavior-heavy, even though row/search/rename rendering now uses primitives. | Continue extracting scoped menu patterns and focus/current states. |
+| Editor header | `components/editor/pane.rs` | Toolbar zones now use primitives, but overflow behavior still needs stronger smoke coverage. | Stabilize fixed/flexible zone rules and document narrow-window smoke cases. |
+| Tab bar | `components/editor/tabbar.rs`, `pane.rs` JS bridge | Document tab rendering now uses `DocumentTab`, but overflow still depends on one-off bridge script and CSS classes. | Move overflow rules into a documented `DocumentTabs` pattern and add smoke coverage. |
+| Outline | `components/editor/outline.rs` | Outline rows now use `OutlineItemButton`, but active-heading and narrow-window behavior remain sensitive. | Add overlay fallback and acceptance checks for active-heading sync. |
 | Status bar | `components/status_bar.rs` | Useful but minimal; wrapping and status priority are not fully defined. | Convert to `StatusStrip` with priority and compact rules. |
 | Settings | `components/settings/mod.rs` | Improved, but still mixes product content with dialog/form layout concerns. | Build `SettingsWindow`, `SettingsNav`, `SettingsRow`, and stable panel sizing. |
 | Search | `components/search.rs` | Result rows mostly resemble command rows but are not a shared pattern. | Adopt shared `ResultRow`, highlight, loading, and error primitives. |
@@ -53,11 +53,11 @@ What works:
 - The sidebar now explains the current folder, supports root selection, and scopes blank-area behavior.
 - Resize min/max rules exist.
 - Brand, search, workspace root, create flow, file tree, and footer are visually grouped.
-- File and folder rows now share `TreeItemButton`, `TreeItemEditRow`, and `TreeItemLabel` primitives for icons and row state classes.
+- File and folder rows now share `TreeItemButton`, `TreeItemEditRow`, `TreeItemLabel`, and `TreeRenameInput` primitives for icons, row state classes, and inline rename input shape.
+- Sidebar search and workspace root rows use `SidebarSearchButton` and `SidebarItem`.
 
 Gaps:
 
-- Root rows and footer rows are not yet covered by a shared `SidebarItem` pattern.
 - Context menus exist but their item grammar is still surface-specific.
 - The tree still carries a lot of behavior in one file, which makes UI polish risky.
 
@@ -71,19 +71,19 @@ Redesign decision:
 
 What works:
 
-- Editor chrome already has a left tab zone and a right tool zone.
+- Editor chrome already has a left tab zone and a right tool zone through `EditorToolbar` and `ToolbarZone`.
 - Tab scrolling exists and avoids the worst overflow regression.
 - View mode and outline controls stay near the document.
+- Document tabs use the shared `DocumentTab` shell, and tab scroll buttons use `EditorTabScrollButton`.
 
 Gaps:
 
 - Tab overflow depends on `TABBAR_WHEEL_BRIDGE_SCRIPT` and class toggles instead of a reusable toolbar contract.
-- There is no named primitive for fixed/flexible toolbar zones.
 - The close glyph, dirty markers, and scroll affordances need a more polished visual grammar.
 
 Redesign decision:
 
-- Introduce `EditorToolbar`, `ToolbarZone`, and `DocumentTabs` patterns.
+- Continue turning the current `EditorToolbar`, `ToolbarZone`, and `DocumentTab` primitives into a documented `DocumentTabs` pattern.
 - Right-zone controls are fixed and primary; left-zone tabs scroll.
 - Add manual smoke cases for many tabs, long filenames, narrow windows, dirty tabs, conflict tabs, and keyboard close.
 
@@ -112,7 +112,7 @@ Redesign decision:
 What works:
 
 - Outline extraction is cached.
-- Outline items can navigate in Source, Hybrid, and Preview.
+- Outline items can navigate in Source, Hybrid, and Preview, and row rendering uses `OutlineItemButton`.
 - Active-section sync exists through runtime scripts.
 
 Gaps:
@@ -152,11 +152,11 @@ What works:
 - Settings are grouped into General and About.
 - Workspace/global save-target confusion is removed from the visible UI.
 - Language and theme are global settings and can update without restart.
-- The surface now composes shared `SettingsNav`, `SettingsPanel`, `DialogSection`, and `SettingsRow` primitives instead of owning every layout wrapper locally.
+- The surface now composes shared `SettingsNav`, `SettingsPanel`, `DialogSection`, `SettingsRow`, `SettingsInlineRow`, `TextInput`, and `ColorInput` primitives instead of owning every layout wrapper locally.
 
 Gaps:
 
-- Tag management rows and future helper/error copy still need reusable row contracts.
+- Future helper/error copy still needs reusable row contracts.
 - Some controls use native select-like behavior through an early `Dropdown` primitive.
 - Future independent-window behavior needs startup, icon, theme, localization, and no-flash rules.
 

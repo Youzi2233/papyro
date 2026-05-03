@@ -11,10 +11,10 @@
 | 界面 | 当前代码 | 主要风险 | 下一步 |
 | --- | --- | --- | --- |
 | 桌面壳 | `crates/ui/src/layouts/desktop_layout.rs` | 布局能用，但还没有表达成可复用 app-shell primitive。 | 抽出 `AppShell`、`WorkspaceRail`、`MainColumn` 和 modal/tool-window layer contract。 |
-| 侧边栏 | `components/sidebar/mod.rs`、`components/sidebar/file_tree.rs` | Workspace、文件树、空白区域和右键菜单状态仍然耦合在一个界面里。 | 建立 `WorkspaceRail`、`TreeItem` 和分场景菜单 pattern。 |
-| 编辑器头部 | `components/editor/pane.rs` | Toolbar 区域经过 overflow 修补，但还不是稳定 primitive contract。 | 建立 `EditorToolbar` 和 `ToolbarZone`，固定右侧操作区规则。 |
-| Tab bar | `components/editor/tabbar.rs`、`pane.rs` JS bridge | 溢出行为可用，但依赖一次性脚本和 CSS class。 | 把 overflow 规则沉淀为 `DocumentTabs` pattern，并补 smoke 覆盖。 |
-| 大纲 | `components/editor/outline.rs` | 导航可用，但 active heading 和窄窗口行为仍然敏感。 | 把大纲当作文档导航 primitive，并增加 overlay fallback。 |
+| 侧边栏 | `components/sidebar/mod.rs`、`components/sidebar/file_tree.rs` | 行、搜索和重命名渲染已接入基础组件，但 workspace、文件树、空白区域和右键菜单行为仍较重。 | 继续抽分场景菜单 pattern 和 focus/current 状态。 |
+| 编辑器头部 | `components/editor/pane.rs` | Toolbar 区域已接入基础组件，但 overflow 行为仍需要更强 smoke 覆盖。 | 稳定固定/弹性区域规则，并记录窄窗口 smoke case。 |
+| Tab bar | `components/editor/tabbar.rs`、`pane.rs` JS bridge | 文档 tab 渲染已使用 `DocumentTab`，但溢出仍依赖一次性 bridge script 和 CSS class。 | 把 overflow 规则沉淀为 `DocumentTabs` pattern，并补 smoke 覆盖。 |
+| 大纲 | `components/editor/outline.rs` | 大纲行已使用 `OutlineItemButton`，但 active heading 和窄窗口行为仍然敏感。 | 增加 overlay fallback，并补 active-heading 同步验收点。 |
 | 状态栏 | `components/status_bar.rs` | 有用但较轻；换行和状态优先级未完整定义。 | 转成带优先级和紧凑规则的 `StatusStrip`。 |
 | 设置 | `components/settings/mod.rs` | 已改善，但产品内容和 dialog/form 布局职责仍混在一起。 | 建立 `SettingsWindow`、`SettingsNav`、`SettingsRow` 和稳定面板尺寸。 |
 | 搜索 | `components/search.rs` | 结果行接近命令行，但不是共享 pattern。 | 使用共享 `ResultRow`、高亮、加载和错误 primitive。 |
@@ -53,11 +53,11 @@
 - 侧边栏已经说明当前目录、支持根目录选中，并能处理空白区域语义。
 - 已有 resize min/max 规则。
 - 品牌、搜索、workspace 根目录、新建流程、文件树、底部区域有视觉分组。
-- 文件和文件夹行现在共享 `TreeItemButton`、`TreeItemEditRow` 和 `TreeItemLabel` 基础组件来承载图标和行状态 class。
+- 文件和文件夹行现在共享 `TreeItemButton`、`TreeItemEditRow`、`TreeItemLabel` 和 `TreeRenameInput` 基础组件来承载图标、行状态 class 和 inline rename 输入结构。
+- 侧边栏搜索和 workspace 根目录行已使用 `SidebarSearchButton` 与 `SidebarItem`。
 
 差距：
 
-- 根目录行、底部行还没有共享 `SidebarItem` pattern。
 - 右键菜单存在，但菜单项语法仍是界面内定制。
 - 文件树仍承载大量行为，后续视觉微调风险较高。
 
@@ -71,19 +71,19 @@
 
 可用点：
 
-- 编辑器 chrome 已有左侧 tab 区和右侧工具区。
+- 编辑器 chrome 已通过 `EditorToolbar` 和 `ToolbarZone` 拥有左侧 tab 区和右侧工具区。
 - Tab 横向滚动已经存在，规避了最明显的 overflow 回归。
 - 视图模式和大纲控制靠近文档。
+- 文档 tab 使用共享 `DocumentTab` 外壳，tab 滚动按钮使用 `EditorTabScrollButton`。
 
 差距：
 
 - Tab overflow 依赖 `TABBAR_WHEEL_BRIDGE_SCRIPT` 和 class toggle，而不是可复用 toolbar contract。
-- 没有命名 primitive 表达固定/弹性 toolbar zone。
 - 关闭符号、dirty 标记和滚动按钮需要更成熟的视觉语法。
 
 改造决策：
 
-- 引入 `EditorToolbar`、`ToolbarZone`、`DocumentTabs` pattern。
+- 继续把现有 `EditorToolbar`、`ToolbarZone` 和 `DocumentTab` 基础组件沉淀成文档化的 `DocumentTabs` pattern。
 - 右侧控件固定且优先级最高；左侧 tabs 内部滚动。
 - 增加多 tab、长文件名、窄窗口、dirty tab、conflict tab、键盘关闭的手工 smoke case。
 
@@ -112,7 +112,7 @@
 可用点：
 
 - 大纲提取有缓存。
-- 大纲条目可以在 Source、Hybrid、Preview 中跳转。
+- 大纲条目可以在 Source、Hybrid、Preview 中跳转，并且行渲染使用 `OutlineItemButton`。
 - active section 通过 runtime script 同步。
 
 差距：
@@ -152,11 +152,11 @@
 - 设置分为通用设置和关于 Papyro。
 - 已从可见 UI 中移除全局/工作区保存目标造成的理解成本。
 - 语言和主题属于全局设置，可不重启更新。
-- 当前界面已组合共享的 `SettingsNav`、`SettingsPanel`、`DialogSection` 和 `SettingsRow` 基础组件，不再由业务模块本地拥有全部布局 wrapper。
+- 当前界面已组合共享的 `SettingsNav`、`SettingsPanel`、`DialogSection`、`SettingsRow`、`SettingsInlineRow`、`TextInput` 和 `ColorInput` 基础组件，不再由业务模块本地拥有全部布局 wrapper。
 
 差距：
 
-- 标签管理行和未来 helper/error 文案还需要可复用 row 契约。
+- 未来 helper/error 文案还需要可复用 row 契约。
 - 部分控件使用早期 `Dropdown` primitive，仍带一点原生 select 感。
 - 未来独立窗口需要启动、图标、主题、国际化和无白屏规则。
 
