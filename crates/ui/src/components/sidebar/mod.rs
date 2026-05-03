@@ -3,7 +3,8 @@ pub mod file_tree;
 use crate::commands::FileTarget;
 use crate::components::primitives::{
     ActionButton, Button, ButtonState, ButtonVariant, ContextMenu, IconButton, MenuItem,
-    SegmentedControl, SegmentedControlOption, SidebarItem, SidebarSearchButton, TextInput,
+    ResizeRail, SegmentedControl, SegmentedControlOption, SidebarItem, SidebarSearchButton,
+    TextInput,
 };
 use crate::context::use_app_context;
 use crate::i18n::use_i18n;
@@ -271,13 +272,12 @@ pub fn Sidebar(on_search: EventHandler<()>, on_settings: EventHandler<()>) -> El
                 }
             }
 
-            div {
-                class: "mn-sidebar-resize-handle",
-                title: i18n.text("Resize sidebar", "调整侧边栏宽度"),
-                "aria-label": i18n.text("Resize sidebar", "调整侧边栏宽度"),
-                role: "separator",
-                "aria-orientation": "vertical",
-                onmousedown: move |event| {
+            ResizeRail {
+                label: i18n.text("Resize sidebar", "调整侧边栏宽度").to_string(),
+                class_name: "mn-sidebar-resize-handle".to_string(),
+                overlay_class_name: "mn-sidebar-resize-overlay".to_string(),
+                is_resizing: resize_drag().is_some(),
+                on_start: move |event: MouseEvent| {
                     event.prevent_default();
                     event.stop_propagation();
                     let started_at = perf_timer();
@@ -288,16 +288,15 @@ pub fn Sidebar(on_search: EventHandler<()>, on_settings: EventHandler<()>) -> El
                     }));
                     resize_preview_width.set(Some(sidebar_width));
                 },
-            }
-            if let Some(drag) = resize_drag() {
-                div {
-                    class: "mn-sidebar-resize-overlay",
-                    onmousemove: move |event| {
+                on_drag: move |event: MouseEvent| {
+                    if let Some(drag) = resize_drag() {
                         event.prevent_default();
                         let width = sidebar_width_from_drag(drag, event.client_coordinates().x);
                         resize_preview_width.set(Some(width));
-                    },
-                    onmouseup: move |event| {
+                    }
+                },
+                on_end: move |event: MouseEvent| {
+                    if let Some(drag) = resize_drag() {
                         event.prevent_default();
                         let width = sidebar_width_from_drag(drag, event.client_coordinates().x);
                         resize_preview_width.set(Some(width));
@@ -305,8 +304,8 @@ pub fn Sidebar(on_search: EventHandler<()>, on_settings: EventHandler<()>) -> El
                         trace_sidebar_resize(drag.start_width, width, drag.started_at);
                         resize_drag.set(None);
                         resize_preview_width.set(None);
-                    },
-                }
+                    }
+                },
             }
             if let Some(menu) = workspace_menu() {
                 div {

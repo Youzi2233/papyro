@@ -780,6 +780,16 @@ button { border: 0; cursor: pointer; background: transparent; }
     gap: 0;
 }
 
+.mn-resize-rail,
+.mn-resize-rail-overlay {
+    cursor: col-resize;
+    user-select: none;
+}
+
+.mn-resize-rail {
+    touch-action: none;
+}
+
 .mn-main-column {
     display: flex;
     flex: 1;

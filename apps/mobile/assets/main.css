@@ -230,6 +230,16 @@ small {
     gap: 18px;
 }
 
+.mn-resize-rail,
+.mn-resize-rail-overlay {
+    cursor: col-resize;
+    user-select: none;
+}
+
+.mn-resize-rail {
+    touch-action: none;
+}
+
 .mn-shell-mobile .mn-header {
     display: flex;
     grid-template-columns: none;

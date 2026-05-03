@@ -20,8 +20,8 @@ pub use forms::{
     Select, Slider, Switch, TextInput, Toggle,
 };
 pub use layout::{
-    AppShell, EditorTabScrollButton, EditorToolButton, EditorToolbar, MainColumn, ScrollContainer,
-    ToolbarZone, ToolbarZoneKind, Workbench,
+    AppShell, EditorTabScrollButton, EditorToolButton, EditorToolbar, MainColumn, ResizeRail,
+    ScrollContainer, ToolbarZone, ToolbarZoneKind, Workbench,
 };
 pub use navigation::{
     OutlineItemButton, SidebarItem, SidebarSearchButton, TreeItemButton, TreeItemEditRow,
