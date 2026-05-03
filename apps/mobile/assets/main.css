@@ -746,13 +746,13 @@ small {
 
 .mn-editor-tool:focus-visible,
 .mn-tab-scroll-btn:focus-visible,
-.mn-view-mode-option:focus-visible {
+.mn-view-mode-switch .mn-view-mode-option:focus-visible {
     outline: 0;
     box-shadow: var(--mn-ring-focus);
 }
 
 .mn-editor-tool:disabled,
-.mn-view-mode-option:disabled {
+.mn-view-mode-switch .mn-view-mode-option:disabled {
     opacity: 0.44;
     cursor: not-allowed;
 }
@@ -851,7 +851,7 @@ small {
     background: rgba(247, 247, 244, 0.92);
 }
 
-.mn-view-mode-option {
+.mn-view-mode-switch .mn-view-mode-option {
     height: 24px;
     padding: 0 8px;
     border-radius: 9px;
@@ -860,32 +860,32 @@ small {
     font-weight: 800;
 }
 
-.mn-view-mode-option.active {
+.mn-view-mode-switch .mn-view-mode-option.active {
     background: var(--mn-panel);
     color: var(--mn-accent-dark);
     box-shadow: 0 1px 8px rgba(23, 26, 22, 0.08);
 }
 
 @container (max-width: 520px) {
-    .mn-view-mode-option {
+    .mn-view-mode-switch .mn-view-mode-option {
         width: 24px;
         padding: 0;
         font-size: 0;
     }
 
-    .mn-view-mode-option::before {
+    .mn-view-mode-switch .mn-view-mode-option::before {
         font-size: 12px;
     }
 
-    .mn-view-mode-option:nth-child(1)::before {
+    .mn-view-mode-switch .mn-view-mode-option:nth-child(1)::before {
         content: "S";
     }
 
-    .mn-view-mode-option:nth-child(2)::before {
+    .mn-view-mode-switch .mn-view-mode-option:nth-child(2)::before {
         content: "H";
     }
 
-    .mn-view-mode-option:nth-child(3)::before {
+    .mn-view-mode-switch .mn-view-mode-option:nth-child(3)::before {
         content: "P";
     }
 }

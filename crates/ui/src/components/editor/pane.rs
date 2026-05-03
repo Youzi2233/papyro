@@ -7,7 +7,7 @@ use super::tabbar::EditorTabButton;
 use crate::commands::AppCommands;
 use crate::components::primitives::{
     Button, ButtonVariant, EditorToolButton, EditorToolbar, EmptyRecentItem, EmptyStateCopy,
-    EmptyStateSurface, ToolbarZone, ToolbarZoneKind,
+    EmptyStateSurface, SegmentedControl, SegmentedControlOption, ToolbarZone, ToolbarZoneKind,
 };
 use crate::context::use_app_context;
 use crate::i18n::{i18n_for, use_i18n, UiText};
@@ -119,8 +119,8 @@ fn editor_style(typography: &EditorTypography) -> String {
     )
 }
 
-fn editor_view_modes() -> Vec<ViewMode> {
-    vec![ViewMode::Source, ViewMode::Hybrid, ViewMode::Preview]
+fn editor_view_modes() -> [ViewMode; 3] {
+    [ViewMode::Source, ViewMode::Hybrid, ViewMode::Preview]
 }
 
 fn code_highlight_theme(theme: &Theme) -> CodeHighlightTheme {
@@ -135,12 +135,30 @@ fn view_mode_label(language: AppLanguage, mode: &ViewMode) -> &'static str {
     i18n_for(language).view_mode_label(mode)
 }
 
-fn view_mode_option_class(current: &ViewMode, mode: &ViewMode) -> &'static str {
-    if current == mode {
-        "mn-view-mode-option active"
-    } else {
-        "mn-view-mode-option"
+fn view_mode_value(mode: &ViewMode) -> &'static str {
+    match mode {
+        ViewMode::Source => "source",
+        ViewMode::Hybrid => "hybrid",
+        ViewMode::Preview => "preview",
     }
+}
+
+fn view_mode_from_value(value: &str) -> Option<ViewMode> {
+    match value {
+        "source" => Some(ViewMode::Source),
+        "hybrid" => Some(ViewMode::Hybrid),
+        "preview" => Some(ViewMode::Preview),
+        _ => None,
+    }
+}
+
+fn view_mode_options(language: AppLanguage) -> Vec<SegmentedControlOption> {
+    editor_view_modes()
+        .into_iter()
+        .map(|mode| {
+            SegmentedControlOption::new(view_mode_label(language, &mode), view_mode_value(&mode))
+        })
+        .collect()
 }
 
 fn sidebar_toggle_label(i18n: UiText, collapsed: bool) -> &'static str {
@@ -427,6 +445,7 @@ fn EditorChrome(
     let mode_commands = commands.clone();
     let sidebar_label = sidebar_toggle_label(i18n, sidebar_collapsed);
     let sidebar_icon_class = sidebar_toggle_icon_class(sidebar_collapsed);
+    let view_mode_options = view_mode_options(i18n.language());
     let outline_label = if outline_visible {
         i18n.text("Hide outline", "隐藏大纲")
     } else {
@@ -474,29 +493,20 @@ fn EditorChrome(
                 }
             }
             ToolbarZone { kind: ToolbarZoneKind::Fixed, class_name: String::new(),
-                div {
-                    class: "mn-view-mode-switch",
-                    role: "radiogroup",
-                    "aria-label": i18n.text("Editor view mode", "编辑器视图模式"),
-                    for mode in editor_view_modes() {
-                        button {
-                            class: view_mode_option_class(&view_mode, &mode),
-                            r#type: "button",
-                            role: "radio",
-                            disabled: !has_active_tab,
-                            "aria-checked": if mode == view_mode { "true" } else { "false" },
-                            onclick: {
-                                let mode_commands = mode_commands.clone();
-                                let mode = mode.clone();
-                                move |_| {
-                                    crate::chrome::set_view_mode(
-                                        mode_commands.clone(),
-                                        mode.clone(),
-                                        "editor_chrome",
-                                    );
-                                }
-                            },
-                            "{view_mode_label(i18n.language(), &mode)}"
+                SegmentedControl {
+                    label: i18n.text("Editor view mode", "编辑器视图模式").to_string(),
+                    options: view_mode_options,
+                    selected: view_mode_value(&view_mode).to_string(),
+                    class_name: "mn-view-mode-switch".to_string(),
+                    option_class_name: "mn-view-mode-option".to_string(),
+                    disabled: !has_active_tab,
+                    on_change: move |value: String| {
+                        if let Some(mode) = view_mode_from_value(&value) {
+                            crate::chrome::set_view_mode(
+                                mode_commands.clone(),
+                                mode,
+                                "editor_chrome",
+                            );
                         }
                     }
                 }
@@ -792,13 +802,18 @@ mod tests {
             "预览"
         );
         assert_eq!(
-            view_mode_option_class(&ViewMode::Hybrid, &ViewMode::Hybrid),
-            "mn-view-mode-option active"
+            view_mode_options(AppLanguage::English)
+                .into_iter()
+                .map(|option| (option.label, option.value))
+                .collect::<Vec<_>>(),
+            vec![
+                ("Source".to_string(), "source".to_string()),
+                ("Hybrid".to_string(), "hybrid".to_string()),
+                ("Preview".to_string(), "preview".to_string()),
+            ]
         );
-        assert_eq!(
-            view_mode_option_class(&ViewMode::Hybrid, &ViewMode::Source),
-            "mn-view-mode-option"
-        );
+        assert_eq!(view_mode_from_value("hybrid"), Some(ViewMode::Hybrid));
+        assert_eq!(view_mode_from_value("missing"), None);
     }
 
     #[test]

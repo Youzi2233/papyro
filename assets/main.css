@@ -1427,13 +1427,13 @@ button { border: 0; cursor: pointer; background: transparent; }
 }
 
 .mn-editor-tool:disabled,
-.mn-view-mode-option:disabled {
+.mn-view-mode-switch .mn-view-mode-option:disabled {
     opacity: 0.45;
     cursor: not-allowed;
 }
 
 .mn-editor-tool:focus-visible,
-.mn-view-mode-option:focus-visible {
+.mn-view-mode-switch .mn-view-mode-option:focus-visible {
     outline: 0;
     box-shadow: var(--mn-ring-focus-sm);
 }
@@ -1584,7 +1584,7 @@ button { border: 0; cursor: pointer; background: transparent; }
     flex-shrink: 0;
 }
 
-.mn-view-mode-option {
+.mn-view-mode-switch .mn-view-mode-option {
     height: 24px;
     padding: 0 9px;
     border-radius: var(--mn-radius-xs);
@@ -1594,11 +1594,11 @@ button { border: 0; cursor: pointer; background: transparent; }
     transition: background 0.14s, color 0.14s;
 }
 
-.mn-view-mode-option:hover {
+.mn-view-mode-switch .mn-view-mode-option:hover {
     color: var(--mn-ink);
 }
 
-.mn-view-mode-option.active {
+.mn-view-mode-switch .mn-view-mode-option.active {
     background: var(--mn-surface);
     color: var(--mn-accent);
     box-shadow: var(--mn-shadow-xs);
@@ -1621,26 +1621,26 @@ button { border: 0; cursor: pointer; background: transparent; }
         gap: 4px;
     }
 
-    .mn-view-mode-option {
+    .mn-view-mode-switch .mn-view-mode-option {
         width: 24px;
         padding: 0;
         font-size: 0;
     }
 
-    .mn-view-mode-option::before {
+    .mn-view-mode-switch .mn-view-mode-option::before {
         font-size: var(--mn-type-caption);
         font-weight: var(--mn-weight-semibold);
     }
 
-    .mn-view-mode-option:nth-child(1)::before {
+    .mn-view-mode-switch .mn-view-mode-option:nth-child(1)::before {
         content: "S";
     }
 
-    .mn-view-mode-option:nth-child(2)::before {
+    .mn-view-mode-switch .mn-view-mode-option:nth-child(2)::before {
         content: "H";
     }
 
-    .mn-view-mode-option:nth-child(3)::before {
+    .mn-view-mode-switch .mn-view-mode-option:nth-child(3)::before {
         content: "P";
     }
 }

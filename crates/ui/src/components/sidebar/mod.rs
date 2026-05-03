@@ -344,6 +344,7 @@ pub fn TreeSortControl(
             selected: sort_mode_value(selected).to_string(),
             class_name: "mn-tree-sortbar".to_string(),
             option_class_name: "mn-tree-sort-btn".to_string(),
+            disabled: false,
             on_change: move |value: String| {
                 if let Some(mode) = sort_mode_from_value(&value) {
                     on_change.call(mode);

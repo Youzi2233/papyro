@@ -32,13 +32,22 @@ impl DropdownOption {
     }
 }
 
-pub(super) fn segmented_option_class(is_selected: bool, class_name: &str) -> String {
+pub(super) fn segmented_option_class(
+    is_selected: bool,
+    disabled: bool,
+    class_name: &str,
+) -> String {
     let base = if is_selected {
         "mn-segmented-option active"
     } else {
         "mn-segmented-option"
     };
-    append_class(base, class_name)
+    let class = append_class(base, class_name);
+    if disabled {
+        append_class(&class, "disabled")
+    } else {
+        class
+    }
 }
 
 pub(super) fn dropdown_class(is_open: bool) -> &'static str {
@@ -117,6 +126,7 @@ pub fn SegmentedControl(
     selected: String,
     class_name: String,
     option_class_name: String,
+    disabled: bool,
     on_change: EventHandler<String>,
 ) -> Element {
     let class = if class_name.trim().is_empty() {
@@ -132,9 +142,14 @@ pub fn SegmentedControl(
             "aria-label": "{label}",
             for option in options {
                 button {
-                    class: segmented_option_class(option.value == selected, &option_class_name),
+                    class: segmented_option_class(
+                        option.value == selected,
+                        disabled,
+                        &option_class_name,
+                    ),
                     r#type: "button",
                     role: "radio",
+                    disabled,
                     "aria-checked": if option.value == selected { "true" } else { "false" },
                     onclick: {
                         let value = option.value.clone();
