@@ -1,5 +1,12 @@
 use dioxus::prelude::*;
 
+mod layout;
+
+pub use layout::{
+    AppShell, EditorToolButton, EditorToolbar, MainColumn, ScrollContainer, ToolbarZone,
+    ToolbarZoneKind, Workbench,
+};
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ButtonVariant {
     Default,
@@ -32,12 +39,6 @@ pub enum InlineAlertTone {
 pub enum ResultRowKind {
     Default,
     Search,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ToolbarZoneKind {
-    Flexible,
-    Fixed,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -242,10 +243,6 @@ fn action_button_class(variant: ButtonVariant, class_name: &str) -> String {
     }
 }
 
-fn app_shell_class(class_name: &str) -> String {
-    append_class("mn-shell", class_name)
-}
-
 fn icon_button_class(selected: bool, danger: bool, class_name: &str) -> String {
     let mut classes = vec!["mn-icon-btn"];
     if selected {
@@ -256,31 +253,6 @@ fn icon_button_class(selected: bool, danger: bool, class_name: &str) -> String {
     }
     let class = classes.join(" ");
     append_class(&class, class_name)
-}
-
-fn workbench_class(class_name: &str) -> String {
-    append_class("mn-workbench", class_name)
-}
-
-fn toolbar_zone_class(kind: ToolbarZoneKind, class_name: &str) -> String {
-    let base = match kind {
-        ToolbarZoneKind::Flexible => "mn-editor-tabs-row",
-        ToolbarZoneKind::Fixed => "mn-editor-tools",
-    };
-    append_class(base, class_name)
-}
-
-fn editor_tool_button_class(selected: bool, class_name: &str) -> String {
-    let base = if selected {
-        "mn-editor-tool icon-only active"
-    } else {
-        "mn-editor-tool icon-only"
-    };
-    append_class(base, class_name)
-}
-
-fn scroll_container_class(class_name: &str) -> String {
-    append_class("mn-scroll-container", class_name)
 }
 
 fn empty_state_card_class(onboarding: bool, class_name: &str) -> String {
@@ -367,79 +339,6 @@ fn append_class(base: &str, class_name: &str) -> String {
         base.to_string()
     } else {
         format!("{base} {trimmed}")
-    }
-}
-
-#[component]
-pub fn AppShell(class_name: String, children: Element) -> Element {
-    let class = app_shell_class(&class_name);
-
-    rsx! {
-        div { class, {children} }
-    }
-}
-
-#[component]
-pub fn Workbench(class_name: String, children: Element) -> Element {
-    let class = workbench_class(&class_name);
-
-    rsx! {
-        div { class, {children} }
-    }
-}
-
-#[component]
-pub fn MainColumn(children: Element) -> Element {
-    rsx! {
-        div { class: "mn-main-column", {children} }
-    }
-}
-
-#[component]
-pub fn EditorToolbar(children: Element) -> Element {
-    rsx! {
-        div { class: "mn-editor-chrome", {children} }
-    }
-}
-
-#[component]
-pub fn ToolbarZone(kind: ToolbarZoneKind, class_name: String, children: Element) -> Element {
-    let class = toolbar_zone_class(kind, &class_name);
-
-    rsx! {
-        div { class, {children} }
-    }
-}
-
-#[component]
-pub fn EditorToolButton(
-    label: String,
-    class_name: String,
-    icon_class: String,
-    disabled: bool,
-    selected: bool,
-    on_click: EventHandler<()>,
-) -> Element {
-    let class = editor_tool_button_class(selected, &class_name);
-
-    rsx! {
-        button {
-            class,
-            title: "{label}",
-            "aria-label": "{label}",
-            disabled,
-            onclick: move |_| on_click.call(()),
-            span { class: "{icon_class}", "aria-hidden": "true" }
-        }
-    }
-}
-
-#[component]
-pub fn ScrollContainer(class_name: String, children: Element) -> Element {
-    let class = scroll_container_class(&class_name);
-
-    rsx! {
-        div { class, {children} }
     }
 }
 

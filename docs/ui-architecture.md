@@ -26,7 +26,7 @@ Rules:
 
 - `assets/main.css` is the shared visual source.
 - `apps/desktop/assets/main.css` and `apps/mobile/assets/main.css` mirror runtime copies and must stay synchronized when CSS changes.
-- `crates/ui/src/components/primitives.rs` owns reusable Dioxus controls.
+- `crates/ui/src/components/primitives.rs` owns reusable Dioxus controls and re-exports focused primitive submodules such as `primitives/layout.rs`.
 - Product components compose primitives and should avoid inventing control behavior.
 - Layout modules arrange product regions; they should not own button, menu, or field styling.
 - `js/src/editor-theme.js` consumes the same CSS tokens for CodeMirror and Hybrid rendering.
@@ -133,7 +133,7 @@ Run the narrowest checks that cover the changed layer:
 | `Tabs` | Exists | Distinguish segmented tabs from document tab bar. |
 | `SidebarItem` | Partial | Workspace root rows now use `SidebarItem`; sidebar footer buttons and future navigation rows still need adoption. |
 | `TreeItem` | Partial | `TreeItemButton`, `TreeItemEditRow`, and `TreeItemLabel` now own file/folder icons, expand state, selected/editing/drag/drop classes, and row label layout; keyboard model and context-menu scoping remain in file-tree code. |
-| `Toolbar` / `ToolbarZone` | Partial | `AppShell`, `Workbench`, `MainColumn`, `EditorToolbar`, `ToolbarZone`, `EditorToolButton`, and `ScrollContainer` now cover the shared shell, settings content scrolling, and editor chrome zones; split panes, resizable rails, and more scroll containers still need broader adoption. |
+| `Toolbar` / `ToolbarZone` | Partial | `primitives/layout.rs` owns `AppShell`, `Workbench`, `MainColumn`, `EditorToolbar`, `ToolbarZone`, `EditorToolButton`, and `ScrollContainer` for the shared shell, settings content scrolling, and editor chrome zones; split panes, resizable rails, and more scroll containers still need broader adoption. |
 | `EmptyState` | Partial | `EmptyStateSurface`, `EmptyStateCopy`, `EmptyState`, and `EmptyRecentItem` now cover generic empty shells, copy, onboarding layout, and recent-workspace entry rows; add compact, error, and richer action variants. |
 | `SkeletonRows` | Partial | Workspace search loading now uses reusable skeleton rows; workspace load and future async windows still need adoption. |
 | `InlineAlert` / `ErrorState` | Partial | `InlineAlert` covers preview notices and command/search empty states; `ErrorState` now covers editor runtime failures and should be reused for larger blocking failures. |

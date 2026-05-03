@@ -1,3 +1,7 @@
+use super::layout::{
+    app_shell_class, editor_tool_button_class, scroll_container_class, toolbar_zone_class,
+    workbench_class,
+};
 use super::*;
 
 #[test]
