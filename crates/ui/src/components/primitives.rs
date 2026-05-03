@@ -1,5 +1,6 @@
 use dioxus::prelude::*;
 
+mod buttons;
 mod empty;
 mod feedback;
 mod layout;
@@ -7,6 +8,7 @@ mod navigation;
 mod results;
 mod settings;
 
+pub use buttons::{ActionButton, Button, ButtonState, ButtonVariant, IconButton, RowActionButton};
 pub use empty::{EmptyRecentItem, EmptyState, EmptyStateCopy, EmptyStateSurface};
 pub use feedback::{
     ErrorState, InlineAlert, InlineAlertTone, Message, SkeletonRows, StatusIndicator,
@@ -26,20 +28,6 @@ pub use settings::{
     DialogSection, SettingsContent, SettingsInlineRow, SettingsInlineRowKind, SettingsLayout,
     SettingsNav, SettingsNavItem, SettingsPanel, SettingsRow,
 };
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ButtonVariant {
-    Default,
-    Primary,
-    Danger,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ButtonState {
-    Enabled,
-    Disabled,
-    Loading,
-}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SegmentedControlOption {
@@ -83,22 +71,6 @@ impl TabOption {
             label: label.to_string(),
             value: value.to_string(),
         }
-    }
-}
-
-impl ButtonVariant {
-    fn class(self) -> &'static str {
-        match self {
-            Self::Default => "mn-button",
-            Self::Primary => "mn-button primary",
-            Self::Danger => "mn-button danger",
-        }
-    }
-}
-
-impl ButtonState {
-    fn is_disabled(self) -> bool {
-        matches!(self, Self::Disabled | Self::Loading)
     }
 }
 
@@ -183,106 +155,12 @@ fn form_field_class(class_name: &str) -> String {
     append_class("mn-form-field mn-setting-row", class_name)
 }
 
-fn action_button_class(variant: ButtonVariant, class_name: &str) -> String {
-    let base = variant.class();
-    let trimmed = class_name.trim();
-    if trimmed.is_empty() {
-        base.to_string()
-    } else {
-        format!("{base} {trimmed}")
-    }
-}
-
-fn icon_button_class(selected: bool, danger: bool, class_name: &str) -> String {
-    let mut classes = vec!["mn-icon-btn"];
-    if selected {
-        classes.push("active");
-    }
-    if danger {
-        classes.push("danger");
-    }
-    let class = classes.join(" ");
-    append_class(&class, class_name)
-}
-
 fn append_class(base: &str, class_name: &str) -> String {
     let trimmed = class_name.trim();
     if trimmed.is_empty() {
         base.to_string()
     } else {
         format!("{base} {trimmed}")
-    }
-}
-
-#[component]
-pub fn Button(
-    label: String,
-    variant: ButtonVariant,
-    disabled: bool,
-    on_click: EventHandler<()>,
-) -> Element {
-    let class = variant.class();
-
-    rsx! {
-        button {
-            class,
-            disabled,
-            onclick: move |_| on_click.call(()),
-            "{label}"
-        }
-    }
-}
-
-#[component]
-pub fn ActionButton(
-    label: String,
-    variant: ButtonVariant,
-    state: ButtonState,
-    icon_class: Option<String>,
-    title: Option<String>,
-    class_name: String,
-    on_click: EventHandler<()>,
-) -> Element {
-    let class = action_button_class(variant, &class_name);
-    let is_loading = state == ButtonState::Loading;
-
-    rsx! {
-        button {
-            class,
-            disabled: state.is_disabled(),
-            title: title.as_deref(),
-            "aria-busy": if is_loading { "true" } else { "false" },
-            onclick: move |_| on_click.call(()),
-            if let Some(icon_class) = icon_class {
-                span { class: "{icon_class}", "aria-hidden": "true" }
-            }
-            span { "{label}" }
-        }
-    }
-}
-
-#[component]
-pub fn RowActionButton(
-    label: String,
-    variant: ButtonVariant,
-    state: ButtonState,
-    class_name: String,
-    on_click: EventHandler<()>,
-) -> Element {
-    let class = action_button_class(variant, &class_name);
-    let is_loading = state == ButtonState::Loading;
-
-    rsx! {
-        button {
-            class,
-            disabled: state.is_disabled(),
-            "aria-busy": if is_loading { "true" } else { "false" },
-            onclick: move |event| {
-                event.stop_propagation();
-                on_click.call(());
-            },
-            "{label}"
-        }
     }
 }
 
@@ -451,37 +329,6 @@ pub fn MenuItem(label: String, danger: bool, on_select: EventHandler<()>) -> Ele
 pub fn MenuSeparator() -> Element {
     rsx! {
         div { class: "mn-menu-separator" }
-    }
-}
-
-#[component]
-pub fn IconButton(
-    label: String,
-    icon: String,
-    icon_class: Option<String>,
-    class_name: String,
-    disabled: bool,
-    selected: bool,
-    danger: bool,
-    on_click: EventHandler<()>,
-) -> Element {
-    let class = icon_button_class(selected, danger, &class_name);
-
-    rsx! {
-        Tooltip { label: label.clone(),
-            button {
-                class,
-                disabled,
-                "aria-label": "{label}",
-                "aria-pressed": selected.then_some("true"),
-                onclick: move |_| on_click.call(()),
-                if let Some(icon_class) = icon_class {
-                    span { class: "{icon_class}", "aria-hidden": "true" }
-                } else {
-                    "{icon}"
-                }
-            }
-        }
     }
 }
 
