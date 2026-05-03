@@ -16,8 +16,8 @@ pub use feedback::{
     StatusMessage, StatusStrip, StatusTone,
 };
 pub use forms::{
-    Dropdown, DropdownOption, FormField, SegmentedControl, SegmentedControlOption, Select, Slider,
-    Switch, TextInput, Toggle,
+    ColorInput, Dropdown, DropdownOption, FormField, SegmentedControl, SegmentedControlOption,
+    Select, Slider, Switch, TextInput, Toggle,
 };
 pub use layout::{
     AppShell, EditorTabScrollButton, EditorToolButton, EditorToolbar, MainColumn, ScrollContainer,

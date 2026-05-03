@@ -107,6 +107,10 @@ pub(super) fn form_field_class(class_name: &str) -> String {
     append_class("mn-form-field mn-setting-row", class_name)
 }
 
+pub(super) fn color_input_class(class_name: &str) -> String {
+    append_class("mn-tag-color-input", class_name)
+}
+
 #[component]
 pub fn FormField(label: String, class_name: String, children: Element) -> Element {
     let class = form_field_class(&class_name);
@@ -279,6 +283,28 @@ pub fn Slider(
             min: "{min}",
             max: "{max}",
             step: "{step}",
+            value: "{value}",
+            oninput: move |event| on_input.call(event.value()),
+        }
+    }
+}
+
+#[component]
+pub fn ColorInput(
+    label: String,
+    title: String,
+    value: String,
+    class_name: String,
+    on_input: EventHandler<String>,
+) -> Element {
+    let class = color_input_class(&class_name);
+
+    rsx! {
+        input {
+            class,
+            r#type: "color",
+            title,
+            "aria-label": "{label}",
             value: "{value}",
             oninput: move |event| on_input.call(event.value()),
         }

@@ -2,9 +2,10 @@ use crate::commands::{
     AppCommands, DeleteTagRequest, RenameTagRequest, SetTagColorRequest, UpsertTagRequest,
 };
 use crate::components::primitives::{
-    ActionButton, Button, ButtonState, ButtonVariant, DialogSection, DropdownOption, Modal,
-    ModalHeader, Select, SettingsContent, SettingsInlineRow, SettingsInlineRowKind, SettingsLayout,
-    SettingsNav, SettingsNavItem, SettingsPanel, SettingsRow, Slider, Switch, TextInput,
+    ActionButton, Button, ButtonState, ButtonVariant, ColorInput, DialogSection, DropdownOption,
+    Modal, ModalHeader, Select, SettingsContent, SettingsInlineRow, SettingsInlineRowKind,
+    SettingsLayout, SettingsNav, SettingsNavItem, SettingsPanel, SettingsRow, Slider, Switch,
+    TextInput,
 };
 use crate::context::use_app_context;
 use crate::i18n::{use_i18n, UiText};
@@ -400,13 +401,12 @@ fn TagManagementSection(
                                 }
                             },
                         }
-                        input {
-                            class: "mn-tag-color-input",
-                            r#type: "color",
+                        ColorInput {
+                            label: i18n.text("New tag color", "新标签颜色").to_string(),
                             title: i18n.text("Tag color", "标签颜色"),
-                            "aria-label": i18n.text("New tag color", "新标签颜色"),
-                            value: "{new_color_value}",
-                            oninput: move |event| new_color.set(event.value()),
+                            value: new_color_value,
+                            class_name: String::new(),
+                            on_input: move |value| new_color.set(value),
                         }
                         Button {
                             label: i18n.text("Add", "添加").to_string(),
@@ -510,14 +510,13 @@ fn TagEditorRow(tag: TagListItem, has_workspace: bool, commands: AppCommands) ->
                     }
                 },
             }
-            input {
-                class: "mn-tag-color-input",
-                r#type: "color",
+            ColorInput {
+                label: format!("{} {}", i18n.text("Tag color for", "标签颜色"), tag.name),
                 title: i18n.text("Tag color", "标签颜色"),
-                "aria-label": format!("{} {}", i18n.text("Tag color for", "标签颜色"), tag.name),
-                value: "{color_value}",
-                oninput: move |event| {
-                    color.set(event.value());
+                value: color_value,
+                class_name: String::new(),
+                on_input: move |value| {
+                    color.set(value);
                     confirm_delete.set(false);
                 },
             }

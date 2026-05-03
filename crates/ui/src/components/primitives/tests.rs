@@ -2,7 +2,7 @@ use super::buttons::{action_button_class, icon_button_class};
 use super::empty::empty_state_card_class;
 use super::feedback::{inline_alert_class, status_tone_class};
 use super::forms::{
-    dropdown_class, dropdown_id_suffix, dropdown_list_id, dropdown_option_class,
+    color_input_class, dropdown_class, dropdown_id_suffix, dropdown_list_id, dropdown_option_class,
     dropdown_selected_label, form_field_class, segmented_option_class,
 };
 use super::layout::{
@@ -265,4 +265,6 @@ fn form_field_class_adds_optional_extension_class() {
         form_field_class("wide"),
         "mn-form-field mn-setting-row wide"
     );
+    assert_eq!(color_input_class(""), "mn-tag-color-input");
+    assert_eq!(color_input_class("compact"), "mn-tag-color-input compact");
 }
