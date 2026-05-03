@@ -772,6 +772,47 @@ button { border: 0; cursor: pointer; background: transparent; }
 }
 
 /* 閳光偓閳光偓 Workbench 閳光偓閳光偓 */
+.mn-split-pane {
+    display: flex;
+    position: relative;
+    min-width: 0;
+    min-height: 0;
+}
+
+.mn-split-pane-primary {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+}
+
+.mn-sticky-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 18;
+    flex: 0 0 auto;
+}
+
+.mn-toolbar-zone {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.mn-toolbar-zone-flexible {
+    flex: 1 1 0;
+    overflow: hidden;
+}
+
+.mn-toolbar-zone-fixed {
+    flex: 0 0 auto;
+}
+
+.mn-overflow-inline {
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+}
+
 .mn-workbench {
     display: flex;
     position: relative;

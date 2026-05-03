@@ -151,7 +151,7 @@ pub fn DesktopLayout() -> Element {
                         },
                     }
                 }
-                MainColumn {
+                MainColumn { class_name: String::new(),
                     EditorPane {
                         on_settings: move |_| {
                             let started_at = perf_timer();

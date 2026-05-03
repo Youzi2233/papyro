@@ -6,7 +6,8 @@ use super::forms::{
     dropdown_selected_label, form_field_class, segmented_option_class,
 };
 use super::layout::{
-    app_shell_class, editor_tab_scroll_button_class, editor_tool_button_class, resize_rail_class,
+    app_shell_class, editor_tab_scroll_button_class, editor_tool_button_class,
+    editor_toolbar_class, inline_overflow_class, main_column_class, resize_rail_class,
     resize_rail_overlay_class, scroll_container_class, toolbar_zone_class, workbench_class,
 };
 use super::navigation::{
@@ -77,18 +78,26 @@ fn layout_helpers_extend_base_classes() {
         app_shell_class("mn-shell-mobile"),
         "mn-shell mn-shell-mobile"
     );
-    assert_eq!(workbench_class(""), "mn-workbench");
+    assert_eq!(workbench_class(""), "mn-workbench mn-split-pane");
     assert_eq!(
         workbench_class("mn-workbench-mobile"),
-        "mn-workbench mn-workbench-mobile"
+        "mn-workbench mn-split-pane mn-workbench-mobile"
+    );
+    assert_eq!(
+        main_column_class("compact"),
+        "mn-main-column mn-split-pane-primary compact"
+    );
+    assert_eq!(
+        editor_toolbar_class("compact"),
+        "mn-editor-chrome mn-sticky-toolbar compact"
     );
     assert_eq!(
         toolbar_zone_class(ToolbarZoneKind::Flexible, "extra"),
-        "mn-editor-tabs-row extra"
+        "mn-toolbar-zone mn-toolbar-zone-flexible mn-editor-tabs-row extra"
     );
     assert_eq!(
         toolbar_zone_class(ToolbarZoneKind::Fixed, ""),
-        "mn-editor-tools"
+        "mn-toolbar-zone mn-toolbar-zone-fixed mn-editor-tools"
     );
     assert_eq!(
         editor_tool_button_class(false, ""),
@@ -116,6 +125,10 @@ fn layout_helpers_extend_base_classes() {
     assert_eq!(
         scroll_container_class("mn-settings-content"),
         "mn-scroll-container mn-settings-content"
+    );
+    assert_eq!(
+        inline_overflow_class("mn-tabbar"),
+        "mn-overflow-inline mn-tabbar"
     );
     assert_eq!(empty_state_card_class(false, ""), "mn-empty-card");
     assert_eq!(

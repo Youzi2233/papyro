@@ -157,7 +157,7 @@ Design work:
 - [x] Add a CSS token audit for raw colors, spacing one-offs, and duplicated component selectors before broad visual rewrites. See [UI Token Audit](ui-token-audit.md).
 - [x] Replace native-looking controls and one-off product controls with reusable primitives for sidebar search, tree rows, inline rename, editor tabs, outline items, settings color inputs, and editor chrome controls.
 - [ ] Continue reducing one-off CSS by moving repeated hover, active, disabled, focus-visible, loading, destructive, compact, selected, and checked state rules into reusable primitive contracts.
-- [ ] Create layout primitives for app chrome: split panes, resizable rails, scroll containers, sticky toolbars, fixed editor action zones, and responsive overflow rules.
+- [x] Create layout primitives for app chrome: split panes, resizable rails, scroll containers, sticky toolbars, fixed editor action zones, and responsive overflow rules.
 - [ ] Make Markdown writing surfaces visually match mature editors: quiet canvas, readable measure, balanced margins, polished code/table/callout styles, and consistent Preview/Hybrid typography.
 - [ ] Add design QA artifacts: component inventory, before/after screenshots, desktop narrow-width screenshots, dark-mode screenshots, contrast checks, keyboard navigation checks, and CSS line-budget checks.
 - [x] Document the new UI architecture so future contributors know where to add components, where tokens live, and when one-off CSS is forbidden.

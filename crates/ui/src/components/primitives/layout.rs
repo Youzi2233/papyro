@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 
-use super::append_class;
+use super::{append_class, ClassBuilder};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ToolbarZoneKind {
@@ -13,15 +13,33 @@ pub(super) fn app_shell_class(class_name: &str) -> String {
 }
 
 pub(super) fn workbench_class(class_name: &str) -> String {
-    append_class("mn-workbench", class_name)
+    ClassBuilder::new("mn-workbench")
+        .push("mn-split-pane")
+        .extend(class_name)
+}
+
+pub(super) fn main_column_class(class_name: &str) -> String {
+    ClassBuilder::new("mn-main-column")
+        .push("mn-split-pane-primary")
+        .extend(class_name)
+}
+
+pub(super) fn editor_toolbar_class(class_name: &str) -> String {
+    ClassBuilder::new("mn-editor-chrome")
+        .push("mn-sticky-toolbar")
+        .extend(class_name)
 }
 
 pub(super) fn toolbar_zone_class(kind: ToolbarZoneKind, class_name: &str) -> String {
-    let base = match kind {
-        ToolbarZoneKind::Flexible => "mn-editor-tabs-row",
-        ToolbarZoneKind::Fixed => "mn-editor-tools",
+    let builder = match kind {
+        ToolbarZoneKind::Flexible => ClassBuilder::new("mn-toolbar-zone")
+            .push("mn-toolbar-zone-flexible")
+            .push("mn-editor-tabs-row"),
+        ToolbarZoneKind::Fixed => ClassBuilder::new("mn-toolbar-zone")
+            .push("mn-toolbar-zone-fixed")
+            .push("mn-editor-tools"),
     };
-    append_class(base, class_name)
+    builder.extend(class_name)
 }
 
 pub(super) fn editor_tool_button_class(selected: bool, class_name: &str) -> String {
@@ -54,6 +72,10 @@ pub(super) fn scroll_container_class(class_name: &str) -> String {
     append_class("mn-scroll-container", class_name)
 }
 
+pub(super) fn inline_overflow_class(class_name: &str) -> String {
+    append_class("mn-overflow-inline", class_name)
+}
+
 #[component]
 pub fn AppShell(class_name: String, children: Element) -> Element {
     let class = app_shell_class(&class_name);
@@ -73,16 +95,20 @@ pub fn Workbench(class_name: String, children: Element) -> Element {
 }
 
 #[component]
-pub fn MainColumn(children: Element) -> Element {
+pub fn MainColumn(class_name: String, children: Element) -> Element {
+    let class = main_column_class(&class_name);
+
     rsx! {
-        div { class: "mn-main-column", {children} }
+        div { class, {children} }
     }
 }
 
 #[component]
-pub fn EditorToolbar(children: Element) -> Element {
+pub fn EditorToolbar(class_name: String, children: Element) -> Element {
+    let class = editor_toolbar_class(&class_name);
+
     rsx! {
-        div { class: "mn-editor-chrome", {children} }
+        div { class, {children} }
     }
 }
 
@@ -173,6 +199,15 @@ pub fn ResizeRail(
 #[component]
 pub fn ScrollContainer(class_name: String, children: Element) -> Element {
     let class = scroll_container_class(&class_name);
+
+    rsx! {
+        div { class, {children} }
+    }
+}
+
+#[component]
+pub fn InlineOverflow(class_name: String, children: Element) -> Element {
+    let class = inline_overflow_class(&class_name);
 
     rsx! {
         div { class, {children} }

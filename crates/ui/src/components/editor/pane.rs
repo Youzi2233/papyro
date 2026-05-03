@@ -7,8 +7,8 @@ use super::tabbar::EditorTabButton;
 use crate::commands::AppCommands;
 use crate::components::primitives::{
     Button, ButtonVariant, EditorTabScrollButton, EditorToolButton, EditorToolbar, EmptyRecentItem,
-    EmptyStateCopy, EmptyStateSurface, SegmentedControl, SegmentedControlOption, ToolbarZone,
-    ToolbarZoneKind,
+    EmptyStateCopy, EmptyStateSurface, InlineOverflow, SegmentedControl, SegmentedControlOption,
+    ToolbarZone, ToolbarZoneKind,
 };
 use crate::context::use_app_context;
 use crate::i18n::{i18n_for, use_i18n, UiText};
@@ -454,7 +454,7 @@ fn EditorChrome(
     };
 
     rsx! {
-        EditorToolbar {
+        EditorToolbar { class_name: String::new(),
             ToolbarZone { kind: ToolbarZoneKind::Flexible, class_name: String::new(),
                 EditorToolButton {
                     label: sidebar_label.to_string(),
@@ -472,7 +472,7 @@ fn EditorChrome(
                     class_name: String::new(),
                     on_click: move |_| scroll_editor_tabs(-220),
                 }
-                div { class: "mn-tabbar",
+                InlineOverflow { class_name: "mn-tabbar".to_string(),
                     if tab_items.is_empty() {
                         span { class: "mn-tabbar-placeholder", {i18n.text("No open note", "没有打开的笔记")} }
                     } else {
