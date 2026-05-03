@@ -1107,6 +1107,19 @@ pub fn ModalCloseButton(label: String, on_close: EventHandler<()>) -> Element {
 }
 
 #[component]
+pub fn ModalHeader(title: String, close_label: String, on_close: EventHandler<()>) -> Element {
+    rsx! {
+        div { class: "mn-modal-header",
+            h2 { class: "mn-modal-title", "{title}" }
+            ModalCloseButton {
+                label: close_label,
+                on_close,
+            }
+        }
+    }
+}
+
+#[component]
 pub fn TextInput(
     class_name: String,
     placeholder: String,

@@ -3,9 +3,8 @@ use crate::commands::{
 };
 use crate::components::primitives::{
     ActionButton, Button, ButtonState, ButtonVariant, DialogSection, DropdownOption, Modal,
-    ModalCloseButton, Select, SettingsContent, SettingsInlineRow, SettingsInlineRowKind,
-    SettingsLayout, SettingsNav, SettingsNavItem, SettingsPanel, SettingsRow, Slider, Switch,
-    TextInput,
+    ModalHeader, Select, SettingsContent, SettingsInlineRow, SettingsInlineRowKind, SettingsLayout,
+    SettingsNav, SettingsNavItem, SettingsPanel, SettingsRow, Slider, Switch, TextInput,
 };
 use crate::context::use_app_context;
 use crate::i18n::{use_i18n, UiText};
@@ -108,12 +107,10 @@ pub fn SettingsSurface(on_close: EventHandler<()>) -> Element {
     };
 
     rsx! {
-    div { class: "mn-modal-header",
-            h2 { class: "mn-modal-title", {i18n.text("Settings", "设置")} }
-            ModalCloseButton {
-                label: i18n.text("Close settings", "关闭设置").to_string(),
-                on_close,
-            }
+        ModalHeader {
+            title: i18n.text("Settings", "设置").to_string(),
+            close_label: i18n.text("Close settings", "关闭设置").to_string(),
+            on_close,
         }
         div { class: "mn-modal-body mn-settings-body",
             SettingsLayout {

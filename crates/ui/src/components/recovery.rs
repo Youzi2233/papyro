@@ -1,6 +1,6 @@
 use crate::components::primitives::{
     Button, ButtonState, ButtonVariant, ComparePanel, InlineAlert, InlineAlertTone, Modal,
-    ModalCloseButton, ResultList, ResultRow, ResultRowKind, RowActionButton, RowActions,
+    ModalHeader, ResultList, ResultRow, ResultRowKind, RowActionButton, RowActions,
 };
 use crate::context::use_app_context;
 use crate::i18n::use_i18n;
@@ -20,12 +20,10 @@ pub fn RecoveryDraftsModal(on_close: EventHandler<()>) -> Element {
             label: i18n.text("Recovery drafts", "恢复草稿").to_string(),
             class_name: "mn-modal mn-command-modal".to_string(),
             on_close,
-            div { class: "mn-modal-header",
-                h2 { class: "mn-modal-title", {i18n.text("Recovery drafts", "恢复草稿")} }
-                ModalCloseButton {
-                    label: i18n.text("Close recovery drafts", "关闭恢复草稿").to_string(),
-                    on_close,
-                }
+            ModalHeader {
+                title: i18n.text("Recovery drafts", "恢复草稿").to_string(),
+                close_label: i18n.text("Close recovery drafts", "关闭恢复草稿").to_string(),
+                on_close,
             }
             if drafts.is_empty() {
                 InlineAlert {
@@ -141,12 +139,10 @@ pub fn RecoveryDraftCompareModal() -> Element {
             label: i18n.text("Compare recovery draft", "比较恢复草稿").to_string(),
             class_name: "mn-modal mn-recovery-compare-modal".to_string(),
             on_close: move |_| commands.close_recovery_comparison.call(()),
-            div { class: "mn-modal-header",
-                h2 { class: "mn-modal-title", {i18n.text("Compare recovery draft", "比较恢复草稿")} }
-                ModalCloseButton {
-                    label: i18n.text("Close recovery comparison", "关闭恢复比较").to_string(),
-                    on_close: move |_| close_commands.close_recovery_comparison.call(()),
-                }
+            ModalHeader {
+                title: i18n.text("Compare recovery draft", "比较恢复草稿").to_string(),
+                close_label: i18n.text("Close recovery comparison", "关闭恢复比较").to_string(),
+                on_close: move |_| close_commands.close_recovery_comparison.call(()),
             }
             div { class: "mn-recovery-compare-summary",
                 span { class: "mn-command-title", "{model.title}" }
