@@ -1,6 +1,6 @@
 use crate::commands::{AppCommands, InsertMarkdownRequest, OpenMarkdownTarget};
 use crate::components::primitives::{
-    InlineAlert, InlineAlertTone, Modal, ResultRow, ResultRowKind, TextInput,
+    InlineAlert, InlineAlertTone, Modal, ResultList, ResultRow, ResultRowKind, TextInput,
 };
 use crate::context::use_app_context;
 use crate::i18n::{i18n_for, use_i18n};
@@ -144,7 +144,9 @@ pub fn CommandPaletteModal(
                         },
                     }
                 }
-                div { class: "mn-command-list",
+                ResultList {
+                    label: i18n.text("Command results", "命令结果").to_string(),
+                    class_name: String::new(),
                     if filtered.is_empty() {
                         InlineAlert {
                             message: i18n.text("No matching commands", "没有匹配的命令").to_string(),

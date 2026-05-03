@@ -1,7 +1,7 @@
 use crate::action_labels::open_note_label;
 use crate::commands::{AppCommands, OpenMarkdownTarget};
 use crate::components::primitives::{
-    InlineAlert, InlineAlertTone, Modal, ResultRow, ResultRowKind, TextInput,
+    InlineAlert, InlineAlertTone, Modal, ResultList, ResultRow, ResultRowKind, TextInput,
 };
 use crate::context::use_app_context;
 use crate::i18n::use_i18n;
@@ -76,7 +76,9 @@ pub fn QuickOpenModal(on_close: EventHandler<()>) -> Element {
                         },
                     }
                 }
-                div { class: "mn-command-list",
+                ResultList {
+                    label: i18n.text("Note results", "笔记结果").to_string(),
+                    class_name: String::new(),
                     if filtered.is_empty() {
                         InlineAlert {
                             message: if all_items.is_empty() {

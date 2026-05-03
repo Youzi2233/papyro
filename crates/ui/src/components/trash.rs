@@ -1,7 +1,7 @@
 use crate::commands::{AppCommands, RestoreTrashedNoteTarget};
 use crate::components::primitives::{
     Button, ButtonState, ButtonVariant, InlineAlert, InlineAlertTone, Modal, ModalCloseButton,
-    ModalFooterMeta, ResultRow, ResultRowKind, RowActionButton, RowActions,
+    ModalFooterMeta, ResultList, ResultRow, ResultRowKind, RowActionButton, RowActions,
 };
 use crate::context::use_app_context;
 use crate::i18n::{i18n_for, use_i18n};
@@ -39,7 +39,9 @@ pub fn TrashModal(on_close: EventHandler<()>) -> Element {
                     class_name: "mn-command-empty".to_string(),
                 }
             } else {
-                div { class: "mn-command-list",
+                ResultList {
+                    label: i18n.text("Deleted notes", "已删除笔记").to_string(),
+                    class_name: String::new(),
                     for note in notes {
                         TrashNoteRow {
                             key: "{note.note_id}",

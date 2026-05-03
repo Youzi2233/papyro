@@ -1150,6 +1150,20 @@ pub fn ResultRow(
 }
 
 #[component]
+pub fn ResultList(label: String, class_name: String, children: Element) -> Element {
+    let class = append_class("mn-command-list", &class_name);
+
+    rsx! {
+        div {
+            class,
+            role: "list",
+            "aria-label": "{label}",
+            {children}
+        }
+    }
+}
+
+#[component]
 pub fn RowActions(class_name: String, children: Element) -> Element {
     let class = append_class("mn-row-actions", &class_name);
 

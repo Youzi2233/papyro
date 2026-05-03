@@ -35,12 +35,12 @@ flowchart TD
 
 | 区域 | 当前组件 | 说明 |
 | --- | --- | --- |
-| 基础组件 | `Button`、`ActionButton`、`RowActionButton`、`IconButton`、`Select`、`Dropdown`、`SegmentedControl`、`Tabs`、`Modal`、`ModalCloseButton`、`Menu`、`ContextMenu`、`MenuItem`、`Tooltip`、`Message`、`StatusStrip`、`StatusMessage`、`StatusIndicator`、`FormField`、`Switch`、`Toggle`、`Slider`、`TextInput`、`ResultRow`、`RowActions`、`ModalFooterMeta`、`ComparePanel`、`SkeletonRows`、`ErrorState`、`SettingsLayout`、`SettingsNav`、`SettingsRow`、`SettingsInlineRow`、`SidebarItem`、`DialogSection`、`TreeItemButton`、`TreeItemEditRow`、`EmptyState` | 已经有基础，但还需要更强的状态契约、variant、键盘行为和文档。 |
+| 基础组件 | `Button`、`ActionButton`、`RowActionButton`、`IconButton`、`Select`、`Dropdown`、`SegmentedControl`、`Tabs`、`Modal`、`ModalCloseButton`、`Menu`、`ContextMenu`、`MenuItem`、`Tooltip`、`Message`、`StatusStrip`、`StatusMessage`、`StatusIndicator`、`FormField`、`Switch`、`Toggle`、`Slider`、`TextInput`、`ResultList`、`ResultRow`、`RowActions`、`ModalFooterMeta`、`ComparePanel`、`SkeletonRows`、`ErrorState`、`SettingsLayout`、`SettingsNav`、`SettingsRow`、`SettingsInlineRow`、`SidebarItem`、`DialogSection`、`TreeItemButton`、`TreeItemEditRow`、`EmptyState` | 已经有基础，但还需要更强的状态契约、variant、键盘行为和文档。 |
 | App chrome | `Sidebar`、`FileTree`、`AppHeader`、`StatusBar`、`DesktopLayout`、`MobileLayout` | 文件树行已使用 `TreeItem` 基础组件，workspace 根目录行已使用 `SidebarItem`；侧边栏 footer 行还需要继续接入基础组件。 |
 | 编辑器 | `EditorPane`、`EditorChrome`、`EditorTabButton`、`OutlinePane`、`PreviewPane`、`EditorHost`、`FallbackEditor` | 需要稳定 chrome 分区、tab overflow 规则、大纲行为和共享 Markdown 视觉 token。 |
 | 弹窗界面 | `SettingsModal`、`QuickOpenModal`、`CommandPaletteModal`、`SearchModal`、`TrashModal`、`RecoveryDraftsModal`、`RecoveryDraftCompareModal` | 应共享 dialog shell、结果行、空状态、加载态和键盘焦点行为。 |
 | 设置 | `SettingsSurface`、`TagManagementSection`、`TagEditorRow`、`AboutMetaItem` | 设置页已经组合共享导航、面板、表单行、内联行和 section 基础组件；标签管理还需要更丰富的校验与 helper 状态。 |
-| 搜索/命令 | `ResultRow`、`RowActions`、`CommandPaletteRow`、`QuickOpenRow`、`SearchResultRow`、`HighlightedText` | 命令、快速打开、搜索、回收站和恢复行已经共享行壳和动作槽位；下一步补图标、快捷键、更丰富元信息和分组状态。 |
+| 搜索/命令 | `ResultList`、`ResultRow`、`RowActions`、`CommandPaletteRow`、`QuickOpenRow`、`SearchResultRow`、`HighlightedText` | 命令、快速打开、搜索、回收站和恢复界面已经共享列表壳、行壳和动作槽位；下一步补图标、快捷键、更丰富元信息和分组状态。 |
 | 恢复/回收站 | `RecoveryDraftRow`、`ComparePanel`、`TrashNoteRow` | 恢复和回收站列表行已使用 `ResultRow`，恢复对比已使用 `ComparePanel`，回收站 footer 元信息已使用 `ModalFooterMeta`；冲突/错误状态仍需要专门的数据安全 pattern。 |
 
 ## 目标基础组件
@@ -76,7 +76,7 @@ flowchart TD
 | --- | --- | --- |
 | `SettingsRow` | 设置、未来偏好设置窗口 | 一列表单：label、可选 description、control、未来 helper/error slots。 |
 | `SettingsInlineRow` | 设置标签管理、紧凑表单行 | 稳定的 create/edit 内联控制网格，并为窄窗口迁移保留统一入口。 |
-| `ResultRow` | 搜索、快速打开、命令面板、回收站、恢复 | 图标、主文本、次文本、元信息、高亮、键盘 current 状态。 |
+| `ResultList` / `ResultRow` | 搜索、快速打开、命令面板、回收站、恢复 | 可访问的结果列表壳，以及行图标、主文本、次文本、元信息、高亮、键盘 current 状态。 |
 | `RowActions` / `RowActionButton` | 结果行、数据安全管理行 | 右对齐行内动作，统一间距，按需支持换行，并收敛行内按钮点击边界。 |
 | `ModalFooterMeta` | 回收站、恢复、破坏性操作弹窗 | footer 左侧元信息，长文本会在操作按钮前安全截断。 |
 | `ComparePanel` | 恢复对比、未来冲突处理 | 标题、元信息、可选错误、可滚动预格式内容和稳定的左右对比尺寸。 |

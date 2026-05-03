@@ -1,6 +1,6 @@
 use crate::components::primitives::{
     Button, ButtonState, ButtonVariant, ComparePanel, InlineAlert, InlineAlertTone, Modal,
-    ModalCloseButton, ResultRow, ResultRowKind, RowActionButton, RowActions,
+    ModalCloseButton, ResultList, ResultRow, ResultRowKind, RowActionButton, RowActions,
 };
 use crate::context::use_app_context;
 use crate::i18n::use_i18n;
@@ -34,7 +34,9 @@ pub fn RecoveryDraftsModal(on_close: EventHandler<()>) -> Element {
                     class_name: "mn-command-empty".to_string(),
                 }
             } else {
-                div { class: "mn-command-list",
+                ResultList {
+                    label: i18n.text("Recovery drafts", "恢复草稿").to_string(),
+                    class_name: String::new(),
                     for draft in drafts {
                         RecoveryDraftRow {
                             draft,

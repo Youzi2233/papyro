@@ -1,7 +1,8 @@
 use crate::action_labels::open_note_label;
 use crate::commands::{AppCommands, OpenMarkdownTarget};
 use crate::components::primitives::{
-    InlineAlert, InlineAlertTone, Modal, ResultRow, ResultRowKind, SkeletonRows, TextInput,
+    InlineAlert, InlineAlertTone, Modal, ResultList, ResultRow, ResultRowKind, SkeletonRows,
+    TextInput,
 };
 use crate::context::use_app_context;
 use crate::i18n::{i18n_for, use_i18n};
@@ -94,7 +95,9 @@ pub fn SearchModal(on_close: EventHandler<()>) -> Element {
                         },
                     }
                 }
-                div { class: "mn-command-list",
+                ResultList {
+                    label: i18n.text("Search results", "搜索结果").to_string(),
+                    class_name: String::new(),
                     if results.is_empty() && show_loading_skeleton {
                         SkeletonRows {
                             label: empty_message,
