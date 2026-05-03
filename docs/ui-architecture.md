@@ -26,7 +26,7 @@ Rules:
 
 - `assets/main.css` is the shared visual source.
 - `apps/desktop/assets/main.css` and `apps/mobile/assets/main.css` mirror runtime copies and must stay synchronized when CSS changes.
-- `crates/ui/src/components/primitives.rs` owns reusable Dioxus controls and re-exports focused primitive submodules such as `primitives/layout.rs`.
+- `crates/ui/src/components/primitives.rs` owns reusable Dioxus controls and re-exports focused primitive submodules such as `primitives/layout.rs` and `primitives/settings.rs`.
 - Product components compose primitives and should avoid inventing control behavior.
 - Layout modules arrange product regions; they should not own button, menu, or field styling.
 - `js/src/editor-theme.js` consumes the same CSS tokens for CodeMirror and Hybrid rendering.
@@ -110,7 +110,7 @@ Run the narrowest checks that cover the changed layer:
 | App chrome | `AppShell`, `Workbench`, `MainColumn`, `Sidebar`, `TreeSortControl`, `FileTree`, `AppHeader`, `StatusBar`, `DesktopLayout`, `MobileLayout` | Desktop and mobile shells now share `AppShell` and `Workbench`, file-tree rows use `TreeItem` primitives, workspace root rows use `SidebarItem`, and desktop/mobile file sort controls share `TreeSortControl`; sidebar footer rows still need broader primitive coverage. |
 | Editor | `EditorPane`, `EditorChrome`, `EditorTabButton`, `OutlinePane`, `PreviewPane`, `EditorHost`, `FallbackEditor` | Needs stable chrome zones, tab overflow rules, outline behavior, and shared Markdown visual tokens. |
 | Modal surfaces | `SettingsModal`, `QuickOpenModal`, `CommandPaletteModal`, `SearchModal`, `TrashModal`, `RecoveryDraftsModal`, `RecoveryDraftCompareModal` | Should share dialog shells, result rows, empty states, loading states, and keyboard focus behavior. |
-| Settings | `SettingsSurface`, `TagManagementSection`, `TagEditorRow`, `AboutMetaItem` | Settings now composes shared navigation, panel, row, inline-row, and section primitives; tag management still needs richer validation and helper states. |
+| Settings | `SettingsSurface`, `TagManagementSection`, `TagEditorRow`, `AboutMetaItem` | Settings now composes shared navigation, panel, row, inline-row, and section primitives from `primitives/settings.rs`; tag management still needs richer validation and helper states. |
 | Search/commands | `ResultList`, `ResultRow`, `RowActions`, `CommandPaletteRow`, `QuickOpenRow`, `SearchResultRow`, `HighlightedText` | Command, quick-open, search, trash, and recovery surfaces now share list shells, row shells, and action slots; next work should add icons, shortcuts, richer metadata, and grouped states. |
 | Recovery/trash | `RecoveryDraftRow`, `ComparePanel`, `TrashNoteRow` | Recovery and trash list rows use `ResultRow`, recovery comparisons use `ComparePanel`, and trash footer metadata uses `ModalFooterMeta`; conflict/error states still need dedicated data-safety patterns. |
 
@@ -137,7 +137,7 @@ Run the narrowest checks that cover the changed layer:
 | `EmptyState` | Partial | `EmptyStateSurface`, `EmptyStateCopy`, `EmptyState`, and `EmptyRecentItem` now cover generic empty shells, copy, onboarding layout, and recent-workspace entry rows; add compact, error, and richer action variants. |
 | `SkeletonRows` | Partial | Workspace search loading now uses reusable skeleton rows; workspace load and future async windows still need adoption. |
 | `InlineAlert` / `ErrorState` | Partial | `InlineAlert` covers preview notices and command/search empty states; `ErrorState` now covers editor runtime failures and should be reused for larger blocking failures. |
-| `SettingsLayout` / `SettingsRow` / `SettingsInlineRow` | Partial | Settings navigation, panels, sections, rows, and inline control rows now live in primitives; helper text, errors, and richer form states still need broader use. |
+| `SettingsLayout` / `SettingsRow` / `SettingsInlineRow` | Partial | `primitives/settings.rs` owns settings navigation, panels, sections, rows, and inline control rows; helper text, errors, and richer form states still need broader use. |
 
 ## Product Patterns
 

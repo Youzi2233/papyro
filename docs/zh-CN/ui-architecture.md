@@ -26,7 +26,7 @@ flowchart TD
 
 - `assets/main.css` 是共享视觉源。
 - `apps/desktop/assets/main.css` 和 `apps/mobile/assets/main.css` 是运行时副本，CSS 改动时必须同步。
-- `crates/ui/src/components/primitives.rs` 拥有可复用 Dioxus 控件，并重新导出 `primitives/layout.rs` 等聚焦的基础组件子模块。
+- `crates/ui/src/components/primitives.rs` 拥有可复用 Dioxus 控件，并重新导出 `primitives/layout.rs`、`primitives/settings.rs` 等聚焦的基础组件子模块。
 - 产品组件组合基础组件，不应该重新发明控件行为。
 - layout 模块负责排列产品区域，不拥有按钮、菜单或表单字段样式。
 - `js/src/editor-theme.js` 使用同一批 CSS token 来服务 CodeMirror 和 Hybrid 渲染。
@@ -110,7 +110,7 @@ Token 名称描述语义，而不是描述单个颜色或单个页面：
 | App chrome | `AppShell`、`Workbench`、`MainColumn`、`Sidebar`、`TreeSortControl`、`FileTree`、`AppHeader`、`StatusBar`、`DesktopLayout`、`MobileLayout` | 桌面和移动端 shell 已共享 `AppShell` 与 `Workbench`，文件树行已使用 `TreeItem` 基础组件，workspace 根目录行已使用 `SidebarItem`，桌面/移动端文件排序控件已共享 `TreeSortControl`；侧边栏 footer 行还需要继续接入基础组件。 |
 | 编辑器 | `EditorPane`、`EditorChrome`、`EditorTabButton`、`OutlinePane`、`PreviewPane`、`EditorHost`、`FallbackEditor` | 需要稳定 chrome 分区、tab overflow 规则、大纲行为和共享 Markdown 视觉 token。 |
 | 弹窗界面 | `SettingsModal`、`QuickOpenModal`、`CommandPaletteModal`、`SearchModal`、`TrashModal`、`RecoveryDraftsModal`、`RecoveryDraftCompareModal` | 应共享 dialog shell、结果行、空状态、加载态和键盘焦点行为。 |
-| 设置 | `SettingsSurface`、`TagManagementSection`、`TagEditorRow`、`AboutMetaItem` | 设置页已经组合共享导航、面板、表单行、内联行和 section 基础组件；标签管理还需要更丰富的校验与 helper 状态。 |
+| 设置 | `SettingsSurface`、`TagManagementSection`、`TagEditorRow`、`AboutMetaItem` | 设置页已经组合 `primitives/settings.rs` 中的共享导航、面板、表单行、内联行和 section 基础组件；标签管理还需要更丰富的校验与 helper 状态。 |
 | 搜索/命令 | `ResultList`、`ResultRow`、`RowActions`、`CommandPaletteRow`、`QuickOpenRow`、`SearchResultRow`、`HighlightedText` | 命令、快速打开、搜索、回收站和恢复界面已经共享列表壳、行壳和动作槽位；下一步补图标、快捷键、更丰富元信息和分组状态。 |
 | 恢复/回收站 | `RecoveryDraftRow`、`ComparePanel`、`TrashNoteRow` | 恢复和回收站列表行已使用 `ResultRow`，恢复对比已使用 `ComparePanel`，回收站 footer 元信息已使用 `ModalFooterMeta`；冲突/错误状态仍需要专门的数据安全 pattern。 |
 
@@ -137,7 +137,7 @@ Token 名称描述语义，而不是描述单个颜色或单个页面：
 | `EmptyState` | 部分已有 | `EmptyStateSurface`、`EmptyStateCopy`、`EmptyState` 和 `EmptyRecentItem` 已覆盖通用空状态外壳、文案、onboarding 布局与最近工作区入口行；还需要增加 compact、error 和更丰富的 action variant。 |
 | `SkeletonRows` | 部分已有 | 工作区搜索加载态已使用可复用 skeleton 行；workspace 加载和未来异步窗口还需要继续接入。 |
 | `InlineAlert` / `ErrorState` | 部分已有 | `InlineAlert` 已用于预览提示和命令/搜索空态；`ErrorState` 已覆盖编辑器 runtime 失败，后续较大的阻断错误也应复用它。 |
-| `SettingsLayout` / `SettingsRow` / `SettingsInlineRow` | 部分已有 | 设置导航、面板、section、行和内联控制行已经进入基础组件；helper text、错误态和更丰富的表单状态还需要继续接入。 |
+| `SettingsLayout` / `SettingsRow` / `SettingsInlineRow` | 部分已有 | `primitives/settings.rs` 拥有设置导航、面板、section、行和内联控制行；helper text、错误态和更丰富的表单状态还需要继续接入。 |
 
 ## 产品 Pattern
 

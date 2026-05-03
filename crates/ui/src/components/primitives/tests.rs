@@ -2,6 +2,7 @@ use super::layout::{
     app_shell_class, editor_tool_button_class, scroll_container_class, toolbar_zone_class,
     workbench_class,
 };
+use super::settings::{settings_inline_row_class, settings_nav_button_class};
 use super::*;
 
 #[test]
@@ -81,6 +82,14 @@ fn layout_helpers_extend_base_classes() {
     assert_eq!(
         settings_nav_button_class(false, ""),
         "mn-settings-nav-button"
+    );
+    assert_eq!(
+        settings_inline_row_class(SettingsInlineRowKind::Create, "compact"),
+        "mn-setting-inline-row create compact"
+    );
+    assert_eq!(
+        settings_inline_row_class(SettingsInlineRowKind::Edit, ""),
+        "mn-setting-inline-row edit"
     );
 }
 
