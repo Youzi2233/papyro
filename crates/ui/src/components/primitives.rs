@@ -1,8 +1,13 @@
 use dioxus::prelude::*;
 
+mod feedback;
 mod layout;
 mod settings;
 
+pub use feedback::{
+    ErrorState, InlineAlert, InlineAlertTone, Message, SkeletonRows, StatusIndicator,
+    StatusMessage, StatusStrip, StatusTone,
+};
 pub use layout::{
     AppShell, EditorToolButton, EditorToolbar, MainColumn, ScrollContainer, ToolbarZone,
     ToolbarZoneKind, Workbench,
@@ -24,20 +29,6 @@ pub enum ButtonState {
     Enabled,
     Disabled,
     Loading,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum StatusTone {
-    Default,
-    Saving,
-    Attention,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum InlineAlertTone {
-    Neutral,
-    Attention,
-    Danger,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -197,14 +188,6 @@ fn menu_item_class(danger: bool) -> &'static str {
     }
 }
 
-fn status_tone_class(tone: StatusTone) -> &'static str {
-    match tone {
-        StatusTone::Default => "mn-status-item",
-        StatusTone::Saving => "mn-status-saving",
-        StatusTone::Attention => "mn-status-unsaved",
-    }
-}
-
 fn form_field_class(class_name: &str) -> String {
     append_class("mn-form-field mn-setting-row", class_name)
 }
@@ -215,20 +198,6 @@ fn result_row_class(kind: ResultRowKind, is_active: bool) -> &'static str {
         (ResultRowKind::Default, true) => "mn-command-row active",
         (ResultRowKind::Search, false) => "mn-command-row mn-search-row",
         (ResultRowKind::Search, true) => "mn-command-row mn-search-row active",
-    }
-}
-
-fn inline_alert_class(tone: InlineAlertTone, class_name: &str) -> String {
-    let tone_class = match tone {
-        InlineAlertTone::Neutral => "mn-inline-alert neutral",
-        InlineAlertTone::Attention => "mn-inline-alert attention",
-        InlineAlertTone::Danger => "mn-inline-alert danger",
-    };
-    let trimmed = class_name.trim();
-    if trimmed.is_empty() {
-        tone_class.to_string()
-    } else {
-        format!("{tone_class} {trimmed}")
     }
 }
 
@@ -515,108 +484,6 @@ pub fn RowActionButton(
             },
             "{label}"
         }
-    }
-}
-
-#[component]
-pub fn StatusMessage(message: String) -> Element {
-    rsx! {
-        span { class: "mn-status-message", "{message}" }
-    }
-}
-
-#[component]
-pub fn StatusStrip(message: Option<String>, children: Element) -> Element {
-    rsx! {
-        footer { class: "mn-status-bar",
-            div { class: "mn-status-left",
-                if let Some(message) = message {
-                    if !message.is_empty() {
-                        StatusMessage { message }
-                    }
-                }
-            }
-            div { class: "mn-status-right", {children} }
-        }
-    }
-}
-
-#[component]
-pub fn Message(message: String, tone: StatusTone) -> Element {
-    rsx! {
-        div {
-            class: status_tone_class(tone),
-            role: "status",
-            "{message}"
-        }
-    }
-}
-
-#[component]
-pub fn InlineAlert(message: String, tone: InlineAlertTone, class_name: String) -> Element {
-    let class = inline_alert_class(tone, &class_name);
-
-    rsx! {
-        div {
-            class,
-            role: "status",
-            "{message}"
-        }
-    }
-}
-
-#[component]
-pub fn SkeletonRows(label: String, rows: usize, class_name: String) -> Element {
-    let class = append_class("mn-skeleton-list", &class_name);
-    let row_count = rows.max(1);
-
-    rsx! {
-        div {
-            class,
-            role: "status",
-            "aria-label": "{label}",
-            "aria-live": "polite",
-            for row in 0..row_count {
-                div {
-                    key: "{row}",
-                    class: "mn-skeleton-row",
-                    "aria-hidden": "true",
-                    span { class: "mn-skeleton-line primary" }
-                    span { class: "mn-skeleton-line secondary" }
-                }
-            }
-        }
-    }
-}
-
-#[component]
-pub fn ErrorState(
-    title: String,
-    message: String,
-    detail: Option<String>,
-    class_name: String,
-) -> Element {
-    let class = append_class("mn-error-state", &class_name);
-
-    rsx! {
-        section {
-            class,
-            role: "alert",
-            h2 { class: "mn-error-state-title", "{title}" }
-            p { class: "mn-error-state-message", "{message}" }
-            if let Some(detail) = detail {
-                pre { class: "mn-error-state-detail",
-                    code { "{detail}" }
-                }
-            }
-        }
-    }
-}
-
-#[component]
-pub fn StatusIndicator(label: String, tone: StatusTone) -> Element {
-    rsx! {
-        span { class: status_tone_class(tone), "{label}" }
     }
 }
 

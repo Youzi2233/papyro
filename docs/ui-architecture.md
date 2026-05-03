@@ -26,7 +26,7 @@ Rules:
 
 - `assets/main.css` is the shared visual source.
 - `apps/desktop/assets/main.css` and `apps/mobile/assets/main.css` mirror runtime copies and must stay synchronized when CSS changes.
-- `crates/ui/src/components/primitives.rs` owns reusable Dioxus controls and re-exports focused primitive submodules such as `primitives/layout.rs` and `primitives/settings.rs`.
+- `crates/ui/src/components/primitives.rs` owns reusable Dioxus controls and re-exports focused primitive submodules such as `primitives/feedback.rs`, `primitives/layout.rs`, and `primitives/settings.rs`.
 - Product components compose primitives and should avoid inventing control behavior.
 - Layout modules arrange product regions; they should not own button, menu, or field styling.
 - `js/src/editor-theme.js` consumes the same CSS tokens for CodeMirror and Hybrid rendering.
@@ -106,7 +106,7 @@ Run the narrowest checks that cover the changed layer:
 
 | Area | Current Components | Notes |
 | --- | --- | --- |
-| Primitives | `Button`, `ActionButton`, `RowActionButton`, `IconButton`, `EditorToolButton`, `Select`, `Dropdown`, `SegmentedControl`, `Tabs`, `Modal`, `ModalHeader`, `ModalCloseButton`, `Menu`, `ContextMenu`, `MenuItem`, `Tooltip`, `Message`, `StatusStrip`, `StatusMessage`, `StatusIndicator`, `FormField`, `Switch`, `Toggle`, `Slider`, `TextInput`, `ResultList`, `ResultRow`, `RowActions`, `ModalFooterMeta`, `ComparePanel`, `SkeletonRows`, `ErrorState`, `SettingsLayout`, `SettingsNav`, `SettingsRow`, `SettingsInlineRow`, `SidebarItem`, `DialogSection`, `TreeItemButton`, `TreeItemEditRow`, `EmptyState`, `EmptyStateSurface`, `EmptyStateCopy`, `EmptyRecentItem` | Good foundation, but still needs stronger state contracts, variants, keyboard behavior, and docs. |
+| Primitives | `Button`, `ActionButton`, `RowActionButton`, `IconButton`, `EditorToolButton`, `Select`, `Dropdown`, `SegmentedControl`, `Tabs`, `Modal`, `ModalHeader`, `ModalCloseButton`, `Menu`, `ContextMenu`, `MenuItem`, `Tooltip`, `Message`, `StatusStrip`, `StatusMessage`, `StatusIndicator`, `FormField`, `Switch`, `Toggle`, `Slider`, `TextInput`, `ResultList`, `ResultRow`, `RowActions`, `ModalFooterMeta`, `ComparePanel`, `SkeletonRows`, `ErrorState`, `SettingsLayout`, `SettingsNav`, `SettingsRow`, `SettingsInlineRow`, `SidebarItem`, `DialogSection`, `TreeItemButton`, `TreeItemEditRow`, `EmptyState`, `EmptyStateSurface`, `EmptyStateCopy`, `EmptyRecentItem` | Good foundation; feedback, layout, and settings component families now live in focused submodules, but the system still needs stronger state contracts, variants, keyboard behavior, and docs. |
 | App chrome | `AppShell`, `Workbench`, `MainColumn`, `Sidebar`, `TreeSortControl`, `FileTree`, `AppHeader`, `StatusBar`, `DesktopLayout`, `MobileLayout` | Desktop and mobile shells now share `AppShell` and `Workbench`, file-tree rows use `TreeItem` primitives, workspace root rows use `SidebarItem`, and desktop/mobile file sort controls share `TreeSortControl`; sidebar footer rows still need broader primitive coverage. |
 | Editor | `EditorPane`, `EditorChrome`, `EditorTabButton`, `OutlinePane`, `PreviewPane`, `EditorHost`, `FallbackEditor` | Needs stable chrome zones, tab overflow rules, outline behavior, and shared Markdown visual tokens. |
 | Modal surfaces | `SettingsModal`, `QuickOpenModal`, `CommandPaletteModal`, `SearchModal`, `TrashModal`, `RecoveryDraftsModal`, `RecoveryDraftCompareModal` | Should share dialog shells, result rows, empty states, loading states, and keyboard focus behavior. |
@@ -129,14 +129,14 @@ Run the narrowest checks that cover the changed layer:
 | `DropdownMenu` | Partial through `Menu` | Add trigger, alignment, keyboard handling, separators, icons, and shortcuts. |
 | `ContextMenu` | Exists | Keep as menu shell; share item model with dropdown menu. |
 | `Tooltip` | Exists | Add placement and delay policy if CSS-only tooltip becomes insufficient. |
-| `Toast` / `Message` / `StatusStrip` | Partial | `StatusStrip` now owns the footer status layout; transient toast still needs a separate primitive. |
+| `Toast` / `Message` / `StatusStrip` | Partial | `primitives/feedback.rs` owns `Message`, `InlineAlert`, `SkeletonRows`, `ErrorState`, `StatusStrip`, `StatusMessage`, and `StatusIndicator`; transient toast still needs a separate primitive. |
 | `Tabs` | Exists | Distinguish segmented tabs from document tab bar. |
 | `SidebarItem` | Partial | Workspace root rows now use `SidebarItem`; sidebar footer buttons and future navigation rows still need adoption. |
 | `TreeItem` | Partial | `TreeItemButton`, `TreeItemEditRow`, and `TreeItemLabel` now own file/folder icons, expand state, selected/editing/drag/drop classes, and row label layout; keyboard model and context-menu scoping remain in file-tree code. |
 | `Toolbar` / `ToolbarZone` | Partial | `primitives/layout.rs` owns `AppShell`, `Workbench`, `MainColumn`, `EditorToolbar`, `ToolbarZone`, `EditorToolButton`, and `ScrollContainer` for the shared shell, settings content scrolling, and editor chrome zones; split panes, resizable rails, and more scroll containers still need broader adoption. |
 | `EmptyState` | Partial | `EmptyStateSurface`, `EmptyStateCopy`, `EmptyState`, and `EmptyRecentItem` now cover generic empty shells, copy, onboarding layout, and recent-workspace entry rows; add compact, error, and richer action variants. |
 | `SkeletonRows` | Partial | Workspace search loading now uses reusable skeleton rows; workspace load and future async windows still need adoption. |
-| `InlineAlert` / `ErrorState` | Partial | `InlineAlert` covers preview notices and command/search empty states; `ErrorState` now covers editor runtime failures and should be reused for larger blocking failures. |
+| `InlineAlert` / `ErrorState` | Partial | `primitives/feedback.rs` owns preview notices, command/search empty states, loading skeletons, status indicators, and editor runtime failures; larger blocking failures should reuse this family. |
 | `SettingsLayout` / `SettingsRow` / `SettingsInlineRow` | Partial | `primitives/settings.rs` owns settings navigation, panels, sections, rows, and inline control rows; helper text, errors, and richer form states still need broader use. |
 
 ## Product Patterns
