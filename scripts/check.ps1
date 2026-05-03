@@ -38,6 +38,8 @@ Invoke-Step "file line report" { node scripts/report-file-lines.js }
 Invoke-Step "file line report self-test" { node scripts/report-file-lines.js --self-test }
 Invoke-Step "UI accessibility check" { node scripts/check-ui-a11y.js }
 Invoke-Step "UI accessibility check self-test" { node scripts/check-ui-a11y.js --self-test }
+Invoke-Step "UI primitive usage check" { node scripts/check-ui-primitives.js }
+Invoke-Step "UI primitive usage check self-test" { node scripts/check-ui-primitives.js --self-test }
 Invoke-Step "UI contrast check" { node scripts/check-ui-contrast.js }
 Invoke-Step "UI contrast check self-test" { node scripts/check-ui-contrast.js --self-test }
 Invoke-Step "Markdown style smoke check" { node scripts/check-markdown-style-smoke.js }

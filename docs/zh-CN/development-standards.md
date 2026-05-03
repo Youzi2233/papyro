@@ -107,6 +107,8 @@ cargo test --workspace
 node scripts/check-workspace-deps.js
 node scripts/report-file-lines.js
 node scripts/check-ui-a11y.js
+node scripts/check-ui-primitives.js
+node scripts/check-ui-primitives.js --self-test
 node scripts/check-ui-contrast.js
 node scripts/report-ui-tokens.js
 node scripts/check-perf-docs.js

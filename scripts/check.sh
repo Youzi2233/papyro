@@ -28,6 +28,12 @@ node scripts/check-ui-a11y.js
 echo "=== UI accessibility check self-test ==="
 node scripts/check-ui-a11y.js --self-test
 
+echo "=== UI primitive usage check ==="
+node scripts/check-ui-primitives.js
+
+echo "=== UI primitive usage check self-test ==="
+node scripts/check-ui-primitives.js --self-test
+
 echo "=== UI contrast check ==="
 node scripts/check-ui-contrast.js
 

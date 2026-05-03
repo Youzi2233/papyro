@@ -109,6 +109,8 @@ node scripts/report-file-lines.js
 node scripts/report-file-lines.js --self-test
 node scripts/check-ui-a11y.js
 node scripts/check-ui-a11y.js --self-test
+node scripts/check-ui-primitives.js
+node scripts/check-ui-primitives.js --self-test
 node scripts/check-ui-contrast.js
 node scripts/check-ui-contrast.js --self-test
 node scripts/report-ui-tokens.js
