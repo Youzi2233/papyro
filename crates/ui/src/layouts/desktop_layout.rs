@@ -130,7 +130,7 @@ pub fn DesktopLayout() -> Element {
     });
 
     rsx! {
-        AppShell {
+        AppShell { class_name: String::new(),
             ThemeDomEffect {}
             Workbench { class_name: String::new(),
                 if !sidebar_collapsed {

@@ -242,6 +242,10 @@ fn action_button_class(variant: ButtonVariant, class_name: &str) -> String {
     }
 }
 
+fn app_shell_class(class_name: &str) -> String {
+    append_class("mn-shell", class_name)
+}
+
 fn icon_button_class(selected: bool, danger: bool, class_name: &str) -> String {
     let mut classes = vec!["mn-icon-btn"];
     if selected {
@@ -345,9 +349,11 @@ fn append_class(base: &str, class_name: &str) -> String {
 }
 
 #[component]
-pub fn AppShell(children: Element) -> Element {
+pub fn AppShell(class_name: String, children: Element) -> Element {
+    let class = app_shell_class(&class_name);
+
     rsx! {
-        div { class: "mn-shell", {children} }
+        div { class, {children} }
     }
 }
 
@@ -1281,6 +1287,11 @@ mod tests {
 
     #[test]
     fn layout_helpers_extend_base_classes() {
+        assert_eq!(app_shell_class(""), "mn-shell");
+        assert_eq!(
+            app_shell_class("mn-shell-mobile"),
+            "mn-shell mn-shell-mobile"
+        );
         assert_eq!(workbench_class(""), "mn-workbench");
         assert_eq!(
             workbench_class("mn-workbench-mobile"),

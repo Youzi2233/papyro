@@ -6,7 +6,7 @@ use crate::components::{
     command_palette::CommandPaletteModal,
     editor::EditorPane,
     header::AppHeader,
-    primitives::{Button, ButtonVariant, TextInput},
+    primitives::{AppShell, Button, ButtonVariant, TextInput, Workbench},
     quick_open::QuickOpenModal,
     settings::SettingsModal,
     sidebar::{FileTree, FileTreeSortMode, TreeSortControl},
@@ -52,7 +52,7 @@ pub fn MobileLayout() -> Element {
     });
 
     rsx! {
-        div { class: "mn-shell mn-shell-mobile",
+        AppShell { class_name: "mn-shell-mobile".to_string(),
             ThemeDomEffect {}
             AppHeader {
                 on_settings: move |_| {
@@ -277,7 +277,7 @@ pub fn MobileLayout() -> Element {
                     }
                 }
 
-                div { class: "mn-workbench mn-workbench-mobile",
+                Workbench { class_name: "mn-workbench-mobile".to_string(),
                     EditorPane {
                         on_settings: move |_| {
                             let started_at = perf_timer();
