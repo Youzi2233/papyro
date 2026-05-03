@@ -2,8 +2,8 @@ pub mod file_tree;
 
 use crate::commands::FileTarget;
 use crate::components::primitives::{
-    ActionButton, ButtonState, ButtonVariant, ContextMenu, IconButton, MenuItem, SegmentedControl,
-    SegmentedControlOption, SidebarItem, TextInput,
+    ActionButton, Button, ButtonState, ButtonVariant, ContextMenu, IconButton, MenuItem,
+    SegmentedControl, SegmentedControlOption, SidebarItem, TextInput,
 };
 use crate::context::use_app_context;
 use crate::i18n::use_i18n;
@@ -214,16 +214,17 @@ pub fn Sidebar(on_search: EventHandler<()>, on_settings: EventHandler<()>) -> El
                                 }
                             },
                         }
-                        button {
-                            class: "mn-button",
-                            onclick: move |_| {
+                        Button {
+                            label: i18n.text("Create", "创建").to_string(),
+                            variant: ButtonVariant::Default,
+                            disabled: false,
+                            on_click: move |_| {
                                 let name = create_name().trim().to_string();
                                 let name = if name.is_empty() { "Untitled".to_string() } else { name };
                                 commands.create_note.call(name);
                                 create_name.set(String::new());
                                 show_create.set(false);
                             },
-                            {i18n.text("Create", "创建")}
                         }
                     }
                 }
