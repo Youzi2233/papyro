@@ -242,6 +242,7 @@ pub fn Sidebar(on_search: EventHandler<()>, on_settings: EventHandler<()>) -> El
                     variant: ButtonVariant::Primary,
                     state: if has_workspace { ButtonState::Enabled } else { ButtonState::Disabled },
                     icon_class: Some(create_action_icon_class.to_string()),
+                    title: None::<String>,
                     class_name: "mn-sidebar-new".to_string(),
                     on_click: move |_| {
                         show_create.set(!show_create());
@@ -253,6 +254,7 @@ pub fn Sidebar(on_search: EventHandler<()>, on_settings: EventHandler<()>) -> El
                         variant: ButtonVariant::Default,
                         state: if has_workspace { ButtonState::Enabled } else { ButtonState::Disabled },
                         icon_class: Some("mn-button-icon refresh".to_string()),
+                        title: None::<String>,
                         class_name: String::new(),
                         on_click: move |_| commands.refresh_workspace.call(()),
                     }
@@ -261,6 +263,7 @@ pub fn Sidebar(on_search: EventHandler<()>, on_settings: EventHandler<()>) -> El
                         variant: ButtonVariant::Default,
                         state: ButtonState::Enabled,
                         icon_class: Some("mn-button-icon workspace".to_string()),
+                        title: None::<String>,
                         class_name: String::new(),
                         on_click: move |_| commands.open_workspace.call(()),
                     }

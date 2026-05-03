@@ -6,7 +6,9 @@ use crate::components::{
     command_palette::CommandPaletteModal,
     editor::EditorPane,
     header::AppHeader,
-    primitives::{AppShell, Button, ButtonVariant, TextInput, Workbench},
+    primitives::{
+        ActionButton, AppShell, Button, ButtonState, ButtonVariant, TextInput, Workbench,
+    },
     quick_open::QuickOpenModal,
     settings::SettingsModal,
     sidebar::{FileTree, FileTreeSortMode, TreeSortControl},
@@ -218,11 +220,14 @@ pub fn MobileLayout() -> Element {
                                             rename_name.set(String::new());
                                         },
                                     }
-                                    button {
-                                        class: "mn-button danger",
-                                        title: delete_action_title(i18n.language(), selected_delete_pending),
-                                        onclick: move |_| commands.delete_selected.call(()),
-                                        "{delete_action_label(i18n.language(), selected_delete_pending)}"
+                                    ActionButton {
+                                        label: delete_action_label(i18n.language(), selected_delete_pending).to_string(),
+                                        variant: ButtonVariant::Danger,
+                                        state: ButtonState::Enabled,
+                                        icon_class: None,
+                                        title: Some(delete_action_title(i18n.language(), selected_delete_pending).to_string()),
+                                        class_name: String::new(),
+                                        on_click: move |_| commands.delete_selected.call(()),
                                     }
                                     if let Some(target) = selected_target.clone() {
                                         Button {

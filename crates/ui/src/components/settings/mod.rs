@@ -562,6 +562,7 @@ fn TagEditorRow(tag: TagListItem, has_workspace: bool, commands: AppCommands) ->
                 variant: ButtonVariant::Danger,
                 state: delete_button_state,
                 icon_class: None,
+                title: None::<String>,
                 class_name: delete_button_class,
                 on_click: {
                     let commands = commands.clone();

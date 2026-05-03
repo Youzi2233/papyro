@@ -680,6 +680,7 @@ pub fn ActionButton(
     variant: ButtonVariant,
     state: ButtonState,
     icon_class: Option<String>,
+    title: Option<String>,
     class_name: String,
     on_click: EventHandler<()>,
 ) -> Element {
@@ -690,6 +691,7 @@ pub fn ActionButton(
         button {
             class,
             disabled: state.is_disabled(),
+            title: title.as_deref(),
             "aria-busy": if is_loading { "true" } else { "false" },
             onclick: move |_| on_click.call(()),
             if let Some(icon_class) = icon_class {
