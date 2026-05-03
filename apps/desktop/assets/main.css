@@ -1054,9 +1054,10 @@ button { border: 0; cursor: pointer; background: transparent; }
     background: transparent;
 }
 
-.mn-tree-sort-btn {
+.mn-tree-sortbar .mn-tree-sort-btn {
     min-width: 0;
     min-height: 26px;
+    padding: 0 6px;
     border-radius: var(--mn-radius-control);
     color: var(--mn-ink-3);
     font-size: var(--mn-type-caption);
@@ -1065,11 +1066,11 @@ button { border: 0; cursor: pointer; background: transparent; }
     transition: background 0.14s, color 0.14s, box-shadow 0.14s;
 }
 
-.mn-tree-sort-btn:hover {
+.mn-tree-sortbar .mn-tree-sort-btn:hover {
     color: var(--mn-ink);
 }
 
-.mn-tree-sort-btn.active {
+.mn-tree-sortbar .mn-tree-sort-btn.active {
     background: var(--mn-accent-wash);
     color: var(--mn-accent);
     box-shadow: none;
@@ -1092,7 +1093,7 @@ button { border: 0; cursor: pointer; background: transparent; }
     min-height: 72px;
 }
 
-.mn-tree-sort-btn:focus-visible {
+.mn-tree-sortbar .mn-tree-sort-btn:focus-visible {
     outline: 0;
     box-shadow: var(--mn-ring-focus-sm);
 }

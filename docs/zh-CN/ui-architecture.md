@@ -107,7 +107,7 @@ Token 名称描述语义，而不是描述单个颜色或单个页面：
 | 区域 | 当前组件 | 说明 |
 | --- | --- | --- |
 | 基础组件 | `Button`、`ActionButton`、`RowActionButton`、`IconButton`、`EditorToolButton`、`Select`、`Dropdown`、`SegmentedControl`、`Tabs`、`Modal`、`ModalHeader`、`ModalCloseButton`、`Menu`、`ContextMenu`、`MenuItem`、`Tooltip`、`Message`、`StatusStrip`、`StatusMessage`、`StatusIndicator`、`FormField`、`Switch`、`Toggle`、`Slider`、`TextInput`、`ResultList`、`ResultRow`、`RowActions`、`ModalFooterMeta`、`ComparePanel`、`SkeletonRows`、`ErrorState`、`SettingsLayout`、`SettingsNav`、`SettingsRow`、`SettingsInlineRow`、`SidebarItem`、`DialogSection`、`TreeItemButton`、`TreeItemEditRow`、`EmptyState`、`EmptyStateSurface`、`EmptyStateCopy`、`EmptyRecentItem` | 已经有基础，按钮、空状态、反馈、表单、布局、导航、浮层、结果、设置和 tabs 组件族已经进入聚焦子模块；但还需要更强的状态契约、variant、键盘行为和文档。 |
-| App chrome | `AppShell`、`Workbench`、`MainColumn`、`Sidebar`、`TreeSortControl`、`FileTree`、`AppHeader`、`StatusBar`、`DesktopLayout`、`MobileLayout` | 桌面和移动端 shell 已共享 `AppShell` 与 `Workbench`，文件树行已使用 `TreeItem` 基础组件，workspace 根目录行已使用 `SidebarItem`，桌面/移动端文件排序控件已共享 `TreeSortControl`；侧边栏 footer 行还需要继续接入基础组件。 |
+| App chrome | `AppShell`、`Workbench`、`MainColumn`、`Sidebar`、`TreeSortControl`、`FileTree`、`AppHeader`、`StatusBar`、`DesktopLayout`、`MobileLayout` | 桌面和移动端 shell 已共享 `AppShell` 与 `Workbench`，文件树行已使用 `TreeItem` 基础组件，workspace 根目录行已使用 `SidebarItem`，桌面/移动端文件排序控件已共享 `TreeSortControl`，并且树排序控件已组合 `SegmentedControl`；侧边栏 footer 行还需要继续接入基础组件。 |
 | 编辑器 | `EditorPane`、`EditorChrome`、`EditorTabButton`、`OutlinePane`、`PreviewPane`、`EditorHost`、`FallbackEditor` | 需要稳定 chrome 分区、tab overflow 规则、大纲行为和共享 Markdown 视觉 token。 |
 | 弹窗界面 | `SettingsModal`、`QuickOpenModal`、`CommandPaletteModal`、`SearchModal`、`TrashModal`、`RecoveryDraftsModal`、`RecoveryDraftCompareModal` | 应共享 dialog shell、结果行、空状态、加载态和键盘焦点行为。 |
 | 设置 | `SettingsSurface`、`TagManagementSection`、`TagEditorRow`、`AboutMetaItem` | 设置页已经组合 `primitives/settings.rs` 中的共享导航、面板、表单行、内联行和 section 基础组件；标签管理还需要更丰富的校验与 helper 状态。 |
@@ -122,7 +122,7 @@ Token 名称描述语义，而不是描述单个颜色或单个页面：
 | `IconButton` | 部分已有 | `primitives/buttons.rs` 拥有 selected、disabled、destructive、自定义 class 和 icon-class 状态，并覆盖 app header 与侧边栏品牌区图标按钮。下一步补 compact 尺寸 variant 和 tooltip placement。 |
 | `Input` / `TextInput` | 部分已有 | `primitives/forms.rs` 拥有 `TextInput`，已覆盖命令/搜索/快速打开输入框，以及普通侧边栏、移动端、设置标签文本输入。文件树 inline rename 仍保留专用路径，等 blur/context-menu 契约迁入组件族后再统一。下一步补 label、error、disabled、inline action。 |
 | `Select` | 已有 | `primitives/forms.rs` 拥有当前 select/dropdown 壳。下一步增加键盘导航、必要时支持 option group、增加尺寸 variant。 |
-| `SegmentedControl` | 已有 | `primitives/forms.rs` 拥有主题、视图模式等小枚举控件；必要时支持 disabled option。 |
+| `SegmentedControl` | 已有 | `primitives/forms.rs` 拥有主题、视图模式、文件树排序等小枚举控件，并支持紧凑产品界面的 option class；必要时支持 disabled option。 |
 | `Switch` | 部分已有 | `primitives/forms.rs` 拥有布尔设置控件；`Toggle` 保留为兼容封装。下一步补 disabled 和 helper/error 状态。 |
 | `Dialog` / `Modal` | 部分已有 | `primitives/overlays.rs` 拥有 `Modal`、`ModalHeader` 和 `ModalCloseButton`，用于重复弹窗标题/关闭控件；`DialogSection` 已覆盖设置页重复 section；modal shell 还需要稳定尺寸和焦点管理。 |
 | `Popover` | 缺失 | 用于插入菜单、紧凑设置提示和编辑器 affordance。 |

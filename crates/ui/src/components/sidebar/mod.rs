@@ -2,8 +2,8 @@ pub mod file_tree;
 
 use crate::commands::FileTarget;
 use crate::components::primitives::{
-    ActionButton, ButtonState, ButtonVariant, ContextMenu, IconButton, MenuItem, SidebarItem,
-    TextInput,
+    ActionButton, ButtonState, ButtonVariant, ContextMenu, IconButton, MenuItem, SegmentedControl,
+    SegmentedControlOption, SidebarItem, TextInput,
 };
 use crate::context::use_app_context;
 use crate::i18n::use_i18n;
@@ -331,25 +331,23 @@ pub fn TreeSortControl(
     on_change: EventHandler<FileTreeSortMode>,
 ) -> Element {
     let i18n = use_i18n();
+    let options = FileTreeSortMode::all()
+        .into_iter()
+        .map(|mode| SegmentedControlOption::new(sort_mode_label(mode, i18n), sort_mode_value(mode)))
+        .collect::<Vec<_>>();
 
     rsx! {
-        div {
-            class: "mn-tree-sortbar",
-            role: "group",
-            "aria-label": i18n.text("File tree sort", "文件树排序"),
-            for mode in FileTreeSortMode::all() {
-                button {
-                    class: if selected == mode { "mn-tree-sort-btn active" } else { "mn-tree-sort-btn" },
-                    title: format!(
-                        "{} {}",
-                        i18n.text("Sort by", "排序方式"),
-                        sort_mode_label(mode, i18n)
-                    ),
-                    "aria-pressed": "{selected == mode}",
-                    onclick: move |_| on_change.call(mode),
-                    "{sort_mode_label(mode, i18n)}"
+        SegmentedControl {
+            label: i18n.text("File tree sort", "文件树排序").to_string(),
+            options,
+            selected: sort_mode_value(selected).to_string(),
+            class_name: "mn-tree-sortbar".to_string(),
+            option_class_name: "mn-tree-sort-btn".to_string(),
+            on_change: move |value: String| {
+                if let Some(mode) = sort_mode_from_value(&value) {
+                    on_change.call(mode);
                 }
-            }
+            },
         }
     }
 }
@@ -415,6 +413,23 @@ fn sort_mode_label(mode: FileTreeSortMode, i18n: crate::i18n::UiText) -> &'stati
     }
 }
 
+fn sort_mode_value(mode: FileTreeSortMode) -> &'static str {
+    match mode {
+        FileTreeSortMode::Name => "name",
+        FileTreeSortMode::Updated => "updated",
+        FileTreeSortMode::Created => "created",
+    }
+}
+
+fn sort_mode_from_value(value: &str) -> Option<FileTreeSortMode> {
+    match value {
+        "name" => Some(FileTreeSortMode::Name),
+        "updated" => Some(FileTreeSortMode::Updated),
+        "created" => Some(FileTreeSortMode::Created),
+        _ => None,
+    }
+}
+
 fn clamp_sidebar_width(width: f64) -> u32 {
     width
         .round()
@@ -468,5 +483,22 @@ mod tests {
             ),
             "Open a folder to start"
         );
+    }
+
+    #[test]
+    fn sort_mode_values_round_trip() {
+        assert_eq!(sort_mode_value(FileTreeSortMode::Name), "name");
+        assert_eq!(sort_mode_value(FileTreeSortMode::Updated), "updated");
+        assert_eq!(sort_mode_value(FileTreeSortMode::Created), "created");
+        assert_eq!(sort_mode_from_value("name"), Some(FileTreeSortMode::Name));
+        assert_eq!(
+            sort_mode_from_value("updated"),
+            Some(FileTreeSortMode::Updated)
+        );
+        assert_eq!(
+            sort_mode_from_value("created"),
+            Some(FileTreeSortMode::Created)
+        );
+        assert_eq!(sort_mode_from_value("missing"), None);
     }
 }

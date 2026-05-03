@@ -160,7 +160,7 @@ small {
 
 .mn-button:focus-visible,
 .mn-icon-btn:focus-visible,
-.mn-tree-sort-btn:focus-visible,
+.mn-tree-sortbar .mn-tree-sort-btn:focus-visible,
 .mn-modal-close:focus-visible,
 .mn-tab-title:focus-visible,
 .mn-tab-close:focus-visible {
@@ -324,9 +324,10 @@ small {
     background: rgba(255, 255, 255, 0.78);
 }
 
-.mn-tree-sort-btn {
+.mn-tree-sortbar .mn-tree-sort-btn {
     min-width: 0;
     min-height: 32px;
+    padding: 0 8px;
     border-radius: 10px;
     color: var(--mn-muted);
     font-size: 12px;
@@ -334,7 +335,7 @@ small {
     text-align: center;
 }
 
-.mn-tree-sort-btn.active {
+.mn-tree-sortbar .mn-tree-sort-btn.active {
     background: var(--mn-panel);
     color: var(--mn-accent-dark);
     box-shadow: 0 1px 8px rgba(23, 26, 22, 0.08);

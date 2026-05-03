@@ -160,8 +160,11 @@ fn inline_alert_class_includes_tone_and_extension_class() {
 
 #[test]
 fn segmented_option_class_marks_active_option() {
-    assert_eq!(segmented_option_class(false), "mn-segmented-option");
-    assert_eq!(segmented_option_class(true), "mn-segmented-option active");
+    assert_eq!(segmented_option_class(false, ""), "mn-segmented-option");
+    assert_eq!(
+        segmented_option_class(true, "compact"),
+        "mn-segmented-option active compact"
+    );
 }
 
 #[test]
