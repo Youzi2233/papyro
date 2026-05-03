@@ -1,7 +1,8 @@
 use dioxus::prelude::*;
 
+use super::append_class;
+use super::forms::form_field_class;
 use super::layout::ScrollContainer;
-use super::{append_class, form_field_class};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SettingsInlineRowKind {
