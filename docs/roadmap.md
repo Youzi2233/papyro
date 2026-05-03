@@ -159,7 +159,7 @@ Design work:
 - [ ] Create layout primitives for app chrome: split panes, resizable rails, scroll containers, sticky toolbars, fixed editor action zones, and responsive overflow rules.
 - [ ] Make Markdown writing surfaces visually match mature editors: quiet canvas, readable measure, balanced margins, polished code/table/callout styles, and consistent Preview/Hybrid typography.
 - [ ] Add design QA artifacts: component inventory, before/after screenshots, desktop narrow-width screenshots, dark-mode screenshots, contrast checks, keyboard navigation checks, and CSS line-budget checks.
-- [ ] Document the new UI architecture so future contributors know where to add components, where tokens live, and when one-off CSS is forbidden.
+- [x] Document the new UI architecture so future contributors know where to add components, where tokens live, and when one-off CSS is forbidden.
 
 Acceptance bar:
 

@@ -138,7 +138,7 @@ flowchart LR
 - [ ] 建立 app chrome 的布局基础设施：split panes、可调整侧栏、滚动容器、sticky toolbar、固定编辑操作区、窄窗口 overflow 规则和 tab 溢出规则。
 - [ ] 重做 Markdown 写作界面：安静的编辑画布、合理行宽、更成熟的标题/列表/表格/引用/代码/公式/Mermaid 样式，并保证 Preview 与 Hybrid 的视觉一致。
 - [ ] 产出设计 QA 资产：组件清单、改版前后截图、窄窗口截图、暗色模式截图、对比度检查、键盘导航检查、CSS 行数预算检查。
-- [ ] 更新 UI 架构文档，明确组件放在哪里、token 怎么命名、什么情况下禁止新增一次性 CSS、Dioxus 组件如何保持可维护。
+- [x] 更新 UI 架构文档，明确组件放在哪里、token 怎么命名、什么情况下禁止新增一次性 CSS、Dioxus 组件如何保持可维护。
 
 验收标准：
 

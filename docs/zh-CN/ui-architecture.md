@@ -31,6 +31,77 @@ flowchart TD
 - layout 模块负责排列产品区域，不拥有按钮、菜单或表单字段样式。
 - `js/src/editor-theme.js` 使用同一批 CSS token 来服务 CodeMirror 和 Hybrid 渲染。
 
+## 组件放置规则
+
+用能够表达行为的最小归属层，不把产品状态泄漏到更底层：
+
+| 需求 | 放置位置 | 规则 |
+| --- | --- | --- |
+| 可复用控件行为 | `crates/ui/src/components/primitives.rs` | 组件拥有视觉状态、键盘/焦点行为、ARIA 结构、尺寸或共享 slot 时放这里。 |
+| 由基础组件组成的产品界面 | `crates/ui/src/components/<surface>/` | 涉及标签、app 命令、view-model 数据或产品专属回调时放这里。 |
+| 页面或窗口排布 | `crates/ui/src/layouts/` | 只负责区域排列、split pane、rail、滚动容器和响应式 overflow 规则。 |
+| Markdown 编辑器 runtime 行为 | `js/src/editor*.js` | 只有 CodeMirror 或编辑器 hit-testing 拥有该行为时才放这里。Rust 仍是 app 状态事实来源。 |
+| 共享视觉语言 | `assets/main.css` | 在这里定义 token 和基础组件 class，再同步到 app 资源目录。 |
+
+新增按钮、菜单项、文本输入、选择器、开关、tab、tooltip、dialog header、结果行、树行或空状态样式前，必须先检查现有基础组件族。若只是缺少 variant，优先扩展基础组件；只有产品界面确实存在一次性布局需求时，才增加产品层 class。
+
+## Dioxus 组件契约
+
+新增或修改 Dioxus UI 组件时遵守这些规则：
+
+- 使用 Dioxus 0.7 组件函数，props 使用 owned value，并实现 `Clone + PartialEq`。
+- 用显式 props 表达语义状态：`selected`、`disabled`、`danger`、`loading`、`compact`、`checked`、`current`、`expanded` 优于临时 class 字符串。
+- 明确事件边界。行内动作不应触发行选择，右键菜单目标不应触发文件打开，弹窗关闭控件不应依赖父级 DOM 细节。
+- 通用 role 的 ARIA 放在基础组件层。产品组件只负责传入面向用户的 label 和 ID。
+- 产品文案保持国际化。基础组件可以接收 label 字符串，但不拥有具体中英文产品文案。
+- render path 不做阻塞工作、文件访问或大对象 clone。
+- 焦点状态必须可见，不只为鼠标 hover 设计。键盘用户要能到达同一个操作界面。
+
+## Token 命名规则
+
+Token 名称描述语义，而不是描述单个颜色或单个页面：
+
+| 分层 | 前缀 | 示例 | 用途 |
+| --- | --- | --- | --- |
+| 色板 | `--mn-bg`、`--mn-surface`、`--mn-ink`、`--mn-accent` | `--mn-surface`、`--mn-ink-muted` | 主题基础色。 |
+| 语义界面 | `--mn-chrome-*`、`--mn-editor-*`、`--mn-markdown-*` | `--mn-chrome-border`、`--mn-editor-canvas` | App 区域和写作界面。 |
+| 交互反馈 | `--mn-focus-*`、`--mn-selection-*`、`--mn-status-*` | `--mn-focus-ring`、`--mn-selection-bg` | 共享状态反馈。 |
+| 组件 | `--mn-<component>-*` | `--mn-tabbar-min-height`、`--mn-button-pad` | 只有基础组件需要稳定尺寸或状态契约时使用。 |
+
+避免 `--mn-settings-blue` 或 `--mn-sidebar-new-bg` 这种绑定临时界面的名字。优先使用角色化命名，让 token 在未来布局变化后仍然成立。
+
+## 一次性 CSS 政策
+
+一次性 CSS 只允许用于产品布局胶水，不能替代基础组件状态或视觉契约。
+
+允许：
+
+- 区域尺寸、split pane 轨道、sticky 区域和滚动容器。
+- 界面专属内容排版，例如设置 section 或对比面板。
+- 已在本文、roadmap 或后续 primitive 任务中记录的迁移 class。
+
+禁止：
+
+- 在基础组件族之外新增按钮、输入框、选择器、tab、菜单、tooltip、dialog、空状态、skeleton 或结果行样式。
+- 在组件 CSS 里写裸色值，palette/theme 定义除外。
+- 只服务单个界面的 hover/focus/active/disabled 状态。
+- 只适配浅色模式的 selector。
+- 用 card 套 card 伪造层级。
+- 让桌面端/移动端生成 CSS 副本偏离 `assets/main.css`。
+
+如果某条一次性规则开始出现第二个使用场景，先提升为基础组件或产品 pattern，再增加第二份使用。
+
+## 验证矩阵
+
+按改动层级运行最小但充分的检查：
+
+| 改动 | 必跑检查 |
+| --- | --- |
+| Rust UI 组件 | `cargo fmt --check`；`cargo clippy -p papyro-ui --all-targets --all-features -- -D warnings`；`cargo test -p papyro-ui`；`node scripts/check-ui-a11y.js` |
+| CSS 或 token | UI 组件检查；`node scripts/check-ui-contrast.js`；`node scripts/report-ui-tokens.js`；`node scripts/report-file-lines.js`；确认镜像 CSS 同步 |
+| 编辑器 JS UI 行为 | `npm --prefix js run build`；`npm --prefix js test`；提交生成后的 bundle |
+| 纯文档 UI 规则 | `git diff --check`；同步中英文文档；完成 roadmap 任务时更新 roadmap 状态 |
+
 ## 当前组件盘点
 
 | 区域 | 当前组件 | 说明 |
