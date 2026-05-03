@@ -258,7 +258,7 @@ Goal: support advanced workflows after single-window routing is reliable.
 - [x] Add document window routing behind `NoteOpenMode::MultiWindow`.
 - [x] Ensure each window owns its own tab contents, selection, and dirty state.
 - [x] Share storage and settings safely across windows.
-- [ ] Add save-conflict tests across windows.
+- [x] Add save-conflict tests across windows.
 
 Multi-window should not be rushed. It is a reliability feature, not just a UI feature.
 

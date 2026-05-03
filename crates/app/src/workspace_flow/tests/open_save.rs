@@ -7,7 +7,7 @@ use papyro_core::models::{
 use papyro_core::storage::{OpenedNote, SavedAsNote, SavedNote, WorkspaceBootstrap};
 use papyro_core::{EditorTabs, FileState, TabContentsMap};
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[test]
 fn open_note_flow_uses_storage_and_updates_state() {
@@ -797,6 +797,81 @@ fn save_tab_flow_marks_conflict_when_storage_reports_conflict() {
 }
 
 #[test]
+fn save_conflict_across_document_windows_keeps_states_isolated() -> anyhow::Result<()> {
+    let temp = tempfile::tempdir()?;
+    let workspace_root = temp.path().join("workspace");
+    std::fs::create_dir_all(&workspace_root)?;
+    let note_path = workspace_root.join("shared.md");
+    std::fs::write(&note_path, "# Shared\n\nold")?;
+    let storage = papyro_storage::SqliteStorage::from_db_path(temp.path().join("papyro.db"))?;
+    let workspace = storage.initialize_workspace(&workspace_root)?.workspace;
+
+    let (mut first_file_state, mut first_tabs, mut first_contents) =
+        open_storage_backed_window(&storage, &workspace, &note_path)?;
+    let (mut second_file_state, mut second_tabs, mut second_contents) =
+        open_storage_backed_window(&storage, &workspace, &note_path)?;
+    let first_tab_id = first_tabs.active_tab_id.clone().expect("first tab");
+    let second_tab_id = second_tabs.active_tab_id.clone().expect("second tab");
+    let first_opened_hash = first_tabs
+        .tab_by_id(&first_tab_id)
+        .and_then(|tab| tab.disk_content_hash);
+
+    first_contents.update_tab_content(&first_tab_id, "# First\n\nsaved".to_string());
+    first_tabs.mark_tab_dirty(&first_tab_id);
+    save_tab_to_storage(
+        &storage,
+        &mut first_file_state,
+        &mut first_tabs,
+        &first_contents,
+        &first_tab_id,
+    )?;
+
+    second_contents.update_tab_content(&second_tab_id, "# Second\n\nlocal".to_string());
+    second_tabs.mark_tab_dirty(&second_tab_id);
+    let error = save_tab_to_storage(
+        &storage,
+        &mut second_file_state,
+        &mut second_tabs,
+        &second_contents,
+        &second_tab_id,
+    )
+    .unwrap_err();
+
+    assert!(error.downcast_ref::<papyro_core::SaveConflict>().is_some());
+    assert_eq!(std::fs::read_to_string(&note_path)?, "# First\n\nsaved");
+    assert_eq!(
+        first_tabs.tab_by_id(&first_tab_id).map(|tab| (
+            tab.is_dirty,
+            tab.save_status.clone(),
+            tab.title.clone()
+        )),
+        Some((false, SaveStatus::Saved, "First".to_string()))
+    );
+    assert_ne!(
+        first_tabs
+            .tab_by_id(&first_tab_id)
+            .and_then(|tab| tab.disk_content_hash),
+        first_opened_hash
+    );
+    assert_eq!(
+        first_contents.content_for_tab(&first_tab_id),
+        Some("# First\n\nsaved")
+    );
+    assert_eq!(
+        second_tabs
+            .tab_by_id(&second_tab_id)
+            .map(|tab| (tab.is_dirty, tab.save_status.clone())),
+        Some((true, SaveStatus::Conflict))
+    );
+    assert_eq!(
+        second_contents.content_for_tab(&second_tab_id),
+        Some("# Second\n\nlocal")
+    );
+
+    Ok(())
+}
+
+#[test]
 fn save_tab_flow_uses_tab_workspace_after_external_workspace_switch() {
     let storage = MockStorage {
         save_result: Some(SavedNote {
@@ -843,6 +918,26 @@ fn save_tab_flow_uses_tab_workspace_after_external_workspace_switch() {
         )),
         Some((false, SaveStatus::Saved, Some(99)))
     );
+}
+
+fn open_storage_backed_window(
+    storage: &papyro_storage::SqliteStorage,
+    workspace: &Workspace,
+    note_path: &Path,
+) -> anyhow::Result<(FileState, EditorTabs, TabContentsMap)> {
+    let opened = storage.open_note(workspace, note_path)?;
+    let mut editor_tabs = EditorTabs::default();
+    let tab_id = opened.tab.id.clone();
+    editor_tabs.open_tab(opened.tab);
+    let mut tab_contents = TabContentsMap::default();
+    tab_contents.insert_tab(tab_id, opened.content, DocumentStats::default());
+    let file_state = FileState {
+        current_workspace: Some(workspace.clone()),
+        workspaces: vec![workspace.clone()],
+        ..FileState::default()
+    };
+
+    Ok((file_state, editor_tabs, tab_contents))
 }
 
 #[test]
