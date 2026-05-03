@@ -107,10 +107,13 @@ fn layout_helpers_extend_base_classes() {
         editor_tool_button_class(true, "mn-editor-outline-toggle"),
         "mn-editor-tool icon-only active mn-editor-outline-toggle"
     );
-    assert_eq!(editor_tab_scroll_button_class(""), "mn-tab-scroll-btn");
+    assert_eq!(
+        editor_tab_scroll_button_class(""),
+        "mn-editor-tool icon-only mn-tab-scroll-btn"
+    );
     assert_eq!(
         editor_tab_scroll_button_class("compact"),
-        "mn-tab-scroll-btn compact"
+        "mn-editor-tool icon-only mn-tab-scroll-btn compact"
     );
     assert_eq!(resize_rail_class(false, ""), "mn-resize-rail");
     assert_eq!(

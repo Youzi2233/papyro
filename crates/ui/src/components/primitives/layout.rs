@@ -52,7 +52,10 @@ pub(super) fn editor_tool_button_class(selected: bool, class_name: &str) -> Stri
 }
 
 pub(super) fn editor_tab_scroll_button_class(class_name: &str) -> String {
-    append_class("mn-tab-scroll-btn", class_name)
+    ClassBuilder::new("mn-editor-tool")
+        .push("icon-only")
+        .push("mn-tab-scroll-btn")
+        .extend(class_name)
 }
 
 pub(super) fn resize_rail_class(is_resizing: bool, class_name: &str) -> String {

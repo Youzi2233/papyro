@@ -1493,9 +1493,7 @@ button { border: 0; cursor: pointer; background: transparent; }
     flex: 0 0 auto;
 }
 
-.mn-tab-scroll-btn { display: none; place-items: center; width: 22px; height: 28px; flex: 0 0 22px; border-radius: var(--mn-radius-xs); color: var(--mn-ink-3); transition: background .14s, color .14s; } .mn-editor-tabs-row.overflowing .mn-tab-scroll-btn { display: grid; }
-.mn-tab-scroll-btn:hover { background: var(--mn-surface-sunken); color: var(--mn-ink); }
-.mn-tab-scroll-btn:focus-visible { outline: 0; box-shadow: var(--mn-ring-focus-sm); }
+.mn-tab-scroll-btn { display: none; width: 22px; height: 28px; flex: 0 0 22px; border-radius: var(--mn-radius-xs); color: var(--mn-ink-3); } .mn-editor-tabs-row.overflowing .mn-tab-scroll-btn { display: inline-flex; }
 
 /* 閳光偓閳光偓 Tab bar 閳光偓閳光偓 */
 .mn-tabbar {
