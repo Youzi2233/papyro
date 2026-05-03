@@ -1277,6 +1277,24 @@ pub fn EmptyState(title: String, description: String) -> Element {
 }
 
 #[component]
+pub fn EmptyRecentItem(
+    name: String,
+    detail: String,
+    title: String,
+    on_click: EventHandler<()>,
+) -> Element {
+    rsx! {
+        button {
+            class: "mn-empty-recent-item",
+            title: "{title}",
+            onclick: move |_| on_click.call(()),
+            span { class: "mn-empty-recent-name", "{name}" }
+            span { class: "mn-empty-recent-path", "{detail}" }
+        }
+    }
+}
+
+#[component]
 pub fn Tooltip(label: String, children: Element) -> Element {
     rsx! {
         span {

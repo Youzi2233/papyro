@@ -6,7 +6,8 @@ use super::preview::{PreviewLinkBridge, PreviewPane};
 use super::tabbar::EditorTabButton;
 use crate::commands::AppCommands;
 use crate::components::primitives::{
-    Button, ButtonVariant, EditorToolButton, EditorToolbar, ToolbarZone, ToolbarZoneKind,
+    Button, ButtonVariant, EditorToolButton, EditorToolbar, EmptyRecentItem, ToolbarZone,
+    ToolbarZoneKind,
 };
 use crate::context::use_app_context;
 use crate::i18n::{i18n_for, use_i18n, UiText};
@@ -555,17 +556,16 @@ fn EditorEmptyState(commands: AppCommands, workspace: WorkspaceViewModel) -> Ele
                             p { class: "mn-empty-recent-title", {i18n.text("Recent workspaces", "最近工作区")} }
                             div { class: "mn-empty-recent-list",
                                 for item in recent_workspaces.iter().take(4).cloned() {
-                                    button {
+                                    EmptyRecentItem {
                                         key: "{item.path.display()}",
-                                        class: "mn-empty-recent-item",
-                                        title: "{item.path.display()}",
-                                        onclick: {
+                                        name: item.name.clone(),
+                                        detail: item.path.display().to_string(),
+                                        title: item.path.display().to_string(),
+                                        on_click: {
                                             let commands = commands.clone();
                                             let path = item.path.clone();
                                             move |_| commands.open_workspace_path.call(path.clone())
                                         },
-                                        span { class: "mn-empty-recent-name", "{item.name}" }
-                                        span { class: "mn-empty-recent-path", "{item.path.display()}" }
                                     }
                                 }
                             }

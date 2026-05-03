@@ -106,7 +106,7 @@ Token 名称描述语义，而不是描述单个颜色或单个页面：
 
 | 区域 | 当前组件 | 说明 |
 | --- | --- | --- |
-| 基础组件 | `Button`、`ActionButton`、`RowActionButton`、`IconButton`、`EditorToolButton`、`Select`、`Dropdown`、`SegmentedControl`、`Tabs`、`Modal`、`ModalHeader`、`ModalCloseButton`、`Menu`、`ContextMenu`、`MenuItem`、`Tooltip`、`Message`、`StatusStrip`、`StatusMessage`、`StatusIndicator`、`FormField`、`Switch`、`Toggle`、`Slider`、`TextInput`、`ResultList`、`ResultRow`、`RowActions`、`ModalFooterMeta`、`ComparePanel`、`SkeletonRows`、`ErrorState`、`SettingsLayout`、`SettingsNav`、`SettingsRow`、`SettingsInlineRow`、`SidebarItem`、`DialogSection`、`TreeItemButton`、`TreeItemEditRow`、`EmptyState` | 已经有基础，但还需要更强的状态契约、variant、键盘行为和文档。 |
+| 基础组件 | `Button`、`ActionButton`、`RowActionButton`、`IconButton`、`EditorToolButton`、`Select`、`Dropdown`、`SegmentedControl`、`Tabs`、`Modal`、`ModalHeader`、`ModalCloseButton`、`Menu`、`ContextMenu`、`MenuItem`、`Tooltip`、`Message`、`StatusStrip`、`StatusMessage`、`StatusIndicator`、`FormField`、`Switch`、`Toggle`、`Slider`、`TextInput`、`ResultList`、`ResultRow`、`RowActions`、`ModalFooterMeta`、`ComparePanel`、`SkeletonRows`、`ErrorState`、`SettingsLayout`、`SettingsNav`、`SettingsRow`、`SettingsInlineRow`、`SidebarItem`、`DialogSection`、`TreeItemButton`、`TreeItemEditRow`、`EmptyState`、`EmptyRecentItem` | 已经有基础，但还需要更强的状态契约、variant、键盘行为和文档。 |
 | App chrome | `AppShell`、`Workbench`、`MainColumn`、`Sidebar`、`TreeSortControl`、`FileTree`、`AppHeader`、`StatusBar`、`DesktopLayout`、`MobileLayout` | 桌面和移动端 shell 已共享 `AppShell` 与 `Workbench`，文件树行已使用 `TreeItem` 基础组件，workspace 根目录行已使用 `SidebarItem`，桌面/移动端文件排序控件已共享 `TreeSortControl`；侧边栏 footer 行还需要继续接入基础组件。 |
 | 编辑器 | `EditorPane`、`EditorChrome`、`EditorTabButton`、`OutlinePane`、`PreviewPane`、`EditorHost`、`FallbackEditor` | 需要稳定 chrome 分区、tab overflow 规则、大纲行为和共享 Markdown 视觉 token。 |
 | 弹窗界面 | `SettingsModal`、`QuickOpenModal`、`CommandPaletteModal`、`SearchModal`、`TrashModal`、`RecoveryDraftsModal`、`RecoveryDraftCompareModal` | 应共享 dialog shell、结果行、空状态、加载态和键盘焦点行为。 |
@@ -134,7 +134,7 @@ Token 名称描述语义，而不是描述单个颜色或单个页面：
 | `SidebarItem` | 部分已有 | workspace 根目录行已接入 `SidebarItem`；侧边栏 footer 按钮和未来导航行还需要继续接入。 |
 | `TreeItem` | 部分已有 | `TreeItemButton`、`TreeItemEditRow` 和 `TreeItemLabel` 已拥有文件/文件夹图标、展开态、选中/编辑/拖拽/放置 class 和行标签布局；键盘模型和右键菜单作用域仍在文件树代码里。 |
 | `Toolbar` / `ToolbarZone` | 部分已有 | `AppShell`、`Workbench`、`MainColumn`、`EditorToolbar`、`ToolbarZone`、`EditorToolButton` 和 `ScrollContainer` 已覆盖共享 shell、设置内容滚动区与编辑器 chrome 分区；split panes、可调整 rail 和更多滚动容器还需要继续接入。 |
-| `EmptyState` | 已有 | 增加 compact、onboarding、error 和 action variant。 |
+| `EmptyState` | 部分已有 | `EmptyState` 和 `EmptyRecentItem` 已覆盖通用空状态文案与最近工作区入口行；还需要增加 compact、onboarding、error 和 action variant。 |
 | `SkeletonRows` | 部分已有 | 工作区搜索加载态已使用可复用 skeleton 行；workspace 加载和未来异步窗口还需要继续接入。 |
 | `InlineAlert` / `ErrorState` | 部分已有 | `InlineAlert` 已用于预览提示和命令/搜索空态；`ErrorState` 已覆盖编辑器 runtime 失败，后续较大的阻断错误也应复用它。 |
 | `SettingsLayout` / `SettingsRow` / `SettingsInlineRow` | 部分已有 | 设置导航、面板、section、行和内联控制行已经进入基础组件；helper text、错误态和更丰富的表单状态还需要继续接入。 |
