@@ -11,7 +11,7 @@ use super::layout::{
 };
 use super::navigation::{
     outline_item_class, sidebar_search_button_class, tree_caret_class, tree_icon_class,
-    tree_item_class,
+    tree_item_class, tree_rename_input_class,
 };
 use super::overlays::menu_item_class;
 use super::results::result_row_class;
@@ -119,6 +119,11 @@ fn layout_helpers_extend_base_classes() {
     assert_eq!(
         outline_item_class(3, "current"),
         "mn-outline-item level-3 current"
+    );
+    assert_eq!(tree_rename_input_class(""), "mn-tree-rename-input");
+    assert_eq!(
+        tree_rename_input_class("compact"),
+        "mn-tree-rename-input compact"
     );
 }
 

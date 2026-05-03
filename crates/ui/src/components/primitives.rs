@@ -25,7 +25,7 @@ pub use layout::{
 };
 pub use navigation::{
     OutlineItemButton, SidebarItem, SidebarSearchButton, TreeItemButton, TreeItemEditRow,
-    TreeItemIconKind, TreeItemKind, TreeItemLabel,
+    TreeItemIconKind, TreeItemKind, TreeItemLabel, TreeRenameInput,
 };
 pub use overlays::{
     ContextMenu, Menu, MenuItem, MenuSeparator, Modal, ModalCloseButton, ModalHeader, Tooltip,

@@ -106,7 +106,7 @@ Token 名称描述语义，而不是描述单个颜色或单个页面：
 
 | 区域 | 当前组件 | 说明 |
 | --- | --- | --- |
-| 基础组件 | `Button`、`ActionButton`、`RowActionButton`、`IconButton`、`EditorToolButton`、`EditorTabScrollButton`、`Select`、`Dropdown`、`SegmentedControl`、`Tabs`、`DocumentTab`、`Modal`、`ModalHeader`、`ModalCloseButton`、`Menu`、`ContextMenu`、`MenuItem`、`Tooltip`、`Message`、`StatusStrip`、`StatusMessage`、`StatusIndicator`、`FormField`、`Switch`、`Toggle`、`Slider`、`TextInput`、`ColorInput`、`ResultList`、`ResultRow`、`RowActions`、`ModalFooterMeta`、`ComparePanel`、`SkeletonRows`、`ErrorState`、`SettingsLayout`、`SettingsNav`、`SettingsRow`、`SettingsInlineRow`、`SidebarItem`、`SidebarSearchButton`、`OutlineItemButton`、`DialogSection`、`TreeItemButton`、`TreeItemEditRow`、`EmptyState`、`EmptyStateSurface`、`EmptyStateCopy`、`EmptyRecentItem` | 已经有基础，按钮、空状态、反馈、表单、布局、导航、浮层、结果、设置和 tabs 组件族已经进入聚焦子模块；但还需要更强的状态契约、variant、键盘行为和文档。 |
+| 基础组件 | `Button`、`ActionButton`、`RowActionButton`、`IconButton`、`EditorToolButton`、`EditorTabScrollButton`、`Select`、`Dropdown`、`SegmentedControl`、`Tabs`、`DocumentTab`、`Modal`、`ModalHeader`、`ModalCloseButton`、`Menu`、`ContextMenu`、`MenuItem`、`Tooltip`、`Message`、`StatusStrip`、`StatusMessage`、`StatusIndicator`、`FormField`、`Switch`、`Toggle`、`Slider`、`TextInput`、`ColorInput`、`ResultList`、`ResultRow`、`RowActions`、`ModalFooterMeta`、`ComparePanel`、`SkeletonRows`、`ErrorState`、`SettingsLayout`、`SettingsNav`、`SettingsRow`、`SettingsInlineRow`、`SidebarItem`、`SidebarSearchButton`、`OutlineItemButton`、`DialogSection`、`TreeItemButton`、`TreeItemEditRow`、`TreeRenameInput`、`EmptyState`、`EmptyStateSurface`、`EmptyStateCopy`、`EmptyRecentItem` | 已经有基础，按钮、空状态、反馈、表单、布局、导航、浮层、结果、设置和 tabs 组件族已经进入聚焦子模块；但还需要更强的状态契约、variant、键盘行为和文档。 |
 | App chrome | `AppShell`、`Workbench`、`MainColumn`、`Sidebar`、`TreeSortControl`、`FileTree`、`AppHeader`、`StatusBar`、`DesktopLayout`、`MobileLayout` | 桌面和移动端 shell 已共享 `AppShell` 与 `Workbench`，文件树行已使用 `TreeItem` 基础组件，workspace 根目录行已使用 `SidebarItem`，侧边栏搜索已使用 `SidebarSearchButton`，侧边栏创建和底部操作已使用 button 基础组件，桌面/移动端文件排序控件已共享 `TreeSortControl`，并且树排序控件已组合 `SegmentedControl`；剩余 tab chrome 还需要继续接入基础组件。 |
 | 编辑器 | `EditorPane`、`EditorChrome`、`EditorTabButton`、`OutlinePane`、`PreviewPane`、`EditorHost`、`FallbackEditor` | 编辑器 chrome 已组合 `SegmentedControl` 承载视图模式切换，使用 `EditorTabScrollButton` 承载 tab 溢出滚动按钮，使用 `DocumentTab` 承载打开文档 tab，并使用 `OutlineItemButton` 承载大纲导航行；还需要共享 Markdown 视觉 token。 |
 | 弹窗界面 | `SettingsModal`、`QuickOpenModal`、`CommandPaletteModal`、`SearchModal`、`TrashModal`、`RecoveryDraftsModal`、`RecoveryDraftCompareModal` | 应共享 dialog shell、结果行、空状态、加载态和键盘焦点行为。 |
@@ -120,7 +120,7 @@ Token 名称描述语义，而不是描述单个颜色或单个页面：
 | --- | --- | --- |
 | `Button` / `ActionButton` / `RowActionButton` | 部分已有 | `primitives/buttons.rs` 拥有普通按钮、图标+文字 action 按钮、loading/disabled 状态和不会触发行选择的行内按钮。下一步补尺寸 variant，并迁移仍带特殊 `title`、`aria` 或键盘契约的原生按钮。 |
 | `IconButton` | 部分已有 | `primitives/buttons.rs` 拥有 selected、disabled、destructive、自定义 class 和 icon-class 状态，并覆盖 app header 与侧边栏品牌区图标按钮。下一步补 compact 尺寸 variant 和 tooltip placement。 |
-| `Input` / `TextInput` / `ColorInput` | 部分已有 | `primitives/forms.rs` 拥有 `TextInput`，已覆盖命令/搜索/快速打开输入框，以及普通侧边栏、移动端、设置标签文本输入；同时拥有用于标签管理原生颜色输入的 `ColorInput`。文件树 inline rename 仍保留专用路径，等 blur/context-menu 契约迁入组件族后再统一。下一步补 label、error、disabled、inline action。 |
+| `Input` / `TextInput` / `ColorInput` | 部分已有 | `primitives/forms.rs` 拥有 `TextInput`，已覆盖命令/搜索/快速打开输入框，以及普通侧边栏、移动端、设置标签文本输入；同时拥有用于标签管理原生颜色输入的 `ColorInput`。下一步补 label、error、disabled、inline action。 |
 | `Select` | 已有 | `primitives/forms.rs` 拥有当前 select/dropdown 壳。下一步增加键盘导航、必要时支持 option group、增加尺寸 variant。 |
 | `SegmentedControl` | 已有 | `primitives/forms.rs` 拥有主题、视图模式、文件树排序等小枚举控件，并支持 disabled 状态和紧凑产品界面的 option class；必要时补每个 option 独立 disabled 状态。 |
 | `Switch` | 部分已有 | `primitives/forms.rs` 拥有布尔设置控件；`Toggle` 保留为兼容封装。下一步补 disabled 和 helper/error 状态。 |
@@ -133,7 +133,7 @@ Token 名称描述语义，而不是描述单个颜色或单个页面：
 | `Tabs` / `DocumentTab` | 已有 | `primitives/tabs.rs` 拥有通用 tabs 和文档 tab 行外壳，包括标题、保存状态标记槽位、关闭元数据和键盘关闭行为；产品代码仍负责 tab 命令和保存状态文案。 |
 | `SidebarItem` / `SidebarSearchButton` | 部分已有 | `primitives/navigation.rs` 通过 `SidebarItem` 拥有 workspace 根目录行，并通过 `SidebarSearchButton` 拥有侧边栏搜索触发器；未来导航行还需要继续接入。 |
 | `OutlineItemButton` | 部分已有 | `primitives/navigation.rs` 拥有大纲导航行结构、标题层级 class、行号元数据和 tab 元数据；active/current 状态仍由编辑器大纲同步脚本维护。 |
-| `TreeItem` | 部分已有 | `primitives/navigation.rs` 拥有 `TreeItemButton`、`TreeItemEditRow` 和 `TreeItemLabel`，覆盖文件/文件夹图标、展开态、选中/编辑/拖拽/放置 class 和行标签布局；键盘模型和右键菜单作用域仍在文件树代码里。 |
+| `TreeItem` / `TreeRenameInput` | 部分已有 | `primitives/navigation.rs` 拥有 `TreeItemButton`、`TreeItemEditRow`、`TreeItemLabel` 和 `TreeRenameInput`，覆盖文件/文件夹图标、展开态、选中/编辑/拖拽/放置 class、行标签布局和 inline rename 输入结构；键盘模型和右键菜单作用域仍在文件树代码里。 |
 | `Toolbar` / `ToolbarZone` | 部分已有 | `primitives/layout.rs` 拥有 `AppShell`、`Workbench`、`MainColumn`、`EditorToolbar`、`ToolbarZone`、`EditorToolButton`、`EditorTabScrollButton` 和 `ScrollContainer`，覆盖共享 shell、设置内容滚动区与编辑器 chrome 分区；split panes、可调整 rail 和更多滚动容器还需要继续接入。 |
 | `EmptyState` | 部分已有 | `primitives/empty.rs` 拥有 `EmptyStateSurface`、`EmptyStateCopy`、`EmptyState` 和 `EmptyRecentItem`，覆盖通用空状态外壳、文案、onboarding 布局与最近工作区入口行；还需要增加 compact、error 和更丰富的 action variant。 |
 | `SkeletonRows` | 部分已有 | 工作区搜索加载态已使用可复用 skeleton 行；workspace 加载和未来异步窗口还需要继续接入。 |

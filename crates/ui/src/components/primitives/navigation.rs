@@ -75,6 +75,10 @@ pub(super) fn tree_icon_class(kind: TreeItemIconKind) -> &'static str {
     }
 }
 
+pub(super) fn tree_rename_input_class(class_name: &str) -> String {
+    append_class("mn-tree-rename-input", class_name)
+}
+
 #[component]
 pub fn OutlineItemButton(
     label: String,
@@ -98,6 +102,33 @@ pub fn OutlineItemButton(
             title,
             onclick: move |_| on_click.call(()),
             "{label}"
+        }
+    }
+}
+
+#[component]
+pub fn TreeRenameInput(
+    label: String,
+    value: String,
+    class_name: String,
+    on_input: EventHandler<String>,
+    on_blur: EventHandler<()>,
+    on_keydown: EventHandler<KeyboardEvent>,
+    on_context_menu: EventHandler<MouseEvent>,
+) -> Element {
+    let class = tree_rename_input_class(&class_name);
+
+    rsx! {
+        input {
+            class,
+            r#type: "text",
+            "aria-label": "{label}",
+            value: "{value}",
+            autofocus: true,
+            oninput: move |event| on_input.call(event.value()),
+            onblur: move |_| on_blur.call(()),
+            onkeydown: move |event| on_keydown.call(event),
+            oncontextmenu: move |event| on_context_menu.call(event),
         }
     }
 }

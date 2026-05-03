@@ -2,7 +2,7 @@
 use crate::commands::{AppCommands, FileTarget, OpenMarkdownTarget};
 use crate::components::primitives::{
     ContextMenu, MenuItem, MenuSeparator, TreeItemButton, TreeItemEditRow, TreeItemIconKind,
-    TreeItemKind, TreeItemLabel,
+    TreeItemKind, TreeItemLabel, TreeRenameInput,
 };
 use crate::context::use_app_context;
 use crate::i18n::use_i18n;
@@ -239,20 +239,20 @@ fn FileTreeNode(
                         depth_px: indent,
                         expanded: Some(is_expanded),
                         icon: folder_icon_kind(is_expanded),
-                        input {
-                            class: "mn-tree-rename-input",
-                            value: "{draft.value}",
-                            autofocus: true,
-                            oninput: move |event| {
+                        TreeRenameInput {
+                            label: i18n.text("Rename folder", "重命名文件夹").to_string(),
+                            value: draft.value,
+                            class_name: String::new(),
+                            on_input: move |value| {
                                 if let Some(mut draft) = rename_draft_for_change() {
-                                    draft.value = event.value();
+                                    draft.value = value;
                                     rename_draft_for_change.set(Some(draft));
                                 }
                             },
-                            onblur: move |_| {
+                            on_blur: move |_| {
                                 commit_inline_rename(rename_draft_for_commit, rename_commands.clone());
                             },
-                            onkeydown: move |event| {
+                            on_keydown: move |event: KeyboardEvent| {
                                 event.stop_propagation();
                                 match event.key() {
                                     Key::Enter => {
@@ -266,7 +266,7 @@ fn FileTreeNode(
                                     _ => {}
                                 }
                             },
-                            oncontextmenu: move |event| {
+                            on_context_menu: move |event: MouseEvent| {
                                 event.prevent_default();
                                 event.stop_propagation();
                             },
@@ -350,20 +350,20 @@ fn FileTreeNode(
                         depth_px: indent + 18,
                         expanded: None::<bool>,
                         icon: TreeItemIconKind::Markdown,
-                        input {
-                            class: "mn-tree-rename-input",
-                            value: "{draft.value}",
-                            autofocus: true,
-                            oninput: move |event| {
+                        TreeRenameInput {
+                            label: i18n.text("Rename note", "重命名笔记").to_string(),
+                            value: draft.value,
+                            class_name: String::new(),
+                            on_input: move |value| {
                                 if let Some(mut draft) = rename_draft_for_change() {
-                                    draft.value = event.value();
+                                    draft.value = value;
                                     rename_draft_for_change.set(Some(draft));
                                 }
                             },
-                            onblur: move |_| {
+                            on_blur: move |_| {
                                 commit_inline_rename(rename_draft_for_commit, rename_commands.clone());
                             },
-                            onkeydown: move |event| {
+                            on_keydown: move |event: KeyboardEvent| {
                                 event.stop_propagation();
                                 match event.key() {
                                     Key::Enter => {
@@ -377,7 +377,7 @@ fn FileTreeNode(
                                     _ => {}
                                 }
                             },
-                            oncontextmenu: move |event| {
+                            on_context_menu: move |event: MouseEvent| {
                                 event.prevent_default();
                                 event.stop_propagation();
                             },
