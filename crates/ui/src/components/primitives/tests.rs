@@ -4,6 +4,7 @@ use super::layout::{
     workbench_class,
 };
 use super::navigation::{tree_caret_class, tree_icon_class, tree_item_class};
+use super::results::result_row_class;
 use super::settings::{settings_inline_row_class, settings_nav_button_class};
 use super::*;
 

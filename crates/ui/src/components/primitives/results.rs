@@ -1,0 +1,96 @@
+use dioxus::prelude::*;
+
+use super::append_class;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ResultRowKind {
+    Default,
+    Search,
+}
+
+pub(super) fn result_row_class(kind: ResultRowKind, is_active: bool) -> &'static str {
+    match (kind, is_active) {
+        (ResultRowKind::Default, false) => "mn-command-row",
+        (ResultRowKind::Default, true) => "mn-command-row active",
+        (ResultRowKind::Search, false) => "mn-command-row mn-search-row",
+        (ResultRowKind::Search, true) => "mn-command-row mn-search-row active",
+    }
+}
+
+#[component]
+pub fn ResultRow(
+    label: String,
+    metadata: String,
+    is_active: bool,
+    kind: ResultRowKind,
+    on_select: EventHandler<()>,
+    children: Element,
+) -> Element {
+    rsx! {
+        button {
+            class: result_row_class(kind, is_active),
+            "aria-label": "{label}",
+            onclick: move |_| on_select.call(()),
+            span { class: "mn-command-row-main", {children} }
+            span { class: "mn-command-kind", "{metadata}" }
+        }
+    }
+}
+
+#[component]
+pub fn ResultList(label: String, class_name: String, children: Element) -> Element {
+    let class = append_class("mn-command-list", &class_name);
+
+    rsx! {
+        div {
+            class,
+            role: "list",
+            "aria-label": "{label}",
+            {children}
+        }
+    }
+}
+
+#[component]
+pub fn RowActions(class_name: String, children: Element) -> Element {
+    let class = append_class("mn-row-actions", &class_name);
+
+    rsx! {
+        span { class, {children} }
+    }
+}
+
+#[component]
+pub fn ModalFooterMeta(label: String, class_name: String) -> Element {
+    let class = append_class("mn-modal-footer-meta", &class_name);
+
+    rsx! {
+        span { class, "{label}" }
+    }
+}
+
+#[component]
+pub fn ComparePanel(
+    title: String,
+    metadata: String,
+    content: String,
+    error: Option<String>,
+    class_name: String,
+) -> Element {
+    let class = append_class("mn-compare-panel", &class_name);
+
+    rsx! {
+        section { class,
+            div { class: "mn-compare-panel-header",
+                h3 { "{title}" }
+                span { "{metadata}" }
+            }
+            if let Some(error) = error {
+                p { class: "mn-compare-panel-error", "{error}" }
+            }
+            pre { class: "mn-compare-panel-content",
+                code { "{content}" }
+            }
+        }
+    }
+}
