@@ -6,8 +6,8 @@ use super::forms::{
     dropdown_selected_label, form_field_class, segmented_option_class,
 };
 use super::layout::{
-    app_shell_class, editor_tool_button_class, scroll_container_class, toolbar_zone_class,
-    workbench_class,
+    app_shell_class, editor_tab_scroll_button_class, editor_tool_button_class,
+    scroll_container_class, toolbar_zone_class, workbench_class,
 };
 use super::navigation::{tree_caret_class, tree_icon_class, tree_item_class};
 use super::overlays::menu_item_class;
@@ -75,6 +75,11 @@ fn layout_helpers_extend_base_classes() {
     assert_eq!(
         editor_tool_button_class(true, "mn-editor-outline-toggle"),
         "mn-editor-tool icon-only active mn-editor-outline-toggle"
+    );
+    assert_eq!(editor_tab_scroll_button_class(""), "mn-tab-scroll-btn");
+    assert_eq!(
+        editor_tab_scroll_button_class("compact"),
+        "mn-tab-scroll-btn compact"
     );
     assert_eq!(scroll_container_class(""), "mn-scroll-container");
     assert_eq!(

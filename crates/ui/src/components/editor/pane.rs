@@ -6,8 +6,9 @@ use super::preview::{PreviewLinkBridge, PreviewPane};
 use super::tabbar::EditorTabButton;
 use crate::commands::AppCommands;
 use crate::components::primitives::{
-    Button, ButtonVariant, EditorToolButton, EditorToolbar, EmptyRecentItem, EmptyStateCopy,
-    EmptyStateSurface, SegmentedControl, SegmentedControlOption, ToolbarZone, ToolbarZoneKind,
+    Button, ButtonVariant, EditorTabScrollButton, EditorToolButton, EditorToolbar, EmptyRecentItem,
+    EmptyStateCopy, EmptyStateSurface, SegmentedControl, SegmentedControlOption, ToolbarZone,
+    ToolbarZoneKind,
 };
 use crate::context::use_app_context;
 use crate::i18n::{i18n_for, use_i18n, UiText};
@@ -465,12 +466,11 @@ fn EditorChrome(
                         crate::chrome::toggle_sidebar(sidebar_commands.clone(), "editor");
                     },
                 }
-                button {
-                    class: "mn-tab-scroll-btn",
-                    title: i18n.text("Scroll tabs left", "向左滚动标签"),
-                    "aria-label": i18n.text("Scroll tabs left", "向左滚动标签"),
-                    onclick: move |_| scroll_editor_tabs(-220),
-                    span { class: "mn-tool-icon tab-left", "aria-hidden": "true" }
+                EditorTabScrollButton {
+                    label: i18n.text("Scroll tabs left", "向左滚动标签").to_string(),
+                    icon_class: "mn-tool-icon tab-left".to_string(),
+                    class_name: String::new(),
+                    on_click: move |_| scroll_editor_tabs(-220),
                 }
                 div { class: "mn-tabbar",
                     if tab_items.is_empty() {
@@ -484,12 +484,11 @@ fn EditorChrome(
                         }
                     }
                 }
-                button {
-                    class: "mn-tab-scroll-btn",
-                    title: i18n.text("Scroll tabs right", "向右滚动标签"),
-                    "aria-label": i18n.text("Scroll tabs right", "向右滚动标签"),
-                    onclick: move |_| scroll_editor_tabs(220),
-                    span { class: "mn-tool-icon tab-right", "aria-hidden": "true" }
+                EditorTabScrollButton {
+                    label: i18n.text("Scroll tabs right", "向右滚动标签").to_string(),
+                    icon_class: "mn-tool-icon tab-right".to_string(),
+                    class_name: String::new(),
+                    on_click: move |_| scroll_editor_tabs(220),
                 }
             }
             ToolbarZone { kind: ToolbarZoneKind::Fixed, class_name: String::new(),

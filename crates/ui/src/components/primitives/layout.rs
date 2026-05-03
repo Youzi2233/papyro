@@ -33,6 +33,10 @@ pub(super) fn editor_tool_button_class(selected: bool, class_name: &str) -> Stri
     append_class(base, class_name)
 }
 
+pub(super) fn editor_tab_scroll_button_class(class_name: &str) -> String {
+    append_class("mn-tab-scroll-btn", class_name)
+}
+
 pub(super) fn scroll_container_class(class_name: &str) -> String {
     append_class("mn-scroll-container", class_name)
 }
@@ -95,6 +99,26 @@ pub fn EditorToolButton(
             title: "{label}",
             "aria-label": "{label}",
             disabled,
+            onclick: move |_| on_click.call(()),
+            span { class: "{icon_class}", "aria-hidden": "true" }
+        }
+    }
+}
+
+#[component]
+pub fn EditorTabScrollButton(
+    label: String,
+    icon_class: String,
+    class_name: String,
+    on_click: EventHandler<()>,
+) -> Element {
+    let class = editor_tab_scroll_button_class(&class_name);
+
+    rsx! {
+        button {
+            class,
+            title: "{label}",
+            "aria-label": "{label}",
             onclick: move |_| on_click.call(()),
             span { class: "{icon_class}", "aria-hidden": "true" }
         }

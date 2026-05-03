@@ -20,8 +20,8 @@ pub use forms::{
     Switch, TextInput, Toggle,
 };
 pub use layout::{
-    AppShell, EditorToolButton, EditorToolbar, MainColumn, ScrollContainer, ToolbarZone,
-    ToolbarZoneKind, Workbench,
+    AppShell, EditorTabScrollButton, EditorToolButton, EditorToolbar, MainColumn, ScrollContainer,
+    ToolbarZone, ToolbarZoneKind, Workbench,
 };
 pub use navigation::{
     SidebarItem, TreeItemButton, TreeItemEditRow, TreeItemIconKind, TreeItemKind, TreeItemLabel,
