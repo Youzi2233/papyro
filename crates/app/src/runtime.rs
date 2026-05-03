@@ -1,5 +1,6 @@
 use crate::dispatcher::AppDispatcher;
 use crate::open_requests::MarkdownOpenRequestReceiver;
+use crate::process_settings::{shared_process_settings_hub, ProcessSettingsHub};
 use crate::state::use_runtime_state;
 use dioxus::prelude::*;
 use papyro_core::{NoteStorage, WorkspaceBootstrap};
@@ -77,6 +78,19 @@ pub struct RuntimeOptions {
     pub multi_window_available: bool,
 }
 
+#[derive(Clone, PartialEq)]
+pub struct RuntimeSharedServices {
+    pub(crate) process_settings: ProcessSettingsHub,
+}
+
+impl Default for RuntimeSharedServices {
+    fn default() -> Self {
+        Self {
+            process_settings: shared_process_settings_hub(),
+        }
+    }
+}
+
 pub fn use_app_runtime_with_options(
     options: RuntimeOptions,
     bootstrap: WorkspaceBootstrap,
@@ -85,7 +99,29 @@ pub fn use_app_runtime_with_options(
     startup_markdown_paths: Vec<PathBuf>,
     external_open_requests: Option<MarkdownOpenRequestReceiver>,
 ) -> Signal<Option<String>> {
+    use_app_runtime_with_shared_services(
+        options,
+        bootstrap,
+        storage,
+        platform,
+        startup_markdown_paths,
+        external_open_requests,
+        RuntimeSharedServices::default(),
+    )
+}
+
+pub fn use_app_runtime_with_shared_services(
+    options: RuntimeOptions,
+    bootstrap: WorkspaceBootstrap,
+    storage: Arc<dyn NoteStorage>,
+    platform: Arc<dyn PlatformApi>,
+    startup_markdown_paths: Vec<PathBuf>,
+    external_open_requests: Option<MarkdownOpenRequestReceiver>,
+    shared_services: RuntimeSharedServices,
+) -> Signal<Option<String>> {
     let shell = options.shell;
+    let process_settings = shared_services.process_settings.clone();
+    let bootstrap = process_settings.prepare_bootstrap(bootstrap);
     let state = use_runtime_state(bootstrap, options.multi_window_available);
     let watch_storage = storage.clone();
     let flush_storage = storage.clone();
@@ -95,7 +131,7 @@ pub fn use_app_runtime_with_options(
     let document_window_storage = storage.clone();
     #[cfg(feature = "desktop-shell")]
     let document_window_platform = platform.clone();
-    let dispatcher = AppDispatcher::new(shell, state, storage, platform);
+    let dispatcher = AppDispatcher::new(shell, state, storage, platform, process_settings.clone());
     use_startup_markdown_paths(dispatcher.clone(), startup_markdown_paths);
     use_external_markdown_open_requests(dispatcher.clone(), external_open_requests);
     let commands = dispatcher.commands();
@@ -202,7 +238,9 @@ pub fn use_app_runtime_with_options(
         state,
         document_window_storage,
         document_window_platform,
+        shared_services,
     );
+    crate::process_settings::use_process_settings_sync(state, process_settings);
     crate::effects::use_workspace_watcher(state, watch_storage);
     #[cfg(feature = "desktop-shell")]
     crate::effects::use_desktop_close_flush(state, close_flush_storage);

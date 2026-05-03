@@ -1,4 +1,6 @@
-use crate::runtime::{use_app_runtime_with_options, AppShell, RuntimeOptions};
+use crate::runtime::{
+    use_app_runtime_with_shared_services, AppShell, RuntimeOptions, RuntimeSharedServices,
+};
 use crate::state::{DocumentWindowRequest, RuntimeState};
 use dioxus::desktop::tao::dpi::LogicalSize;
 use dioxus::desktop::tao::event::{Event, WindowEvent};
@@ -37,6 +39,7 @@ struct DocumentToolWindowProps {
     path: PathBuf,
     storage: Arc<dyn NoteStorage>,
     platform: Arc<dyn PlatformApi>,
+    shared_services: RuntimeSharedServices,
     on_closed: EventHandler<WindowSessionId>,
 }
 
@@ -98,6 +101,7 @@ pub(crate) fn use_document_window_requests(
     mut state: RuntimeState,
     storage: Arc<dyn NoteStorage>,
     platform: Arc<dyn PlatformApi>,
+    shared_services: RuntimeSharedServices,
 ) {
     let document_windows = use_signal(DocumentWindowRegistry::default);
     let request_revision = use_memo(move || state.document_window_requests.read().revision());
@@ -114,6 +118,7 @@ pub(crate) fn use_document_window_requests(
                 request,
                 storage.clone(),
                 platform.clone(),
+                shared_services.clone(),
             );
         }
     }));
@@ -124,6 +129,7 @@ fn open_or_focus_document_window(
     request: DocumentWindowRequest,
     storage: Arc<dyn NoteStorage>,
     platform: Arc<dyn PlatformApi>,
+    shared_services: RuntimeSharedServices,
 ) {
     if let Some(existing_window) = document_windows.read().get(&request.window_id) {
         if let Some(context) = existing_window.context.as_ref() {
@@ -146,6 +152,7 @@ fn open_or_focus_document_window(
         path: request.path.clone(),
         storage,
         platform,
+        shared_services,
         on_closed,
     };
     let pending = window().new_window(
@@ -224,6 +231,7 @@ fn DocumentToolWindowRoot(props: DocumentToolWindowProps) -> Element {
         path,
         storage,
         platform,
+        shared_services,
         on_closed,
     } = props;
     use_context_provider(|| TOOL_WINDOW_LOGO_SRC.to_string());
@@ -262,7 +270,7 @@ fn DocumentToolWindowRoot(props: DocumentToolWindowProps) -> Element {
             None,
         )
     });
-    use_app_runtime_with_options(
+    use_app_runtime_with_shared_services(
         RuntimeOptions {
             shell: AppShell::Desktop,
             multi_window_available: false,
@@ -272,6 +280,7 @@ fn DocumentToolWindowRoot(props: DocumentToolWindowProps) -> Element {
         platform,
         startup_open_request.markdown_paths.clone(),
         None,
+        shared_services,
     );
 
     rsx! {

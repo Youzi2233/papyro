@@ -1,8 +1,9 @@
+use crate::process_settings::{ProcessSettingsHub, SettingsPersistenceGuard};
 use dioxus::prelude::*;
 use papyro_core::models::{AppSettings, Workspace, WorkspaceSettingsOverrides};
 use papyro_core::NoteStorage;
 use std::collections::VecDeque;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex, OnceLock};
 
 #[derive(Debug, Clone, PartialEq, Default)]
 pub(crate) struct SettingsPersistenceQueue {
@@ -12,16 +13,24 @@ pub(crate) struct SettingsPersistenceQueue {
 
 #[derive(Debug, Clone, PartialEq)]
 enum SettingsPersistenceJob {
-    Global(AppSettings),
+    Global {
+        settings: AppSettings,
+        guard: SettingsPersistenceGuard,
+    },
     Workspace {
         workspace: Workspace,
         overrides: WorkspaceSettingsOverrides,
+        guard: SettingsPersistenceGuard,
     },
 }
 
 impl SettingsPersistenceQueue {
-    pub(crate) fn enqueue_global(&mut self, settings: AppSettings) -> bool {
-        self.coalesce_global(settings);
+    pub(crate) fn enqueue_global(
+        &mut self,
+        settings: AppSettings,
+        guard: SettingsPersistenceGuard,
+    ) -> bool {
+        self.coalesce_global(settings, guard);
         self.start_next()
     }
 
@@ -29,26 +38,32 @@ impl SettingsPersistenceQueue {
         &mut self,
         workspace: Workspace,
         overrides: WorkspaceSettingsOverrides,
+        guard: SettingsPersistenceGuard,
     ) -> bool {
-        self.coalesce_workspace(workspace, overrides);
+        self.coalesce_workspace(workspace, overrides, guard);
         self.start_next()
     }
 
-    fn coalesce_global(&mut self, settings: AppSettings) {
+    fn coalesce_global(&mut self, settings: AppSettings, guard: SettingsPersistenceGuard) {
         if let Some(job) = self
             .pending
             .iter_mut()
-            .find(|job| matches!(job, SettingsPersistenceJob::Global(_)))
+            .find(|job| matches!(job, SettingsPersistenceJob::Global { .. }))
         {
-            *job = SettingsPersistenceJob::Global(settings);
+            *job = SettingsPersistenceJob::Global { settings, guard };
             return;
         }
 
         self.pending
-            .push_back(SettingsPersistenceJob::Global(settings));
+            .push_back(SettingsPersistenceJob::Global { settings, guard });
     }
 
-    fn coalesce_workspace(&mut self, workspace: Workspace, overrides: WorkspaceSettingsOverrides) {
+    fn coalesce_workspace(
+        &mut self,
+        workspace: Workspace,
+        overrides: WorkspaceSettingsOverrides,
+        guard: SettingsPersistenceGuard,
+    ) {
         if let Some(job) = self.pending.iter_mut().find(|job| {
             matches!(
                 job,
@@ -61,6 +76,7 @@ impl SettingsPersistenceQueue {
             *job = SettingsPersistenceJob::Workspace {
                 workspace,
                 overrides,
+                guard,
             };
             return;
         }
@@ -68,6 +84,7 @@ impl SettingsPersistenceQueue {
         self.pending.push_back(SettingsPersistenceJob::Workspace {
             workspace,
             overrides,
+            guard,
         });
     }
 
@@ -98,11 +115,13 @@ pub(crate) fn enqueue_global_settings_save(
     storage: Arc<dyn NoteStorage>,
     mut queue: Signal<SettingsPersistenceQueue>,
     status_message: Signal<Option<String>>,
+    process_settings: ProcessSettingsHub,
+    guard: SettingsPersistenceGuard,
     settings: AppSettings,
 ) {
-    let should_start = queue.write().enqueue_global(settings);
+    let should_start = queue.write().enqueue_global(settings, guard);
     if should_start {
-        spawn_settings_worker(storage, queue, status_message);
+        spawn_settings_worker(storage, queue, status_message, process_settings);
     }
 }
 
@@ -110,12 +129,14 @@ pub(crate) fn enqueue_workspace_settings_save(
     storage: Arc<dyn NoteStorage>,
     mut queue: Signal<SettingsPersistenceQueue>,
     status_message: Signal<Option<String>>,
+    process_settings: ProcessSettingsHub,
+    guard: SettingsPersistenceGuard,
     workspace: Workspace,
     overrides: WorkspaceSettingsOverrides,
 ) {
-    let should_start = queue.write().enqueue_workspace(workspace, overrides);
+    let should_start = queue.write().enqueue_workspace(workspace, overrides, guard);
     if should_start {
-        spawn_settings_worker(storage, queue, status_message);
+        spawn_settings_worker(storage, queue, status_message, process_settings);
     }
 }
 
@@ -123,6 +144,7 @@ fn spawn_settings_worker(
     storage: Arc<dyn NoteStorage>,
     mut queue: Signal<SettingsPersistenceQueue>,
     mut status_message: Signal<Option<String>>,
+    process_settings: ProcessSettingsHub,
 ) {
     spawn(async move {
         loop {
@@ -134,7 +156,7 @@ fn spawn_settings_worker(
                 return;
             };
 
-            let result = persist_job(storage.clone(), job).await;
+            let result = persist_job(storage.clone(), process_settings.clone(), job).await;
             match result {
                 SettingsPersistenceResult::Saved => {}
                 SettingsPersistenceResult::Failed { scope, error } => {
@@ -157,12 +179,15 @@ enum SettingsPersistenceResult {
 
 async fn persist_job(
     storage: Arc<dyn NoteStorage>,
+    process_settings: ProcessSettingsHub,
     job: SettingsPersistenceJob,
 ) -> SettingsPersistenceResult {
     match job {
-        SettingsPersistenceJob::Global(settings) => {
-            let result =
-                tokio::task::spawn_blocking(move || storage.save_settings(&settings)).await;
+        SettingsPersistenceJob::Global { settings, guard } => {
+            let result = tokio::task::spawn_blocking(move || {
+                persist_global_settings(storage.as_ref(), &process_settings, &guard, &settings)
+            })
+            .await;
             match result {
                 Ok(Ok(())) => SettingsPersistenceResult::Saved,
                 Ok(Err(error)) => SettingsPersistenceResult::Failed {
@@ -178,9 +203,16 @@ async fn persist_job(
         SettingsPersistenceJob::Workspace {
             workspace,
             overrides,
+            guard,
         } => {
             let result = tokio::task::spawn_blocking(move || {
-                storage.save_workspace_settings(&workspace, &overrides)
+                persist_workspace_settings(
+                    storage.as_ref(),
+                    &process_settings,
+                    &guard,
+                    &workspace,
+                    &overrides,
+                )
             })
             .await;
             match result {
@@ -196,6 +228,38 @@ async fn persist_job(
             }
         }
     }
+}
+
+fn persist_global_settings(
+    storage: &dyn NoteStorage,
+    process_settings: &ProcessSettingsHub,
+    guard: &SettingsPersistenceGuard,
+    settings: &AppSettings,
+) -> anyhow::Result<()> {
+    let _lock = settings_write_lock().lock().unwrap();
+    if process_settings.is_current(guard) {
+        storage.save_settings(settings)?;
+    }
+    Ok(())
+}
+
+fn persist_workspace_settings(
+    storage: &dyn NoteStorage,
+    process_settings: &ProcessSettingsHub,
+    guard: &SettingsPersistenceGuard,
+    workspace: &Workspace,
+    overrides: &WorkspaceSettingsOverrides,
+) -> anyhow::Result<()> {
+    let _lock = settings_write_lock().lock().unwrap();
+    if process_settings.is_current(guard) {
+        storage.save_workspace_settings(workspace, overrides)?;
+    }
+    Ok(())
+}
+
+fn settings_write_lock() -> &'static Mutex<()> {
+    static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+    LOCK.get_or_init(|| Mutex::new(()))
 }
 
 #[cfg(test)]
@@ -225,10 +289,19 @@ mod tests {
     fn global_settings_jobs_are_coalesced() {
         let mut queue = SettingsPersistenceQueue::default();
 
-        assert!(queue.enqueue_global(settings(papyro_core::models::Theme::Light)));
-        assert!(!queue.enqueue_global(settings(papyro_core::models::Theme::Dark)));
+        assert!(queue.enqueue_global(
+            settings(papyro_core::models::Theme::Light),
+            SettingsPersistenceGuard::Global { revision: 1 }
+        ));
+        assert!(!queue.enqueue_global(
+            settings(papyro_core::models::Theme::Dark),
+            SettingsPersistenceGuard::Global { revision: 2 }
+        ));
 
-        let Some(SettingsPersistenceJob::Global(saved)) = queue.take_next() else {
+        let Some(SettingsPersistenceJob::Global {
+            settings: saved, ..
+        }) = queue.take_next()
+        else {
             panic!("expected global settings job");
         };
         assert_eq!(saved.theme, papyro_core::models::Theme::Dark);
@@ -246,12 +319,20 @@ mod tests {
                 sidebar_collapsed: Some(false),
                 ..WorkspaceSettingsOverrides::default()
             },
+            SettingsPersistenceGuard::Workspace {
+                workspace_id: first.id.clone(),
+                revision: 1,
+            },
         ));
         assert!(!queue.enqueue_workspace(
             first.clone(),
             WorkspaceSettingsOverrides {
                 sidebar_collapsed: Some(true),
                 ..WorkspaceSettingsOverrides::default()
+            },
+            SettingsPersistenceGuard::Workspace {
+                workspace_id: first.id.clone(),
+                revision: 2,
             },
         ));
         assert!(!queue.enqueue_workspace(
@@ -260,11 +341,16 @@ mod tests {
                 sidebar_collapsed: Some(false),
                 ..WorkspaceSettingsOverrides::default()
             },
+            SettingsPersistenceGuard::Workspace {
+                workspace_id: second.id.clone(),
+                revision: 1,
+            },
         ));
 
         let Some(SettingsPersistenceJob::Workspace {
             workspace,
             overrides,
+            ..
         }) = queue.take_next()
         else {
             panic!("expected first workspace settings job");

@@ -8,6 +8,7 @@ use crate::perf::{
     trace_chrome_toggle_theme, trace_editor_switch_tab, trace_editor_view_mode_change,
     trace_runtime_close_tab_handler,
 };
+use crate::process_settings::ProcessSettingsHub;
 use crate::runtime::AppShell;
 use crate::settings_persistence::{enqueue_global_settings_save, enqueue_workspace_settings_save};
 use crate::state::RuntimeState;
@@ -31,6 +32,7 @@ pub struct AppDispatcher {
     state: RuntimeState,
     storage: Arc<dyn NoteStorage>,
     platform: Arc<dyn PlatformApi>,
+    process_settings: ProcessSettingsHub,
 }
 
 impl PartialEq for AppDispatcher {
@@ -45,12 +47,14 @@ impl AppDispatcher {
         state: RuntimeState,
         storage: Arc<dyn NoteStorage>,
         platform: Arc<dyn PlatformApi>,
+        process_settings: ProcessSettingsHub,
     ) -> Self {
         Self {
             shell,
             state,
             storage,
             platform,
+            process_settings,
         }
     }
 
@@ -61,23 +65,26 @@ impl AppDispatcher {
                 let platform = self.platform.clone();
                 let storage = self.storage.clone();
                 let state = self.state;
+                let process_settings = self.process_settings.clone();
                 spawn(async move {
                     if !effects::flush_dirty_tabs(storage.clone(), state).await {
                         return;
                     }
 
-                    workspace::open_workspace(platform, storage, state).await;
+                    workspace::open_workspace(platform, storage, state, process_settings).await;
                 });
             }
             AppAction::OpenWorkspacePath(action) => {
                 let storage = self.storage.clone();
                 let state = self.state;
+                let process_settings = self.process_settings.clone();
                 spawn(async move {
                     if !effects::flush_dirty_tabs(storage.clone(), state).await {
                         return;
                     }
 
-                    workspace::open_workspace_path(storage, state, action.path).await;
+                    workspace::open_workspace_path(storage, state, action.path, process_settings)
+                        .await;
                 });
             }
             AppAction::RefreshWorkspace => {
@@ -229,16 +236,35 @@ impl AppDispatcher {
                 ui_state.write().toggle_outline();
             }
             AppAction::ToggleSidebar(action) => {
-                toggle_sidebar(self.storage.clone(), self.state, action.trigger);
+                toggle_sidebar(
+                    self.storage.clone(),
+                    self.state,
+                    self.process_settings.clone(),
+                    action.trigger,
+                );
             }
             AppAction::ToggleTheme => {
-                toggle_theme(self.storage.clone(), self.state);
+                toggle_theme(
+                    self.storage.clone(),
+                    self.state,
+                    self.process_settings.clone(),
+                );
             }
             AppAction::SetViewMode(action) => {
-                set_view_mode(self.storage.clone(), self.state, action);
+                set_view_mode(
+                    self.storage.clone(),
+                    self.state,
+                    self.process_settings.clone(),
+                    action,
+                );
             }
             AppAction::SetSidebarWidth(action) => {
-                set_sidebar_width(self.storage.clone(), self.state, action.width);
+                set_sidebar_width(
+                    self.storage.clone(),
+                    self.state,
+                    self.process_settings.clone(),
+                    action.width,
+                );
             }
             AppAction::RenameSelected(action) => {
                 file_ops::rename_selected(
@@ -368,7 +394,12 @@ impl AppDispatcher {
                 export_html(self.shell, self.state);
             }
             AppAction::SaveSettings(action) => {
-                apply_settings(self.storage.clone(), self.state, action.settings);
+                apply_settings(
+                    self.storage.clone(),
+                    self.state,
+                    self.process_settings.clone(),
+                    action.settings,
+                );
             }
             AppAction::SaveWorkspaceSettings(action) => {
                 apply_workspace_settings(
@@ -377,6 +408,7 @@ impl AppDispatcher {
                     self.state.ui_state,
                     self.state.status_message,
                     self.state.settings_persistence,
+                    self.process_settings.clone(),
                     action.overrides,
                 );
             }
@@ -386,8 +418,9 @@ impl AppDispatcher {
     fn dispatch_open_markdown(&self, target: OpenMarkdownTarget) {
         let storage = self.storage.clone();
         let state = self.state;
+        let process_settings = self.process_settings.clone();
         spawn(async move {
-            run_open_markdown(storage, state, target).await;
+            run_open_markdown(storage, state, process_settings, target).await;
         });
     }
 
@@ -407,9 +440,10 @@ impl AppDispatcher {
 
         let storage = self.storage.clone();
         let state = self.state;
+        let process_settings = self.process_settings.clone();
         spawn(async move {
             for target in targets {
-                run_open_markdown(storage.clone(), state, target).await;
+                run_open_markdown(storage.clone(), state, process_settings.clone(), target).await;
             }
         });
     }
@@ -819,7 +853,13 @@ fn export_html(shell: AppShell, mut state: RuntimeState) {
         .set(Some("Export is not available in this build".to_string()));
 }
 
-fn apply_settings(storage: Arc<dyn NoteStorage>, mut state: RuntimeState, settings: AppSettings) {
+fn apply_settings(
+    storage: Arc<dyn NoteStorage>,
+    mut state: RuntimeState,
+    process_settings: ProcessSettingsHub,
+    settings: AppSettings,
+) {
+    let guard = process_settings.publish_global(settings.clone());
     state
         .ui_state
         .write()
@@ -829,6 +869,8 @@ fn apply_settings(storage: Arc<dyn NoteStorage>, mut state: RuntimeState, settin
         storage,
         state.settings_persistence,
         state.status_message,
+        process_settings,
+        guard,
         settings,
     );
 }
@@ -839,6 +881,7 @@ fn apply_workspace_settings(
     mut ui_state: Signal<UiState>,
     mut status_message: Signal<Option<String>>,
     settings_persistence: Signal<crate::settings_persistence::SettingsPersistenceQueue>,
+    process_settings: ProcessSettingsHub,
     overrides: WorkspaceSettingsOverrides,
 ) {
     let workspace = file_state.read().current_workspace.clone();
@@ -849,6 +892,7 @@ fn apply_workspace_settings(
         return;
     };
 
+    let guard = process_settings.publish_workspace(&workspace, overrides.clone());
     ui_state
         .write()
         .apply_workspace_overrides(overrides.clone());
@@ -856,23 +900,34 @@ fn apply_workspace_settings(
         storage,
         settings_persistence,
         status_message,
+        process_settings,
+        guard,
         workspace,
         overrides,
     );
 }
 
-fn toggle_sidebar(storage: Arc<dyn NoteStorage>, state: RuntimeState, trigger: String) {
+fn toggle_sidebar(
+    storage: Arc<dyn NoteStorage>,
+    state: RuntimeState,
+    process_settings: ProcessSettingsHub,
+    trigger: String,
+) {
     let started_at = perf_timer();
     let (collapsed, target) = {
         let ui_state = state.ui_state.read();
         sidebar_toggle_target(&ui_state)
     };
 
-    apply_chrome_settings_target(storage, state, target);
+    apply_chrome_settings_target(storage, state, process_settings, target);
     trace_chrome_toggle_sidebar(&trigger, collapsed, started_at);
 }
 
-fn toggle_theme(storage: Arc<dyn NoteStorage>, state: RuntimeState) {
+fn toggle_theme(
+    storage: Arc<dyn NoteStorage>,
+    state: RuntimeState,
+    process_settings: ProcessSettingsHub,
+) {
     let started_at = perf_timer();
     let (from_theme, target) = {
         let ui_state = state.ui_state.read();
@@ -880,11 +935,16 @@ fn toggle_theme(storage: Arc<dyn NoteStorage>, state: RuntimeState) {
     };
     let to_theme = settings_target_theme(&target);
 
-    apply_chrome_settings_target(storage, state, target);
+    apply_chrome_settings_target(storage, state, process_settings, target);
     trace_chrome_toggle_theme(&from_theme, &to_theme, started_at);
 }
 
-fn set_view_mode(storage: Arc<dyn NoteStorage>, state: RuntimeState, request: SetViewModeRequest) {
+fn set_view_mode(
+    storage: Arc<dyn NoteStorage>,
+    state: RuntimeState,
+    process_settings: ProcessSettingsHub,
+    request: SetViewModeRequest,
+) {
     let started_at = perf_timer();
     let Some((previous_mode, next_mode, target)) = ({
         let ui_state = state.ui_state.read();
@@ -898,7 +958,7 @@ fn set_view_mode(storage: Arc<dyn NoteStorage>, state: RuntimeState, request: Se
         .map(|tab_id| tab_revision_and_bytes(&state.tab_contents.read(), tab_id))
         .unwrap_or((None, None));
 
-    apply_chrome_settings_target(storage, state, target);
+    apply_chrome_settings_target(storage, state, process_settings, target);
     trace_editor_view_mode_change(
         &request.trigger,
         active_tab_id.as_deref(),
@@ -910,25 +970,31 @@ fn set_view_mode(storage: Arc<dyn NoteStorage>, state: RuntimeState, request: Se
     );
 }
 
-fn set_sidebar_width(storage: Arc<dyn NoteStorage>, state: RuntimeState, width: u32) {
+fn set_sidebar_width(
+    storage: Arc<dyn NoteStorage>,
+    state: RuntimeState,
+    process_settings: ProcessSettingsHub,
+    width: u32,
+) {
     let target = {
         let ui_state = state.ui_state.read();
         sidebar_width_target(&ui_state, width)
     };
 
     if let Some(target) = target {
-        apply_chrome_settings_target(storage, state, target);
+        apply_chrome_settings_target(storage, state, process_settings, target);
     }
 }
 
 fn apply_chrome_settings_target(
     storage: Arc<dyn NoteStorage>,
     state: RuntimeState,
+    process_settings: ProcessSettingsHub,
     target: ChromeSettingsTarget,
 ) {
     match target {
         ChromeSettingsTarget::Global(settings) => {
-            apply_settings(storage, state, settings);
+            apply_settings(storage, state, process_settings, settings);
         }
         ChromeSettingsTarget::Workspace(overrides) => {
             apply_workspace_settings(
@@ -937,6 +1003,7 @@ fn apply_chrome_settings_target(
                 state.ui_state,
                 state.status_message,
                 state.settings_persistence,
+                process_settings,
                 overrides,
             );
         }
@@ -978,6 +1045,7 @@ fn toggle_expanded_path(
 async fn run_open_markdown(
     storage: Arc<dyn NoteStorage>,
     mut state: RuntimeState,
+    process_settings: ProcessSettingsHub,
     target: OpenMarkdownTarget,
 ) {
     let route_target = state
@@ -1021,7 +1089,7 @@ async fn run_open_markdown(
         return;
     }
 
-    notes::open_markdown(storage, state, target).await;
+    notes::open_markdown_with_process_settings(storage, state, process_settings, target).await;
 }
 
 fn open_markdown_requires_dirty_flush(file_state: &FileState, path: &Path) -> bool {

@@ -4,6 +4,7 @@ use papyro_platform::PlatformApi;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
+use crate::process_settings::ProcessSettingsHub;
 use crate::state::RuntimeState;
 use crate::workspace_flow::{
     apply_workspace_bootstrap, reload_workspace_or_bootstrap, WorkspaceReloadOutcome,
@@ -19,10 +20,11 @@ pub async fn open_workspace(
     platform: Arc<dyn PlatformApi>,
     storage: Arc<dyn NoteStorage>,
     mut state: RuntimeState,
+    process_settings: ProcessSettingsHub,
 ) {
     match platform.pick_folder().await {
         Ok(Some(path)) => {
-            open_workspace_path(storage, state, path).await;
+            open_workspace_path(storage, state, path, process_settings).await;
         }
         Ok(None) => {
             state
@@ -41,6 +43,7 @@ pub async fn open_workspace_path(
     storage: Arc<dyn NoteStorage>,
     mut state: RuntimeState,
     path: PathBuf,
+    process_settings: ProcessSettingsHub,
 ) {
     let result = {
         let p = path.clone();
@@ -50,6 +53,7 @@ pub async fn open_workspace_path(
 
     match result {
         Ok(bootstrap) => {
+            let bootstrap = process_settings.prepare_bootstrap(bootstrap);
             let applied = apply_workspace_bootstrap(bootstrap);
             state.file_state.set(applied.file_state);
             state.editor_tabs.set(applied.editor_tabs);

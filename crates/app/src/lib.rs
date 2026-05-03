@@ -8,6 +8,7 @@ mod export;
 mod handlers;
 mod open_requests;
 mod perf;
+mod process_settings;
 mod runtime;
 mod settings_persistence;
 mod state;

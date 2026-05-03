@@ -7,6 +7,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use crate::perf::{perf_timer, trace_editor_open_markdown};
+use crate::process_settings::ProcessSettingsHub;
 use crate::state::RuntimeState;
 use crate::status_messages::{save_failure_message, SaveFailureContext};
 use crate::workspace_flow::{
@@ -17,9 +18,10 @@ use crate::workspace_flow::{
     write_save_snapshot,
 };
 
-pub async fn open_markdown(
+pub async fn open_markdown_with_process_settings(
     storage: Arc<dyn NoteStorage>,
     mut state: RuntimeState,
+    process_settings: ProcessSettingsHub,
     target: OpenMarkdownTarget,
 ) {
     let perf_started_at = perf_timer();
@@ -29,7 +31,7 @@ pub async fn open_markdown(
     let mut next_tab_contents = state.tab_contents.read().clone();
 
     let result = tokio::task::spawn_blocking(move || {
-        let outcome = open_markdown_target_from_storage(
+        let mut outcome = open_markdown_target_from_storage(
             storage.as_ref(),
             &mut next_file_state,
             &mut next_editor_tabs,
@@ -37,6 +39,23 @@ pub async fn open_markdown(
             target.path,
             summarize_markdown,
         )?;
+        if let Some(ui_state) = outcome.ui_state.as_ref() {
+            let bootstrap = papyro_core::WorkspaceBootstrap {
+                file_state: next_file_state.clone(),
+                global_settings: ui_state.global_settings.clone(),
+                workspace_settings: ui_state.workspace_overrides.clone(),
+                ..papyro_core::WorkspaceBootstrap::default()
+            };
+            let prepared = process_settings.prepare_bootstrap(bootstrap);
+            if prepared.global_settings != ui_state.global_settings
+                || prepared.workspace_settings != ui_state.workspace_overrides
+            {
+                outcome.ui_state = Some(papyro_core::UiState::from_settings_with_overrides(
+                    prepared.global_settings,
+                    prepared.workspace_settings,
+                ));
+            }
+        }
 
         Ok::<_, anyhow::Error>(OpenMarkdownStateUpdate {
             file_state: next_file_state,

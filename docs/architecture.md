@@ -699,7 +699,15 @@ tab path is the source of truth for the sidebar tree and watcher context.
 
 Document windows run their own Dioxus runtime with `multi_window_available: false`.
 That keeps their `EditorTabs`, `TabContentsMap`, pending close tab, selection, command queue, and dirty state local to that window instead of projecting through the main window state.
-Storage and settings are still process-level dependencies and must be treated carefully when cross-window save conflict handling is expanded.
+Storage and settings are process-level dependencies:
+
+- `crates/app/src/runtime.rs` passes the same storage `Arc<dyn NoteStorage>` into document windows.
+- `crates/app/src/process_settings.rs` owns `ProcessSettingsHub`, a process-level settings snapshot and watch channel shared by every runtime.
+- Runtime bootstrap goes through `ProcessSettingsHub::prepare_bootstrap`, so newly opened document windows use the latest in-memory global settings before falling back to disk state.
+- Settings saves publish to the hub before writing to storage, so other windows update live.
+- `crates/app/src/settings_persistence.rs` guards settings writes with revision checks and a process-level write lock, so an older window cannot overwrite a newer settings snapshot after a delayed save task.
+
+Cross-window document save conflicts still need dedicated tests and UX before multi-window editing should be considered complete.
 
 ## 20. How The Settings Tool Window Works
 
@@ -717,6 +725,7 @@ The implementation path is:
 
 Document windows reuse the same process-level window pattern, but unlike settings
 they create a fresh app runtime rather than sharing the main `AppContext`.
+Their editor state is local, while storage and settings are supplied through shared process services.
 
 ## 21. Where To Start For Common Tasks
 
