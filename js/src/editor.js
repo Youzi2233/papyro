@@ -21,6 +21,7 @@ import {
 } from "@codemirror/search";
 
 import { editorTheme, markdownHighlightStyle } from "./editor-theme.js";
+import { createCodeMirrorRuntimeAdapter, createPapyroEditorFacade } from "./editor-runtime.js";
 
 import {
   activeOutlineHeadingIndex,
@@ -2083,7 +2084,7 @@ function recycleEditor(tabId) {
   recycleEditorCore(editorRegistry, tabId);
 }
 
-window.papyroEditor = {
+const codeMirrorRuntimeAdapter = createCodeMirrorRuntimeAdapter({
   ensureEditor,
 
   handleRustMessage(tabId, message) {
@@ -2115,4 +2116,6 @@ window.papyroEditor = {
   scrollEditorToLine: jumpEditorToLine,
   scrollPreviewToHeading: jumpPreviewToHeading,
   renderPreviewMermaid,
-};
+});
+
+window.papyroEditor = createPapyroEditorFacade(codeMirrorRuntimeAdapter);
