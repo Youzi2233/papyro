@@ -171,6 +171,36 @@ flowchart LR
 - [ ] 以企业级编辑体验为标准：粘贴、撤销、选区、IME、键盘导航、可访问性和布局稳定性都要可靠。
 - [x] 评估 Hybrid 长期是否继续基于 CodeMirror decoration，还是引入更丰富的文档模型。
 
+## Phase 4.1 - Tiptap 编辑器运行时迁移
+
+目标：在 `feat-tiptap` 分支把交互式编辑器从 CodeMirror runtime 迁移到 Tiptap/ProseMirror 文档模型，同时保持 Markdown 文件格式、Rust/Dioxus 协议和企业级可维护性。
+
+迁移计划见 [Tiptap 迁移计划](tiptap-migration-plan.md)。
+
+企业级要求：
+
+- 新代码必须高可复用、可迭代、健壮，并且有明确模块边界。
+- 不能把 Tiptap 逻辑塞进一个新的巨型 `editor.js`。
+- 所有复杂 block 必须有 Markdown round-trip 策略和测试。
+- 迁移期间保留 `window.papyroEditor` facade，避免 Rust/Dioxus 侧被编辑器实现细节污染。
+- 生成 bundle、桌面/mobile asset、CSS 行数预算、a11y、contrast、primitive usage 和 Rust/JS 测试必须持续通过。
+
+任务：
+
+- [x] 创建专用迁移分支 `feat-tiptap`。
+- [x] 写清 Tiptap 迁移架构、风险、分阶段计划和完成定义。
+- [ ] 提交并推送迁移计划。
+- [ ] 把 JS 编辑器 runtime 拆出稳定 facade、registry 和 adapter 契约。
+- [ ] 默认保持 CodeMirror adapter，无行为变化地通过现有测试。
+- [ ] 安装并接入 Tiptap 基础依赖。
+- [ ] 在 feature flag 或 runtime selector 后面实现 Tiptap adapter 原型。
+- [ ] 支持基础 Markdown round-trip：段落、标题、列表、引用、粗体、斜体、行内代码、代码块、链接。
+- [ ] 重新定义 Source/Hybrid/Preview 模式契约：Hybrid 用 Tiptap，Preview 继续 Rust 渲染，Source 保持源码可编辑。
+- [ ] 保持 Rust/JS 协议兼容：`content_changed`、`insert_markdown`、`set_view_mode`、`set_preferences`、`destroy`、`runtime_error`。
+- [ ] 迁移 task list、table、math、Mermaid、image 和 code block。
+- [ ] 清理 CodeMirror 依赖、`.cm-*` CSS 和旧测试。
+- [ ] 完成全量验收并推送最终迁移提交。
+
 ## Phase 4.5 - 主题、字体和 Markdown 样式
 
 - [x] 定义 theme token：app chrome、editor canvas、Markdown 内容、代码块、selection、focus ring、状态色。

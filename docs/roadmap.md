@@ -196,6 +196,36 @@ Goal: make Hybrid mode useful for real writing, not just decorated source text.
 
 See [editor.md](editor.md).
 
+## Phase 4.1 - Tiptap Editor Runtime Migration
+
+Goal: use the `feat-tiptap` branch to migrate the interactive editor runtime from CodeMirror to Tiptap/ProseMirror while preserving Markdown files, the Rust/Dioxus protocol, and enterprise-grade maintainability.
+
+See [Tiptap Migration Plan](tiptap-migration-plan.md).
+
+Engineering bar:
+
+- New code must be reusable, iterative, resilient, and clearly modular.
+- Do not replace the current large runtime with another giant `editor.js`.
+- Every complex block needs a Markdown round-trip strategy and tests.
+- Preserve the `window.papyroEditor` facade during migration so Rust/Dioxus stay independent from editor internals.
+- Generated bundles, desktop/mobile assets, CSS line budgets, a11y, contrast, primitive usage, and Rust/JS tests must keep passing.
+
+Tasks:
+
+- [x] Create the dedicated `feat-tiptap` migration branch.
+- [x] Document the Tiptap migration architecture, risks, phases, and definition of done.
+- [ ] Commit and push the migration plan.
+- [ ] Split the JS editor runtime into a stable facade, registry, and adapter contract.
+- [ ] Keep the CodeMirror adapter as the default with no behavior change.
+- [ ] Install and wire the Tiptap foundation dependencies.
+- [ ] Implement a Tiptap adapter prototype behind a feature flag or runtime selector.
+- [ ] Support basic Markdown round-trip: paragraphs, headings, lists, blockquotes, bold, italic, inline code, code blocks, and links.
+- [ ] Redefine Source/Hybrid/Preview: Hybrid uses Tiptap, Preview remains Rust-rendered, and Source remains Markdown-editable.
+- [ ] Preserve Rust/JS protocol compatibility for `content_changed`, `insert_markdown`, `set_view_mode`, `set_preferences`, `destroy`, and `runtime_error`.
+- [ ] Migrate task lists, tables, math, Mermaid, images, and code blocks.
+- [ ] Remove CodeMirror dependencies, `.cm-*` CSS, and obsolete tests.
+- [ ] Finish full acceptance checks and push the completed migration.
+
 ## Phase 4.5 - Themes, Typography, And Markdown Styles
 
 Goal: give users several high-quality visual choices without making the app feel like a random theme gallery.
