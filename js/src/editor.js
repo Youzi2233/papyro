@@ -21,6 +21,7 @@ import {
 } from "@codemirror/search";
 
 import { editorTheme, markdownHighlightStyle } from "./editor-theme.js";
+import { createEditorRuntimeRegistry } from "./editor-registry.js";
 import { createCodeMirrorRuntimeAdapter, createPapyroEditorFacade } from "./editor-runtime.js";
 
 import {
@@ -86,8 +87,7 @@ import {
   tableWidgetData,
 } from "./editor-media.js";
 
-// tabId 闁?{ view, dioxus, suppressChange }
-const editorRegistry = new Map();
+const editorRegistry = createEditorRuntimeRegistry();
 const modeScrollSnapshots = new Map();
 const editorScrollListeners = new WeakMap();
 const previewScrollListeners = new WeakMap();
