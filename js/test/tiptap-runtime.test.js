@@ -50,6 +50,9 @@ function createRuntimeHarness({
           this.emit("update", { editor: this });
         },
         focus: () => calls.push(["focus"]),
+        setHorizontalRule: () => calls.push(["setHorizontalRule"]),
+        setParagraph: () => calls.push(["setParagraph"]),
+        toggleHeading: (attrs) => calls.push(["toggleHeading", attrs.level]),
       };
       calls.push([
         "constructor",
@@ -179,6 +182,10 @@ test("Tiptap runtime handles baseline Rust messages", () => {
   runtime.handleRustMessage("tab-a", { type: "set_view_mode", mode: "source" });
   runtime.handleRustMessage("tab-a", { type: "set_content", content: "## Updated" });
   runtime.handleRustMessage("tab-a", { type: "insert_markdown", markdown: "\n- item" });
+  runtime.handleRustMessage("tab-a", {
+    type: "run_slash_command",
+    command_id: "heading-2",
+  });
   runtime.handleRustMessage("tab-a", { type: "focus" });
 
   assert.equal(registry.get("tab-a").dioxus.id, "dioxus-a");
@@ -190,6 +197,8 @@ test("Tiptap runtime handles baseline Rust messages", () => {
     ["syncOutline", "tab-a", "source"],
     ["setContent", "## Updated", "markdown"],
     ["insertContent", "\n- item", "markdown"],
+    ["toggleHeading", 2],
+    ["focus"],
     ["focus"],
   ]);
   assert.deepEqual(messages, [

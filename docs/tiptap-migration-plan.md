@@ -78,6 +78,13 @@ Product targets inspired by the template:
 - **Responsive editor chrome**: adaptive toolbars that keep narrow windows usable without hiding core writing actions.
 - **Token-based styling**: `.mn-tiptap-*` classes should map to the existing theme system instead of importing template CSS wholesale.
 
+Implementation rules for this reference:
+
+- Start with headless command controllers before drawing menus. The same command model must power slash search, toolbar buttons, keyboard shortcuts, and tests.
+- Use simple Markdown insertion for blocks that are not yet native Tiptap nodes, such as tables, math, and Mermaid. Upgrade each block later through a tested extension.
+- Keep all Notion-like UI pieces optional and local. Collaboration, AI, comments, uploads, and JWT flows are out of scope for the migration branch unless a separate product decision adds them.
+- Keep command labels and groups stable enough for i18n and future Dioxus chrome integration.
+
 ## Engineering Standards
 
 - **Stable facade**: Rust depends only on `window.papyroEditor`, not on Tiptap internals.
@@ -147,6 +154,7 @@ flowchart TD
 - [ ] Hybrid uses Tiptap rich-text editing.
 - [ ] Hybrid interaction design references the official Notion-like template while staying local-first, Markdown-first, and Papyro-token based.
 - [x] Add a Tiptap mode controller that normalizes Source, Hybrid, and Preview and keeps non-Hybrid modes non-editable in the rich-text editor.
+- [x] Add a reusable Tiptap slash command controller for headings, lists, quotes, code, dividers, tables, math, and Mermaid.
 - [ ] Add a Papyro slash command menu for common Markdown block insertion.
 - [ ] Add a Papyro floating formatting toolbar for selected text.
 - [ ] Add reusable UI primitives for Tiptap dropdowns, popovers, toolbars, and block action menus before wiring advanced blocks.

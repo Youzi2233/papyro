@@ -199,7 +199,8 @@ flowchart LR
 - [x] 在 feature flag 或 runtime selector 后面实现 Tiptap adapter 原型。
 - [x] 支持基础 Markdown round-trip：段落、标题、列表、引用、粗体、斜体、行内代码、代码块、链接。
 - [ ] 重新定义 Source/Hybrid/Preview 模式契约：Hybrid 用 Tiptap，Preview 继续 Rust 渲染，Source 保持源码可编辑。
-- [ ] 增加 Notion-like 但 Papyro 原生的 slash command、浮动格式栏、块插入和响应式编辑器 toolbar primitives。
+- [x] 增加可复用的 slash command controller，作为 Notion-like 但 Papyro 原生块插入体验的 headless 基础。
+- [ ] 增加 Notion-like 但 Papyro 原生的 slash command 菜单、浮动格式栏、块操作柄和响应式编辑器 toolbar primitives。
 - [ ] 保持 Rust/JS 协议兼容：`content_changed`、`insert_markdown`、`set_view_mode`、`set_preferences`、`destroy`、`runtime_error`。
 - [ ] 迁移 task list、table、math、Mermaid、image 和 code block。
 - [ ] 清理 CodeMirror 依赖、`.cm-*` CSS 和旧测试。
