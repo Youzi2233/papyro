@@ -5,14 +5,16 @@ use crate::state::{DocumentWindowRequest, RuntimeState};
 use dioxus::desktop::tao::dpi::LogicalSize;
 use dioxus::desktop::tao::event::{Event, WindowEvent};
 use dioxus::desktop::tao::window::Icon;
-use dioxus::desktop::{window, Config, DesktopContext, WindowBuilder};
+use dioxus::desktop::{window, Config, DesktopContext, WindowBuilder, WindowCloseBehaviour};
 use dioxus::prelude::*;
 use papyro_core::models::{AppLanguage, Theme};
-use papyro_core::{NoteStorage, WindowSessionId};
+use papyro_core::{NoteStorage, WindowSessionId, WorkspaceBootstrap};
 use papyro_platform::PlatformApi;
 use papyro_ui::context::{AppContext, SettingsWindowLauncher};
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+use std::rc::Rc;
 use std::sync::Arc;
 
 const TOOL_WINDOW_CSS: &str = concat!(
@@ -27,10 +29,18 @@ const TOOL_WINDOW_LOGO_SRC: &str = "/assets/logo.png";
 const TOOL_WINDOW_EDITOR_JS_SRC: &str = "/assets/editor.js";
 const PAPYRO_WINDOW_ICON: &[u8] = include_bytes!("../../../assets/logo.png");
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone)]
 struct SettingsToolWindowProps {
-    app_context: AppContext,
-    on_closed: EventHandler<()>,
+    bootstrap: WorkspaceBootstrap,
+    storage: Arc<dyn NoteStorage>,
+    platform: Arc<dyn PlatformApi>,
+    process_settings: crate::process_settings::ProcessSettingsHub,
+}
+
+impl PartialEq for SettingsToolWindowProps {
+    fn eq(&self, other: &Self) -> bool {
+        self.bootstrap == other.bootstrap
+    }
 }
 
 #[derive(Clone)]
@@ -53,13 +63,22 @@ struct DocumentWindowEntry {
     context: Option<DesktopContext>,
 }
 
+#[derive(Default)]
+struct SettingsWindowEntry {
+    context: Option<DesktopContext>,
+    opening: bool,
+}
+
 type DocumentWindowRegistry = HashMap<WindowSessionId, DocumentWindowEntry>;
 
 pub(crate) fn use_settings_window_launcher(
     shell: AppShell,
     app_context: AppContext,
+    storage: Arc<dyn NoteStorage>,
+    platform: Arc<dyn PlatformApi>,
+    process_settings: crate::process_settings::ProcessSettingsHub,
 ) -> SettingsWindowLauncher {
-    let settings_window = use_signal(|| None::<DesktopContext>);
+    let settings_window = use_hook(|| Rc::new(RefCell::new(SettingsWindowEntry::default())));
 
     SettingsWindowLauncher {
         open: EventHandler::new(move |_| {
@@ -67,30 +86,36 @@ pub(crate) fn use_settings_window_launcher(
                 return;
             }
 
-            if let Some(existing_window) = settings_window.read().as_ref() {
+            if let Some(existing_window) = settings_window.borrow().context.as_ref() {
                 existing_window.set_visible(true);
                 existing_window.set_focus();
                 return;
             }
+            if settings_window.borrow().opening {
+                return;
+            }
 
-            let mut settings_window_for_close = settings_window;
-            let on_closed = EventHandler::new(move |_| {
-                settings_window_for_close.set(None);
-            });
+            settings_window.borrow_mut().opening = true;
+
             let props = SettingsToolWindowProps {
-                app_context: app_context.clone(),
-                on_closed,
+                bootstrap: settings_tool_window_bootstrap(&app_context),
+                storage: storage.clone(),
+                platform: platform.clone(),
+                process_settings: process_settings.clone(),
             };
             let settings = app_context.ui_state.read().settings.clone();
+            let config = settings_tool_window_config(&settings.theme, settings.language);
             let pending = window().new_window(
                 VirtualDom::new_with_props(SettingsToolWindowRoot, props),
-                settings_tool_window_config(&settings.theme, settings.language),
+                config,
             );
 
-            let mut settings_window_for_open = settings_window;
+            let settings_window_for_open = settings_window.clone();
             spawn(async move {
                 let opened_window = pending.await;
-                settings_window_for_open.set(Some(opened_window));
+                let mut entry = settings_window_for_open.borrow_mut();
+                entry.context = Some(opened_window);
+                entry.opening = false;
             });
         }),
     }
@@ -172,33 +197,46 @@ fn open_or_focus_document_window(
     });
 }
 
+fn settings_tool_window_bootstrap(app_context: &AppContext) -> WorkspaceBootstrap {
+    WorkspaceBootstrap {
+        file_state: app_context.file_state.read().clone(),
+        workspace_root: app_context
+            .file_state
+            .read()
+            .current_workspace
+            .as_ref()
+            .map(|workspace| workspace.path.clone()),
+        status_message: String::new(),
+        settings: app_context.ui_state.read().settings.clone(),
+        global_settings: app_context.ui_state.read().global_settings.clone(),
+        workspace_settings: app_context.ui_state.read().workspace_overrides.clone(),
+        ..WorkspaceBootstrap::default()
+    }
+}
+
 #[allow(non_snake_case)]
 fn SettingsToolWindowRoot(props: SettingsToolWindowProps) -> Element {
     let SettingsToolWindowProps {
-        app_context,
-        on_closed,
+        bootstrap,
+        storage,
+        platform,
+        process_settings,
     } = props;
-    use_context_provider(|| app_context);
-    let window_id = window().id();
-    let native_close = on_closed;
+    use_app_runtime_with_shared_services(
+        RuntimeOptions {
+            shell: AppShell::Mobile,
+            multi_window_available: false,
+        },
+        bootstrap,
+        storage,
+        platform,
+        Vec::new(),
+        None,
+        RuntimeSharedServices { process_settings },
+    );
 
-    dioxus::desktop::use_wry_event_handler(move |event, _| {
-        if let Event::WindowEvent {
-            window_id: closed_window_id,
-            event: WindowEvent::CloseRequested,
-            ..
-        } = event
-        {
-            if *closed_window_id == window_id {
-                native_close.call(());
-            }
-        }
-    });
-
-    let close_button = on_closed;
     let close_settings = EventHandler::new(move |_| {
-        close_button.call(());
-        window().close();
+        window().set_visible(false);
     });
     let i18n = papyro_ui::i18n::use_i18n();
     let language = i18n.language();
@@ -301,6 +339,8 @@ fn settings_tool_window_config(theme: &Theme, language: AppLanguage) -> Config {
     Config::new()
         .with_menu(None)
         .with_window(window)
+        .with_close_behaviour(WindowCloseBehaviour::WindowHides)
+        .with_exits_when_last_window_closes(false)
         .with_background_color(settings_window_background(theme))
         .with_custom_head(settings_tool_window_head(theme, language))
 }

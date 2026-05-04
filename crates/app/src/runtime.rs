@@ -131,7 +131,13 @@ pub fn use_app_runtime_with_shared_services(
     let document_window_storage = storage.clone();
     #[cfg(feature = "desktop-shell")]
     let document_window_platform = platform.clone();
-    let dispatcher = AppDispatcher::new(shell, state, storage, platform, process_settings.clone());
+    let dispatcher = AppDispatcher::new(
+        shell,
+        state,
+        storage.clone(),
+        platform.clone(),
+        process_settings.clone(),
+    );
     use_startup_markdown_paths(dispatcher.clone(), startup_markdown_paths);
     use_external_markdown_open_requests(dispatcher.clone(), external_open_requests);
     let commands = dispatcher.commands();
@@ -226,8 +232,13 @@ pub fn use_app_runtime_with_shared_services(
         outline_visible,
     };
     #[cfg(feature = "desktop-shell")]
-    let settings_window_launcher =
-        crate::desktop_tool_windows::use_settings_window_launcher(shell, app_context.clone());
+    let settings_window_launcher = crate::desktop_tool_windows::use_settings_window_launcher(
+        shell,
+        app_context.clone(),
+        storage.clone(),
+        platform.clone(),
+        process_settings.clone(),
+    );
     use_context_provider(|| app_context);
     #[cfg(feature = "desktop-shell")]
     use_context_provider(|| settings_window_launcher);
