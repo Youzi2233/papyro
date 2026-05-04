@@ -217,6 +217,7 @@ Tasks:
 - [x] Document the Tiptap migration architecture, risks, phases, and definition of done.
 - [x] Commit and push the migration plan.
 - [x] Extract the first runtime adapter facade contract and tests.
+- [x] Add runtime registry and injectable CodeMirror runtime factory modules.
 - [ ] Split the JS editor runtime into a stable facade, registry, and adapter contract.
 - [ ] Keep the CodeMirror adapter as the default with no behavior change.
 - [ ] Install and wire the Tiptap foundation dependencies.

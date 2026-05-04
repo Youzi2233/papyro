@@ -192,6 +192,7 @@ flowchart LR
 - [x] 写清 Tiptap 迁移架构、风险、分阶段计划和完成定义。
 - [x] 提交并推送迁移计划。
 - [x] 抽出第一版 runtime adapter facade 契约和测试。
+- [x] 增加 runtime registry 和可注入的 CodeMirror runtime 工厂模块。
 - [ ] 把 JS 编辑器 runtime 拆出稳定 facade、registry 和 adapter 契约。
 - [ ] 默认保持 CodeMirror adapter，无行为变化地通过现有测试。
 - [ ] 安装并接入 Tiptap 基础依赖。

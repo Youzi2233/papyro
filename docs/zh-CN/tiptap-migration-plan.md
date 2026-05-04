@@ -140,6 +140,8 @@ flowchart TD
 ### 1. 建立运行时边界
 
 - [x] 抽出第一版 runtime adapter facade 契约和测试。
+- [x] 增加 runtime registry 模块，管理 tab entry 生命周期。
+- [x] 把当前 CodeMirror runtime 包装成可注入的 runtime 工厂。
 - [ ] 把当前 `js/src/editor.js` facade 入口拆成小模块。
 - [ ] 定义 `EditorRuntimeAdapter` 契约：`mount`、`attachChannel`、`handleMessage`、`setViewMode`、`destroy`、`getMarkdown`。
 - [ ] 保持 CodeMirror adapter 默认启用，确保无行为变化。

@@ -128,6 +128,8 @@ flowchart TD
 ### 1. Runtime Boundary
 
 - [x] Extract the first runtime adapter facade contract and tests.
+- [x] Add a runtime registry module for tab entry lifecycle management.
+- [x] Wrap the current CodeMirror runtime in an injectable runtime factory.
 - [ ] Split the current `js/src/editor.js` facade into smaller runtime modules.
 - [ ] Define an `EditorRuntimeAdapter` contract: `mount`, `attachChannel`, `handleMessage`, `setViewMode`, `destroy`, and `getMarkdown`.
 - [ ] Keep the CodeMirror adapter as the default implementation with no behavior change.

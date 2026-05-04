@@ -20,9 +20,10 @@ import {
   searchKeymap,
 } from "@codemirror/search";
 
+import { createCodeMirrorEditorRuntime } from "./codemirror-runtime.js";
 import { editorTheme, markdownHighlightStyle } from "./editor-theme.js";
 import { createEditorRuntimeRegistry } from "./editor-registry.js";
-import { createCodeMirrorRuntimeAdapter, createPapyroEditorFacade } from "./editor-runtime.js";
+import { createPapyroEditorFacade } from "./editor-runtime.js";
 
 import {
   activeOutlineHeadingIndex,
@@ -1996,61 +1997,6 @@ function attachViewToTab(view, tabId, container, instanceId, initialContent, vie
   });
 }
 
-function ensureEditor({ tabId, containerId, instanceId = "", initialContent, viewMode }) {
-  const container = document.getElementById(containerId);
-  if (!container) throw new Error(`Editor container not found: ${containerId}`);
-
-  const existing = editorRegistry.get(tabId);
-  if (existing) {
-    // Re-attach in case the DOM got detached across re-renders.
-    if (existing.view.dom.parentElement !== container) {
-      container.replaceChildren(existing.view.dom);
-    }
-    existing.view.dom.dataset.tabId = tabId;
-    existing.instanceId = instanceId;
-    handleRustMessageCore(editorRegistry, tabId, {
-      type: "set_view_mode",
-      mode: viewMode ?? existing.viewMode ?? "hybrid",
-    }, { refreshEditorLayout, setViewMode: setEditorViewMode });
-    return existing.view;
-  }
-
-  let view;
-  if (spareViews.length > 0) {
-    view = spareViews.pop();
-    resetViewState(view, initialContent ?? "");
-    attachViewToTab(view, tabId, container, instanceId, initialContent, viewMode);
-    // Warm the next spare so a subsequent open is also instant.
-    scheduleWarmSpare();
-  } else {
-    // Pool miss 闁?fall back to a fresh view. Happens only on the very first
-    // open if the warm-up hasn't finished yet, or under rapid-fire opens.
-    const state = EditorState.create({
-      doc: initialContent ?? "",
-      extensions: buildExtensions(),
-    });
-    view = new EditorView({ state, parent: container });
-    view.dom.dataset.tabId = tabId;
-    const entry = {
-      view,
-      instanceId,
-      dioxus: null,
-      suppressChange: false,
-      viewMode: "hybrid",
-      preferences: normalizeEditorPreferences(),
-      blockHints: null,
-    };
-    editorRegistry.set(tabId, entry);
-    handleRustMessageCore(editorRegistry, tabId, {
-      type: "set_view_mode",
-      mode: viewMode ?? "hybrid",
-    }, { refreshEditorLayout, setViewMode: setEditorViewMode });
-    scheduleWarmSpare();
-  }
-
-  return view;
-}
-
 function releaseEditor(tabId) {
   return recycleEditor(tabId);
   const entry = editorRegistry.get(tabId);
@@ -2084,38 +2030,56 @@ function recycleEditor(tabId) {
   recycleEditorCore(editorRegistry, tabId);
 }
 
-const codeMirrorRuntimeAdapter = createCodeMirrorRuntimeAdapter({
-  ensureEditor,
-
-  handleRustMessage(tabId, message) {
-    return handleRustMessageCore(editorRegistry, tabId, message, {
-      applyFormat: applyFormatToView,
-      refreshEditorLayout,
-      setEditorPreferences: setRuntimePreferences,
-      setBlockHints: setRuntimeBlockHints,
-      setViewMode: setEditorViewMode,
-    });
+const codeMirrorRuntimeAdapter = createCodeMirrorEditorRuntime({
+  registry: editorRegistry,
+  viewPool: {
+    takeSpareView: () => spareViews.pop() ?? null,
+    resetViewState,
+    scheduleWarmSpare,
   },
-
-  attachChannel(tabId, dioxus) {
-    const entry = editorRegistry.get(tabId);
-    if (!entry) return;
-
-    entry.dioxus = dioxus;
-    attachEditorScroll(tabId, entry);
-    syncOutline(tabId, entry.viewMode);
-    const container = entry.view?.dom?.parentElement;
-    if (container instanceof HTMLElement) {
-      attachLayoutObserver(tabId, container, dioxus);
-    }
+  viewFactory: {
+    attachViewToTab,
+    createEditorView({ container, initialContent }) {
+      return new EditorView({
+        state: EditorState.create({
+          doc: initialContent ?? "",
+          extensions: buildExtensions(),
+        }),
+        parent: container,
+      });
+    },
+    createEntry({ view, instanceId }) {
+      return {
+        view,
+        instanceId,
+        dioxus: null,
+        suppressChange: false,
+        viewMode: "hybrid",
+        preferences: normalizeEditorPreferences(),
+        blockHints: null,
+      };
+    },
   },
-
-  attachPreviewScroll,
-  navigateOutline,
-  syncOutline,
-  scrollEditorToLine: jumpEditorToLine,
-  scrollPreviewToHeading: jumpPreviewToHeading,
-  renderPreviewMermaid,
+  protocol: {
+    handleRustMessage: handleRustMessageCore,
+    applyFormat: applyFormatToView,
+    refreshEditorLayout,
+    setEditorPreferences: setRuntimePreferences,
+    setBlockHints: setRuntimeBlockHints,
+    setViewMode: setEditorViewMode,
+  },
+  layout: {
+    attachEditorScroll,
+    attachLayoutObserver,
+  },
+  navigation: {
+    attachPreviewScroll,
+    navigateOutline,
+    syncOutline,
+    scrollEditorToLine: jumpEditorToLine,
+    scrollPreviewToHeading: jumpPreviewToHeading,
+    renderPreviewMermaid,
+  },
 });
 
 window.papyroEditor = createPapyroEditorFacade(codeMirrorRuntimeAdapter);
