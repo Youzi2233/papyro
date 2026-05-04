@@ -158,6 +158,7 @@ flowchart TD
 
 - [ ] Hybrid 使用 Tiptap 富文本编辑。
 - [ ] Hybrid 交互设计参考官方 Notion-like template，但保持 local-first、Markdown-first 和 Papyro token 化样式。
+- [x] 增加 Tiptap mode controller，统一 Source、Hybrid、Preview，并让非 Hybrid 模式关闭富文本编辑态。
 - [ ] 增加 Papyro slash command 菜单，用于常见 Markdown block 插入。
 - [ ] 增加 Papyro 浮动格式栏，用于选中文字后的上下文格式操作。
 - [ ] 先封装 Tiptap 下拉、popover、toolbar 和 block action menu primitives，再接高级 block。

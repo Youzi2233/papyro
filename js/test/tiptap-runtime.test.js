@@ -77,6 +77,11 @@ function createRuntimeHarness({
       return this.markdown;
     }
 
+    setEditable(value) {
+      this.editable = value;
+      calls.push(["setEditable", value]);
+    }
+
     destroy() {
       this.destroyed = true;
       calls.push(["destroy"]);
@@ -126,6 +131,7 @@ test("Tiptap runtime creates an editor instance and registry entry", () => {
   assert.deepEqual(calls, [
     ["constructor", "# Note", "markdown", false, true],
     ["mount", "mn-tiptap-runtime", "tab-a"],
+    ["setEditable", true],
   ]);
 });
 
@@ -153,6 +159,8 @@ test("Tiptap runtime reattaches existing editors without rebuilding", () => {
   assert.deepEqual(calls, [
     ["constructor", "# Note", "markdown", false, true],
     ["mount", "mn-tiptap-runtime", "tab-a"],
+    ["setEditable", true],
+    ["setEditable", false],
   ]);
 });
 
@@ -178,6 +186,7 @@ test("Tiptap runtime handles baseline Rust messages", () => {
   assert.equal(registry.get("tab-a").dom.dataset.viewMode, "source");
   assert.deepEqual(calls, [
     ["syncOutline", "tab-a", "hybrid"],
+    ["setEditable", false],
     ["syncOutline", "tab-a", "source"],
     ["setContent", "## Updated", "markdown"],
     ["insertContent", "\n- item", "markdown"],

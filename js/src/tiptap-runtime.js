@@ -3,6 +3,7 @@ import { Markdown } from "@tiptap/markdown";
 
 import { createTiptapRuntimeAdapter } from "./editor-runtime.js";
 import { createMarkdownSyncController } from "./markdown-sync-controller.js";
+import { createTiptapModeController } from "./tiptap-mode-controller.js";
 import {
   createPapyroMarkdownManager,
   createPapyroTiptapExtensions,
@@ -26,14 +27,14 @@ function defaultDocument() {
   return typeof document === "undefined" ? null : document;
 }
 
-function defaultEditorOptions(initialContent, extensions) {
+function defaultEditorOptions(initialContent, extensions, viewMode) {
   return {
     element: null,
     extensions: [...extensions, Markdown],
     content: initialContent ?? "",
     contentType: "markdown",
     injectCSS: false,
-    editable: true,
+    editable: viewMode === "hybrid",
     editorProps: {
       attributes: {
         class: "mn-tiptap-editor",
@@ -42,14 +43,15 @@ function defaultEditorOptions(initialContent, extensions) {
   };
 }
 
-function createEntry({ editor, dom, instanceId, viewMode, markdownSync }) {
+function createEntry({ editor, dom, instanceId, modeController, markdownSync }) {
   return {
     editor,
     dom,
     instanceId,
     dioxus: null,
     suppressChange: false,
-    viewMode: viewMode ?? "hybrid",
+    viewMode: modeController.mode,
+    modeController,
     markdownSync,
   };
 }
@@ -61,6 +63,7 @@ export function createTiptapEditorRuntime({
   extensionsFactory = createPapyroTiptapExtensions,
   markdownManagerFactory = createPapyroMarkdownManager,
   markdownSyncFactory = createMarkdownSyncController,
+  modeControllerFactory = createTiptapModeController,
   navigation,
 } = {}) {
   const runtimeRegistry = requireObject(registry, "registry");
@@ -73,6 +76,10 @@ export function createTiptapEditorRuntime({
     "markdownManagerFactory",
   );
   const createMarkdownSync = requireFunction(markdownSyncFactory, "markdownSyncFactory");
+  const createModeController = requireFunction(
+    modeControllerFactory,
+    "modeControllerFactory",
+  );
 
   const controls = requireObject(navigation, "navigation");
   const attachPreviewScroll = requireFunction(
@@ -105,8 +112,7 @@ export function createTiptapEditorRuntime({
       }
       existing.dom.dataset.tabId = tabId;
       existing.instanceId = instanceId;
-      existing.viewMode = viewMode ?? existing.viewMode ?? "hybrid";
-      existing.dom.dataset.viewMode = existing.viewMode;
+      existing.modeController.apply(existing, viewMode ?? existing.viewMode);
       return existing.editor;
     }
 
@@ -114,7 +120,6 @@ export function createTiptapEditorRuntime({
     if (!root) throw new Error("Unable to create Tiptap editor root");
     root.className = "mn-tiptap-runtime";
     root.dataset.tabId = tabId;
-    root.dataset.viewMode = viewMode ?? "hybrid";
     container.replaceChildren(root);
 
     const extensions = createExtensions();
@@ -123,7 +128,10 @@ export function createTiptapEditorRuntime({
       initialMarkdown: initialContent ?? "",
       manager: markdownManager,
     });
-    const editor = new TiptapEditor(defaultEditorOptions(markdownSync.markdown, extensions));
+    const modeController = createModeController(viewMode);
+    const editor = new TiptapEditor(
+      defaultEditorOptions(markdownSync.markdown, extensions, modeController.mode),
+    );
     if (typeof editor.on === "function") {
       editor.on("update", ({ editor: updatedEditor } = {}) => {
         const targetEditor = updatedEditor ?? editor;
@@ -139,16 +147,15 @@ export function createTiptapEditorRuntime({
     }
     editor.mount?.(root);
 
-    runtimeRegistry.set(
-      tabId,
-      createEntry({
-        editor,
-        dom: root,
-        instanceId,
-        viewMode,
-        markdownSync,
-      }),
-    );
+    const entry = createEntry({
+      editor,
+      dom: root,
+      instanceId,
+      modeController,
+      markdownSync,
+    });
+    modeController.apply(entry, modeController.mode);
+    runtimeRegistry.set(tabId, entry);
 
     return editor;
   }
@@ -169,8 +176,7 @@ export function createTiptapEditorRuntime({
       if (!entry) return;
 
       if (message.type === "set_view_mode") {
-        entry.viewMode = message.mode ?? "hybrid";
-        entry.dom.dataset.viewMode = entry.viewMode;
+        entry.modeController.apply(entry, message.mode);
         syncOutline(tabId, entry.viewMode);
       } else if (message.type === "set_content") {
         const result = entry.markdownSync.setMarkdown(message.content ?? "");
