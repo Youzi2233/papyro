@@ -55,6 +55,8 @@ pub fn DocumentTab(
             class,
             "data-tab-id": "{id}",
             "data-save-status": "{save_status}",
+            onmousedown: move |event| event.stop_propagation(),
+            ondoubleclick: move |event| event.stop_propagation(),
             button {
                 class: "mn-tab-title",
                 "aria-label": "{open_label}",
@@ -91,7 +93,7 @@ pub fn DocumentTab(
                     event.stop_propagation();
                     on_close_keyboard.call(());
                 },
-                "x"
+                span { "aria-hidden": "true" }
             }
         }
     }

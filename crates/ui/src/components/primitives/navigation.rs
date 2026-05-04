@@ -113,6 +113,8 @@ pub fn TreeRenameInput(
             "aria-label": "{label}",
             value: "{value}",
             autofocus: true,
+            onmousedown: move |event| event.stop_propagation(),
+            ondoubleclick: move |event| event.stop_propagation(),
             oninput: move |event| on_input.call(event.value()),
             onblur: move |_| on_blur.call(()),
             onkeydown: move |event| on_keydown.call(event),
@@ -138,6 +140,8 @@ pub fn SidebarSearchButton(
             class,
             disabled,
             title,
+            onmousedown: move |event| event.stop_propagation(),
+            ondoubleclick: move |event| event.stop_propagation(),
             onclick: move |_| on_click.call(()),
             span { class: "mn-sidebar-search-icon", "⌕" }
             span { class: "mn-sidebar-search-label", "{label}" }
@@ -217,6 +221,8 @@ pub fn TreeItemButton(
             "aria-selected": "{selected}",
             "aria-expanded": expanded.map(|value| if value { "true" } else { "false" }),
             draggable: true,
+            onmousedown: move |event| event.stop_propagation(),
+            ondoubleclick: move |event| event.stop_propagation(),
             onclick: move |event| on_click.call(event),
             oncontextmenu: move |event| on_context_menu.call(event),
             ondragstart: move |event| on_drag_start.call(event),
@@ -252,6 +258,8 @@ pub fn TreeItemEditRow(
             role: "treeitem",
             "aria-selected": "{selected}",
             "aria-expanded": expanded.map(|value| if value { "true" } else { "false" }),
+            onmousedown: move |event| event.stop_propagation(),
+            ondoubleclick: move |event| event.stop_propagation(),
             if let Some(expanded) = expanded {
                 span { class: tree_caret_class(expanded), "aria-hidden": "true" }
             }

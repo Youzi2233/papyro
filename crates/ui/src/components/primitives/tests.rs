@@ -2,8 +2,8 @@ use super::buttons::{action_button_class, icon_button_class};
 use super::empty::empty_state_card_class;
 use super::feedback::{inline_alert_class, status_tone_class};
 use super::forms::{
-    color_input_class, dropdown_class, dropdown_id_suffix, dropdown_list_id, dropdown_option_class,
-    dropdown_selected_label, form_field_class, segmented_option_class,
+    color_input_class, dropdown_class, dropdown_option_class, dropdown_selected_label,
+    form_field_class, segmented_option_class,
 };
 use super::layout::{
     app_shell_class, editor_tab_scroll_button_class, editor_tool_button_class,
@@ -272,23 +272,6 @@ fn dropdown_selected_label_uses_matching_option_label() {
     assert_eq!(
         dropdown_selected_label(&options, "missing"),
         "missing".to_string()
-    );
-}
-
-#[test]
-fn dropdown_id_suffix_normalizes_arbitrary_values() {
-    assert_eq!(
-        dropdown_id_suffix("\"Cascadia Code\", monospace"),
-        "cascadia-code---monospace"
-    );
-    assert_eq!(dropdown_id_suffix(""), "value");
-}
-
-#[test]
-fn dropdown_list_id_combines_label_and_value() {
-    assert_eq!(
-        dropdown_list_id("Font family", "\"Cascadia Code\", monospace"),
-        "mn-select-font-family-cascadia-code---monospace"
     );
 }
 

@@ -136,7 +136,12 @@ pub fn EditorToolButton(
             title: "{label}",
             "aria-label": "{label}",
             disabled,
-            onclick: move |_| on_click.call(()),
+            onmousedown: move |event| event.stop_propagation(),
+            ondoubleclick: move |event| event.stop_propagation(),
+            onclick: move |event| {
+                event.stop_propagation();
+                on_click.call(());
+            },
             span { class: "{icon_class}", "aria-hidden": "true" }
         }
     }
@@ -156,7 +161,12 @@ pub fn EditorTabScrollButton(
             class,
             title: "{label}",
             "aria-label": "{label}",
-            onclick: move |_| on_click.call(()),
+            onmousedown: move |event| event.stop_propagation(),
+            ondoubleclick: move |event| event.stop_propagation(),
+            onclick: move |event| {
+                event.stop_propagation();
+                on_click.call(());
+            },
             span { class: "{icon_class}", "aria-hidden": "true" }
         }
     }

@@ -57,6 +57,8 @@ pub fn Button(
         button {
             class,
             disabled,
+            onmousedown: move |event| event.stop_propagation(),
+            ondoubleclick: move |event| event.stop_propagation(),
             onclick: move |_| on_click.call(()),
             "{label}"
         }
@@ -82,6 +84,8 @@ pub fn ActionButton(
             disabled: state.is_disabled(),
             title: title.as_deref(),
             "aria-busy": if is_loading { "true" } else { "false" },
+            onmousedown: move |event| event.stop_propagation(),
+            ondoubleclick: move |event| event.stop_propagation(),
             onclick: move |_| on_click.call(()),
             if let Some(icon_class) = icon_class {
                 span { class: "{icon_class}", "aria-hidden": "true" }
@@ -107,6 +111,8 @@ pub fn RowActionButton(
             class,
             disabled: state.is_disabled(),
             "aria-busy": if is_loading { "true" } else { "false" },
+            onmousedown: move |event| event.stop_propagation(),
+            ondoubleclick: move |event| event.stop_propagation(),
             onclick: move |event| {
                 event.stop_propagation();
                 on_click.call(());
@@ -136,6 +142,8 @@ pub fn IconButton(
                 disabled,
                 "aria-label": "{label}",
                 "aria-pressed": selected.then_some("true"),
+                onmousedown: move |event| event.stop_propagation(),
+                ondoubleclick: move |event| event.stop_propagation(),
                 onclick: move |_| on_click.call(()),
                 if let Some(icon_class) = icon_class {
                     span { class: "{icon_class}", "aria-hidden": "true" }

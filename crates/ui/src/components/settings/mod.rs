@@ -3,9 +3,8 @@ use crate::commands::{
 };
 use crate::components::primitives::{
     ActionButton, Button, ButtonState, ButtonVariant, ColorInput, DialogSection, DropdownOption,
-    Modal, ModalHeader, Select, SettingsContent, SettingsInlineRow, SettingsInlineRowKind,
-    SettingsLayout, SettingsNav, SettingsNavItem, SettingsPanel, SettingsRow, Slider, Switch,
-    TextInput,
+    Modal, Select, SettingsContent, SettingsInlineRow, SettingsInlineRowKind, SettingsLayout,
+    SettingsNav, SettingsNavItem, SettingsPanel, SettingsRow, Slider, Switch, TextInput,
 };
 use crate::context::use_app_context;
 use crate::i18n::{use_i18n, UiText};
@@ -46,13 +45,16 @@ pub fn SettingsModal(on_close: EventHandler<()>) -> Element {
             label: i18n.text("Settings", "设置").to_string(),
             class_name: "mn-modal mn-settings-modal".to_string(),
             on_close,
-            SettingsSurface { on_close }
+            SettingsSurface {
+                on_close,
+                window_chrome: false,
+            }
         }
     }
 }
 
 #[component]
-pub fn SettingsSurface(on_close: EventHandler<()>) -> Element {
+pub fn SettingsSurface(on_close: EventHandler<()>, window_chrome: bool) -> Element {
     let app = use_app_context();
     let i18n = use_i18n();
     let commands = app.commands.clone();
@@ -108,9 +110,12 @@ pub fn SettingsSurface(on_close: EventHandler<()>) -> Element {
     };
 
     rsx! {
-        ModalHeader {
+        SettingsTitleBar {
             title: i18n.text("Settings", "设置").to_string(),
             close_label: i18n.text("Close settings", "关闭设置").to_string(),
+            minimize_label: i18n.text("Minimize settings", "最小化设置").to_string(),
+            maximize_label: i18n.text("Maximize settings", "最大化设置").to_string(),
+            window_chrome,
             on_close,
         }
         div { class: "mn-modal-body mn-settings-body",
@@ -119,13 +124,13 @@ pub fn SettingsSurface(on_close: EventHandler<()>) -> Element {
                     SettingsNavItem {
                             label: i18n.text("General", "通用设置").to_string(),
                             active: active_panel() == SettingsPanelKind::General,
-                            class_name: String::new(),
+                            class_name: "general".to_string(),
                             on_click: move |_| active_panel.set(SettingsPanelKind::General),
                         }
                     SettingsNavItem {
                             label: i18n.text("About Papyro", "关于 Papyro").to_string(),
                             active: active_panel() == SettingsPanelKind::About,
-                            class_name: String::new(),
+                            class_name: "about".to_string(),
                             on_click: move |_| active_panel.set(SettingsPanelKind::About),
                         }
                 }
@@ -151,19 +156,41 @@ pub fn SettingsSurface(on_close: EventHandler<()>) -> Element {
                                             },
                                         }
                                     }
-                                    SettingsRow {
-                                        label: i18n.text("Theme", "主题").to_string(),
-                                        description: None::<String>,
-                                        class_name: String::new(),
-                                        Select {
-                                            label: i18n.text("Theme", "主题").to_string(),
-                                            options: theme_options,
-                                            selected: theme_value(&theme()).to_string(),
-                                            on_change: move |value: String| {
-                                                if let Some(next_theme) = theme_from_value(&value) {
-                                                    theme.set(next_theme);
-                                                }
-                                            },
+                                    div { class: "mn-theme-preference",
+                                        div { class: "mn-setting-label",
+                                            span { {i18n.text("Theme", "主题")} }
+                                        }
+                                        div { class: "mn-theme-card-group",
+                                            ThemeChoiceCard {
+                                                label: i18n.text("Light", "浅色主题").to_string(),
+                                                selected: theme() == Theme::Light,
+                                                class_name: "light".to_string(),
+                                                on_select: move |_| theme.set(Theme::Light),
+                                            }
+                                            ThemeChoiceCard {
+                                                label: i18n.text("Dark", "深色主题").to_string(),
+                                                selected: theme() == Theme::Dark,
+                                                class_name: "dark".to_string(),
+                                                on_select: move |_| theme.set(Theme::Dark),
+                                            }
+                                            ThemeChoiceCard {
+                                                label: i18n.text("System", "跟随系统").to_string(),
+                                                selected: theme() == Theme::System,
+                                                class_name: "system".to_string(),
+                                                on_select: move |_| theme.set(Theme::System),
+                                            }
+                                        }
+                                        div { class: "mn-theme-advanced",
+                                            Select {
+                                                label: i18n.text("More themes", "更多主题").to_string(),
+                                                options: theme_options,
+                                                selected: theme_value(&theme()).to_string(),
+                                                on_change: move |value: String| {
+                                                    if let Some(next_theme) = theme_from_value(&value) {
+                                                        theme.set(next_theme);
+                                                    }
+                                                },
+                                            }
                                         }
                                     }
                                 }
@@ -344,6 +371,129 @@ pub fn SettingsSurface(on_close: EventHandler<()>) -> Element {
                 on_click: save,
             }
         }
+    }
+}
+
+#[component]
+fn SettingsTitleBar(
+    title: String,
+    close_label: String,
+    minimize_label: String,
+    maximize_label: String,
+    window_chrome: bool,
+    on_close: EventHandler<()>,
+) -> Element {
+    rsx! {
+        div {
+            class: if window_chrome { "mn-modal-header mn-settings-titlebar window" } else { "mn-modal-header mn-settings-titlebar" },
+            onmousedown: move |_| {
+                if window_chrome {
+                    drag_settings_window();
+                }
+            },
+            ondoubleclick: move |_| {
+                if window_chrome {
+                    toggle_settings_window_maximized();
+                }
+            },
+            h2 { class: "mn-modal-title", "{title}" }
+            if window_chrome {
+                div {
+                    class: "mn-window-controls mn-settings-window-controls",
+                    onmousedown: move |event| event.stop_propagation(),
+                    ondoubleclick: move |event| event.stop_propagation(),
+                    button {
+                        class: "mn-window-control minimize",
+                        r#type: "button",
+                        "aria-label": "{minimize_label}",
+                        onclick: move |event| {
+                            event.stop_propagation();
+                            minimize_settings_window();
+                        },
+                        span { "aria-hidden": "true" }
+                    }
+                    button {
+                        class: "mn-window-control maximize",
+                        r#type: "button",
+                        "aria-label": "{maximize_label}",
+                        onclick: move |event| {
+                            event.stop_propagation();
+                            toggle_settings_window_maximized();
+                        },
+                        span { "aria-hidden": "true" }
+                    }
+                    button {
+                        class: "mn-window-control close",
+                        r#type: "button",
+                        "aria-label": "{close_label}",
+                        onclick: move |event| {
+                            event.stop_propagation();
+                            on_close.call(());
+                        },
+                        span { "aria-hidden": "true" }
+                    }
+                }
+            } else {
+                button {
+                    class: "mn-modal-close",
+                    r#type: "button",
+                    "aria-label": "{close_label}",
+                    onclick: move |_| on_close.call(()),
+                    "x"
+                }
+            }
+        }
+    }
+}
+
+#[component]
+fn ThemeChoiceCard(
+    label: String,
+    selected: bool,
+    class_name: String,
+    on_select: EventHandler<()>,
+) -> Element {
+    let class = if selected {
+        format!("mn-theme-choice active {class_name}")
+    } else {
+        format!("mn-theme-choice {class_name}")
+    };
+
+    rsx! {
+        button {
+            class,
+            r#type: "button",
+            "aria-pressed": if selected { "true" } else { "false" },
+            onclick: move |_| on_select.call(()),
+            span { class: "mn-theme-choice-radio", "aria-hidden": "true" }
+            span { class: "mn-theme-choice-preview", "aria-hidden": "true",
+                span { class: "mn-theme-choice-bar" }
+                span { class: "mn-theme-choice-line one" }
+                span { class: "mn-theme-choice-line two" }
+            }
+            span { class: "mn-theme-choice-label", "{label}" }
+        }
+    }
+}
+
+fn drag_settings_window() {
+    #[cfg(feature = "desktop-shell")]
+    {
+        dioxus::desktop::window().drag();
+    }
+}
+
+fn minimize_settings_window() {
+    #[cfg(feature = "desktop-shell")]
+    {
+        dioxus::desktop::window().set_minimized(true);
+    }
+}
+
+fn toggle_settings_window_maximized() {
+    #[cfg(feature = "desktop-shell")]
+    {
+        dioxus::desktop::window().toggle_maximized();
     }
 }
 

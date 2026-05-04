@@ -76,6 +76,7 @@ fn RecoveryDraftRow(
             metadata: "DRAFT".to_string(),
             is_active: false,
             kind: ResultRowKind::Default,
+            data_search_active_index: None::<String>,
             on_select: move |_| {
                 row_commands.compare_recovery_draft.call(row_compare_note_id.clone());
             },

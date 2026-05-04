@@ -16,6 +16,8 @@ pub fn Menu(label: String, class_name: String, style: String, children: Element)
             role: "menu",
             "aria-label": "{label}",
             style,
+            onmousedown: move |event| event.stop_propagation(),
+            ondoubleclick: move |event| event.stop_propagation(),
             onclick: move |event| event.stop_propagation(),
             oncontextmenu: move |event| {
                 event.prevent_default();
@@ -45,6 +47,8 @@ pub fn MenuItem(label: String, danger: bool, on_select: EventHandler<()>) -> Ele
             class: menu_item_class(danger),
             r#type: "button",
             role: "menuitem",
+            onmousedown: move |event| event.stop_propagation(),
+            ondoubleclick: move |event| event.stop_propagation(),
             onclick: move |_| on_select.call(()),
             "{label}"
         }

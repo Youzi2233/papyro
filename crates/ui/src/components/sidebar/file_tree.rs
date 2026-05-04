@@ -168,6 +168,8 @@ pub fn FileTree(sort_mode: FileTreeSortMode) -> Element {
             if let Some(menu) = context_menu() {
                 div {
                     class: "mn-tree-context-dismiss",
+                    onmousedown: move |event| event.stop_propagation(),
+                    ondoubleclick: move |event| event.stop_propagation(),
                     onclick: move |_| context_menu.set(None),
                     oncontextmenu: move |event| {
                         event.prevent_default();

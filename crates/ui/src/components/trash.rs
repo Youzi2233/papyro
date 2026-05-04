@@ -86,6 +86,7 @@ fn TrashNoteRow(note: TrashedNoteListItem, commands: AppCommands) -> Element {
             metadata: "TRASH".to_string(),
             is_active: false,
             kind: ResultRowKind::Default,
+            data_search_active_index: None::<String>,
             on_select: move |_| row_commands.restore_trashed_note.call(row_target.clone()),
             span { class: "mn-command-title", "{note.title}" }
             span { class: "mn-command-path", "{note.relative_path.display()}" }

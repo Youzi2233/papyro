@@ -2,7 +2,7 @@ use crate::runtime::{
     use_app_runtime_with_shared_services, AppShell, RuntimeOptions, RuntimeSharedServices,
 };
 use crate::state::{DocumentWindowRequest, RuntimeState};
-use dioxus::desktop::tao::dpi::LogicalSize;
+use dioxus::desktop::tao::dpi::{LogicalPosition, LogicalSize, PhysicalPosition};
 use dioxus::desktop::tao::event::{Event, WindowEvent};
 use dioxus::desktop::tao::window::Icon;
 use dioxus::desktop::{window, Config, DesktopContext, WindowBuilder, WindowCloseBehaviour};
@@ -28,6 +28,8 @@ const TOOL_WINDOW_FAVICON: &str = "/assets/favicon.ico";
 const TOOL_WINDOW_LOGO_SRC: &str = "/assets/logo.png";
 const TOOL_WINDOW_EDITOR_JS_SRC: &str = "/assets/editor.js";
 const PAPYRO_WINDOW_ICON: &[u8] = include_bytes!("../../../assets/logo.png");
+const SETTINGS_WINDOW_WIDTH: f64 = 980.0;
+const SETTINGS_WINDOW_HEIGHT: f64 = 720.0;
 
 #[derive(Clone)]
 struct SettingsToolWindowProps {
@@ -86,7 +88,9 @@ pub(crate) fn use_settings_window_launcher(
                 return;
             }
 
+            let parent_window = window();
             if let Some(existing_window) = settings_window.borrow().context.as_ref() {
+                center_settings_window_over_parent(&parent_window, existing_window);
                 existing_window.set_visible(true);
                 existing_window.set_focus();
                 return;
@@ -104,8 +108,12 @@ pub(crate) fn use_settings_window_launcher(
                 process_settings: process_settings.clone(),
             };
             let settings = app_context.ui_state.read().settings.clone();
-            let config = settings_tool_window_config(&settings.theme, settings.language);
-            let pending = window().new_window(
+            let config = settings_tool_window_config(
+                &settings.theme,
+                settings.language,
+                centered_settings_window_position(&parent_window),
+            );
+            let pending = parent_window.new_window(
                 VirtualDom::new_with_props(SettingsToolWindowRoot, props),
                 config,
             );
@@ -257,6 +265,7 @@ fn SettingsToolWindowRoot(props: SettingsToolWindowProps) -> Element {
             papyro_ui::theme::ThemeDomEffect {}
             papyro_ui::components::settings::SettingsSurface {
                 on_close: close_settings,
+                window_chrome: true,
             }
         }
     }
@@ -327,14 +336,27 @@ fn DocumentToolWindowRoot(props: DocumentToolWindowProps) -> Element {
     }
 }
 
-fn settings_tool_window_config(theme: &Theme, language: AppLanguage) -> Config {
+fn settings_tool_window_config(
+    theme: &Theme,
+    language: AppLanguage,
+    position: Option<LogicalPosition<f64>>,
+) -> Config {
     let window = WindowBuilder::new()
         .with_title(settings_window_title(language))
-        .with_inner_size(LogicalSize::new(980.0, 720.0))
+        .with_inner_size(LogicalSize::new(
+            SETTINGS_WINDOW_WIDTH,
+            SETTINGS_WINDOW_HEIGHT,
+        ))
         .with_min_inner_size(LogicalSize::new(720.0, 560.0))
+        .with_decorations(false)
         .with_visible(false)
         .with_window_icon(settings_window_icon())
         .with_always_on_top(false);
+    let window = if let Some(position) = position {
+        window.with_position(position)
+    } else {
+        window
+    };
 
     Config::new()
         .with_menu(None)
@@ -343,6 +365,37 @@ fn settings_tool_window_config(theme: &Theme, language: AppLanguage) -> Config {
         .with_exits_when_last_window_closes(false)
         .with_background_color(settings_window_background(theme))
         .with_custom_head(settings_tool_window_head(theme, language))
+}
+
+fn centered_settings_window_position(parent: &DesktopContext) -> Option<LogicalPosition<f64>> {
+    let parent_position = parent.outer_position().ok()?;
+    let parent_size = parent.outer_size();
+    let scale_factor = parent.scale_factor();
+    Some(center_child_window_position(
+        parent_position,
+        parent_size.to_logical(scale_factor),
+        LogicalSize::new(SETTINGS_WINDOW_WIDTH, SETTINGS_WINDOW_HEIGHT),
+        scale_factor,
+    ))
+}
+
+fn center_settings_window_over_parent(parent: &DesktopContext, settings_window: &DesktopContext) {
+    if let Some(position) = centered_settings_window_position(parent) {
+        settings_window.set_outer_position(position);
+    }
+}
+
+fn center_child_window_position(
+    parent_position: PhysicalPosition<i32>,
+    parent_size: LogicalSize<f64>,
+    child_size: LogicalSize<f64>,
+    scale_factor: f64,
+) -> LogicalPosition<f64> {
+    let parent_position = parent_position.to_logical::<f64>(scale_factor);
+    LogicalPosition::new(
+        parent_position.x + (parent_size.width - child_size.width) / 2.0,
+        parent_position.y + (parent_size.height - child_size.height) / 2.0,
+    )
 }
 
 fn document_tool_window_config(path: &Path) -> Config {
@@ -501,6 +554,19 @@ mod tests {
             "Papyro Settings"
         );
         assert_eq!(settings_window_title(AppLanguage::Chinese), "Papyro 设置");
+    }
+
+    #[test]
+    fn settings_tool_window_position_centers_over_parent() {
+        assert_eq!(
+            center_child_window_position(
+                PhysicalPosition::new(200, 100),
+                LogicalSize::new(1440.0, 920.0),
+                LogicalSize::new(980.0, 720.0),
+                1.0,
+            ),
+            LogicalPosition::new(430.0, 200.0)
+        );
     }
 
     #[test]

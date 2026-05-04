@@ -42,6 +42,14 @@ pub(super) fn segmented_option_class(
         .extend_when(class_name, disabled, PrimitiveState::Disabled.class())
 }
 
+pub(super) fn dropdown_selected_label(options: &[DropdownOption], selected: &str) -> String {
+    options
+        .iter()
+        .find(|option| option.value == selected)
+        .map(|option| option.label.clone())
+        .unwrap_or_else(|| selected.to_string())
+}
+
 pub(super) fn dropdown_class(is_open: bool) -> String {
     ClassBuilder::new("mn-select")
         .state_when(is_open, PrimitiveState::Open)
@@ -52,43 +60,6 @@ pub(super) fn dropdown_option_class(is_selected: bool) -> String {
     ClassBuilder::new("mn-select-option")
         .state_when(is_selected, PrimitiveState::Active)
         .extend("")
-}
-
-pub(super) fn dropdown_selected_label(options: &[DropdownOption], selected: &str) -> String {
-    options
-        .iter()
-        .find(|option| option.value == selected)
-        .map(|option| option.label.clone())
-        .unwrap_or_else(|| selected.to_string())
-}
-
-pub(super) fn dropdown_id_suffix(value: &str) -> String {
-    let suffix = value
-        .chars()
-        .map(|ch| {
-            if ch.is_ascii_alphanumeric() {
-                ch.to_ascii_lowercase()
-            } else {
-                '-'
-            }
-        })
-        .collect::<String>()
-        .trim_matches('-')
-        .to_string();
-
-    if suffix.is_empty() {
-        "value".to_string()
-    } else {
-        suffix
-    }
-}
-
-pub(super) fn dropdown_list_id(label: &str, selected: &str) -> String {
-    format!(
-        "mn-select-{}-{}",
-        dropdown_id_suffix(label),
-        dropdown_id_suffix(selected)
-    )
 }
 
 pub(super) fn form_field_class(class_name: &str) -> String {
@@ -132,6 +103,8 @@ pub fn SegmentedControl(
             class: "{class}",
             role: "radiogroup",
             "aria-label": "{label}",
+            onmousedown: move |event| event.stop_propagation(),
+            ondoubleclick: move |event| event.stop_propagation(),
             for option in options {
                 button {
                     class: segmented_option_class(
@@ -161,30 +134,55 @@ pub fn Dropdown(
     selected: String,
     on_change: EventHandler<String>,
 ) -> Element {
-    let mut is_open = use_signal(|| false);
     let selected_label = dropdown_selected_label(&options, &selected);
-    let list_id = dropdown_list_id(&label, &selected);
+    let mut is_open = use_signal(|| false);
 
     rsx! {
         div {
             class: dropdown_class(is_open()),
+            tabindex: "0",
+            role: "combobox",
+            "aria-label": "{label}",
+            "aria-expanded": if is_open() { "true" } else { "false" },
+            onmousedown: move |event| event.stop_propagation(),
+            ondoubleclick: move |event| event.stop_propagation(),
+            onblur: move |_| is_open.set(false),
+            onkeydown: move |event| match event.key() {
+                Key::Escape => is_open.set(false),
+                Key::Enter => {
+                    event.prevent_default();
+                    is_open.toggle();
+                }
+                Key::Character(ref value) if value == " " => {
+                    event.prevent_default();
+                    is_open.toggle();
+                }
+                _ => {}
+            },
             button {
                 class: "mn-select-trigger",
                 r#type: "button",
-                "aria-label": "{label}",
-                "aria-haspopup": "listbox",
-                "aria-expanded": if is_open() { "true" } else { "false" },
-                "aria-controls": "{list_id}",
-                onclick: move |_| is_open.set(!is_open()),
+                onclick: move |event| {
+                    event.stop_propagation();
+                    is_open.toggle();
+                },
                 span { class: "mn-select-value", "{selected_label}" }
-                span { class: "mn-select-caret", "aria-hidden": "true" }
+                span { class: "mn-select-caret" }
             }
             if is_open() {
+                button {
+                    class: "mn-select-dismiss-layer",
+                    r#type: "button",
+                    tabindex: "-1",
+                    "aria-label": "Close select menu",
+                    onclick: move |event| {
+                        event.stop_propagation();
+                        is_open.set(false);
+                    },
+                }
                 div {
-                    id: "{list_id}",
-                    class: "mn-select-list",
+                    class: "mn-select-menu",
                     role: "listbox",
-                    "aria-label": "{label}",
                     for option in options {
                         button {
                             class: dropdown_option_class(option.value == selected),
@@ -193,12 +191,16 @@ pub fn Dropdown(
                             "aria-selected": if option.value == selected { "true" } else { "false" },
                             onclick: {
                                 let value = option.value.clone();
-                                move |_| {
+                                move |event| {
+                                    event.stop_propagation();
                                     on_change.call(value.clone());
                                     is_open.set(false);
                                 }
                             },
-                            "{option.label}"
+                            span { class: "mn-select-option-label", "{option.label}" }
+                            if option.value == selected {
+                                span { class: "mn-select-option-check", "aria-hidden": "true" }
+                            }
                         }
                     }
                 }
@@ -316,6 +318,8 @@ pub fn TextInput(
             autofocus,
             placeholder: "{placeholder}",
             value: "{value}",
+            onmousedown: move |event| event.stop_propagation(),
+            ondoubleclick: move |event| event.stop_propagation(),
             oninput: move |event| on_input.call(event.value()),
             onkeydown: move |event| on_keydown.call(event),
         }

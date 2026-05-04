@@ -11,7 +11,7 @@ use crate::components::{
     },
     quick_open::QuickOpenModal,
     settings::SettingsModal,
-    sidebar::{FileTree, FileTreeSortMode, TreeSortControl},
+    sidebar::{FileTree, FileTreeSortMode},
     status_bar::StatusBar,
     trash::TrashModal,
 };
@@ -40,7 +40,6 @@ pub fn MobileLayout() -> Element {
     let mut show_rename = use_signal(|| false);
     let mut create_name = use_signal(String::new);
     let mut rename_name = use_signal(String::new);
-    let mut tree_sort = use_signal(FileTreeSortMode::default);
 
     let theme = (app.theme)();
     let sidebar_collapsed = (app.sidebar_collapsed)();
@@ -273,12 +272,7 @@ pub fn MobileLayout() -> Element {
                             }
                         }
 
-                        TreeSortControl {
-                            selected: tree_sort(),
-                            on_change: move |mode| tree_sort.set(mode),
-                        }
-
-                        FileTree { sort_mode: tree_sort() }
+                        FileTree { sort_mode: FileTreeSortMode::Name }
                     }
                 }
 

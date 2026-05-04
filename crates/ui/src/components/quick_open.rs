@@ -121,6 +121,7 @@ fn QuickOpenRow(
             metadata: "MD".to_string(),
             is_active,
             kind: ResultRowKind::Default,
+            data_search_active_index: None::<String>,
             on_select: move |_| {
                 open_quick_item(commands.clone(), on_close, item_for_click.clone());
             },

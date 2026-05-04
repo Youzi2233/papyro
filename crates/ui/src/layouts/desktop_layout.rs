@@ -4,7 +4,6 @@ use crate::components::{
     primitives::{AppShell, MainColumn, Workbench},
     quick_open::QuickOpenModal,
     recovery::{RecoveryDraftCompareModal, RecoveryDraftsModal},
-    search::SearchModal,
     settings::SettingsModal,
     sidebar::Sidebar,
     status_bar::StatusBar,
@@ -23,11 +22,13 @@ pub fn DesktopLayout() -> Element {
     let mut show_settings = use_signal(|| false);
     let mut show_quick_open = use_signal(|| false);
     let mut show_command_palette = use_signal(|| false);
-    let mut show_search = use_signal(|| false);
     let show_trash = use_signal(|| false);
     let settings_window_launcher = try_use_context::<SettingsWindowLauncher>();
     let sidebar_settings_launcher = settings_window_launcher.clone();
     let editor_settings_launcher = settings_window_launcher.clone();
+    let shortcut_commands = commands.clone();
+    let sidebar_search_commands = commands.clone();
+    let sidebar_collapsed_for_shortcut = app.sidebar_collapsed;
 
     let sidebar_collapsed = (app.sidebar_collapsed)();
 
@@ -93,7 +94,7 @@ pub fn DesktopLayout() -> Element {
         "#,
         );
 
-        let shortcut_commands = commands.clone();
+        let shortcut_commands = shortcut_commands.clone();
         spawn(async move {
             while let Ok(message) = eval.recv::<String>().await {
                 let Some(action) = desktop_shortcut_action(&message) else {
@@ -111,9 +112,10 @@ pub fn DesktopLayout() -> Element {
                         trace_chrome_open_modal("command_palette", "shortcut", started_at);
                     }
                     DesktopShortcutAction::WorkspaceSearch => {
-                        let started_at = perf_timer();
-                        show_search.set(true);
-                        trace_chrome_open_modal("workspace_search", "shortcut", started_at);
+                        focus_sidebar_search(
+                            shortcut_commands.clone(),
+                            sidebar_collapsed_for_shortcut(),
+                        );
                     }
                     DesktopShortcutAction::SaveActiveNote => {
                         shortcut_commands.save_active_note.call(())
@@ -136,9 +138,10 @@ pub fn DesktopLayout() -> Element {
                 if !sidebar_collapsed {
                     Sidebar {
                         on_search: move |_| {
-                            let started_at = perf_timer();
-                            show_search.set(true);
-                            trace_chrome_open_modal("workspace_search", "sidebar", started_at);
+                            focus_sidebar_search(
+                                sidebar_search_commands.clone(),
+                                sidebar_collapsed,
+                            );
                         },
                         on_settings: move |_| {
                             let started_at = perf_timer();
@@ -180,7 +183,6 @@ pub fn DesktopLayout() -> Element {
                 show_settings,
                 show_quick_open,
                 show_command_palette,
-                show_search,
                 show_trash,
                 settings_window_launcher,
             }
@@ -217,7 +219,6 @@ fn DesktopModalLayer(
     mut show_settings: Signal<bool>,
     mut show_quick_open: Signal<bool>,
     mut show_command_palette: Signal<bool>,
-    mut show_search: Signal<bool>,
     mut show_trash: Signal<bool>,
     settings_window_launcher: Option<SettingsWindowLauncher>,
 ) -> Element {
@@ -258,12 +259,20 @@ fn DesktopModalLayer(
                 on_trash: move |_| show_trash.set(true),
             }
         }
-        if *show_search.read() {
-            SearchModal { on_close: move |_| show_search.set(false) }
-        }
         if *show_trash.read() {
             TrashModal { on_close: move |_| show_trash.set(false) }
         }
+    }
+}
+
+fn focus_sidebar_search(commands: crate::commands::AppCommands, sidebar_collapsed: bool) {
+    if sidebar_collapsed {
+        crate::chrome::toggle_sidebar(commands, "workspace_search");
+        document::eval(
+            r#"setTimeout(() => document.getElementById("mn-sidebar-search-input")?.focus(), 80);"#,
+        );
+    } else {
+        document::eval(r#"document.getElementById("mn-sidebar-search-input")?.focus();"#);
     }
 }
 

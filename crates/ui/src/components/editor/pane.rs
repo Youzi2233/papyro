@@ -6,12 +6,11 @@ use super::preview::{PreviewLinkBridge, PreviewPane};
 use super::tabbar::EditorTabButton;
 use crate::commands::AppCommands;
 use crate::components::primitives::{
-    Button, ButtonVariant, EditorTabScrollButton, EditorToolButton, EditorToolbar, EmptyRecentItem,
-    EmptyStateCopy, EmptyStateSurface, InlineOverflow, SegmentedControl, SegmentedControlOption,
-    ToolbarZone, ToolbarZoneKind,
+    Button, ButtonVariant, EditorTabScrollButton, EditorToolButton, EmptyRecentItem,
+    EmptyStateCopy, EmptyStateSurface, InlineOverflow, ToolbarZone, ToolbarZoneKind,
 };
 use crate::context::use_app_context;
-use crate::i18n::{i18n_for, use_i18n, UiText};
+use crate::i18n::{use_i18n, UiText};
 use crate::perf::{
     perf_timer, trace_editor_host_lifecycle, trace_editor_pane_render_prep,
     trace_editor_stale_bridge_cleanup,
@@ -20,7 +19,7 @@ use crate::view_model::{
     EditorHostItemViewModel, EditorSurfaceViewModel, EditorTabItemViewModel, WorkspaceViewModel,
 };
 use dioxus::prelude::*;
-use papyro_core::models::{AppLanguage, Theme, ViewMode};
+use papyro_core::models::{Theme, ViewMode};
 use papyro_core::DocumentSnapshot;
 use papyro_editor::parser::{
     analyze_markdown_block_snapshot_with_options, MarkdownBlockAnalysisOptions,
@@ -120,10 +119,6 @@ fn editor_style(typography: &EditorTypography) -> String {
     )
 }
 
-fn editor_view_modes() -> [ViewMode; 3] {
-    [ViewMode::Source, ViewMode::Hybrid, ViewMode::Preview]
-}
-
 fn code_highlight_theme(theme: &Theme) -> CodeHighlightTheme {
     if theme.is_dark() {
         CodeHighlightTheme::Dark
@@ -132,34 +127,12 @@ fn code_highlight_theme(theme: &Theme) -> CodeHighlightTheme {
     }
 }
 
-fn view_mode_label(language: AppLanguage, mode: &ViewMode) -> &'static str {
-    i18n_for(language).view_mode_label(mode)
-}
-
-fn view_mode_value(mode: &ViewMode) -> &'static str {
-    match mode {
-        ViewMode::Source => "source",
-        ViewMode::Hybrid => "hybrid",
-        ViewMode::Preview => "preview",
+fn theme_value(theme: &Theme) -> &'static str {
+    if theme.is_dark() {
+        "dark"
+    } else {
+        "light"
     }
-}
-
-fn view_mode_from_value(value: &str) -> Option<ViewMode> {
-    match value {
-        "source" => Some(ViewMode::Source),
-        "hybrid" => Some(ViewMode::Hybrid),
-        "preview" => Some(ViewMode::Preview),
-        _ => None,
-    }
-}
-
-fn view_mode_options(language: AppLanguage) -> Vec<SegmentedControlOption> {
-    editor_view_modes()
-        .into_iter()
-        .map(|mode| {
-            SegmentedControlOption::new(view_mode_label(language, &mode), view_mode_value(&mode))
-        })
-        .collect()
 }
 
 fn sidebar_toggle_label(i18n: UiText, collapsed: bool) -> &'static str {
@@ -182,6 +155,27 @@ fn scroll_editor_tabs(delta: i32) {
     document::eval(&format!(
         r#"document.querySelector(".mn-tabbar")?.scrollBy({{ left: {delta}, behavior: "smooth" }});"#
     ));
+}
+
+fn minimize_app_window() {
+    #[cfg(feature = "desktop-shell")]
+    {
+        dioxus::desktop::window().set_minimized(true);
+    }
+}
+
+fn toggle_maximized_app_window() {
+    #[cfg(feature = "desktop-shell")]
+    {
+        dioxus::desktop::window().toggle_maximized();
+    }
+}
+
+fn close_app_window() {
+    #[cfg(feature = "desktop-shell")]
+    {
+        dioxus::desktop::window().close();
+    }
 }
 
 #[component]
@@ -211,8 +205,9 @@ pub fn EditorPane(
     let workspace_model = app.workspace_model;
     let surface_model = app.editor_surface_model.read().clone();
     let view_mode = surface_model.view_mode.clone();
+    let theme = (app.theme)();
     let highlight_theme = if view_mode == ViewMode::Preview {
-        code_highlight_theme(&(app.theme)())
+        code_highlight_theme(&theme)
     } else {
         CodeHighlightTheme::Light
     };
@@ -350,9 +345,11 @@ pub fn EditorPane(
                 tab_items: pane.tab_items.clone(),
                 has_active_tab: pane.has_active_tab,
                 view_mode: view_mode.clone(),
+                theme,
                 outline_visible,
                 sidebar_collapsed,
                 commands: commands.clone(),
+                on_settings,
             }
             if pane.has_active_tab {
                 section { class: "mn-document",
@@ -436,90 +433,328 @@ fn EditorChrome(
     tab_items: Vec<EditorTabItemViewModel>,
     has_active_tab: bool,
     view_mode: ViewMode,
+    theme: Theme,
     outline_visible: bool,
     sidebar_collapsed: bool,
     commands: AppCommands,
+    on_settings: EventHandler<()>,
 ) -> Element {
     let i18n = use_i18n();
     let sidebar_commands = commands.clone();
-    let outline_commands = commands.clone();
-    let mode_commands = commands.clone();
+    let outline_tool_commands = commands.clone();
+    let theme_commands = commands.clone();
     let sidebar_label = sidebar_toggle_label(i18n, sidebar_collapsed);
     let sidebar_icon_class = sidebar_toggle_icon_class(sidebar_collapsed);
-    let view_mode_options = view_mode_options(i18n.language());
     let outline_label = if outline_visible {
         i18n.text("Hide outline", "隐藏大纲")
     } else {
         i18n.text("Show outline", "显示大纲")
     };
+    let active_tab_id = tab_items
+        .iter()
+        .find(|item| item.is_active)
+        .map(|item| item.id.clone());
+    let can_insert = has_active_tab && view_mode.is_editable();
 
     rsx! {
-        EditorToolbar { class_name: String::new(),
-            ToolbarZone { kind: ToolbarZoneKind::Flexible, class_name: String::new(),
-                EditorToolButton {
-                    label: sidebar_label.to_string(),
-                    class_name: "mn-editor-sidebar-toggle".to_string(),
-                    icon_class: sidebar_icon_class.to_string(),
-                    disabled: false,
-                    selected: false,
-                    on_click: move |_| {
-                        crate::chrome::toggle_sidebar(sidebar_commands.clone(), "editor");
-                    },
-                }
-                EditorTabScrollButton {
-                    label: i18n.text("Scroll tabs left", "向左滚动标签").to_string(),
-                    icon_class: "mn-tool-icon tab-left".to_string(),
-                    class_name: String::new(),
-                    on_click: move |_| scroll_editor_tabs(-220),
-                }
-                InlineOverflow { class_name: "mn-tabbar".to_string(),
-                    if tab_items.is_empty() {
-                        span { class: "mn-tabbar-placeholder", {i18n.text("No open note", "没有打开的笔记")} }
-                    } else {
-                        for item in tab_items.iter().cloned() {
-                            EditorTabButton {
-                                key: "{item.id}",
-                                item,
+        div { class: "mn-editor-chrome-shell",
+            div {
+                class: "mn-editor-chrome mn-sticky-toolbar mn-editor-titlebar",
+                onmousedown: crate::chrome::drag_window_on_primary_mouse_down,
+                ondoubleclick: move |_| toggle_maximized_app_window(),
+                ToolbarZone { kind: ToolbarZoneKind::Flexible, class_name: String::new(),
+                    if sidebar_collapsed {
+                        EditorToolButton {
+                            label: sidebar_label.to_string(),
+                            class_name: "mn-editor-sidebar-toggle".to_string(),
+                            icon_class: sidebar_icon_class.to_string(),
+                            disabled: false,
+                            selected: false,
+                            on_click: move |_| {
+                                crate::chrome::toggle_sidebar(sidebar_commands.clone(), "editor");
+                            },
+                        }
+                    }
+                    EditorTabScrollButton {
+                        label: i18n.text("Scroll tabs left", "向左滚动标签").to_string(),
+                        icon_class: "mn-tool-icon tab-left".to_string(),
+                        class_name: String::new(),
+                        on_click: move |_| scroll_editor_tabs(-220),
+                    }
+                    InlineOverflow { class_name: "mn-tabbar".to_string(),
+                        if tab_items.is_empty() {
+                            span { class: "mn-tabbar-placeholder", {i18n.text("No open note", "没有打开的笔记")} }
+                        } else {
+                            for item in tab_items.iter().cloned() {
+                                EditorTabButton {
+                                    key: "{item.id}",
+                                    item,
+                                }
                             }
                         }
                     }
-                }
-                EditorTabScrollButton {
-                    label: i18n.text("Scroll tabs right", "向右滚动标签").to_string(),
-                    icon_class: "mn-tool-icon tab-right".to_string(),
-                    class_name: String::new(),
-                    on_click: move |_| scroll_editor_tabs(220),
-                }
-            }
-            ToolbarZone { kind: ToolbarZoneKind::Fixed, class_name: String::new(),
-                SegmentedControl {
-                    label: i18n.text("Editor view mode", "编辑器视图模式").to_string(),
-                    options: view_mode_options,
-                    selected: view_mode_value(&view_mode).to_string(),
-                    class_name: "mn-view-mode-switch".to_string(),
-                    option_class_name: "mn-view-mode-option".to_string(),
-                    disabled: !has_active_tab,
-                    on_change: move |value: String| {
-                        if let Some(mode) = view_mode_from_value(&value) {
-                            crate::chrome::set_view_mode(
-                                mode_commands.clone(),
-                                mode,
-                                "editor_chrome",
-                            );
-                        }
+                    EditorTabScrollButton {
+                        label: i18n.text("Scroll tabs right", "向右滚动标签").to_string(),
+                        icon_class: "mn-tool-icon tab-right".to_string(),
+                        class_name: String::new(),
+                        on_click: move |_| scroll_editor_tabs(220),
                     }
                 }
-                EditorToolButton {
-                    label: outline_label.to_string(),
-                    class_name: "mn-editor-outline-toggle".to_string(),
-                    icon_class: "mn-tool-icon outline".to_string(),
-                    disabled: !has_active_tab,
-                    selected: outline_visible,
-                    on_click: move |_| outline_commands.toggle_outline.call(()),
+                ToolbarZone { kind: ToolbarZoneKind::Fixed, class_name: String::new(),
+                    ThemeSwitch {
+                        label: i18n.text("Theme", "主题").to_string(),
+                        selected: theme_value(&theme).to_string(),
+                        on_change: move |value: String| {
+                            if value != theme_value(&theme) {
+                                crate::chrome::toggle_theme(theme_commands.clone());
+                            }
+                        },
+                    }
+                    EditorToolButton {
+                        label: i18n.text("Settings", "设置").to_string(),
+                        class_name: "mn-editor-settings-button".to_string(),
+                        icon_class: "mn-tool-icon settings".to_string(),
+                        disabled: false,
+                        selected: false,
+                        on_click: move |_| on_settings.call(()),
+                    }
+                    WindowControls {}
+                }
+            }
+            div { class: "mn-markdown-toolbar",
+                div { class: "mn-markdown-tools-left",
+                    MarkdownToolButton {
+                        label: i18n.text("Heading", "标题").to_string(),
+                        icon_class: "mn-tool-icon heading".to_string(),
+                        disabled: !can_insert,
+                        commands: commands.clone(),
+                        active_tab_id: active_tab_id.clone(),
+                        template: TEMPLATE_HEADING,
+                    }
+                    MarkdownToolButton {
+                        label: i18n.text("Bold", "加粗").to_string(),
+                        icon_class: "mn-tool-icon bold".to_string(),
+                        disabled: !can_insert,
+                        commands: commands.clone(),
+                        active_tab_id: active_tab_id.clone(),
+                        template: TEMPLATE_BOLD,
+                    }
+                    MarkdownToolButton {
+                        label: i18n.text("Italic", "斜体").to_string(),
+                        icon_class: "mn-tool-icon italic".to_string(),
+                        disabled: !can_insert,
+                        commands: commands.clone(),
+                        active_tab_id: active_tab_id.clone(),
+                        template: TEMPLATE_ITALIC,
+                    }
+                    MarkdownToolButton {
+                        label: i18n.text("Quote", "引用").to_string(),
+                        icon_class: "mn-tool-icon quote".to_string(),
+                        disabled: !can_insert,
+                        commands: commands.clone(),
+                        active_tab_id: active_tab_id.clone(),
+                        template: TEMPLATE_QUOTE,
+                    }
+                    MarkdownToolButton {
+                        label: i18n.text("Code", "代码").to_string(),
+                        icon_class: "mn-tool-icon code".to_string(),
+                        disabled: !can_insert,
+                        commands: commands.clone(),
+                        active_tab_id: active_tab_id.clone(),
+                        template: TEMPLATE_CODE,
+                    }
+                    MarkdownToolButton {
+                        label: i18n.text("Link", "链接").to_string(),
+                        icon_class: "mn-tool-icon link".to_string(),
+                        disabled: !can_insert,
+                        commands: commands.clone(),
+                        active_tab_id: active_tab_id.clone(),
+                        template: TEMPLATE_LINK,
+                    }
+                    MarkdownToolButton {
+                        label: i18n.text("List", "列表").to_string(),
+                        icon_class: "mn-tool-icon list".to_string(),
+                        disabled: !can_insert,
+                        commands: commands.clone(),
+                        active_tab_id: active_tab_id.clone(),
+                        template: TEMPLATE_LIST,
+                    }
+                    MarkdownToolButton {
+                        label: i18n.text("Task list", "任务列表").to_string(),
+                        icon_class: "mn-tool-icon task".to_string(),
+                        disabled: !can_insert,
+                        commands: commands.clone(),
+                        active_tab_id: active_tab_id.clone(),
+                        template: TEMPLATE_TASK,
+                    }
+                    MarkdownToolButton {
+                        label: i18n.text("Table", "表格").to_string(),
+                        icon_class: "mn-tool-icon table".to_string(),
+                        disabled: !can_insert,
+                        commands: commands.clone(),
+                        active_tab_id: active_tab_id.clone(),
+                        template: TEMPLATE_TABLE,
+                    }
+                }
+                div { class: "mn-markdown-tools-right",
+                    EditorToolButton {
+                        label: outline_label.to_string(),
+                        class_name: "mn-editor-outline-toggle".to_string(),
+                        icon_class: "mn-tool-icon outline".to_string(),
+                        disabled: !has_active_tab,
+                        selected: outline_visible,
+                        on_click: move |_| outline_tool_commands.toggle_outline.call(()),
+                    }
                 }
             }
         }
     }
+}
+
+#[component]
+fn ThemeSwitch(label: String, selected: String, on_change: EventHandler<String>) -> Element {
+    rsx! {
+        div {
+            class: "mn-theme-switch",
+            role: "radiogroup",
+            "aria-label": "{label}",
+            onmousedown: move |event| event.stop_propagation(),
+            ondoubleclick: move |event| event.stop_propagation(),
+            ThemeSwitchOption {
+                label: "Light theme".to_string(),
+                value: "light".to_string(),
+                icon_class: "mn-tool-icon sun".to_string(),
+                selected: selected == "light",
+                on_change,
+            }
+            ThemeSwitchOption {
+                label: "Dark theme".to_string(),
+                value: "dark".to_string(),
+                icon_class: "mn-tool-icon moon".to_string(),
+                selected: selected == "dark",
+                on_change,
+            }
+        }
+    }
+}
+
+#[component]
+fn ThemeSwitchOption(
+    label: String,
+    value: String,
+    icon_class: String,
+    selected: bool,
+    on_change: EventHandler<String>,
+) -> Element {
+    rsx! {
+        button {
+            class: if selected { "mn-theme-switch-option active" } else { "mn-theme-switch-option" },
+            r#type: "button",
+            role: "radio",
+            "aria-label": "{label}",
+            "aria-checked": if selected { "true" } else { "false" },
+            onmousedown: move |event| event.stop_propagation(),
+            ondoubleclick: move |event| event.stop_propagation(),
+            onclick: move |event| {
+                event.stop_propagation();
+                on_change.call(value.clone());
+            },
+            span { class: "{icon_class}", "aria-hidden": "true" }
+        }
+    }
+}
+
+#[component]
+fn MarkdownToolButton(
+    label: String,
+    icon_class: String,
+    disabled: bool,
+    commands: AppCommands,
+    active_tab_id: Option<String>,
+    template: &'static str,
+) -> Element {
+    rsx! {
+        button {
+            class: "mn-markdown-tool",
+            r#type: "button",
+            title: "{label}",
+            "aria-label": "{label}",
+            disabled,
+            onclick: move |_| {
+                if let Some(tab_id) = active_tab_id.clone() {
+                    insert_markdown_template(commands.clone(), tab_id, template);
+                }
+            },
+            span { class: "{icon_class}", "aria-hidden": "true" }
+        }
+    }
+}
+
+#[component]
+fn WindowControls() -> Element {
+    let i18n = use_i18n();
+
+    rsx! {
+        div {
+            class: "mn-window-controls",
+            onmousedown: move |event| event.stop_propagation(),
+            ondoubleclick: move |event| event.stop_propagation(),
+            button {
+                class: "mn-window-control minimize",
+                r#type: "button",
+                "aria-label": i18n.text("Minimize window", "最小化窗口"),
+                onclick: move |_| minimize_app_window(),
+                span { "aria-hidden": "true" }
+            }
+            button {
+                class: "mn-window-control maximize",
+                r#type: "button",
+                "aria-label": i18n.text("Maximize window", "最大化窗口"),
+                onclick: move |_| toggle_maximized_app_window(),
+                span { "aria-hidden": "true" }
+            }
+            button {
+                class: "mn-window-control close",
+                r#type: "button",
+                "aria-label": i18n.text("Close window", "关闭窗口"),
+                onclick: move |_| close_app_window(),
+                span { "aria-hidden": "true" }
+            }
+        }
+    }
+}
+
+fn insert_markdown_template(commands: AppCommands, tab_id: String, template: &str) {
+    let (markdown, cursor_offset) = markdown_insert_template(template);
+    commands
+        .insert_markdown
+        .call(crate::commands::InsertMarkdownRequest {
+            tab_id,
+            markdown,
+            cursor_offset,
+        });
+}
+
+const INSERT_CURSOR_MARKER: &str = "{|cursor|}";
+const TEMPLATE_HEADING: &str = "## {|cursor|}";
+const TEMPLATE_BOLD: &str = "**{|cursor|}**";
+const TEMPLATE_ITALIC: &str = "*{|cursor|}*";
+const TEMPLATE_QUOTE: &str = "\n> {|cursor|}";
+const TEMPLATE_CODE: &str = "`{|cursor|}`";
+const TEMPLATE_LINK: &str = "[{|cursor|}](https://)";
+const TEMPLATE_LIST: &str = "\n- {|cursor|}";
+const TEMPLATE_TASK: &str = "\n- [ ] {|cursor|}";
+const TEMPLATE_TABLE: &str = "\n| Column | Column |\n| --- | --- |\n| {|cursor|} |  |\n";
+
+fn markdown_insert_template(template: &str) -> (String, Option<usize>) {
+    let Some(cursor_offset) = template.find(INSERT_CURSOR_MARKER) else {
+        return (template.to_string(), None);
+    };
+
+    let mut markdown = String::with_capacity(template.len() - INSERT_CURSOR_MARKER.len());
+    markdown.push_str(&template[..cursor_offset]);
+    markdown.push_str(&template[cursor_offset + INSERT_CURSOR_MARKER.len()..]);
+    (markdown, Some(cursor_offset))
 }
 
 #[component]
@@ -538,7 +773,11 @@ fn EditorEmptyState(commands: AppCommands, workspace: WorkspaceViewModel) -> Ele
                 if has_workspace {
                     EmptyStateCopy {
                         title: i18n.text("Open a note", "打开一篇笔记").to_string(),
-                        description: i18n.text("Pick a Markdown file from the sidebar or start a new note.", "从侧边栏选择 Markdown 文件，或新建一篇笔记。").to_string(),
+                        description: i18n.text(
+                            "Pick a Markdown file from the sidebar or start a new note.",
+                            "从侧边栏选择 Markdown 文件，或新建一篇笔记。",
+                        )
+                        .to_string(),
                     }
                     div { class: "mn-empty-actions",
                         Button {
@@ -557,7 +796,11 @@ fn EditorEmptyState(commands: AppCommands, workspace: WorkspaceViewModel) -> Ele
                 } else {
                     EmptyStateCopy {
                         title: i18n.text("Choose a workspace", "选择工作区").to_string(),
-                        description: i18n.text("Open a folder of Markdown notes to begin.", "打开一个 Markdown 笔记目录即可开始。").to_string(),
+                        description: i18n.text(
+                            "Open a folder of Markdown notes to begin.",
+                            "打开一个 Markdown 笔记目录即可开始。",
+                        )
+                        .to_string(),
                     }
                     Button {
                         label: i18n.text("Open workspace", "打开工作区").to_string(),
@@ -742,6 +985,8 @@ fn host_runtime_auto_link_paste(is_active: bool, auto_link_paste: bool) -> bool 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::i18n::i18n_for;
+    use papyro_core::models::AppLanguage;
     use papyro_editor::parser::MarkdownBlockFallback;
 
     fn host_item(tab_id: &str, is_active: bool) -> EditorHostItemViewModel {
@@ -786,33 +1031,23 @@ mod tests {
     }
 
     #[test]
-    fn editor_chrome_view_mode_helpers_keep_visible_labels() {
-        assert_eq!(editor_view_modes().len(), 3);
+    fn editor_chrome_markdown_template_tracks_cursor_offset() {
         assert_eq!(
-            view_mode_label(AppLanguage::English, &ViewMode::Source),
-            "Source"
+            markdown_insert_template("**{|cursor|}**"),
+            ("****".to_string(), Some(2))
         );
         assert_eq!(
-            view_mode_label(AppLanguage::English, &ViewMode::Hybrid),
-            "Hybrid"
+            markdown_insert_template("plain"),
+            ("plain".to_string(), None)
         );
-        assert_eq!(
-            view_mode_label(AppLanguage::Chinese, &ViewMode::Preview),
-            "预览"
-        );
-        assert_eq!(
-            view_mode_options(AppLanguage::English)
-                .into_iter()
-                .map(|option| (option.label, option.value))
-                .collect::<Vec<_>>(),
-            vec![
-                ("Source".to_string(), "source".to_string()),
-                ("Hybrid".to_string(), "hybrid".to_string()),
-                ("Preview".to_string(), "preview".to_string()),
-            ]
-        );
-        assert_eq!(view_mode_from_value("hybrid"), Some(ViewMode::Hybrid));
-        assert_eq!(view_mode_from_value("missing"), None);
+    }
+
+    #[test]
+    fn editor_chrome_theme_value_groups_light_and_dark_themes() {
+        assert_eq!(theme_value(&Theme::Light), "light");
+        assert_eq!(theme_value(&Theme::WarmReading), "light");
+        assert_eq!(theme_value(&Theme::Dark), "dark");
+        assert_eq!(theme_value(&Theme::HighContrast), "dark");
     }
 
     #[test]

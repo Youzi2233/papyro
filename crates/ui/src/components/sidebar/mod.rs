@@ -1,14 +1,15 @@
 pub mod file_tree;
 
-use crate::commands::FileTarget;
+use crate::commands::{FileTarget, OpenMarkdownTarget};
 use crate::components::primitives::{
     ActionButton, Button, ButtonState, ButtonVariant, ContextMenu, IconButton, MenuItem,
-    ResizeRail, SegmentedControl, SegmentedControlOption, SidebarItem, SidebarSearchButton,
-    TextInput,
+    ResizeRail, SidebarSearchButton, TextInput,
 };
+use crate::components::search::SearchResultsPanel;
 use crate::context::use_app_context;
 use crate::i18n::use_i18n;
 use crate::perf::{perf_timer, trace_sidebar_resize};
+use crate::view_model::{SearchResultRowViewModel, WorkspaceSearchViewModel};
 use dioxus::prelude::*;
 use std::path::Path;
 use std::time::Instant;
@@ -17,6 +18,26 @@ pub use file_tree::{FileTree, FileTreeSortMode};
 
 const SIDEBAR_MIN_WIDTH: u32 = 240;
 const SIDEBAR_MAX_WIDTH: u32 = 380;
+const SIDEBAR_SEARCH_DISMISS_SCRIPT: &str = r#"
+const previous = window.__papyroSidebarSearchDismiss;
+if (previous) {
+    document.removeEventListener("pointerdown", previous, true);
+}
+
+const handler = (event) => {
+    const target = event.target;
+    const element = target instanceof Element ? target : target?.parentElement;
+    if (element?.closest?.(".mn-sidebar-search-shell")) {
+        return;
+    }
+
+    dioxus.send("close");
+};
+
+window.__papyroSidebarSearchDismiss = handler;
+document.addEventListener("pointerdown", handler, true);
+await new Promise(() => {});
+"#;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 struct SidebarResizeDrag {
@@ -49,6 +70,8 @@ impl SidebarContextMenuPosition {
 
 #[component]
 pub fn Sidebar(on_search: EventHandler<()>, on_settings: EventHandler<()>) -> Element {
+    let _ = on_settings;
+    let _ = on_search;
     let app = use_app_context();
     let i18n = use_i18n();
     let commands = app.commands;
@@ -56,15 +79,17 @@ pub fn Sidebar(on_search: EventHandler<()>, on_settings: EventHandler<()>) -> El
         try_use_context::<String>().unwrap_or_else(|| "/assets/logo.png".to_string());
     let sidebar_model = app.sidebar_model.read().clone();
     let resize_commands = commands.clone();
-    let theme_commands = commands.clone();
+    let collapse_commands = commands.clone();
+    let workspace_switch_commands = commands.clone();
     let workspace_path_text = sidebar_workspace_path_text(sidebar_model.path.as_deref(), i18n);
 
     let mut create_name = use_signal(String::new);
     let mut show_create = use_signal(|| false);
-    let mut tree_sort = use_signal(FileTreeSortMode::default);
     let mut resize_drag = use_signal(|| None::<SidebarResizeDrag>);
     let mut resize_preview_width = use_signal(|| None::<u32>);
     let mut workspace_menu = use_signal(|| None::<SidebarWorkspaceMenu>);
+    let mut search_focused = use_signal(|| false);
+    let search_active_index = use_signal(|| 0usize);
 
     let configured_sidebar_width = (app.sidebar_width)();
     let sidebar_width = resize_preview_width().unwrap_or(configured_sidebar_width);
@@ -73,7 +98,26 @@ pub fn Sidebar(on_search: EventHandler<()>, on_settings: EventHandler<()>) -> El
     } else {
         "mn-sidebar"
     };
+    let workspace_root_path = sidebar_model.path.clone();
+    let workspace_root_selected = sidebar_model.root_selected;
+    let workspace_root_target_name = sidebar_model
+        .name
+        .clone()
+        .unwrap_or_else(|| workspace_path_text.clone());
     let has_workspace = sidebar_model.name.is_some();
+    let workspace_name = i18n.text("Workspace", "工作区").to_string();
+    let workspace_switch_label = if has_workspace {
+        i18n.text("Switch workspace", "切换工作区")
+    } else {
+        i18n.text("Open workspace", "打开工作区")
+    };
+    let workspace_card_class = if workspace_root_selected {
+        "mn-sidebar-workspace-card active"
+    } else if has_workspace {
+        "mn-sidebar-workspace-card"
+    } else {
+        "mn-sidebar-workspace-card empty"
+    };
     let create_action_label = if show_create() {
         i18n.text("Cancel", "取消")
     } else {
@@ -84,116 +128,135 @@ pub fn Sidebar(on_search: EventHandler<()>, on_settings: EventHandler<()>) -> El
     } else {
         "mn-button-icon note"
     };
-    let workspace_root_path = sidebar_model.path.clone();
-    let workspace_root_selected = sidebar_model.root_selected;
-    let workspace_root_target_name = sidebar_model
-        .name
-        .clone()
-        .unwrap_or_else(|| workspace_path_text.clone());
-    let workspace_action_label = if has_workspace {
-        i18n.text("Switch", "切换")
-    } else {
-        i18n.text("Open workspace", "打开工作区")
-    };
     let search_title = if has_workspace {
         i18n.text("Search workspace", "搜索工作区")
     } else {
         i18n.text("Open a workspace to search", "打开工作区后即可搜索")
     };
 
+    let workspace_search_model = app.workspace_search_model.read().clone();
+    let search_query = workspace_search_model.query.clone();
+    let search_results = workspace_search_model.results.clone();
+    let search_has_content = !search_query.trim().is_empty()
+        || workspace_search_model.is_loading
+        || workspace_search_model.error.is_some();
+    let search_open = has_workspace && search_focused() && search_has_content;
+    let search_active = if search_results.is_empty() {
+        0
+    } else {
+        search_active_index().min(search_results.len() - 1)
+    };
+
     rsx! {
         aside {
             class: "{sidebar_class}",
             style: format!("width: {}px", sidebar_width),
-            onclick: move |_| workspace_menu.set(None),
+            onclick: move |_| {
+                workspace_menu.set(None);
+                search_focused.set(false);
+            },
 
             div { class: "mn-sidebar-header",
                 div { class: "mn-sidebar-brand",
+                    onmousedown: crate::chrome::drag_window_on_primary_mouse_down,
                     img {
                         class: "mn-sidebar-brand-logo",
                         src: brand_logo_src,
                         alt: "Papyro logo",
                     }
                     div { class: "mn-sidebar-brand-copy",
-                        p { class: "mn-sidebar-brand-title", "papyro" }
+                        p { class: "mn-sidebar-brand-title", "Papyro" }
                     }
                     div { class: "mn-sidebar-brand-actions",
                         IconButton {
-                            label: i18n.text("Toggle theme", "切换主题").to_string(),
+                            label: i18n.text("Collapse sidebar", "收起侧边栏").to_string(),
                             icon: String::new(),
-                            icon_class: Some("mn-tool-icon theme".to_string()),
+                            icon_class: Some("mn-tool-icon sidebar-open".to_string()),
                             class_name: "mn-sidebar-icon-btn".to_string(),
                             disabled: false,
                             selected: false,
                             danger: false,
                             on_click: move |_| {
-                                crate::chrome::toggle_theme(theme_commands.clone());
+                                crate::chrome::toggle_sidebar(collapse_commands.clone(), "sidebar");
                             },
                         }
-                        IconButton {
-                            label: i18n.text("Settings", "设置").to_string(),
-                            icon: String::new(),
-                            icon_class: Some("mn-tool-icon settings".to_string()),
-                            class_name: "mn-sidebar-icon-btn".to_string(),
-                            disabled: false,
-                            selected: false,
-                            danger: false,
-                            on_click: move |_| on_settings.call(()),
-                        }
                     }
+                }
+                SidebarInlineSearch {
+                    title: search_title.to_string(),
+                    has_workspace,
+                    query: search_query.clone(),
+                    results: search_results.clone(),
+                    model: workspace_search_model.clone(),
+                    active_index: search_active,
+                    is_open: search_open,
+                    search_focused,
+                    search_active_index,
                 }
                 SidebarSearchButton {
                     label: i18n.text("Search notes", "搜索笔记").to_string(),
                     title: search_title.to_string(),
                     shortcut: "Ctrl Shift F".to_string(),
-                    class_name: String::new(),
+                    class_name: "legacy-hidden".to_string(),
                     disabled: !has_workspace,
                     on_click: move |_| on_search.call(()),
                 }
-                if let Some(root_path) = workspace_root_path.clone() {
-                    SidebarItem {
-                        label: i18n.text("Folder", "目录").to_string(),
-                        value: workspace_path_text.clone(),
-                        title: i18n.text(
-                            "Use the workspace root for new notes and folders",
-                            "将工作区根目录作为新建笔记和文件夹的位置",
-                        ).to_string(),
-                        selected: workspace_root_selected,
-                        class_name: String::new(),
-                        on_click: Some(EventHandler::new({
-                            let commands = commands.clone();
-                            let root_path = root_path.clone();
-                            move |_event: MouseEvent| {
-                                commands.select_path.call(root_path.clone());
-                            }
-                        })),
-                        on_context_menu: Some(EventHandler::new({
-                            let commands = commands.clone();
-                            let root_path = root_path.clone();
-                            let target_name = workspace_root_target_name.clone();
-                            move |event: MouseEvent| {
-                                event.prevent_default();
-                                event.stop_propagation();
-                                commands.select_path.call(root_path.clone());
-                                workspace_menu.set(Some(SidebarWorkspaceMenu {
-                                    position: SidebarContextMenuPosition::from_event(&event),
-                                    target: FileTarget {
-                                        path: root_path.clone(),
-                                        name: target_name.clone(),
-                                    },
-                                }));
-                            }
-                        })),
+                div { class: "{workspace_card_class}",
+                    if let Some(root_path) = workspace_root_path.clone() {
+                        button {
+                            class: "mn-sidebar-workspace-main",
+                            r#type: "button",
+                            title: i18n.text(
+                                "Use the workspace root for new notes and folders",
+                                "将工作区根目录作为新建笔记和文件夹的位置",
+                            ),
+                            "aria-pressed": if workspace_root_selected { "true" } else { "false" },
+                            onmousedown: move |event| event.stop_propagation(),
+                            onclick: {
+                                let commands = commands.clone();
+                                let root_path = root_path.clone();
+                                move |_| commands.select_path.call(root_path.clone())
+                            },
+                            oncontextmenu: {
+                                let commands = commands.clone();
+                                let root_path = root_path.clone();
+                                let target_name = workspace_root_target_name.clone();
+                                move |event: MouseEvent| {
+                                    event.prevent_default();
+                                    event.stop_propagation();
+                                    commands.select_path.call(root_path.clone());
+                                    workspace_menu.set(Some(SidebarWorkspaceMenu {
+                                        position: SidebarContextMenuPosition::from_event(&event),
+                                        target: FileTarget {
+                                            path: root_path.clone(),
+                                            name: target_name.clone(),
+                                        },
+                                    }));
+                                }
+                            },
+                            span { class: "mn-sidebar-workspace-name", "{workspace_name}" }
+                            span { class: "mn-sidebar-workspace-path", "{workspace_path_text}" }
+                        }
+                    } else {
+                        div {
+                            class: "mn-sidebar-workspace-main",
+                            title: workspace_path_text.clone(),
+                            onmousedown: move |event| event.stop_propagation(),
+                            span { class: "mn-sidebar-workspace-name", "{workspace_name}" }
+                            span { class: "mn-sidebar-workspace-path", "{workspace_path_text}" }
+                        }
                     }
-                } else {
-                    SidebarItem {
-                        label: i18n.text("Folder", "目录").to_string(),
-                        value: workspace_path_text.clone(),
-                        title: workspace_path_text.clone(),
-                        selected: false,
-                        class_name: String::new(),
-                        on_click: None::<EventHandler<MouseEvent>>,
-                        on_context_menu: None::<EventHandler<MouseEvent>>,
+                    button {
+                        class: "mn-sidebar-workspace-switch",
+                        r#type: "button",
+                        title: workspace_switch_label,
+                        "aria-label": workspace_switch_label,
+                        onmousedown: move |event| event.stop_propagation(),
+                        onclick: move |event| {
+                            event.stop_propagation();
+                            workspace_switch_commands.open_workspace.call(());
+                        },
+                        span { class: "mn-button-icon workspace", "aria-hidden": "true" }
                     }
                 }
 
@@ -231,14 +294,10 @@ pub fn Sidebar(on_search: EventHandler<()>, on_settings: EventHandler<()>) -> El
                 }
             }
 
-            TreeSortControl {
-                selected: tree_sort(),
-                on_change: move |mode| tree_sort.set(mode),
-            }
-
-            FileTree { sort_mode: tree_sort() }
+            FileTree { sort_mode: FileTreeSortMode::Name }
 
             div { class: "mn-sidebar-footer",
+                onmousedown: move |event| event.stop_propagation(),
                 ActionButton {
                     label: create_action_label.to_string(),
                     variant: ButtonVariant::Primary,
@@ -249,26 +308,6 @@ pub fn Sidebar(on_search: EventHandler<()>, on_settings: EventHandler<()>) -> El
                     on_click: move |_| {
                         show_create.set(!show_create());
                     },
-                }
-                div { class: "mn-sidebar-footer-tools",
-                    ActionButton {
-                        label: i18n.text("Refresh", "刷新").to_string(),
-                        variant: ButtonVariant::Default,
-                        state: if has_workspace { ButtonState::Enabled } else { ButtonState::Disabled },
-                        icon_class: Some("mn-button-icon refresh".to_string()),
-                        title: None::<String>,
-                        class_name: String::new(),
-                        on_click: move |_| commands.refresh_workspace.call(()),
-                    }
-                    ActionButton {
-                        label: workspace_action_label.to_string(),
-                        variant: ButtonVariant::Default,
-                        state: ButtonState::Enabled,
-                        icon_class: Some("mn-button-icon workspace".to_string()),
-                        title: None::<String>,
-                        class_name: String::new(),
-                        on_click: move |_| commands.open_workspace.call(()),
-                    }
                 }
             }
 
@@ -326,31 +365,125 @@ pub fn Sidebar(on_search: EventHandler<()>, on_settings: EventHandler<()>) -> El
 }
 
 #[component]
-pub fn TreeSortControl(
-    selected: FileTreeSortMode,
-    on_change: EventHandler<FileTreeSortMode>,
+fn SidebarInlineSearch(
+    title: String,
+    has_workspace: bool,
+    query: String,
+    results: Vec<SearchResultRowViewModel>,
+    model: WorkspaceSearchViewModel,
+    active_index: usize,
+    is_open: bool,
+    mut search_focused: Signal<bool>,
+    mut search_active_index: Signal<usize>,
 ) -> Element {
+    let app = use_app_context();
     let i18n = use_i18n();
-    let options = FileTreeSortMode::all()
-        .into_iter()
-        .map(|mode| SegmentedControlOption::new(sort_mode_label(mode, i18n), sort_mode_value(mode)))
-        .collect::<Vec<_>>();
+    let commands = app.commands;
+    let results_for_keys = results.clone();
+
+    use_effect(move || {
+        let mut eval = document::eval(SIDEBAR_SEARCH_DISMISS_SCRIPT);
+
+        spawn(async move {
+            while eval.recv::<String>().await.is_ok() {
+                search_focused.set(false);
+            }
+        });
+    });
 
     rsx! {
-        SegmentedControl {
-            label: i18n.text("File tree sort", "文件树排序").to_string(),
-            options,
-            selected: sort_mode_value(selected).to_string(),
-            class_name: "mn-tree-sortbar".to_string(),
-            option_class_name: "mn-tree-sort-btn".to_string(),
-            disabled: false,
-            on_change: move |value: String| {
-                if let Some(mode) = sort_mode_from_value(&value) {
-                    on_change.call(mode);
+        div {
+            class: if is_open { "mn-sidebar-search-shell open" } else { "mn-sidebar-search-shell" },
+            onmousedown: move |event| event.stop_propagation(),
+            ondoubleclick: move |event| event.stop_propagation(),
+            onclick: move |event| event.stop_propagation(),
+            span { class: "mn-sidebar-search-icon", "⌕" }
+            input {
+                id: "mn-sidebar-search-input",
+                class: "mn-sidebar-search-input",
+                r#type: "text",
+                disabled: !has_workspace,
+                title,
+                "aria-label": i18n.text("Search notes", "搜索笔记"),
+                placeholder: i18n.text("Search notes", "搜索笔记"),
+                value: "{query}",
+                onfocus: move |_| search_focused.set(true),
+                oninput: move |event| {
+                    search_active_index.set(0);
+                    search_focused.set(true);
+                    commands.search_workspace.call(event.value());
+                },
+                onkeydown: move |event: KeyboardEvent| {
+                    match event.key() {
+                        Key::Escape => {
+                            event.prevent_default();
+                            search_focused.set(false);
+                        }
+                        Key::ArrowDown => {
+                            event.prevent_default();
+                            if !results_for_keys.is_empty() {
+                                search_active_index.set((search_active_index() + 1).min(results_for_keys.len() - 1));
+                            }
+                        }
+                        Key::ArrowUp => {
+                            event.prevent_default();
+                            search_active_index.set(search_active_index().saturating_sub(1));
+                        }
+                        Key::Enter => {
+                            event.prevent_default();
+                            if let Some(result) = results_for_keys.get(active_index).cloned() {
+                                open_sidebar_search_result(commands.clone(), result, search_focused);
+                            }
+                        }
+                        _ => {}
+                    }
+                },
+            }
+            span { class: "mn-sidebar-search-shortcut", "Ctrl Shift F" }
+            if is_open {
+                SidebarSearchPopover {
+                    model,
+                    active_index,
+                    on_close: move |_| search_focused.set(false),
                 }
-            },
+            }
         }
     }
+}
+
+#[component]
+fn SidebarSearchPopover(
+    model: WorkspaceSearchViewModel,
+    active_index: usize,
+    on_close: EventHandler<()>,
+) -> Element {
+    rsx! {
+        div {
+            class: "mn-sidebar-search-popover",
+            onmousedown: move |event| event.stop_propagation(),
+            onclick: move |event| event.stop_propagation(),
+            SearchResultsPanel {
+                query: model.query,
+                results: model.results,
+                is_loading: model.is_loading,
+                error: model.error,
+                active_index,
+                class_name: "mn-sidebar-search-results".to_string(),
+                on_close,
+            }
+        }
+    }
+}
+
+fn open_sidebar_search_result(
+    commands: crate::commands::AppCommands,
+    result: SearchResultRowViewModel,
+    mut search_focused: Signal<bool>,
+) {
+    commands
+        .open_markdown
+        .call(OpenMarkdownTarget { path: result.path });
+    search_focused.set(false);
 }
 
 #[component]
@@ -406,31 +539,6 @@ fn sidebar_width_from_drag(drag: SidebarResizeDrag, current_x: f64) -> u32 {
     clamp_sidebar_width(drag.start_width as f64 + current_x - drag.start_x)
 }
 
-fn sort_mode_label(mode: FileTreeSortMode, i18n: crate::i18n::UiText) -> &'static str {
-    match mode {
-        FileTreeSortMode::Name => i18n.text("Name", "名称"),
-        FileTreeSortMode::Updated => i18n.text("Updated", "更新"),
-        FileTreeSortMode::Created => i18n.text("Created", "创建"),
-    }
-}
-
-fn sort_mode_value(mode: FileTreeSortMode) -> &'static str {
-    match mode {
-        FileTreeSortMode::Name => "name",
-        FileTreeSortMode::Updated => "updated",
-        FileTreeSortMode::Created => "created",
-    }
-}
-
-fn sort_mode_from_value(value: &str) -> Option<FileTreeSortMode> {
-    match value {
-        "name" => Some(FileTreeSortMode::Name),
-        "updated" => Some(FileTreeSortMode::Updated),
-        "created" => Some(FileTreeSortMode::Created),
-        _ => None,
-    }
-}
-
 fn clamp_sidebar_width(width: f64) -> u32 {
     width
         .round()
@@ -484,22 +592,5 @@ mod tests {
             ),
             "Open a folder to start"
         );
-    }
-
-    #[test]
-    fn sort_mode_values_round_trip() {
-        assert_eq!(sort_mode_value(FileTreeSortMode::Name), "name");
-        assert_eq!(sort_mode_value(FileTreeSortMode::Updated), "updated");
-        assert_eq!(sort_mode_value(FileTreeSortMode::Created), "created");
-        assert_eq!(sort_mode_from_value("name"), Some(FileTreeSortMode::Name));
-        assert_eq!(
-            sort_mode_from_value("updated"),
-            Some(FileTreeSortMode::Updated)
-        );
-        assert_eq!(
-            sort_mode_from_value("created"),
-            Some(FileTreeSortMode::Created)
-        );
-        assert_eq!(sort_mode_from_value("missing"), None);
     }
 }

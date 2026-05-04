@@ -24,16 +24,23 @@ pub fn ResultRow(
     metadata: String,
     is_active: bool,
     kind: ResultRowKind,
+    data_search_active_index: Option<String>,
     on_select: EventHandler<()>,
     children: Element,
 ) -> Element {
+    let metadata = metadata.trim().to_string();
+    let has_metadata = !metadata.is_empty();
+
     rsx! {
         button {
             class: result_row_class(kind, is_active),
             "aria-label": "{label}",
+            "data-search-active-index": data_search_active_index,
             onclick: move |_| on_select.call(()),
             span { class: "mn-command-row-main", {children} }
-            span { class: "mn-command-kind", "{metadata}" }
+            if has_metadata {
+                span { class: "mn-command-kind", "{metadata}" }
+            }
         }
     }
 }

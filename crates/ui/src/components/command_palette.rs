@@ -187,6 +187,7 @@ fn CommandPaletteRow(
             metadata: action.group.clone(),
             is_active,
             kind: ResultRowKind::Default,
+            data_search_active_index: None::<String>,
             on_select: move |_| {
                 execute_command_action(
                     commands.clone(),
