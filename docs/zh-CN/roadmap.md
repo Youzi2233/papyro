@@ -196,7 +196,7 @@ flowchart LR
 - [ ] 把 JS 编辑器 runtime 拆出稳定 facade、registry 和 adapter 契约。
 - [ ] 默认保持 CodeMirror adapter，无行为变化地通过现有测试。
 - [x] 安装并接入 Tiptap 基础依赖。
-- [ ] 在 feature flag 或 runtime selector 后面实现 Tiptap adapter 原型。
+- [x] 在 feature flag 或 runtime selector 后面实现 Tiptap adapter 原型。
 - [x] 支持基础 Markdown round-trip：段落、标题、列表、引用、粗体、斜体、行内代码、代码块、链接。
 - [ ] 重新定义 Source/Hybrid/Preview 模式契约：Hybrid 用 Tiptap，Preview 继续 Rust 渲染，Source 保持源码可编辑。
 - [ ] 增加 Notion-like 但 Papyro 原生的 slash command、浮动格式栏、块插入和响应式编辑器 toolbar primitives。

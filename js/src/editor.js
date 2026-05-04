@@ -24,6 +24,8 @@ import { createCodeMirrorEditorRuntime } from "./codemirror-runtime.js";
 import { editorTheme, markdownHighlightStyle } from "./editor-theme.js";
 import { createEditorRuntimeRegistry } from "./editor-registry.js";
 import { createPapyroEditorFacade } from "./editor-runtime.js";
+import { selectEditorRuntimeAdapter } from "./editor-runtime-selector.js";
+import { createTiptapEditorRuntime } from "./tiptap-runtime.js";
 
 import {
   activeOutlineHeadingIndex,
@@ -2082,4 +2084,24 @@ const codeMirrorRuntimeAdapter = createCodeMirrorEditorRuntime({
   },
 });
 
-window.papyroEditor = createPapyroEditorFacade(codeMirrorRuntimeAdapter);
+const tiptapRuntimeAdapter = createTiptapEditorRuntime({
+  registry: editorRegistry,
+  navigation: {
+    attachPreviewScroll,
+    navigateOutline,
+    syncOutline,
+    scrollEditorToLine: jumpEditorToLine,
+    scrollPreviewToHeading: jumpPreviewToHeading,
+    renderPreviewMermaid,
+  },
+});
+
+const editorRuntimeAdapter = selectEditorRuntimeAdapter({
+  requestedKind: window?.PAPYRO_EDITOR_RUNTIME,
+  adapters: {
+    codemirror: codeMirrorRuntimeAdapter,
+    tiptap: tiptapRuntimeAdapter,
+  },
+});
+
+window.papyroEditor = createPapyroEditorFacade(editorRuntimeAdapter);

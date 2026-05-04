@@ -38,6 +38,14 @@ export function createCodeMirrorRuntimeAdapter(adapter) {
   });
 }
 
+export function createTiptapRuntimeAdapter(adapter) {
+  const runtime = assertEditorRuntimeAdapter(adapter);
+  return Object.freeze({
+    ...runtime,
+    kind: "tiptap",
+  });
+}
+
 export function createPapyroEditorFacade(adapter) {
   const runtime = assertEditorRuntimeAdapter(adapter);
 

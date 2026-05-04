@@ -138,8 +138,8 @@ flowchart TD
 ### 2. Tiptap Foundation
 
 - [x] Install `@tiptap/core`, `@tiptap/pm`, `@tiptap/starter-kit`, and `@tiptap/markdown`.
-- [ ] Add `TiptapRuntimeAdapter` for paragraphs, headings, lists, blockquotes, code blocks, links, bold, italic, inline code, and strike.
-- [ ] Enable the adapter behind a feature flag or runtime selector.
+- [x] Add `TiptapRuntimeAdapter` for paragraphs, headings, lists, blockquotes, code blocks, links, bold, italic, inline code, and strike.
+- [x] Enable the adapter behind a feature flag or runtime selector.
 - [x] Add Markdown parse/serialize fixtures for English, Chinese, headings, lists, links, and code.
 
 ### 3. Source, Hybrid, And Preview
