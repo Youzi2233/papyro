@@ -2,6 +2,7 @@ import { Editor } from "@tiptap/core";
 import { Markdown } from "@tiptap/markdown";
 
 import { createTiptapRuntimeAdapter } from "./editor-runtime.js";
+import { createMarkdownSyncController } from "./markdown-sync-controller.js";
 import {
   createPapyroMarkdownManager,
   createPapyroTiptapExtensions,
@@ -41,7 +42,7 @@ function defaultEditorOptions(initialContent, extensions) {
   };
 }
 
-function createEntry({ editor, dom, instanceId, initialMarkdown, viewMode, markdownManager }) {
+function createEntry({ editor, dom, instanceId, viewMode, markdownSync }) {
   return {
     editor,
     dom,
@@ -49,8 +50,7 @@ function createEntry({ editor, dom, instanceId, initialMarkdown, viewMode, markd
     dioxus: null,
     suppressChange: false,
     viewMode: viewMode ?? "hybrid",
-    markdown: initialMarkdown ?? "",
-    markdownManager,
+    markdownSync,
   };
 }
 
@@ -60,6 +60,7 @@ export function createTiptapEditorRuntime({
   editorConstructor = Editor,
   extensionsFactory = createPapyroTiptapExtensions,
   markdownManagerFactory = createPapyroMarkdownManager,
+  markdownSyncFactory = createMarkdownSyncController,
   navigation,
 } = {}) {
   const runtimeRegistry = requireObject(registry, "registry");
@@ -71,6 +72,7 @@ export function createTiptapEditorRuntime({
     markdownManagerFactory,
     "markdownManagerFactory",
   );
+  const createMarkdownSync = requireFunction(markdownSyncFactory, "markdownSyncFactory");
 
   const controls = requireObject(navigation, "navigation");
   const attachPreviewScroll = requireFunction(
@@ -117,7 +119,24 @@ export function createTiptapEditorRuntime({
 
     const extensions = createExtensions();
     const markdownManager = createMarkdownManager({ extensions });
-    const editor = new TiptapEditor(defaultEditorOptions(initialContent, extensions));
+    const markdownSync = createMarkdownSync({
+      initialMarkdown: initialContent ?? "",
+      manager: markdownManager,
+    });
+    const editor = new TiptapEditor(defaultEditorOptions(markdownSync.markdown, extensions));
+    if (typeof editor.on === "function") {
+      editor.on("update", ({ editor: updatedEditor } = {}) => {
+        const targetEditor = updatedEditor ?? editor;
+        const entry = runtimeRegistry.get(tabId);
+        if (!entry || entry.suppressChange) return;
+        const markdown = entry.markdownSync.setFromEditor(targetEditor);
+        entry.dioxus?.send?.({
+          type: "content_changed",
+          tab_id: tabId,
+          content: markdown,
+        });
+      });
+    }
     editor.mount?.(root);
 
     runtimeRegistry.set(
@@ -126,9 +145,8 @@ export function createTiptapEditorRuntime({
         editor,
         dom: root,
         instanceId,
-        initialMarkdown: initialContent ?? "",
         viewMode,
-        markdownManager,
+        markdownSync,
       }),
     );
 
@@ -155,10 +173,23 @@ export function createTiptapEditorRuntime({
         entry.dom.dataset.viewMode = entry.viewMode;
         syncOutline(tabId, entry.viewMode);
       } else if (message.type === "set_content") {
-        entry.markdown = message.content ?? "";
-        entry.editor.commands?.setContent?.(entry.markdown, {
-          contentType: "markdown",
-        });
+        const result = entry.markdownSync.setMarkdown(message.content ?? "");
+        if (result.ok) {
+          entry.suppressChange = true;
+          try {
+            entry.editor.commands?.setContent?.(entry.markdownSync.markdown, {
+              contentType: "markdown",
+            });
+          } finally {
+            entry.suppressChange = false;
+          }
+        } else {
+          entry.dioxus?.send?.({
+            type: "runtime_error",
+            tab_id: tabId,
+            message: result.error.message,
+          });
+        }
       } else if (message.type === "insert_markdown") {
         entry.editor.commands?.insertContent?.(message.markdown ?? "", {
           contentType: "markdown",

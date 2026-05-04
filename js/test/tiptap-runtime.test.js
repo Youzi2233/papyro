@@ -23,7 +23,13 @@ function createElement(tagName) {
   };
 }
 
-function createRuntimeHarness({ container = createContainer() } = {}) {
+function createRuntimeHarness({
+  container = createContainer(),
+  markdownManagerFactory = ({ extensions }) => ({
+    extensions,
+    parse: (markdown) => ({ type: "doc", markdown }),
+  }),
+} = {}) {
   const calls = [];
   const registry = createEditorRuntimeRegistry();
 
@@ -31,10 +37,18 @@ function createRuntimeHarness({ container = createContainer() } = {}) {
     constructor(options) {
       this.options = options;
       this.destroyed = false;
+      this.handlers = new Map();
+      this.markdown = options.content;
       this.commands = {
-        setContent: (content, options) => calls.push(["setContent", content, options.contentType]),
-        insertContent: (content, options) =>
-          calls.push(["insertContent", content, options.contentType]),
+        setContent: (content, options) => {
+          this.markdown = content;
+          calls.push(["setContent", content, options.contentType]);
+        },
+        insertContent: (content, options) => {
+          this.markdown = `${this.markdown}${content}`;
+          calls.push(["insertContent", content, options.contentType]);
+          this.emit("update", { editor: this });
+        },
         focus: () => calls.push(["focus"]),
       };
       calls.push([
@@ -49,6 +63,18 @@ function createRuntimeHarness({ container = createContainer() } = {}) {
     mount(root) {
       this.root = root;
       calls.push(["mount", root.className, root.dataset.tabId]);
+    }
+
+    on(eventName, handler) {
+      this.handlers.set(eventName, handler);
+    }
+
+    emit(eventName, payload) {
+      this.handlers.get(eventName)?.(payload);
+    }
+
+    getMarkdown() {
+      return this.markdown;
     }
 
     destroy() {
@@ -67,7 +93,7 @@ function createRuntimeHarness({ container = createContainer() } = {}) {
     },
     editorConstructor: FakeTiptapEditor,
     extensionsFactory: () => ["starter-kit"],
-    markdownManagerFactory: ({ extensions }) => ({ extensions }),
+    markdownManagerFactory,
     navigation: {
       attachPreviewScroll: () => "preview-scroll",
       navigateOutline: () => "navigate-outline",
@@ -96,7 +122,7 @@ test("Tiptap runtime creates an editor instance and registry entry", () => {
   assert.equal(editor.root.dataset.tabId, "tab-a");
   assert.equal(editor.root.dataset.viewMode, "hybrid");
   assert.equal(registry.get("tab-a").instanceId, "host-a");
-  assert.equal(registry.get("tab-a").markdown, "# Note");
+  assert.equal(registry.get("tab-a").markdownSync.markdown, "# Note");
   assert.deepEqual(calls, [
     ["constructor", "# Note", "markdown", false, true],
     ["mount", "mn-tiptap-runtime", "tab-a"],
@@ -140,7 +166,8 @@ test("Tiptap runtime handles baseline Rust messages", () => {
   });
   calls.length = 0;
 
-  runtime.attachChannel("tab-a", { id: "dioxus-a" });
+  const messages = [];
+  runtime.attachChannel("tab-a", { id: "dioxus-a", send: (message) => messages.push(message) });
   runtime.handleRustMessage("tab-a", { type: "set_view_mode", mode: "source" });
   runtime.handleRustMessage("tab-a", { type: "set_content", content: "## Updated" });
   runtime.handleRustMessage("tab-a", { type: "insert_markdown", markdown: "\n- item" });
@@ -155,6 +182,42 @@ test("Tiptap runtime handles baseline Rust messages", () => {
     ["setContent", "## Updated", "markdown"],
     ["insertContent", "\n- item", "markdown"],
     ["focus"],
+  ]);
+  assert.deepEqual(messages, [
+    {
+      type: "content_changed",
+      tab_id: "tab-a",
+      content: "## Updated\n- item",
+    },
+  ]);
+});
+
+test("Tiptap runtime reports parse failures without touching the editor", () => {
+  const messages = [];
+  const { calls, runtime } = createRuntimeHarness({
+    markdownManagerFactory: () => ({
+      parse() {
+        throw new Error("parse failed");
+      },
+    }),
+  });
+  runtime.ensureEditor({
+    tabId: "tab-a",
+    containerId: "editor-root",
+    initialContent: "# Note",
+  });
+  runtime.attachChannel("tab-a", { send: (message) => messages.push(message) });
+  calls.length = 0;
+
+  runtime.handleRustMessage("tab-a", { type: "set_content", content: "broken" });
+
+  assert.deepEqual(calls, []);
+  assert.deepEqual(messages, [
+    {
+      type: "runtime_error",
+      tab_id: "tab-a",
+      message: "parse failed",
+    },
   ]);
 });
 

@@ -150,6 +150,7 @@ flowchart TD
 - [ ] Add a Papyro floating formatting toolbar for selected text.
 - [ ] Add reusable UI primitives for Tiptap dropdowns, popovers, toolbars, and block action menus before wiring advanced blocks.
 - [ ] Source uses a source editor pane synchronized through `MarkdownSyncController`.
+- [x] Add `MarkdownSyncController` as the canonical Markdown state boundary for Tiptap runtime updates.
 - [ ] Preview remains Rust-rendered HTML.
 - [ ] Mode switching preserves selection, dirty state, and scroll snapshots.
 - [ ] Outline clicks work in Source and Hybrid.

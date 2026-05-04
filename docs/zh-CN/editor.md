@@ -31,6 +31,20 @@ flowchart LR
     source <--> preview
 ```
 
+## Tiptap 迁移契约
+
+`feat-tiptap` 分支会在现有 `window.papyroEditor` facade 后面引入 Tiptap。迁移期间，在 Source、Hybrid、Preview、IME、粘贴和 block 编辑都达到验收标准前，CodeMirror 仍是默认 runtime。
+
+内容同步必须经过 `MarkdownSyncController`：
+
+- Rust/Dioxus 仍然负责保存内容、dirty 状态、tab 状态和 workspace 状态。
+- JS 每个 editor entry 只保留一份 canonical Markdown 字符串。
+- Rust `set_content` 先更新 controller，再用 `contentType: "markdown"` 写入 Tiptap，并抑制回声事件。
+- Tiptap `update` 事件通过 `editor.getMarkdown()` 产出 Markdown，并发送 `content_changed`。
+- Markdown parse 失败不能覆盖上一份安全内容。JS 要发送 `runtime_error`，并让用户至少能回到可编辑 source 内容。
+- Source 模式后续也必须共用这个 controller，不能维护另一份隐藏内容副本。
+- Preview 继续由 Rust 渲染 HTML，不能成为持久化内容来源。
+
 ## Rust 和 JS 职责
 
 Rust 负责：

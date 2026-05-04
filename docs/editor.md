@@ -31,6 +31,20 @@ flowchart LR
     source <--> preview
 ```
 
+## Tiptap Migration Contract
+
+The `feat-tiptap` branch introduces Tiptap behind the existing `window.papyroEditor` facade. During the migration, CodeMirror remains the default runtime until Source, Hybrid, Preview, IME, paste, and block editing meet the acceptance bar.
+
+Content synchronization must flow through `MarkdownSyncController`:
+
+- Rust/Dioxus still own saved content, dirty state, tab state, and workspace state.
+- JS keeps one canonical Markdown string per editor entry.
+- Rust `set_content` first updates the controller, then writes into Tiptap with `contentType: "markdown"` while suppressing echo events.
+- Tiptap `update` events call `editor.getMarkdown()` and emit `content_changed` with Markdown.
+- Parse failures must not replace the last known good Markdown. JS emits `runtime_error` and leaves the user with editable source content.
+- Source mode will use the same controller rather than keeping a separate hidden content copy.
+- Preview remains Rust-rendered HTML and never becomes the source of persisted content.
+
 ## Rust And JS Responsibilities
 
 ```mermaid

@@ -162,6 +162,7 @@ flowchart TD
 - [ ] 增加 Papyro 浮动格式栏，用于选中文字后的上下文格式操作。
 - [ ] 先封装 Tiptap 下拉、popover、toolbar 和 block action menu primitives，再接高级 block。
 - [ ] Source 使用源码编辑面板，并通过 `MarkdownSyncController` 同步到 Tiptap。
+- [x] 增加 `MarkdownSyncController`，作为 Tiptap runtime 更新的 canonical Markdown 状态边界。
 - [ ] Preview 继续使用 Rust HTML 渲染，不让 Tiptap 接管只读预览。
 - [ ] 模式切换不丢 selection、dirty state 或 scroll snapshot。
 - [ ] 大纲点击在 Source 和 Hybrid 都能跳到目标位置。
