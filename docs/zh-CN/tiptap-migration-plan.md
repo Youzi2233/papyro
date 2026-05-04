@@ -149,10 +149,10 @@ flowchart TD
 
 ### 2. 引入 Tiptap 基础运行时
 
-- [ ] 安装 `@tiptap/core`、`@tiptap/pm`、`@tiptap/starter-kit`、`@tiptap/markdown`。
+- [x] 安装 `@tiptap/core`、`@tiptap/pm`、`@tiptap/starter-kit`、`@tiptap/markdown`。
 - [ ] 新建 `TiptapRuntimeAdapter`，先支持段落、标题、列表、引用、代码块、链接、粗体、斜体、行内代码和删除线。
 - [ ] 通过 feature flag 或 runtime 选择器启用 Tiptap adapter。
-- [ ] 增加 Markdown parse/serialize fixture，覆盖中文、英文、标题、列表、链接和代码。
+- [x] 增加 Markdown parse/serialize fixture，覆盖中文、英文、标题、列表、链接和代码。
 
 ### 3. Source/Hybrid/Preview 模式契约
 

@@ -220,9 +220,9 @@ Tasks:
 - [x] Add runtime registry and injectable CodeMirror runtime factory modules.
 - [ ] Split the JS editor runtime into a stable facade, registry, and adapter contract.
 - [ ] Keep the CodeMirror adapter as the default with no behavior change.
-- [ ] Install and wire the Tiptap foundation dependencies.
+- [x] Install and wire the Tiptap foundation dependencies.
 - [ ] Implement a Tiptap adapter prototype behind a feature flag or runtime selector.
-- [ ] Support basic Markdown round-trip: paragraphs, headings, lists, blockquotes, bold, italic, inline code, code blocks, and links.
+- [x] Support basic Markdown round-trip: paragraphs, headings, lists, blockquotes, bold, italic, inline code, code blocks, and links.
 - [ ] Redefine Source/Hybrid/Preview: Hybrid uses Tiptap, Preview remains Rust-rendered, and Source remains Markdown-editable.
 - [ ] Add Notion-like but Papyro-native slash command, floating toolbar, block insertion, and responsive editor toolbar primitives.
 - [ ] Preserve Rust/JS protocol compatibility for `content_changed`, `insert_markdown`, `set_view_mode`, `set_preferences`, `destroy`, and `runtime_error`.
