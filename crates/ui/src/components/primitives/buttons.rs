@@ -154,3 +154,48 @@ pub fn IconButton(
         }
     }
 }
+
+#[component]
+pub fn RawButton(
+    class_name: String,
+    label: Option<String>,
+    title: Option<String>,
+    disabled: bool,
+    pressed: Option<bool>,
+    checked: Option<bool>,
+    role: Option<String>,
+    stop_events: bool,
+    on_click: EventHandler<MouseEvent>,
+    on_context_menu: Option<EventHandler<MouseEvent>>,
+    children: Element,
+) -> Element {
+    rsx! {
+        button {
+            class: "{class_name}",
+            r#type: "button",
+            disabled,
+            title: title.as_deref(),
+            role: role.as_deref(),
+            "aria-label": label.as_deref(),
+            "aria-pressed": pressed.map(|value| if value { "true" } else { "false" }),
+            "aria-checked": checked.map(|value| if value { "true" } else { "false" }),
+            onmousedown: move |event| {
+                if stop_events {
+                    event.stop_propagation();
+                }
+            },
+            ondoubleclick: move |event| {
+                if stop_events {
+                    event.stop_propagation();
+                }
+            },
+            onclick: move |event| on_click.call(event),
+            oncontextmenu: move |event| {
+                if let Some(handler) = &on_context_menu {
+                    handler.call(event);
+                }
+            },
+            {children}
+        }
+    }
+}

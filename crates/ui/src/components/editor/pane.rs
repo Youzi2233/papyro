@@ -7,7 +7,7 @@ use super::tabbar::EditorTabButton;
 use crate::commands::AppCommands;
 use crate::components::primitives::{
     Button, ButtonVariant, EditorTabScrollButton, EditorToolButton, EmptyRecentItem,
-    EmptyStateCopy, EmptyStateSurface, InlineOverflow, ToolbarZone, ToolbarZoneKind,
+    EmptyStateCopy, EmptyStateSurface, InlineOverflow, RawButton, ToolbarZone, ToolbarZoneKind,
 };
 use crate::context::use_app_context;
 use crate::i18n::{use_i18n, UiText};
@@ -482,9 +482,7 @@ fn EditorChrome(
                         on_click: move |_| scroll_editor_tabs(-220),
                     }
                     InlineOverflow { class_name: "mn-tabbar".to_string(),
-                        if tab_items.is_empty() {
-                            span { class: "mn-tabbar-placeholder", {i18n.text("No open note", "没有打开的笔记")} }
-                        } else {
+                        if !tab_items.is_empty() {
                             for item in tab_items.iter().cloned() {
                                 EditorTabButton {
                                     key: "{item.id}",
@@ -647,18 +645,20 @@ fn ThemeSwitchOption(
     on_change: EventHandler<String>,
 ) -> Element {
     rsx! {
-        button {
-            class: if selected { "mn-theme-switch-option active" } else { "mn-theme-switch-option" },
-            r#type: "button",
-            role: "radio",
-            "aria-label": "{label}",
-            "aria-checked": if selected { "true" } else { "false" },
-            onmousedown: move |event| event.stop_propagation(),
-            ondoubleclick: move |event| event.stop_propagation(),
-            onclick: move |event| {
+        RawButton {
+            class_name: (if selected { "mn-theme-switch-option active" } else { "mn-theme-switch-option" }).to_string(),
+            label: Some(label),
+            title: None::<String>,
+            disabled: false,
+            pressed: None::<bool>,
+            checked: Some(selected),
+            role: Some("radio".to_string()),
+            stop_events: true,
+            on_click: move |event: MouseEvent| {
                 event.stop_propagation();
                 on_change.call(value.clone());
             },
+            on_context_menu: None::<EventHandler<MouseEvent>>,
             span { class: "{icon_class}", "aria-hidden": "true" }
         }
     }
@@ -674,17 +674,21 @@ fn MarkdownToolButton(
     template: &'static str,
 ) -> Element {
     rsx! {
-        button {
-            class: "mn-markdown-tool",
-            r#type: "button",
-            title: "{label}",
-            "aria-label": "{label}",
+        RawButton {
+            class_name: "mn-markdown-tool".to_string(),
+            label: Some(label.clone()),
+            title: Some(label),
             disabled,
-            onclick: move |_| {
+            pressed: None::<bool>,
+            checked: None::<bool>,
+            role: None::<String>,
+            stop_events: false,
+            on_click: move |_| {
                 if let Some(tab_id) = active_tab_id.clone() {
                     insert_markdown_template(commands.clone(), tab_id, template);
                 }
             },
+            on_context_menu: None::<EventHandler<MouseEvent>>,
             span { class: "{icon_class}", "aria-hidden": "true" }
         }
     }
@@ -699,25 +703,43 @@ fn WindowControls() -> Element {
             class: "mn-window-controls",
             onmousedown: move |event| event.stop_propagation(),
             ondoubleclick: move |event| event.stop_propagation(),
-            button {
-                class: "mn-window-control minimize",
-                r#type: "button",
-                "aria-label": i18n.text("Minimize window", "最小化窗口"),
-                onclick: move |_| minimize_app_window(),
+            RawButton {
+                class_name: "mn-window-control minimize".to_string(),
+                label: Some(i18n.text("Minimize window", "最小化窗口").to_string()),
+                title: None::<String>,
+                disabled: false,
+                pressed: None::<bool>,
+                checked: None::<bool>,
+                role: None::<String>,
+                stop_events: false,
+                on_click: move |_| minimize_app_window(),
+                on_context_menu: None::<EventHandler<MouseEvent>>,
                 span { "aria-hidden": "true" }
             }
-            button {
-                class: "mn-window-control maximize",
-                r#type: "button",
-                "aria-label": i18n.text("Maximize window", "最大化窗口"),
-                onclick: move |_| toggle_maximized_app_window(),
+            RawButton {
+                class_name: "mn-window-control maximize".to_string(),
+                label: Some(i18n.text("Maximize window", "最大化窗口").to_string()),
+                title: None::<String>,
+                disabled: false,
+                pressed: None::<bool>,
+                checked: None::<bool>,
+                role: None::<String>,
+                stop_events: false,
+                on_click: move |_| toggle_maximized_app_window(),
+                on_context_menu: None::<EventHandler<MouseEvent>>,
                 span { "aria-hidden": "true" }
             }
-            button {
-                class: "mn-window-control close",
-                r#type: "button",
-                "aria-label": i18n.text("Close window", "关闭窗口"),
-                onclick: move |_| close_app_window(),
+            RawButton {
+                class_name: "mn-window-control close".to_string(),
+                label: Some(i18n.text("Close window", "关闭窗口").to_string()),
+                title: None::<String>,
+                disabled: false,
+                pressed: None::<bool>,
+                checked: None::<bool>,
+                role: None::<String>,
+                stop_events: false,
+                on_click: move |_| close_app_window(),
+                on_context_menu: None::<EventHandler<MouseEvent>>,
                 span { "aria-hidden": "true" }
             }
         }

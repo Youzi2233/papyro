@@ -234,6 +234,7 @@ flowchart TD
 - [x] 增加首次启动 workspace onboarding。
 - [x] 增加 release build 手工 QA checklist。
 - [x] 文档化 known limitations。
+- [ ] 发布前补齐关于窗口的“检查更新”和“查看发行说明”入口。
 
 ## 长期原则
 

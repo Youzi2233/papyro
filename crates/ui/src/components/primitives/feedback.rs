@@ -16,6 +16,14 @@ pub enum InlineAlertTone {
     Danger,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MessageTone {
+    Info,
+    Success,
+    Attention,
+    Danger,
+}
+
 pub(super) fn status_tone_class(tone: StatusTone) -> &'static str {
     match tone {
         StatusTone::Default => "mn-status-item",
@@ -29,6 +37,16 @@ pub(super) fn inline_alert_class(tone: InlineAlertTone, class_name: &str) -> Str
         InlineAlertTone::Neutral => "mn-inline-alert neutral",
         InlineAlertTone::Attention => "mn-inline-alert attention",
         InlineAlertTone::Danger => "mn-inline-alert danger",
+    };
+    append_class(tone_class, class_name)
+}
+
+pub(super) fn message_class(tone: MessageTone, class_name: &str) -> String {
+    let tone_class = match tone {
+        MessageTone::Info => "mn-message info",
+        MessageTone::Success => "mn-message success",
+        MessageTone::Attention => "mn-message attention",
+        MessageTone::Danger => "mn-message danger",
     };
     append_class(tone_class, class_name)
 }
@@ -57,12 +75,18 @@ pub fn StatusStrip(message: Option<String>, children: Element) -> Element {
 }
 
 #[component]
-pub fn Message(message: String, tone: StatusTone) -> Element {
+pub fn Message(message: String, tone: MessageTone, class_name: String) -> Element {
+    let class = message_class(tone, &class_name);
+
     rsx! {
         div {
-            class: status_tone_class(tone),
+            class,
             role: "status",
+            "aria-live": "polite",
+            span { class: "mn-message-icon", "aria-hidden": "true" }
+            span { class: "mn-message-text",
             "{message}"
+            }
         }
     }
 }

@@ -65,7 +65,9 @@ pub fn SettingsNavItem(
 #[component]
 pub fn SettingsContent(children: Element) -> Element {
     rsx! {
-        ScrollContainer { class_name: "mn-settings-content".to_string(), {children} }
+        ScrollContainer { class_name: "mn-settings-content".to_string(),
+            div { class: "mn-settings-content-inner", {children} }
+        }
     }
 }
 

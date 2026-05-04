@@ -1,23 +1,19 @@
-use crate::commands::{
-    AppCommands, DeleteTagRequest, RenameTagRequest, SetTagColorRequest, UpsertTagRequest,
-};
 use crate::components::primitives::{
-    ActionButton, Button, ButtonState, ButtonVariant, ColorInput, DialogSection, DropdownOption,
-    Modal, Select, SettingsContent, SettingsInlineRow, SettingsInlineRowKind, SettingsLayout,
-    SettingsNav, SettingsNavItem, SettingsPanel, SettingsRow, Slider, Switch, TextInput,
+    Button, ButtonVariant, DialogSection, DropdownOption, Message, MessageTone, Modal, RawButton,
+    Select, SettingsContent, SettingsLayout, SettingsNav, SettingsNavItem, SettingsPanel,
+    SettingsRow, Slider, Switch,
 };
 use crate::context::use_app_context;
 use crate::i18n::{use_i18n, UiText};
-use crate::view_model::TagListItem;
 use dioxus::prelude::*;
 use papyro_core::models::{
     AppLanguage, AppSettings, Theme, WorkspaceSettingsOverrides, FONT_PRESET_CJK_SANS,
     FONT_PRESET_MONO_CODE, FONT_PRESET_READING_SERIF, FONT_PRESET_SYSTEM_SERIF,
     FONT_PRESET_UI_SANS,
 };
+use std::time::Duration;
 
 const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
-const DEFAULT_TAG_COLOR: &str = "#6B7280";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum SettingsPanelKind {
@@ -34,6 +30,12 @@ struct SettingsDraft {
     line_height: f32,
     auto_link_paste: bool,
     auto_save_delay_ms: u64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct SettingsMessage {
+    id: u64,
+    text: String,
 }
 
 #[component]
@@ -59,7 +61,6 @@ pub fn SettingsSurface(on_close: EventHandler<()>, window_chrome: bool) -> Eleme
     let i18n = use_i18n();
     let commands = app.commands.clone();
     let settings_form_model = app.settings_form_model;
-    let settings_workspace = app.settings_workspace_model.read().clone();
     let settings_form = settings_form_model.read().clone();
     let effective_settings = settings_form.workspace_settings.clone();
     let workspace_overrides = settings_form.workspace_overrides.clone();
@@ -73,11 +74,15 @@ pub fn SettingsSurface(on_close: EventHandler<()>, window_chrome: bool) -> Eleme
     let mut line_height = use_signal(|| effective_settings.line_height);
     let mut auto_link_paste = use_signal(|| effective_settings.auto_link_paste);
     let mut auto_save_ms = use_signal(|| effective_settings.auto_save_delay_ms);
+    let settings_message = use_signal(|| None::<SettingsMessage>);
+    let settings_message_revision = use_signal(|| 0_u64);
     let font_preview_style = font_preview_style(&font_family(), font_size(), line_height());
 
     let save_commands = commands.clone();
     let save_settings_form_model = settings_form_model;
-    let tag_commands = commands.clone();
+    let feature_unavailable_message = i18n
+        .text("Feature not implemented yet", "功能暂未实现")
+        .to_string();
 
     let theme_options = theme_options(i18n);
     let language_options = vec![
@@ -119,6 +124,14 @@ pub fn SettingsSurface(on_close: EventHandler<()>, window_chrome: bool) -> Eleme
             on_close,
         }
         div { class: "mn-modal-body mn-settings-body",
+            if let Some(message) = settings_message() {
+                Message {
+                    key: "{message.id}",
+                    message: message.text,
+                    tone: MessageTone::Info,
+                    class_name: "mn-settings-message".to_string(),
+                }
+            }
             SettingsLayout {
                 SettingsNav { label: i18n.text("Settings navigation", "设置导航").to_string(),
                     SettingsNavItem {
@@ -138,13 +151,16 @@ pub fn SettingsSurface(on_close: EventHandler<()>, window_chrome: bool) -> Eleme
                     if active_panel() == SettingsPanelKind::General {
                         SettingsPanel {
                             div { class: "mn-settings-panel-body mn-settings-grid",
+                                div { class: "mn-settings-page-heading",
+                                    h3 { {i18n.text("General", "通用设置")} }
+                                }
                                 DialogSection {
                                     label: i18n.text("Interface", "界面").to_string(),
-                                    class_name: "mn-setting-section-card".to_string(),
+                                    class_name: "mn-setting-section-card interface".to_string(),
                                     SettingsRow {
                                         label: i18n.text("Language", "语言").to_string(),
                                         description: None::<String>,
-                                        class_name: String::new(),
+                                        class_name: "select-language".to_string(),
                                         Select {
                                             label: i18n.text("App language", "应用语言").to_string(),
                                             options: language_options,
@@ -156,51 +172,29 @@ pub fn SettingsSurface(on_close: EventHandler<()>, window_chrome: bool) -> Eleme
                                             },
                                         }
                                     }
-                                    div { class: "mn-theme-preference",
-                                        div { class: "mn-setting-label",
-                                            span { {i18n.text("Theme", "主题")} }
-                                        }
-                                        div { class: "mn-theme-card-group",
-                                            ThemeChoiceCard {
-                                                label: i18n.text("Light", "浅色主题").to_string(),
-                                                selected: theme() == Theme::Light,
-                                                class_name: "light".to_string(),
-                                                on_select: move |_| theme.set(Theme::Light),
-                                            }
-                                            ThemeChoiceCard {
-                                                label: i18n.text("Dark", "深色主题").to_string(),
-                                                selected: theme() == Theme::Dark,
-                                                class_name: "dark".to_string(),
-                                                on_select: move |_| theme.set(Theme::Dark),
-                                            }
-                                            ThemeChoiceCard {
-                                                label: i18n.text("System", "跟随系统").to_string(),
-                                                selected: theme() == Theme::System,
-                                                class_name: "system".to_string(),
-                                                on_select: move |_| theme.set(Theme::System),
-                                            }
-                                        }
-                                        div { class: "mn-theme-advanced",
-                                            Select {
-                                                label: i18n.text("More themes", "更多主题").to_string(),
-                                                options: theme_options,
-                                                selected: theme_value(&theme()).to_string(),
-                                                on_change: move |value: String| {
-                                                    if let Some(next_theme) = theme_from_value(&value) {
-                                                        theme.set(next_theme);
-                                                    }
-                                                },
+                                    SettingsRow {
+                                        label: i18n.text("Theme", "主题").to_string(),
+                                        description: None::<String>,
+                                        class_name: "select-theme".to_string(),
+                                        Select {
+                                            label: i18n.text("Theme", "主题").to_string(),
+                                            options: theme_options,
+                                            selected: theme_value(&theme()).to_string(),
+                                            on_change: move |value: String| {
+                                                if let Some(next_theme) = theme_from_value(&value) {
+                                                    theme.set(next_theme);
+                                                }
                                             }
                                         }
                                     }
                                 }
                                 DialogSection {
                                     label: i18n.text("Editor", "编辑器").to_string(),
-                                    class_name: "mn-setting-section-card".to_string(),
+                                    class_name: "mn-setting-section-card editor".to_string(),
                                     SettingsRow {
                                         label: i18n.text("Font family", "字体").to_string(),
                                         description: None::<String>,
-                                        class_name: String::new(),
+                                        class_name: "select-font".to_string(),
                                         Select {
                                             label: i18n.text("Font family", "字体").to_string(),
                                             options: font_options,
@@ -251,11 +245,15 @@ pub fn SettingsSurface(on_close: EventHandler<()>, window_chrome: bool) -> Eleme
                                         }
                                     }
                                     div {
-                                        class: "mn-font-preview",
+                                        class: "mn-font-preview mn-preview",
                                         style: "{font_preview_style}",
-                                        p { class: "mn-font-preview-title", {i18n.text("A clear note starts with readable type.", "清晰的笔记，从易读的字体开始。")} }
-                                        p { class: "mn-font-preview-body", {i18n.text("Headings, body text, numbers 123, and 中文内容 should all feel calm and balanced.", "标题、正文、数字 123 和中文内容都应该清楚、平衡。")} }
-                                        code { class: "mn-font-preview-code", "inline_code = true" }
+                                        h1 { {i18n.text("Heading 1", "一级标题")} }
+                                        h2 { {i18n.text("Heading 2", "二级标题")} }
+                                        p {
+                                            {i18n.text("Body text shows line height, numbers 123, Chinese text, and ", "正文展示行高、数字 123、中文内容，以及 ")}
+                                            code { "inline_code" }
+                                            {i18n.text(".", "。")}
+                                        }
                                     }
                                     SettingsRow {
                                         label: i18n.text("Paste URL as link", "粘贴 URL 时转成链接").to_string(),
@@ -270,7 +268,7 @@ pub fn SettingsSurface(on_close: EventHandler<()>, window_chrome: bool) -> Eleme
                                 }
                                 DialogSection {
                                     label: i18n.text("Saving", "保存").to_string(),
-                                    class_name: "mn-setting-section-card".to_string(),
+                                    class_name: "mn-setting-section-card saving".to_string(),
                                     SettingsRow {
                                         label: format!(
                                             "{} ({}ms)",
@@ -293,19 +291,32 @@ pub fn SettingsSurface(on_close: EventHandler<()>, window_chrome: bool) -> Eleme
                                         }
                                     }
                                 }
-                                TagManagementSection {
-                                    tags: settings_workspace.tags.clone(),
-                                    has_workspace,
-                                    commands: tag_commands,
-                                }
                             }
                         }
                     } else {
                         SettingsPanel {
                             div { class: "mn-about-card",
-                                div { class: "mn-about-hero",
-                                    div { class: "mn-about-brand",
-                                        div { class: "mn-about-app", "Papyro" }
+                                div { class: "mn-about-heading",
+                                    div { class: "mn-about-heading-copy",
+                                        h3 { {i18n.text("About Papyro", "关于 Papyro")} }
+                                    }
+                                    span { class: "mn-about-status-badge",
+                                        {i18n.text("Up to date", "当前已是最新版本")}
+                                    }
+                                }
+                                section { class: "mn-about-product-card",
+                                    div { class: "mn-about-logo-tile",
+                                        img {
+                                            class: "mn-about-logo",
+                                            src: "/assets/logo.png",
+                                            alt: "Papyro logo",
+                                        }
+                                    }
+                                    div { class: "mn-about-product-copy",
+                                        div { class: "mn-about-title-row",
+                                            h4 { class: "mn-about-app", "Papyro" }
+                                            span { class: "mn-about-version-badge", "v{APP_VERSION}" }
+                                        }
                                         p { class: "mn-about-summary",
                                             {i18n.text(
                                                 "Built for people who want their notes to stay readable, portable, and pleasant to work in every day.",
@@ -313,43 +324,98 @@ pub fn SettingsSurface(on_close: EventHandler<()>, window_chrome: bool) -> Eleme
                                             )}
                                         }
                                     }
-                                    div { class: "mn-about-version-badge", "v{APP_VERSION}" }
+                                    div { class: "mn-about-actions",
+                                        RawButton {
+                                            class_name: "mn-about-action primary".to_string(),
+                                            label: None::<String>,
+                                            title: None::<String>,
+                                            disabled: false,
+                                            pressed: None::<bool>,
+                                            checked: None::<bool>,
+                                            role: None::<String>,
+                                            stop_events: false,
+                                            on_click: {
+                                                let message = feature_unavailable_message.clone();
+                                                move |_| {
+                                                    show_settings_message(
+                                                        settings_message,
+                                                        settings_message_revision,
+                                                        message.clone(),
+                                                    );
+                                                }
+                                            },
+                                            on_context_menu: None::<EventHandler<MouseEvent>>,
+                                            {i18n.text("Check for updates", "检查更新")}
+                                        }
+                                        RawButton {
+                                            class_name: "mn-about-action external".to_string(),
+                                            label: None::<String>,
+                                            title: None::<String>,
+                                            disabled: false,
+                                            pressed: None::<bool>,
+                                            checked: None::<bool>,
+                                            role: None::<String>,
+                                            stop_events: false,
+                                            on_click: {
+                                                let message = feature_unavailable_message.clone();
+                                                move |_| {
+                                                    show_settings_message(
+                                                        settings_message,
+                                                        settings_message_revision,
+                                                        message.clone(),
+                                                    );
+                                                }
+                                            },
+                                            on_context_menu: None::<EventHandler<MouseEvent>>,
+                                            span { {i18n.text("Release notes", "查看发行说明")} }
+                                            span { class: "mn-about-action-external", "aria-hidden": "true" }
+                                        }
+                                    }
                                 }
-                                div { class: "mn-about-grid",
-                                    AboutMetaItem {
-                                        label: i18n.text("Editor", "编辑器").to_string(),
-                                        value: i18n.text(
-                                            "Markdown editing with source, hybrid, and preview workflows",
-                                            "支持源码、混合与预览工作流的 Markdown 编辑体验",
-                                        ).to_string(),
-                                    }
-                                    AboutMetaItem {
-                                        label: i18n.text("Storage", "存储").to_string(),
-                                        value: i18n.text(
-                                            "Local-first files and workspace organization",
-                                            "本地优先的文件存储与工作区组织方式",
-                                        ).to_string(),
-                                    }
-                                    AboutMetaItem {
-                                        label: i18n.text("Runtime", "运行时").to_string(),
-                                        value: i18n.text(
-                                            "Rust application shell with a Dioxus-based interface",
-                                            "基于 Rust 应用壳与 Dioxus 界面层构建",
-                                        ).to_string(),
-                                    }
-                                    AboutMetaItem {
-                                        label: i18n.text("Focus", "定位").to_string(),
-                                        value: i18n.text(
-                                            "Calm note-taking, quick navigation, and durable Markdown output",
-                                            "强调沉浸式记录、快速导航与稳定的 Markdown 产出",
-                                        ).to_string(),
+                                section { class: "mn-about-section mn-about-features",
+                                    h4 { {i18n.text("Core features", "核心特性")} }
+                                    div { class: "mn-about-feature-list",
+                                        AboutFeatureRow {
+                                            class_name: "editor".to_string(),
+                                            label: i18n.text("Markdown editor", "Markdown 编辑器").to_string(),
+                                            value: i18n.text(
+                                                "Switch between source, hybrid, and preview workflows.",
+                                                "在源码、混合与预览工作流之间切换。",
+                                            ).to_string(),
+                                        }
+                                        AboutFeatureRow {
+                                            class_name: "workspace".to_string(),
+                                            label: i18n.text("Workspace files", "工作区文件").to_string(),
+                                            value: i18n.text(
+                                                "Keep notes as readable local Markdown files.",
+                                                "以可读的本地 Markdown 文件保存笔记。",
+                                            ).to_string(),
+                                        }
+                                        AboutFeatureRow {
+                                            class_name: "navigation".to_string(),
+                                            label: i18n.text("Fast navigation", "快速导航").to_string(),
+                                            value: i18n.text(
+                                                "Use tabs, outline, and search to move through larger note sets.",
+                                                "通过标签页、大纲与搜索管理更大的笔记集合。",
+                                            ).to_string(),
+                                        }
                                     }
                                 }
-                                div { class: "mn-about-note",
-                                    {i18n.text(
-                                        "Papyro keeps the content format open, so your notes stay usable outside the app as plain Markdown files.",
-                                        "Papyro 保持内容格式开放，你的笔记始终可以作为普通 Markdown 文件在应用之外继续使用。",
-                                    )}
+                                section { class: "mn-about-section mn-about-resources",
+                                    h4 { {i18n.text("Resources and support", "资源与支持")} }
+                                    a {
+                                        class: "mn-about-resource-link",
+                                        href: "https://github.com/youzi2233/papyro",
+                                        target: "_blank",
+                                        rel: "noreferrer",
+                                        span { class: "mn-about-resource-icon", "aria-hidden": "true" }
+                                        span { class: "mn-about-resource-copy",
+                                            span { class: "mn-about-resource-title",
+                                                {i18n.text("GitHub repository", "GitHub 仓库")}
+                                            }
+                                        }
+                                        span { class: "mn-about-resource-external", "aria-hidden": "true" }
+                                    }
                                 }
                             }
                         }
@@ -402,76 +468,70 @@ fn SettingsTitleBar(
                     class: "mn-window-controls mn-settings-window-controls",
                     onmousedown: move |event| event.stop_propagation(),
                     ondoubleclick: move |event| event.stop_propagation(),
-                    button {
-                        class: "mn-window-control minimize",
-                        r#type: "button",
-                        "aria-label": "{minimize_label}",
-                        onclick: move |event| {
+                    RawButton {
+                        class_name: "mn-window-control minimize".to_string(),
+                        label: Some(minimize_label),
+                        title: None::<String>,
+                        disabled: false,
+                        pressed: None::<bool>,
+                        checked: None::<bool>,
+                        role: None::<String>,
+                        stop_events: false,
+                        on_click: move |event: MouseEvent| {
                             event.stop_propagation();
                             minimize_settings_window();
                         },
+                        on_context_menu: None::<EventHandler<MouseEvent>>,
                         span { "aria-hidden": "true" }
                     }
-                    button {
-                        class: "mn-window-control maximize",
-                        r#type: "button",
-                        "aria-label": "{maximize_label}",
-                        onclick: move |event| {
+                    RawButton {
+                        class_name: "mn-window-control maximize".to_string(),
+                        label: Some(maximize_label),
+                        title: None::<String>,
+                        disabled: false,
+                        pressed: None::<bool>,
+                        checked: None::<bool>,
+                        role: None::<String>,
+                        stop_events: false,
+                        on_click: move |event: MouseEvent| {
                             event.stop_propagation();
                             toggle_settings_window_maximized();
                         },
+                        on_context_menu: None::<EventHandler<MouseEvent>>,
                         span { "aria-hidden": "true" }
                     }
-                    button {
-                        class: "mn-window-control close",
-                        r#type: "button",
-                        "aria-label": "{close_label}",
-                        onclick: move |event| {
+                    RawButton {
+                        class_name: "mn-window-control close".to_string(),
+                        label: Some(close_label.clone()),
+                        title: None::<String>,
+                        disabled: false,
+                        pressed: None::<bool>,
+                        checked: None::<bool>,
+                        role: None::<String>,
+                        stop_events: false,
+                        on_click: move |event: MouseEvent| {
                             event.stop_propagation();
                             on_close.call(());
                         },
+                        on_context_menu: None::<EventHandler<MouseEvent>>,
                         span { "aria-hidden": "true" }
                     }
                 }
             } else {
-                button {
-                    class: "mn-modal-close",
-                    r#type: "button",
-                    "aria-label": "{close_label}",
-                    onclick: move |_| on_close.call(()),
+                RawButton {
+                    class_name: "mn-modal-close".to_string(),
+                    label: Some(close_label),
+                    title: None::<String>,
+                    disabled: false,
+                    pressed: None::<bool>,
+                    checked: None::<bool>,
+                    role: None::<String>,
+                    stop_events: false,
+                    on_click: move |_| on_close.call(()),
+                    on_context_menu: None::<EventHandler<MouseEvent>>,
                     "x"
                 }
             }
-        }
-    }
-}
-
-#[component]
-fn ThemeChoiceCard(
-    label: String,
-    selected: bool,
-    class_name: String,
-    on_select: EventHandler<()>,
-) -> Element {
-    let class = if selected {
-        format!("mn-theme-choice active {class_name}")
-    } else {
-        format!("mn-theme-choice {class_name}")
-    };
-
-    rsx! {
-        button {
-            class,
-            r#type: "button",
-            "aria-pressed": if selected { "true" } else { "false" },
-            onclick: move |_| on_select.call(()),
-            span { class: "mn-theme-choice-radio", "aria-hidden": "true" }
-            span { class: "mn-theme-choice-preview", "aria-hidden": "true",
-                span { class: "mn-theme-choice-bar" }
-                span { class: "mn-theme-choice-line one" }
-                span { class: "mn-theme-choice-line two" }
-            }
-            span { class: "mn-theme-choice-label", "{label}" }
         }
     }
 }
@@ -498,236 +558,40 @@ fn toggle_settings_window_maximized() {
 }
 
 #[component]
-fn AboutMetaItem(label: String, value: String) -> Element {
-    rsx! {
-        div { class: "mn-about-item",
-            div { class: "mn-about-label", "{label}" }
-            div { class: "mn-about-value", "{value}" }
-        }
-    }
-}
-
-#[component]
-fn TagManagementSection(
-    tags: Vec<TagListItem>,
-    has_workspace: bool,
-    commands: AppCommands,
-) -> Element {
-    let i18n = use_i18n();
-    let mut new_name = use_signal(String::new);
-    let mut new_color = use_signal(|| DEFAULT_TAG_COLOR.to_string());
-    let new_name_value = new_name();
-    let new_color_value = new_color();
-    let can_create = has_workspace && !cleaned_tag_name(&new_name_value).is_empty();
+fn AboutFeatureRow(class_name: String, label: String, value: String) -> Element {
+    let class = format!("mn-about-feature {}", class_name);
 
     rsx! {
-        DialogSection {
-            label: i18n.text("Tags", "标签").to_string(),
-            class_name: "mn-setting-section-card mn-setting-section-wide".to_string(),
-            if has_workspace {
-                div { class: "mn-tag-manager",
-                    SettingsInlineRow {
-                        kind: SettingsInlineRowKind::Create,
-                        class_name: String::new(),
-                        TextInput {
-                            class_name: "mn-input mn-tag-name-input".to_string(),
-                            placeholder: i18n.text("New tag", "新标签").to_string(),
-                            value: new_name_value,
-                            autofocus: false,
-                            on_input: move |value| new_name.set(value),
-                            on_keydown: {
-                                let commands = commands.clone();
-                                move |event: KeyboardEvent| {
-                                    if event.key() == Key::Enter {
-                                        let name = cleaned_tag_name(&new_name());
-                                        if !name.is_empty() {
-                                            commands.upsert_tag.call(UpsertTagRequest {
-                                                name,
-                                                color: normalized_tag_color(&new_color()),
-                                            });
-                                            new_name.set(String::new());
-                                        }
-                                    }
-                                }
-                            },
-                        }
-                        ColorInput {
-                            label: i18n.text("New tag color", "新标签颜色").to_string(),
-                            title: i18n.text("Tag color", "标签颜色"),
-                            value: new_color_value,
-                            class_name: String::new(),
-                            on_input: move |value| new_color.set(value),
-                        }
-                        Button {
-                            label: i18n.text("Add", "添加").to_string(),
-                            variant: ButtonVariant::Primary,
-                            disabled: !can_create,
-                            on_click: {
-                                let commands = commands.clone();
-                                move |_| {
-                                    let name = cleaned_tag_name(&new_name());
-                                    if !name.is_empty() {
-                                        commands.upsert_tag.call(UpsertTagRequest {
-                                            name,
-                                            color: normalized_tag_color(&new_color()),
-                                        });
-                                        new_name.set(String::new());
-                                    }
-                                }
-                            },
-                        }
-                    }
-                    if tags.is_empty() {
-                        div { class: "mn-tag-empty", {i18n.text("No tags", "暂无标签")} }
-                    } else {
-                        div { class: "mn-tag-list",
-                            for tag in tags {
-                                TagEditorRow {
-                                    key: "{tag.id}",
-                                    tag,
-                                    has_workspace,
-                                    commands: commands.clone(),
-                                }
-                            }
-                        }
-                    }
-                }
-            } else {
-                div { class: "mn-tag-empty",
-                    {i18n.text("Open a workspace to manage tags", "打开工作区后即可管理标签")}
-                }
+        div { class,
+            span { class: "mn-about-feature-icon", "aria-hidden": "true" }
+            span { class: "mn-about-feature-copy",
+                span { class: "mn-about-feature-title", "{label}" }
+                span { class: "mn-about-feature-desc", "{value}" }
             }
         }
     }
 }
 
-#[component]
-fn TagEditorRow(tag: TagListItem, has_workspace: bool, commands: AppCommands) -> Element {
-    let i18n = use_i18n();
-    let mut name = use_signal(|| tag.name.clone());
-    let mut color = use_signal(|| tag.color.clone());
-    let mut confirm_delete = use_signal(|| false);
-    let name_value = name();
-    let color_value = color();
-    let cleaned_name = cleaned_tag_name(&name_value);
-    let color_hex = normalized_tag_color(&color_value);
-    let can_rename = has_workspace && !cleaned_name.is_empty() && cleaned_name != tag.name;
-    let can_recolor =
-        has_workspace && !color_hex.eq_ignore_ascii_case(&tag.color) && is_tag_color(&color_hex);
-    let delete_label = if confirm_delete() {
-        i18n.text("Confirm", "确认")
-    } else {
-        i18n.text("Delete", "删除")
-    };
-    let delete_button_class = if confirm_delete() {
-        "active".to_string()
-    } else {
-        String::new()
-    };
-    let delete_button_state = if has_workspace {
-        ButtonState::Enabled
-    } else {
-        ButtonState::Disabled
-    };
+fn show_settings_message(
+    mut settings_message: Signal<Option<SettingsMessage>>,
+    mut settings_message_revision: Signal<u64>,
+    text: String,
+) {
+    let id = settings_message_revision().saturating_add(1);
+    settings_message_revision.set(id);
+    settings_message.set(Some(SettingsMessage { id, text }));
 
-    rsx! {
-        SettingsInlineRow {
-            kind: SettingsInlineRowKind::Edit,
-            class_name: String::new(),
-            TextInput {
-                class_name: "mn-input mn-tag-name-input".to_string(),
-                placeholder: i18n.text("Tag name", "标签名称").to_string(),
-                value: name_value,
-                autofocus: false,
-                on_input: move |value| {
-                    name.set(value);
-                    confirm_delete.set(false);
-                },
-                on_keydown: {
-                    let commands = commands.clone();
-                    let tag_id = tag.id.clone();
-                    let original_name = tag.name.clone();
-                    move |event: KeyboardEvent| {
-                        if event.key() == Key::Enter {
-                            let next_name = cleaned_tag_name(&name());
-                            if !next_name.is_empty() && next_name != original_name {
-                                commands.rename_tag.call(RenameTagRequest {
-                                    id: tag_id.clone(),
-                                    name: next_name,
-                                });
-                            }
-                        }
-                    }
-                },
-            }
-            ColorInput {
-                label: format!("{} {}", i18n.text("Tag color for", "标签颜色"), tag.name),
-                title: i18n.text("Tag color", "标签颜色"),
-                value: color_value,
-                class_name: String::new(),
-                on_input: move |value| {
-                    color.set(value);
-                    confirm_delete.set(false);
-                },
-            }
-            Button {
-                label: i18n.text("Rename", "重命名").to_string(),
-                variant: ButtonVariant::Default,
-                disabled: !can_rename,
-                on_click: {
-                    let commands = commands.clone();
-                    let tag_id = tag.id.clone();
-                    move |_| {
-                        let next_name = cleaned_tag_name(&name());
-                        if !next_name.is_empty() {
-                            commands.rename_tag.call(RenameTagRequest {
-                                id: tag_id.clone(),
-                                name: next_name,
-                            });
-                        }
-                    }
-                },
-            }
-            Button {
-                label: i18n.text("Color", "颜色").to_string(),
-                variant: ButtonVariant::Default,
-                disabled: !can_recolor,
-                on_click: {
-                    let commands = commands.clone();
-                    let tag_id = tag.id.clone();
-                    move |_| {
-                        let next_color = normalized_tag_color(&color());
-                        if is_tag_color(&next_color) {
-                            commands.set_tag_color.call(SetTagColorRequest {
-                                id: tag_id.clone(),
-                                color: next_color,
-                            });
-                        }
-                    }
-                },
-            }
-            ActionButton {
-                label: delete_label.to_string(),
-                variant: ButtonVariant::Danger,
-                state: delete_button_state,
-                icon_class: None,
-                title: None::<String>,
-                class_name: delete_button_class,
-                on_click: {
-                    let commands = commands.clone();
-                    let tag_id = tag.id.clone();
-                    move |_| {
-                        if confirm_delete() {
-                            commands.delete_tag.call(DeleteTagRequest { id: tag_id.clone() });
-                            confirm_delete.set(false);
-                        } else {
-                            confirm_delete.set(true);
-                        }
-                    }
-                },
-            }
+    let mut clear_settings_message = settings_message;
+    spawn(async move {
+        tokio::time::sleep(Duration::from_millis(2200)).await;
+        let should_clear = clear_settings_message
+            .read()
+            .as_ref()
+            .is_some_and(|message| message.id == id);
+        if should_clear {
+            clear_settings_message.set(None);
         }
-    }
+    });
 }
 
 fn theme_value(theme: &Theme) -> &'static str {
@@ -788,7 +652,9 @@ fn font_family_options(i18n: UiText) -> Vec<DropdownOption> {
 }
 
 fn font_preview_style(font_family: &str, font_size: u8, line_height: f32) -> String {
-    format!("font-family: {font_family}; font-size: {font_size}px; line-height: {line_height:.1};")
+    format!(
+        "--mn-editor-font: {font_family}; --mn-editor-font-size: {font_size}px; --mn-editor-line-height: {line_height:.1}; --mn-markdown-body-size: {font_size}px; --mn-markdown-line-height: {line_height:.1};"
+    )
 }
 
 fn language_value(language: AppLanguage) -> &'static str {
@@ -820,14 +686,6 @@ fn form_settings(base: &AppSettings, draft: &SettingsDraft) -> AppSettings {
     }
 }
 
-fn cleaned_tag_name(value: &str) -> String {
-    value.trim().trim_start_matches('#').trim().to_string()
-}
-
-fn normalized_tag_color(value: &str) -> String {
-    value.trim().to_ascii_uppercase()
-}
-
 fn clear_global_managed_workspace_overrides(
     overrides: &WorkspaceSettingsOverrides,
 ) -> WorkspaceSettingsOverrides {
@@ -841,24 +699,9 @@ fn clear_global_managed_workspace_overrides(
     next
 }
 
-fn is_tag_color(value: &str) -> bool {
-    value.len() == 7
-        && value.starts_with('#')
-        && value.chars().skip(1).all(|ch| ch.is_ascii_hexdigit())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn tag_form_helpers_normalize_inputs() {
-        assert_eq!(cleaned_tag_name("  #Planning  "), "Planning");
-        assert_eq!(normalized_tag_color(" #abcdef "), "#ABCDEF");
-        assert!(is_tag_color("#ABCDEF"));
-        assert!(!is_tag_color("ABCDEF"));
-        assert!(!is_tag_color("#ABCDEG"));
-    }
 
     #[test]
     fn segmented_setting_values_round_trip() {
@@ -924,7 +767,7 @@ mod tests {
     fn font_preview_style_reflects_current_typography() {
         assert_eq!(
             font_preview_style("system-ui", 17, 1.7),
-            "font-family: system-ui; font-size: 17px; line-height: 1.7;"
+            "--mn-editor-font: system-ui; --mn-editor-font-size: 17px; --mn-editor-line-height: 1.7; --mn-markdown-body-size: 17px; --mn-markdown-line-height: 1.7;"
         );
     }
 

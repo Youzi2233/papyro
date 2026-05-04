@@ -265,17 +265,34 @@ pub fn Slider(
     step: String,
     on_input: EventHandler<String>,
 ) -> Element {
+    let progress = slider_progress(&value, &min, &max);
+    let style = format!("--mn-range-progress: {progress:.2}%;");
+
     rsx! {
         input {
             class: "mn-range",
             r#type: "range",
             "aria-label": "{label}",
+            style,
             min: "{min}",
             max: "{max}",
             step: "{step}",
             value: "{value}",
             oninput: move |event| on_input.call(event.value()),
         }
+    }
+}
+
+fn slider_progress(value: &str, min: &str, max: &str) -> f64 {
+    let value = value.parse::<f64>().unwrap_or(0.0);
+    let min = min.parse::<f64>().unwrap_or(0.0);
+    let max = max.parse::<f64>().unwrap_or(100.0);
+    let span = max - min;
+
+    if span <= f64::EPSILON {
+        0.0
+    } else {
+        (((value - min) / span) * 100.0).clamp(0.0, 100.0)
     }
 }
 
@@ -320,6 +337,40 @@ pub fn TextInput(
             value: "{value}",
             onmousedown: move |event| event.stop_propagation(),
             ondoubleclick: move |event| event.stop_propagation(),
+            oninput: move |event| on_input.call(event.value()),
+            onkeydown: move |event| on_keydown.call(event),
+        }
+    }
+}
+
+#[component]
+pub fn RawTextInput(
+    id: Option<String>,
+    class_name: String,
+    label: String,
+    title: Option<String>,
+    placeholder: String,
+    value: String,
+    disabled: bool,
+    autofocus: bool,
+    on_focus: EventHandler<()>,
+    on_input: EventHandler<String>,
+    on_keydown: EventHandler<KeyboardEvent>,
+) -> Element {
+    rsx! {
+        input {
+            id: id.as_deref(),
+            class: "{class_name}",
+            r#type: "text",
+            disabled,
+            title: title.as_deref(),
+            "aria-label": "{label}",
+            autofocus,
+            placeholder: "{placeholder}",
+            value: "{value}",
+            onmousedown: move |event| event.stop_propagation(),
+            ondoubleclick: move |event| event.stop_propagation(),
+            onfocus: move |_| on_focus.call(()),
             oninput: move |event| on_input.call(event.value()),
             onkeydown: move |event| on_keydown.call(event),
         }

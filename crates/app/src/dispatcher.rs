@@ -801,10 +801,7 @@ fn close_tab(shell: AppShell, mut state: RuntimeState, tab_id: String) {
         .editor_runtime_commands
         .with_mut(|commands| commands.discard_for_tab(&tab.id));
 
-    let closed_title = tab.title;
-    state
-        .status_message
-        .set(Some(format!("Closed {closed_title}")));
+    state.status_message.set(None);
 
     trace_runtime_close_tab_handler(
         &tab.id,

@@ -2,8 +2,8 @@ pub mod file_tree;
 
 use crate::commands::{FileTarget, OpenMarkdownTarget};
 use crate::components::primitives::{
-    ActionButton, Button, ButtonState, ButtonVariant, ContextMenu, IconButton, MenuItem,
-    ResizeRail, SidebarSearchButton, TextInput,
+    ActionButton, Button, ButtonState, ButtonVariant, ContextMenu, IconButton, MenuItem, RawButton,
+    RawTextInput, ResizeRail, SidebarSearchButton, TextInput,
 };
 use crate::components::search::SearchResultsPanel;
 use crate::context::use_app_context;
@@ -275,21 +275,24 @@ pub fn Sidebar(on_search: EventHandler<()>, on_settings: EventHandler<()>) -> El
                 }
                 div { class: "{workspace_card_class}",
                     if let Some(root_path) = workspace_root_path.clone() {
-                        button {
-                            class: "mn-sidebar-workspace-main",
-                            r#type: "button",
-                            title: i18n.text(
+                        RawButton {
+                            class_name: "mn-sidebar-workspace-main".to_string(),
+                            label: None::<String>,
+                            title: Some(i18n.text(
                                 "Use the workspace root for new notes and folders",
                                 "将工作区根目录作为新建笔记和文件夹的位置",
-                            ),
-                            "aria-pressed": if workspace_root_selected { "true" } else { "false" },
-                            onmousedown: move |event| event.stop_propagation(),
-                            onclick: {
+                            ).to_string()),
+                            disabled: false,
+                            pressed: Some(workspace_root_selected),
+                            checked: None::<bool>,
+                            role: None::<String>,
+                            stop_events: true,
+                            on_click: {
                                 let commands = commands.clone();
                                 let root_path = root_path.clone();
                                 move |_| commands.select_path.call(root_path.clone())
                             },
-                            oncontextmenu: {
+                            on_context_menu: Some(EventHandler::new({
                                 let commands = commands.clone();
                                 let root_path = root_path.clone();
                                 let target_name = workspace_root_target_name.clone();
@@ -305,7 +308,7 @@ pub fn Sidebar(on_search: EventHandler<()>, on_settings: EventHandler<()>) -> El
                                         },
                                     }));
                                 }
-                            },
+                            })),
                             span { class: "mn-sidebar-workspace-name", "{workspace_name}" }
                             span { class: "mn-sidebar-workspace-path", "{workspace_path_text}" }
                         }
@@ -318,16 +321,20 @@ pub fn Sidebar(on_search: EventHandler<()>, on_settings: EventHandler<()>) -> El
                             span { class: "mn-sidebar-workspace-path", "{workspace_path_text}" }
                         }
                     }
-                    button {
-                        class: "mn-sidebar-workspace-switch",
-                        r#type: "button",
-                        title: workspace_switch_label,
-                        "aria-label": workspace_switch_label,
-                        onmousedown: move |event| event.stop_propagation(),
-                        onclick: move |event| {
+                    RawButton {
+                        class_name: "mn-sidebar-workspace-switch".to_string(),
+                        label: Some(workspace_switch_label.to_string()),
+                        title: Some(workspace_switch_label.to_string()),
+                        disabled: false,
+                        pressed: None::<bool>,
+                        checked: None::<bool>,
+                        role: None::<String>,
+                        stop_events: true,
+                        on_click: move |event: MouseEvent| {
                             event.stop_propagation();
                             workspace_switch_commands.open_workspace.call(());
                         },
+                        on_context_menu: None::<EventHandler<MouseEvent>>,
                         span { class: "mn-button-icon workspace", "aria-hidden": "true" }
                     }
                 }
@@ -472,22 +479,22 @@ fn SidebarInlineSearch(
             ondoubleclick: move |event| event.stop_propagation(),
             onclick: move |event| event.stop_propagation(),
             span { class: "mn-sidebar-search-icon", "⌕" }
-            input {
-                id: "mn-sidebar-search-input",
-                class: "mn-sidebar-search-input",
-                r#type: "text",
+            RawTextInput {
+                id: Some("mn-sidebar-search-input".to_string()),
+                class_name: "mn-sidebar-search-input".to_string(),
+                label: i18n.text("Search notes", "搜索笔记").to_string(),
+                title: Some(title),
+                placeholder: i18n.text("Search notes", "搜索笔记").to_string(),
+                value: query,
                 disabled: !has_workspace,
-                title,
-                "aria-label": i18n.text("Search notes", "搜索笔记"),
-                placeholder: i18n.text("Search notes", "搜索笔记"),
-                value: "{query}",
-                onfocus: move |_| search_focused.set(true),
-                oninput: move |event| {
+                autofocus: false,
+                on_focus: move |_| search_focused.set(true),
+                on_input: move |value| {
                     search_active_index.set(0);
                     search_focused.set(true);
-                    commands.search_workspace.call(event.value());
+                    commands.search_workspace.call(value);
                 },
-                onkeydown: move |event: KeyboardEvent| {
+                on_keydown: move |event: KeyboardEvent| {
                     match event.key() {
                         Key::Escape => {
                             event.prevent_default();
