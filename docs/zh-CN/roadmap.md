@@ -183,19 +183,22 @@ flowchart LR
 - 不能把 Tiptap 逻辑塞进一个新的巨型 `editor.js`。
 - 所有复杂 block 必须有 Markdown round-trip 策略和测试。
 - 迁移期间保留 `window.papyroEditor` facade，避免 Rust/Dioxus 侧被编辑器实现细节污染。
+- 以 Tiptap 官方 Notion-like editor template 作为交互参考，重点借鉴 slash command、浮动格式栏、块插入和响应式编辑器 chrome，但保持 Papyro local-first 和 Markdown-first。
 - 生成 bundle、桌面/mobile asset、CSS 行数预算、a11y、contrast、primitive usage 和 Rust/JS 测试必须持续通过。
 
 任务：
 
 - [x] 创建专用迁移分支 `feat-tiptap`。
 - [x] 写清 Tiptap 迁移架构、风险、分阶段计划和完成定义。
-- [ ] 提交并推送迁移计划。
+- [x] 提交并推送迁移计划。
+- [x] 抽出第一版 runtime adapter facade 契约和测试。
 - [ ] 把 JS 编辑器 runtime 拆出稳定 facade、registry 和 adapter 契约。
 - [ ] 默认保持 CodeMirror adapter，无行为变化地通过现有测试。
 - [ ] 安装并接入 Tiptap 基础依赖。
 - [ ] 在 feature flag 或 runtime selector 后面实现 Tiptap adapter 原型。
 - [ ] 支持基础 Markdown round-trip：段落、标题、列表、引用、粗体、斜体、行内代码、代码块、链接。
 - [ ] 重新定义 Source/Hybrid/Preview 模式契约：Hybrid 用 Tiptap，Preview 继续 Rust 渲染，Source 保持源码可编辑。
+- [ ] 增加 Notion-like 但 Papyro 原生的 slash command、浮动格式栏、块插入和响应式编辑器 toolbar primitives。
 - [ ] 保持 Rust/JS 协议兼容：`content_changed`、`insert_markdown`、`set_view_mode`、`set_preferences`、`destroy`、`runtime_error`。
 - [ ] 迁移 task list、table、math、Mermaid、image 和 code block。
 - [ ] 清理 CodeMirror 依赖、`.cm-*` CSS 和旧测试。

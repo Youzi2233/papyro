@@ -62,6 +62,21 @@ References:
 - [Tiptap Markdown basic usage](https://tiptap.dev/docs/editor/markdown/getting-started/basic-usage)
 - [Tiptap Markdown introduction](https://tiptap.dev/docs/editor/markdown)
 - [Tiptap JavaScript node views](https://tiptap.dev/docs/editor/extensions/custom-extensions/node-views/javascript)
+- [Tiptap Notion-like editor template](https://tiptap.dev/docs/ui-components/templates/notion-like-editor)
+
+## Notion-Like Interaction Reference
+
+The official Tiptap Notion-like template is a strong product reference for Papyro's future Hybrid editor. It demonstrates a block-based writing surface with slash commands, context-aware floating formatting, block drag and drop, responsive toolbars, dark/light theming, rich block insertion, link management, and undo/redo.
+
+Papyro should borrow the interaction model, not the full product dependency stack. The template requires a Start plan for production, is delivered as a React UI Components template, and includes cloud-oriented collaboration, AI, JWT, and upload service assumptions. Papyro remains a local-first Markdown app, so the migration should rebuild the relevant interaction patterns with vanilla Tiptap modules, local Markdown persistence, existing Dioxus chrome, and Papyro design tokens.
+
+Product targets inspired by the template:
+
+- **Slash command menu**: quick insert for headings, lists, tasks, tables, code, math, Mermaid, images, and future callouts.
+- **Floating toolbar**: compact contextual formatting for selected text, using Papyro primitives instead of browser-native controls.
+- **Block handle affordance**: optional block move/duplicate/delete controls after Markdown round-trip is stable.
+- **Responsive editor chrome**: adaptive toolbars that keep narrow windows usable without hiding core writing actions.
+- **Token-based styling**: `.mn-tiptap-*` classes should map to the existing theme system instead of importing template CSS wholesale.
 
 ## Engineering Standards
 
@@ -74,6 +89,7 @@ References:
 - **Budgets stay enforced**: bundle generation, file line budget, primitive usage, a11y, contrast, token audit, and Rust checks remain mandatory.
 - **Reusable extension system**: tables, math, Mermaid, images, and callouts should live in focused extension/adapter modules.
 - **IME and undo cannot regress**: IME, paste, undo/redo, selection, and keyboard navigation are acceptance criteria.
+- **Enterprise code quality**: generated implementation code must be reusable, iterative, robust, tested at the contract level, and safe to evolve without creating a second monolithic editor runtime.
 
 ## Target Architecture
 
@@ -107,10 +123,11 @@ flowchart TD
 
 - [x] Create the `feat-tiptap` branch.
 - [x] Document migration goals, risks, and acceptance criteria.
-- [ ] Commit and push the planning update.
+- [x] Commit and push the planning update.
 
 ### 1. Runtime Boundary
 
+- [x] Extract the first runtime adapter facade contract and tests.
 - [ ] Split the current `js/src/editor.js` facade into smaller runtime modules.
 - [ ] Define an `EditorRuntimeAdapter` contract: `mount`, `attachChannel`, `handleMessage`, `setViewMode`, `destroy`, and `getMarkdown`.
 - [ ] Keep the CodeMirror adapter as the default implementation with no behavior change.
@@ -126,6 +143,10 @@ flowchart TD
 ### 3. Source, Hybrid, And Preview
 
 - [ ] Hybrid uses Tiptap rich-text editing.
+- [ ] Hybrid interaction design references the official Notion-like template while staying local-first, Markdown-first, and Papyro-token based.
+- [ ] Add a Papyro slash command menu for common Markdown block insertion.
+- [ ] Add a Papyro floating formatting toolbar for selected text.
+- [ ] Add reusable UI primitives for Tiptap dropdowns, popovers, toolbars, and block action menus before wiring advanced blocks.
 - [ ] Source uses a source editor pane synchronized through `MarkdownSyncController`.
 - [ ] Preview remains Rust-rendered HTML.
 - [ ] Mode switching preserves selection, dirty state, and scroll snapshots.

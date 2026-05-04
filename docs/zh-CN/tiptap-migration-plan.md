@@ -62,6 +62,21 @@ Tiptap 官方文档确认三件事适合 Papyro：
 - [Tiptap Markdown basic usage](https://tiptap.dev/docs/editor/markdown/getting-started/basic-usage)
 - [Tiptap Markdown introduction](https://tiptap.dev/docs/editor/markdown)
 - [Tiptap JavaScript node views](https://tiptap.dev/docs/editor/extensions/custom-extensions/node-views/javascript)
+- [Tiptap Notion-like editor template](https://tiptap.dev/docs/ui-components/templates/notion-like-editor)
+
+## Notion-like 交互参考
+
+Tiptap 官方的 Notion-like template 是 Papyro 后续 Hybrid 编辑器非常值得参考的产品范式。它展示了块级写作界面、slash command、上下文浮动格式栏、块拖拽、响应式工具栏、暗亮主题、富 block 插入、链接管理和撤销重做等能力。
+
+Papyro 应该借鉴它的交互模型，而不是直接引入整套产品依赖。该模板生产使用需要 Start plan，本身是 React UI Components 模板，并且默认带有协作、AI、JWT 和上传服务等 Cloud 场景假设。Papyro 仍然是 local-first Markdown 应用，因此迁移时要用 vanilla Tiptap 模块、本地 Markdown 持久化、现有 Dioxus chrome 和 Papyro design tokens 重建适合自身的交互。
+
+受该模板启发的产品目标：
+
+- **Slash command 菜单**：快速插入标题、列表、任务、表格、代码、公式、Mermaid、图片和未来 callout。
+- **浮动格式栏**：选中文字时展示紧凑的上下文格式操作，使用 Papyro primitives，不使用浏览器原生控件。
+- **块级操作柄**：Markdown round-trip 稳定后，再支持移动、复制、删除等块级操作。
+- **响应式编辑器 chrome**：窄窗口下仍然保留核心写作动作，不让工具栏挤压正文。
+- **Token 化样式**：`.mn-tiptap-*` 语义类必须映射到现有主题系统，不整包照搬模板 CSS。
 
 ## 企业级工程准则
 
@@ -74,6 +89,7 @@ Tiptap 官方文档确认三件事适合 Papyro：
 - **预算受控**：继续满足 bundle 生成、单文件行数、UI primitive、a11y、contrast、token audit 和 Rust checks。
 - **可迭代 extension 体系**：表格、公式、Mermaid、图片、callout 都应是独立 extension/adapter 模块，而不是写进一个巨型 runtime 文件。
 - **输入法和撤销不可回归**：IME、paste、undo/redo、selection、keyboard navigation 是验收项，不是后续优化项。
+- **企业级代码质量**：生成实现代码必须高可复用、可迭代、健壮，有契约测试，并且不能制造第二个巨型编辑器 runtime。
 
 ## 目标架构
 
@@ -119,10 +135,11 @@ flowchart TD
 
 - [x] 创建 `feat-tiptap` 分支。
 - [x] 写清迁移计划、风险、验收标准并更新 roadmap。
-- [ ] 提交并推送计划文档。
+- [x] 提交并推送计划文档。
 
 ### 1. 建立运行时边界
 
+- [x] 抽出第一版 runtime adapter facade 契约和测试。
 - [ ] 把当前 `js/src/editor.js` facade 入口拆成小模块。
 - [ ] 定义 `EditorRuntimeAdapter` 契约：`mount`、`attachChannel`、`handleMessage`、`setViewMode`、`destroy`、`getMarkdown`。
 - [ ] 保持 CodeMirror adapter 默认启用，确保无行为变化。
@@ -138,6 +155,10 @@ flowchart TD
 ### 3. Source/Hybrid/Preview 模式契约
 
 - [ ] Hybrid 使用 Tiptap 富文本编辑。
+- [ ] Hybrid 交互设计参考官方 Notion-like template，但保持 local-first、Markdown-first 和 Papyro token 化样式。
+- [ ] 增加 Papyro slash command 菜单，用于常见 Markdown block 插入。
+- [ ] 增加 Papyro 浮动格式栏，用于选中文字后的上下文格式操作。
+- [ ] 先封装 Tiptap 下拉、popover、toolbar 和 block action menu primitives，再接高级 block。
 - [ ] Source 使用源码编辑面板，并通过 `MarkdownSyncController` 同步到 Tiptap。
 - [ ] Preview 继续使用 Rust HTML 渲染，不让 Tiptap 接管只读预览。
 - [ ] 模式切换不丢 selection、dirty state 或 scroll snapshot。

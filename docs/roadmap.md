@@ -208,19 +208,22 @@ Engineering bar:
 - Do not replace the current large runtime with another giant `editor.js`.
 - Every complex block needs a Markdown round-trip strategy and tests.
 - Preserve the `window.papyroEditor` facade during migration so Rust/Dioxus stay independent from editor internals.
+- Use the official Tiptap Notion-like editor template as an interaction benchmark for slash commands, floating toolbars, block insertion, and responsive editor chrome, while keeping Papyro local-first and Markdown-first.
 - Generated bundles, desktop/mobile assets, CSS line budgets, a11y, contrast, primitive usage, and Rust/JS tests must keep passing.
 
 Tasks:
 
 - [x] Create the dedicated `feat-tiptap` migration branch.
 - [x] Document the Tiptap migration architecture, risks, phases, and definition of done.
-- [ ] Commit and push the migration plan.
+- [x] Commit and push the migration plan.
+- [x] Extract the first runtime adapter facade contract and tests.
 - [ ] Split the JS editor runtime into a stable facade, registry, and adapter contract.
 - [ ] Keep the CodeMirror adapter as the default with no behavior change.
 - [ ] Install and wire the Tiptap foundation dependencies.
 - [ ] Implement a Tiptap adapter prototype behind a feature flag or runtime selector.
 - [ ] Support basic Markdown round-trip: paragraphs, headings, lists, blockquotes, bold, italic, inline code, code blocks, and links.
 - [ ] Redefine Source/Hybrid/Preview: Hybrid uses Tiptap, Preview remains Rust-rendered, and Source remains Markdown-editable.
+- [ ] Add Notion-like but Papyro-native slash command, floating toolbar, block insertion, and responsive editor toolbar primitives.
 - [ ] Preserve Rust/JS protocol compatibility for `content_changed`, `insert_markdown`, `set_view_mode`, `set_preferences`, `destroy`, and `runtime_error`.
 - [ ] Migrate task lists, tables, math, Mermaid, images, and code blocks.
 - [ ] Remove CodeMirror dependencies, `.cm-*` CSS, and obsolete tests.
