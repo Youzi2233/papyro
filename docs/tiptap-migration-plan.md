@@ -155,7 +155,7 @@ flowchart TD
 - [ ] Hybrid interaction design references the official Notion-like template while staying local-first, Markdown-first, and Papyro-token based.
 - [x] Add a Tiptap mode controller that normalizes Source, Hybrid, and Preview and keeps non-Hybrid modes non-editable in the rich-text editor.
 - [x] Add a reusable Tiptap slash command controller for headings, lists, quotes, code, dividers, tables, math, and Mermaid.
-- [ ] Add a Papyro slash command menu for common Markdown block insertion.
+- [x] Add a Papyro slash command menu controller with keyboard navigation and token-based styling for common Markdown block insertion.
 - [ ] Add a Papyro floating formatting toolbar for selected text.
 - [ ] Add reusable UI primitives for Tiptap dropdowns, popovers, toolbars, and block action menus before wiring advanced blocks.
 - [ ] Source uses a source editor pane synchronized through `MarkdownSyncController`.

@@ -167,7 +167,7 @@ flowchart TD
 - [ ] Hybrid 交互设计参考官方 Notion-like template，但保持 local-first、Markdown-first 和 Papyro token 化样式。
 - [x] 增加 Tiptap mode controller，统一 Source、Hybrid、Preview，并让非 Hybrid 模式关闭富文本编辑态。
 - [x] 增加可复用的 Tiptap slash command controller，覆盖标题、列表、引用、代码、分割线、表格、公式和 Mermaid。
-- [ ] 增加 Papyro slash command 菜单，用于常见 Markdown block 插入。
+- [x] 增加带键盘导航和 token 化样式的 Papyro slash command menu controller，用于常见 Markdown block 插入。
 - [ ] 增加 Papyro 浮动格式栏，用于选中文字后的上下文格式操作。
 - [ ] 先封装 Tiptap 下拉、popover、toolbar 和 block action menu primitives，再接高级 block。
 - [ ] Source 使用源码编辑面板，并通过 `MarkdownSyncController` 同步到 Tiptap。

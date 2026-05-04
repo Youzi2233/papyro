@@ -225,7 +225,8 @@ Tasks:
 - [x] Support basic Markdown round-trip: paragraphs, headings, lists, blockquotes, bold, italic, inline code, code blocks, and links.
 - [ ] Redefine Source/Hybrid/Preview: Hybrid uses Tiptap, Preview remains Rust-rendered, and Source remains Markdown-editable.
 - [x] Add a reusable slash command controller as the headless foundation for Notion-like but Papyro-native block insertion.
-- [ ] Add Notion-like but Papyro-native slash command menu, floating toolbar, block handle, and responsive editor toolbar primitives.
+- [x] Add the first Notion-like but Papyro-native slash command menu controller.
+- [ ] Add Papyro-native floating toolbar, block handle, and responsive editor toolbar primitives.
 - [ ] Preserve Rust/JS protocol compatibility for `content_changed`, `insert_markdown`, `set_view_mode`, `set_preferences`, `destroy`, and `runtime_error`.
 - [ ] Migrate task lists, tables, math, Mermaid, images, and code blocks.
 - [ ] Remove CodeMirror dependencies, `.cm-*` CSS, and obsolete tests.

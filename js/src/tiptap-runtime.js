@@ -5,6 +5,7 @@ import { createTiptapRuntimeAdapter } from "./editor-runtime.js";
 import { createMarkdownSyncController } from "./markdown-sync-controller.js";
 import { createTiptapModeController } from "./tiptap-mode-controller.js";
 import { createTiptapSlashCommandController } from "./tiptap-slash-commands.js";
+import { createTiptapSlashMenuController } from "./tiptap-slash-menu.js";
 import {
   createPapyroMarkdownManager,
   createPapyroTiptapExtensions,
@@ -28,7 +29,7 @@ function defaultDocument() {
   return typeof document === "undefined" ? null : document;
 }
 
-function defaultEditorOptions(initialContent, extensions, viewMode) {
+function defaultEditorOptions(initialContent, extensions, viewMode, tabId, registry) {
   return {
     element: null,
     extensions: [...extensions, Markdown],
@@ -39,6 +40,10 @@ function defaultEditorOptions(initialContent, extensions, viewMode) {
     editorProps: {
       attributes: {
         class: "mn-tiptap-editor",
+      },
+      handleKeyDown: (_view, event) => {
+        const entry = registry.get(tabId);
+        return entry?.slashMenu?.handleKeyDown(event) ?? false;
       },
     },
   };
@@ -51,6 +56,7 @@ function createEntry({
   modeController,
   markdownSync,
   slashCommands,
+  slashMenu,
 }) {
   return {
     editor,
@@ -62,6 +68,7 @@ function createEntry({
     modeController,
     markdownSync,
     slashCommands,
+    slashMenu,
   };
 }
 
@@ -74,6 +81,7 @@ export function createTiptapEditorRuntime({
   markdownSyncFactory = createMarkdownSyncController,
   modeControllerFactory = createTiptapModeController,
   slashCommandControllerFactory = createTiptapSlashCommandController,
+  slashMenuControllerFactory = createTiptapSlashMenuController,
   navigation,
 } = {}) {
   const runtimeRegistry = requireObject(registry, "registry");
@@ -93,6 +101,10 @@ export function createTiptapEditorRuntime({
   const createSlashCommandController = requireFunction(
     slashCommandControllerFactory,
     "slashCommandControllerFactory",
+  );
+  const createSlashMenuController = requireFunction(
+    slashMenuControllerFactory,
+    "slashMenuControllerFactory",
   );
 
   const controls = requireObject(navigation, "navigation");
@@ -144,8 +156,20 @@ export function createTiptapEditorRuntime({
     });
     const modeController = createModeController(viewMode);
     const slashCommands = createSlashCommandController();
+    const slashMenu = createSlashMenuController({
+      commandController: slashCommands,
+      dom: {
+        document: documentRef,
+      },
+    });
     const editor = new TiptapEditor(
-      defaultEditorOptions(markdownSync.markdown, extensions, modeController.mode),
+      defaultEditorOptions(
+        markdownSync.markdown,
+        extensions,
+        modeController.mode,
+        tabId,
+        runtimeRegistry,
+      ),
     );
     if (typeof editor.on === "function") {
       editor.on("update", ({ editor: updatedEditor } = {}) => {
@@ -158,6 +182,15 @@ export function createTiptapEditorRuntime({
           tab_id: tabId,
           content: markdown,
         });
+        entry.slashMenu.refresh(targetEditor);
+      });
+      editor.on("selectionUpdate", ({ editor: updatedEditor } = {}) => {
+        const targetEditor = updatedEditor ?? editor;
+        const entry = runtimeRegistry.get(tabId);
+        entry?.slashMenu?.refresh(targetEditor);
+      });
+      editor.on("blur", () => {
+        runtimeRegistry.get(tabId)?.slashMenu?.close();
       });
     }
     editor.mount?.(root);
@@ -169,8 +202,10 @@ export function createTiptapEditorRuntime({
       modeController,
       markdownSync,
       slashCommands,
+      slashMenu,
     });
     modeController.apply(entry, modeController.mode);
+    slashMenu.attach({ editor, root, entry });
     runtimeRegistry.set(tabId, entry);
 
     return editor;
@@ -240,6 +275,7 @@ export function createTiptapEditorRuntime({
           released = runtimeRegistry.get(tabId);
           runtimeRegistry.delete(tabId);
         }
+        released?.slashMenu?.destroy?.();
         released?.editor?.destroy?.();
       }
     },
