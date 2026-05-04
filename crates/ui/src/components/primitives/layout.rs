@@ -62,10 +62,6 @@ pub(super) fn resize_rail_class(is_resizing: bool, class_name: &str) -> String {
         .extend(class_name)
 }
 
-pub(super) fn resize_rail_overlay_class(class_name: &str) -> String {
-    append_class("mn-resize-rail-overlay", class_name)
-}
-
 pub(super) fn scroll_container_class(class_name: &str) -> String {
     append_class("mn-scroll-container", class_name)
 }
@@ -176,14 +172,10 @@ pub fn EditorTabScrollButton(
 pub fn ResizeRail(
     label: String,
     class_name: String,
-    overlay_class_name: String,
     is_resizing: bool,
     on_start: EventHandler<MouseEvent>,
-    on_drag: EventHandler<MouseEvent>,
-    on_end: EventHandler<MouseEvent>,
 ) -> Element {
     let class = resize_rail_class(is_resizing, &class_name);
-    let overlay_class = resize_rail_overlay_class(&overlay_class_name);
 
     rsx! {
         div {
@@ -193,13 +185,6 @@ pub fn ResizeRail(
             role: "separator",
             "aria-orientation": "vertical",
             onmousedown: move |event| on_start.call(event),
-        }
-        if is_resizing {
-            div {
-                class: "{overlay_class}",
-                onmousemove: move |event| on_drag.call(event),
-                onmouseup: move |event| on_end.call(event),
-            }
         }
     }
 }

@@ -18,6 +18,80 @@ pub use file_tree::{FileTree, FileTreeSortMode};
 
 const SIDEBAR_MIN_WIDTH: u32 = 240;
 const SIDEBAR_MAX_WIDTH: u32 = 380;
+const SIDEBAR_RESIZE_SCRIPT: &str = r#"
+const previous = window.__papyroSidebarResize;
+if (previous?.cleanup) {
+    previous.cleanup();
+}
+
+const minWidth = 240;
+const maxWidth = 380;
+const sidebar = document.querySelector(".mn-sidebar");
+if (!sidebar) {
+    dioxus.send("cancel");
+} else {
+    let finish = () => {};
+    const done = new Promise((resolve) => {
+        finish = resolve;
+    });
+    const startX = Number(await dioxus.recv());
+    const startWidth = Number(await dioxus.recv());
+    const clampWidth = (width) => Math.round(Math.min(maxWidth, Math.max(minWidth, width)));
+    let latestWidth = clampWidth(startWidth);
+    let frame = 0;
+
+    const applyWidth = () => {
+        frame = 0;
+        sidebar.style.width = `${latestWidth}px`;
+    };
+    const requestApply = () => {
+        if (!frame) {
+            frame = requestAnimationFrame(applyWidth);
+        }
+    };
+    const setResizing = (enabled) => {
+        sidebar.classList.toggle("resizing", enabled);
+        document.documentElement.classList.toggle("mn-sidebar-resizing", enabled);
+    };
+    const move = (event) => {
+        latestWidth = clampWidth(startWidth + event.clientX - startX);
+        requestApply();
+        event.preventDefault();
+    };
+    const cleanup = () => {
+        window.removeEventListener("pointermove", move, true);
+        window.removeEventListener("pointerup", up, true);
+        window.removeEventListener("pointercancel", cancel, true);
+        if (frame) {
+            cancelAnimationFrame(frame);
+            applyWidth();
+        }
+        setResizing(false);
+        if (window.__papyroSidebarResize?.cleanup === cleanup) {
+            window.__papyroSidebarResize = null;
+        }
+        finish();
+    };
+    const up = (event) => {
+        move(event);
+        cleanup();
+        dioxus.send(String(latestWidth));
+    };
+    const cancel = () => {
+        cleanup();
+        sidebar.style.width = `${clampWidth(startWidth)}px`;
+        dioxus.send("cancel");
+    };
+
+    window.__papyroSidebarResize = { cleanup };
+    setResizing(true);
+    requestApply();
+    window.addEventListener("pointermove", move, true);
+    window.addEventListener("pointerup", up, true);
+    window.addEventListener("pointercancel", cancel, true);
+    await done;
+}
+"#;
 const SIDEBAR_SEARCH_DISMISS_SCRIPT: &str = r#"
 const previous = window.__papyroSidebarSearchDismiss;
 if (previous) {
@@ -86,13 +160,11 @@ pub fn Sidebar(on_search: EventHandler<()>, on_settings: EventHandler<()>) -> El
     let mut create_name = use_signal(String::new);
     let mut show_create = use_signal(|| false);
     let mut resize_drag = use_signal(|| None::<SidebarResizeDrag>);
-    let mut resize_preview_width = use_signal(|| None::<u32>);
     let mut workspace_menu = use_signal(|| None::<SidebarWorkspaceMenu>);
     let mut search_focused = use_signal(|| false);
     let search_active_index = use_signal(|| 0usize);
 
     let configured_sidebar_width = (app.sidebar_width)();
-    let sidebar_width = resize_preview_width().unwrap_or(configured_sidebar_width);
     let sidebar_class = if resize_drag().is_some() {
         "mn-sidebar resizing"
     } else {
@@ -150,7 +222,7 @@ pub fn Sidebar(on_search: EventHandler<()>, on_settings: EventHandler<()>) -> El
     rsx! {
         aside {
             class: "{sidebar_class}",
-            style: format!("width: {}px", sidebar_width),
+            style: format!("width: {}px", configured_sidebar_width),
             onclick: move |_| {
                 workspace_menu.set(None);
                 search_focused.set(false);
@@ -314,36 +386,38 @@ pub fn Sidebar(on_search: EventHandler<()>, on_settings: EventHandler<()>) -> El
             ResizeRail {
                 label: i18n.text("Resize sidebar", "调整侧边栏宽度").to_string(),
                 class_name: "mn-sidebar-resize-handle".to_string(),
-                overlay_class_name: "mn-sidebar-resize-overlay".to_string(),
                 is_resizing: resize_drag().is_some(),
                 on_start: move |event: MouseEvent| {
                     event.prevent_default();
                     event.stop_propagation();
                     let started_at = perf_timer();
-                    resize_drag.set(Some(SidebarResizeDrag {
+                    let drag = SidebarResizeDrag {
                         start_x: event.client_coordinates().x,
-                        start_width: sidebar_width,
+                        start_width: configured_sidebar_width,
                         started_at,
-                    }));
-                    resize_preview_width.set(Some(sidebar_width));
-                },
-                on_drag: move |event: MouseEvent| {
-                    if let Some(drag) = resize_drag() {
-                        event.prevent_default();
-                        let width = sidebar_width_from_drag(drag, event.client_coordinates().x);
-                        resize_preview_width.set(Some(width));
-                    }
-                },
-                on_end: move |event: MouseEvent| {
-                    if let Some(drag) = resize_drag() {
-                        event.prevent_default();
-                        let width = sidebar_width_from_drag(drag, event.client_coordinates().x);
-                        resize_preview_width.set(Some(width));
-                        crate::chrome::set_sidebar_width(resize_commands.clone(), width);
-                        trace_sidebar_resize(drag.start_width, width, drag.started_at);
+                    };
+                    resize_drag.set(Some(drag));
+
+                    let mut eval = document::eval(SIDEBAR_RESIZE_SCRIPT);
+                    let commands = resize_commands.clone();
+                    spawn(async move {
+                        if eval.send(drag.start_x).is_err() || eval.send(drag.start_width).is_err() {
+                            resize_drag.set(None);
+                            return;
+                        }
+
+                        match eval.recv::<String>().await {
+                            Ok(width) if width != "cancel" => {
+                                if let Ok(width) = width.parse::<u32>() {
+                                    let width = clamp_sidebar_width(width as f64);
+                                    crate::chrome::set_sidebar_width(commands, width);
+                                    trace_sidebar_resize(drag.start_width, width, drag.started_at);
+                                }
+                            }
+                            _ => {}
+                        }
                         resize_drag.set(None);
-                        resize_preview_width.set(None);
-                    }
+                    });
                 },
             }
             if let Some(menu) = workspace_menu() {
@@ -535,6 +609,7 @@ fn sidebar_context_menu_style(position: SidebarContextMenuPosition) -> String {
     )
 }
 
+#[cfg(test)]
 fn sidebar_width_from_drag(drag: SidebarResizeDrag, current_x: f64) -> u32 {
     clamp_sidebar_width(drag.start_width as f64 + current_x - drag.start_x)
 }

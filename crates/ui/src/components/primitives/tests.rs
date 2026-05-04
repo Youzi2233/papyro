@@ -8,7 +8,7 @@ use super::forms::{
 use super::layout::{
     app_shell_class, editor_tab_scroll_button_class, editor_tool_button_class,
     editor_toolbar_class, inline_overflow_class, main_column_class, resize_rail_class,
-    resize_rail_overlay_class, scroll_container_class, toolbar_zone_class, workbench_class,
+    scroll_container_class, toolbar_zone_class, workbench_class,
 };
 use super::navigation::{
     outline_item_class, sidebar_search_button_class, tree_caret_class, tree_icon_class,
@@ -120,10 +120,6 @@ fn layout_helpers_extend_base_classes() {
     assert_eq!(
         resize_rail_class(true, "mn-sidebar-resize-handle"),
         "mn-resize-rail resizing mn-sidebar-resize-handle"
-    );
-    assert_eq!(
-        resize_rail_overlay_class("mn-sidebar-resize-overlay"),
-        "mn-resize-rail-overlay mn-sidebar-resize-overlay"
     );
     assert_eq!(scroll_container_class(""), "mn-scroll-container");
     assert_eq!(

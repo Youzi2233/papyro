@@ -594,7 +594,7 @@ impl EditorPaneViewModel {
                 let is_active = Some(tab.id.as_str()) == active_tab_id.as_deref();
                 EditorTabItemViewModel {
                     id: tab.id.clone(),
-                    title: tab.title.clone(),
+                    title: tab_display_title(tab),
                     is_dirty: tab.is_dirty,
                     save_status: tab.save_status.clone(),
                     is_active,
@@ -618,6 +618,15 @@ impl EditorPaneViewModel {
             host_items,
         }
     }
+}
+
+fn tab_display_title(tab: &EditorTab) -> String {
+    tab.path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .filter(|name| !name.trim().is_empty())
+        .map(str::to_string)
+        .unwrap_or_else(|| tab.title.clone())
 }
 
 fn document_snapshot_for_tab(
@@ -1348,7 +1357,7 @@ mod tests {
             vec![
                 EditorTabItemViewModel {
                     id: "a".to_string(),
-                    title: "Note a".to_string(),
+                    title: "a.md".to_string(),
                     is_dirty: false,
                     save_status: SaveStatus::Saved,
                     is_active: true,
@@ -1357,7 +1366,7 @@ mod tests {
                 },
                 EditorTabItemViewModel {
                     id: "b".to_string(),
-                    title: "Note b".to_string(),
+                    title: "b.md".to_string(),
                     is_dirty: false,
                     save_status: SaveStatus::Saved,
                     is_active: false,
@@ -1395,6 +1404,20 @@ mod tests {
                 },
             ]
         );
+    }
+
+    #[test]
+    fn editor_pane_view_model_uses_file_name_for_tab_titles() {
+        let mut editor_tabs = EditorTabs::default();
+        let mut tab = editor_tab("a");
+        tab.title = "Document heading".to_string();
+        tab.path = PathBuf::from("workspace/architecture-beginner-guide.md");
+        editor_tabs.open_tab(tab);
+
+        let model =
+            EditorPaneViewModel::from_editor_state(&editor_tabs, &TabContentsMap::default(), None);
+
+        assert_eq!(model.tab_items[0].title, "architecture-beginner-guide.md");
     }
 
     #[test]

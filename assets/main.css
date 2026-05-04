@@ -863,7 +863,7 @@ button { border: 0; cursor: pointer; background: transparent; }
 }
 
 .mn-resize-rail,
-.mn-resize-rail-overlay {
+.mn-sidebar-resizing {
     cursor: col-resize;
     user-select: none;
 }
@@ -909,9 +909,13 @@ button { border: 0; cursor: pointer; background: transparent; }
 }
 
 .mn-sidebar.resizing,
-.mn-sidebar-resize-overlay {
+.mn-sidebar-resizing {
     cursor: col-resize;
     user-select: none;
+}
+
+.mn-sidebar.resizing {
+    transition: opacity 0.15s ease;
 }
 
 .mn-sidebar-resize-handle {
@@ -939,13 +943,6 @@ button { border: 0; cursor: pointer; background: transparent; }
 .mn-sidebar-resize-handle:hover::after,
 .mn-sidebar.resizing .mn-sidebar-resize-handle::after {
     background: var(--mn-accent);
-}
-
-.mn-sidebar-resize-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 2000;
-    background: transparent;
 }
 
 .mn-sidebar-header {
