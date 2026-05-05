@@ -160,7 +160,7 @@ flowchart TD
 - [x] Add a Papyro block handle controller as the hover entry point for future block actions.
 - [x] Add the first Papyro block action menu controller for basic insert, transform, and delete actions.
 - [ ] Add reusable UI primitives for Tiptap dropdowns, popovers, responsive toolbars, and advanced block action menus before wiring advanced blocks.
-- [ ] Source uses a source editor pane synchronized through `MarkdownSyncController`.
+- [x] Source uses a source editor pane synchronized through `MarkdownSyncController`.
 - [x] Add `MarkdownSyncController` as the canonical Markdown state boundary for Tiptap runtime updates.
 - [ ] Preview remains Rust-rendered HTML.
 - [ ] Mode switching preserves selection, dirty state, and scroll snapshots.

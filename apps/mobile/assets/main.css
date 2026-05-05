@@ -985,6 +985,43 @@ small {
     line-height: 1.7;
 }
 
+.mn-tiptap-runtime {
+    flex: 1;
+    min-height: 0;
+    min-width: 0;
+    width: 100%;
+    overflow: auto;
+    background: var(--mn-panel);
+    color: var(--mn-text);
+}
+
+.mn-tiptap-editor,
+.mn-tiptap-source-pane {
+    box-sizing: border-box;
+    min-height: 100%;
+    width: 100%;
+    padding: 22px;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    line-height: 1.7;
+}
+
+.mn-tiptap-source-pane {
+    display: block;
+    resize: none;
+    font-family: ui-monospace, "SFMono-Regular", "Cascadia Code", Consolas, monospace;
+    tab-size: 4;
+    white-space: pre-wrap;
+}
+
+.mn-tiptap-source-pane[hidden],
+.mn-tiptap-runtime[data-view-mode="source"] .mn-tiptap-editor {
+    display: none;
+}
+
 .mn-preview-notice {
     margin-bottom: 12px;
     padding: 10px 12px;

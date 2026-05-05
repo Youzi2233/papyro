@@ -35,6 +35,7 @@ function createRuntimeHarness({
   formatToolbarControllerFactory,
   pasteControllerFactory,
   preferencesControllerFactory,
+  sourcePaneControllerFactory,
   slashMenuControllerFactory,
 } = {}) {
   const calls = [];
@@ -180,6 +181,7 @@ function createRuntimeHarness({
     formatToolbarControllerFactory: createFormatToolbar,
     pasteControllerFactory: createPasteController,
     ...(preferencesControllerFactory ? { preferencesControllerFactory } : {}),
+    ...(sourcePaneControllerFactory ? { sourcePaneControllerFactory } : {}),
     slashMenuControllerFactory: createSlashMenu,
     navigation: {
       attachPreviewScroll: () => "preview-scroll",
@@ -381,6 +383,82 @@ test("Tiptap runtime preserves insert_markdown protocol updates", () => {
       content: "# Note\n- item",
     },
   ]);
+});
+
+test("Tiptap runtime mounts and updates the source pane controller", () => {
+  const sourcePaneCalls = [];
+  const sourcePaneControllerFactory = () => ({
+    attach: ({ root, entry }) => sourcePaneCalls.push(["attach", root.className, entry.viewMode]),
+    applyMode: (entry) => sourcePaneCalls.push(["applyMode", entry.viewMode]),
+    setMarkdown: (markdown) => sourcePaneCalls.push(["setMarkdown", markdown]),
+    insertMarkdown: () => {
+      sourcePaneCalls.push(["insertMarkdown"]);
+      return false;
+    },
+    focus: () => {
+      sourcePaneCalls.push(["focus"]);
+      return false;
+    },
+    destroy: () => sourcePaneCalls.push(["destroy"]),
+  });
+  const { runtime } = createRuntimeHarness({ sourcePaneControllerFactory });
+
+  runtime.ensureEditor({
+    tabId: "tab-a",
+    containerId: "editor-root",
+    initialContent: "# Note",
+    viewMode: "source",
+  });
+  runtime.handleRustMessage("tab-a", { type: "set_view_mode", mode: "hybrid" });
+  runtime.handleRustMessage("tab-a", { type: "set_content", content: "## Updated" });
+  runtime.handleRustMessage("tab-a", { type: "destroy" });
+
+  assert.deepEqual(sourcePaneCalls, [
+    ["attach", "mn-tiptap-runtime", "source"],
+    ["applyMode", "hybrid"],
+    ["setMarkdown", "## Updated"],
+    ["destroy"],
+  ]);
+});
+
+test("Tiptap runtime routes source mode insert and focus through source pane", () => {
+  const sourcePaneCalls = [];
+  const sourcePaneControllerFactory = () => ({
+    attach: () => sourcePaneCalls.push(["attach"]),
+    applyMode: () => sourcePaneCalls.push(["applyMode"]),
+    setMarkdown: () => sourcePaneCalls.push(["setMarkdown"]),
+    insertMarkdown: (_entry, markdown, cursorOffset) => {
+      sourcePaneCalls.push(["insertMarkdown", markdown, cursorOffset]);
+      return true;
+    },
+    focus: () => {
+      sourcePaneCalls.push(["focus"]);
+      return true;
+    },
+    destroy: () => sourcePaneCalls.push(["destroy"]),
+  });
+  const { calls, runtime } = createRuntimeHarness({ sourcePaneControllerFactory });
+  runtime.ensureEditor({
+    tabId: "tab-a",
+    containerId: "editor-root",
+    initialContent: "# Note",
+    viewMode: "source",
+  });
+  calls.length = 0;
+  sourcePaneCalls.length = 0;
+
+  runtime.handleRustMessage("tab-a", {
+    type: "insert_markdown",
+    markdown: "$x$",
+    cursor_offset: 2,
+  });
+  runtime.handleRustMessage("tab-a", { type: "focus" });
+
+  assert.deepEqual(sourcePaneCalls, [
+    ["insertMarkdown", "$x$", 2],
+    ["focus"],
+  ]);
+  assert.deepEqual(calls, []);
 });
 
 test("Tiptap runtime applies preferences through the injected controller", () => {

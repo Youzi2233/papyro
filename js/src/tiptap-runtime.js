@@ -16,6 +16,7 @@ import { createTiptapFormatToolbarController } from "./tiptap-format-toolbar.js"
 import { createTiptapModeController } from "./tiptap-mode-controller.js";
 import { createTiptapPasteController } from "./tiptap-paste-controller.js";
 import { createTiptapPreferencesController } from "./tiptap-preferences-controller.js";
+import { createTiptapSourcePaneController } from "./tiptap-source-pane.js";
 import { createTiptapSlashCommandController } from "./tiptap-slash-commands.js";
 import { createTiptapSlashMenuController } from "./tiptap-slash-menu.js";
 import {
@@ -151,6 +152,7 @@ function createEntry({
   formatToolbar,
   pasteController,
   preferencesController,
+  sourcePane,
   slashCommands,
   slashMenu,
 }) {
@@ -171,6 +173,7 @@ function createEntry({
     pasteController,
     preferences: preferencesController.preferences,
     preferencesController,
+    sourcePane,
     slashCommands,
     slashMenu,
   };
@@ -192,6 +195,7 @@ export function createTiptapEditorRuntime({
   formatToolbarControllerFactory = createTiptapFormatToolbarController,
   pasteControllerFactory = createTiptapPasteController,
   preferencesControllerFactory = createTiptapPreferencesController,
+  sourcePaneControllerFactory = createTiptapSourcePaneController,
   slashCommandControllerFactory = createTiptapSlashCommandController,
   slashMenuControllerFactory = createTiptapSlashMenuController,
   clipboard = {},
@@ -243,6 +247,10 @@ export function createTiptapEditorRuntime({
     preferencesControllerFactory,
     "preferencesControllerFactory",
   );
+  const createSourcePane = requireFunction(
+    sourcePaneControllerFactory,
+    "sourcePaneControllerFactory",
+  );
   const createSlashCommandController = requireFunction(
     slashCommandControllerFactory,
     "slashCommandControllerFactory",
@@ -292,6 +300,7 @@ export function createTiptapEditorRuntime({
       existing.dom.dataset.tabId = tabId;
       existing.instanceId = instanceId;
       existing.modeController.apply(existing, viewMode ?? existing.viewMode);
+      existing.sourcePane.applyMode(existing);
       existing.blockHandle.refresh();
       existing.formatToolbar.refresh(existing.editor);
       return existing.editor;
@@ -333,6 +342,7 @@ export function createTiptapEditorRuntime({
     });
     const pasteController = createPasteController();
     const preferencesController = createPreferencesController();
+    const sourcePane = createSourcePane({ document: documentRef });
     const slashCommands = createSlashCommandController();
     const slashMenu = createSlashMenuController({
       commandController: slashCommands,
@@ -362,6 +372,7 @@ export function createTiptapEditorRuntime({
           tab_id: tabId,
           content: markdown,
         });
+        entry.sourcePane.setMarkdown(markdown);
         entry.blockHandle.refresh();
         entry.slashMenu.refresh(targetEditor);
         entry.formatToolbar.refresh(targetEditor);
@@ -394,12 +405,14 @@ export function createTiptapEditorRuntime({
       formatToolbar,
       pasteController,
       preferencesController,
+      sourcePane,
       slashCommands,
       slashMenu,
     });
     modeController.apply(entry, modeController.mode);
     blockHintsController.attach(entry);
     preferencesController.attach(entry);
+    sourcePane.attach({ editor, root, entry });
     blockHandle.attach({ editor, root, entry });
     formatToolbar.attach({ editor, root, entry });
     pasteController.attach({ editor, root, entry });
@@ -426,6 +439,7 @@ export function createTiptapEditorRuntime({
 
       if (message.type === "set_view_mode") {
         entry.modeController.apply(entry, message.mode);
+        entry.sourcePane.applyMode(entry);
         entry.blockHandle.refresh();
         entry.formatToolbar.refresh(entry.editor);
         syncOutline(tabId, entry.viewMode);
@@ -437,6 +451,7 @@ export function createTiptapEditorRuntime({
             entry.editor.commands?.setContent?.(entry.markdownSync.markdown, {
               contentType: "markdown",
             });
+            entry.sourcePane.setMarkdown(entry.markdownSync.markdown);
           } finally {
             entry.suppressChange = false;
           }
@@ -448,6 +463,9 @@ export function createTiptapEditorRuntime({
           });
         }
       } else if (message.type === "insert_markdown") {
+        if (entry.sourcePane.insertMarkdown(entry, message.markdown ?? "", message.cursor_offset)) {
+          return;
+        }
         entry.editor.commands?.insertContent?.(message.markdown ?? "", {
           contentType: "markdown",
         });
@@ -484,6 +502,9 @@ export function createTiptapEditorRuntime({
           });
         }
       } else if (message.type === "focus") {
+        if (entry.sourcePane.focus(entry)) {
+          return;
+        }
         entry.editor.commands?.focus?.();
       } else if (message.type === "destroy") {
         if (
@@ -503,6 +524,7 @@ export function createTiptapEditorRuntime({
         released?.blockHandle?.destroy?.();
         released?.formatToolbar?.destroy?.();
         released?.pasteController?.destroy?.();
+        released?.sourcePane?.destroy?.();
         released?.slashMenu?.destroy?.();
         released?.editor?.destroy?.();
         return "destroyed";

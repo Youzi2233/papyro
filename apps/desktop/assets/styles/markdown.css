@@ -223,6 +223,39 @@
     caret-color: var(--mn-accent);
 }
 
+.mn-tiptap-source-pane {
+    box-sizing: border-box;
+    display: block;
+    min-height: 100%;
+    width: 100%;
+    max-width: var(--mn-document-measure);
+    margin-inline: auto;
+    padding: var(--mn-document-pad-top) var(--mn-document-pad-x) var(--mn-document-pad-bottom);
+    border: 0;
+    outline: 0;
+    resize: none;
+    background: var(--mn-editor-bg);
+    color: var(--mn-editor-ink);
+    caret-color: var(--mn-accent);
+    font-family: var(--mn-document-code-font);
+    font-size: var(--mn-document-body-size);
+    line-height: var(--mn-document-line-height);
+    tab-size: 4;
+    white-space: pre-wrap;
+}
+
+.mn-tiptap-source-pane[hidden] {
+    display: none;
+}
+
+.mn-tiptap-runtime[data-view-mode="source"] .mn-tiptap-editor {
+    display: none;
+}
+
+.mn-tiptap-source-pane::selection {
+    background: var(--mn-hybrid-selection, var(--mn-selection-bg, rgba(100, 116, 139, .26)));
+}
+
 .mn-tiptap-editor > *:first-child { margin-top: 0; }
 .mn-tiptap-editor > *:last-child { margin-bottom: 0; }
 

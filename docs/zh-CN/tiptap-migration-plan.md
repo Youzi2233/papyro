@@ -172,7 +172,7 @@ flowchart TD
 - [x] 增加 Papyro 块操作柄 controller，作为后续块操作的 hover 入口。
 - [x] 增加第一版 Papyro 块操作菜单 controller，用于基础插入、转换和删除操作。
 - [ ] 先封装 Tiptap 下拉、popover、响应式 toolbar 和高级 block action menu primitives，再接高级 block。
-- [ ] Source 使用源码编辑面板，并通过 `MarkdownSyncController` 同步到 Tiptap。
+- [x] Source 使用源码编辑面板，并通过 `MarkdownSyncController` 同步到 Tiptap。
 - [x] 增加 `MarkdownSyncController`，作为 Tiptap runtime 更新的 canonical Markdown 状态边界。
 - [ ] Preview 继续使用 Rust HTML 渲染，不让 Tiptap 接管只读预览。
 - [ ] 模式切换不丢 selection、dirty state 或 scroll snapshot。
