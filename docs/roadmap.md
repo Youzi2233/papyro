@@ -244,6 +244,7 @@ Tasks:
 - [x] Add a reset-formatting block action that clears marks, color, and highlights from the current block with localized English/Chinese labels.
 - [x] Make the `+` insertion control create a dedicated slash paragraph on the next line and open the insertion menu at that caret position instead of behaving like a hidden block action.
 - [x] Keep the block action menu focused on current-block actions and styles, with insertion owned by `+` and slash commands.
+- [x] Clean up the temporary `/` paragraph created by the `+` insertion flow when the user cancels the menu, while preserving slash triggers the user typed manually.
 - [x] Add a table-size picker to the slash/`+` insertion menu so users can insert 1x1 through 6x6 tables instead of only the fixed 3x2 default.
 - [x] Add the first Tiptap table floating toolbar with row/column insertion and deletion, cell merge/split, header toggles, and table deletion.
 - [x] Upgrade the Tiptap table toolbar into grouped column, row, cell, header, navigation, repair, and delete commands so table editing feels closer to mature document editors.

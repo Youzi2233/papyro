@@ -99,6 +99,7 @@ function createViewSpy() {
         state.commands.map((command) => command.id),
         state.selectedIndex,
         state.range,
+        state.cleanupRangeOnClose ?? false,
       ]);
       this.choose = state.choose;
     },
@@ -246,6 +247,7 @@ test("Tiptap slash menu opens from editor text and ranks commands", () => {
       ["heading-1", "heading-2", "heading-3"],
       0,
       { from: 6, to: 9 },
+      false,
     ],
   ]);
 });
@@ -423,6 +425,48 @@ test("Tiptap slash menu opens as a block insert menu without deleting a trigger"
     ["setParagraph"],
     ["focus"],
   ]);
+});
+
+test("Tiptap slash menu removes temporary block insert triggers on cancel", () => {
+  const { calls, editor } = createEditor("plain");
+  const view = createViewSpy();
+  const controller = createTiptapSlashMenuController({ view });
+  controller.attach({ editor, root: {} });
+
+  controller.openAtBlock({
+    pos: 3,
+    node: {
+      nodeSize: 5,
+    },
+  });
+  controller.close();
+
+  assert.equal(controller.state.open, false);
+  assert.deepEqual(calls, [
+    [
+      "insertContentAt",
+      8,
+      { type: "paragraph", content: [{ type: "text", text: "/" }] },
+      { updateSelection: true },
+    ],
+    ["setTextSelection", 10],
+    ["focus"],
+    ["coordsAtPos", 10],
+    ["deleteRange", 9, 10],
+  ]);
+  assert.equal(view.calls.at(-1)[0], "hide");
+});
+
+test("Tiptap slash menu keeps typed slash triggers when cancelled", () => {
+  const { calls, editor } = createEditor("/table");
+  const view = createViewSpy();
+  const controller = createTiptapSlashMenuController({ view });
+  controller.attach({ editor, root: {} });
+
+  controller.close();
+
+  assert.equal(controller.state.open, false);
+  assert.deepEqual(calls, []);
 });
 
 test("Tiptap slash menu forwards table picker dimensions to the command", () => {

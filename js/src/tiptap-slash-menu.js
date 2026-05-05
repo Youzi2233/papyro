@@ -371,6 +371,7 @@ export class TiptapSlashMenuController {
     commands: [],
     selectedIndex: 0,
     deleteRangeBeforeRun: true,
+    cleanupRangeOnClose: false,
     anchorRect: null,
     placement: "bottom",
   };
@@ -454,6 +455,7 @@ export class TiptapSlashMenuController {
       commands,
       selectedIndex: nextSelectedIndex < 0 ? 0 : nextSelectedIndex,
       deleteRangeBeforeRun: true,
+      cleanupRangeOnClose: false,
       anchorRect: null,
       placement: "bottom",
     };
@@ -495,6 +497,7 @@ export class TiptapSlashMenuController {
       commands,
       selectedIndex: 0,
       deleteRangeBeforeRun: true,
+      cleanupRangeOnClose: true,
       anchorRect: usableAnchorRect(slashRect) ? slashRect : anchorRect,
       placement: "bottom",
     };
@@ -532,7 +535,7 @@ export class TiptapSlashMenuController {
     if (!this.#state.open || !commandId || !this.#editor) return false;
     const range = this.#state.range;
     const shouldDeleteRange = this.#state.deleteRangeBeforeRun;
-    this.close();
+    this.close({ cleanupRange: false });
 
     if (shouldDeleteRange && range && typeof this.#editor.commands?.deleteRange === "function") {
       this.#editor.commands.deleteRange(range);
@@ -578,8 +581,15 @@ export class TiptapSlashMenuController {
     return false;
   }
 
-  close() {
+  close({ cleanupRange = true } = {}) {
     if (!this.#state.open) return;
+    const range = this.#state.range;
+    const shouldCleanupRange =
+      cleanupRange &&
+      this.#state.cleanupRangeOnClose &&
+      this.#state.query === "" &&
+      range &&
+      typeof this.#editor?.commands?.deleteRange === "function";
     this.#state = {
       open: false,
       query: "",
@@ -587,11 +597,15 @@ export class TiptapSlashMenuController {
       commands: [],
       selectedIndex: 0,
       deleteRangeBeforeRun: true,
+      cleanupRangeOnClose: false,
       anchorRect: null,
       placement: "bottom",
     };
     this.#view.hide?.();
     this.#dismiss.close();
+    if (shouldCleanupRange) {
+      this.#editor.commands.deleteRange(range);
+    }
   }
 
   destroy() {
