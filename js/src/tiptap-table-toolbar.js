@@ -330,6 +330,12 @@ function closestTableElement(target, editorDom) {
   return table && editorDom.contains(table) ? table : null;
 }
 
+function closestTableCellElement(target) {
+  const tagName = String(target?.tagName ?? "").toLowerCase();
+  if (tagName === "td" || tagName === "th") return target;
+  return target?.closest?.("th,td") ?? null;
+}
+
 function tableRows(table) {
   return Array.from(table?.querySelectorAll?.("tr") ?? []);
 }
@@ -1144,6 +1150,7 @@ export class TiptapTableToolbarController {
   #dismiss;
   #editor = null;
   #entry = null;
+  #removeListeners = [];
   #state = {
     open: false,
     menuOpen: false,
@@ -1196,7 +1203,24 @@ export class TiptapTableToolbarController {
     this.#editor = editor ?? null;
     this.#entry = entry ?? null;
     this.#view.mount?.(root);
+    this.#bind(editor?.view?.dom ?? root);
     this.refresh(editor);
+  }
+
+  #bind(target) {
+    this.#unbind();
+    if (!target?.addEventListener) return;
+
+    const onContextMenu = (event) => this.handleContextMenu(event);
+    target.addEventListener("contextmenu", onContextMenu, true);
+    this.#removeListeners = [
+      () => target.removeEventListener?.("contextmenu", onContextMenu, true),
+    ];
+  }
+
+  #unbind() {
+    this.#removeListeners.forEach((remove) => remove());
+    this.#removeListeners = [];
   }
 
   refresh(editor = this.#editor) {
@@ -1383,6 +1407,39 @@ export class TiptapTableToolbarController {
     return false;
   }
 
+  handleContextMenu(event) {
+    if (!this.#editor || this.#entry?.viewMode !== "hybrid") return false;
+
+    const target = event?.target;
+    const table = closestTableElement(target, this.#editor?.view?.dom);
+    if (!table) return false;
+
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+
+    const cell = closestTableCellElement(target);
+    if (cell && table.contains?.(cell) && typeof this.#editor?.view?.posAtDOM === "function") {
+      try {
+        const pos = this.#editor.view.posAtDOM(cell, 0);
+        if (
+          Number.isFinite(pos) &&
+          typeof this.#editor.commands?.setCellSelection === "function"
+        ) {
+          this.#editor.commands.setCellSelection({
+            anchorCell: pos,
+            headCell: pos,
+          });
+        }
+      } catch (_error) {
+        // Fall through to refreshing the existing table selection.
+      }
+    }
+
+    this.#editor.commands?.focus?.();
+    this.refresh(this.#editor);
+    return this.toggleMenu("context", { open: true });
+  }
+
   run(commandId) {
     const command = TABLE_COMMANDS.find((item) => item.id === commandId);
     if (!command || !this.#editor) return false;
@@ -1476,6 +1533,7 @@ export class TiptapTableToolbarController {
 
   destroy() {
     this.close();
+    this.#unbind();
     this.#dismiss.close();
     this.#view.destroy?.();
     this.#editor = null;

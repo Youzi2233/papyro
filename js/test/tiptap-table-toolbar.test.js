@@ -101,6 +101,15 @@ function createTableHarness(commandOverrides = {}) {
   const cell = cells[0];
   const root = {
     contains: (target) => target === table || cells.includes(target),
+    listeners: new Map(),
+    addEventListener(type, listener) {
+      this.listeners.set(type, listener);
+    },
+    removeEventListener(type, listener) {
+      if (this.listeners.get(type) === listener) {
+        this.listeners.delete(type);
+      }
+    },
   };
   const editor = {
     state: {
@@ -1122,6 +1131,47 @@ test("Tiptap table toolbar opens table selection menus from the centered trigger
       "delete-table",
     ],
   );
+});
+
+test("Tiptap table toolbar replaces native context menus inside table cells", () => {
+  const { created, documentRef } = createDocument();
+  const { calls, cells, editor } = createTableHarness({
+    mergeCells: () => true,
+    setCellAttribute: () => true,
+  });
+  const controller = createTiptapTableToolbarController({
+    dom: { document: documentRef },
+  });
+  const events = [];
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+
+  assert.equal(
+    editor.view.dom.listeners.get("contextmenu")({
+      target: cells[1],
+      preventDefault() {
+        events.push("preventDefault");
+      },
+      stopPropagation() {
+        events.push("stopPropagation");
+      },
+    }),
+    true,
+  );
+
+  const root = created.find((element) =>
+    String(element.className).includes("mn-tiptap-table-toolbar"),
+  );
+  assert.deepEqual(events, ["preventDefault", "stopPropagation"]);
+  assert.deepEqual(calls.slice(0, 2), [
+    ["setCellSelection", 11, 11],
+    ["focus"],
+  ]);
+  assert.equal(controller.state.menuOpen, true);
+  assert.equal(root.hidden, false);
+  assert.equal(root.dataset.selectionKind, "cell");
+
+  controller.destroy();
+  assert.equal(editor.view.dom.listeners.size, 0);
 });
 
 test("selectTableAxis rejects missing table selection commands", () => {

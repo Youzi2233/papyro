@@ -237,6 +237,7 @@ flowchart LR
 - [x] 表格工具条主命令统一为 pointer-first 触发，避免 WebView 焦点顺序吞掉表格操作。
 - [x] 给表格浮层控件补齐 WebView 容错点击链路：上下文菜单、命令按钮、行列快捷 `+`、整表/行/列 handle 都支持 pointerdown 和 click fallback，避免焦点竞争导致普通用户点击后无响应，同时防止 pointer + click 双触发。
 - [x] 表格多单元格选区的操作触发点改为锚定 head cell 中心，行/列/整表才锚定整块选区，让普通用户更容易理解“当前要操作的是哪块内容”。
+- [x] 表格单元格右键改为打开 Papyro 自身上下文菜单并阻止 WebView 原生菜单，避免出现刷新、检查等系统项打断编辑体验。
 - [x] 归一化表格工具条 active 对齐状态，让默认、左对齐、居中和右对齐能准确反映 Markdown 表格状态。
 - [x] 增加表格单元格背景色命令：清除、黄色、蓝色、绿色通过 Tiptap `setCellAttribute('backgroundColor', ...)` 写入单元格属性，并在工具条中显示当前背景状态。
 - [x] 增加共享 Tiptap UI primitives，用于 popover 定位、菜单 active-descendant 状态、toolbar root 和显隐处理。
