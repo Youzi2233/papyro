@@ -246,6 +246,7 @@ Tasks:
 - [x] Add table-edge quick add controls for inserting a row below and a column to the right without opening the full toolbar.
 - [x] Add row and column edge handles for tables: clicking the left row rail or top column rail selects the full row/column and reuses the table toolbar for follow-up operations.
 - [x] Add a top-left whole-table handle so one click selects the full table before delete, header, alignment, and cell-style operations.
+- [x] Replace the always-visible table command strip with a lighter Notion-like table surface: edge `+` controls stay visible for quick row/column insertion, while cell merge, alignment, and color actions live behind a current-cell context trigger.
 - [x] Add table cell alignment commands: left, center, and right use Tiptap `setCellAttribute('align', ...)` so pipe table alignment remains part of the Markdown document model.
 - [x] Make table toolbar command buttons pointer-first so WebView focus ordering does not swallow table operations.
 - [x] Normalize table toolbar active alignment states so default/left/center/right cells reflect the actual Markdown table state.

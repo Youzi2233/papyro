@@ -188,6 +188,10 @@ export function tableToolsLabel(language) {
   return localizedText(language, "Table tools", "表格工具");
 }
 
+export function tableCellActionsLabel(language) {
+  return localizedText(language, "Cell actions", "单元格操作");
+}
+
 export function addRowBelowLabel(language) {
   return localizedText(language, "Add row below", "在下方添加行");
 }

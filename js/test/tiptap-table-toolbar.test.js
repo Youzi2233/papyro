@@ -259,6 +259,12 @@ test("Tiptap table toolbar command buttons run from pointerdown", () => {
   });
 
   controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  controller.handleKeyDown({
+    key: "F10",
+    shiftKey: true,
+    preventDefault() {},
+    stopPropagation() {},
+  });
   const button = created.find((element) => element.dataset.commandId === "delete-table");
   const events = [];
 
@@ -289,6 +295,10 @@ test("Tiptap table toolbar disables commands rejected by editor.can", () => {
   });
 
   controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  const trigger = created.find((element) =>
+    String(element.className).includes("mn-tiptap-table-cell-menu-trigger"),
+  );
+  trigger.onpointerdown({ preventDefault() {}, stopPropagation() {} });
 
   assert.deepEqual(
     controller.state.commands.map((command) => [command.id, command.disabled]),
@@ -464,6 +474,10 @@ test("Tiptap table toolbar marks active cell background commands", () => {
   });
 
   controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  const trigger = created.find((element) =>
+    String(element.className).includes("mn-tiptap-table-cell-menu-trigger"),
+  );
+  trigger.onpointerdown({ preventDefault() {}, stopPropagation() {} });
 
   const yellow = created.find((element) => element.dataset.commandId === "cell-bg-yellow");
   const blue = created.find((element) => element.dataset.commandId === "cell-bg-blue");
@@ -522,6 +536,49 @@ test("Tiptap table toolbar quick add buttons run row and column insertion", () =
   ]);
 });
 
+test("Tiptap table toolbar keeps complex command chrome hidden until requested", () => {
+  const { created, documentRef } = createDocument();
+  const { editor } = createTableHarness();
+  editor.commands.addRowAfter = () => true;
+  editor.commands.mergeCells = () => true;
+  editor.commands.setCellAttribute = () => true;
+  const controller = createTiptapTableToolbarController({
+    dom: { document: documentRef },
+  });
+
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+
+  const root = created.find((element) =>
+    String(element.className).includes("mn-tiptap-table-toolbar"),
+  );
+  const trigger = created.find((element) =>
+    String(element.className).includes("mn-tiptap-table-cell-menu-trigger"),
+  );
+  assert.equal(root.hidden, true);
+  assert.equal(trigger.hidden, false);
+  assert.equal(created.some((element) => element.dataset.commandId === "merge-cells"), false);
+
+  trigger.onpointerdown({ preventDefault() {}, stopPropagation() {} });
+
+  assert.equal(root.hidden, false);
+  assert.equal(controller.state.menuOpen, true);
+  assert.deepEqual(
+    root.children[0].children
+      .filter((element) => element.dataset.commandId)
+      .map((element) => element.dataset.commandId),
+    [
+      "merge-cells",
+      "align-left",
+      "align-center",
+      "align-right",
+      "cell-bg-clear",
+      "cell-bg-yellow",
+      "cell-bg-blue",
+      "cell-bg-green",
+    ],
+  );
+});
+
 test("Tiptap table toolbar supports keyboard navigation and execution", () => {
   const { created, documentRef } = createDocument();
   const { calls, editor } = createTableHarness();
@@ -578,6 +635,12 @@ test("Tiptap table toolbar handles keyboard events after focus enters the toolba
     dom: { document: documentRef },
   });
   controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  controller.handleKeyDown({
+    key: "F10",
+    shiftKey: true,
+    preventDefault() {},
+    stopPropagation() {},
+  });
 
   const root = created.find((element) =>
     String(element.className).includes("mn-tiptap-table-toolbar"),
