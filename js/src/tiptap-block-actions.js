@@ -525,6 +525,7 @@ export class TiptapBlockActionController {
         title: command.title,
         description: command.description,
         group: command.group,
+        groupKey: command.group,
         icon: command.icon,
         shortcut: command.shortcut,
         tone: command.tone,

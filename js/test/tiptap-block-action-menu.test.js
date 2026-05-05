@@ -441,6 +441,11 @@ test("Tiptap block action menu renders grouped command sections", () => {
   assert.equal(list.children[0].children[1].dataset.commandId, "copy-block");
   assert.equal(list.children[0].children[3].dataset.commandId, "reset-formatting");
   assert.equal(list.children[1].children[1].dataset.commandId, "text-color-ink");
+  assert.equal(list.children[0].dataset.group, "Actions");
+  assert.equal(list.children[0].dataset.layout, "list");
+  assert.equal(list.children[1].dataset.group, "Color");
+  assert.equal(list.children[1].dataset.layout, "swatch");
+  assert.equal(list.children[3].dataset.tone, "danger");
 });
 
 test("Tiptap block action menu localizes its accessible label", () => {

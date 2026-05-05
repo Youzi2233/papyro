@@ -1547,17 +1547,17 @@
 
 .mn-tiptap-block-action-menu-list {
     display: grid;
-    gap: 6px;
+    gap: 7px;
     overflow-y: auto;
 }
 
 .mn-tiptap-block-action-menu-section {
     display: grid;
-    gap: 1px;
+    gap: 2px;
 }
 
 .mn-tiptap-block-action-menu-section-title {
-    padding: 2px 7px 3px;
+    padding: 2px 7px 4px;
     color: var(--mn-ink-3);
     font-size: var(--mn-type-label);
     font-weight: var(--mn-weight-semibold);
@@ -1588,10 +1588,6 @@
     color: var(--mn-ink);
 }
 
-.mn-tiptap-block-action-menu-item[data-tone="danger"] {
-    color: var(--mn-danger);
-}
-
 .mn-tiptap-block-action-menu-icon {
     position: relative;
     display: grid;
@@ -1614,6 +1610,25 @@
 
 .mn-tiptap-block-action-menu-item[data-tone="danger"] .mn-tiptap-block-action-menu-icon {
     color: var(--mn-danger);
+}
+
+.mn-tiptap-block-action-menu-section[data-tone="danger"] {
+    margin-top: 2px;
+    padding-top: 7px;
+    border-top: var(--mn-border-subtle);
+}
+
+.mn-tiptap-block-action-menu-section[data-tone="danger"] .mn-tiptap-block-action-menu-section-title {
+    color: var(--mn-danger);
+}
+
+.mn-tiptap-block-action-menu-section[data-tone="danger"] .mn-tiptap-block-action-menu-item {
+    color: var(--mn-danger);
+}
+
+.mn-tiptap-block-action-menu-section[data-tone="danger"] .mn-tiptap-block-action-menu-item:hover,
+.mn-tiptap-block-action-menu-section[data-tone="danger"] .mn-tiptap-block-action-menu-item.active {
+    background: color-mix(in srgb, var(--mn-danger) 10%, transparent);
 }
 
 .mn-tiptap-block-action-menu-icon::before {
@@ -1794,29 +1809,24 @@
     line-height: var(--mn-line-caption);
 }
 
-.mn-tiptap-block-action-menu-section:has(.mn-tiptap-block-action-menu-icon.text-color),
-.mn-tiptap-block-action-menu-section:has(.mn-tiptap-block-action-menu-icon.highlight) {
+.mn-tiptap-block-action-menu-section[data-layout="swatch"] {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 4px;
 }
 
-.mn-tiptap-block-action-menu-section:has(.mn-tiptap-block-action-menu-icon.text-color) .mn-tiptap-block-action-menu-section-title,
-.mn-tiptap-block-action-menu-section:has(.mn-tiptap-block-action-menu-icon.highlight) .mn-tiptap-block-action-menu-section-title {
+.mn-tiptap-block-action-menu-section[data-layout="swatch"] .mn-tiptap-block-action-menu-section-title {
     grid-column: 1 / -1;
 }
 
-.mn-tiptap-block-action-menu-section:has(.mn-tiptap-block-action-menu-icon.text-color) .mn-tiptap-block-action-menu-item,
-.mn-tiptap-block-action-menu-section:has(.mn-tiptap-block-action-menu-icon.highlight) .mn-tiptap-block-action-menu-item {
+.mn-tiptap-block-action-menu-section[data-layout="swatch"] .mn-tiptap-block-action-menu-item {
     grid-template-columns: 1fr;
     justify-items: center;
     min-height: 36px;
     padding: 4px;
 }
 
-.mn-tiptap-block-action-menu-section:has(.mn-tiptap-block-action-menu-icon.text-color) .mn-tiptap-block-action-menu-copy,
-.mn-tiptap-block-action-menu-section:has(.mn-tiptap-block-action-menu-icon.highlight) .mn-tiptap-block-action-menu-copy,
-.mn-tiptap-block-action-menu-section:has(.mn-tiptap-block-action-menu-icon.text-color) .mn-tiptap-block-action-menu-shortcut,
-.mn-tiptap-block-action-menu-section:has(.mn-tiptap-block-action-menu-icon.highlight) .mn-tiptap-block-action-menu-shortcut {
+.mn-tiptap-block-action-menu-section[data-layout="swatch"] .mn-tiptap-block-action-menu-copy,
+.mn-tiptap-block-action-menu-section[data-layout="swatch"] .mn-tiptap-block-action-menu-shortcut {
     display: none;
 }
 
