@@ -13,6 +13,7 @@ import { createTiptapBlockHintsController } from "./tiptap-block-hints-controlle
 import { createTiptapBlockHandleController } from "./tiptap-block-handle.js";
 import { createTiptapFormatCommandController } from "./tiptap-format-commands.js";
 import { createTiptapFormatToolbarController } from "./tiptap-format-toolbar.js";
+import { createTiptapHistoryCommandController } from "./tiptap-history-commands.js";
 import { createTiptapModeController } from "./tiptap-mode-controller.js";
 import { createTiptapModeSnapshotController } from "./tiptap-mode-snapshots.js";
 import { createTiptapPasteController } from "./tiptap-paste-controller.js";
@@ -158,6 +159,7 @@ function createEntry({
   blockHandle,
   formatCommands,
   formatToolbar,
+  historyCommands,
   pasteController,
   preferencesController,
   sourcePane,
@@ -180,6 +182,7 @@ function createEntry({
     blockHandle,
     formatCommands,
     formatToolbar,
+    historyCommands,
     pasteController,
     preferences: preferencesController.preferences,
     preferencesController,
@@ -205,6 +208,7 @@ export function createTiptapEditorRuntime({
   blockHandleControllerFactory = createTiptapBlockHandleController,
   formatCommandControllerFactory = createTiptapFormatCommandController,
   formatToolbarControllerFactory = createTiptapFormatToolbarController,
+  historyCommandControllerFactory = createTiptapHistoryCommandController,
   pasteControllerFactory = createTiptapPasteController,
   preferencesControllerFactory = createTiptapPreferencesController,
   sourcePaneControllerFactory = createTiptapSourcePaneController,
@@ -256,6 +260,10 @@ export function createTiptapEditorRuntime({
   const createFormatToolbarController = requireFunction(
     formatToolbarControllerFactory,
     "formatToolbarControllerFactory",
+  );
+  const createHistoryCommandController = requireFunction(
+    historyCommandControllerFactory,
+    "historyCommandControllerFactory",
   );
   const createPasteController = requireFunction(
     pasteControllerFactory,
@@ -364,6 +372,7 @@ export function createTiptapEditorRuntime({
       },
     });
     const formatCommands = createFormatCommandController();
+    const historyCommands = createHistoryCommandController();
     const formatToolbar = createFormatToolbarController({
       commandController: formatCommands,
       dom: {
@@ -463,6 +472,7 @@ export function createTiptapEditorRuntime({
       blockHandle,
       formatCommands,
       formatToolbar,
+      historyCommands,
       pasteController,
       preferencesController,
       sourcePane,
@@ -563,6 +573,20 @@ export function createTiptapEditorRuntime({
         }
       } else if (message.type === "run_format_command") {
         const result = entry.formatCommands.run(message.command_id ?? message.commandId, {
+          editor: entry.editor,
+          entry,
+          message,
+          tabId,
+        });
+        if (!result.ok) {
+          entry.dioxus?.send?.({
+            type: "runtime_error",
+            tab_id: tabId,
+            message: result.error,
+          });
+        }
+      } else if (message.type === "undo" || message.type === "redo") {
+        const result = entry.historyCommands.run(message.type, {
           editor: entry.editor,
           entry,
           message,

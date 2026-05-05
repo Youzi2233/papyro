@@ -233,6 +233,7 @@ flowchart LR
 - [x] 通过 runtime 测试保持 Tiptap `content_changed`、`insert_markdown` 和 `set_view_mode` 协议行为。
 - [x] Markdown 内容变化后跳过过期的 Source/Hybrid 选区快照，避免模式切换把旧光标恢复到已更新文本中。
 - [x] 保持 Tiptap `save_requested`、`paste_image_requested` 和 `runtime_error` 协议行为；`runtime_ready` 继续由 editor host 负责。
+- [x] 通过独立 history command controller 保持 Tiptap 撤销/重做协议，并接入稳定 Rust 消息路由，同时避免把撤销/重做混进只服务选区的浮动格式栏。
 - [x] 通过测试覆盖的 controller 保持 Tiptap `set_preferences` 状态更新。
 - [x] 保持 Tiptap 选中文字后粘贴 URL 的 `auto_link_paste` 行为。
 - [x] 在 IME composition 期间保护 slash 菜单和块操作菜单的键盘处理，避免中文输入确认被误当成菜单导航或命令执行。

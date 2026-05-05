@@ -30,6 +30,8 @@ function createRuntimeHarness({
     parse: (markdown) => ({ type: "doc", markdown }),
   }),
   clipboard,
+  formatCommandControllerFactory,
+  historyCommandControllerFactory,
   blockHintsControllerFactory,
   blockHandleControllerFactory,
   formatToolbarControllerFactory,
@@ -136,6 +138,14 @@ function createRuntimeHarness({
           this.emit("update", { editor: this });
         },
         focus: () => calls.push(["focus"]),
+        undo: () => {
+          calls.push(["undo"]);
+          return true;
+        },
+        redo: () => {
+          calls.push(["redo"]);
+          return true;
+        },
         toggleBold: () => calls.push(["toggleBold"]),
         toggleItalic: () => calls.push(["toggleItalic"]),
         setHorizontalRule: () => calls.push(["setHorizontalRule"]),
@@ -213,7 +223,9 @@ function createRuntimeHarness({
     ...(clipboard ? { clipboard } : {}),
     blockHintsControllerFactory: createBlockHintsController,
     blockHandleControllerFactory: createBlockHandle,
+    ...(formatCommandControllerFactory ? { formatCommandControllerFactory } : {}),
     formatToolbarControllerFactory: createFormatToolbar,
+    ...(historyCommandControllerFactory ? { historyCommandControllerFactory } : {}),
     pasteControllerFactory: createPasteController,
     ...(preferencesControllerFactory ? { preferencesControllerFactory } : {}),
     ...(sourcePaneControllerFactory ? { sourcePaneControllerFactory } : {}),
@@ -380,6 +392,8 @@ test("Tiptap runtime handles baseline Rust messages", () => {
     type: "run_format_command",
     command_id: "bold",
   });
+  runtime.handleRustMessage("tab-a", { type: "undo" });
+  runtime.handleRustMessage("tab-a", { type: "redo" });
   runtime.handleRustMessage("tab-a", { type: "focus" });
 
   assert.equal(registry.get("tab-a").dioxus.id, "dioxus-a");
@@ -404,6 +418,10 @@ test("Tiptap runtime handles baseline Rust messages", () => {
     ["toggleHeading", 2],
     ["focus"],
     ["toggleBold"],
+    ["focus"],
+    ["undo"],
+    ["focus"],
+    ["redo"],
     ["focus"],
     ["focus"],
   ]);

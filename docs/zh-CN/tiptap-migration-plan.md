@@ -196,6 +196,7 @@ flowchart TD
 - [x] 保持 Tiptap Markdown 变更后的 `content_changed` 事件，并用 runtime 测试覆盖。
 - [x] 保持 `insert_markdown`、`set_view_mode` 消息不变，并用显式 runtime 测试覆盖。
 - [x] 保持 Tiptap 键盘快捷键触发的 `save_requested`。
+- [x] 通过独立 Tiptap history command controller 和稳定 `undo`/`redo` Rust 消息保持撤销/重做。
 - [x] 通过共享 clipboard helper 保持 Tiptap 粘贴和拖拽图片时的 `paste_image_requested`。
 - [x] 保持 parse 失败和 runtime command 失败时的 `runtime_error`。
 - [x] 明确 `runtime_ready` 归 editor host 所有：Dioxus 在 `ensureEditor` 和 `attachChannel` 后发送，Tiptap adapter 不重复发送。

@@ -184,6 +184,7 @@ flowchart TD
 - [x] Preserve `content_changed` emission after Tiptap Markdown mutations covered by runtime tests.
 - [x] Preserve `insert_markdown` and `set_view_mode` messages with explicit runtime tests.
 - [x] Preserve `save_requested` from Tiptap keyboard shortcuts.
+- [x] Preserve undo/redo through a dedicated Tiptap history command controller and stable `undo`/`redo` Rust messages.
 - [x] Preserve `paste_image_requested` for Tiptap paste and drop image transfers through a shared clipboard helper.
 - [x] Preserve `runtime_error` for parse failures and failed runtime command dispatch.
 - [x] Keep `runtime_ready` host-owned: Dioxus emits it after `ensureEditor` and `attachChannel`, so the Tiptap adapter must not duplicate it.
