@@ -175,7 +175,7 @@ flowchart TD
 - [x] Preview remains Rust-rendered HTML.
 - [x] Mode switching preserves selection, dirty state, and scroll snapshots.
   - `TiptapModeSnapshotController` captures Hybrid ProseMirror selections and Source textarea selections before view-mode changes, then restores the target mode after `set_view_mode`.
-  - Runtime tests cover Source/Hybrid selection restoration and verify mode switching does not emit `content_changed`; scroll restoration continues through the shared per-mode scroll snapshot hook.
+  - Runtime tests cover Source/Hybrid selection restoration, skip stale snapshots when the Markdown revision changes, and verify mode switching does not emit `content_changed`; scroll restoration continues through the shared per-mode scroll snapshot hook.
 - [x] Outline clicks work in Source and Hybrid.
 
 ### 4. Rust/JS Protocol Compatibility

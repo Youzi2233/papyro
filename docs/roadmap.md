@@ -251,6 +251,7 @@ Tasks:
 - [x] Add advanced block action menus and responsive editor toolbar behavior.
 - [x] Fix Tiptap Hybrid scroll-container constraints so long documents scroll inside the editor host instead of being clipped by the outer shell.
 - [x] Preserve Tiptap `content_changed`, `insert_markdown`, and `set_view_mode` protocol behavior with runtime tests.
+- [x] Skip stale Source/Hybrid selection snapshots after Markdown content changes so mode switching cannot restore an old cursor into updated text.
 - [x] Preserve Tiptap `save_requested`, `paste_image_requested`, and `runtime_error` protocol behavior; keep `runtime_ready` host-owned.
 - [x] Preserve Tiptap `set_preferences` state updates through a tested controller.
 - [x] Preserve Tiptap `auto_link_paste` behavior for selected-text URL paste.

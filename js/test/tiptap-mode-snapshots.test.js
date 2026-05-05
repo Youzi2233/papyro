@@ -63,6 +63,22 @@ test("Tiptap mode snapshots capture and restore Hybrid editor selections", () =>
   ]);
 });
 
+test("Tiptap mode snapshots skip stale Hybrid selections after content changes", () => {
+  const { calls, editor } = createEditorSelectionHarness();
+  const controller = createTiptapModeSnapshotController();
+  const entry = {
+    viewMode: "hybrid",
+    editor,
+    markdownSync: { markdown: "# Note" },
+  };
+
+  controller.capture(entry);
+  entry.markdownSync.markdown = "# Updated note";
+
+  assert.equal(controller.restore(entry, "hybrid"), false);
+  assert.deepEqual(calls, []);
+});
+
 test("Tiptap mode snapshots capture and restore Source textarea selections", () => {
   const sourcePane = createSourcePane();
   const controller = createTiptapModeSnapshotController();
@@ -88,4 +104,25 @@ test("Tiptap mode snapshots capture and restore Source textarea selections", () 
     [2, 2],
   );
   assert.equal(sourcePane.textarea.focused, true);
+});
+
+test("Tiptap mode snapshots skip stale Source selections after content changes", () => {
+  const sourcePane = createSourcePane();
+  const controller = createTiptapModeSnapshotController();
+  const entry = {
+    viewMode: "source",
+    sourcePane,
+    markdownSync: { markdown: "Hello source" },
+  };
+
+  controller.capture(entry);
+  entry.markdownSync.markdown = "Changed source";
+  sourcePane.textarea.selectionStart = 0;
+  sourcePane.textarea.selectionEnd = 0;
+
+  assert.equal(controller.restore(entry, "source"), false);
+  assert.deepEqual(
+    [sourcePane.textarea.selectionStart, sourcePane.textarea.selectionEnd],
+    [0, 0],
+  );
 });

@@ -187,7 +187,7 @@ flowchart TD
 - [x] Preview 继续使用 Rust HTML 渲染，不让 Tiptap 接管只读预览。
 - [x] 模式切换不丢 selection、dirty state 或 scroll snapshot。
   - `TiptapModeSnapshotController` 在视图模式切换前保存 Hybrid ProseMirror 选区和 Source textarea 选区，并在 `set_view_mode` 后恢复目标模式选区。
-  - Runtime 测试覆盖 Source/Hybrid 选区恢复，并验证模式切换不会发送 `content_changed`；滚动位置继续复用已有的按模式 scroll snapshot hook。
+  - Runtime 测试覆盖 Source/Hybrid 选区恢复、Markdown 内容版本变化后跳过过期选区快照，并验证模式切换不会发送 `content_changed`；滚动位置继续复用已有的按模式 scroll snapshot hook。
 - [x] 大纲点击在 Source 和 Hybrid 都能跳到目标位置。
 
 ### 4. Rust/JS 协议兼容

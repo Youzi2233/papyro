@@ -60,6 +60,10 @@ function restoreSourceSelection(sourcePane, selection) {
   return true;
 }
 
+function markdownRevision(entry) {
+  return entry?.markdownSync?.markdown?.length ?? 0;
+}
+
 export class TiptapModeSnapshotController {
   #snapshots = new Map();
 
@@ -81,7 +85,7 @@ export class TiptapModeSnapshotController {
     const snapshot = {
       mode: normalizedMode,
       selection,
-      markdownRevision: entry?.markdownSync?.markdown?.length ?? 0,
+      markdownRevision: markdownRevision(entry),
     };
     this.#snapshots.set(normalizedMode, snapshot);
     return { ...snapshot, selection: { ...selection } };
@@ -91,6 +95,7 @@ export class TiptapModeSnapshotController {
     const normalizedMode = normalizeTiptapViewMode(mode);
     const snapshot = this.#snapshots.get(normalizedMode);
     if (!snapshot) return false;
+    if (snapshot.markdownRevision !== markdownRevision(entry)) return false;
 
     if (normalizedMode === "source") {
       return restoreSourceSelection(entry?.sourcePane, snapshot.selection);

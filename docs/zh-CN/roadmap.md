@@ -227,6 +227,7 @@ flowchart LR
 - [x] 增加高级块操作菜单和响应式编辑器 toolbar 行为。
 - [x] 修复 Tiptap Hybrid 滚动容器约束，避免内容撑开宿主后被外层裁剪导致无法滚动。
 - [x] 通过 runtime 测试保持 Tiptap `content_changed`、`insert_markdown` 和 `set_view_mode` 协议行为。
+- [x] Markdown 内容变化后跳过过期的 Source/Hybrid 选区快照，避免模式切换把旧光标恢复到已更新文本中。
 - [x] 保持 Tiptap `save_requested`、`paste_image_requested` 和 `runtime_error` 协议行为；`runtime_ready` 继续由 editor host 负责。
 - [x] 通过测试覆盖的 controller 保持 Tiptap `set_preferences` 状态更新。
 - [x] 保持 Tiptap 选中文字后粘贴 URL 的 `auto_link_paste` 行为。
