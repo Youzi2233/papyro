@@ -437,6 +437,14 @@ function cellByPosition(grid, pos) {
     .find((cell) => cell.pos === pos) ?? null;
 }
 
+function cellPosition(grid, element) {
+  if (!element) return null;
+  const cell = (grid ?? [])
+    .flatMap((row) => row.cells)
+    .find((item) => item.cell === element);
+  return Number.isFinite(cell?.pos) ? cell.pos : null;
+}
+
 function tableSelectionState(selection, grid) {
   const positions = new Set(selectionCellPositions(selection));
   const rows = [];
@@ -831,7 +839,7 @@ class TiptapTableToolbarView {
       this.#cellMenuButton.title = cellMenuLabel;
       this.#cellMenuButton.setAttribute("aria-label", cellMenuLabel);
       this.#cellMenuButton.dataset.open = state.menuOpen ? "true" : "false";
-      this.#cellMenuButton._mnRun = () => state.toggleMenu?.("context") !== false;
+      this.#cellMenuButton._mnRun = () => state.openCellMenu?.("context") !== false;
       if (!this.#cellMenuButton._mnBound) {
         bindPointerCommand(this.#cellMenuButton, null, () => this.#cellMenuButton?._mnRun?.());
         this.#cellMenuButton._mnBound = true;
@@ -1296,6 +1304,7 @@ export class TiptapTableToolbarController {
       run: (commandId) => this.run(commandId),
       selectAxis: (axis, index) => this.selectAxis(axis, index),
       toggleMenu: (mode, options) => this.toggleMenu(mode, options),
+      openCellMenu: (mode, options) => this.openCellMenu(mode, options),
       handleKeyDown: (event) => this.handleKeyDown(event),
     });
     this.#dismiss.open();
@@ -1350,6 +1359,7 @@ export class TiptapTableToolbarController {
         run: (commandId) => this.run(commandId),
         selectAxis: (axis, index) => this.selectAxis(axis, index),
         toggleMenu: (mode, options) => this.toggleMenu(mode, options),
+        openCellMenu: (mode, options) => this.openCellMenu(mode, options),
         handleKeyDown: (keyboardEvent) => this.handleKeyDown(keyboardEvent),
       });
       const firstId = enabledCommandIds(visibleCommands(this.#state.commands, "keyboard", this.#state.selection.kind))[0] ?? null;
@@ -1479,9 +1489,33 @@ export class TiptapTableToolbarController {
       run: (commandId) => this.run(commandId),
       selectAxis: (axis, index) => this.selectAxis(axis, index),
       toggleMenu: (menuMode, options) => this.toggleMenu(menuMode, options),
+      openCellMenu: (menuMode, options) => this.openCellMenu(menuMode, options),
       handleKeyDown: (event) => this.handleKeyDown(event),
     });
     return true;
+  }
+
+  openCellMenu(mode = "context", { open = null } = {}) {
+    if (!this.#state.open) return false;
+    const isPlainCellContext =
+      this.#state.selection?.kind === "cell" &&
+      (this.#state.selection?.positions?.size ?? 0) === 0;
+    const pos = isPlainCellContext ? cellPosition(this.#state.grid, this.#state.cell) : null;
+    if (
+      Number.isFinite(pos) &&
+      typeof this.#editor?.commands?.setCellSelection === "function"
+    ) {
+      const ok =
+        this.#editor.commands.setCellSelection({
+          anchorCell: pos,
+          headCell: pos,
+        }) !== false;
+      if (ok) {
+        this.#editor.commands?.focus?.();
+        this.refresh(this.#editor);
+      }
+    }
+    return this.toggleMenu(mode, { open });
   }
 
   selectAxis(axis, index) {
@@ -1499,6 +1533,7 @@ export class TiptapTableToolbarController {
       run: (commandId) => this.run(commandId),
       selectAxis: (selectedAxis, selectedIndex) => this.selectAxis(selectedAxis, selectedIndex),
       toggleMenu: (menuMode, options) => this.toggleMenu(menuMode, options),
+      openCellMenu: (menuMode, options) => this.openCellMenu(menuMode, options),
       handleKeyDown: (event) => this.handleKeyDown(event),
     });
     return ok;

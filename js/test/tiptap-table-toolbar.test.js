@@ -414,7 +414,10 @@ test("Tiptap table toolbar disables commands rejected by editor.can", () => {
   assert.equal(rowButton.disabled, true);
   assert.equal(rowButton.dataset.disabled, "true");
   rowButton.onpointerdown({ preventDefault() {}, stopPropagation() {} });
-  assert.deepEqual(calls, []);
+  assert.deepEqual(calls, [
+    ["setCellSelection", 10, 10],
+    ["focus"],
+  ]);
 });
 
 test("Tiptap table toolbar stays closed outside Hybrid mode", () => {
@@ -738,9 +741,64 @@ test("Tiptap table toolbar controls fall back to click events", () => {
     ["focus"],
     ["addColumnAfter"],
     ["focus"],
+    ["setCellSelection", 10, 10],
+    ["focus"],
     ["setCellAttribute", "align", "center"],
     ["focus"],
   ]);
+});
+
+test("Tiptap table toolbar selects the focused cell before opening cell actions", () => {
+  const { cells, created, documentRef, editor } = (() => {
+    const { created, documentRef } = createDocument();
+    const harness = createTableHarness({ setCellAttribute: () => true });
+    return { ...harness, created, documentRef };
+  })();
+  const controller = createTiptapTableToolbarController({
+    dom: { document: documentRef },
+  });
+
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  const trigger = created.find((element) =>
+    String(element.className).includes("mn-tiptap-table-cell-menu-trigger"),
+  );
+  trigger.onpointerdown({ preventDefault() {}, stopPropagation() {} });
+
+  assert.equal(controller.state.selection.kind, "cell");
+  assert.deepEqual([...controller.state.selection.positions], [10]);
+  assert.deepEqual(
+    cells.map((cell) => cell.classes.has("mn-tiptap-table-cell-selected")),
+    [true, false, false, false, false, false],
+  );
+});
+
+test("Tiptap table toolbar preserves multi-cell selection when opening cell actions", () => {
+  const { calls, created, documentRef, editor } = (() => {
+    const { created, documentRef } = createDocument();
+    const harness = createTableHarness({ mergeCells: () => true });
+    return { ...harness, created, documentRef };
+  })();
+  editor.state.selection = {
+    from: 4,
+    $anchorCell: { pos: 10 },
+    $headCell: { pos: 11 },
+    forEachCell(callback) {
+      [10, 11].forEach((pos) => callback({}, pos));
+    },
+  };
+  const controller = createTiptapTableToolbarController({
+    dom: { document: documentRef },
+  });
+
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  const trigger = created.find((element) =>
+    String(element.className).includes("mn-tiptap-table-cell-menu-trigger"),
+  );
+  trigger.onpointerdown({ preventDefault() {}, stopPropagation() {} });
+
+  assert.equal(controller.state.selection.kind, "cells");
+  assert.deepEqual(calls, []);
+  assert.deepEqual([...controller.state.selection.positions], [10, 11]);
 });
 
 test("Tiptap table toolbar pointer and click fallback do not double-run", () => {
