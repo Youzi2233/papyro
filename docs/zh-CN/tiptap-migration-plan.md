@@ -149,7 +149,8 @@ flowchart TD
 - [x] 抽出第一版 runtime adapter facade 契约和测试。
 - [x] 增加 runtime registry 模块，管理 tab entry 生命周期。
 - [x] 把当前 CodeMirror runtime 包装成可注入的 runtime 工厂。
-- [ ] 把当前 `js/src/editor.js` facade 入口拆成小模块。
+- [x] 把当前 `js/src/editor.js` facade 入口拆成小模块。
+  - `editor-runtime-bootstrap` 现在负责 runtime 选择、facade 创建和 host 安装，大入口只组装具体 adapter。
 - [x] 定义 `EditorRuntimeAdapter` 契约：`mount`、`attachChannel`、`handleMessage`、`setViewMode`、`destroy`、`getMarkdown`。
 - [x] 将迁移分支默认 runtime 切换到 Tiptap，同时保留显式 CodeMirror 回退选择器。
 - [x] 增加 adapter contract 单测。

@@ -137,7 +137,8 @@ flowchart TD
 - [x] Extract the first runtime adapter facade contract and tests.
 - [x] Add a runtime registry module for tab entry lifecycle management.
 - [x] Wrap the current CodeMirror runtime in an injectable runtime factory.
-- [ ] Split the current `js/src/editor.js` facade into smaller runtime modules.
+- [x] Split the current `js/src/editor.js` facade into smaller runtime modules.
+  - `editor-runtime-bootstrap` now owns runtime selection, facade creation, and host installation so the large entry file only assembles concrete adapters.
 - [x] Define an `EditorRuntimeAdapter` contract: `mount`, `attachChannel`, `handleMessage`, `setViewMode`, `destroy`, and `getMarkdown`.
 - [x] Switch the migration branch default runtime to Tiptap while keeping an explicit CodeMirror fallback selector.
 - [x] Add adapter contract tests.
