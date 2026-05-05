@@ -1054,6 +1054,25 @@ test("Tiptap runtime wires slash menu keyboard handling through editor props", (
   assert.deepEqual(calls, [["slashMenuKeyDown", "ArrowDown"]]);
 });
 
+test("Tiptap runtime does not consume slash menu keys during IME composition", () => {
+  const { calls, registry, runtime } = createRuntimeHarness();
+  runtime.ensureEditor({
+    tabId: "tab-a",
+    containerId: "editor-root",
+    initialContent: "# Note",
+  });
+  calls.length = 0;
+
+  const editor = registry.get("tab-a").editor;
+  const handled = editor.options.editorProps.handleKeyDown(null, {
+    key: "ArrowDown",
+    isComposing: true,
+  });
+
+  assert.equal(handled, false);
+  assert.deepEqual(calls, []);
+});
+
 test("Tiptap runtime keeps facade navigation methods available", () => {
   const { runtime } = createRuntimeHarness();
 

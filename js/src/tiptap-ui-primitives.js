@@ -71,6 +71,16 @@ export function commandElementId(ownerId, index) {
   return `${ownerId}-item-${index}`;
 }
 
+export function isComposingKeyboardEvent(event) {
+  return Boolean(
+    event?.isComposing ||
+      event?.nativeEvent?.isComposing ||
+      event?.keyCode === 229 ||
+      event?.which === 229 ||
+      event?.key === "Process",
+  );
+}
+
 export function viewportSize(reference, fallbackWindow) {
   const documentElement =
     reference?.ownerDocument?.documentElement ?? reference?.dom?.ownerDocument?.documentElement;

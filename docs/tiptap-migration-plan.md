@@ -188,6 +188,7 @@ flowchart TD
 - [x] Preserve `set_preferences` state updates through a Tiptap preferences controller.
 - [x] Treat `set_block_hints` as a compatibility message through a Tiptap block hints controller.
 - [x] Preserve `auto_link_paste` for selected-text URL paste through a Tiptap paste controller.
+- [x] Slash and block action menus now yield keyboard handling during IME composition so Chinese input confirmation is not consumed as menu navigation or command execution.
 
 ### 5. Markdown Block Migration
 

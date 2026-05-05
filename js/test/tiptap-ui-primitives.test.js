@@ -5,6 +5,7 @@ import {
   clamp,
   commandElementId,
   createElement,
+  isComposingKeyboardEvent,
   mountFloatingRoot,
   positionFloatingElement,
   setHidden,
@@ -52,6 +53,15 @@ test("Tiptap UI primitives clamp values and create command item ids", () => {
   assert.equal(clamp(-2, 0, 10), 0);
   assert.equal(clamp(4, 0, 10), 4);
   assert.equal(commandElementId("menu", 3), "menu-item-3");
+});
+
+test("Tiptap UI primitives detect IME composition keyboard events", () => {
+  assert.equal(isComposingKeyboardEvent({ isComposing: true }), true);
+  assert.equal(isComposingKeyboardEvent({ nativeEvent: { isComposing: true } }), true);
+  assert.equal(isComposingKeyboardEvent({ keyCode: 229 }), true);
+  assert.equal(isComposingKeyboardEvent({ which: 229 }), true);
+  assert.equal(isComposingKeyboardEvent({ key: "Process" }), true);
+  assert.equal(isComposingKeyboardEvent({ key: "Enter" }), false);
 });
 
 test("Tiptap UI primitives create and mount floating roots", () => {

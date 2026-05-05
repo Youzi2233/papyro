@@ -5,6 +5,7 @@ import {
   createFloatingDismissController,
   defaultDocument,
   defaultWindow,
+  isComposingKeyboardEvent,
   mountFloatingRoot,
   positionFloatingElement,
   setHidden,
@@ -283,6 +284,7 @@ export class TiptapBlockActionMenuController {
 
   handleKeyDown(event) {
     if (!this.#state.open) return false;
+    if (isComposingKeyboardEvent(event)) return false;
 
     if (event.key === "ArrowDown") {
       event.preventDefault();

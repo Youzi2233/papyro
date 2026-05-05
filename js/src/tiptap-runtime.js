@@ -21,6 +21,7 @@ import { createTiptapSourcePaneController } from "./tiptap-source-pane.js";
 import { createTiptapSlashCommandController } from "./tiptap-slash-commands.js";
 import { createTiptapSlashMenuController } from "./tiptap-slash-menu.js";
 import { createTiptapTableToolbarController } from "./tiptap-table-toolbar.js";
+import { isComposingKeyboardEvent } from "./tiptap-ui-primitives.js";
 import {
   createPapyroMarkdownManager,
   createPapyroTiptapExtensions,
@@ -107,6 +108,9 @@ function defaultEditorOptions({
         const entry = registry.get(tabId);
         if (isSaveShortcut(event) && requestSave(entry, tabId, event)) {
           return true;
+        }
+        if (isComposingKeyboardEvent(event)) {
+          return false;
         }
 
         return entry?.slashMenu?.handleKeyDown(event) ?? false;

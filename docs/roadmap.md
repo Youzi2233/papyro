@@ -249,6 +249,7 @@ Tasks:
 - [x] Preserve Tiptap `save_requested`, `paste_image_requested`, and `runtime_error` protocol behavior; keep `runtime_ready` host-owned.
 - [x] Preserve Tiptap `set_preferences` state updates through a tested controller.
 - [x] Preserve Tiptap `auto_link_paste` behavior for selected-text URL paste.
+- [x] Guard slash and block action menu keyboard handling during IME composition so Chinese input confirmation is not mistaken for menu navigation or command execution.
 - [x] Preserve `set_block_hints` as a Tiptap migration compatibility message.
 - [x] Preserve Tiptap `destroy` semantics with stale instance protection.
 - [x] Add Tiptap task list extensions with checked/unchecked Markdown round-trip coverage.

@@ -225,6 +225,7 @@ flowchart LR
 - [x] 保持 Tiptap `save_requested`、`paste_image_requested` 和 `runtime_error` 协议行为；`runtime_ready` 继续由 editor host 负责。
 - [x] 通过测试覆盖的 controller 保持 Tiptap `set_preferences` 状态更新。
 - [x] 保持 Tiptap 选中文字后粘贴 URL 的 `auto_link_paste` 行为。
+- [x] 在 IME composition 期间保护 slash 菜单和块操作菜单的键盘处理，避免中文输入确认被误当成菜单导航或命令执行。
 - [x] 把 `set_block_hints` 保留为 Tiptap 迁移期兼容消息。
 - [x] 保持 Tiptap `destroy` 语义，并保护 stale instance 不误删新 runtime。
 - [x] 增加 Tiptap task list 扩展，并用 checked/unchecked Markdown round-trip 测试覆盖。

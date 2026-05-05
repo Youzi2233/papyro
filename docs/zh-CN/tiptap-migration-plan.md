@@ -200,6 +200,7 @@ flowchart TD
 - [x] 通过 Tiptap preferences controller 保持 `set_preferences` 状态更新。
 - [x] 通过 Tiptap block hints controller 对 `set_block_hints` 做兼容处理。
 - [x] 通过 Tiptap paste controller 保持选中文字后粘贴 URL 的 `auto_link_paste` 行为。
+- [x] slash 菜单和块操作菜单在 IME composition 期间会让出键盘处理，避免中文输入确认被菜单导航或命令执行吞掉。
 
 ### 5. Markdown block 能力迁移
 

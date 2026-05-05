@@ -198,6 +198,52 @@ test("Tiptap slash menu runs selected command and removes trigger text", () => {
   ]);
 });
 
+test("Tiptap slash menu yields keyboard handling during IME composition", () => {
+  const { calls, editor } = createEditor("/h2");
+  const view = createViewSpy();
+  const controller = createTiptapSlashMenuController({ view });
+  let prevented = false;
+  controller.attach({ editor, root: {} });
+
+  assert.equal(
+    controller.handleKeyDown({
+      key: "Enter",
+      isComposing: true,
+      preventDefault() {
+        prevented = true;
+      },
+    }),
+    false,
+  );
+
+  assert.equal(prevented, false);
+  assert.equal(controller.state.open, true);
+  assert.deepEqual(calls, []);
+});
+
+test("Tiptap slash menu treats keyCode 229 as IME composition", () => {
+  const { calls, editor } = createEditor("/table");
+  const view = createViewSpy();
+  const controller = createTiptapSlashMenuController({ view });
+  let prevented = false;
+  controller.attach({ editor, root: {} });
+
+  assert.equal(
+    controller.handleKeyDown({
+      key: "ArrowDown",
+      keyCode: 229,
+      preventDefault() {
+        prevented = true;
+      },
+    }),
+    false,
+  );
+
+  assert.equal(prevented, false);
+  assert.equal(controller.state.selectedIndex, 0);
+  assert.deepEqual(calls, []);
+});
+
 test("Tiptap slash menu closes on Escape", () => {
   const { editor } = createEditor("/table");
   const view = createViewSpy();

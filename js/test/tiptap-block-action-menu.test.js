@@ -252,6 +252,54 @@ test("Tiptap block action menu runs the selected command", () => {
   assert.deepEqual(view.calls.at(-1), ["hide"]);
 });
 
+test("Tiptap block action menu yields keyboard handling during IME composition", () => {
+  const { calls, editor } = createEditor();
+  const view = createViewSpy();
+  const controller = createTiptapBlockActionMenuController({ view });
+  let prevented = false;
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  controller.open(createTarget());
+
+  assert.equal(
+    controller.handleKeyDown({
+      key: "Enter",
+      isComposing: true,
+      preventDefault() {
+        prevented = true;
+      },
+    }),
+    false,
+  );
+
+  assert.equal(prevented, false);
+  assert.equal(controller.state.open, true);
+  assert.deepEqual(calls, []);
+});
+
+test("Tiptap block action menu treats keyCode 229 as IME composition", () => {
+  const { calls, editor } = createEditor();
+  const view = createViewSpy();
+  const controller = createTiptapBlockActionMenuController({ view });
+  let prevented = false;
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  controller.open(createTarget());
+
+  assert.equal(
+    controller.handleKeyDown({
+      key: "ArrowDown",
+      keyCode: 229,
+      preventDefault() {
+        prevented = true;
+      },
+    }),
+    false,
+  );
+
+  assert.equal(prevented, false);
+  assert.equal(controller.state.selectedIndex, 0);
+  assert.deepEqual(calls, []);
+});
+
 test("Tiptap block action menu renders grouped command sections", () => {
   const { editor } = createEditor();
   const documentRef = createDocument();
