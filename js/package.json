@@ -8,20 +8,12 @@
     "watch": "node build.js --watch"
   },
   "dependencies": {
-    "@codemirror/commands": "^6.8.1",
-    "@codemirror/lang-markdown": "^6.3.4",
-    "@codemirror/language": "^6.11.3",
-    "@codemirror/language-data": "^6.5.1",
-    "@codemirror/search": "^6.7.0",
-    "@codemirror/state": "^6.5.2",
-    "@codemirror/view": "^6.38.6",
     "@tiptap/core": "3.22.5",
     "@tiptap/extension-list": "3.22.5",
     "@tiptap/extension-table": "3.22.5",
     "@tiptap/markdown": "3.22.5",
     "@tiptap/pm": "3.22.5",
     "@tiptap/starter-kit": "3.22.5",
-    "codemirror-lang-mermaid": "^0.5.0",
     "katex": "^0.16.45",
     "mermaid": "^11.14.0"
   },

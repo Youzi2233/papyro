@@ -221,7 +221,8 @@ flowchart LR
 - [x] 增加 Tiptap image 扩展，并用本地 URL Markdown round-trip 和共享粘贴/拖拽协议测试覆盖。
 - [x] 增加 Tiptap code block 配置，并用语言元数据、fenced Markdown round-trip 和共享代码样式测试覆盖。
 - [x] 迁移 task list、table、math、Mermaid、image 和 code block。
-- [ ] 清理 CodeMirror 依赖、`.cm-*` CSS 和旧测试。
+- [x] 清理 CodeMirror npm 依赖和旧 JS runtime 测试。
+- [ ] 清理剩余 `.cm-*` CSS，并把 host surface 改成语义化 Tiptap/editor class。
 - [ ] 完成全量验收并推送最终迁移提交。
 
 ## Phase 4.5 - 主题、字体和 Markdown 样式

@@ -5,7 +5,6 @@ const DEFAULT_CSS_GROUPS = [
   ["assets/main.css", "assets/styles/markdown.css"],
   ["apps/desktop/assets/main.css", "apps/desktop/assets/styles/markdown.css"],
 ];
-const DEFAULT_EDITOR_THEME_PATH = "js/src/editor-theme.js";
 
 const REQUIRED_MARKDOWN_TOKENS = [
   "--mn-markdown-font",
@@ -60,18 +59,17 @@ const PREVIEW_REQUIREMENTS = [
   ["preview Mermaid block rhythm", ".mn-mermaid-block", "--mn-markdown-code-block-pad-y"],
 ];
 
-const HYBRID_REQUIREMENTS = [
-  ["hybrid heading 1 size", ".cm-hybrid-heading-1", "--mn-markdown-h1-size"],
-  ["hybrid heading 2 size", ".cm-hybrid-heading-2", "--mn-markdown-h2-size"],
-  ["hybrid quote spacing", ".cm-line.cm-hybrid-blockquote-line", "--mn-markdown-quote-pad-y"],
-  ["hybrid code block padding", ".cm-line.cm-hybrid-code-block-line", "--mn-markdown-code-block-pad-x"],
-  ["hybrid table line padding", ".cm-line.cm-hybrid-table-line", "--mn-markdown-table-line-pad-x"],
-  ["hybrid table cell padding", ".cm-hybrid-table-cell-input", "--mn-markdown-table-cell-pad"],
-  ["hybrid inline code color", ".cm-hybrid-inline-code", "--mn-code-ink"],
-  ["hybrid inline math font", ".cm-hybrid-inline-math", "--mn-markdown-inline-math-font"],
-  ["hybrid math block padding", ".cm-hybrid-math-block", "--mn-markdown-code-block-pad-y"],
-  ["hybrid Mermaid editor surface", ".cm-hybrid-mermaid-source-editor", "--mn-code-block-surface"],
-  ["hybrid list marker width", ".cm-hybrid-list-marker", "--mn-markdown-list-marker-width"],
+const TIPTAP_REQUIREMENTS = [
+  ["Tiptap editor body size", ".mn-tiptap-editor", "--mn-markdown-body-size"],
+  ["Tiptap editor line height", ".mn-tiptap-editor", "--mn-markdown-line-height"],
+  ["Tiptap table cell padding", ".mn-tiptap-table-cell", "--mn-markdown-table-cell-pad"],
+  ["Tiptap math font", ".mn-tiptap-inline-math", "--mn-markdown-inline-math-font"],
+  ["Tiptap math block surface", ".mn-tiptap-math-block", "--mn-markdown-code-block-bg"],
+  ["Tiptap Mermaid editor padding", ".mn-tiptap-mermaid-source", "--mn-markdown-code-block-pad-y"],
+  ["Tiptap Mermaid editor mono font", ".mn-tiptap-mermaid-source", "--mn-markdown-mono-font"],
+  ["Tiptap image radius", ".mn-tiptap-image", "--mn-markdown-image-radius"],
+  ["Tiptap code block padding", ".mn-tiptap-code-block", "--mn-markdown-code-block-pad-y"],
+  ["Tiptap code block mono font", ".mn-tiptap-code-block", "--mn-markdown-mono-font"],
 ];
 
 function main() {
@@ -96,13 +94,9 @@ function main() {
   }
 
   const cssGroups = args.length > 0 ? args.map((path) => [path]) : DEFAULT_CSS_GROUPS;
-  const editorTheme = readFileSync(DEFAULT_EDITOR_THEME_PATH, "utf8");
   const failures = [
     ...cssGroups.flatMap((paths) =>
       checkCssText(readCssGroup(paths)).map((failure) => `${paths.join(" + ")}: ${failure}`),
-    ),
-    ...checkEditorThemeText(editorTheme).map(
-      (failure) => `${DEFAULT_EDITOR_THEME_PATH}: ${failure}`,
     ),
   ];
 
@@ -125,7 +119,7 @@ function printUsage() {
   node scripts/check-markdown-style-smoke.js --self-test
 
 Checks that Markdown visual tokens are present and shared by Preview and
-Hybrid styling paths.`);
+Tiptap Hybrid styling paths.`);
 }
 
 function readCssGroup(paths) {
@@ -148,12 +142,7 @@ function checkCssText(source) {
       failures.push(`${label} missing token ${token}`);
     }
   }
-  return failures;
-}
-
-function checkEditorThemeText(source) {
-  const failures = [];
-  for (const [label, selector, token] of HYBRID_REQUIREMENTS) {
+  for (const [label, selector, token] of TIPTAP_REQUIREMENTS) {
     if (!source.includes(selector)) {
       failures.push(`${label} missing selector ${selector}`);
     }
@@ -181,19 +170,18 @@ ${REQUIRED_MARKDOWN_TOKENS.map((token) => `  ${token}: #111111;`).join("\n")}
 ${PREVIEW_REQUIREMENTS.map(
   ([, selector, token]) => `${selector} { color: var(${token}); }`,
 ).join("\n")}
+${TIPTAP_REQUIREMENTS.map(
+  ([, selector, token]) => `${selector} { color: var(${token}); }`,
+).join("\n")}
 `;
-  const js = HYBRID_REQUIREMENTS.map(
-    ([, selector, token]) => `"${selector}": { color: "var(${token})" },`,
-  ).join("\n");
 
   assert(checkCssText(css).length === 0);
-  assert(checkEditorThemeText(js).length === 0);
 
   const missingTokenCss = css.replace("  --mn-markdown-h1-size: #111111;\n", "");
   assert(checkCssText(missingTokenCss).some((failure) => failure.includes("--mn-markdown-h1-size")));
 
-  const missingHybrid = js.replace(".cm-hybrid-heading-1", ".cm-heading");
-  assert(checkEditorThemeText(missingHybrid).some((failure) => failure.includes("heading 1")));
+  const missingTiptap = css.replaceAll(".mn-tiptap-editor", ".mn-editor");
+  assert(checkCssText(missingTiptap).some((failure) => failure.includes("Tiptap editor")));
 
   console.log("Markdown style smoke checker self-test passed.");
 }

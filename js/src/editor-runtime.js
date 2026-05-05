@@ -106,14 +106,6 @@ export function createEditorRuntimeAdapterContract(hostAdapter, { getMarkdown } 
   });
 }
 
-export function createCodeMirrorRuntimeAdapter(adapter) {
-  const runtime = assertEditorRuntimeHostAdapter(adapter);
-  return Object.freeze({
-    ...runtime,
-    kind: "codemirror",
-  });
-}
-
 export function createTiptapRuntimeAdapter(adapter) {
   const runtime = assertEditorRuntimeHostAdapter(adapter);
   return Object.freeze({

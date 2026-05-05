@@ -17,7 +17,8 @@ const DEFAULT_PATHS = [
   "apps/desktop/assets/main.css",
   "apps/desktop/assets/styles/markdown.css",
   "apps/mobile/assets/main.css",
-  "js/src/editor-theme.js",
+  "js/src/tiptap-runtime.js",
+  "js/src/tiptap-ui-primitives.js",
   "crates/ui/src",
 ];
 const COLOR_PATTERN = /#[0-9a-fA-F]{3,8}\b|rgba?\([^)]*\)|hsla?\([^)]*\)|color-mix\([^)]*\)/g;
@@ -135,9 +136,6 @@ function findRawColors(file, source) {
 function colorRisk(file, line) {
   if (isCssThemeLine(line)) {
     return "allowed";
-  }
-  if (normalized(file).endsWith("js/src/editor-theme.js") && line.includes("var(")) {
-    return "fallback";
   }
   if (line.includes("DEFAULT_TAG_COLOR") || line.includes("normalized_tag_color")) {
     return "data";

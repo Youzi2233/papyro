@@ -199,9 +199,10 @@ flowchart TD
 
 - [x] Replace CodeMirror runtime entry points and tests.
   - The generated bundle now builds from `editor-tiptap-entry`, installs only the Tiptap adapter, and keeps shared host scroll/outline/Mermaid behavior in `editor-host-runtime`.
-- [ ] Remove CodeMirror npm dependencies and `codemirror-lang-mermaid`.
+- [x] Remove CodeMirror npm dependencies and `codemirror-lang-mermaid`.
+  - `js/package.json` now depends only on Tiptap, KaTeX, Mermaid, and esbuild for the editor runtime. Legacy CodeMirror runtime files and tests have been removed.
 - [ ] Clean `.cm-*` CSS in favor of `.mn-editor-*` and `.mn-tiptap-*` semantic classes.
-- [ ] Confirm generated bundles and file line budgets pass.
+- [x] Confirm generated bundles and file line budgets pass.
 
 ### 7. Acceptance
 

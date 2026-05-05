@@ -6,7 +6,6 @@ import {
   EDITOR_RUNTIME_HOST_METHODS,
   assertEditorRuntimeAdapter,
   assertEditorRuntimeHostAdapter,
-  createCodeMirrorRuntimeAdapter,
   createEditorRuntimeAdapterContract,
   createPapyroEditorFacade,
   missingEditorRuntimeHostMethods,
@@ -70,13 +69,6 @@ test("editor runtime adapter contract validation reports stable migration method
   );
 });
 
-test("CodeMirror runtime adapter keeps an explicit runtime kind", () => {
-  const runtime = createCodeMirrorRuntimeAdapter(createRuntimeAdapter({ kind: "custom" }));
-
-  assert.equal(runtime.kind, "codemirror");
-  assert.equal(runtime.ensureEditor(), "ensureEditor");
-});
-
 test("editor runtime adapter contract bridges host messages to stable methods", () => {
   const calls = [];
   const host = createRuntimeAdapter({
@@ -115,12 +107,11 @@ test("editor runtime adapter contract requires getMarkdown implementation", () =
 
 test("Papyro editor facade delegates calls without exposing runtime internals", () => {
   const calls = [];
-  const runtime = createCodeMirrorRuntimeAdapter(
-    createRuntimeAdapter({
-      ensureEditor: (...args) => calls.push(["ensureEditor", args]),
-      handleRustMessage: (...args) => calls.push(["handleRustMessage", args]),
-    }),
-  );
+  const runtime = createRuntimeAdapter({
+    kind: "tiptap",
+    ensureEditor: (...args) => calls.push(["ensureEditor", args]),
+    handleRustMessage: (...args) => calls.push(["handleRustMessage", args]),
+  });
   const facade = createPapyroEditorFacade(runtime);
 
   facade.ensureEditor({ tabId: "tab-a" });
