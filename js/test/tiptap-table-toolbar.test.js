@@ -625,6 +625,62 @@ test("Tiptap table toolbar quick add buttons run row and column insertion", () =
   ]);
 });
 
+test("Tiptap table toolbar controls fall back to click events", () => {
+  const { created, documentRef } = createDocument();
+  const { calls, editor } = createTableHarness();
+  editor.commands.addRowAfter = commandSpy(calls, "addRowAfter");
+  editor.commands.addColumnAfter = commandSpy(calls, "addColumnAfter");
+  editor.commands.mergeCells = commandSpy(calls, "mergeCells");
+  const controller = createTiptapTableToolbarController({
+    dom: { document: documentRef },
+  });
+
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  const rowButton = created.find((element) =>
+    String(element.className).includes("mn-tiptap-table-add-row"),
+  );
+  const columnButton = created.find((element) =>
+    String(element.className).includes("mn-tiptap-table-add-column"),
+  );
+  const trigger = created.find((element) =>
+    String(element.className).includes("mn-tiptap-table-cell-menu-trigger"),
+  );
+
+  rowButton.onclick({ preventDefault() {}, stopPropagation() {} });
+  columnButton.onclick({ preventDefault() {}, stopPropagation() {} });
+  trigger.onclick({ preventDefault() {}, stopPropagation() {} });
+  const mergeButton = created.find((element) => element.dataset.commandId === "merge-cells");
+  mergeButton.onclick({ preventDefault() {}, stopPropagation() {} });
+
+  assert.deepEqual(calls, [
+    ["addRowAfter"],
+    ["focus"],
+    ["addColumnAfter"],
+    ["focus"],
+    ["mergeCells"],
+    ["focus"],
+  ]);
+});
+
+test("Tiptap table toolbar pointer and click fallback do not double-run", () => {
+  const { created, documentRef } = createDocument();
+  const { calls, editor } = createTableHarness();
+  editor.commands.addRowAfter = commandSpy(calls, "addRowAfter");
+  const controller = createTiptapTableToolbarController({
+    dom: { document: documentRef },
+  });
+
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  const rowButton = created.find((element) =>
+    String(element.className).includes("mn-tiptap-table-add-row"),
+  );
+
+  rowButton.onpointerdown({ preventDefault() {}, stopPropagation() {} });
+  rowButton.onclick({ preventDefault() {}, stopPropagation() {} });
+
+  assert.deepEqual(calls, [["addRowAfter"], ["focus"]]);
+});
+
 test("Tiptap table toolbar keeps complex command chrome hidden until requested", () => {
   const { created, documentRef } = createDocument();
   const { editor } = createTableHarness();

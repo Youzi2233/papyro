@@ -643,6 +643,41 @@ function commandButtonById(root, commandId) {
   return null;
 }
 
+function guardPointerEvent(event) {
+  event?.preventDefault?.();
+  event?.stopPropagation?.();
+}
+
+function bindPointerCommand(button, command, run) {
+  if (!button || typeof run !== "function") return;
+  let pointerHandled = false;
+  const execute = () => {
+    if (command?.disabled) return false;
+    return run() !== false;
+  };
+
+  button.addEventListener("pointerdown", (event) => {
+    guardPointerEvent(event);
+    pointerHandled = execute();
+  });
+  button.addEventListener("click", (event) => {
+    guardPointerEvent(event);
+    if (!pointerHandled) {
+      execute();
+    }
+    pointerHandled = false;
+  });
+  button.addEventListener("auxclick", (event) => {
+    guardPointerEvent(event);
+    pointerHandled = false;
+  });
+  button.addEventListener("contextmenu", (event) => {
+    guardPointerEvent(event);
+    pointerHandled = false;
+  });
+  button.addEventListener("mousedown", (event) => event.preventDefault());
+}
+
 export function selectTableAxis(editor, grid, axis, index) {
   if (!editor || typeof editor.commands?.setCellSelection !== "function") return false;
   const axisIndex = Number(index);
@@ -782,12 +817,11 @@ class TiptapTableToolbarView {
       this.#cellMenuButton.title = cellMenuLabel;
       this.#cellMenuButton.setAttribute("aria-label", cellMenuLabel);
       this.#cellMenuButton.dataset.open = state.menuOpen ? "true" : "false";
-      this.#cellMenuButton.onpointerdown = (event) => {
-        event.preventDefault();
-        event.stopPropagation?.();
-        state.toggleMenu?.("context");
-      };
-      this.#cellMenuButton.onmousedown = (event) => event.preventDefault();
+      this.#cellMenuButton._mnRun = () => state.toggleMenu?.("context") !== false;
+      if (!this.#cellMenuButton._mnBound) {
+        bindPointerCommand(this.#cellMenuButton, null, () => this.#cellMenuButton?._mnRun?.());
+        this.#cellMenuButton._mnBound = true;
+      }
     }
     const menuCommands = state.menuOpen ? visibleCommands(state.commands, state.mode, state.selection?.kind) : [];
     const commandGroups = [];
@@ -822,15 +856,7 @@ class TiptapTableToolbarView {
       button.tabIndex = state.activeCommandId === command.id ? 0 : -1;
       button.disabled = !!command.disabled;
       button.setAttribute("aria-disabled", command.disabled ? "true" : "false");
-      button.addEventListener("pointerdown", (event) => {
-        event.preventDefault();
-        event.stopPropagation?.();
-        if (command.disabled) return;
-        state.run(command.id);
-      });
-      button.addEventListener("mousedown", (event) => {
-        event.preventDefault();
-      });
+      bindPointerCommand(button, command, () => state.run(command.id));
       if (command.variant === "icon" || command.variant === "swatch") {
         const visual = createElement(
           this.#document,
@@ -881,18 +907,24 @@ class TiptapTableToolbarView {
     this.#addColumnButton.style.left = `${rect.right + 6}px`;
     this.#addColumnButton.style.top = `${rect.top + Math.max(0, rect.height ?? rect.bottom - rect.top) / 2 - 12}px`;
 
-    this.#addRowButton.onpointerdown = (event) => {
-      event.preventDefault();
-      event.stopPropagation?.();
-      if (addRow?.disabled) return;
-      state.run("add-row-after");
-    };
-    this.#addColumnButton.onpointerdown = (event) => {
-      event.preventDefault();
-      event.stopPropagation?.();
-      if (addColumn?.disabled) return;
-      state.run("add-column-after");
-    };
+    this.#addRowButton._mnCommand = addRow;
+    this.#addColumnButton._mnCommand = addColumn;
+    this.#addRowButton._mnRun = () => state.run("add-row-after");
+    this.#addColumnButton._mnRun = () => state.run("add-column-after");
+    if (!this.#addRowButton._mnBound) {
+      bindPointerCommand(this.#addRowButton, null, () => {
+        if (this.#addRowButton?._mnCommand?.disabled) return false;
+        return this.#addRowButton?._mnRun?.() !== false;
+      });
+      this.#addRowButton._mnBound = true;
+    }
+    if (!this.#addColumnButton._mnBound) {
+      bindPointerCommand(this.#addColumnButton, null, () => {
+        if (this.#addColumnButton?._mnCommand?.disabled) return false;
+        return this.#addColumnButton?._mnRun?.() !== false;
+      });
+      this.#addColumnButton._mnBound = true;
+    }
     this.#addRowButton.disabled = !!addRow?.disabled;
     this.#addRowButton.dataset.disabled = addRow?.disabled ? "true" : "false";
     this.#addRowButton.setAttribute("aria-disabled", addRow?.disabled ? "true" : "false");
@@ -912,13 +944,14 @@ class TiptapTableToolbarView {
     this.#tableSelectButton.title = selectTableLabel(state.language);
     this.#tableSelectButton.setAttribute("aria-label", selectTableLabel(state.language));
     this.#tableSelectButton.dataset.active = state.selection?.table ? "true" : "false";
-    this.#tableSelectButton.onpointerdown = (event) => {
-      event.preventDefault();
-      event.stopPropagation?.();
+    this.#tableSelectButton._mnRun = () => {
       state.selectAxis("table", 0);
-      state.toggleMenu("context", { open: true });
+      return state.toggleMenu("context", { open: true });
     };
-    this.#tableSelectButton.onmousedown = (event) => event.preventDefault();
+    if (!this.#tableSelectButton._mnBound) {
+      bindPointerCommand(this.#tableSelectButton, null, () => this.#tableSelectButton?._mnRun?.());
+      this.#tableSelectButton._mnBound = true;
+    }
     setHidden(this.#tableSelectButton, (state.grid ?? []).length === 0);
   }
 
@@ -977,13 +1010,10 @@ class TiptapTableToolbarView {
       button.dataset.active = state.selection?.rows?.includes?.(index) ? "true" : "false";
       button.style.left = `${tableRect.left - TABLE_AXIS_HANDLE_SIZE - 6}px`;
       button.style.top = `${rect.top + Math.max(0, rect.height - TABLE_AXIS_HANDLE_SIZE) / 2}px`;
-      button.addEventListener("pointerdown", (event) => {
-        event.preventDefault();
-        event.stopPropagation?.();
+      bindPointerCommand(button, null, () => {
         state.selectAxis("row", index);
-        state.toggleMenu("context", { open: true });
+        return state.toggleMenu("context", { open: true });
       });
-      button.addEventListener("mousedown", (event) => event.preventDefault());
       mountFloatingRoot(button, state.table, this.#document);
       this.#rowHandles.push(button);
     });
@@ -999,13 +1029,10 @@ class TiptapTableToolbarView {
       button.dataset.active = state.selection?.columns?.includes?.(index) ? "true" : "false";
       button.style.left = `${rect.left + Math.max(0, rect.width - TABLE_AXIS_HANDLE_SIZE) / 2}px`;
       button.style.top = `${tableRect.top - TABLE_AXIS_HANDLE_SIZE - 6}px`;
-      button.addEventListener("pointerdown", (event) => {
-        event.preventDefault();
-        event.stopPropagation?.();
+      bindPointerCommand(button, null, () => {
         state.selectAxis("column", index);
-        state.toggleMenu("context", { open: true });
+        return state.toggleMenu("context", { open: true });
       });
-      button.addEventListener("mousedown", (event) => event.preventDefault());
       mountFloatingRoot(button, state.table, this.#document);
       this.#columnHandles.push(button);
     });

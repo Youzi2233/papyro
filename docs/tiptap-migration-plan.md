@@ -173,6 +173,7 @@ flowchart TD
   - The handle menu has been narrowed to current-block actions: copy, duplicate, reset, delete, text color, highlight, and callout kind changes. Structural transforms and rich block creation stay in `+`/slash commands and the Markdown toolbar so the two entry points keep clear product semantics.
   - The floating format toolbar now exposes a density state, switches to compact controls in narrow viewports or constrained selection positions, and runs commands from pointerdown to avoid WebView focus races.
   - The slash/`+` insertion menu, block action menu, floating format toolbar, and table toolbar now share a dismiss lifecycle: outside clicks, scrolling, and window changes close overlays, while interactions inside the current block or table keep context alive.
+  - Table chrome now uses the same WebView-tolerant activation contract as block chrome: contextual triggers, command buttons, quick row/column add controls, and row/column/table handles run from pointerdown with click fallback and duplicate-activation protection.
   - Slash and block action menus now share active-descendant scrolling so keyboard navigation keeps the selected command visible in long menus.
 - [x] Source uses a source editor pane synchronized through `MarkdownSyncController`.
 - [x] Add `MarkdownSyncController` as the canonical Markdown state boundary for Tiptap runtime updates.
