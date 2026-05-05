@@ -209,7 +209,8 @@ flowchart TD
 
 ### 6. 删除 CodeMirror 依赖
 
-- [ ] 替换所有 CodeMirror runtime 入口和测试。
+- [x] 替换所有 CodeMirror runtime 入口和测试。
+  - 生成 bundle 现在从 `editor-tiptap-entry` 构建，只安装 Tiptap adapter，并把共享滚动、大纲和 Mermaid 预览桥接放进 `editor-host-runtime`。
 - [ ] 移除 CodeMirror npm 依赖和 `codemirror-lang-mermaid`。
 - [ ] 清理 `.cm-*` 专属 CSS，保留迁移后的 `.mn-editor-*` 和 `.mn-tiptap-*` 语义类。
 - [ ] 确认 bundle 生成物同步且行数预算通过。

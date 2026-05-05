@@ -28,7 +28,7 @@ async function stripTrailingWhitespace(file) {
 }
 
 const ctx = await esbuild.context({
-  entryPoints: ["src/editor.js"],
+  entryPoints: ["src/editor-tiptap-entry.js"],
   bundle: true,
   format: "iife",
   outfile: outFile,

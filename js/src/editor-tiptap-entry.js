@@ -1,0 +1,24 @@
+import { createEditorRuntimeRegistry } from "./editor-registry.js";
+import { createEditorHostRuntime } from "./editor-host-runtime.js";
+import { installPapyroEditorRuntime } from "./editor-runtime-bootstrap.js";
+import { createTiptapEditorRuntime } from "./tiptap-runtime.js";
+
+const editorRegistry = createEditorRuntimeRegistry();
+const hostRuntime = createEditorHostRuntime({ registry: editorRegistry });
+const tiptapRuntimeAdapter = createTiptapEditorRuntime({
+  registry: editorRegistry,
+  layout: {
+    attachEditorScroll: hostRuntime.attachEditorScroll,
+    detachEditorScroll: hostRuntime.detachEditorScroll,
+    attachLayoutObserver: hostRuntime.attachLayoutObserver,
+    detachLayoutObserver: hostRuntime.detachLayoutObserver,
+    restoreEditorScrollSnapshot: hostRuntime.restoreEditorScrollSnapshot,
+  },
+  navigation: hostRuntime.navigation,
+});
+
+installPapyroEditorRuntime(window, {
+  adapters: {
+    tiptap: tiptapRuntimeAdapter,
+  },
+});
