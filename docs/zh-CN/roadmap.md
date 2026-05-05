@@ -230,6 +230,7 @@ flowchart LR
 - [x] 增加 Tiptap Mermaid 扩展，并用 fenced code round-trip 和共享预览/错误渲染测试覆盖。
 - [x] 增加 Tiptap image 扩展，并用本地 URL Markdown round-trip 和共享粘贴/拖拽协议测试覆盖。
 - [x] 增加 Tiptap code block 配置，并用语言元数据、fenced Markdown round-trip 和共享代码样式测试覆盖。
+- [x] 增加 Tiptap callout/admonition block，支持 `> [!NOTE]` 风格 Markdown round-trip、slash/`+` 插入、块操作菜单插入和 token 化样式。
 - [x] 迁移 task list、table、math、Mermaid、image 和 code block。
 - [x] 清理 CodeMirror npm 依赖和旧 JS runtime 测试。
 - [x] 清理剩余 `.cm-*` CSS，并把 host surface 改成语义化 Tiptap/editor class。

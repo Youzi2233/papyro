@@ -20,6 +20,9 @@ Inline math $e^{i\\pi} + 1 = 0$ remains editable.
 
 > Quote line
 
+> [!NOTE]
+> Ship the Tiptap migration in small, tested pieces.
+
 - First item
 - Second item
 
@@ -190,6 +193,23 @@ function collectCodeBlocks(node, codeBlocks = []) {
   return codeBlocks;
 }
 
+function collectCallouts(node, callouts = []) {
+  if (!node || typeof node !== "object") return callouts;
+
+  if (node.type === "calloutBlock") {
+    callouts.push({
+      kind: node.attrs?.kind ?? "",
+      text: plainText(node),
+    });
+  }
+
+  for (const child of node.content ?? []) {
+    collectCallouts(child, callouts);
+  }
+
+  return callouts;
+}
+
 test("Tiptap Markdown manager parses the baseline Markdown blocks", () => {
   const doc = parseTiptapMarkdown(markdownFixture);
   const nodeTypes = collectNodeTypes(doc);
@@ -200,10 +220,12 @@ test("Tiptap Markdown manager parses the baseline Markdown blocks", () => {
   const mermaid = collectMermaid(doc);
   const images = collectImages(doc);
   const codeBlocks = collectCodeBlocks(doc);
+  const callouts = collectCallouts(doc);
 
   assert.deepEqual(doc.content.slice(0, 2).map((node) => node.attrs.level), [1, 2]);
   assert.ok(nodeTypes.includes("paragraph"));
   assert.ok(nodeTypes.includes("blockquote"));
+  assert.ok(nodeTypes.includes("calloutBlock"));
   assert.ok(nodeTypes.includes("bulletList"));
   assert.ok(nodeTypes.includes("taskList"));
   assert.ok(nodeTypes.includes("taskItem"));
@@ -256,6 +278,12 @@ test("Tiptap Markdown manager parses the baseline Markdown blocks", () => {
       text: 'fn main() {\n  println!("hi");\n}',
     },
   ]);
+  assert.deepEqual(callouts, [
+    {
+      kind: "NOTE",
+      text: "Ship the Tiptap migration in small, tested pieces.",
+    },
+  ]);
 });
 
 test("Tiptap Markdown serialization keeps semantic Markdown output", () => {
@@ -273,6 +301,10 @@ test("Tiptap Markdown serialization keeps semantic Markdown output", () => {
   assert.match(output, /\$e\^\{i\\pi\} \+ 1 = 0\$/);
   assert.match(output, /!\[Papyro logo\]\(assets\/logo\.png "Logo"\)/);
   assert.match(output, /^> Quote line/m);
+  assert.match(
+    output,
+    /^> \[!NOTE\]\n> Ship the Tiptap migration in small, tested pieces\./m,
+  );
   assert.match(output, /^- First item/m);
   assert.match(output, /^- \[ \] Draft task/m);
   assert.match(output, /^- \[x\] Reviewed task/m);
@@ -391,6 +423,24 @@ test("Tiptap Markdown code blocks round trip language metadata and text", () => 
   ]);
   assert.equal(serialized, markdown);
   assert.deepEqual(collectCodeBlocks(reparsed), collectCodeBlocks(parsed));
+});
+
+test("Tiptap Markdown callouts round trip as Markdown admonitions", () => {
+  const markdown = [
+    "> [!WARNING]",
+    "> Confirm migrations with automated checks.",
+    "> Keep Markdown files portable.",
+  ].join("\n");
+  const { parsed, serialized, reparsed } = roundTripTiptapMarkdown(markdown);
+
+  assert.deepEqual(collectCallouts(parsed), [
+    {
+      kind: "WARNING",
+      text: "Confirm migrations with automated checks.\nKeep Markdown files portable.",
+    },
+  ]);
+  assert.equal(serialized, markdown);
+  assert.deepEqual(collectCallouts(reparsed), collectCallouts(parsed));
 });
 
 test("Tiptap Markdown round trip is stable at the document JSON level", () => {

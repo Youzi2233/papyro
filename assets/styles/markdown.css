@@ -312,6 +312,67 @@
     text-decoration-color: color-mix(in srgb, var(--mn-ink-3) 55%, transparent);
 }
 
+.mn-tiptap-callout {
+    --mn-tiptap-callout-tone: var(--mn-accent);
+    --mn-tiptap-callout-bg: color-mix(in srgb, var(--mn-tiptap-callout-tone) 7%, var(--mn-editor-bg));
+    --mn-tiptap-callout-border: color-mix(in srgb, var(--mn-tiptap-callout-tone) 28%, var(--mn-border));
+    display: grid;
+    gap: 8px;
+    margin: 0 0 var(--mn-markdown-block-gap);
+    padding: 12px 14px 13px 16px;
+    border: 1px solid var(--mn-tiptap-callout-border);
+    border-left: 3px solid var(--mn-tiptap-callout-tone);
+    border-radius: var(--mn-markdown-code-radius);
+    background: var(--mn-tiptap-callout-bg);
+    color: var(--mn-editor-ink);
+}
+
+.mn-tiptap-callout[data-callout-kind="warning"],
+.mn-tiptap-callout[data-callout-kind="caution"],
+.mn-tiptap-callout[data-callout-kind="important"] {
+    --mn-tiptap-callout-tone: var(--mn-warning);
+}
+
+.mn-tiptap-callout[data-callout-kind="tip"],
+.mn-tiptap-callout[data-callout-kind="success"] {
+    --mn-tiptap-callout-tone: var(--mn-success);
+}
+
+.mn-tiptap-callout[data-callout-kind="danger"],
+.mn-tiptap-callout[data-callout-kind="error"] {
+    --mn-tiptap-callout-tone: var(--mn-danger);
+}
+
+.mn-tiptap-callout-header {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    user-select: none;
+}
+
+.mn-tiptap-callout-badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 22px;
+    border-radius: var(--mn-radius-xs);
+    background: color-mix(in srgb, var(--mn-tiptap-callout-tone) 11%, transparent);
+    color: color-mix(in srgb, var(--mn-tiptap-callout-tone) 78%, var(--mn-editor-ink));
+    padding: 0 8px;
+    font-family: var(--mn-font-ui);
+    font-size: var(--mn-type-small);
+    font-weight: var(--mn-weight-bold);
+    line-height: var(--mn-line-control);
+    letter-spacing: var(--mn-letter-normal);
+}
+
+.mn-tiptap-callout-content {
+    min-width: 0;
+}
+
+.mn-tiptap-callout-content > :last-child {
+    margin-bottom: 0;
+}
+
 .mn-tiptap-editor .tableWrapper {
     overflow-x: auto;
     margin: 0 0 var(--mn-markdown-block-gap);
@@ -1142,6 +1203,15 @@
     border: 0;
     content: "\"";
     font-size: 22px;
+}
+
+.mn-tiptap-block-action-menu-icon.callout::before {
+    width: 16px;
+    height: 14px;
+    border-radius: 5px;
+    background:
+        linear-gradient(currentColor, currentColor) 4px 4px / 8px 1.5px no-repeat,
+        linear-gradient(currentColor, currentColor) 4px 8px / 5px 1.5px no-repeat;
 }
 
 .mn-tiptap-block-action-menu-icon.code-block::before {

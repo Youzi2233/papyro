@@ -1,3 +1,8 @@
+import {
+  createMarkdownCallout,
+  createMarkdownTable,
+} from "./tiptap-markdown-snippets.js";
+
 const DEFAULT_LIMIT = 8;
 
 function normalizeText(value) {
@@ -24,24 +29,8 @@ function insertMarkdown(editor, markdown) {
   return editorCommand(editor, "insertContent", markdown, { contentType: "markdown" });
 }
 
-export function createMarkdownTable(rows = 3, cols = 2) {
-  const rowCount = Math.max(1, Number(rows) || 3);
-  const columnCount = Math.max(1, Number(cols) || 2);
-  const header = Array.from({ length: columnCount }, (_, index) => `Column ${index + 1}`);
-  const divider = Array.from({ length: columnCount }, () => "---");
-  const body = Array.from({ length: Math.max(1, rowCount - 1) }, () =>
-    Array.from({ length: columnCount }, () => ""),
-  );
-  const renderRow = (cells) => `| ${cells.join(" | ")} |`;
+export { createMarkdownCallout, createMarkdownTable };
 
-  return [
-    "",
-    renderRow(header),
-    renderRow(divider),
-    ...body.map(renderRow),
-    "",
-  ].join("\n");
-}
 
 function focusEditor(editor) {
   editor?.commands?.focus?.();
@@ -197,13 +186,29 @@ export const PAPYRO_TIPTAP_SLASH_COMMANDS = Object.freeze([
     run: ({ editor }) => runEditorCommand(editor, "toggleBlockquote", [], "> "),
   }),
   createCommand({
+    id: "callout",
+    title: "Callout",
+    description: "Insert a note callout",
+    group: "Blocks",
+    aliases: ["note", "alert", "admonition"],
+    keywords: ["callout", "notice", "tip", "warning"],
+    priority: 41,
+    run: ({ editor }) =>
+      runEditorCommand(
+        editor,
+        "setCalloutBlock",
+        [{ kind: "NOTE", text: "Callout text" }],
+        createMarkdownCallout(),
+      ),
+  }),
+  createCommand({
     id: "code-block",
     title: "Code block",
     description: "Insert a fenced code block",
     group: "Blocks",
     aliases: ["code", "fence"],
     keywords: ["programming", "代码", "代码块"],
-    priority: 41,
+    priority: 42,
     run: ({ editor }) =>
       runEditorCommand(editor, "toggleCodeBlock", [], "```\ncode\n```"),
   }),
@@ -214,7 +219,7 @@ export const PAPYRO_TIPTAP_SLASH_COMMANDS = Object.freeze([
     group: "Blocks",
     aliases: ["hr", "line"],
     keywords: ["separator", "rule", "分割线"],
-    priority: 42,
+    priority: 43,
     run: ({ editor }) => runEditorCommand(editor, "setHorizontalRule", [], "\n---\n"),
   }),
   createCommand({

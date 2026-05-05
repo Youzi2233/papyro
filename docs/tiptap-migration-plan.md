@@ -72,7 +72,7 @@ Papyro should borrow the interaction model, not the full product dependency stac
 
 Product targets inspired by the template:
 
-- **Slash command menu**: quick insert for headings, lists, tasks, tables, code, math, Mermaid, images, and future callouts.
+- **Slash command menu**: quick insert for headings, lists, tasks, tables, code, math, Mermaid, images, and callouts.
 - **Floating toolbar**: compact contextual formatting for selected text, using Papyro primitives instead of browser-native controls.
 - **Block handle affordance**: optional block move/duplicate/delete controls after Markdown round-trip is stable.
 - **Responsive editor chrome**: adaptive toolbars that keep narrow windows usable without hiding core writing actions.
@@ -81,7 +81,7 @@ Product targets inspired by the template:
 Implementation rules for this reference:
 
 - Start with headless command controllers before drawing menus. The same command model must power slash search, toolbar buttons, keyboard shortcuts, and tests.
-- Use simple Markdown insertion for blocks that are not yet native Tiptap nodes, such as tables, math, and Mermaid. Upgrade each block later through a tested extension.
+- Use simple Markdown insertion only as a fallback for blocks that are not yet native Tiptap nodes. Upgrade each block later through a tested extension.
 - Keep all Notion-like UI pieces optional and local. Collaboration, AI, comments, uploads, and JWT flows are out of scope for the migration branch unless a separate product decision adds them.
 - Keep command labels and groups stable enough for i18n and future Dioxus chrome integration.
 
@@ -196,6 +196,7 @@ flowchart TD
 - [x] Mermaid supports source editing and rendered preview.
 - [x] Images preserve local image URLs, paste image requests, and Markdown image syntax.
 - [x] Code blocks preserve language metadata and highlighting strategy.
+- [x] Callouts/admonitions parse and serialize `> [!NOTE]` style Markdown, expose a reusable Tiptap node, and are available from slash/`+` insertion and block actions.
 
 ### 6. Remove CodeMirror
 
@@ -242,6 +243,6 @@ flowchart TD
 - `js/package.json` no longer depends on CodeMirror.
 - `window.papyroEditor` still serves the existing Rust/Dioxus protocol.
 - Source, Hybrid, and Preview support everyday Markdown writing.
-- Markdown round-trip tests cover headings, paragraphs, lists, tasks, links, inline code, code blocks, tables, math, Mermaid, and images.
-- Tables, math, Mermaid, and images are testable extensions or adapter modules, not one-off DOM hacks.
+- Markdown round-trip tests cover headings, paragraphs, lists, tasks, links, inline code, code blocks, tables, math, Mermaid, images, and callouts.
+- Tables, math, Mermaid, images, and callouts are testable extensions or adapter modules, not one-off DOM hacks.
 - Generated bundles, desktop/mobile assets, Rust checks, JS tests, and UI checks all pass.

@@ -1,3 +1,5 @@
+import { createMarkdownCallout } from "./tiptap-markdown-snippets.js";
+
 function normalizeCommandId(value) {
   return String(value ?? "").trim().toLowerCase();
 }
@@ -253,12 +255,27 @@ export const PAPYRO_TIPTAP_BLOCK_ACTIONS = Object.freeze([
     run: ({ editor }) => runEditorCommand(editor, "toggleBlockquote", [], "> "),
   }),
   createCommand({
+    id: "callout",
+    title: "Callout",
+    description: "Insert a note callout",
+    group: "Blocks",
+    icon: "callout",
+    priority: 41,
+    run: ({ editor }) =>
+      runEditorCommand(
+        editor,
+        "setCalloutBlock",
+        [{ kind: "NOTE", text: "Callout text" }],
+        createMarkdownCallout(),
+      ),
+  }),
+  createCommand({
     id: "code-block",
     title: "Code block",
     description: "Use a fenced code block",
     group: "Blocks",
     icon: "code-block",
-    priority: 41,
+    priority: 42,
     run: ({ editor }) =>
       runEditorCommand(editor, "toggleCodeBlock", [], "```\ncode\n```"),
   }),
@@ -268,7 +285,7 @@ export const PAPYRO_TIPTAP_BLOCK_ACTIONS = Object.freeze([
     description: "Insert a horizontal rule",
     group: "Blocks",
     icon: "divider",
-    priority: 42,
+    priority: 43,
     run: ({ editor }) => runEditorCommand(editor, "setHorizontalRule", [], "\n---\n"),
   }),
   createCommand({

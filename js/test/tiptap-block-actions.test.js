@@ -54,6 +54,10 @@ function createEditor() {
         calls.push(["toggleBlockquote"]);
         return true;
       },
+      setCalloutBlock: (attrs) => {
+        calls.push(["setCalloutBlock", attrs.kind, attrs.text]);
+        return true;
+      },
       toggleBulletList: () => {
         calls.push(["toggleBulletList"]);
         return true;
@@ -105,6 +109,7 @@ test("Tiptap block actions expose stable command ids", () => {
       "ordered-list",
       "task-list",
       "blockquote",
+      "callout",
       "code-block",
       "divider",
       "table",
@@ -219,7 +224,7 @@ test("Tiptap block actions prefer Markdown manager serialization for duplicate",
 test("Tiptap block actions expose menu metadata in priority order", () => {
   const controller = createTiptapBlockActionController();
 
-  assert.deepEqual(controller.list()[12], {
+  assert.deepEqual(controller.list()[13], {
     id: "table",
     title: "Table",
     description: "Insert a 3 by 2 table",
@@ -242,6 +247,18 @@ test("Tiptap block actions create rich advanced blocks when available", () => {
   ]);
 });
 
+test("Tiptap block actions create rich callout blocks when available", () => {
+  const { calls, editor } = createEditor();
+  const controller = createTiptapBlockActionController();
+
+  assert.equal(controller.run("callout", { editor, target: { pos: 3 } }).ok, true);
+  assert.deepEqual(calls, [
+    ["focus", 3],
+    ["setCalloutBlock", "NOTE", "Callout text"],
+    ["focus", null],
+  ]);
+});
+
 test("Tiptap block actions fall back to Markdown for unavailable rich commands", () => {
   const calls = [];
   const editor = {
@@ -259,6 +276,27 @@ test("Tiptap block actions fall back to Markdown for unavailable rich commands",
   assert.deepEqual(calls, [
     ["focus", 7],
     ["insertContent", "\n$$\n\n$$\n", "markdown"],
+    ["focus", null],
+  ]);
+});
+
+test("Tiptap block actions fall back to Markdown for callouts", () => {
+  const calls = [];
+  const editor = {
+    commands: {
+      focus: (pos) => calls.push(["focus", pos ?? null]),
+      insertContent: (markdown, options) => {
+        calls.push(["insertContent", markdown, options.contentType]);
+        return true;
+      },
+    },
+  };
+  const controller = createTiptapBlockActionController();
+
+  assert.equal(controller.run("callout", { editor, target: { pos: 7 } }).ok, true);
+  assert.deepEqual(calls, [
+    ["focus", 7],
+    ["insertContent", "\n> [!NOTE]\n> Callout text\n", "markdown"],
     ["focus", null],
   ]);
 });

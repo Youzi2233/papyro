@@ -129,6 +129,7 @@ test("Tiptap block action menu opens for Hybrid block targets", () => {
       "ordered-list",
       "task-list",
       "blockquote",
+      "callout",
       "code-block",
       "divider",
       "table",
@@ -201,7 +202,7 @@ test("Tiptap block action menu renders grouped command sections", () => {
   const menu = documentRef.body.children[0];
   const list = menu.children[0];
   assert.deepEqual(
-      list.children.map((section) => section.children[0].textContent),
+    list.children.map((section) => section.children[0].textContent),
     ["Insert", "Text", "Lists", "Blocks", "Advanced", "Actions", "Danger"],
   );
   assert.equal(list.children[0].children[1].dataset.commandId, "insert-before");

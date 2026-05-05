@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  createMarkdownCallout,
   createMarkdownTable,
   createTiptapSlashCommandController,
   PAPYRO_TIPTAP_SLASH_COMMANDS,
@@ -26,6 +27,10 @@ function createFakeEditor() {
       },
       toggleBlockquote: () => {
         calls.push(["toggleBlockquote"]);
+        return true;
+      },
+      setCalloutBlock: (attrs) => {
+        calls.push(["setCalloutBlock", attrs.kind, attrs.text]);
         return true;
       },
       toggleBulletList: () => {
@@ -78,6 +83,7 @@ test("Tiptap slash commands expose stable command ids", () => {
     "ordered-list",
     "task-list",
     "blockquote",
+    "callout",
     "code-block",
     "divider",
     "table",
@@ -160,6 +166,21 @@ test("Tiptap slash commands create rich math blocks when the math extension is a
   });
   assert.deepEqual(calls, [
     ["setMathBlock", "x^2 + y^2 = z^2"],
+    ["focus"],
+  ]);
+});
+
+test("Tiptap slash commands create rich callout blocks when available", () => {
+  const { calls, editor } = createFakeEditor();
+  const controller = createTiptapSlashCommandController();
+
+  assert.deepEqual(controller.run("callout", { editor }), {
+    ok: true,
+    commandId: "callout",
+    error: null,
+  });
+  assert.deepEqual(calls, [
+    ["setCalloutBlock", "NOTE", "Callout text"],
     ["focus"],
   ]);
 });
@@ -263,6 +284,31 @@ test("Tiptap slash commands fall back to Markdown for images without image comma
   });
   assert.deepEqual(calls, [
     ["insertContent", "![alt text](assets/image.png)", "markdown"],
+    ["focus"],
+  ]);
+});
+
+test("Tiptap slash commands fall back to Markdown for callouts", () => {
+  const calls = [];
+  const editor = {
+    commands: {
+      focus: () => calls.push(["focus"]),
+      insertContent: (content, options) => {
+        calls.push(["insertContent", content, options.contentType]);
+        return true;
+      },
+    },
+  };
+  const controller = createTiptapSlashCommandController();
+
+  assert.deepEqual(controller.run("callout", { editor }), {
+    ok: true,
+    commandId: "callout",
+    error: null,
+  });
+  assert.equal(createMarkdownCallout(), "\n> [!NOTE]\n> Callout text\n");
+  assert.deepEqual(calls, [
+    ["insertContent", "\n> [!NOTE]\n> Callout text\n", "markdown"],
     ["focus"],
   ]);
 });
