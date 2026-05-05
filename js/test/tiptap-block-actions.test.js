@@ -99,6 +99,68 @@ function createEditor() {
   return { calls, editor };
 }
 
+function createStyleEditor() {
+  const calls = [];
+  const marks = {
+    textStyle: {
+      create: (attrs) => ({ type: "textStyle", attrs }),
+    },
+    highlight: {
+      create: (attrs) => ({ type: "highlight", attrs }),
+    },
+  };
+  const tr = {
+    addMark(from, to, mark) {
+      calls.push(["addMark", from, to, mark.type, mark.attrs]);
+      return tr;
+    },
+    removeMark(from, to, mark) {
+      calls.push(["removeMark", from, to, mark === marks.textStyle ? "textStyle" : "highlight"]);
+      return tr;
+    },
+  };
+  const textNode = {
+    isText: true,
+    nodeSize: 9,
+    type: { name: "text" },
+  };
+  const paragraph = {
+    isTextblock: true,
+    nodeSize: 11,
+    type: { name: "paragraph" },
+  };
+  const editor = {
+    commands: {
+      focus: (pos) => {
+        calls.push(["focus", pos ?? null]);
+        return true;
+      },
+    },
+    state: {
+      schema: { marks },
+      tr,
+      doc: {
+        nodeAt(pos) {
+          calls.push(["nodeAt", pos]);
+          return paragraph;
+        },
+        nodesBetween(from, to, visit) {
+          calls.push(["nodesBetween", from, to]);
+          visit(paragraph, from);
+          visit(textNode, from + 1);
+        },
+      },
+    },
+    view: {
+      dispatch(transaction) {
+        calls.push(["dispatch", transaction === tr]);
+      },
+    },
+  };
+
+  return { calls, editor, paragraph };
+}
+
 test("Tiptap block actions expose stable command ids", () => {
   assert.deepEqual(
     PAPYRO_TIPTAP_BLOCK_ACTIONS.map((command) => command.id),
@@ -118,6 +180,14 @@ test("Tiptap block actions expose stable command ids", () => {
       "callout-kind-tip",
       "callout-kind-warning",
       "callout-kind-danger",
+      "text-color-ink",
+      "text-color-muted",
+      "text-color-accent",
+      "text-color-danger",
+      "highlight-clear",
+      "highlight-yellow",
+      "highlight-blue",
+      "highlight-green",
       "code-block",
       "divider",
       "table",
@@ -230,9 +300,11 @@ test("Tiptap block actions prefer Markdown manager serialization for duplicate",
 });
 
 test("Tiptap block actions expose menu metadata in priority order", () => {
+  const { editor, paragraph } = createStyleEditor();
   const controller = createTiptapBlockActionController();
+  const commands = controller.list({ editor, target: { pos: 2, node: paragraph } });
 
-  assert.deepEqual(controller.list()[13], {
+  assert.deepEqual(commands.find((command) => command.id === "table"), {
     id: "table",
     title: "Table",
     description: "Insert a 3 by 2 table",
@@ -241,6 +313,60 @@ test("Tiptap block actions expose menu metadata in priority order", () => {
     shortcut: "",
     tone: "default",
   });
+});
+
+test("Tiptap block actions hide style commands without mark support", () => {
+  const controller = createTiptapBlockActionController();
+  const { editor } = createEditor();
+
+  assert.equal(
+    controller
+      .list({ editor, target: { pos: 2, node: { nodeSize: 6 } } })
+      .some((command) => command.group === "Color" || command.group === "Highlight"),
+    false,
+  );
+});
+
+test("Tiptap block actions style the target block text", () => {
+  const { calls, editor, paragraph } = createStyleEditor();
+  const controller = createTiptapBlockActionController();
+
+  assert.equal(
+    controller.run("text-color-accent", {
+      editor,
+      target: { pos: 2, node: paragraph },
+    }).ok,
+    true,
+  );
+  assert.deepEqual(calls, [
+    ["focus", 2],
+    ["nodesBetween", 2, 13],
+    ["addMark", 3, 12, "textStyle", { color: "var(--mn-accent)" }],
+    ["dispatch", true],
+    ["focus", null],
+    ["focus", null],
+  ]);
+});
+
+test("Tiptap block actions clear target block highlighting", () => {
+  const { calls, editor, paragraph } = createStyleEditor();
+  const controller = createTiptapBlockActionController();
+
+  assert.equal(
+    controller.run("highlight-clear", {
+      editor,
+      target: { pos: 2, node: paragraph },
+    }).ok,
+    true,
+  );
+  assert.deepEqual(calls, [
+    ["focus", 2],
+    ["nodesBetween", 2, 13],
+    ["removeMark", 3, 12, "highlight"],
+    ["dispatch", true],
+    ["focus", null],
+    ["focus", null],
+  ]);
 });
 
 test("Tiptap block actions show callout kind actions only for callout blocks", () => {

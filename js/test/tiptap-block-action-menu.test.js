@@ -33,6 +33,14 @@ function createCalloutTarget() {
 
 function createEditor() {
   const calls = [];
+  const marks = {
+    textStyle: {
+      create: (attrs) => ({ type: "textStyle", attrs }),
+    },
+    highlight: {
+      create: (attrs) => ({ type: "highlight", attrs }),
+    },
+  };
   const editor = {
     commands: {
       focus: (pos) => calls.push(["focus", pos ?? null]),
@@ -40,6 +48,12 @@ function createEditor() {
       setParagraph: () => {
         calls.push(["setParagraph"]);
         return true;
+      },
+    },
+    state: {
+      schema: { marks },
+      doc: {
+        nodesBetween() {},
       },
     },
   };
@@ -141,11 +155,19 @@ test("Tiptap block action menu opens for Hybrid block targets", () => {
       "task-list",
       "blockquote",
       "callout",
-      "code-block",
-      "divider",
+      "text-color-ink",
+      "text-color-muted",
+      "text-color-accent",
+      "text-color-danger",
+      "highlight-clear",
+      "highlight-yellow",
+      "highlight-blue",
+      "highlight-green",
       "table",
       "math-block",
+      "code-block",
       "mermaid",
+      "divider",
       "image",
       "copy-block",
       "duplicate-block",
@@ -214,10 +236,20 @@ test("Tiptap block action menu renders grouped command sections", () => {
   const list = menu.children[0];
   assert.deepEqual(
     list.children.map((section) => section.children[0].textContent),
-    ["Insert", "Text", "Lists", "Blocks", "Advanced", "Actions", "Danger"],
+    [
+      "Insert",
+      "Text",
+      "Lists",
+      "Blocks",
+      "Color",
+      "Highlight",
+      "Advanced",
+      "Actions",
+      "Danger",
+    ],
   );
   assert.equal(list.children[0].children[1].dataset.commandId, "insert-before");
-  assert.equal(list.children[4].children[1].dataset.commandId, "table");
+  assert.equal(list.children[6].children[1].dataset.commandId, "table");
 });
 
 test("Tiptap block action menu renders callout kind sections for callout blocks", () => {
@@ -234,7 +266,18 @@ test("Tiptap block action menu renders callout kind sections for callout blocks"
   const list = menu.children[0];
   assert.deepEqual(
     list.children.map((section) => section.children[0].textContent),
-    ["Insert", "Text", "Lists", "Blocks", "Callout", "Advanced", "Actions", "Danger"],
+    [
+      "Insert",
+      "Text",
+      "Lists",
+      "Blocks",
+      "Callout",
+      "Color",
+      "Highlight",
+      "Advanced",
+      "Actions",
+      "Danger",
+    ],
   );
   assert.deepEqual(
     list.children[4].children.slice(1).map((item) => item.dataset.commandId),

@@ -2,6 +2,11 @@ import {
   createMarkdownCallout,
   PAPYRO_CALLOUT_KIND_OPTIONS,
 } from "./tiptap-markdown-snippets.js";
+import {
+  applyMarkToBlockText,
+  PAPYRO_HIGHLIGHT_OPTIONS,
+  PAPYRO_TEXT_COLOR_OPTIONS,
+} from "./tiptap-text-style.js";
 
 function normalizeCommandId(value) {
   return String(value ?? "").trim().toLowerCase();
@@ -141,6 +146,32 @@ function isCalloutTarget(target) {
 
 function setCalloutKind(editor, target, kind) {
   return editorCommand(editor, "setCalloutKind", { kind, pos: target?.pos });
+}
+
+function canStyleTarget(editor, target) {
+  return !!editor?.state?.schema?.marks?.textStyle && Number.isFinite(target?.pos);
+}
+
+function canHighlightTarget(editor, target) {
+  return !!editor?.state?.schema?.marks?.highlight && Number.isFinite(target?.pos);
+}
+
+function setTargetTextColor(editor, target, color) {
+  return applyMarkToBlockText(
+    editor,
+    target,
+    "textStyle",
+    color ? { color } : null,
+  );
+}
+
+function setTargetHighlight(editor, target, color) {
+  return applyMarkToBlockText(
+    editor,
+    target,
+    "highlight",
+    color ? { color } : null,
+  );
 }
 
 function createCommand({
@@ -296,13 +327,37 @@ export const PAPYRO_TIPTAP_BLOCK_ACTIONS = Object.freeze([
       run: ({ editor, target }) => setCalloutKind(editor, target, option.kind),
     }),
   ),
+  ...PAPYRO_TEXT_COLOR_OPTIONS.map((option, index) =>
+    createCommand({
+      id: `text-color-${option.id}`,
+      title: option.title,
+      description: option.description,
+      group: "Color",
+      icon: `text-color ${option.id}`,
+      priority: 44 + index,
+      enabled: ({ editor, target }) => canStyleTarget(editor, target),
+      run: ({ editor, target }) => setTargetTextColor(editor, target, option.color),
+    }),
+  ),
+  ...PAPYRO_HIGHLIGHT_OPTIONS.map((option, index) =>
+    createCommand({
+      id: `highlight-${option.id}`,
+      title: option.title,
+      description: option.description,
+      group: "Highlight",
+      icon: `highlight ${option.id}`,
+      priority: 48 + index * 0.1,
+      enabled: ({ editor, target }) => canHighlightTarget(editor, target),
+      run: ({ editor, target }) => setTargetHighlight(editor, target, option.color),
+    }),
+  ),
   createCommand({
     id: "code-block",
     title: "Code block",
     description: "Use a fenced code block",
     group: "Blocks",
     icon: "code-block",
-    priority: 42,
+    priority: 52,
     run: ({ editor }) =>
       runEditorCommand(editor, "toggleCodeBlock", [], "```\ncode\n```"),
   }),
@@ -312,7 +367,7 @@ export const PAPYRO_TIPTAP_BLOCK_ACTIONS = Object.freeze([
     description: "Insert a horizontal rule",
     group: "Blocks",
     icon: "divider",
-    priority: 43,
+    priority: 53,
     run: ({ editor }) => runEditorCommand(editor, "setHorizontalRule", [], "\n---\n"),
   }),
   createCommand({

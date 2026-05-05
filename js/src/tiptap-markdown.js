@@ -8,6 +8,7 @@ import { createPapyroMathExtensions } from "./tiptap-math.js";
 import { createPapyroMermaidExtensions } from "./tiptap-mermaid.js";
 import { createPapyroTableExtensions } from "./tiptap-table.js";
 import { createPapyroTaskListExtensions } from "./tiptap-task-list.js";
+import { createPapyroTextStyleExtensions } from "./tiptap-text-style.js";
 
 export function createPapyroTiptapExtensions() {
   return [
@@ -24,6 +25,7 @@ export function createPapyroTiptapExtensions() {
     }),
     ...createPapyroTaskListExtensions(),
     ...createPapyroTableExtensions(),
+    ...createPapyroTextStyleExtensions(),
     ...createPapyroMathExtensions(),
     ...createPapyroMermaidExtensions(),
     ...createPapyroImageExtensions(),
