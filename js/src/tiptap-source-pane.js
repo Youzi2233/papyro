@@ -65,6 +65,10 @@ function syncTiptapEditor(entry, markdown) {
 }
 
 function commitSourceMarkdown(entry, markdown) {
+  if (entry?.markdownSync?.markdown === markdown) {
+    return true;
+  }
+
   const result = entry?.markdownSync?.setMarkdown?.(markdown);
   if (!result?.ok) {
     emit(entry, {

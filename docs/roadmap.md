@@ -225,6 +225,7 @@ Tasks:
 - [x] Support basic Markdown round-trip: paragraphs, headings, lists, blockquotes, bold, italic, inline code, code blocks, and links.
 - [x] Redefine Source/Hybrid/Preview: Hybrid uses Tiptap, Preview remains Rust-rendered, and Source remains Markdown-editable.
 - [x] Add a Tiptap Source pane backed by `MarkdownSyncController`.
+- [x] Make the Tiptap Source pane ignore unchanged input so it does not emit redundant dirty/content events.
 - [x] Support outline navigation and active heading sync in Tiptap Source and Hybrid modes.
 - [x] Add a reusable slash command controller as the headless foundation for Notion-like but Papyro-native block insertion.
 - [x] Add the first Notion-like but Papyro-native slash command menu controller.

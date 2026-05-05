@@ -183,6 +183,7 @@ flowchart TD
   - slash/`+` 插入菜单、块操作菜单、浮动格式栏和表格工具条共享浮层 dismiss 生命周期：外部点击、滚动和窗口变化会关闭浮层，点击当前块或表格内部会保持上下文不丢失。
 - [x] Source 使用源码编辑面板，并通过 `MarkdownSyncController` 同步到 Tiptap。
 - [x] 增加 `MarkdownSyncController`，作为 Tiptap runtime 更新的 canonical Markdown 状态边界。
+- [x] Source 面板输入会跳过未变化 Markdown，避免源码编辑产生重复 dirty/content 事件。
 - [x] Preview 继续使用 Rust HTML 渲染，不让 Tiptap 接管只读预览。
 - [x] 模式切换不丢 selection、dirty state 或 scroll snapshot。
   - `TiptapModeSnapshotController` 在视图模式切换前保存 Hybrid ProseMirror 选区和 Source textarea 选区，并在 `set_view_mode` 后恢复目标模式选区。

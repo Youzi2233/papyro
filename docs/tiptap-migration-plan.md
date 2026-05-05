@@ -171,6 +171,7 @@ flowchart TD
   - The slash/`+` insertion menu, block action menu, floating format toolbar, and table toolbar now share a dismiss lifecycle: outside clicks, scrolling, and window changes close overlays, while interactions inside the current block or table keep context alive.
 - [x] Source uses a source editor pane synchronized through `MarkdownSyncController`.
 - [x] Add `MarkdownSyncController` as the canonical Markdown state boundary for Tiptap runtime updates.
+- [x] Source pane input now skips unchanged Markdown so source editing does not emit redundant dirty/content events.
 - [x] Preview remains Rust-rendered HTML.
 - [x] Mode switching preserves selection, dirty state, and scroll snapshots.
   - `TiptapModeSnapshotController` captures Hybrid ProseMirror selections and Source textarea selections before view-mode changes, then restores the target mode after `set_view_mode`.

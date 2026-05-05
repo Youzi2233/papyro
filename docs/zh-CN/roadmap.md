@@ -200,6 +200,7 @@ flowchart LR
 - [x] 支持基础 Markdown round-trip：段落、标题、列表、引用、粗体、斜体、行内代码、代码块、链接。
 - [x] 重新定义 Source/Hybrid/Preview 模式契约：Hybrid 用 Tiptap，Preview 继续 Rust 渲染，Source 保持源码可编辑。
 - [x] 增加通过 `MarkdownSyncController` 同步的 Tiptap Source 源码编辑面板。
+- [x] Tiptap Source 面板忽略未变化输入，避免重复触发 dirty/content_changed 事件。
 - [x] 支持 Tiptap Source 和 Hybrid 模式下的大纲跳转与当前标题联动。
 - [x] 增加可复用的 slash command controller，作为 Notion-like 但 Papyro 原生块插入体验的 headless 基础。
 - [x] 增加第一版 Notion-like 但 Papyro 原生的 slash command menu controller。

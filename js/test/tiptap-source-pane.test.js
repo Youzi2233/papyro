@@ -154,6 +154,18 @@ test("Tiptap source pane input syncs Markdown and emits content_changed", () => 
   assert.deepEqual(selectionChanges, [entry]);
 });
 
+test("Tiptap source pane ignores unchanged input without dirty events", () => {
+  const { textarea, messages, setContentCalls, entry, selectionChanges } = createControllerHarness();
+  textarea.value = "# Note";
+
+  textarea.dispatch("input");
+
+  assert.equal(entry.markdownSync.markdown, "# Note");
+  assert.deepEqual(setContentCalls, []);
+  assert.deepEqual(messages, []);
+  assert.deepEqual(selectionChanges, [entry]);
+});
+
 test("Tiptap source pane reports parse failures without replacing the editor", () => {
   const { textarea, messages, setContentCalls, entry } = createControllerHarness({
     parseOk: false,
