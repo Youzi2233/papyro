@@ -78,6 +78,7 @@ Use `node scripts/check-perf-smoke.js --self-test` to validate the checker itsel
 - Markdown insertion
 - editor outline scroll targets
 - IME composition guards
+- Tiptap release-smoke Markdown fixture round-trip semantics
 
 Add to that smoke path when changing Tiptap host lifecycle, Rust-to-JS protocol commands, Hybrid block state, selection handling, paste behavior, or outline navigation.
 

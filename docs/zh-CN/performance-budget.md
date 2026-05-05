@@ -74,6 +74,7 @@ node scripts/check-perf-smoke.js target/perf-smoke.log
 - Markdown 插入
 - 编辑器大纲滚动目标
 - IME composition 防护
+- Tiptap 发布 smoke Markdown fixture 的 round-trip 语义
 
 修改 Tiptap host 生命周期、Rust 到 JS 协议命令、Hybrid block 状态、选区行为、粘贴行为或大纲导航时，要扩展这条 smoke 路径。
 

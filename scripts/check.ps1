@@ -44,6 +44,8 @@ Invoke-Step "UI contrast check" { node scripts/check-ui-contrast.js }
 Invoke-Step "UI contrast check self-test" { node scripts/check-ui-contrast.js --self-test }
 Invoke-Step "Markdown style smoke check" { node scripts/check-markdown-style-smoke.js }
 Invoke-Step "Markdown style smoke check self-test" { node scripts/check-markdown-style-smoke.js --self-test }
+Invoke-Step "Tiptap release smoke fixture check" { node scripts/check-tiptap-release-smoke.js }
+Invoke-Step "Tiptap release smoke fixture check self-test" { node scripts/check-tiptap-release-smoke.js --self-test }
 Invoke-Step "performance fixture generator self-test" { node scripts/generate-perf-fixtures.js --self-test }
 Invoke-Step "performance smoke checker self-test" { node scripts/check-perf-smoke.js --self-test }
 Invoke-Step "performance documentation check" { node scripts/check-perf-docs.js }

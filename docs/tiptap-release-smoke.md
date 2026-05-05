@@ -25,6 +25,7 @@ Fill this section before marking the smoke run complete.
 ## Preconditions
 
 - [ ] Run the automated baseline from [Development Standards](development-standards.md).
+- [ ] Confirm `node scripts/check-tiptap-release-smoke.js` passes for the release fixture.
 - [ ] Build the editor bundle from source, not from stale generated assets.
 - [ ] Launch the desktop app from the same commit recorded above.
 - [ ] Use a normal workspace with at least one existing Markdown file.

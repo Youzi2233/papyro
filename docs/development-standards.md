@@ -121,6 +121,8 @@ node scripts/check-ui-contrast.js --self-test
 node scripts/report-ui-tokens.js
 node scripts/report-ui-tokens.js --self-test
 node scripts/generate-perf-fixtures.js --self-test
+node scripts/check-tiptap-release-smoke.js
+node scripts/check-tiptap-release-smoke.js --self-test
 node scripts/check-perf-smoke.js --self-test
 node scripts/check-perf-docs.js
 node scripts/check-perf-docs.js --self-test

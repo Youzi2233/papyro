@@ -25,6 +25,7 @@
 ## 前置条件
 
 - [ ] 已执行 [开发规范](development-standards.md) 中的自动化基线检查。
+- [ ] 确认 `node scripts/check-tiptap-release-smoke.js` 针对发布 fixture 通过。
 - [ ] editor bundle 来自当前源码构建，不是过期生成物。
 - [ ] 桌面端应用来自上面记录的同一个 commit。
 - [ ] 使用一个正常工作区，且至少包含一个已有 Markdown 文件。

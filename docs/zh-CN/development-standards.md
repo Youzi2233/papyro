@@ -115,6 +115,8 @@ node scripts/check-ui-primitives.js
 node scripts/check-ui-primitives.js --self-test
 node scripts/check-ui-contrast.js
 node scripts/report-ui-tokens.js
+node scripts/check-tiptap-release-smoke.js
+node scripts/check-tiptap-release-smoke.js --self-test
 node scripts/check-perf-docs.js
 npm --prefix js run build
 npm --prefix js test

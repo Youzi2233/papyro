@@ -235,6 +235,7 @@ flowchart LR
 - [x] 增加 Tiptap code block 配置，并用语言元数据、fenced Markdown round-trip 和共享代码样式测试覆盖。
 - [x] 增加 Tiptap callout/admonition block，支持 `> [!NOTE]` 风格 Markdown round-trip、slash/`+` 插入、块操作菜单插入和 token 化样式。
 - [x] 增加发布 smoke Markdown fixture 的自动化 round-trip 覆盖，确保标题、中文、列表、任务、callout、代码、对齐表格、公式、Mermaid 和图片在手工 QA 前先有测试守护。
+- [x] 增加专用 Tiptap 发布 smoke fixture checker，并接入完整本地检查脚本。
 - [x] 块操作菜单增加 Notion-like 的文本颜色和块高亮动作，点击句柄后可直接对当前块应用弱化、强调、危险色和多色高亮，并保持 Markdown 保存语义。
 - [x] 迁移 task list、table、math、Mermaid、image 和 code block。
 - [x] 清理 CodeMirror npm 依赖和旧 JS runtime 测试。

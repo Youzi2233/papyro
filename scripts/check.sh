@@ -46,6 +46,12 @@ node scripts/check-markdown-style-smoke.js
 echo "=== Markdown style smoke check self-test ==="
 node scripts/check-markdown-style-smoke.js --self-test
 
+echo "=== Tiptap release smoke fixture check ==="
+node scripts/check-tiptap-release-smoke.js
+
+echo "=== Tiptap release smoke fixture check self-test ==="
+node scripts/check-tiptap-release-smoke.js --self-test
+
 echo "=== performance fixture generator self-test ==="
 node scripts/generate-perf-fixtures.js --self-test
 

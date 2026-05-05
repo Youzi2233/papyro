@@ -199,6 +199,7 @@ flowchart TD
 - [x] Code blocks preserve language metadata and highlighting strategy.
 - [x] Callouts/admonitions parse and serialize `> [!NOTE]` style Markdown, expose a reusable Tiptap node, and are available from slash/`+` insertion and block actions.
 - [x] A release-smoke Markdown fixture now runs through automated round-trip coverage for headings, Chinese text, lists, tasks, callouts, code, aligned tables, math, Mermaid, and images.
+- [x] The release-smoke fixture checker is part of the full local check scripts, so fixture coverage cannot silently drift before manual QA.
 
 ### 6. Remove CodeMirror
 
