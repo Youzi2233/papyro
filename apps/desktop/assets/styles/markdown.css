@@ -898,9 +898,14 @@
     white-space: nowrap;
 }
 
-.mn-tiptap-table-toolbar-button:hover {
+.mn-tiptap-table-toolbar-button:hover:not(:disabled) {
     background: var(--mn-accent-wash);
     color: var(--mn-ink);
+}
+
+.mn-tiptap-table-toolbar-button:disabled {
+    cursor: not-allowed;
+    opacity: var(--mn-primitive-disabled-opacity, 0.45);
 }
 
 .mn-tiptap-table-toolbar-button[data-active="true"] {
@@ -929,6 +934,11 @@
 
 .mn-tiptap-table-quick-add.hidden {
     display: none;
+}
+
+.mn-tiptap-table-quick-add:disabled {
+    cursor: not-allowed;
+    opacity: var(--mn-primitive-disabled-opacity, 0.45);
 }
 
 .mn-tiptap-table-axis-handle {

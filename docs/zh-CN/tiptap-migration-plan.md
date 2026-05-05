@@ -208,7 +208,7 @@ flowchart TD
 ### 5. Markdown block 能力迁移
 
 - [x] Task list：checkbox 直接切换并 round-trip 为 `- [ ]` / `- [x]`。
-- [x] Table：从 pipe table 解析到文档表格，支持 slash/`+` 表格尺寸选择、整表/行/列边缘选择 handle、pointer-first 工具条动作、新增/删除行列、表格边缘快捷添加、表头切换、归一化的单元格左/中/右对齐状态、合并/拆分单元格、单元格导航、表格修复和删除。
+- [x] Table：从 pipe table 解析到文档表格，支持 slash/`+` 表格尺寸选择、整表/行/列边缘选择 handle、pointer-first 工具条动作、新增/删除行列、表格边缘快捷添加、表头切换、归一化的单元格左/中/右对齐状态、基于 `editor.can()` 的 disabled 状态、合并/拆分单元格、单元格导航、表格修复和删除。
 - [x] Math：inline/display 公式有编辑态、预览态和错误反馈。
 - [x] Mermaid：保留源码编辑和渲染预览，失败时显示错误。
 - [x] Image：本地图片 URL、粘贴图片请求和 Markdown 图片语法保持兼容。

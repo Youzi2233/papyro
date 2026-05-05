@@ -257,6 +257,19 @@ function runEditorCommand(editor, commandName, args = []) {
   return ok;
 }
 
+function canRunEditorCommand(editor, commandName, args = []) {
+  if (typeof editor?.commands?.[commandName] !== "function") return false;
+  const canCommands = typeof editor?.can === "function" ? editor.can() : null;
+  const canCommand = canCommands?.[commandName];
+  if (typeof canCommand !== "function") return true;
+
+  try {
+    return canCommand(...args) !== false;
+  } catch (_error) {
+    return false;
+  }
+}
+
 function cellValue(editor, name) {
   const selection = editor?.state?.selection;
   const view = editor?.view;
@@ -407,9 +420,13 @@ class TiptapTableToolbarView {
       button.dataset.group = command.group;
       button.dataset.tone = command.tone ?? "default";
       button.dataset.active = command.active ? "true" : "false";
+      button.dataset.disabled = command.disabled ? "true" : "false";
+      button.disabled = !!command.disabled;
+      button.setAttribute("aria-disabled", command.disabled ? "true" : "false");
       button.addEventListener("pointerdown", (event) => {
         event.preventDefault();
         event.stopPropagation?.();
+        if (command.disabled) return;
         state.run(command.id);
       });
       button.addEventListener("mousedown", (event) => {
@@ -437,8 +454,8 @@ class TiptapTableToolbarView {
     const rect = state.rect;
     if (!rect || !this.#addRowButton || !this.#addColumnButton) return;
 
-    const addRow = state.commands.some((command) => command.id === "add-row-after");
-    const addColumn = state.commands.some((command) => command.id === "add-column-after");
+    const addRow = state.commands.find((command) => command.id === "add-row-after");
+    const addColumn = state.commands.find((command) => command.id === "add-column-after");
     this.#addRowButton.style.left = `${rect.left + Math.max(0, rect.width ?? rect.right - rect.left) / 2 - 12}px`;
     this.#addRowButton.style.top = `${rect.bottom + 6}px`;
     this.#addColumnButton.style.left = `${rect.right + 6}px`;
@@ -447,13 +464,21 @@ class TiptapTableToolbarView {
     this.#addRowButton.onpointerdown = (event) => {
       event.preventDefault();
       event.stopPropagation?.();
+      if (addRow?.disabled) return;
       state.run("add-row-after");
     };
     this.#addColumnButton.onpointerdown = (event) => {
       event.preventDefault();
       event.stopPropagation?.();
+      if (addColumn?.disabled) return;
       state.run("add-column-after");
     };
+    this.#addRowButton.disabled = !!addRow?.disabled;
+    this.#addRowButton.dataset.disabled = addRow?.disabled ? "true" : "false";
+    this.#addRowButton.setAttribute("aria-disabled", addRow?.disabled ? "true" : "false");
+    this.#addColumnButton.disabled = !!addColumn?.disabled;
+    this.#addColumnButton.dataset.disabled = addColumn?.disabled ? "true" : "false";
+    this.#addColumnButton.setAttribute("aria-disabled", addColumn?.disabled ? "true" : "false");
     setHidden(this.#addRowButton, !addRow);
     setHidden(this.#addColumnButton, !addColumn);
   }
@@ -625,14 +650,18 @@ export class TiptapTableToolbarController {
       grid: context.grid,
       commands: TABLE_COMMANDS.filter(
         (command) => typeof editor.commands?.[command.command] === "function",
-      ).map((command) => ({
-        ...command,
-        active:
-          command.command === "setCellAttribute" &&
-          command.args?.length >= 2 &&
-          normalizeCellAttributeValue(command.args[0], cellValue(editor, command.args[0])) ===
-            normalizeCellAttributeValue(command.args[0], command.args[1]),
-      })),
+      ).map((command) => {
+        const disabled = !canRunEditorCommand(editor, command.command, command.args);
+        return {
+          ...command,
+          disabled,
+          active:
+            command.command === "setCellAttribute" &&
+            command.args?.length >= 2 &&
+            normalizeCellAttributeValue(command.args[0], cellValue(editor, command.args[0])) ===
+              normalizeCellAttributeValue(command.args[0], command.args[1]),
+        };
+      }),
     };
     this.#view.update?.({
       ...this.#state,
@@ -646,6 +675,10 @@ export class TiptapTableToolbarController {
   run(commandId) {
     const command = TABLE_COMMANDS.find((item) => item.id === commandId);
     if (!command || !this.#editor) return false;
+    if (!canRunEditorCommand(this.#editor, command.command, command.args)) {
+      this.refresh(this.#editor);
+      return false;
+    }
     const ok = runEditorCommand(this.#editor, command.command, command.args);
     this.refresh(this.#editor);
     return ok;

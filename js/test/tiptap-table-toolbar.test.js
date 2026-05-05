@@ -270,6 +270,45 @@ test("Tiptap table toolbar command buttons run from pointerdown", () => {
   assert.deepEqual(calls, [["deleteTable"], ["focus"]]);
 });
 
+test("Tiptap table toolbar disables commands rejected by editor.can", () => {
+  const { created, documentRef } = createDocument();
+  const { calls, editor } = createTableHarness();
+  editor.commands.addRowAfter = commandSpy(calls, "addRowAfter");
+  editor.commands.mergeCells = commandSpy(calls, "mergeCells");
+  editor.can = () => ({
+    addRowAfter: () => false,
+    mergeCells: () => false,
+  });
+  const controller = createTiptapTableToolbarController({
+    dom: { document: documentRef },
+  });
+
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+
+  assert.deepEqual(
+    controller.state.commands.map((command) => [command.id, command.disabled]),
+    [
+      ["add-row-after", true],
+      ["merge-cells", true],
+    ],
+  );
+
+  const mergeButton = created.find((element) => element.dataset.commandId === "merge-cells");
+  assert.equal(mergeButton.disabled, true);
+  assert.equal(mergeButton.dataset.disabled, "true");
+  assert.equal(mergeButton["aria-disabled"], "true");
+  mergeButton.onpointerdown({ preventDefault() {}, stopPropagation() {} });
+  assert.equal(controller.run("merge-cells"), false);
+
+  const rowButton = created.find((element) =>
+    String(element.className).includes("mn-tiptap-table-add-row"),
+  );
+  assert.equal(rowButton.disabled, true);
+  assert.equal(rowButton.dataset.disabled, "true");
+  rowButton.onpointerdown({ preventDefault() {}, stopPropagation() {} });
+  assert.deepEqual(calls, []);
+});
+
 test("Tiptap table toolbar stays closed outside Hybrid mode", () => {
   const { editor } = createTableHarness();
   const view = createViewSpy();

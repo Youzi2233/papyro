@@ -196,7 +196,7 @@ flowchart TD
 ### 5. Markdown Block Migration
 
 - [x] Task list round-trips `- [ ]` and `- [x]`.
-- [x] Pipe tables become editable tables with slash/`+` table-size insertion, whole-table/row/column edge selection handles, pointer-first toolbar actions, row/column operations, table-edge quick add controls, header toggles, normalized left/center/right cell alignment states, cell merge/split, cell navigation, repair commands, and table deletion.
+- [x] Pipe tables become editable tables with slash/`+` table-size insertion, whole-table/row/column edge selection handles, pointer-first toolbar actions, row/column operations, table-edge quick add controls, header toggles, normalized left/center/right cell alignment states, disabled states from `editor.can()`, cell merge/split, cell navigation, repair commands, and table deletion.
 - [x] Inline and display math support edit, preview, and error states.
 - [x] Mermaid supports source editing and rendered preview.
 - [x] Images preserve local image URLs, paste image requests, and Markdown image syntax.
