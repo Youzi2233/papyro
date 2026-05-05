@@ -177,7 +177,7 @@ flowchart TD
 - [x] 增加 `MarkdownSyncController`，作为 Tiptap runtime 更新的 canonical Markdown 状态边界。
 - [x] Preview 继续使用 Rust HTML 渲染，不让 Tiptap 接管只读预览。
 - [ ] 模式切换不丢 selection、dirty state 或 scroll snapshot。
-- [ ] 大纲点击在 Source 和 Hybrid 都能跳到目标位置。
+- [x] 大纲点击在 Source 和 Hybrid 都能跳到目标位置。
 
 ### 4. Rust/JS 协议兼容
 

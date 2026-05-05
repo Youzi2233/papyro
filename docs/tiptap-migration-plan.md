@@ -165,7 +165,7 @@ flowchart TD
 - [x] Add `MarkdownSyncController` as the canonical Markdown state boundary for Tiptap runtime updates.
 - [x] Preview remains Rust-rendered HTML.
 - [ ] Mode switching preserves selection, dirty state, and scroll snapshots.
-- [ ] Outline clicks work in Source and Hybrid.
+- [x] Outline clicks work in Source and Hybrid.
 
 ### 4. Rust/JS Protocol Compatibility
 

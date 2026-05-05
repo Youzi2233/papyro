@@ -37,6 +37,7 @@ function createRuntimeHarness({
   preferencesControllerFactory,
   sourcePaneControllerFactory,
   slashMenuControllerFactory,
+  layout,
 } = {}) {
   const calls = [];
   const registry = createEditorRuntimeRegistry();
@@ -183,6 +184,7 @@ function createRuntimeHarness({
     ...(preferencesControllerFactory ? { preferencesControllerFactory } : {}),
     ...(sourcePaneControllerFactory ? { sourcePaneControllerFactory } : {}),
     slashMenuControllerFactory: createSlashMenu,
+    ...(layout ? { layout } : {}),
     navigation: {
       attachPreviewScroll: () => "preview-scroll",
       navigateOutline: () => "navigate-outline",
@@ -222,6 +224,51 @@ test("Tiptap runtime creates an editor instance and registry entry", () => {
     ["pasteControllerAttach", "mn-tiptap-runtime"],
     ["slashMenuAttach", "mn-tiptap-runtime"],
   ]);
+});
+
+test("Tiptap runtime attaches editor chrome and syncs outline on selection changes", () => {
+  const calls = [];
+  const container = createContainer();
+  const harness = createRuntimeHarness({
+    container,
+    layout: {
+      attachEditorScroll: (tabId, entry) => calls.push(["attachEditorScroll", tabId, entry.viewMode]),
+      detachEditorScroll: (entry) => calls.push(["detachEditorScroll", entry.viewMode]),
+      attachLayoutObserver: (tabId, target, dioxus) => {
+        calls.push(["attachLayoutObserver", tabId, target === container, dioxus.id]);
+      },
+      restoreEditorScrollSnapshot: (entry) => calls.push(["restoreEditorScrollSnapshot", entry.viewMode]),
+    },
+  });
+  harness.runtime.ensureEditor({
+    tabId: "tab-a",
+    containerId: "editor-root",
+    instanceId: "host-a",
+    initialContent: "# Note",
+    viewMode: "hybrid",
+  });
+
+  harness.runtime.attachChannel("tab-a", { id: "dioxus-a" });
+  harness.registry.get("tab-a").editor.emit("selectionUpdate");
+  harness.runtime.handleRustMessage("tab-a", {
+    type: "set_view_mode",
+    mode: "source",
+  });
+
+  assert.deepEqual(calls, [
+    ["attachEditorScroll", "tab-a", "hybrid"],
+    ["attachLayoutObserver", "tab-a", true, "dioxus-a"],
+    ["restoreEditorScrollSnapshot", "source"],
+    ["attachEditorScroll", "tab-a", "source"],
+  ]);
+  assert.deepEqual(
+    harness.calls.filter((call) => call[0] === "syncOutline"),
+    [
+      ["syncOutline", "tab-a", "hybrid"],
+      ["syncOutline", "tab-a", "hybrid"],
+      ["syncOutline", "tab-a", "source"],
+    ],
+  );
 });
 
 test("Tiptap runtime reattaches existing editors without rebuilding", () => {
@@ -625,7 +672,13 @@ test("Tiptap runtime reports format command failures through runtime_error", () 
 });
 
 test("Tiptap runtime destroys and unregisters editor entries", () => {
-  const { calls, registry, runtime } = createRuntimeHarness();
+  const detached = [];
+  const { calls, registry, runtime } = createRuntimeHarness({
+    layout: {
+      detachEditorScroll: (entry) => detached.push(entry.viewMode),
+      detachLayoutObserver: (entry) => detached.push(`layout:${entry.viewMode}`),
+    },
+  });
   runtime.ensureEditor({
     tabId: "tab-a",
     containerId: "editor-root",
@@ -643,6 +696,7 @@ test("Tiptap runtime destroys and unregisters editor entries", () => {
     ["slashMenuDestroy"],
     ["destroy"],
   ]);
+  assert.deepEqual(detached, ["hybrid", "layout:hybrid"]);
 });
 
 test("Tiptap runtime ignores stale host destroy messages", () => {

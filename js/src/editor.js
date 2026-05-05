@@ -30,6 +30,13 @@ import {
   imageFileFromTransfer,
   sendEditorImageRequest,
 } from "./editor-clipboard.js";
+import {
+  isTiptapEntry,
+  scrollTiptapEntryToLine,
+  tiptapActiveMarkdownLineNumber,
+  tiptapEditorScroller,
+  tiptapTopMarkdownLineNumber,
+} from "./tiptap-navigation.js";
 
 import {
   activeOutlineHeadingIndex,
@@ -1547,6 +1554,8 @@ if (document.readyState === "loading") {
 }
 
 function refreshEditorLayout(view) {
+  if (!view?.dom || typeof view.requestMeasure !== "function") return;
+
   const measure = () => {
     if (!view.dom.isConnected) return;
     view.requestMeasure();
@@ -1572,10 +1581,13 @@ function disconnectLayoutObserver(entry) {
 }
 
 function viewTabId(entry) {
-  return entry?.view?.dom?.dataset?.tabId ?? "";
+  return entry?.view?.dom?.dataset?.tabId ?? entry?.dom?.dataset?.tabId ?? "";
 }
 
 function editorScroller(entry) {
+  if (isTiptapEntry(entry)) {
+    return tiptapEditorScroller(entry);
+  }
   return entry?.view?.scrollDOM ?? entry?.view?.dom?.querySelector?.(".cm-scroller") ?? null;
 }
 
@@ -1617,6 +1629,10 @@ function restoreEditorScrollSnapshot(entry) {
 }
 
 function editorTopLineNumber(entry, scroller = editorScroller(entry)) {
+  if (isTiptapEntry(entry)) {
+    return tiptapTopMarkdownLineNumber(entry, outlineLineNumbersForTab(viewTabId(entry)), scroller);
+  }
+
   const view = entry?.view;
   if (!view || !(scroller instanceof HTMLElement)) return null;
   if (typeof view.lineBlockAtHeight !== "function") return null;
@@ -1633,8 +1649,7 @@ function editorTopLineNumber(entry, scroller = editorScroller(entry)) {
   return Number.isSafeInteger(line?.number) ? line.number : null;
 }
 
-function detachEditorScroll(entry) {
-  const scroller = editorScroller(entry);
+function detachEditorScrollElement(scroller) {
   if (!(scroller instanceof HTMLElement)) return false;
 
   const previous = editorScrollListeners.get(scroller);
@@ -1645,6 +1660,14 @@ function detachEditorScroll(entry) {
   return true;
 }
 
+function detachEditorScroll(entry) {
+  const detached = detachEditorScrollElement(entry?.editorScrollScroller ?? editorScroller(entry));
+  if (entry) {
+    entry.editorScrollScroller = null;
+  }
+  return detached;
+}
+
 function attachEditorScroll(tabId, entry = editorRegistry.get(tabId)) {
   if (!modeSupportsEditorScroll(entry?.viewMode)) {
     detachEditorScroll(entry);
@@ -1652,7 +1675,17 @@ function attachEditorScroll(tabId, entry = editorRegistry.get(tabId)) {
   }
 
   const scroller = editorScroller(entry);
-  if (!(scroller instanceof HTMLElement)) return false;
+  if (!(scroller instanceof HTMLElement)) {
+    detachEditorScroll(entry);
+    return false;
+  }
+
+  if (entry?.editorScrollScroller && entry.editorScrollScroller !== scroller) {
+    detachEditorScrollElement(entry.editorScrollScroller);
+  }
+  if (entry) {
+    entry.editorScrollScroller = scroller;
+  }
 
   const previous = editorScrollListeners.get(scroller);
   if (previous?.tabId === tabId) {
@@ -1770,6 +1803,10 @@ function outlineLineNumbersForTab(tabId) {
 }
 
 function editorActiveLineNumber(entry) {
+  if (isTiptapEntry(entry)) {
+    return tiptapActiveMarkdownLineNumber(entry, outlineLineNumbersForTab(viewTabId(entry)));
+  }
+
   const head = entry?.view?.state?.selection?.main?.head;
   if (!Number.isSafeInteger(head)) return null;
 
@@ -1848,7 +1885,7 @@ function navigateOutline(tabId, mode, lineNumber, headingIndex) {
   const normalizedMode = normalizeViewMode(mode);
   const navigated = normalizedMode === "preview"
     ? jumpPreviewToHeading(tabId, headingIndex)
-    : jumpEditorToLine(tabId, lineNumber);
+    : jumpEditorToLine(tabId, lineNumber, { headingIndex: Number(headingIndex) });
 
   setActiveOutlineItem(tabId, Number(headingIndex));
   syncOutline(tabId, normalizedMode);
@@ -1858,8 +1895,13 @@ function navigateOutline(tabId, mode, lineNumber, headingIndex) {
   return navigated;
 }
 
-function jumpEditorToLine(tabId, lineNumber) {
+function jumpEditorToLine(tabId, lineNumber, options = {}) {
   const entry = editorRegistry.get(tabId);
+  if (isTiptapEntry(entry)) {
+    return scrollTiptapEntryToLine(entry, lineNumber, {
+      headingIndex: options.headingIndex,
+    });
+  }
   if (!entry?.view) return false;
 
   const jumped = scrollEditorViewToLine(entry.view, lineNumber, {
@@ -2060,6 +2102,13 @@ const codeMirrorRuntimeAdapter = createCodeMirrorEditorRuntime({
 
 const tiptapRuntimeAdapter = createTiptapEditorRuntime({
   registry: editorRegistry,
+  layout: {
+    attachEditorScroll,
+    detachEditorScroll,
+    attachLayoutObserver,
+    detachLayoutObserver: disconnectLayoutObserver,
+    restoreEditorScrollSnapshot,
+  },
   navigation: {
     attachPreviewScroll,
     navigateOutline,

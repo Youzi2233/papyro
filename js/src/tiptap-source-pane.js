@@ -73,9 +73,13 @@ export class TiptapSourcePaneController {
   #textarea = null;
   #inputHandler = null;
   #keydownHandler = null;
+  #selectionHandler = null;
+  #onSelectionChange = null;
 
-  constructor({ document = defaultDocument() } = {}) {
+  constructor({ document = defaultDocument(), onSelectionChange = null } = {}) {
     this.#document = document;
+    this.#onSelectionChange =
+      typeof onSelectionChange === "function" ? onSelectionChange : null;
   }
 
   get textarea() {
@@ -100,14 +104,22 @@ export class TiptapSourcePaneController {
       this.#inputHandler = () => {
         if (!this.#entry || !this.#textarea) return;
         commitSourceMarkdown(this.#entry, this.#textarea.value);
+        this.#onSelectionChange?.(this.#entry);
       };
       this.#keydownHandler = (event) => {
         if (!isSaveShortcut(event)) return;
         event.preventDefault?.();
         emit(this.#entry, { type: "save_requested" });
       };
+      this.#selectionHandler = () => {
+        if (!this.#entry) return;
+        this.#onSelectionChange?.(this.#entry);
+      };
       textarea.addEventListener?.("input", this.#inputHandler);
       textarea.addEventListener?.("keydown", this.#keydownHandler);
+      textarea.addEventListener?.("click", this.#selectionHandler);
+      textarea.addEventListener?.("keyup", this.#selectionHandler);
+      textarea.addEventListener?.("select", this.#selectionHandler);
     }
 
     if (this.#textarea.parentElement !== root) {
@@ -161,12 +173,18 @@ export class TiptapSourcePaneController {
       if (this.#keydownHandler) {
         this.#textarea.removeEventListener?.("keydown", this.#keydownHandler);
       }
+      if (this.#selectionHandler) {
+        this.#textarea.removeEventListener?.("click", this.#selectionHandler);
+        this.#textarea.removeEventListener?.("keyup", this.#selectionHandler);
+        this.#textarea.removeEventListener?.("select", this.#selectionHandler);
+      }
       this.#textarea.remove?.();
     }
     this.#textarea = null;
     this.#entry = null;
     this.#inputHandler = null;
     this.#keydownHandler = null;
+    this.#selectionHandler = null;
   }
 }
 

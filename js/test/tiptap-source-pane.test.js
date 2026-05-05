@@ -18,13 +18,16 @@ function createElement(tagName) {
       this.attributes[name] = value;
     },
     addEventListener(name, handler) {
-      listeners.set(name, handler);
+      const handlers = listeners.get(name) ?? [];
+      handlers.push(handler);
+      listeners.set(name, handlers);
     },
     removeEventListener(name, handler) {
-      if (listeners.get(name) === handler) listeners.delete(name);
+      const handlers = listeners.get(name) ?? [];
+      listeners.set(name, handlers.filter((candidate) => candidate !== handler));
     },
     dispatch(name, event = {}) {
-      listeners.get(name)?.(event);
+      listeners.get(name)?.forEach((handler) => handler(event));
     },
     setSelectionRange(start, end) {
       this.selectionStart = start;
@@ -92,6 +95,7 @@ function createEntry({
 function createControllerHarness(entryOptions = {}) {
   const root = createRoot();
   const created = [];
+  const selectionChanges = [];
   const controller = createTiptapSourcePaneController({
     document: {
       createElement(tagName) {
@@ -100,10 +104,13 @@ function createControllerHarness(entryOptions = {}) {
         return element;
       },
     },
+    onSelectionChange(entry) {
+      selectionChanges.push(entry);
+    },
   });
   const entry = createEntry(entryOptions);
   const textarea = controller.attach({ root, entry: entry.entry });
-  return { controller, root, textarea, created, ...entry };
+  return { controller, root, textarea, created, selectionChanges, ...entry };
 }
 
 test("Tiptap source pane mounts a hidden Markdown textarea by default", () => {
@@ -129,7 +136,7 @@ test("Tiptap source pane shows only in source mode", () => {
 });
 
 test("Tiptap source pane input syncs Markdown and emits content_changed", () => {
-  const { textarea, messages, setContentCalls, entry } = createControllerHarness();
+  const { textarea, messages, setContentCalls, entry, selectionChanges } = createControllerHarness();
   textarea.value = "# Updated";
 
   textarea.dispatch("input");
@@ -144,6 +151,7 @@ test("Tiptap source pane input syncs Markdown and emits content_changed", () => 
     },
   ]);
   assert.equal(entry.suppressChange, false);
+  assert.deepEqual(selectionChanges, [entry]);
 });
 
 test("Tiptap source pane reports parse failures without replacing the editor", () => {
@@ -201,4 +209,14 @@ test("Tiptap source pane sends save requests and supports focus", () => {
 
   assert.equal(controller.focus(entry), true);
   assert.equal(textarea.focused, true);
+});
+
+test("Tiptap source pane reports source selection movement", () => {
+  const { textarea, entry, selectionChanges } = createControllerHarness();
+
+  textarea.dispatch("click");
+  textarea.dispatch("keyup");
+  textarea.dispatch("select");
+
+  assert.deepEqual(selectionChanges, [entry, entry, entry]);
 });

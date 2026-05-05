@@ -199,6 +199,7 @@ export function createTiptapEditorRuntime({
   slashCommandControllerFactory = createTiptapSlashCommandController,
   slashMenuControllerFactory = createTiptapSlashMenuController,
   clipboard = {},
+  layout = {},
   navigation,
 } = {}) {
   const runtimeRegistry = requireObject(registry, "registry");
@@ -267,6 +268,18 @@ export function createTiptapEditorRuntime({
     clipboard.sendEditorImageRequest ?? sendEditorImageRequest,
     "clipboard.sendEditorImageRequest",
   );
+  const attachEditorScroll =
+    typeof layout.attachEditorScroll === "function" ? layout.attachEditorScroll : () => false;
+  const detachEditorScroll =
+    typeof layout.detachEditorScroll === "function" ? layout.detachEditorScroll : () => false;
+  const attachLayoutObserver =
+    typeof layout.attachLayoutObserver === "function" ? layout.attachLayoutObserver : () => false;
+  const detachLayoutObserver =
+    typeof layout.detachLayoutObserver === "function" ? layout.detachLayoutObserver : () => false;
+  const restoreEditorScrollSnapshot =
+    typeof layout.restoreEditorScrollSnapshot === "function"
+      ? layout.restoreEditorScrollSnapshot
+      : () => false;
 
   const controls = requireObject(navigation, "navigation");
   const attachPreviewScroll = requireFunction(
@@ -342,7 +355,10 @@ export function createTiptapEditorRuntime({
     });
     const pasteController = createPasteController();
     const preferencesController = createPreferencesController();
-    const sourcePane = createSourcePane({ document: documentRef });
+    const sourcePane = createSourcePane({
+      document: documentRef,
+      onSelectionChange: (entry) => syncOutline(tabId, entry?.viewMode),
+    });
     const slashCommands = createSlashCommandController();
     const slashMenu = createSlashMenuController({
       commandController: slashCommands,
@@ -383,6 +399,7 @@ export function createTiptapEditorRuntime({
         entry?.blockHandle?.refresh();
         entry?.slashMenu?.refresh(targetEditor);
         entry?.formatToolbar?.refresh(targetEditor);
+        syncOutline(tabId, entry?.viewMode);
       });
       editor.on("blur", () => {
         const entry = runtimeRegistry.get(tabId);
@@ -430,7 +447,12 @@ export function createTiptapEditorRuntime({
       if (!entry) return;
 
       entry.dioxus = dioxus;
+      attachEditorScroll(tabId, entry);
       syncOutline(tabId, entry.viewMode);
+      const container = entry.dom?.parentElement;
+      if (container) {
+        attachLayoutObserver(tabId, container, dioxus);
+      }
     },
 
     handleRustMessage(tabId, message) {
@@ -440,6 +462,8 @@ export function createTiptapEditorRuntime({
       if (message.type === "set_view_mode") {
         entry.modeController.apply(entry, message.mode);
         entry.sourcePane.applyMode(entry);
+        restoreEditorScrollSnapshot(entry);
+        attachEditorScroll(tabId, entry);
         entry.blockHandle.refresh();
         entry.formatToolbar.refresh(entry.editor);
         syncOutline(tabId, entry.viewMode);
@@ -524,6 +548,8 @@ export function createTiptapEditorRuntime({
         released?.blockHandle?.destroy?.();
         released?.formatToolbar?.destroy?.();
         released?.pasteController?.destroy?.();
+        detachEditorScroll(released);
+        detachLayoutObserver(released);
         released?.sourcePane?.destroy?.();
         released?.slashMenu?.destroy?.();
         released?.editor?.destroy?.();
