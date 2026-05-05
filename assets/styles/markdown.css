@@ -469,6 +469,45 @@
     }
 }
 
+.mn-tiptap-image {
+    display: inline-flex;
+    max-width: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    vertical-align: middle;
+}
+
+.mn-tiptap-image img,
+.mn-tiptap-image-element {
+    display: block;
+    max-width: 100%;
+    max-height: var(--mn-markdown-image-max-height);
+    border: var(--mn-markdown-image-border);
+    border-radius: var(--mn-markdown-image-radius);
+    background: var(--mn-markdown-image-bg);
+    box-shadow: none;
+}
+
+.mn-tiptap-image-caption {
+    color: var(--mn-ink-3);
+    font-family: var(--mn-font-ui);
+    font-size: var(--mn-type-small);
+    line-height: var(--mn-line-caption);
+}
+
+.mn-tiptap-image-error {
+    max-width: 100%;
+    border: var(--mn-border-subtle);
+    border-radius: var(--mn-markdown-image-radius);
+    background: var(--mn-code-block-surface);
+    color: var(--mn-danger);
+    padding: 10px 12px;
+    font-family: var(--mn-markdown-mono-font);
+    font-size: var(--mn-markdown-code-block-size);
+    overflow-wrap: anywhere;
+}
+
 .mn-tiptap-editor > *:first-child { margin-top: 0; }
 .mn-tiptap-editor > *:last-child { margin-bottom: 0; }
 

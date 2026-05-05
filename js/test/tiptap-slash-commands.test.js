@@ -51,6 +51,10 @@ function createFakeEditor() {
         calls.push(["setMermaidBlock", attrs.source]);
         return true;
       },
+      setImage: (attrs) => {
+        calls.push(["setImage", attrs.src, attrs.alt, attrs.title]);
+        return true;
+      },
       toggleOrderedList: () => {
         calls.push(["toggleOrderedList"]);
         return true;
@@ -78,6 +82,7 @@ test("Tiptap slash commands expose stable command ids", () => {
     "table",
     "math-block",
     "mermaid",
+    "image",
   ]);
 });
 
@@ -155,6 +160,21 @@ test("Tiptap slash commands create rich Mermaid blocks when the Mermaid extensio
   ]);
 });
 
+test("Tiptap slash commands create rich images when the image extension is available", () => {
+  const { calls, editor } = createFakeEditor();
+  const controller = createTiptapSlashCommandController();
+
+  assert.deepEqual(controller.run("image", { editor }), {
+    ok: true,
+    commandId: "image",
+    error: null,
+  });
+  assert.deepEqual(calls, [
+    ["setImage", "assets/image.png", "alt text", ""],
+    ["focus"],
+  ]);
+});
+
 test("Tiptap slash commands fall back to Markdown when an editor command is unavailable", () => {
   const calls = [];
   const editor = {
@@ -200,6 +220,30 @@ test("Tiptap slash commands fall back to Markdown for tables without table comma
       "\n| Column | Notes |\n| --- | --- |\n|  |  |\n",
       "markdown",
     ],
+    ["focus"],
+  ]);
+});
+
+test("Tiptap slash commands fall back to Markdown for images without image commands", () => {
+  const calls = [];
+  const editor = {
+    commands: {
+      focus: () => calls.push(["focus"]),
+      insertContent: (content, options) => {
+        calls.push(["insertContent", content, options.contentType]);
+        return true;
+      },
+    },
+  };
+  const controller = createTiptapSlashCommandController();
+
+  assert.deepEqual(controller.run("image", { editor }), {
+    ok: true,
+    commandId: "image",
+    error: null,
+  });
+  assert.deepEqual(calls, [
+    ["insertContent", "![alt text](assets/image.png)", "markdown"],
     ["focus"],
   ]);
 });

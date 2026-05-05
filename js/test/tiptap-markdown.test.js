@@ -16,6 +16,7 @@ Papyro 支持本地 Markdown 笔记，也要稳定处理中文内容。
 
 A paragraph with **bold**, *italic*, \`inline code\`, ~~strike~~, and [docs](https://example.com).
 Inline math $e^{i\\pi} + 1 = 0$ remains editable.
+![Papyro logo](assets/logo.png "Logo")
 
 > Quote line
 
@@ -154,6 +155,24 @@ function collectMermaid(node, diagrams = []) {
   return diagrams;
 }
 
+function collectImages(node, images = []) {
+  if (!node || typeof node !== "object") return images;
+
+  if (node.type === "image") {
+    images.push({
+      src: node.attrs?.src ?? "",
+      alt: node.attrs?.alt ?? "",
+      title: node.attrs?.title ?? "",
+    });
+  }
+
+  for (const child of node.content ?? []) {
+    collectImages(child, images);
+  }
+
+  return images;
+}
+
 test("Tiptap Markdown manager parses the baseline Markdown blocks", () => {
   const doc = parseTiptapMarkdown(markdownFixture);
   const nodeTypes = collectNodeTypes(doc);
@@ -162,6 +181,7 @@ test("Tiptap Markdown manager parses the baseline Markdown blocks", () => {
   const tables = collectTables(doc);
   const math = collectMath(doc);
   const mermaid = collectMermaid(doc);
+  const images = collectImages(doc);
 
   assert.deepEqual(doc.content.slice(0, 2).map((node) => node.attrs.level), [1, 2]);
   assert.ok(nodeTypes.includes("paragraph"));
@@ -177,6 +197,7 @@ test("Tiptap Markdown manager parses the baseline Markdown blocks", () => {
   assert.ok(nodeTypes.includes("inlineMath"));
   assert.ok(nodeTypes.includes("mathBlock"));
   assert.ok(nodeTypes.includes("mermaidBlock"));
+  assert.ok(nodeTypes.includes("image"));
   assert.ok(nodeTypes.includes("codeBlock"));
   assert.ok(marks.includes("bold"));
   assert.ok(marks.includes("italic"));
@@ -208,6 +229,9 @@ test("Tiptap Markdown manager parses the baseline Markdown blocks", () => {
     { type: "mathBlock", source: "x^2 + y^2 = z^2", singleLine: false },
   ]);
   assert.deepEqual(mermaid, ["flowchart TD\n  A --> B"]);
+  assert.deepEqual(images, [
+    { src: "assets/logo.png", alt: "Papyro logo", title: "Logo" },
+  ]);
 });
 
 test("Tiptap Markdown serialization keeps semantic Markdown output", () => {
@@ -223,6 +247,7 @@ test("Tiptap Markdown serialization keeps semantic Markdown output", () => {
   assert.match(output, /~~strike~~/);
   assert.match(output, /\[docs\]\(https:\/\/example\.com\)/);
   assert.match(output, /\$e\^\{i\\pi\} \+ 1 = 0\$/);
+  assert.match(output, /!\[Papyro logo\]\(assets\/logo\.png "Logo"\)/);
   assert.match(output, /^> Quote line/m);
   assert.match(output, /^- First item/m);
   assert.match(output, /^- \[ \] Draft task/m);
@@ -308,6 +333,21 @@ test("Tiptap Markdown Mermaid round trips fenced diagram blocks", () => {
   assert.deepEqual(collectMermaid(parsed), ["flowchart TD\n  Start --> Finish"]);
   assert.equal(serialized, markdown);
   assert.deepEqual(collectMermaid(reparsed), collectMermaid(parsed));
+});
+
+test("Tiptap Markdown images round trip local URLs, alt text, and titles", () => {
+  const markdown = '![Pasted image](../assets/pasted image.png "Screenshot")';
+  const { parsed, serialized, reparsed } = roundTripTiptapMarkdown(markdown);
+
+  assert.deepEqual(collectImages(parsed), [
+    {
+      src: "../assets/pasted image.png",
+      alt: "Pasted image",
+      title: "Screenshot",
+    },
+  ]);
+  assert.equal(serialized, markdown);
+  assert.deepEqual(collectImages(reparsed), collectImages(parsed));
 });
 
 test("Tiptap Markdown round trip is stable at the document JSON level", () => {

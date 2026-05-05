@@ -241,6 +241,22 @@ export const PAPYRO_TIPTAP_SLASH_COMMANDS = Object.freeze([
         "\n```mermaid\nflowchart TD\n  A --> B\n```\n",
       ),
   }),
+  createCommand({
+    id: "image",
+    title: "Image",
+    description: "Insert Markdown image syntax",
+    group: "Advanced",
+    aliases: ["img", "picture"],
+    keywords: ["media", "asset", "图片", "图像"],
+    priority: 53,
+    run: ({ editor }) =>
+      runEditorCommand(
+        editor,
+        "setImage",
+        [{ src: "assets/image.png", alt: "alt text", title: "" }],
+        "![alt text](assets/image.png)",
+      ),
+  }),
 ]);
 
 export class TiptapSlashCommandController {

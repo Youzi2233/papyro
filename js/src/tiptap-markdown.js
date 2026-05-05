@@ -1,6 +1,7 @@
 import { MarkdownManager } from "@tiptap/markdown";
 import { StarterKit } from "@tiptap/starter-kit";
 
+import { createPapyroImageExtensions } from "./tiptap-image.js";
 import { createPapyroMathExtensions } from "./tiptap-math.js";
 import { createPapyroMermaidExtensions } from "./tiptap-mermaid.js";
 import { createPapyroTableExtensions } from "./tiptap-table.js";
@@ -22,6 +23,7 @@ export function createPapyroTiptapExtensions() {
     ...createPapyroTableExtensions(),
     ...createPapyroMathExtensions(),
     ...createPapyroMermaidExtensions(),
+    ...createPapyroImageExtensions(),
   ];
 }
 

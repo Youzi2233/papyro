@@ -241,6 +241,7 @@ Tasks:
 - [x] Add Tiptap table extensions with pipe table round-trip coverage and rich insert command support.
 - [x] Add Tiptap math extensions with inline/display Markdown round-trip coverage and KaTeX preview/error states.
 - [x] Add Tiptap Mermaid extensions with fenced code round-trip coverage and shared preview/error rendering.
+- [x] Add Tiptap image extensions with local URL Markdown round-trip coverage and shared paste/drop protocol support.
 - [ ] Migrate task lists, tables, math, Mermaid, images, and code blocks.
 - [ ] Remove CodeMirror dependencies, `.cm-*` CSS, and obsolete tests.
 - [ ] Finish full acceptance checks and push the completed migration.

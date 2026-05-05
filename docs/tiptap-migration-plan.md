@@ -185,7 +185,7 @@ flowchart TD
 - [x] Pipe tables become editable tables with row/column operations and cell navigation.
 - [x] Inline and display math support edit, preview, and error states.
 - [x] Mermaid supports source editing and rendered preview.
-- [ ] Images preserve local image URLs, paste image requests, and Markdown image syntax.
+- [x] Images preserve local image URLs, paste image requests, and Markdown image syntax.
 - [ ] Code blocks preserve language metadata and highlighting strategy.
 
 ### 6. Remove CodeMirror
