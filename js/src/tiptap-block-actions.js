@@ -133,6 +133,23 @@ function duplicateTarget(editor, target) {
   return insertMarkdownAt(editor, `\n${markdown}\n`, position);
 }
 
+function clearTargetFormatting(editor, target) {
+  let ran = false;
+  if (typeof editor?.commands?.unsetAllMarks === "function") {
+    ran = editorCommand(editor, "unsetAllMarks") !== false || ran;
+  }
+  if (typeof editor?.commands?.clearNodes === "function") {
+    ran = editorCommand(editor, "clearNodes") !== false || ran;
+  }
+  if (canStyleTarget(editor, target)) {
+    ran = setTargetTextColor(editor, target, null) !== false || ran;
+  }
+  if (canHighlightTarget(editor, target)) {
+    ran = setTargetHighlight(editor, target, null) !== false || ran;
+  }
+  return ran;
+}
+
 function canRunEditorCommand(editor, commandName) {
   return typeof editor?.commands?.[commandName] === "function";
 }
@@ -414,6 +431,15 @@ export const PAPYRO_TIPTAP_BLOCK_ACTIONS = Object.freeze([
         [{ src: "assets/image.png", alt: "alt text", title: "" }],
         "![alt text](assets/image.png)",
       ),
+  }),
+  createCommand({
+    id: "reset-formatting",
+    title: "Reset formatting",
+    description: "Clear marks and return to plain text",
+    group: "Actions",
+    icon: "reset-formatting",
+    priority: 69,
+    run: ({ editor, target }) => clearTargetFormatting(editor, target),
   }),
   createCommand({
     id: "copy-block",

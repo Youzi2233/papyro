@@ -192,6 +192,7 @@ test("Tiptap block actions expose stable command ids", () => {
       "math-block",
       "mermaid",
       "image",
+      "reset-formatting",
       "copy-block",
       "duplicate-block",
       "delete",
@@ -294,6 +295,41 @@ test("Tiptap block actions expose menu metadata in priority order", () => {
     shortcut: "Ctrl C",
     tone: "default",
   });
+});
+
+test("Tiptap block actions reset formatting with editor commands and mark cleanup", () => {
+  const { calls, editor, paragraph } = createStyleEditor();
+  editor.commands.unsetAllMarks = () => {
+    calls.push(["unsetAllMarks"]);
+    return true;
+  };
+  editor.commands.clearNodes = () => {
+    calls.push(["clearNodes"]);
+    return true;
+  };
+  const controller = createTiptapBlockActionController();
+
+  assert.equal(
+    controller.run("reset-formatting", {
+      editor,
+      target: { pos: 2, node: paragraph },
+    }).ok,
+    true,
+  );
+  assert.deepEqual(calls, [
+    ["focus", 2],
+    ["unsetAllMarks"],
+    ["clearNodes"],
+    ["nodesBetween", 2, 13],
+    ["removeMark", 3, 12, "textStyle"],
+    ["dispatch", true],
+    ["focus", null],
+    ["nodesBetween", 2, 13],
+    ["removeMark", 3, 12, "highlight"],
+    ["dispatch", true],
+    ["focus", null],
+    ["focus", null],
+  ]);
 });
 
 test("Tiptap block action menu keeps content insertion in the slash menu", () => {

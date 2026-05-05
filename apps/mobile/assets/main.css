@@ -1508,8 +1508,7 @@ small {
 .mn-tiptap-block-action-menu-icon.heading-3::before { content: "H3"; }
 .mn-tiptap-block-action-menu-icon.ordered-list::before { content: "1."; }
 .mn-tiptap-block-action-menu-icon.quote::before { content: "\""; }
-.mn-tiptap-block-action-menu-icon.code-block::before { content: "{}"; }
-.mn-tiptap-block-action-menu-icon.math::before { content: "fx"; }
+.mn-tiptap-block-action-menu-icon.code-block::before { content: "{}"; } .mn-tiptap-block-action-menu-icon.math::before { content: "fx"; } .mn-tiptap-block-action-menu-icon.reset-formatting::before { content: "Tx"; }
 .mn-tiptap-block-action-menu-icon.plus-top::before,
 .mn-tiptap-block-action-menu-icon.plus-bottom::before { content: "+"; }
 

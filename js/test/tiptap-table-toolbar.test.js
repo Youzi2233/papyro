@@ -119,6 +119,32 @@ function createTableHarness(commandOverrides = {}) {
     },
     commands: {
       focus: () => calls.push(["focus"]),
+      setCellSelection(selection) {
+        calls.push(["setCellSelection", selection.anchorCell, selection.headCell]);
+        const positionedCells = cells.map((item, index) => ({ cell: item, pos: index + 10 }));
+        const anchor = positionedCells.find((item) => item.pos === selection.anchorCell);
+        const head = positionedCells.find((item) => item.pos === selection.headCell);
+        const minRow = Math.min(anchor?.cell?.rowIndex ?? 0, head?.cell?.rowIndex ?? 0);
+        const maxRow = Math.max(anchor?.cell?.rowIndex ?? 0, head?.cell?.rowIndex ?? 0);
+        const minColumn = Math.min(anchor?.cell?.columnIndex ?? 0, head?.cell?.columnIndex ?? 0);
+        const maxColumn = Math.max(anchor?.cell?.columnIndex ?? 0, head?.cell?.columnIndex ?? 0);
+        editor.state.selection = {
+          from: 4,
+          $anchorCell: { pos: selection.anchorCell },
+          $headCell: { pos: selection.headCell },
+          forEachCell(callback) {
+            positionedCells
+              .filter((item) =>
+                item.cell.rowIndex >= minRow &&
+                item.cell.rowIndex <= maxRow &&
+                item.cell.columnIndex >= minColumn &&
+                item.cell.columnIndex <= maxColumn,
+              )
+              .forEach((item) => callback(item.cell, item.pos));
+          },
+        };
+        return true;
+      },
       ...commandOverrides,
     },
   };
@@ -730,10 +756,6 @@ test("Tiptap table toolbar activation refreshes a closed table context", () => {
 test("Tiptap table toolbar axis handles select tables rows and columns", () => {
   const { created, documentRef } = createDocument();
   const { calls, editor } = createTableHarness();
-  editor.commands.setCellSelection = (selection) => {
-    calls.push(["setCellSelection", selection.anchorCell, selection.headCell]);
-    return true;
-  };
   const controller = createTiptapTableToolbarController({
     dom: { document: documentRef },
   });
@@ -826,6 +848,101 @@ test("Tiptap table toolbar positions the cell menu trigger inside the selected c
   assert.equal(trigger.style.left, "149px");
   assert.equal(trigger.style.top, "96px");
   assert.equal(trigger.textContent ?? "", "");
+});
+
+test("Tiptap table toolbar scopes context commands to row and column selections", () => {
+  const { created, documentRef } = createDocument();
+  const { editor } = createTableHarness({
+    addRowBefore: () => true,
+    addRowAfter: () => true,
+    deleteRow: () => true,
+    toggleHeaderRow: () => true,
+    addColumnBefore: () => true,
+    addColumnAfter: () => true,
+    deleteColumn: () => true,
+    toggleHeaderColumn: () => true,
+    mergeCells: () => true,
+    splitCell: () => true,
+    setCellAttribute: () => true,
+  });
+  const controller = createTiptapTableToolbarController({
+    dom: { document: documentRef },
+  });
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+
+  const rowHandle = created.find((element) =>
+    String(element.className).includes("mn-tiptap-table-axis-handle row"),
+  );
+  rowHandle.onpointerdown({ preventDefault() {}, stopPropagation() {} });
+  controller.toggleMenu("context", { open: true });
+
+  assert.equal(controller.state.selection.kind, "row");
+  assert.deepEqual(
+    controller.state.commands
+      .filter((command) => !command.disabled)
+      .map((command) => command.id)
+      .filter((id) => ["add-row-before", "add-row-after", "delete-row", "toggle-header-row", "merge-cells"].includes(id)),
+    ["add-row-before", "add-row-after", "delete-row", "merge-cells", "toggle-header-row"],
+  );
+  assert.deepEqual(
+    created
+      .filter((element) => element.dataset.commandId)
+      .map((element) => element.dataset.commandId)
+      .filter((id) => ["add-row-before", "add-row-after", "delete-row", "toggle-header-row", "merge-cells"].includes(id)),
+    ["add-row-before", "add-row-after", "delete-row", "toggle-header-row"],
+  );
+
+  const columnHandle = created.find((element) =>
+    String(element.className).includes("mn-tiptap-table-axis-handle column") && !element.removed,
+  );
+  columnHandle.onpointerdown({ preventDefault() {}, stopPropagation() {} });
+  controller.toggleMenu("context", { open: true });
+  assert.equal(controller.state.selection.kind, "column");
+  assert.deepEqual(
+    created
+      .filter((element) => element.dataset.commandId && !element.removed)
+      .map((element) => element.dataset.commandId)
+      .filter((id) => ["add-column-before", "add-column-after", "delete-column", "toggle-header-column", "merge-cells"].includes(id)),
+    ["add-column-before", "add-column-after", "delete-column", "toggle-header-column"],
+  );
+});
+
+test("Tiptap table toolbar opens table selection menus from the centered trigger", () => {
+  const { created, documentRef } = createDocument();
+  const { editor } = createTableHarness({
+    toggleHeaderRow: () => true,
+    toggleHeaderColumn: () => true,
+    deleteTable: () => true,
+  });
+  const controller = createTiptapTableToolbarController({
+    dom: { document: documentRef },
+  });
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+
+  const tableHandle = created.find((element) =>
+    String(element.className).includes("mn-tiptap-table-axis-handle table"),
+  );
+  tableHandle.onpointerdown({ preventDefault() {}, stopPropagation() {} });
+  const trigger = created.find((element) =>
+    String(element.className).includes("mn-tiptap-table-cell-menu-trigger"),
+  );
+  trigger.onpointerdown({ preventDefault() {}, stopPropagation() {} });
+
+  assert.equal(controller.state.selection.kind, "table");
+  assert.equal(controller.state.menuOpen, true);
+  assert.deepEqual(
+    created
+      .filter((element) => element.dataset.commandId && !element.removed)
+      .map((element) => element.dataset.commandId),
+    [
+      "toggle-header-row",
+      "toggle-header-column",
+      "delete-table",
+      "toggle-header-row",
+      "toggle-header-column",
+      "delete-table",
+    ],
+  );
 });
 
 test("selectTableAxis rejects missing table selection commands", () => {

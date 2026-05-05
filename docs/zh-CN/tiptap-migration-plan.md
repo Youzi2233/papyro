@@ -178,8 +178,8 @@ flowchart TD
   - 块操作菜单现在基于可复用命令模型，按 Insert/Text/Lists/Blocks/Advanced/Danger 分区展示，优先调用富 Tiptap 命令，不可用时回退 Markdown 插入，并保留键盘导航与桌面/移动端 token 化样式。
   - 块操作柄现在在重复 hover 刷新后仍保持回调稳定，并在 pointer 交互阶段触发 `+` 插入，避免 WebView click 顺序导致控件无响应。
   - 块操作柄 hover bridge 现在能覆盖正文与浮动控件之间的沟槽空隙，鼠标移向 `+` 和操作柄时不会提前消失。
-  - 块操作菜单继续向官方 Notion-like template 的 Drag Context Menu 靠齐，包含当前块转换、文字颜色、高亮、复制为 Markdown、重复块和删除动作，并接通 Ctrl/Cmd+C、Ctrl/Cmd+D、Delete/Backspace 等已展示快捷键。纯插入能力交给 `+`/slash 流程，避免块操作菜单和插入菜单职责混在一起。
-  - 块操作柄现在左键点击即可立即打开菜单，右键会阻止 WebView 原生菜单泄漏；菜单打开时当前块保持高亮，小幅鼠标抖动不会被误判为拖拽，鼠标从沟槽控件移入浮层菜单不会误关闭。
+  - 块操作菜单继续向官方 Notion-like template 的 Drag Context Menu 靠齐，包含当前块转换、文字颜色、高亮、重置格式、复制为 Markdown、重复块和删除动作，并接通 Ctrl/Cmd+C、Ctrl/Cmd+D、Delete/Backspace 等已展示快捷键。纯插入能力交给 `+`/slash 流程，避免块操作菜单和插入菜单职责混在一起。
+  - 块操作柄现在把点击与拖拽拆成明确状态机：左键按下只选择当前块并记录点击点，释放且未超过拖拽阈值时才在指针右侧打开菜单；超过阈值才进入块移动。右键会阻止 WebView 原生菜单泄漏；菜单打开时当前块保持高亮，鼠标从沟槽控件移入浮层菜单不会误关闭。
   - `+` 操作柄现在会在下一行插入 slash 触发符，并在该光标位置打开插入菜单，让块动作和内容插入两个入口语义清晰分离。
   - 浮动格式栏现在暴露 density 状态，在窄窗口或选区空间受限时自动切换为 compact 控件，并从 pointerdown 执行命令以减少 WebView 焦点竞争。
   - slash/`+` 插入菜单、块操作菜单、浮动格式栏和表格工具条共享浮层 dismiss 生命周期：外部点击、滚动和窗口变化会关闭浮层，点击当前块或表格内部会保持上下文不丢失。
@@ -212,7 +212,7 @@ flowchart TD
 ### 5. Markdown block 能力迁移
 
 - [x] Task list：checkbox 直接切换并 round-trip 为 `- [ ]` / `- [x]`。
-- [x] Table：从 pipe table 解析到文档表格，支持 slash/`+` 表格尺寸选择、整表/行/列边缘选择 handle、pointer-first 工具条动作、键盘可访问的工具条导航、新增/删除行列、表格边缘快捷添加、更轻量的当前单元格上下文菜单用于合并/对齐/颜色操作、选中单元格覆盖层、当前行列和整表 handle active 态、居中的单元格操作触发器、表头切换、归一化的单元格左/中/右对齐状态、基于 `editor.can()` 的 disabled 状态、合并/拆分单元格、单元格导航、表格修复和删除。
+- [x] Table：从 pipe table 解析到文档表格，支持 slash/`+` 表格尺寸选择、整表/行/列边缘选择 handle、pointer-first 工具条动作、键盘可访问的工具条导航、新增/删除行列、表格边缘快捷添加、更轻量的当前单元格上下文菜单用于合并/对齐/颜色操作、按单元格/行/列/整表选区裁剪上下文命令、选中单元格覆盖层、当前行列和整表 handle active 态、居中的单元格操作触发器、表头切换、归一化的单元格左/中/右对齐状态、基于 `editor.can()` 的 disabled 状态、合并/拆分单元格、单元格导航、表格修复和删除。
 - [x] Math：inline/display 公式有编辑态、预览态和错误反馈。
 - [x] Mermaid：保留源码编辑和渲染预览，失败时显示错误。
 - [x] Image：本地图片 URL、粘贴图片请求和 Markdown 图片语法保持兼容。

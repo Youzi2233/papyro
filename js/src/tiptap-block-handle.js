@@ -123,6 +123,22 @@ function targetEndPos(target) {
   return Number.isFinite(target?.pos) ? target.pos + Math.max(1, nodeSize) : null;
 }
 
+function pointerAnchorRect(event, fallbackRect = null) {
+  const x = Number(event?.clientX);
+  const y = Number(event?.clientY);
+  if (Number.isFinite(x) && Number.isFinite(y)) {
+    return {
+      left: x,
+      top: y,
+      right: x,
+      bottom: y,
+      width: 0,
+      height: 0,
+    };
+  }
+  return fallbackRect;
+}
+
 export function insertSlashParagraphAfterBlock(editor, target) {
   const position = targetEndPos(target);
   if (!Number.isFinite(position)) return null;
@@ -315,7 +331,6 @@ class TiptapBlockHandleView {
       }
       event.preventDefault();
       event.stopPropagation?.();
-      this.#onAction?.(event);
       this.#onDragStart?.(event);
     });
     actionButton.addEventListener("click", (event) => {
@@ -325,7 +340,7 @@ class TiptapBlockHandleView {
     actionButton.addEventListener("contextmenu", (event) => {
       event.preventDefault();
       event.stopPropagation?.();
-      this.#onAction?.(event);
+      this.#onContextAction?.(event);
     });
     root.addEventListener("contextmenu", (event) => {
       event.preventDefault();
@@ -529,16 +544,19 @@ export class TiptapBlockHandleController {
     };
     const onScroll = () => this.close();
     const onKeyDown = (event) => this.handleKeyDown(event);
+    const onContextMenu = (event) => this.handleContextMenu(event);
 
     listenTarget.addEventListener("mousemove", onMouseMove);
     listenTarget.addEventListener("mouseleave", onMouseLeave);
     listenTarget.addEventListener("scroll", onScroll, true);
     listenTarget.addEventListener("keydown", onKeyDown);
+    listenTarget.addEventListener("contextmenu", onContextMenu, true);
     this.#removeListeners = [
       () => listenTarget.removeEventListener?.("mousemove", onMouseMove),
       () => listenTarget.removeEventListener?.("mouseleave", onMouseLeave),
       () => listenTarget.removeEventListener?.("scroll", onScroll, true),
       () => listenTarget.removeEventListener?.("keydown", onKeyDown),
+      () => listenTarget.removeEventListener?.("contextmenu", onContextMenu, true),
     ];
   }
 
@@ -593,13 +611,15 @@ export class TiptapBlockHandleController {
     return this.#openActions();
   }
 
-  #openActions() {
+  #openActions({ anchorRect = null } = {}) {
     if (!this.#state.open || !this.#state.target || this.#entry?.viewMode !== "hybrid") {
       return false;
     }
     this.#selectTarget(this.#state.target);
     this.#insertMenu?.close?.();
-    this.#menu?.open?.(this.#state.target, { anchorRect: this.#view.actionRect?.() });
+    this.#menu?.open?.(this.#state.target, {
+      anchorRect: anchorRect ?? this.#view.actionRect?.(),
+    });
     return true;
   }
 
@@ -623,7 +643,7 @@ export class TiptapBlockHandleController {
     if (event?.button === 2) {
       event.preventDefault?.();
       event.stopPropagation?.();
-      return this.#openActions();
+      return this.#openActions({ anchorRect: pointerAnchorRect(event, this.#view.actionRect?.()) });
     }
 
     if (event?.button && event.button !== 0) {
@@ -638,7 +658,8 @@ export class TiptapBlockHandleController {
       return false;
     }
 
-    this.#openActions();
+    this.#selectTarget(this.#state.target);
+    this.#menu?.close?.();
     this.#insertMenu?.close?.();
     this.#drag = {
       source: this.#state.target,
@@ -646,6 +667,7 @@ export class TiptapBlockHandleController {
       startY: y,
       moved: false,
       drop: null,
+      anchorRect: pointerAnchorRect(event, this.#view.actionRect?.()),
     };
     this.#root?.classList?.add?.(DRAGGING_CLASS);
     this.#bindDragListeners();
@@ -695,7 +717,8 @@ export class TiptapBlockHandleController {
     this.#cleanupDrag();
 
     if (!moved) {
-      this.#openActions();
+      event?.preventDefault?.();
+      this.#openActions({ anchorRect: drag.anchorRect });
       return true;
     }
 
@@ -743,6 +766,21 @@ export class TiptapBlockHandleController {
       this.#menu?.handleKeyDown?.(event) ??
       false
     );
+  }
+
+  handleContextMenu(event) {
+    if (!this.#editor || this.#entry?.viewMode !== "hybrid") return false;
+    const target = blockTargetFromEvent(event, this.#editor);
+    if (!target) return false;
+
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+    this.#state = {
+      open: true,
+      target,
+    };
+    this.#updateView();
+    return this.#openActions({ anchorRect: pointerAnchorRect(event, this.#view.actionRect?.()) });
   }
 
   refresh() {

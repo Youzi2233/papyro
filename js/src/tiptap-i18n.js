@@ -68,6 +68,7 @@ const BLOCK_ACTION_LABELS = Object.freeze({
   "math-block": ["Math block", "公式块", "Insert a display formula", "插入独立公式"],
   mermaid: ["Mermaid diagram", "Mermaid 图表", "Insert a flowchart block", "插入流程图块"],
   image: ["Image", "图片", "Insert Markdown image syntax", "插入 Markdown 图片语法"],
+  "reset-formatting": ["Reset formatting", "重置格式", "Clear marks and return to plain text", "清除标记并恢复为普通文本"],
   "copy-block": ["Copy block", "复制当前块", "Copy this block as Markdown", "以 Markdown 复制当前块"],
   "duplicate-block": ["Duplicate block", "重复当前块", "Copy this block below", "在下方复制当前块"],
   delete: ["Delete block", "删除当前块", "Remove this block", "移除当前块"],

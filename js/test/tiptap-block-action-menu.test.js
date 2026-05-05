@@ -214,6 +214,7 @@ test("Tiptap block action menu opens for Hybrid block targets", () => {
       "highlight-green",
       "code-block",
       "divider",
+      "reset-formatting",
       "copy-block",
       "duplicate-block",
       "delete",
@@ -413,7 +414,8 @@ test("Tiptap block action menu renders grouped command sections", () => {
     ],
   );
   assert.equal(list.children[0].children[1].dataset.commandId, "paragraph");
-  assert.equal(list.children[5].children[1].dataset.commandId, "copy-block");
+  assert.equal(list.children[5].children[1].dataset.commandId, "reset-formatting");
+  assert.equal(list.children[5].children[2].dataset.commandId, "copy-block");
 });
 
 test("Tiptap block action menu renders callout kind sections for callout blocks", () => {

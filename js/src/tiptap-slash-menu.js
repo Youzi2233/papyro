@@ -96,7 +96,10 @@ function placeMenu(element, editor, range, anchorRect = null, placement = "botto
   }
 
   const rect = view.coordsAtPos(range.to);
-  positionFloatingElement(element, rect, {
+  const fallbackRect = usableAnchorRect(rect) ? rect : anchorRect;
+  if (!usableAnchorRect(fallbackRect)) return;
+
+  positionFloatingElement(element, fallbackRect, {
     viewport: viewportSize(view.dom, defaultWindow(view.dom?.ownerDocument)),
     size: {
       width: 320,
@@ -483,7 +486,7 @@ export class TiptapSlashMenuController {
       commands,
       selectedIndex: 0,
       deleteRangeBeforeRun: true,
-      anchorRect: slashRect ?? anchorRect,
+      anchorRect: usableAnchorRect(slashRect) ? slashRect : anchorRect,
       placement: "bottom",
     };
     this.#view.update?.(
