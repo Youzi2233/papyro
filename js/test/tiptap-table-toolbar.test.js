@@ -588,10 +588,12 @@ test("Tiptap table toolbar marks active cell background commands", () => {
 
   const yellow = created.find((element) => element.dataset.commandId === "cell-bg-yellow");
   const blue = created.find((element) => element.dataset.commandId === "cell-bg-blue");
+  const colorGroup = created.find((element) => element.dataset.layoutGroup === "cell-color");
   assert.equal(yellow.dataset.active, "true");
   assert.equal(blue.dataset.active, "false");
   assert.equal(yellow.dataset.variant, "swatch");
   assert.equal(yellow.children[0]?.dataset?.icon, "color-yellow");
+  assert.equal(colorGroup.dataset.group, "Cell color");
 });
 
 test("Tiptap table toolbar renders alignment commands as icon buttons", () => {
@@ -609,10 +611,38 @@ test("Tiptap table toolbar renders alignment commands as icon buttons", () => {
   trigger.onpointerdown({ preventDefault() {}, stopPropagation() {} });
 
   const alignCenter = created.find((element) => element.dataset.commandId === "align-center");
+  const alignGroup = created.find((element) => element.dataset.layoutGroup === "align");
   assert.equal(alignCenter.dataset.variant, "icon");
   assert.equal(alignCenter.dataset.icon, "align-center");
   assert.equal(alignCenter.children[0]?.dataset?.icon, "align-center");
   assert.equal(alignCenter.children.length, 1);
+  assert.equal(alignGroup.dataset.group, "Align");
+});
+
+test("Tiptap table toolbar keeps icon and swatch layouts stable in Chinese", () => {
+  const { created, documentRef } = createDocument();
+  const { editor } = createTableHarness();
+  editor.commands.setCellAttribute = () => true;
+  const controller = createTiptapTableToolbarController({
+    dom: { document: documentRef },
+  });
+
+  controller.attach({
+    editor,
+    root: {},
+    entry: { viewMode: "hybrid", preferences: { language: "Chinese" } },
+  });
+  const trigger = created.find((element) =>
+    String(element.className).includes("mn-tiptap-table-cell-menu-trigger"),
+  );
+  trigger.onpointerdown({ preventDefault() {}, stopPropagation() {} });
+
+  const alignGroup = created.find((element) => element.dataset.layoutGroup === "align");
+  const colorGroup = created.find((element) => element.dataset.layoutGroup === "cell-color");
+  assert.notEqual(alignGroup.dataset.group, "Align");
+  assert.notEqual(colorGroup.dataset.group, "Cell color");
+  assert.equal(created.find((element) => element.dataset.commandId === "align-center").dataset.variant, "icon");
+  assert.equal(created.find((element) => element.dataset.commandId === "cell-bg-yellow").dataset.variant, "swatch");
 });
 
 test("Tiptap table toolbar runs navigation and repair commands when available", () => {

@@ -1006,8 +1006,8 @@
     gap: 3px;
 }
 
-.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-group[data-group="Align"],
-.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-group[data-group="Cell color"] {
+.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-group[data-layout-group="align"],
+.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-group[data-layout-group="cell-color"] {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 5px;
 }

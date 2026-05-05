@@ -619,6 +619,14 @@ function tableCommandVariant(command) {
   return "text";
 }
 
+function tableCommandLayoutGroup(command) {
+  const variant = tableCommandVariant(command);
+  if (variant === "icon") return "align";
+  if (variant === "swatch") return "cell-color";
+  if (command?.tone === "danger") return "danger";
+  return "actions";
+}
+
 function visibleCommands(commands, mode = "context", selectionKind = "cell") {
   const allowed = mode === "keyboard"
     ? KEYBOARD_TABLE_COMMAND_IDS
@@ -836,6 +844,7 @@ class TiptapTableToolbarView {
         const groupElement = createElement(this.#document, "div", "mn-tiptap-table-toolbar-group");
         if (!groupElement) return;
         groupElement.dataset.group = command.group;
+        groupElement.dataset.layoutGroup = command.layoutGroup ?? tableCommandLayoutGroup(command);
         const label = createElement(this.#document, "div", "mn-tiptap-table-toolbar-group-label");
         if (label) {
           label.textContent = command.group;
@@ -1242,6 +1251,7 @@ export class TiptapTableToolbarController {
         ...command,
         disabled,
         variant: tableCommandVariant(command),
+        layoutGroup: tableCommandLayoutGroup(command),
         active:
           command.command === "setCellAttribute" &&
           command.args?.length >= 2 &&
