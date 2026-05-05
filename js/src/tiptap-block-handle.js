@@ -109,6 +109,9 @@ class TiptapBlockHandleView {
     button.draggable = true;
     button.title = "Block actions";
     button.setAttribute("aria-label", "Block actions");
+    button.addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+    });
     button.addEventListener("mousedown", (event) => {
       event.preventDefault();
       this.#onAction?.(event);
@@ -133,14 +136,23 @@ class TiptapBlockHandleView {
       state.target.block.ownerDocument?.documentElement?.clientWidth ??
       this.#window?.innerWidth ??
       1024;
-    const size = this.#root.offsetWidth || DEFAULT_HANDLE_SIZE;
-    const left = Math.max(6, Math.min(rect.left - size - HORIZONTAL_GAP, viewportWidth - size - 6));
+    const size = this.#button.offsetWidth || DEFAULT_HANDLE_SIZE;
+    const bridgeWidth = size + HORIZONTAL_GAP;
+    const left = Math.max(
+      6,
+      Math.min(rect.left - bridgeWidth, viewportWidth - bridgeWidth - 6),
+    );
     const top = rect.top + Math.max(0, (rect.height - size) / 2);
 
     this.#root.dataset.blockKind = state.target.kind;
     this.#root.style.left = `${left}px`;
     this.#root.style.top = `${top}px`;
+    this.#root.style.width = `${bridgeWidth}px`;
     setHidden(this.#root, false);
+  }
+
+  contains(target) {
+    return this.#root?.contains?.(target) ?? false;
   }
 
   hide() {
@@ -204,7 +216,10 @@ export class TiptapBlockHandleController {
     if (!listenTarget?.addEventListener) return;
 
     const onMouseMove = (event) => this.handlePointerMove(event);
-    const onMouseLeave = () => this.close();
+    const onMouseLeave = (event) => {
+      if (this.#view.contains?.(event?.relatedTarget)) return;
+      this.close();
+    };
     const onScroll = () => this.close();
     const onKeyDown = (event) => this.handleKeyDown(event);
 

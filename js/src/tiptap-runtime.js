@@ -413,9 +413,16 @@ export function createTiptapEditorRuntime({
       });
       editor.on("blur", () => {
         const entry = runtimeRegistry.get(tabId);
-        entry?.blockHandle?.close();
-        entry?.slashMenu?.close();
-        entry?.formatToolbar?.close();
+        const activeElement = documentRef?.activeElement;
+        if (!entry?.blockHandle?.contains?.(activeElement)) {
+          entry?.blockHandle?.close();
+        }
+        if (!entry?.slashMenu?.contains?.(activeElement)) {
+          entry?.slashMenu?.close();
+        }
+        if (!entry?.formatToolbar?.contains?.(activeElement)) {
+          entry?.formatToolbar?.close();
+        }
       });
     }
     editor.mount?.(root);

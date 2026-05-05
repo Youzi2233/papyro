@@ -986,6 +986,8 @@ small {
 }
 
 .mn-tiptap-runtime {
+    display: flex;
+    flex-direction: column;
     flex: 1;
     min-height: 0;
     min-width: 0;
@@ -1011,10 +1013,14 @@ small {
 
 .mn-tiptap-source-pane {
     display: block;
+    flex: 1;
+    min-height: 0;
+    height: 100%;
     resize: none;
     font-family: ui-monospace, "SFMono-Regular", "Cascadia Code", Consolas, monospace;
     tab-size: 4;
     white-space: pre-wrap;
+    overflow: auto;
 }
 
 .mn-tiptap-source-pane[hidden],
@@ -1343,7 +1349,8 @@ small {
     position: fixed;
     z-index: 155;
     display: grid;
-    place-items: center;
+    align-items: center;
+    justify-items: start;
     width: 28px;
     height: 28px;
 }

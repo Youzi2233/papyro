@@ -141,6 +141,9 @@ class TiptapBlockActionMenuView {
         shortcut.hidden = !command.shortcut;
         copy.append(title, description);
         item.append(icon, copy, shortcut);
+        item.addEventListener("pointerdown", (event) => {
+          event.preventDefault();
+        });
         item.addEventListener("mousedown", (event) => {
           event.preventDefault();
           state.run(command.id);
@@ -158,6 +161,10 @@ class TiptapBlockActionMenuView {
 
   hide() {
     setHidden(this.#root, true);
+  }
+
+  contains(target) {
+    return this.#root?.contains?.(target) ?? false;
   }
 
   destroy() {
@@ -305,6 +312,10 @@ export class TiptapBlockActionMenuController {
     this.#view.destroy?.();
     this.#editor = null;
     this.#entry = null;
+  }
+
+  contains(target) {
+    return this.#view.contains?.(target) ?? false;
   }
 }
 

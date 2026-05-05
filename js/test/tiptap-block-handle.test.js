@@ -66,6 +66,7 @@ function createEditor({ block = null } = {}) {
 
 function createViewSpy() {
   const calls = [];
+  let hovered = false;
   return {
     calls,
     mount(root) {
@@ -80,6 +81,12 @@ function createViewSpy() {
     },
     destroy() {
       calls.push(["destroy"]);
+    },
+    contains() {
+      return hovered;
+    },
+    setHovered(value) {
+      hovered = value;
     },
   };
 }
@@ -149,6 +156,20 @@ test("Tiptap block handle closes when hover leaves a block", () => {
 
   assert.equal(controller.state.open, false);
   assert.deepEqual(view.calls.at(-1), ["hide"]);
+});
+
+test("Tiptap block handle stays open while moving through the handle hover bridge", () => {
+  const { block, editor } = createEditor();
+  const view = createViewSpy();
+  const controller = createTiptapBlockHandleController({ view });
+  controller.attach({ editor, root: editor.view.dom, entry: { viewMode: "hybrid" } });
+  controller.handlePointerMove({ target: block });
+
+  view.setHovered(true);
+  editor.view.dom.listeners.get("mouseleave")({ relatedTarget: {} });
+
+  assert.equal(controller.state.open, true);
+  assert.notDeepEqual(view.calls.at(-1), ["hide"]);
 });
 
 test("Tiptap block handle destroys listeners and view state", () => {
