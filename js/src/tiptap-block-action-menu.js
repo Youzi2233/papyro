@@ -2,6 +2,7 @@ import { createTiptapBlockActionController } from "./tiptap-block-actions.js";
 import {
   commandElementId,
   createElement,
+  createFloatingDismissController,
   defaultDocument,
   defaultWindow,
   mountFloatingRoot,
@@ -178,6 +179,7 @@ class TiptapBlockActionMenuView {
 export class TiptapBlockActionMenuController {
   #commands;
   #view;
+  #dismiss;
   #editor = null;
   #entry = null;
   #state = {
@@ -194,12 +196,21 @@ export class TiptapBlockActionMenuController {
     dom = {},
   } = {}) {
     this.#commands = commandController;
+    const documentRef = dom.document ?? defaultDocument();
+    const windowRef = dom.window ?? defaultWindow(documentRef);
     this.#view =
       view ??
       new TiptapBlockActionMenuView({
-        document: dom.document ?? defaultDocument(),
-        window: dom.window,
+        document: documentRef,
+        window: windowRef,
       });
+    this.#dismiss = createFloatingDismissController({
+      document: documentRef,
+      window: windowRef,
+      contains: (target) =>
+        this.contains(target) || this.#state.target?.block?.contains?.(target),
+      onDismiss: () => this.close(),
+    });
   }
 
   get state() {
@@ -236,6 +247,7 @@ export class TiptapBlockActionMenuController {
       },
       this.#editor,
     );
+    this.#dismiss.open();
     return this.state;
   }
 
@@ -309,10 +321,12 @@ export class TiptapBlockActionMenuController {
       anchorRect: null,
     };
     this.#view.hide?.();
+    this.#dismiss.close();
   }
 
   destroy() {
     this.close();
+    this.#dismiss.close();
     this.#view.destroy?.();
     this.#editor = null;
     this.#entry = null;

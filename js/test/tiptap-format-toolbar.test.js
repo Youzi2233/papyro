@@ -57,6 +57,7 @@ function createEditor({ selected = true, active = [], viewportWidth = 1000 } = {
 
 function createViewSpy() {
   const calls = [];
+  let containedTarget = null;
   return {
     calls,
     mount(root) {
@@ -76,6 +77,34 @@ function createViewSpy() {
     },
     destroy() {
       calls.push(["destroy"]);
+    },
+    contains(target) {
+      return target === containedTarget;
+    },
+    setContainedTarget(target) {
+      containedTarget = target;
+    },
+  };
+}
+
+function createDismissDocument() {
+  const listeners = new Map();
+  return {
+    body: {
+      appendChild() {},
+    },
+    documentElement: {
+      clientWidth: 1000,
+      clientHeight: 800,
+    },
+    addEventListener(type, listener) {
+      listeners.set(type, listener);
+    },
+    removeEventListener(type, listener) {
+      if (listeners.get(type) === listener) listeners.delete(type);
+    },
+    emit(type, event = {}) {
+      listeners.get(type)?.(event);
     },
   };
 }
@@ -159,4 +188,20 @@ test("Tiptap format toolbar closes and destroys view state", () => {
 
   assert.equal(controller.state.open, false);
   assert.deepEqual(view.calls.slice(-2), [["hide"], ["destroy"]]);
+});
+
+test("Tiptap format toolbar closes on outside pointer events", () => {
+  const { editor } = createEditor();
+  const view = createViewSpy();
+  const documentRef = createDismissDocument();
+  const controller = createTiptapFormatToolbarController({
+    dom: { document: documentRef },
+    view,
+  });
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+
+  documentRef.emit("pointerdown", { target: { id: "outside" } });
+
+  assert.equal(controller.state.open, false);
+  assert.deepEqual(view.calls.at(-1), ["hide"]);
 });

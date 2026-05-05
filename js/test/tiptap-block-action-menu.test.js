@@ -9,6 +9,7 @@ function createTarget() {
     pos: 4,
     node: { nodeSize: 6 },
     block: {
+      contains: (target) => target?.id === "target-block-child",
       getBoundingClientRect: () => ({ left: 120, top: 80, width: 480, height: 30 }),
       ownerDocument: {
         documentElement: {
@@ -62,6 +63,7 @@ function createEditor() {
 
 function createViewSpy() {
   const calls = [];
+  let containedTarget = null;
   return {
     calls,
     mount(root) {
@@ -81,6 +83,34 @@ function createViewSpy() {
     },
     destroy() {
       calls.push(["destroy"]);
+    },
+    contains(target) {
+      return target === containedTarget;
+    },
+    setContainedTarget(target) {
+      containedTarget = target;
+    },
+  };
+}
+
+function createDismissDocument() {
+  const listeners = new Map();
+  return {
+    body: {
+      appendChild() {},
+    },
+    documentElement: {
+      clientWidth: 1000,
+      clientHeight: 800,
+    },
+    addEventListener(type, listener) {
+      listeners.set(type, listener);
+    },
+    removeEventListener(type, listener) {
+      if (listeners.get(type) === listener) listeners.delete(type);
+    },
+    emit(type, event = {}) {
+      listeners.get(type)?.(event);
     },
   };
 }
@@ -301,4 +331,38 @@ test("Tiptap block action menu closes on Escape", () => {
 
   assert.equal(controller.state.open, false);
   assert.deepEqual(view.calls.at(-1), ["hide"]);
+});
+
+test("Tiptap block action menu closes on outside pointer events", () => {
+  const { editor } = createEditor();
+  const view = createViewSpy();
+  const documentRef = createDismissDocument();
+  const controller = createTiptapBlockActionMenuController({
+    dom: { document: documentRef },
+    view,
+  });
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  controller.open(createTarget());
+
+  documentRef.emit("pointerdown", { target: { id: "outside" } });
+
+  assert.equal(controller.state.open, false);
+  assert.deepEqual(view.calls.at(-1), ["hide"]);
+});
+
+test("Tiptap block action menu stays open for the selected block bridge", () => {
+  const { editor } = createEditor();
+  const view = createViewSpy();
+  const documentRef = createDismissDocument();
+  const controller = createTiptapBlockActionMenuController({
+    dom: { document: documentRef },
+    view,
+  });
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  controller.open(createTarget());
+
+  documentRef.emit("pointerdown", { target: { id: "target-block-child" } });
+
+  assert.equal(controller.state.open, true);
+  assert.notDeepEqual(view.calls.at(-1), ["hide"]);
 });

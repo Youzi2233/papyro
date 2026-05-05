@@ -58,6 +58,7 @@ function createTableHarness(commandOverrides = {}) {
   });
   const table = {
     className: "mn-tiptap-table",
+    contains: (target) => target === table || cells.includes(target),
     getBoundingClientRect: () => ({ left: 120, top: 90, right: 360, bottom: 158 }),
     querySelectorAll(selector) {
       return selector === "tr" ? rows : [];
@@ -111,6 +112,7 @@ function commandSpy(calls, name, result = true) {
 
 function createViewSpy() {
   const calls = [];
+  let containedTarget = null;
   return {
     calls,
     mount(root) {
@@ -125,6 +127,12 @@ function createViewSpy() {
     },
     destroy() {
       calls.push(["destroy"]);
+    },
+    contains(target) {
+      return target === containedTarget;
+    },
+    setContainedTarget(target) {
+      containedTarget = target;
     },
   };
 }
@@ -176,6 +184,28 @@ function createDocument() {
   };
 
   return { created, documentRef };
+}
+
+function createDismissDocument() {
+  const listeners = new Map();
+  return {
+    body: {
+      appendChild() {},
+    },
+    documentElement: {
+      clientWidth: 1000,
+      clientHeight: 800,
+    },
+    addEventListener(type, listener) {
+      listeners.set(type, listener);
+    },
+    removeEventListener(type, listener) {
+      if (listeners.get(type) === listener) listeners.delete(type);
+    },
+    emit(type, event = {}) {
+      listeners.get(type)?.(event);
+    },
+  };
 }
 
 test("Tiptap table toolbar opens when the selection is inside a table", () => {
@@ -428,4 +458,38 @@ test("selectTableAxis rejects missing table selection commands", () => {
     ),
     false,
   );
+});
+
+test("Tiptap table toolbar closes on outside pointer events", () => {
+  const { editor } = createTableHarness();
+  editor.commands.deleteTable = () => true;
+  const view = createViewSpy();
+  const documentRef = createDismissDocument();
+  const controller = createTiptapTableToolbarController({
+    dom: { document: documentRef },
+    view,
+  });
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+
+  documentRef.emit("pointerdown", { target: { id: "outside" } });
+
+  assert.equal(controller.state.open, false);
+  assert.deepEqual(view.calls.at(-1), ["hide"]);
+});
+
+test("Tiptap table toolbar stays open for pointer events inside the active table", () => {
+  const { editor, table } = createTableHarness();
+  editor.commands.deleteTable = () => true;
+  const view = createViewSpy();
+  const documentRef = createDismissDocument();
+  const controller = createTiptapTableToolbarController({
+    dom: { document: documentRef },
+    view,
+  });
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+
+  documentRef.emit("pointerdown", { target: table });
+
+  assert.equal(controller.state.open, true);
+  assert.notDeepEqual(view.calls.at(-1), ["hide"]);
 });

@@ -4,6 +4,7 @@ import {
   clamp,
   commandElementId,
   createElement,
+  createFloatingDismissController,
   defaultDocument,
   defaultWindow,
   mountFloatingRoot,
@@ -300,6 +301,7 @@ export class TiptapSlashMenuController {
   #commands;
   #maxItems;
   #view;
+  #dismiss;
   #state = {
     open: false,
     query: "",
@@ -320,11 +322,19 @@ export class TiptapSlashMenuController {
   } = {}) {
     this.#commands = commandController;
     this.#maxItems = maxItems;
+    const documentRef = dom.document ?? defaultDocument();
+    const windowRef = dom.window ?? defaultWindow(documentRef);
     this.#view =
       view ??
       new TiptapSlashMenuView({
-        document: dom.document ?? defaultDocument(),
+        document: documentRef,
       });
+    this.#dismiss = createFloatingDismissController({
+      document: documentRef,
+      window: windowRef,
+      contains: (target) => this.contains(target),
+      onDismiss: () => this.close(),
+    });
   }
 
   get state() {
@@ -387,6 +397,7 @@ export class TiptapSlashMenuController {
       },
       editor,
     );
+    this.#dismiss.open();
     return this.state;
   }
 
@@ -428,6 +439,7 @@ export class TiptapSlashMenuController {
       },
       this.#editor,
     );
+    this.#dismiss.open();
     return this.state;
   }
 
@@ -509,10 +521,12 @@ export class TiptapSlashMenuController {
       anchorRect: null,
     };
     this.#view.hide?.();
+    this.#dismiss.close();
   }
 
   destroy() {
     this.close();
+    this.#dismiss.close();
     this.#view.destroy?.();
     this.#editor = null;
     this.#entry = null;

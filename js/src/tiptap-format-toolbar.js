@@ -1,6 +1,7 @@
 import { createTiptapFormatCommandController } from "./tiptap-format-commands.js";
 import {
   createElement,
+  createFloatingDismissController,
   defaultDocument,
   defaultWindow,
   mountFloatingRoot,
@@ -150,6 +151,10 @@ class TiptapFormatToolbarView {
     setHidden(this.#root, true);
   }
 
+  contains(target) {
+    return this.#root?.contains?.(target) ?? false;
+  }
+
   destroy() {
     this.#root?.remove?.();
     this.#root = null;
@@ -160,6 +165,7 @@ class TiptapFormatToolbarView {
 export class TiptapFormatToolbarController {
   #commands;
   #view;
+  #dismiss;
   #editor = null;
   #entry = null;
   #state = {
@@ -175,12 +181,20 @@ export class TiptapFormatToolbarController {
     dom = {},
   } = {}) {
     this.#commands = commandController;
+    const documentRef = dom.document ?? defaultDocument();
+    const windowRef = dom.window ?? defaultWindow(documentRef);
     this.#view =
       view ??
       new TiptapFormatToolbarView({
-        document: dom.document ?? defaultDocument(),
-        window: dom.window,
+        document: documentRef,
+        window: windowRef,
       });
+    this.#dismiss = createFloatingDismissController({
+      document: documentRef,
+      window: windowRef,
+      contains: (target) => this.contains(target),
+      onDismiss: () => this.close(),
+    });
   }
 
   get state() {
@@ -225,6 +239,7 @@ export class TiptapFormatToolbarController {
       },
       editor,
     );
+    this.#dismiss.open();
     return this.state;
   }
 
@@ -248,13 +263,19 @@ export class TiptapFormatToolbarController {
       commands: [],
     };
     this.#view.hide?.();
+    this.#dismiss.close();
   }
 
   destroy() {
     this.close();
+    this.#dismiss.close();
     this.#view.destroy?.();
     this.#editor = null;
     this.#entry = null;
+  }
+
+  contains(target) {
+    return this.#view.contains?.(target) ?? false;
   }
 }
 

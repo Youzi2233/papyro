@@ -1,5 +1,6 @@
 import {
   createElement,
+  createFloatingDismissController,
   defaultDocument,
   defaultWindow,
   mountFloatingRoot,
@@ -514,6 +515,7 @@ class TiptapTableToolbarView {
 
 export class TiptapTableToolbarController {
   #view;
+  #dismiss;
   #editor = null;
   #entry = null;
   #state = {
@@ -525,12 +527,21 @@ export class TiptapTableToolbarController {
   };
 
   constructor({ view = null, dom = {} } = {}) {
+    const documentRef = dom.document ?? defaultDocument();
+    const windowRef = dom.window ?? defaultWindow(documentRef);
     this.#view =
       view ??
       new TiptapTableToolbarView({
-        document: dom.document ?? defaultDocument(),
-        window: dom.window,
+        document: documentRef,
+        window: windowRef,
       });
+    this.#dismiss = createFloatingDismissController({
+      document: documentRef,
+      window: windowRef,
+      contains: (target) =>
+        this.contains(target) || this.#state.table?.contains?.(target),
+      onDismiss: () => this.close(),
+    });
   }
 
   get state() {
@@ -579,6 +590,7 @@ export class TiptapTableToolbarController {
       run: (commandId) => this.run(commandId),
       selectAxis: (axis, index) => this.selectAxis(axis, index),
     });
+    this.#dismiss.open();
     return this.state;
   }
 
@@ -606,6 +618,7 @@ export class TiptapTableToolbarController {
       commands: [],
     };
     this.#view.hide?.();
+    this.#dismiss.close();
   }
 
   contains(target) {
@@ -614,6 +627,7 @@ export class TiptapTableToolbarController {
 
   destroy() {
     this.close();
+    this.#dismiss.close();
     this.#view.destroy?.();
     this.#editor = null;
     this.#entry = null;

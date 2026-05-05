@@ -25,6 +25,42 @@ export function mountFloatingRoot(root, container, documentRef = defaultDocument
   (container?.ownerDocument?.body ?? documentRef?.body)?.appendChild(root);
 }
 
+export function createFloatingDismissController({
+  document: documentRef = defaultDocument(),
+  window: windowRef = defaultWindow(documentRef),
+  contains = () => false,
+  onDismiss = () => {},
+} = {}) {
+  let removeListeners = [];
+
+  const close = () => {
+    removeListeners.forEach((remove) => remove());
+    removeListeners = [];
+  };
+
+  const dismissIfOutside = (event) => {
+    if (contains(event?.target)) return;
+    onDismiss(event);
+  };
+
+  return {
+    open() {
+      close();
+      if (!documentRef?.addEventListener) return;
+
+      documentRef.addEventListener("pointerdown", dismissIfOutside, true);
+      documentRef.addEventListener("scroll", dismissIfOutside, true);
+      windowRef?.addEventListener?.("resize", dismissIfOutside);
+      removeListeners = [
+        () => documentRef.removeEventListener?.("pointerdown", dismissIfOutside, true),
+        () => documentRef.removeEventListener?.("scroll", dismissIfOutside, true),
+        () => windowRef?.removeEventListener?.("resize", dismissIfOutside),
+      ];
+    },
+    close,
+  };
+}
+
 export function setHidden(element, hidden) {
   if (!element) return;
   element.hidden = hidden;

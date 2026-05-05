@@ -217,6 +217,7 @@ flowchart LR
 - [x] 增加表格单元格对齐命令：左对齐、居中、右对齐通过 Tiptap `setCellAttribute('align', ...)` 写入文档模型，并保持 Markdown pipe table 对齐语义。
 - [x] 增加表格单元格背景色命令：清除、黄色、蓝色、绿色通过 Tiptap `setCellAttribute('backgroundColor', ...)` 写入单元格属性，并在工具条中显示当前背景状态。
 - [x] 增加共享 Tiptap UI primitives，用于 popover 定位、菜单 active-descendant 状态、toolbar root 和显隐处理。
+- [x] 给 slash/`+` 插入菜单、块操作菜单、浮动格式栏和表格工具条接入共享浮层 dismiss 生命周期：外部点击、滚动和窗口变化会稳定收起，点击当前块或表格内部不会误关。
 - [x] 增加高级块操作菜单和响应式编辑器 toolbar 行为。
 - [x] 修复 Tiptap Hybrid 滚动容器约束，避免内容撑开宿主后被外层裁剪导致无法滚动。
 - [x] 通过 runtime 测试保持 Tiptap `content_changed`、`insert_markdown` 和 `set_view_mode` 协议行为。

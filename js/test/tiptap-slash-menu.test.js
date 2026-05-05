@@ -79,6 +79,7 @@ function createEditor(text, cursor = text.length) {
 
 function createViewSpy() {
   const calls = [];
+  let containedTarget = null;
   return {
     calls,
     mount(root) {
@@ -99,6 +100,34 @@ function createViewSpy() {
     },
     destroy() {
       calls.push(["destroy"]);
+    },
+    contains(target) {
+      return target === containedTarget;
+    },
+    setContainedTarget(target) {
+      containedTarget = target;
+    },
+  };
+}
+
+function createDismissDocument() {
+  const listeners = new Map();
+  return {
+    body: {
+      appendChild() {},
+    },
+    documentElement: {
+      clientWidth: 1000,
+      clientHeight: 800,
+    },
+    addEventListener(type, listener) {
+      listeners.set(type, listener);
+    },
+    removeEventListener(type, listener) {
+      if (listeners.get(type) === listener) listeners.delete(type);
+    },
+    emit(type, event = {}) {
+      listeners.get(type)?.(event);
     },
   };
 }
@@ -253,4 +282,38 @@ test("Tiptap slash menu forwards callout kind choices to the command", () => {
     ["setCalloutBlock", "WARNING", "Callout text"],
     ["focus"],
   ]);
+});
+
+test("Tiptap slash menu closes on outside pointer events", () => {
+  const { editor } = createEditor("/table");
+  const view = createViewSpy();
+  const documentRef = createDismissDocument();
+  const controller = createTiptapSlashMenuController({
+    dom: { document: documentRef },
+    view,
+  });
+  controller.attach({ editor, root: {} });
+
+  documentRef.emit("pointerdown", { target: { id: "outside" } });
+
+  assert.equal(controller.state.open, false);
+  assert.deepEqual(view.calls.at(-1), ["hide"]);
+});
+
+test("Tiptap slash menu stays open for pointer events inside the menu", () => {
+  const { editor } = createEditor("/table");
+  const view = createViewSpy();
+  const inside = { id: "inside" };
+  view.setContainedTarget(inside);
+  const documentRef = createDismissDocument();
+  const controller = createTiptapSlashMenuController({
+    dom: { document: documentRef },
+    view,
+  });
+  controller.attach({ editor, root: {} });
+
+  documentRef.emit("pointerdown", { target: inside });
+
+  assert.equal(controller.state.open, true);
+  assert.notDeepEqual(view.calls.at(-1), ["hide"]);
 });
