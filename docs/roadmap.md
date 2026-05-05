@@ -227,7 +227,8 @@ Tasks:
 - [x] Add a reusable slash command controller as the headless foundation for Notion-like but Papyro-native block insertion.
 - [x] Add the first Notion-like but Papyro-native slash command menu controller.
 - [x] Add the first Papyro-native floating formatting toolbar controller.
-- [ ] Add Papyro-native block handle and responsive editor toolbar primitives.
+- [x] Add the first Papyro-native block handle controller.
+- [ ] Add full block action menus and responsive editor toolbar primitives.
 - [ ] Preserve Rust/JS protocol compatibility for `content_changed`, `insert_markdown`, `set_view_mode`, `set_preferences`, `destroy`, and `runtime_error`.
 - [ ] Migrate task lists, tables, math, Mermaid, images, and code blocks.
 - [ ] Remove CodeMirror dependencies, `.cm-*` CSS, and obsolete tests.

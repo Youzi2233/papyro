@@ -169,7 +169,8 @@ flowchart TD
 - [x] 增加可复用的 Tiptap slash command controller，覆盖标题、列表、引用、代码、分割线、表格、公式和 Mermaid。
 - [x] 增加带键盘导航和 token 化样式的 Papyro slash command menu controller，用于常见 Markdown block 插入。
 - [x] 增加 Papyro 浮动格式栏 controller，用于选中文字后的常见行内格式操作。
-- [ ] 先封装 Tiptap 下拉、popover、toolbar 和 block action menu primitives，再接高级 block。
+- [x] 增加 Papyro 块操作柄 controller，作为后续块操作的 hover 入口。
+- [ ] 先封装 Tiptap 下拉、popover、toolbar 和完整 block action menu primitives，再接高级 block。
 - [ ] Source 使用源码编辑面板，并通过 `MarkdownSyncController` 同步到 Tiptap。
 - [x] 增加 `MarkdownSyncController`，作为 Tiptap runtime 更新的 canonical Markdown 状态边界。
 - [ ] Preview 继续使用 Rust HTML 渲染，不让 Tiptap 接管只读预览。

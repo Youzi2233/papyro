@@ -157,7 +157,8 @@ flowchart TD
 - [x] Add a reusable Tiptap slash command controller for headings, lists, quotes, code, dividers, tables, math, and Mermaid.
 - [x] Add a Papyro slash command menu controller with keyboard navigation and token-based styling for common Markdown block insertion.
 - [x] Add a Papyro floating formatting toolbar controller for selected text and common inline marks.
-- [ ] Add reusable UI primitives for Tiptap dropdowns, popovers, toolbars, and block action menus before wiring advanced blocks.
+- [x] Add a Papyro block handle controller as the hover entry point for future block actions.
+- [ ] Add reusable UI primitives for Tiptap dropdowns, popovers, toolbars, and full block action menus before wiring advanced blocks.
 - [ ] Source uses a source editor pane synchronized through `MarkdownSyncController`.
 - [x] Add `MarkdownSyncController` as the canonical Markdown state boundary for Tiptap runtime updates.
 - [ ] Preview remains Rust-rendered HTML.

@@ -394,6 +394,70 @@
     font-size: var(--mn-type-small);
 }
 
+.mn-tiptap-block-handle {
+    position: fixed;
+    z-index: 155;
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    user-select: none;
+}
+
+.mn-tiptap-block-handle.hidden {
+    display: none;
+}
+
+.mn-tiptap-block-handle-button {
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    border: var(--mn-border-transparent);
+    border-radius: var(--mn-radius-sm);
+    background: color-mix(in srgb, var(--mn-surface-raised) 86%, transparent);
+    color: var(--mn-ink-3);
+    box-shadow: var(--mn-shadow-xs);
+    transition: var(--mn-transition-theme);
+}
+
+.mn-tiptap-block-handle-button:hover,
+.mn-tiptap-block-handle-button:focus-visible {
+    outline: 0;
+    border-color: var(--mn-border);
+    background: var(--mn-surface-raised);
+    color: var(--mn-ink);
+    box-shadow: var(--mn-shadow-sm);
+}
+
+.mn-tiptap-block-handle-icon {
+    position: relative;
+    display: block;
+    width: 14px;
+    height: 14px;
+}
+
+.mn-tiptap-block-handle-icon::before,
+.mn-tiptap-block-handle-icon::after {
+    content: "";
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    border-radius: var(--mn-radius-round);
+    background: currentColor;
+    top: 2px;
+}
+
+.mn-tiptap-block-handle-icon::before {
+    left: 3px;
+    box-shadow: 0 5px 0 currentColor, 0 10px 0 currentColor;
+}
+
+.mn-tiptap-block-handle-icon::after {
+    right: 3px;
+    box-shadow: 0 5px 0 currentColor, 0 10px 0 currentColor;
+}
+
 .mn-codemirror-host.initializing {
     position: absolute;
     inset: 0;

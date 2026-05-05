@@ -3,6 +3,7 @@ import { Markdown } from "@tiptap/markdown";
 
 import { createTiptapRuntimeAdapter } from "./editor-runtime.js";
 import { createMarkdownSyncController } from "./markdown-sync-controller.js";
+import { createTiptapBlockHandleController } from "./tiptap-block-handle.js";
 import { createTiptapFormatCommandController } from "./tiptap-format-commands.js";
 import { createTiptapFormatToolbarController } from "./tiptap-format-toolbar.js";
 import { createTiptapModeController } from "./tiptap-mode-controller.js";
@@ -57,6 +58,7 @@ function createEntry({
   instanceId,
   modeController,
   markdownSync,
+  blockHandle,
   formatCommands,
   formatToolbar,
   slashCommands,
@@ -71,6 +73,7 @@ function createEntry({
     viewMode: modeController.mode,
     modeController,
     markdownSync,
+    blockHandle,
     formatCommands,
     formatToolbar,
     slashCommands,
@@ -86,6 +89,7 @@ export function createTiptapEditorRuntime({
   markdownManagerFactory = createPapyroMarkdownManager,
   markdownSyncFactory = createMarkdownSyncController,
   modeControllerFactory = createTiptapModeController,
+  blockHandleControllerFactory = createTiptapBlockHandleController,
   formatCommandControllerFactory = createTiptapFormatCommandController,
   formatToolbarControllerFactory = createTiptapFormatToolbarController,
   slashCommandControllerFactory = createTiptapSlashCommandController,
@@ -105,6 +109,10 @@ export function createTiptapEditorRuntime({
   const createModeController = requireFunction(
     modeControllerFactory,
     "modeControllerFactory",
+  );
+  const createBlockHandleController = requireFunction(
+    blockHandleControllerFactory,
+    "blockHandleControllerFactory",
   );
   const createFormatCommandController = requireFunction(
     formatCommandControllerFactory,
@@ -155,6 +163,7 @@ export function createTiptapEditorRuntime({
       existing.dom.dataset.tabId = tabId;
       existing.instanceId = instanceId;
       existing.modeController.apply(existing, viewMode ?? existing.viewMode);
+      existing.blockHandle.refresh();
       existing.formatToolbar.refresh(existing.editor);
       return existing.editor;
     }
@@ -172,6 +181,11 @@ export function createTiptapEditorRuntime({
       manager: markdownManager,
     });
     const modeController = createModeController(viewMode);
+    const blockHandle = createBlockHandleController({
+      dom: {
+        document: documentRef,
+      },
+    });
     const formatCommands = createFormatCommandController();
     const formatToolbar = createFormatToolbarController({
       commandController: formatCommands,
@@ -206,17 +220,20 @@ export function createTiptapEditorRuntime({
           tab_id: tabId,
           content: markdown,
         });
+        entry.blockHandle.refresh();
         entry.slashMenu.refresh(targetEditor);
         entry.formatToolbar.refresh(targetEditor);
       });
       editor.on("selectionUpdate", ({ editor: updatedEditor } = {}) => {
         const targetEditor = updatedEditor ?? editor;
         const entry = runtimeRegistry.get(tabId);
+        entry?.blockHandle?.refresh();
         entry?.slashMenu?.refresh(targetEditor);
         entry?.formatToolbar?.refresh(targetEditor);
       });
       editor.on("blur", () => {
         const entry = runtimeRegistry.get(tabId);
+        entry?.blockHandle?.close();
         entry?.slashMenu?.close();
         entry?.formatToolbar?.close();
       });
@@ -229,12 +246,14 @@ export function createTiptapEditorRuntime({
       instanceId,
       modeController,
       markdownSync,
+      blockHandle,
       formatCommands,
       formatToolbar,
       slashCommands,
       slashMenu,
     });
     modeController.apply(entry, modeController.mode);
+    blockHandle.attach({ editor, root, entry });
     formatToolbar.attach({ editor, root, entry });
     slashMenu.attach({ editor, root, entry });
     runtimeRegistry.set(tabId, entry);
@@ -259,6 +278,7 @@ export function createTiptapEditorRuntime({
 
       if (message.type === "set_view_mode") {
         entry.modeController.apply(entry, message.mode);
+        entry.blockHandle.refresh();
         entry.formatToolbar.refresh(entry.editor);
         syncOutline(tabId, entry.viewMode);
       } else if (message.type === "set_content") {
@@ -321,6 +341,7 @@ export function createTiptapEditorRuntime({
           released = runtimeRegistry.get(tabId);
           runtimeRegistry.delete(tabId);
         }
+        released?.blockHandle?.destroy?.();
         released?.formatToolbar?.destroy?.();
         released?.slashMenu?.destroy?.();
         released?.editor?.destroy?.();

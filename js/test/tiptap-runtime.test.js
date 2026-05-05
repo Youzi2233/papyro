@@ -29,11 +29,21 @@ function createRuntimeHarness({
     extensions,
     parse: (markdown) => ({ type: "doc", markdown }),
   }),
+  blockHandleControllerFactory,
   formatToolbarControllerFactory,
   slashMenuControllerFactory,
 } = {}) {
   const calls = [];
   const registry = createEditorRuntimeRegistry();
+
+  const createBlockHandle =
+    blockHandleControllerFactory ??
+    (() => ({
+      attach: ({ root }) => calls.push(["blockHandleAttach", root.className]),
+      close: () => calls.push(["blockHandleClose"]),
+      destroy: () => calls.push(["blockHandleDestroy"]),
+      refresh: () => calls.push(["blockHandleRefresh"]),
+    }));
 
   const createFormatToolbar =
     formatToolbarControllerFactory ??
@@ -128,6 +138,7 @@ function createRuntimeHarness({
     editorConstructor: FakeTiptapEditor,
     extensionsFactory: () => ["starter-kit"],
     markdownManagerFactory,
+    blockHandleControllerFactory: createBlockHandle,
     formatToolbarControllerFactory: createFormatToolbar,
     slashMenuControllerFactory: createSlashMenu,
     navigation: {
@@ -163,6 +174,7 @@ test("Tiptap runtime creates an editor instance and registry entry", () => {
     ["constructor", "# Note", "markdown", false, true],
     ["mount", "mn-tiptap-runtime", "tab-a"],
     ["setEditable", true],
+    ["blockHandleAttach", "mn-tiptap-runtime"],
     ["formatToolbarAttach", "mn-tiptap-runtime"],
     ["slashMenuAttach", "mn-tiptap-runtime"],
   ]);
@@ -193,9 +205,11 @@ test("Tiptap runtime reattaches existing editors without rebuilding", () => {
     ["constructor", "# Note", "markdown", false, true],
     ["mount", "mn-tiptap-runtime", "tab-a"],
     ["setEditable", true],
+    ["blockHandleAttach", "mn-tiptap-runtime"],
     ["formatToolbarAttach", "mn-tiptap-runtime"],
     ["slashMenuAttach", "mn-tiptap-runtime"],
     ["setEditable", false],
+    ["blockHandleRefresh"],
     ["formatToolbarRefresh"],
   ]);
 });
@@ -231,10 +245,12 @@ test("Tiptap runtime handles baseline Rust messages", () => {
   assert.deepEqual(calls, [
     ["syncOutline", "tab-a", "hybrid"],
     ["setEditable", false],
+    ["blockHandleRefresh"],
     ["formatToolbarRefresh"],
     ["syncOutline", "tab-a", "source"],
     ["setContent", "## Updated", "markdown"],
     ["insertContent", "\n- item", "markdown"],
+    ["blockHandleRefresh"],
     ["slashMenuRefresh"],
     ["formatToolbarRefresh"],
     ["toggleHeading", 2],
@@ -293,7 +309,12 @@ test("Tiptap runtime destroys and unregisters editor entries", () => {
   runtime.handleRustMessage("tab-a", { type: "destroy" });
 
   assert.equal(registry.has("tab-a"), false);
-  assert.deepEqual(calls, [["formatToolbarDestroy"], ["slashMenuDestroy"], ["destroy"]]);
+  assert.deepEqual(calls, [
+    ["blockHandleDestroy"],
+    ["formatToolbarDestroy"],
+    ["slashMenuDestroy"],
+    ["destroy"],
+  ]);
 });
 
 test("Tiptap runtime wires slash menu keyboard handling through editor props", () => {
