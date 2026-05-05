@@ -126,7 +126,7 @@ function targetEndPos(target) {
 function pointerAnchorRect(event, fallbackRect = null) {
   const x = Number(event?.clientX);
   const y = Number(event?.clientY);
-  if (Number.isFinite(x) && Number.isFinite(y)) {
+  if (Number.isFinite(x) && Number.isFinite(y) && Math.abs(x) + Math.abs(y) > 0) {
     return {
       left: x,
       top: y,
@@ -267,6 +267,7 @@ class TiptapBlockHandleView {
   #onDragStart = null;
   #insertPointerHandled = false;
   #actionPointerStarted = false;
+  #actionContextPointerHandled = false;
 
   constructor({ document = defaultDocument(), window = defaultWindow(document) } = {}) {
     this.#document = document;
@@ -335,7 +336,9 @@ class TiptapBlockHandleView {
       if (event.button === 2) {
         event.preventDefault();
         event.stopPropagation?.();
-        this.#onContextAction?.(event);
+        const handled = this.#onContextAction?.(event);
+        this.#actionContextPointerHandled =
+          typeof this.#onContextAction === "function" && handled !== false;
         return;
       }
       if (event.button && event.button !== 0) {
@@ -381,7 +384,10 @@ class TiptapBlockHandleView {
     actionButton.addEventListener("contextmenu", (event) => {
       event.preventDefault();
       event.stopPropagation?.();
-      this.#onContextAction?.(event);
+      if (!this.#actionContextPointerHandled) {
+        this.#onContextAction?.(event);
+      }
+      this.#actionContextPointerHandled = false;
     });
     root.addEventListener("contextmenu", (event) => {
       event.preventDefault();
@@ -717,7 +723,6 @@ export class TiptapBlockHandleController {
     }
 
     this.#selectTarget(this.#state.target);
-    this.#menu?.close?.();
     this.#insertMenu?.close?.();
     this.#drag = {
       source: this.#state.target,
@@ -729,7 +734,6 @@ export class TiptapBlockHandleController {
     };
     this.#root?.classList?.add?.(DRAGGING_CLASS);
     this.#bindDragListeners();
-    this.#openActions({ anchorRect: pointerAnchorRect(event, this.#view.actionRect?.()) });
     this.#updateView();
     return true;
   }
@@ -750,10 +754,12 @@ export class TiptapBlockHandleController {
       return this.state;
     }
 
+    if (!this.#drag.moved) {
+      this.#menu?.close?.();
+      this.#insertMenu?.close?.();
+    }
     this.#drag.moved = true;
     event?.preventDefault?.();
-    this.#menu?.close?.();
-    this.#insertMenu?.close?.();
     const documentRef = this.#root?.ownerDocument ?? defaultDocument();
     const target = dropTargetFromEvent(event, this.#editor, documentRef);
     const drop = blockDropPlacement(target, y);
@@ -841,7 +847,7 @@ export class TiptapBlockHandleController {
       target,
     };
     this.#updateView();
-    return this.#openActions({ anchorRect: pointerAnchorRect(event, this.#view.actionRect?.()) });
+    return this.#openActions({ anchorRect: pointerAnchorRect(event, target.block.getBoundingClientRect?.()) });
   }
 
   refresh() {

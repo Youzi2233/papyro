@@ -430,13 +430,12 @@ test("Tiptap block handle treats a non-moving pointer gesture as an action click
   controller.handlePointerMove({ target: block });
 
   assert.equal(view.startDrag({ clientX: 10, clientY: 10, preventDefault() {} }), true);
+  assert.equal(menu.state.open, false);
   assert.equal(controller.finishDrag({ preventDefault() {} }), true);
-  assert.equal(view.openActions(), true);
 
   assert.deepEqual(menu.calls, [
     ["attach", "DIV"],
     ["open", "paragraph", 7, [10, 10]],
-    ["open", "paragraph", 7, null],
   ]);
 });
 
@@ -475,7 +474,7 @@ test("Tiptap block handle click fallback opens actions without pointer capture",
   ]);
 });
 
-test("Tiptap block handle opens actions as soon as a click gesture starts", () => {
+test("Tiptap block handle waits for release before opening actions", () => {
   const { block, editor } = createEditor();
   const menu = createMenuSpy();
   const view = createViewSpy();
@@ -485,11 +484,13 @@ test("Tiptap block handle opens actions as soon as a click gesture starts", () =
 
   assert.equal(view.startDrag({ clientX: 10, clientY: 10, preventDefault() {} }), true);
 
+  assert.equal(menu.state.open, false);
+  assert.deepEqual(menu.calls, [["attach", "DIV"]]);
+
+  assert.equal(view.releaseAction({ clientX: 10, clientY: 10, preventDefault() {} }), true);
+
   assert.equal(menu.state.open, true);
-  assert.deepEqual(menu.calls, [
-    ["attach", "DIV"],
-    ["open", "paragraph", 7, [10, 10]],
-  ]);
+  assert.deepEqual(menu.calls.at(-1), ["open", "paragraph", 7, [10, 10]]);
 });
 
 test("Tiptap block handle suppresses right-click native menus and opens actions", () => {
