@@ -252,6 +252,7 @@ Tasks:
 - [x] Replace the always-visible table command strip with a lighter Notion-like table surface: edge `+` controls stay visible for quick row/column insertion, while cell merge, alignment, and color actions live behind a current-cell context trigger.
 - [x] Add clear table selection feedback: ProseMirror `selectedCell` and Papyro row/column/table selections render a visible overlay, active edge handles show selected state, and the current-cell trigger is centered with localized labels.
 - [x] Scope table context menus by selection semantics: cells show merge/split/alignment/color, rows show row insertion/deletion/header/style actions, columns show column insertion/deletion/header/style actions, and whole-table selection shows only table-level header/repair/delete actions.
+- [x] Make table row, column, and whole-table handles click-to-open: selecting an axis now opens the scoped context menu beside the selected range, keeps a stable selection backdrop, and groups commands into a quieter menu so table editing feels closer to the official Tiptap Notion-like reference instead of a dense developer toolbar.
 - [x] Add table cell alignment commands: left, center, and right use Tiptap `setCellAttribute('align', ...)` so pipe table alignment remains part of the Markdown document model.
 - [x] Make table toolbar command buttons pointer-first so WebView focus ordering does not swallow table operations.
 - [x] Normalize table toolbar active alignment states so default/left/center/right cells reflect the actual Markdown table state.

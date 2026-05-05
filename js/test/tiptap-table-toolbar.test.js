@@ -206,6 +206,9 @@ function createDocument() {
         appendChild(child) {
           this.children.push(child);
         },
+        append(...children) {
+          this.children.push(...children);
+        },
         replaceChildren(...children) {
           this.children = children;
         },
@@ -613,6 +616,7 @@ test("Tiptap table toolbar keeps complex command chrome hidden until requested",
   assert.equal(controller.state.menuOpen, true);
   assert.deepEqual(
     root.children[0].children
+      .flatMap((element) => element.children ?? [])
       .filter((element) => element.dataset.commandId)
       .map((element) => element.dataset.commandId),
     [
@@ -874,9 +878,9 @@ test("Tiptap table toolbar scopes context commands to row and column selections"
     String(element.className).includes("mn-tiptap-table-axis-handle row"),
   );
   rowHandle.onpointerdown({ preventDefault() {}, stopPropagation() {} });
-  controller.toggleMenu("context", { open: true });
 
   assert.equal(controller.state.selection.kind, "row");
+  assert.equal(controller.state.menuOpen, true);
   assert.deepEqual(
     controller.state.commands
       .filter((command) => !command.disabled)
@@ -896,8 +900,8 @@ test("Tiptap table toolbar scopes context commands to row and column selections"
     String(element.className).includes("mn-tiptap-table-axis-handle column") && !element.removed,
   );
   columnHandle.onpointerdown({ preventDefault() {}, stopPropagation() {} });
-  controller.toggleMenu("context", { open: true });
   assert.equal(controller.state.selection.kind, "column");
+  assert.equal(controller.state.menuOpen, true);
   assert.deepEqual(
     created
       .filter((element) => element.dataset.commandId && !element.removed)
@@ -905,6 +909,59 @@ test("Tiptap table toolbar scopes context commands to row and column selections"
       .filter((id) => ["add-column-before", "add-column-after", "delete-column", "toggle-header-column", "merge-cells"].includes(id)),
     ["add-column-before", "add-column-after", "delete-column", "toggle-header-column"],
   );
+});
+
+test("Tiptap table toolbar anchors row and column menus to the active selection", () => {
+  const { created, documentRef } = createDocument();
+  const { editor } = createTableHarness({
+    addRowBefore: () => true,
+    addRowAfter: () => true,
+    deleteRow: () => true,
+    addColumnBefore: () => true,
+    addColumnAfter: () => true,
+    deleteColumn: () => true,
+  });
+  const controller = createTiptapTableToolbarController({
+    dom: { document: documentRef },
+  });
+
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  const rowHandle = created.find((element) =>
+    String(element.className).includes("mn-tiptap-table-axis-handle row"),
+  );
+  rowHandle.onpointerdown({ preventDefault() {}, stopPropagation() {} });
+  const root = created.find((element) =>
+    String(element.className).includes("mn-tiptap-table-toolbar"),
+  );
+  const trigger = created.find((element) =>
+    String(element.className).includes("mn-tiptap-table-cell-menu-trigger"),
+  );
+  const backdrop = created.find((element) =>
+    String(element.className).includes("mn-tiptap-table-selection-backdrop"),
+  );
+
+  assert.equal(controller.state.selection.kind, "row");
+  assert.equal(root.hidden, false);
+  assert.equal(root.style.top, "132px");
+  assert.equal(trigger.style.left, "349px");
+  assert.equal(trigger.style.top, "96px");
+  assert.equal(backdrop.hidden, false);
+  assert.equal(backdrop.style.left, "120px");
+  assert.equal(backdrop.style.width, "240px");
+  assert.equal(backdrop.style.height, "34px");
+
+  const columnHandle = created.find((element) =>
+    String(element.className).includes("mn-tiptap-table-axis-handle column") && !element.removed,
+  );
+  columnHandle.onpointerdown({ preventDefault() {}, stopPropagation() {} });
+
+  assert.equal(controller.state.selection.kind, "column");
+  assert.equal(root.style.top, "166px");
+  assert.equal(trigger.style.left, "189px");
+  assert.equal(trigger.style.top, "147px");
+  assert.equal(backdrop.style.left, "120px");
+  assert.equal(backdrop.style.width, "80px");
+  assert.equal(backdrop.style.height, "68px");
 });
 
 test("Tiptap table toolbar opens table selection menus from the centered trigger", () => {
@@ -923,10 +980,6 @@ test("Tiptap table toolbar opens table selection menus from the centered trigger
     String(element.className).includes("mn-tiptap-table-axis-handle table"),
   );
   tableHandle.onpointerdown({ preventDefault() {}, stopPropagation() {} });
-  const trigger = created.find((element) =>
-    String(element.className).includes("mn-tiptap-table-cell-menu-trigger"),
-  );
-  trigger.onpointerdown({ preventDefault() {}, stopPropagation() {} });
 
   assert.equal(controller.state.selection.kind, "table");
   assert.equal(controller.state.menuOpen, true);
@@ -935,9 +988,6 @@ test("Tiptap table toolbar opens table selection menus from the centered trigger
       .filter((element) => element.dataset.commandId && !element.removed)
       .map((element) => element.dataset.commandId),
     [
-      "toggle-header-row",
-      "toggle-header-column",
-      "delete-table",
       "toggle-header-row",
       "toggle-header-column",
       "delete-table",
