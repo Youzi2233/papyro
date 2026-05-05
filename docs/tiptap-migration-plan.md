@@ -138,9 +138,10 @@ flowchart TD
 - [x] Add a runtime registry module for tab entry lifecycle management.
 - [x] Wrap the current CodeMirror runtime in an injectable runtime factory.
 - [ ] Split the current `js/src/editor.js` facade into smaller runtime modules.
-- [ ] Define an `EditorRuntimeAdapter` contract: `mount`, `attachChannel`, `handleMessage`, `setViewMode`, `destroy`, and `getMarkdown`.
+- [x] Define an `EditorRuntimeAdapter` contract: `mount`, `attachChannel`, `handleMessage`, `setViewMode`, `destroy`, and `getMarkdown`.
 - [x] Switch the migration branch default runtime to Tiptap while keeping an explicit CodeMirror fallback selector.
-- [ ] Add adapter contract tests.
+- [x] Add adapter contract tests.
+  - The contract now bridges the legacy host facade to stable migration methods and keeps preview, outline, and Mermaid helpers explicit for Rust/Dioxus compatibility.
 
 ### 2. Tiptap Foundation
 

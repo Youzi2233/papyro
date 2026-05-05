@@ -150,9 +150,10 @@ flowchart TD
 - [x] 增加 runtime registry 模块，管理 tab entry 生命周期。
 - [x] 把当前 CodeMirror runtime 包装成可注入的 runtime 工厂。
 - [ ] 把当前 `js/src/editor.js` facade 入口拆成小模块。
-- [ ] 定义 `EditorRuntimeAdapter` 契约：`mount`、`attachChannel`、`handleMessage`、`setViewMode`、`destroy`、`getMarkdown`。
+- [x] 定义 `EditorRuntimeAdapter` 契约：`mount`、`attachChannel`、`handleMessage`、`setViewMode`、`destroy`、`getMarkdown`。
 - [x] 将迁移分支默认 runtime 切换到 Tiptap，同时保留显式 CodeMirror 回退选择器。
-- [ ] 增加 adapter contract 单测。
+- [x] 增加 adapter contract 单测。
+  - 该契约已把旧 host facade 桥接到稳定迁移方法，并显式保留 preview、大纲和 Mermaid helper，避免 Rust/Dioxus 兼容协议被隐式打散。
 
 ### 2. 引入 Tiptap 基础运行时
 
