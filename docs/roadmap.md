@@ -232,6 +232,7 @@ Tasks:
 - [ ] Add advanced block action menus and responsive editor toolbar primitives.
 - [ ] Preserve Rust/JS protocol compatibility for `content_changed`, `insert_markdown`, `set_view_mode`, `destroy`, and `runtime_error`.
 - [x] Preserve Tiptap `set_preferences` state updates through a tested controller.
+- [x] Preserve Tiptap `auto_link_paste` behavior for selected-text URL paste.
 - [ ] Migrate task lists, tables, math, Mermaid, images, and code blocks.
 - [ ] Remove CodeMirror dependencies, `.cm-*` CSS, and obsolete tests.
 - [ ] Finish full acceptance checks and push the completed migration.

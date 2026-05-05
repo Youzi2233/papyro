@@ -31,6 +31,7 @@ function createRuntimeHarness({
   }),
   blockHandleControllerFactory,
   formatToolbarControllerFactory,
+  pasteControllerFactory,
   preferencesControllerFactory,
   slashMenuControllerFactory,
 } = {}) {
@@ -53,6 +54,17 @@ function createRuntimeHarness({
       close: () => calls.push(["formatToolbarClose"]),
       destroy: () => calls.push(["formatToolbarDestroy"]),
       refresh: () => calls.push(["formatToolbarRefresh"]),
+    }));
+
+  const createPasteController =
+    pasteControllerFactory ??
+    (() => ({
+      attach: ({ root }) => calls.push(["pasteControllerAttach", root.className]),
+      destroy: () => calls.push(["pasteControllerDestroy"]),
+      handlePaste: ({ event }) => {
+        calls.push(["pasteControllerPaste", event.type]);
+        return event.type === "paste";
+      },
     }));
 
   const createSlashMenu =
@@ -141,6 +153,7 @@ function createRuntimeHarness({
     markdownManagerFactory,
     blockHandleControllerFactory: createBlockHandle,
     formatToolbarControllerFactory: createFormatToolbar,
+    pasteControllerFactory: createPasteController,
     ...(preferencesControllerFactory ? { preferencesControllerFactory } : {}),
     slashMenuControllerFactory: createSlashMenu,
     navigation: {
@@ -178,6 +191,7 @@ test("Tiptap runtime creates an editor instance and registry entry", () => {
     ["setEditable", true],
     ["blockHandleAttach", "mn-tiptap-runtime"],
     ["formatToolbarAttach", "mn-tiptap-runtime"],
+    ["pasteControllerAttach", "mn-tiptap-runtime"],
     ["slashMenuAttach", "mn-tiptap-runtime"],
   ]);
 });
@@ -209,6 +223,7 @@ test("Tiptap runtime reattaches existing editors without rebuilding", () => {
     ["setEditable", true],
     ["blockHandleAttach", "mn-tiptap-runtime"],
     ["formatToolbarAttach", "mn-tiptap-runtime"],
+    ["pasteControllerAttach", "mn-tiptap-runtime"],
     ["slashMenuAttach", "mn-tiptap-runtime"],
     ["setEditable", false],
     ["blockHandleRefresh"],
@@ -350,9 +365,38 @@ test("Tiptap runtime destroys and unregisters editor entries", () => {
   assert.deepEqual(calls, [
     ["blockHandleDestroy"],
     ["formatToolbarDestroy"],
+    ["pasteControllerDestroy"],
     ["slashMenuDestroy"],
     ["destroy"],
   ]);
+});
+
+test("Tiptap runtime wires paste handling through editor props", () => {
+  const pasteCalls = [];
+  const pasteControllerFactory = () => ({
+    attach({ root }) {
+      pasteCalls.push(["attach", root.className]);
+    },
+    destroy() {
+      pasteCalls.push(["destroy"]);
+    },
+    handlePaste({ event }) {
+      pasteCalls.push(["paste", event.type]);
+      return true;
+    },
+  });
+  const { registry, runtime } = createRuntimeHarness({ pasteControllerFactory });
+  runtime.ensureEditor({
+    tabId: "tab-a",
+    containerId: "editor-root",
+    initialContent: "# Note",
+  });
+
+  const editor = registry.get("tab-a").editor;
+  const handled = editor.options.editorProps.handlePaste(null, { type: "paste" }, null);
+
+  assert.equal(handled, true);
+  assert.deepEqual(pasteCalls, [["attach", "mn-tiptap-runtime"], ["paste", "paste"]]);
 });
 
 test("Tiptap runtime wires slash menu keyboard handling through editor props", () => {

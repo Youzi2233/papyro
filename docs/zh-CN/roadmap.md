@@ -207,6 +207,7 @@ flowchart LR
 - [ ] 增加高级块操作菜单和响应式编辑器 toolbar primitives。
 - [ ] 保持 Rust/JS 协议兼容：`content_changed`、`insert_markdown`、`set_view_mode`、`destroy`、`runtime_error`。
 - [x] 通过测试覆盖的 controller 保持 Tiptap `set_preferences` 状态更新。
+- [x] 保持 Tiptap 选中文字后粘贴 URL 的 `auto_link_paste` 行为。
 - [ ] 迁移 task list、table、math、Mermaid、image 和 code block。
 - [ ] 清理 CodeMirror 依赖、`.cm-*` CSS 和旧测试。
 - [ ] 完成全量验收并推送最终迁移提交。

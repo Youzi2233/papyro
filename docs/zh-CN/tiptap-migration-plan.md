@@ -184,7 +184,7 @@ flowchart TD
 - [ ] 保持 `insert_markdown`、`set_view_mode`、`destroy` 消息不变。
 - [x] 通过 Tiptap preferences controller 保持 `set_preferences` 状态更新。
 - [ ] 对 `set_block_hints` 做兼容处理：Tiptap 阶段可以忽略或只用于诊断，不应让 Rust 报错。
-- [ ] 保持 `auto_link_paste` 行为。
+- [x] 通过 Tiptap paste controller 保持选中文字后粘贴 URL 的 `auto_link_paste` 行为。
 
 ### 5. Markdown block 能力迁移
 

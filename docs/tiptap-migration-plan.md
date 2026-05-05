@@ -172,7 +172,7 @@ flowchart TD
 - [ ] Preserve `insert_markdown`, `set_view_mode`, and `destroy`.
 - [x] Preserve `set_preferences` state updates through a Tiptap preferences controller.
 - [ ] Treat `set_block_hints` as a compatibility message during the Tiptap phase.
-- [ ] Preserve `auto_link_paste`.
+- [x] Preserve `auto_link_paste` for selected-text URL paste through a Tiptap paste controller.
 
 ### 5. Markdown Block Migration
 

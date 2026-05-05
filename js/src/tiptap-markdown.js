@@ -10,6 +10,7 @@ export function createPapyroTiptapExtensions() {
       link: {
         openOnClick: false,
         autolink: false,
+        linkOnPaste: false,
       },
     }),
   ];

@@ -9,6 +9,7 @@ import { createTiptapBlockHandleController } from "./tiptap-block-handle.js";
 import { createTiptapFormatCommandController } from "./tiptap-format-commands.js";
 import { createTiptapFormatToolbarController } from "./tiptap-format-toolbar.js";
 import { createTiptapModeController } from "./tiptap-mode-controller.js";
+import { createTiptapPasteController } from "./tiptap-paste-controller.js";
 import { createTiptapPreferencesController } from "./tiptap-preferences-controller.js";
 import { createTiptapSlashCommandController } from "./tiptap-slash-commands.js";
 import { createTiptapSlashMenuController } from "./tiptap-slash-menu.js";
@@ -51,6 +52,10 @@ function defaultEditorOptions(initialContent, extensions, viewMode, tabId, regis
         const entry = registry.get(tabId);
         return entry?.slashMenu?.handleKeyDown(event) ?? false;
       },
+      handlePaste: (view, event, slice) => {
+        const entry = registry.get(tabId);
+        return entry?.pasteController?.handlePaste({ view, event, slice }) ?? false;
+      },
     },
   };
 }
@@ -64,6 +69,7 @@ function createEntry({
   blockHandle,
   formatCommands,
   formatToolbar,
+  pasteController,
   preferencesController,
   slashCommands,
   slashMenu,
@@ -80,6 +86,7 @@ function createEntry({
     blockHandle,
     formatCommands,
     formatToolbar,
+    pasteController,
     preferences: preferencesController.preferences,
     preferencesController,
     slashCommands,
@@ -100,6 +107,7 @@ export function createTiptapEditorRuntime({
   blockHandleControllerFactory = createTiptapBlockHandleController,
   formatCommandControllerFactory = createTiptapFormatCommandController,
   formatToolbarControllerFactory = createTiptapFormatToolbarController,
+  pasteControllerFactory = createTiptapPasteController,
   preferencesControllerFactory = createTiptapPreferencesController,
   slashCommandControllerFactory = createTiptapSlashCommandController,
   slashMenuControllerFactory = createTiptapSlashMenuController,
@@ -138,6 +146,10 @@ export function createTiptapEditorRuntime({
   const createFormatToolbarController = requireFunction(
     formatToolbarControllerFactory,
     "formatToolbarControllerFactory",
+  );
+  const createPasteController = requireFunction(
+    pasteControllerFactory,
+    "pasteControllerFactory",
   );
   const createPreferencesController = requireFunction(
     preferencesControllerFactory,
@@ -222,6 +234,7 @@ export function createTiptapEditorRuntime({
         document: documentRef,
       },
     });
+    const pasteController = createPasteController();
     const preferencesController = createPreferencesController();
     const slashCommands = createSlashCommandController();
     const slashMenu = createSlashMenuController({
@@ -279,6 +292,7 @@ export function createTiptapEditorRuntime({
       blockHandle,
       formatCommands,
       formatToolbar,
+      pasteController,
       preferencesController,
       slashCommands,
       slashMenu,
@@ -287,6 +301,7 @@ export function createTiptapEditorRuntime({
     preferencesController.attach(entry);
     blockHandle.attach({ editor, root, entry });
     formatToolbar.attach({ editor, root, entry });
+    pasteController.attach({ editor, root, entry });
     slashMenu.attach({ editor, root, entry });
     runtimeRegistry.set(tabId, entry);
 
@@ -377,6 +392,7 @@ export function createTiptapEditorRuntime({
         }
         released?.blockHandle?.destroy?.();
         released?.formatToolbar?.destroy?.();
+        released?.pasteController?.destroy?.();
         released?.slashMenu?.destroy?.();
         released?.editor?.destroy?.();
       }
