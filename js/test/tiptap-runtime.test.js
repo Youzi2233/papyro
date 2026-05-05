@@ -125,8 +125,27 @@ function createRuntimeHarness({
         toggleItalic: () => calls.push(["toggleItalic"]),
         setHorizontalRule: () => calls.push(["setHorizontalRule"]),
         setParagraph: () => calls.push(["setParagraph"]),
-        setTextSelection: (position) => calls.push(["setTextSelection", position]),
+        setTextSelection: (position) => {
+          calls.push(["setTextSelection", position]);
+          if (typeof position === "number") {
+            this.state.selection = { from: position, to: position, empty: true };
+          } else {
+            this.state.selection = {
+              from: position.from,
+              to: position.to,
+              empty: position.from === position.to,
+            };
+          }
+          return true;
+        },
         toggleHeading: (attrs) => calls.push(["toggleHeading", attrs.level]),
+      };
+      this.state = {
+        selection: {
+          from: 1,
+          to: 1,
+          empty: true,
+        },
       };
       calls.push([
         "constructor",
@@ -452,6 +471,95 @@ test("Tiptap runtime mode contract keeps rich editing Hybrid-only", () => {
     ["applyMode", "source"],
     ["applyMode", "hybrid"],
   ]);
+});
+
+test("Tiptap runtime preserves selection snapshots across Source and Hybrid modes", () => {
+  let textarea = null;
+  const sourcePaneCalls = [];
+  const sourcePaneControllerFactory = () => ({
+    get textarea() {
+      return textarea;
+    },
+    attach: ({ entry }) => {
+      textarea = {
+        value: entry.markdownSync.markdown,
+        selectionStart: 0,
+        selectionEnd: 0,
+        setSelectionRange(start, end) {
+          this.selectionStart = start;
+          this.selectionEnd = end;
+          sourcePaneCalls.push(["setSelectionRange", start, end]);
+        },
+        focus() {
+          sourcePaneCalls.push(["sourceFocus"]);
+        },
+      };
+      sourcePaneCalls.push(["attach", entry.viewMode]);
+    },
+    applyMode: (entry) => {
+      sourcePaneCalls.push(["applyMode", entry.viewMode]);
+      if (textarea) {
+        textarea.value = entry.markdownSync.markdown;
+      }
+      return entry.viewMode === "source";
+    },
+    setMarkdown: (markdown) => {
+      sourcePaneCalls.push(["setMarkdown", markdown]);
+      if (textarea) textarea.value = markdown;
+    },
+    insertMarkdown: () => false,
+    focus: () => false,
+    destroy: () => sourcePaneCalls.push(["destroy"]),
+  });
+  const { calls, registry, runtime } = createRuntimeHarness({ sourcePaneControllerFactory });
+  runtime.ensureEditor({
+    tabId: "tab-a",
+    containerId: "editor-root",
+    initialContent: "0123456789",
+    viewMode: "hybrid",
+  });
+  const entry = registry.get("tab-a");
+  calls.length = 0;
+  sourcePaneCalls.length = 0;
+
+  entry.editor.state.selection = { from: 2, to: 5, empty: false };
+  entry.editor.emit("selectionUpdate", { editor: entry.editor });
+
+  runtime.handleRustMessage("tab-a", { type: "set_view_mode", mode: "source" });
+  textarea.selectionStart = 6;
+  textarea.selectionEnd = 9;
+  runtime.handleRustMessage("tab-a", { type: "set_view_mode", mode: "hybrid" });
+  runtime.handleRustMessage("tab-a", { type: "set_view_mode", mode: "source" });
+
+  assert.deepEqual(
+    calls.filter((call) => call[0] === "setTextSelection"),
+    [["setTextSelection", { from: 2, to: 5 }]],
+  );
+  assert.deepEqual(
+    sourcePaneCalls.filter((call) => call[0] === "setSelectionRange"),
+    [
+      ["setSelectionRange", 6, 9],
+    ],
+  );
+});
+
+test("Tiptap runtime mode switching does not emit dirty content changes", () => {
+  const { registry, runtime } = createRuntimeHarness();
+  const messages = [];
+  runtime.ensureEditor({
+    tabId: "tab-a",
+    containerId: "editor-root",
+    initialContent: "# Note",
+    viewMode: "hybrid",
+  });
+  runtime.attachChannel("tab-a", { send: (message) => messages.push(message) });
+
+  runtime.handleRustMessage("tab-a", { type: "set_view_mode", mode: "source" });
+  runtime.handleRustMessage("tab-a", { type: "set_view_mode", mode: "preview" });
+  runtime.handleRustMessage("tab-a", { type: "set_view_mode", mode: "hybrid" });
+
+  assert.equal(registry.get("tab-a").markdownSync.markdown, "# Note");
+  assert.deepEqual(messages, []);
 });
 
 test("Tiptap runtime preserves insert_markdown protocol updates", () => {

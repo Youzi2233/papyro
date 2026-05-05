@@ -14,6 +14,7 @@ import { createTiptapBlockHandleController } from "./tiptap-block-handle.js";
 import { createTiptapFormatCommandController } from "./tiptap-format-commands.js";
 import { createTiptapFormatToolbarController } from "./tiptap-format-toolbar.js";
 import { createTiptapModeController } from "./tiptap-mode-controller.js";
+import { createTiptapModeSnapshotController } from "./tiptap-mode-snapshots.js";
 import { createTiptapPasteController } from "./tiptap-paste-controller.js";
 import { createTiptapPreferencesController } from "./tiptap-preferences-controller.js";
 import { createTiptapSourcePaneController } from "./tiptap-source-pane.js";
@@ -145,6 +146,7 @@ function createEntry({
   dom,
   instanceId,
   modeController,
+  modeSnapshots,
   markdownSync,
   blockHintsController,
   blockHandle,
@@ -164,6 +166,7 @@ function createEntry({
     suppressChange: false,
     viewMode: modeController.mode,
     modeController,
+    modeSnapshots,
     markdownSync,
     blockHints: blockHintsController.hints,
     blockHintsController,
@@ -187,6 +190,7 @@ export function createTiptapEditorRuntime({
   markdownManagerFactory = createPapyroMarkdownManager,
   markdownSyncFactory = createMarkdownSyncController,
   modeControllerFactory = createTiptapModeController,
+  modeSnapshotControllerFactory = createTiptapModeSnapshotController,
   blockActionControllerFactory = createTiptapBlockActionController,
   blockActionMenuControllerFactory = createTiptapBlockActionMenuController,
   blockHintsControllerFactory = createTiptapBlockHintsController,
@@ -215,6 +219,10 @@ export function createTiptapEditorRuntime({
   const createModeController = requireFunction(
     modeControllerFactory,
     "modeControllerFactory",
+  );
+  const createModeSnapshots = requireFunction(
+    modeSnapshotControllerFactory,
+    "modeSnapshotControllerFactory",
   );
   const createBlockActionController = requireFunction(
     blockActionControllerFactory,
@@ -332,6 +340,7 @@ export function createTiptapEditorRuntime({
       manager: markdownManager,
     });
     const modeController = createModeController(viewMode);
+    const modeSnapshots = createModeSnapshots();
     const blockHintsController = createBlockHintsController();
     const blockActions = createBlockActionController();
     const blockActionMenu = createBlockActionMenuController({
@@ -399,6 +408,7 @@ export function createTiptapEditorRuntime({
         entry?.blockHandle?.refresh();
         entry?.slashMenu?.refresh(targetEditor);
         entry?.formatToolbar?.refresh(targetEditor);
+        entry?.modeSnapshots?.capture(entry, entry?.viewMode);
         syncOutline(tabId, entry?.viewMode);
       });
       editor.on("blur", () => {
@@ -415,6 +425,7 @@ export function createTiptapEditorRuntime({
       dom: root,
       instanceId,
       modeController,
+      modeSnapshots,
       markdownSync,
       blockHintsController,
       blockHandle,
@@ -430,6 +441,7 @@ export function createTiptapEditorRuntime({
     blockHintsController.attach(entry);
     preferencesController.attach(entry);
     sourcePane.attach({ editor, root, entry });
+    modeSnapshots.capture(entry, entry.viewMode);
     blockHandle.attach({ editor, root, entry });
     formatToolbar.attach({ editor, root, entry });
     pasteController.attach({ editor, root, entry });
@@ -460,8 +472,11 @@ export function createTiptapEditorRuntime({
       if (!entry) return;
 
       if (message.type === "set_view_mode") {
+        const previousMode = entry.viewMode;
+        entry.modeSnapshots.capture(entry, previousMode);
         entry.modeController.apply(entry, message.mode);
         entry.sourcePane.applyMode(entry);
+        entry.modeSnapshots.restore(entry, entry.viewMode);
         restoreEditorScrollSnapshot(entry);
         attachEditorScroll(tabId, entry);
         entry.blockHandle.refresh();

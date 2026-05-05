@@ -166,7 +166,9 @@ flowchart TD
 - [x] Source uses a source editor pane synchronized through `MarkdownSyncController`.
 - [x] Add `MarkdownSyncController` as the canonical Markdown state boundary for Tiptap runtime updates.
 - [x] Preview remains Rust-rendered HTML.
-- [ ] Mode switching preserves selection, dirty state, and scroll snapshots.
+- [x] Mode switching preserves selection, dirty state, and scroll snapshots.
+  - `TiptapModeSnapshotController` captures Hybrid ProseMirror selections and Source textarea selections before view-mode changes, then restores the target mode after `set_view_mode`.
+  - Runtime tests cover Source/Hybrid selection restoration and verify mode switching does not emit `content_changed`; scroll restoration continues through the shared per-mode scroll snapshot hook.
 - [x] Outline clicks work in Source and Hybrid.
 
 ### 4. Rust/JS Protocol Compatibility

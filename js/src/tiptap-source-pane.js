@@ -31,6 +31,21 @@ function replaceTextareaSelection(textarea, text, cursorOffset = null) {
   return textarea.value;
 }
 
+function restoreTextareaSelection(textarea, previousSelection) {
+  if (!textarea || !previousSelection) return false;
+  const valueLength = String(textarea.value ?? "").length;
+  const from = Math.max(
+    0,
+    Math.min(Number(previousSelection.start) || 0, valueLength),
+  );
+  const to = Math.max(
+    from,
+    Math.min(Number(previousSelection.end) || from, valueLength),
+  );
+  textarea.setSelectionRange?.(from, to);
+  return true;
+}
+
 function emit(entry, message) {
   entry?.dioxus?.send?.({
     tab_id: tabIdForEntry(entry),
@@ -135,7 +150,12 @@ export class TiptapSourcePaneController {
     const active = normalizeTiptapViewMode(mode) === "source";
     this.#textarea.hidden = !active;
     if (active) {
+      const previousSelection = {
+        start: this.#textarea.selectionStart,
+        end: this.#textarea.selectionEnd,
+      };
       this.setMarkdown(entry?.markdownSync?.markdown ?? "");
+      restoreTextareaSelection(this.#textarea, previousSelection);
     }
     return active;
   }
