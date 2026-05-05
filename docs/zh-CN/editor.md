@@ -31,9 +31,11 @@ flowchart LR
     source <--> preview
 ```
 
-## Tiptap 迁移契约
+## Runtime 契约
 
-`feat-tiptap` 分支会在现有 `window.papyroEditor` facade 后面引入 Tiptap。迁移期间，在 Source、Hybrid、Preview、IME、粘贴和 block 编辑都达到验收标准前，CodeMirror 仍是默认 runtime。
+`feat-tiptap` 分支现在已经在现有 `window.papyroEditor` facade 后面运行
+Tiptap/ProseMirror。Rust 和 Dioxus 仍然只依赖稳定 facade，不直接依赖
+Tiptap 内部对象。
 
 内容同步必须经过 `MarkdownSyncController`：
 
@@ -58,11 +60,11 @@ Rust 负责：
 
 JS 负责：
 
-- CodeMirror state 和 extensions
+- Tiptap editor state 和 extensions
 - 输入命令、粘贴、IME
 - selection、cursor、scroll
-- Hybrid decorations 和 widgets
-- Mermaid、KaTeX、CodeMirror language support
+- Hybrid 富文本行为和 node views
+- Mermaid、KaTeX、table、task list、image 和 code block 扩展
 
 应用层负责：
 
@@ -111,7 +113,7 @@ Hybrid 不是“把 Markdown 标记藏起来”就完成了。它需要对齐 Ty
 
 Hybrid 表格 widget 支持直接编辑单元格、用 Tab/Shift+Tab 在单元格之间移动，并且行列操作会围绕当前聚焦的单元格执行。Markdown 源码仍然是存储格式，但常规表格编辑不应要求用户手动对齐 pipe 语法。
 
-Hybrid 选区颜色由共享的 `--mn-hybrid-selection` token 驱动。代码块、inline code、链接、表格输入框和 Mermaid 源码编辑区都应该使用与普通编辑器文本一致的选区色，避免浏览器原生蓝色和 CodeMirror 选区层混在一起。
+Hybrid 选区颜色由共享的 `--mn-hybrid-selection` token 驱动。代码块、inline code、链接、表格输入框和 Mermaid 源码编辑区都应该使用与普通编辑器文本一致的选区色，避免浏览器原生蓝色和自定义编辑器选区层混在一起。
 
 Hybrid pointer 行为必须区分文字字形和行高空隙。鼠标 hover 或点击文字本身时，使用当前行的编辑语义；hover 到文字下方的竖向空隙时，保持普通态，并且拖选应命中下一行；hover 到文字上方空隙时，应命中上一行。选中背景只应覆盖文字/字形矩形，不能把整块行高空隙都染色。
 
@@ -127,10 +129,10 @@ Rust 侧：
 
 JS 侧：
 
-- CodeMirror 6
+- Tiptap/ProseMirror 负责 editor state 和渲染
+- `@tiptap/markdown` 负责 Markdown parse/serialize round-trip
 - Mermaid
 - KaTeX
-- `codemirror-lang-mermaid`
 
 采用新的 Markdown 样式或渲染库前，先看 [Markdown 样式参考调研](markdown-style-references.md)。不要直接复制大段第三方样式。Papyro 需要统一的应用设计系统。
 

@@ -12,8 +12,8 @@ Papyro should look familiar to Markdown users without becoming a copy of another
 | --- | --- |
 | Markdown parsing | `pulldown-cmark` in `crates/editor/src/renderer/html.rs` |
 | Preview code highlighting | `syntect` in `crates/editor/src/renderer/html.rs` |
-| Editor runtime | CodeMirror 6 in `js/src/editor.js` and `js/src/editor-core.js` |
-| Mermaid | `mermaid` and `codemirror-lang-mermaid` |
+| Editor runtime | Tiptap/ProseMirror in `js/src/tiptap-runtime.js` and focused `js/src/tiptap-*.js` modules |
+| Mermaid | `mermaid` plus the Papyro Tiptap Mermaid extension in `js/src/tiptap-mermaid.js` |
 | Theme contract | [theme-system.md](theme-system.md) |
 
 ## Reference Candidates

@@ -15,7 +15,7 @@ Papyro 是一个基于 Rust 和 Dioxus 0.7 的桌面优先 Markdown 应用。它
 - **工作区桌面壳** - 支持侧边栏、标签页、最近文件、快速打开、命令面板、大纲、搜索、回收站和恢复草稿。
 - **Rust 应用核心** - 存储、文件操作、状态迁移、恢复和 Markdown 渲染都可以测试。
 - **Dioxus 0.7 UI** - desktop 和 mobile 共享应用运行时与 UI 层。
-- **本地编辑器 bundle** - CodeMirror、Mermaid、KaTeX 和代码高亮资源都随应用构建。
+- **本地编辑器 bundle** - Tiptap/ProseMirror、Mermaid、KaTeX 和代码高亮资源都随应用构建。
 
 ## 当前状态
 
@@ -67,7 +67,9 @@ bash scripts/check.sh
 
 ### 构建编辑器资源
 
-只手动修改 `js/src/editor.js` 和 `js/src/editor-core.js`。改完后运行：
+手动修改 `js/src/` 下的聚焦源码模块，例如 `tiptap-runtime.js`、
+`tiptap-*` 扩展/控制器、`editor-host-runtime.js`、`editor-runtime-bootstrap.js`
+以及 `editor-core.js` 中的共享 helper。不要手动改生成物。改完后运行：
 
 ```bash
 npm --prefix js install
@@ -89,7 +91,7 @@ flowchart TD
     storage["crates/storage<br/>SQLite、文件系统、watcher、搜索元数据"]
     platform["crates/platform<br/>对话框、app data、reveal、外链"]
     editor["crates/editor<br/>Markdown 统计、HTML 渲染、协议"]
-    js["js/<br/>CodeMirror runtime 源码"]
+    js["js/<br/>Tiptap runtime 源码"]
 
     desktop --> app
     mobile --> app

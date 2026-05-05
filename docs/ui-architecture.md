@@ -12,7 +12,7 @@ flowchart TD
     primitives["Dioxus primitives<br/>crates/ui/src/components/primitives.rs"]
     product["Product components<br/>crates/ui/src/components/*"]
     layouts["Layouts<br/>crates/ui/src/layouts/*"]
-    editorjs["Editor runtime<br/>js/src/editor-theme.js"]
+    editorjs["Editor runtime<br/>js/src/tiptap-runtime.js"]
     appassets["Mirrored assets<br/>apps/*/assets/main.css"]
 
     tokens --> primitives
@@ -29,7 +29,7 @@ Rules:
 - `crates/ui/src/components/primitives.rs` owns reusable Dioxus controls and re-exports focused primitive submodules such as `primitives/buttons.rs`, `primitives/empty.rs`, `primitives/feedback.rs`, `primitives/forms.rs`, `primitives/layout.rs`, `primitives/navigation.rs`, `primitives/overlays.rs`, `primitives/results.rs`, `primitives/settings.rs`, and `primitives/tabs.rs`.
 - Product components compose primitives and should avoid inventing control behavior.
 - Layout modules arrange product regions; they should not own button, menu, or field styling.
-- `js/src/editor-theme.js` consumes the same CSS tokens for CodeMirror and Hybrid rendering.
+- Tiptap runtime modules and node views consume the same CSS tokens through semantic `.mn-tiptap-*` and `.mn-editor-*` classes.
 
 ## Component Placement Rules
 
@@ -40,7 +40,7 @@ Use the smallest owner that can express the behavior without leaking product-spe
 | Reusable control behavior | `crates/ui/src/components/primitives.rs` and `crates/ui/src/components/primitives/*` | Use when the component owns visual states, keyboard/focus behavior, ARIA shape, sizing, or shared slots. Keep tests or large component families in submodules once the main file grows. |
 | A product surface made from primitives | `crates/ui/src/components/<surface>/` | Use when labels, app commands, view-model data, or product-specific callbacks are involved. |
 | Page or window arrangement | `crates/ui/src/layouts/` | Use only for region placement, split panes, rails, scroll containers, and responsive overflow rules. |
-| Markdown editor runtime behavior | `js/src/editor*.js` | Use only when CodeMirror or editor hit-testing owns the behavior. Keep Rust as the source of app state truth. |
+| Markdown editor runtime behavior | `js/src/tiptap-*.js`, `js/src/editor-host-runtime.js`, `js/src/editor-runtime-bootstrap.js`, `js/src/editor-core.js` | Use only when Tiptap, editor hit-testing, Markdown sync, or JS host lifecycle owns the behavior. Keep Rust as the source of app state truth. |
 | Shared visual language | `assets/main.css` | Define tokens and primitive classes here, then mirror the CSS into app asset directories. |
 
 Do not create a new product-level class for a button, menu item, text field, select, switch, tab, tooltip, dialog header, result row, tree row, or empty state until the existing primitive family has been checked. If a primitive is missing a variant, extend the primitive first unless the product surface has a one-off layout need.

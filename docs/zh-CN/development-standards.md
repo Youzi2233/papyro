@@ -24,7 +24,7 @@
 | `crates/storage` | SQLite、文件、workspace 扫描、watcher | UI 行为 |
 | `crates/platform` | 对话框、app data、reveal、外链 | app 状态变更 |
 | `crates/editor` | Markdown 统计、渲染、协议 | storage 写入 |
-| `js/` | CodeMirror runtime 行为 | Rust 状态真相 |
+| `js/` | Tiptap runtime 行为、编辑器 facade、Markdown 交互 helper | Rust 状态真相 |
 
 调整 crate 依赖方向后运行：
 
@@ -52,9 +52,13 @@ node scripts/check-workspace-deps.js
 
 ## 编辑器 JS 规则
 
-只手动修改：
+只手动修改 `js/src/` 下的聚焦源码文件。最常见入口是：
 
-- `js/src/editor.js`
+- `js/src/editor-tiptap-entry.js`
+- `js/src/tiptap-runtime.js`
+- `js/src/tiptap-*.js`
+- `js/src/editor-host-runtime.js`
+- `js/src/editor-runtime-bootstrap.js`
 - `js/src/editor-core.js`
 
 改完后运行：

@@ -12,8 +12,8 @@ Papyro 应该让 Markdown 用户觉得熟悉，但不能变成另一个产品的
 | --- | --- |
 | Markdown 解析 | `crates/editor/src/renderer/html.rs` 中的 `pulldown-cmark` |
 | Preview 代码高亮 | `crates/editor/src/renderer/html.rs` 中的 `syntect` |
-| 编辑器 runtime | `js/src/editor.js` 和 `js/src/editor-core.js` 中的 CodeMirror 6 |
-| Mermaid | `mermaid` 和 `codemirror-lang-mermaid` |
+| 编辑器 runtime | `js/src/tiptap-runtime.js` 和聚焦的 `js/src/tiptap-*.js` 模块中的 Tiptap/ProseMirror |
+| Mermaid | `mermaid` 以及 `js/src/tiptap-mermaid.js` 中的 Papyro Tiptap Mermaid 扩展 |
 | 主题契约 | [theme-system.md](theme-system.md) |
 
 ## 候选参考

@@ -60,7 +60,7 @@ If you are unsure where a change belongs:
 - SQLite, filesystem, workspace scan, watcher: `crates/storage`
 - Platform dialogs and shell integration: `crates/platform`
 - Markdown summary, render, protocol structs: `crates/editor`
-- CodeMirror runtime behavior: `js/src/editor.js` or `js/src/editor-core.js`
+- Tiptap runtime behavior: `js/src/tiptap-runtime.js`, `js/src/tiptap-*.js`, `js/src/editor-host-runtime.js`, or shared helpers in `js/src/editor-core.js`
 - Theme tokens or Markdown visual language: `assets/main.css`, `apps/*/assets/main.css`, and [theme-system.md](theme-system.md)
 
 ## Documentation Maintenance Rules

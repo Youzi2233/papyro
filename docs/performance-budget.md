@@ -79,7 +79,7 @@ Use `node scripts/check-perf-smoke.js --self-test` to validate the checker itsel
 - editor outline scroll targets
 - IME composition guards
 
-Add to that smoke path when changing CodeMirror host lifecycle, Rust-to-JS protocol commands, Hybrid block state, selection handling, paste behavior, or outline navigation.
+Add to that smoke path when changing Tiptap host lifecycle, Rust-to-JS protocol commands, Hybrid block state, selection handling, paste behavior, or outline navigation.
 
 ## Render Path Rules
 
@@ -88,7 +88,7 @@ flowchart TD
     chrome["Chrome interaction<br/>sidebar, modal, settings"]
     workspace["Workspace interaction<br/>file tree, search, watcher"]
     document["Document interaction<br/>content, outline, preview"]
-    editor["Editor runtime<br/>CodeMirror host"]
+    editor["Editor runtime<br/>Tiptap host"]
 
     chrome -. must not trigger .-> document
     workspace -. must not recreate .-> editor
@@ -101,7 +101,7 @@ Rules:
 - Do not render large Markdown HTML directly in a Dioxus component body.
 - Do not clone large tab contents just to update chrome.
 - Do not make preview, outline, and tabbar subscribe to unrelated raw signals.
-- Do not rebuild CodeMirror on sidebar, settings, or status bar changes.
+- Do not rebuild Tiptap on sidebar, settings, or status bar changes.
 - Do not let Hybrid decorations scan unbounded documents on every input.
 
 ## Large Document Policy

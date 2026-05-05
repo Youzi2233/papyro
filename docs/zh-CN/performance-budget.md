@@ -75,7 +75,7 @@ node scripts/check-perf-smoke.js target/perf-smoke.log
 - 编辑器大纲滚动目标
 - IME composition 防护
 
-修改 CodeMirror host 生命周期、Rust 到 JS 协议命令、Hybrid block 状态、选区行为、粘贴行为或大纲导航时，要扩展这条 smoke 路径。
+修改 Tiptap host 生命周期、Rust 到 JS 协议命令、Hybrid block 状态、选区行为、粘贴行为或大纲导航时，要扩展这条 smoke 路径。
 
 ## Render Path 规则
 
@@ -84,7 +84,7 @@ flowchart TD
     chrome["Chrome interaction<br/>sidebar, modal, settings"]
     workspace["Workspace interaction<br/>file tree, search, watcher"]
     document["Document interaction<br/>content, outline, preview"]
-    editor["Editor runtime<br/>CodeMirror host"]
+    editor["Editor runtime<br/>Tiptap host"]
 
     chrome -. 不应触发 .-> document
     workspace -. 不应重建 .-> editor
@@ -97,7 +97,7 @@ flowchart TD
 - 不在 Dioxus component body 里直接渲染大型 Markdown HTML。
 - 不为了更新 chrome clone 大段 tab content。
 - Preview、Outline、Tabbar 不订阅无关 raw signal。
-- Sidebar、settings、status bar 变化不重建 CodeMirror。
+- Sidebar、settings、status bar 变化不重建 Tiptap。
 - Hybrid decoration 不在每次输入时无界扫描大文档。
 
 ## 大文档策略

@@ -237,9 +237,13 @@ This is normal on a fresh Rust machine. It compiles the CLI from source. It is o
 
 ## Editor Bundle
 
-Only edit:
+Only edit focused files under `js/src/`, commonly:
 
-- `js/src/editor.js`
+- `js/src/editor-tiptap-entry.js`
+- `js/src/tiptap-runtime.js`
+- `js/src/tiptap-*.js`
+- `js/src/editor-host-runtime.js`
+- `js/src/editor-runtime-bootstrap.js`
 - `js/src/editor-core.js`
 
 Then run:

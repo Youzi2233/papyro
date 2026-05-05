@@ -15,7 +15,7 @@ The project is still early. The current priority is not to add every note-taking
 - **Workspace-aware desktop shell** - sidebar, tabs, recent files, quick open, command palette, outline, search, trash, and recovery drafts.
 - **Rust application core** - storage, file operations, state transitions, recovery, and Markdown rendering stay testable.
 - **Dioxus 0.7 UI** - desktop and mobile shells share the same app runtime and UI layer.
-- **Offline editor bundle** - CodeMirror, Mermaid, KaTeX, and syntax highlighting are built into local assets.
+- **Offline editor bundle** - Tiptap/ProseMirror, Mermaid, KaTeX, and syntax highlighting are built into local assets.
 
 ## Current Status
 
@@ -71,7 +71,10 @@ bash scripts/check.sh
 
 ### Rebuild the editor bundle
 
-Only edit `js/src/editor.js` and `js/src/editor-core.js` by hand. Then run:
+Edit focused source modules under `js/src/`, such as `tiptap-runtime.js`,
+`tiptap-*` extensions/controllers, `editor-host-runtime.js`,
+`editor-runtime-bootstrap.js`, and shared helpers in `editor-core.js`. Do not edit
+generated bundles by hand. Then run:
 
 ```bash
 npm --prefix js install
@@ -93,7 +96,7 @@ flowchart TD
     storage["crates/storage<br/>SQLite, filesystem, watcher, search metadata"]
     platform["crates/platform<br/>dialogs, app data, reveal, external links"]
     editor["crates/editor<br/>Markdown summary, HTML render, protocol"]
-    js["js/<br/>CodeMirror runtime source"]
+    js["js/<br/>Tiptap runtime source"]
 
     desktop --> app
     mobile --> app

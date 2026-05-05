@@ -12,7 +12,7 @@ flowchart TD
     primitives["Dioxus 基础组件<br/>crates/ui/src/components/primitives.rs"]
     product["产品组件<br/>crates/ui/src/components/*"]
     layouts["布局<br/>crates/ui/src/layouts/*"]
-    editorjs["编辑器 runtime<br/>js/src/editor-theme.js"]
+    editorjs["编辑器 runtime<br/>js/src/tiptap-runtime.js"]
     appassets["镜像资源<br/>apps/*/assets/main.css"]
 
     tokens --> primitives
@@ -29,7 +29,7 @@ flowchart TD
 - `crates/ui/src/components/primitives.rs` 拥有可复用 Dioxus 控件，并重新导出 `primitives/buttons.rs`、`primitives/empty.rs`、`primitives/feedback.rs`、`primitives/forms.rs`、`primitives/layout.rs`、`primitives/navigation.rs`、`primitives/overlays.rs`、`primitives/results.rs`、`primitives/settings.rs`、`primitives/tabs.rs` 等聚焦的基础组件子模块。
 - 产品组件组合基础组件，不应该重新发明控件行为。
 - layout 模块负责排列产品区域，不拥有按钮、菜单或表单字段样式。
-- `js/src/editor-theme.js` 使用同一批 CSS token 来服务 CodeMirror 和 Hybrid 渲染。
+- Tiptap runtime 模块和 node views 通过语义化 `.mn-tiptap-*` 与 `.mn-editor-*` class 消费同一批 CSS token。
 
 ## 组件放置规则
 
@@ -40,7 +40,7 @@ flowchart TD
 | 可复用控件行为 | `crates/ui/src/components/primitives.rs` 和 `crates/ui/src/components/primitives/*` | 组件拥有视觉状态、键盘/焦点行为、ARIA 结构、尺寸或共享 slot 时放这里。主文件变大后，测试或大型组件族应进入子模块。 |
 | 由基础组件组成的产品界面 | `crates/ui/src/components/<surface>/` | 涉及标签、app 命令、view-model 数据或产品专属回调时放这里。 |
 | 页面或窗口排布 | `crates/ui/src/layouts/` | 只负责区域排列、split pane、rail、滚动容器和响应式 overflow 规则。 |
-| Markdown 编辑器 runtime 行为 | `js/src/editor*.js` | 只有 CodeMirror 或编辑器 hit-testing 拥有该行为时才放这里。Rust 仍是 app 状态事实来源。 |
+| Markdown 编辑器 runtime 行为 | `js/src/tiptap-*.js`、`js/src/editor-host-runtime.js`、`js/src/editor-runtime-bootstrap.js`、`js/src/editor-core.js` | 只有 Tiptap、编辑器 hit-testing、Markdown 同步或 JS host 生命周期拥有该行为时才放这里。Rust 仍是 app 状态事实来源。 |
 | 共享视觉语言 | `assets/main.css` | 在这里定义 token 和基础组件 class，再同步到 app 资源目录。 |
 
 新增按钮、菜单项、文本输入、选择器、开关、tab、tooltip、dialog header、结果行、树行或空状态样式前，必须先检查现有基础组件族。若只是缺少 variant，优先扩展基础组件；只有产品界面确实存在一次性布局需求时，才增加产品层 class。

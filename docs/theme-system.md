@@ -9,7 +9,7 @@ flowchart TD
     palette["Palette tokens<br/>bg, surface, ink, accent, state"]
     semantic["Semantic contracts<br/>chrome, editor, markdown, code, selection, focus, status"]
     components["Rust UI and CSS components"]
-    editor["CodeMirror runtime"]
+    editor["Tiptap runtime"]
     preview["Markdown preview"]
 
     palette --> semantic
@@ -24,7 +24,7 @@ flowchart TD
 | --- | --- | --- |
 | Palette | `--mn-bg`, `--mn-surface`, `--mn-ink`, `--mn-accent` | Theme authors and low-level CSS only |
 | Chrome | `--mn-chrome-bg`, `--mn-chrome-surface`, `--mn-chrome-ink-muted` | Sidebar, header, modal, command palette, status bar |
-| Editor canvas | `--mn-editor-canvas-bg`, `--mn-editor-canvas-ink`, `--mn-editor-active-line-bg` | CodeMirror host and source editing UI |
+| Editor canvas | `--mn-editor-canvas-bg`, `--mn-editor-canvas-ink`, `--mn-editor-active-line-bg` | Tiptap host and source editing UI |
 | Markdown | `--mn-markdown-ink`, `--mn-markdown-muted-ink`, `--mn-markdown-link` | Preview and Hybrid rendered Markdown |
 | Code | `--mn-code-surface`, `--mn-code-block-surface`, `--mn-code-ink`, `--mn-code-border` | Inline code, fenced code, Mermaid source panes |
 | Selection and focus | `--mn-selection-bg`, `--mn-selection-ink`, `--mn-focus-ring` | Selection backgrounds, focused controls, editor cursor states |
@@ -36,7 +36,7 @@ flowchart TD
 - `apps/desktop/assets/main.css` mirrors the desktop runtime copy.
 - `assets/styles/modal.css` and `apps/desktop/assets/styles/modal.css` hold modal-specific styles.
 - `assets/styles/markdown.css` and `apps/desktop/assets/styles/markdown.css` hold the document surface, outline, Preview, and rendered Markdown rhythm.
-- `js/src/editor-theme.js` consumes the same tokens inside CodeMirror.
+- Tiptap node views and runtime chrome consume the same tokens through CSS classes in `assets/styles/markdown.css` and focused `js/src/tiptap-*.js` modules.
 
 When changing a token that is mirrored in an app asset, update both copies in the same commit.
 

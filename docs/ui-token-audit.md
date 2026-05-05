@@ -36,14 +36,14 @@ UI token audit found 709 migration risks.
 | --- | --- | --- |
 | `allowed` | Theme palette, semantic token, or harmless reset value. | Keep unless the token model changes. |
 | `component` | Raw color or literal spacing inside component/surface CSS. | Migrate to semantic/component tokens during surface redesign. |
-| `fallback` | JS editor fallback inside a `var(...)` chain. | Keep until CodeMirror tokens are guaranteed for all modes. |
+| `fallback` | JS editor fallback inside a `var(...)` chain. | Track and remove when semantic tokens cover the runtime surface. |
 | `data` | User-facing data value such as tag colors. | Keep as data, but do not use as component styling. |
 
 ## Main Findings
 
 - Desktop shared CSS and desktop runtime CSS are mostly synchronized, but both contain component-level spacing literals.
 - Mobile CSS still has many standalone rgba/hex values and should be tokenized before serious mobile UI work.
-- `js/src/editor-theme.js` has fallback colors in CodeMirror styles. These are acceptable short term but should shrink as semantic tokens stabilize.
+- Tiptap runtime styling now lives in CSS tokenized classes instead of a separate JS theme file. Future fallback color debt should be reduced in CSS or focused node-view modules.
 - Rust UI still contains a few raw color data defaults for tags and language/view metadata. These should remain data values unless they become visual chrome.
 - Repeated selectors show where primitives are needed most: Preview/Markdown, tool icons, buttons, view mode controls, tooltips, tree rows, and empty states.
 - Button, icon-button, editor-tool, and view-mode option state feedback now has a first local `--mn-primitive-*` contract for hover, active, focus, disabled, and destructive states. Continue moving repeated state values into that contract before changing visual tone.

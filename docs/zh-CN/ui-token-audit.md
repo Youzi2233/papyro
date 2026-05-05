@@ -36,14 +36,14 @@ UI token audit found 709 migration risks.
 | --- | --- | --- |
 | `allowed` | 主题色板、语义 token 或无害 reset 值。 | token 模型不变时保留。 |
 | `component` | 组件/界面 CSS 里的裸色值或字面量间距。 | 在界面重构时迁移到语义 token 或组件 token。 |
-| `fallback` | JS 编辑器 `var(...)` 链中的 fallback 色值。 | 短期可保留，等 CodeMirror token 稳定后再减少。 |
+| `fallback` | JS 编辑器 `var(...)` 链中的 fallback 色值。 | 等语义 token 覆盖 runtime surface 后逐步移除。 |
 | `data` | 面向用户的数据值，例如标签颜色。 | 作为数据保留，但不要当成 chrome 样式。 |
 
 ## 主要发现
 
 - 桌面共享 CSS 和桌面运行时 CSS 基本同步，但两边都有组件级间距字面量。
 - 移动端 CSS 还有不少独立 rgba/hex，认真做移动端 UI 前需要先 token 化。
-- `js/src/editor-theme.js` 在 CodeMirror 样式里有 fallback 色值，短期可接受，但应随着语义 token 稳定逐步减少。
+- Tiptap runtime 样式现在主要位于 CSS token 化 class，而不是单独的 JS theme 文件。后续 fallback 色值债务应在 CSS 或聚焦的 node-view 模块中继续减少。
 - Rust UI 里有少量标签色和语言/视图元信息色值。它们属于数据值，除非变成 chrome 样式，否则不需要直接改掉。
 - 重复 selector 显示最需要 primitives 的区域：Preview/Markdown、工具图标、按钮、视图模式控件、tooltip、文件树行、空状态。
 - button、icon button、editor tool 和 view-mode option 的状态反馈已经有第一批局部 `--mn-primitive-*` 契约，覆盖 hover、active、focus、disabled、destructive。后续调整视觉语气前，应继续先把重复状态值迁入这个契约。

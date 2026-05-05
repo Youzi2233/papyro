@@ -31,9 +31,11 @@ flowchart LR
     source <--> preview
 ```
 
-## Tiptap Migration Contract
+## Runtime Contract
 
-The `feat-tiptap` branch introduces Tiptap behind the existing `window.papyroEditor` facade. During the migration, CodeMirror remains the default runtime until Source, Hybrid, Preview, IME, paste, and block editing meet the acceptance bar.
+The `feat-tiptap` branch now runs Tiptap/ProseMirror behind the existing
+`window.papyroEditor` facade. Rust and Dioxus still talk to the stable facade;
+they do not depend on Tiptap internals.
 
 Content synchronization must flow through `MarkdownSyncController`:
 
@@ -51,7 +53,7 @@ Content synchronization must flow through `MarkdownSyncController`:
 flowchart TD
     rust["Rust editor crates"]
     protocol["Protocol structs"]
-    js["CodeMirror runtime"]
+    js["Tiptap runtime"]
     ui["Dioxus editor host"]
     storage["App/storage flows"]
 
@@ -73,11 +75,11 @@ Rust owns:
 
 JS owns:
 
-- CodeMirror state and extensions
+- Tiptap editor state and extensions
 - input commands and paste behavior
 - selection, cursor, scroll, and IME handling
-- Hybrid decorations and widget behavior
-- Mermaid, KaTeX, CodeMirror language support
+- Hybrid rich-text behavior and node views
+- Mermaid, KaTeX, table, task list, image, and code block extensions
 
 The app layer owns:
 
@@ -126,7 +128,7 @@ The command palette includes insertion commands for common writing structures: t
 
 Hybrid table widgets support direct cell editing, Tab/Shift+Tab cell navigation, and row/column actions relative to the focused cell. The Markdown source remains the storage format, but normal table edits should not require hand-aligning pipe syntax.
 
-Hybrid selection color is driven by the shared `--mn-hybrid-selection` token. Code blocks, inline code, links, table inputs, and Mermaid source editors should therefore use the same selection tone as normal editor text instead of mixing native browser blue with CodeMirror selection layers.
+Hybrid selection color is driven by the shared `--mn-hybrid-selection` token. Code blocks, inline code, links, table inputs, and Mermaid source editors should therefore use the same selection tone as normal editor text instead of mixing native browser blue with custom editor selection layers.
 
 Hybrid pointer behavior must distinguish glyphs from line-height whitespace. Hovering or clicking directly on text uses edit semantics for that line. Hovering the vertical gap below a glyph run stays in normal semantics and should target the next line when selecting. Hovering the gap above a glyph run should target the previous line. Selection backgrounds should be clipped to glyph/text rectangles and must not paint the whole line-height gap.
 
@@ -142,10 +144,10 @@ Current Rust-side stack:
 
 Current JS-side stack:
 
-- CodeMirror 6 for editor state and rendering
+- Tiptap/ProseMirror for editor state and rendering
+- `@tiptap/markdown` for Markdown parse/serialize round-trips
 - Mermaid for diagrams
 - KaTeX for math
-- `codemirror-lang-mermaid` for Mermaid syntax support
 
 Before adopting additional Markdown styles or parser/render libraries, use [Markdown style references](markdown-style-references.md). Do not copy large third-party styles blindly. Papyro needs a coherent app design system.
 

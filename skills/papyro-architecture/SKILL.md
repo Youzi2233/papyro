@@ -23,7 +23,7 @@ crates/ui      Dioxus components, layouts, view models, i18n
 crates/storage SQLite, filesystem, watcher, workspace scan
 crates/platform dialogs, app data, reveal, external URLs
 crates/editor  Markdown summary, render, protocol
-js/            CodeMirror runtime source
+js/            Tiptap runtime source and editor facade
 ```
 
 ## Decision Rules
@@ -34,7 +34,7 @@ js/            CodeMirror runtime source
 - File or SQLite behavior: start in `crates/storage`.
 - System integration: start in `crates/platform`.
 - Markdown render or protocol: start in `crates/editor`.
-- Cursor, selection, IME, paste, or decoration behavior: start in `js/src`.
+- Cursor, selection, IME, paste, Markdown sync, or Tiptap node-view behavior: start in `js/src`.
 
 ## Data Flow
 
@@ -64,4 +64,4 @@ Dioxus component
 - settings should become an independent process-level window
 - OS Markdown file-open events should route through one app use case
 - active tab should drive the visible workspace tree when tabs span roots
-- Hybrid editor behavior must become stable before more decoration is added
+- Hybrid editor behavior now centers on Tiptap/ProseMirror; keep runtime modules focused and test-covered

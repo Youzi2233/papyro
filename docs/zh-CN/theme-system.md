@@ -9,7 +9,7 @@ flowchart TD
     palette["基础色板 token<br/>bg、surface、ink、accent、state"]
     semantic["语义契约<br/>chrome、editor、markdown、code、selection、focus、status"]
     components["Rust UI 和 CSS 组件"]
-    editor["CodeMirror runtime"]
+    editor["Tiptap runtime"]
     preview["Markdown preview"]
 
     palette --> semantic
@@ -24,7 +24,7 @@ flowchart TD
 | --- | --- | --- |
 | 基础色板 | `--mn-bg`、`--mn-surface`、`--mn-ink`、`--mn-accent` | 主题作者和底层 CSS |
 | 应用界面 | `--mn-chrome-bg`、`--mn-chrome-surface`、`--mn-chrome-ink-muted` | 侧边栏、顶部栏、弹窗、命令面板、状态栏 |
-| 编辑画布 | `--mn-editor-canvas-bg`、`--mn-editor-canvas-ink`、`--mn-editor-active-line-bg` | CodeMirror host 和源码编辑 UI |
+| 编辑画布 | `--mn-editor-canvas-bg`、`--mn-editor-canvas-ink`、`--mn-editor-active-line-bg` | Tiptap host 和源码编辑 UI |
 | Markdown | `--mn-markdown-ink`、`--mn-markdown-muted-ink`、`--mn-markdown-link` | Preview 和 Hybrid 渲染后的 Markdown |
 | 代码 | `--mn-code-surface`、`--mn-code-block-surface`、`--mn-code-ink`、`--mn-code-border` | 行内代码、代码块、Mermaid 源码编辑区 |
 | 选区和焦点 | `--mn-selection-bg`、`--mn-selection-ink`、`--mn-focus-ring` | 文本选区、控件焦点、编辑器光标状态 |
@@ -36,7 +36,7 @@ flowchart TD
 - `apps/desktop/assets/main.css` 是桌面端 runtime 使用的副本。
 - `assets/styles/modal.css` 和 `apps/desktop/assets/styles/modal.css` 放弹窗相关样式。
 - `assets/styles/markdown.css` 和 `apps/desktop/assets/styles/markdown.css` 放文档 surface、大纲、Preview 与渲染后 Markdown 的排版节奏样式。
-- `js/src/editor-theme.js` 在 CodeMirror 内部消费同一批 token。
+- Tiptap node views 和 runtime chrome 通过 `assets/styles/markdown.css` 中的 CSS class，以及聚焦的 `js/src/tiptap-*.js` 模块消费同一批 token。
 
 如果某个 token 在 app asset 中有副本，同一次提交里必须同步更新。
 

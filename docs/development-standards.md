@@ -24,7 +24,7 @@ These rules keep Papyro easy to change, review, and recover. They apply to human
 | `crates/storage` | SQLite, files, workspace scan, watcher | UI behavior |
 | `crates/platform` | dialogs, app data, reveal, external links | app state mutation |
 | `crates/editor` | Markdown summary, render, protocol | storage writes |
-| `js/` | CodeMirror runtime behavior | Rust state truth |
+| `js/` | Tiptap runtime behavior, editor facade, Markdown interaction helpers | Rust state truth |
 
 When dependency direction changes, run:
 
@@ -52,9 +52,14 @@ node scripts/check-workspace-deps.js
 
 ## Editor JS Rules
 
-Only edit these source files by hand:
+Only edit focused source files under `js/src/` by hand. The most common entry
+points are:
 
-- `js/src/editor.js`
+- `js/src/editor-tiptap-entry.js`
+- `js/src/tiptap-runtime.js`
+- `js/src/tiptap-*.js`
+- `js/src/editor-host-runtime.js`
+- `js/src/editor-runtime-bootstrap.js`
 - `js/src/editor-core.js`
 
 Then run:
