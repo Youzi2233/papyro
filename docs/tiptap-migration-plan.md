@@ -221,6 +221,7 @@ flowchart TD
 - [x] `node scripts/report-ui-tokens.js`
 - [x] `node scripts/report-file-lines.js`
 - [x] `git diff --check`
+- [x] Block drag-and-drop reorders blocks through the Papyro handle and keeps the transaction mover covered by JS tests.
 - [ ] Manual smoke before release: Source/Hybrid/Preview, Chinese IME, paste, undo, tables, math, Mermaid, images, outline, failed saves, and OS-opened Markdown files.
 
 ## Risks

@@ -227,7 +227,7 @@ flowchart LR
 - [x] 清理 CodeMirror npm 依赖和旧 JS runtime 测试。
 - [x] 清理剩余 `.cm-*` CSS，并把 host surface 改成语义化 Tiptap/editor class。
 - [x] 完成全量自动化验收并推送迁移收口提交。
-- [ ] 实现完整块拖拽排序体验；在正式实现前不要把动作柄标记为 draggable，避免给用户错误暗示。
+- [x] 通过 Papyro 块操作柄实现完整块拖拽排序体验，包含可测试的 ProseMirror transaction 移动逻辑和 drop indicator。
 - [ ] 完成发布候选手工 smoke：Source/Hybrid/Preview、中文 IME、粘贴、撤销、表格、公式、Mermaid、图片、大纲、保存失败、外部文件打开。
 
 ## Phase 4.5 - 主题、字体和 Markdown 样式

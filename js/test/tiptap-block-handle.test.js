@@ -1,7 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { createTiptapBlockHandleController } from "../src/tiptap-block-handle.js";
+import {
+  blockDropPlacement,
+  createTiptapBlockMove,
+  createTiptapBlockHandleController,
+} from "../src/tiptap-block-handle.js";
 
 function createElement({ tagName = "P", parent = null, rect = null } = {}) {
   const element = {
@@ -90,6 +94,10 @@ function createViewSpy() {
       calls.push(["update", state.target.kind, state.target.pos]);
       this.openActions = state.openActions;
       this.openInsert = state.openInsert;
+      this.startDrag = state.startDrag;
+    },
+    updateDrag(state) {
+      calls.push(["drag", state.open, state.drop?.placement ?? null, state.drop?.pos ?? null]);
     },
     hide() {
       calls.push(["hide"]);
@@ -262,4 +270,138 @@ test("Tiptap block handle opens the insert menu from the plus action", () => {
     ["setNodeSelection", 7],
     ["focus"],
   ]);
+});
+
+test("Tiptap block handle treats a non-moving pointer gesture as an action click", () => {
+  const { block, editor } = createEditor();
+  const menu = createMenuSpy();
+  const view = createViewSpy();
+  const controller = createTiptapBlockHandleController({ menu, view });
+  controller.attach({ editor, root: editor.view.dom, entry: { viewMode: "hybrid" } });
+  controller.handlePointerMove({ target: block });
+
+  assert.equal(view.startDrag({ clientX: 10, clientY: 10, preventDefault() {} }), true);
+  assert.equal(controller.finishDrag({ preventDefault() {} }), true);
+  assert.equal(view.openActions(), false);
+
+  assert.deepEqual(menu.calls, [
+    ["attach", "DIV"],
+    ["close"],
+    ["open", "paragraph", 7],
+  ]);
+});
+
+test("Tiptap block drop placement targets before and after positions", () => {
+  const block = createElement({
+    tagName: "P",
+    rect: { left: 80, top: 20, width: 360, height: 40, bottom: 60 },
+  });
+  const target = {
+    block,
+    pos: 12,
+    node: { nodeSize: 8 },
+  };
+
+  assert.deepEqual(blockDropPlacement(target, 24), {
+    target,
+    placement: "before",
+    pos: 12,
+    rect: { left: 80, top: 20, width: 360, height: 40, bottom: 60 },
+  });
+  assert.deepEqual(blockDropPlacement(target, 58), {
+    target,
+    placement: "after",
+    pos: 20,
+    rect: { left: 80, top: 20, width: 360, height: 40, bottom: 60 },
+  });
+});
+
+test("Tiptap block move creates an adjusted ProseMirror transaction", () => {
+  const calls = [];
+  const node = { nodeSize: 6, type: "paragraph" };
+  const tr = {
+    doc: {
+      resolve(pos) {
+        calls.push(["resolve", pos]);
+        return {
+          index: () => 0,
+          parent: {
+            canReplaceWith(index, end, type) {
+              calls.push(["canReplaceWith", index, end, type]);
+              return true;
+            },
+          },
+        };
+      },
+    },
+    delete(from, to) {
+      calls.push(["delete", from, to]);
+      return this;
+    },
+    insert(pos, insertedNode) {
+      calls.push(["insert", pos, insertedNode]);
+      return this;
+    },
+    scrollIntoView() {
+      calls.push(["scrollIntoView"]);
+      return this;
+    },
+  };
+  const editor = {
+    state: {
+      tr,
+      doc: {
+        nodeAt() {
+          return node;
+        },
+      },
+    },
+  };
+
+  const result = createTiptapBlockMove(
+    editor,
+    { pos: 4, node },
+    { pos: 22 },
+  );
+
+  assert.equal(result.pos, 16);
+  assert.equal(result.tr, tr);
+  assert.deepEqual(calls, [
+    ["delete", 4, 10],
+    ["resolve", 16],
+    ["canReplaceWith", 0, 0, "paragraph"],
+    ["insert", 16, node],
+    ["scrollIntoView"],
+  ]);
+});
+
+test("Tiptap block move rejects self drops and invalid parents", () => {
+  const node = { nodeSize: 6, type: "paragraph" };
+  const editor = {
+    state: {
+      tr: {
+        doc: {
+          resolve() {
+            return {
+              index: () => 0,
+              parent: {
+                canReplaceWith: () => false,
+              },
+            };
+          },
+        },
+        delete() {
+          return this;
+        },
+      },
+      doc: {
+        nodeAt() {
+          return node;
+        },
+      },
+    },
+  };
+
+  assert.equal(createTiptapBlockMove(editor, { pos: 4, node }, { pos: 7 }), null);
+  assert.equal(createTiptapBlockMove(editor, { pos: 4, node }, { pos: 20 }), null);
 });

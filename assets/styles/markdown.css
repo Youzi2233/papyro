@@ -554,6 +554,10 @@
     box-shadow: 0 0 0 3px var(--mn-accent-wash);
 }
 
+.mn-tiptap-block-dragging {
+    cursor: grabbing;
+}
+
 .mn-tiptap-slash-menu {
     position: fixed;
     z-index: 150;
@@ -804,6 +808,12 @@
     color: var(--mn-ink-3);
     box-shadow: var(--mn-shadow-xs);
     transition: var(--mn-transition-theme);
+}
+
+.mn-tiptap-block-handle[data-dragging="true"] .mn-tiptap-block-handle-button {
+    cursor: grabbing;
+    border-color: var(--mn-accent);
+    color: var(--mn-accent);
 }
 
 .mn-tiptap-block-handle-insert {

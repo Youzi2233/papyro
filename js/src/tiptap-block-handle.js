@@ -29,6 +29,8 @@ const DEFAULT_HANDLE_SIZE = 28;
 const CONTROL_GAP = 4;
 const BRIDGE_PADDING = 8;
 const SELECTED_CLASS = "mn-tiptap-block-selected";
+const DRAGGING_CLASS = "mn-tiptap-block-dragging";
+const DRAG_THRESHOLD_PX = 5;
 
 function isElement(value) {
   return value && value.nodeType === 1;
@@ -42,6 +44,16 @@ function closestBlockElement(target, editorDom) {
   const block = target.closest?.(BLOCK_SELECTOR) ?? null;
   if (!block || block === editorDom || !editorDom.contains?.(block)) {
     return null;
+  }
+
+  const table = block.closest?.(".mn-tiptap-table, table") ?? null;
+  if (table && table !== editorDom && editorDom.contains?.(table)) {
+    return table;
+  }
+
+  const listItem = block.closest?.("li") ?? null;
+  if (listItem && listItem !== editorDom && editorDom.contains?.(listItem)) {
+    return listItem;
   }
 
   return block;
@@ -98,14 +110,112 @@ function targetEquals(left, right) {
   return left?.block === right?.block && left?.pos === right?.pos && left?.kind === right?.kind;
 }
 
+function targetEndPos(target) {
+  const nodeSize = target?.node?.nodeSize ?? target?.block?.pmViewDesc?.node?.nodeSize ?? 0;
+  return Number.isFinite(target?.pos) ? target.pos + Math.max(1, nodeSize) : null;
+}
+
+function dropTargetFromEvent(event, editor, fallbackDocument) {
+  const x = Number(event?.clientX);
+  const y = Number(event?.clientY);
+  const element =
+    Number.isFinite(x) && Number.isFinite(y)
+      ? fallbackDocument?.elementFromPoint?.(x, y)
+      : null;
+  return blockTargetFromEvent({ target: element ?? event?.target }, editor);
+}
+
+export function blockDropPlacement(target, clientY) {
+  const rect = target?.block?.getBoundingClientRect?.();
+  if (!target || !rect || !Number.isFinite(target.pos)) return null;
+
+  const y = Number(clientY);
+  const midpoint = rect.top + rect.height / 2;
+  const placement = Number.isFinite(y) && y < midpoint ? "before" : "after";
+  const pos = placement === "before" ? target.pos : targetEndPos(target);
+  if (!Number.isFinite(pos)) return null;
+
+  return {
+    target,
+    placement,
+    pos,
+    rect,
+  };
+}
+
+export function createTiptapBlockMove(editor, source, drop) {
+  const state = editor?.state;
+  const doc = state?.doc;
+  const from = source?.pos;
+  const node = source?.node ?? (Number.isFinite(from) ? doc?.nodeAt?.(from) : null);
+  const nodeSize = node?.nodeSize ?? 0;
+  const to = Number.isFinite(from) ? from + Math.max(1, nodeSize) : null;
+  const dropPos = drop?.pos;
+
+  if (
+    !state?.tr ||
+    !doc ||
+    !node ||
+    !Number.isFinite(from) ||
+    !Number.isFinite(to) ||
+    !Number.isFinite(dropPos) ||
+    to <= from
+  ) {
+    return null;
+  }
+
+  if (dropPos >= from && dropPos <= to) {
+    return null;
+  }
+
+  const insertPos = dropPos > to ? dropPos - (to - from) : dropPos;
+  if (!Number.isFinite(insertPos) || insertPos < 0) {
+    return null;
+  }
+
+  try {
+    let tr = state.tr.delete(from, to);
+    const resolved = tr.doc?.resolve?.(insertPos);
+    if (
+      node.type &&
+      typeof resolved?.parent?.canReplaceWith === "function" &&
+      resolved.parent.canReplaceWith(resolved.index(), resolved.index(), node.type) === false
+    ) {
+      return null;
+    }
+
+    tr = tr.insert(insertPos, node);
+    tr = typeof tr.scrollIntoView === "function" ? tr.scrollIntoView() : tr;
+    return { tr, pos: insertPos };
+  } catch (_error) {
+    return null;
+  }
+}
+
+export function moveTiptapBlock(editor, source, drop) {
+  const move = createTiptapBlockMove(editor, source, drop);
+  if (!move) return false;
+
+  editor?.view?.dispatch?.(move.tr);
+  if (typeof editor?.commands?.setNodeSelection === "function") {
+    editor.commands.setNodeSelection(move.pos);
+  } else {
+    editor?.commands?.setTextSelection?.(move.pos);
+  }
+  editor?.commands?.focus?.();
+  return true;
+}
+
 class TiptapBlockHandleView {
   #document;
   #window;
   #root = null;
   #insertButton = null;
   #actionButton = null;
+  #dropIndicator = null;
   #onAction = null;
   #onInsert = null;
+  #onDragStart = null;
 
   constructor({ document = defaultDocument(), window = defaultWindow(document) } = {}) {
     this.#document = document;
@@ -128,7 +238,16 @@ class TiptapBlockHandleView {
       "mn-tiptap-block-handle-button mn-tiptap-block-handle-action",
     );
     const icon = createElement(this.#document, "span", "mn-tiptap-block-handle-icon");
-    if (!root || !insertButton || !insertIcon || !actionButton || !icon) return;
+    const dropIndicator = createElement(this.#document, "div", "mn-tiptap-block-drop-indicator hidden");
+    if (!root || !insertButton || !insertIcon || !actionButton || !icon || !dropIndicator) return;
+
+    dropIndicator.style.position = "fixed";
+    dropIndicator.style.zIndex = "154";
+    dropIndicator.style.height = "2px";
+    dropIndicator.style.borderRadius = "999px";
+    dropIndicator.style.background = "var(--mn-accent)";
+    dropIndicator.style.boxShadow = "0 0 0 3px var(--mn-accent-wash)";
+    dropIndicator.style.pointerEvents = "none";
 
     insertButton.type = "button";
     insertButton.title = "Insert block below";
@@ -146,8 +265,9 @@ class TiptapBlockHandleView {
     actionButton.setAttribute("aria-label", "Block actions");
     actionButton.addEventListener("pointerdown", (event) => {
       event.preventDefault();
+      this.#onDragStart?.(event);
     });
-    actionButton.addEventListener("mousedown", (event) => {
+    actionButton.addEventListener("click", (event) => {
       event.preventDefault();
       this.#onAction?.(event);
     });
@@ -156,11 +276,14 @@ class TiptapBlockHandleView {
     actionButton.appendChild(icon);
     root.append(insertButton, actionButton);
     mountFloatingRoot(root, container, this.#document);
+    mountFloatingRoot(dropIndicator, container, this.#document);
 
     this.#root = root;
     this.#insertButton = insertButton;
     this.#actionButton = actionButton;
+    this.#dropIndicator = dropIndicator;
     setHidden(root, true);
+    setHidden(dropIndicator, true);
   }
 
   update(state) {
@@ -168,6 +291,7 @@ class TiptapBlockHandleView {
 
     this.#onAction = state.openActions ?? null;
     this.#onInsert = state.openInsert ?? null;
+    this.#onDragStart = state.startDrag ?? null;
     const rect = state.target.block.getBoundingClientRect?.();
     if (!rect) return;
 
@@ -185,10 +309,34 @@ class TiptapBlockHandleView {
     const top = rect.top + Math.max(0, (rect.height - size) / 2);
 
     this.#root.dataset.blockKind = state.target.kind;
+    this.#root.dataset.dragging = state.dragging ? "true" : "false";
     this.#root.style.left = `${left}px`;
     this.#root.style.top = `${top}px`;
     this.#root.style.width = `${bridgeWidth + BRIDGE_PADDING}px`;
+    this.#actionButton.style.cursor = state.dragging ? "grabbing" : "grab";
     setHidden(this.#root, false);
+  }
+
+  updateDrag(state) {
+    if (!this.#dropIndicator) return;
+    if (!state?.open || !state.drop?.rect) {
+      setHidden(this.#dropIndicator, true);
+      return;
+    }
+
+    const viewportWidth =
+      state.drop.target?.block?.ownerDocument?.documentElement?.clientWidth ??
+      this.#window?.innerWidth ??
+      1024;
+    const rect = state.drop.rect;
+    const left = Math.max(8, rect.left);
+    const width = Math.max(48, Math.min(rect.width, viewportWidth - left - 8));
+    const top = state.drop.placement === "before" ? rect.top : rect.bottom;
+
+    this.#dropIndicator.style.left = `${left}px`;
+    this.#dropIndicator.style.top = `${top - 1}px`;
+    this.#dropIndicator.style.width = `${width}px`;
+    setHidden(this.#dropIndicator, false);
   }
 
   contains(target) {
@@ -221,13 +369,16 @@ class TiptapBlockHandleView {
 
   hide() {
     setHidden(this.#root, true);
+    setHidden(this.#dropIndicator, true);
   }
 
   destroy() {
     this.#root?.remove?.();
+    this.#dropIndicator?.remove?.();
     this.#root = null;
     this.#insertButton = null;
     this.#actionButton = null;
+    this.#dropIndicator = null;
   }
 }
 
@@ -239,6 +390,8 @@ export class TiptapBlockHandleController {
   #entry = null;
   #root = null;
   #removeListeners = [];
+  #drag = null;
+  #suppressNextAction = false;
   #state = {
     open: false,
     target: null,
@@ -308,6 +461,10 @@ export class TiptapBlockHandleController {
   }
 
   handlePointerMove(event) {
+    if (this.#drag) {
+      return this.state;
+    }
+
     if (!this.#editor || this.#entry?.viewMode !== "hybrid") {
       this.close();
       return this.state;
@@ -337,6 +494,15 @@ export class TiptapBlockHandleController {
   }
 
   openActions() {
+    if (this.#suppressNextAction) {
+      this.#suppressNextAction = false;
+      return false;
+    }
+
+    return this.#openActions();
+  }
+
+  #openActions() {
     if (!this.#state.open || !this.#state.target || this.#entry?.viewMode !== "hybrid") {
       return false;
     }
@@ -356,6 +522,116 @@ export class TiptapBlockHandleController {
     return this.#insertMenu?.openAtBlock?.(this.#state.target, {
       anchorRect: this.#view.insertRect?.(),
     }) !== false;
+  }
+
+  startDrag(event) {
+    if (!this.#state.open || !this.#state.target || this.#entry?.viewMode !== "hybrid") {
+      return false;
+    }
+
+    const x = Number(event?.clientX);
+    const y = Number(event?.clientY);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) {
+      return false;
+    }
+
+    this.#selectTarget(this.#state.target);
+    this.#menu?.close?.();
+    this.#insertMenu?.close?.();
+    this.#drag = {
+      source: this.#state.target,
+      startX: x,
+      startY: y,
+      moved: false,
+      drop: null,
+    };
+    this.#root?.classList?.add?.(DRAGGING_CLASS);
+    this.#bindDragListeners();
+    this.#updateView();
+    return true;
+  }
+
+  handleDragMove(event) {
+    if (!this.#drag || !this.#editor || this.#entry?.viewMode !== "hybrid") {
+      return this.state;
+    }
+
+    const x = Number(event?.clientX);
+    const y = Number(event?.clientY);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) {
+      return this.state;
+    }
+
+    const distance = Math.hypot(x - this.#drag.startX, y - this.#drag.startY);
+    if (!this.#drag.moved && distance < DRAG_THRESHOLD_PX) {
+      return this.state;
+    }
+
+    this.#drag.moved = true;
+    event?.preventDefault?.();
+    const documentRef = this.#root?.ownerDocument ?? defaultDocument();
+    const target = dropTargetFromEvent(event, this.#editor, documentRef);
+    const drop = blockDropPlacement(target, y);
+    this.#drag.drop =
+      createTiptapBlockMove(this.#editor, this.#drag.source, drop) !== null ? drop : null;
+    this.#view.updateDrag?.({
+      open: this.#drag.moved && !!this.#drag.drop,
+      source: this.#drag.source,
+      drop: this.#drag.drop,
+    });
+    return this.state;
+  }
+
+  finishDrag(event) {
+    if (!this.#drag) return false;
+
+    const drag = this.#drag;
+    const moved = drag.moved;
+    const drop = drag.drop;
+    this.#cleanupDrag();
+
+    if (!moved) {
+      this.#suppressNextAction = true;
+      return this.#openActions();
+    }
+
+    event?.preventDefault?.();
+    this.#suppressNextAction = true;
+    const ok = moveTiptapBlock(this.#editor, drag.source, drop);
+    this.close();
+    return ok;
+  }
+
+  #bindDragListeners() {
+    const documentRef = this.#root?.ownerDocument ?? defaultDocument();
+    if (!documentRef?.addEventListener) return;
+
+    const onMove = (event) => this.handleDragMove(event);
+    const onEnd = (event) => this.finishDrag(event);
+    const onCancel = () => this.cancelDrag();
+    documentRef.addEventListener("pointermove", onMove, true);
+    documentRef.addEventListener("pointerup", onEnd, true);
+    documentRef.addEventListener("pointercancel", onCancel, true);
+    this.#drag.removeListeners = [
+      () => documentRef.removeEventListener?.("pointermove", onMove, true),
+      () => documentRef.removeEventListener?.("pointerup", onEnd, true),
+      () => documentRef.removeEventListener?.("pointercancel", onCancel, true),
+    ];
+  }
+
+  cancelDrag() {
+    if (!this.#drag) return false;
+    this.#cleanupDrag();
+    this.#view.updateDrag?.({ open: false, drop: null });
+    return true;
+  }
+
+  #cleanupDrag() {
+    this.#drag?.removeListeners?.forEach?.((remove) => remove());
+    this.#drag = null;
+    this.#root?.classList?.remove?.(DRAGGING_CLASS);
+    this.#view.updateDrag?.({ open: false, drop: null });
+    this.#updateView();
   }
 
   handleKeyDown(event) {
@@ -380,8 +656,10 @@ export class TiptapBlockHandleController {
     this.#view.update?.(
       {
         ...this.#state,
+        dragging: !!this.#drag,
         openActions: () => this.openActions(),
         openInsert: () => this.openInsert(),
+        startDrag: (event) => this.startDrag(event),
       },
       this.#editor,
     );
@@ -412,6 +690,7 @@ export class TiptapBlockHandleController {
   }
 
   close() {
+    this.cancelDrag();
     if (!this.#state.open) return;
     this.#clearSelectedBlock();
     this.#state = {
@@ -432,11 +711,6 @@ export class TiptapBlockHandleController {
     this.#entry = null;
     this.#root = null;
   }
-}
-
-function targetEndPos(target) {
-  const nodeSize = target?.node?.nodeSize ?? target?.block?.pmViewDesc?.node?.nodeSize ?? 0;
-  return Number.isFinite(target?.pos) ? target.pos + Math.max(1, nodeSize) : null;
 }
 
 export function createTiptapBlockHandleController(options) {
