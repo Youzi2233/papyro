@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  bindPointerActivation,
   clamp,
   commandElementId,
   createElement,
@@ -200,4 +201,41 @@ test("Tiptap UI primitives scroll active descendants into view", () => {
   );
   assert.deepEqual(calls, [{ block: "nearest", inline: "nearest" }]);
   assert.equal(scrollActiveDescendantIntoView(root, "menu", [], 0), false);
+});
+
+test("Tiptap UI primitives bind pointer activation with click fallback", () => {
+  const listeners = new Map();
+  const calls = [];
+  const element = {
+    addEventListener(type, listener) {
+      listeners.set(type, listener);
+    },
+  };
+  const event = () => ({
+    preventDefault() {
+      calls.push("preventDefault");
+    },
+    stopPropagation() {
+      calls.push("stopPropagation");
+    },
+  });
+
+  bindPointerActivation(element, () => {
+    calls.push("run");
+    return true;
+  });
+  listeners.get("click")(event());
+  listeners.get("pointerdown")(event());
+  listeners.get("click")(event());
+
+  assert.deepEqual(calls, [
+    "preventDefault",
+    "stopPropagation",
+    "run",
+    "preventDefault",
+    "stopPropagation",
+    "run",
+    "preventDefault",
+    "stopPropagation",
+  ]);
 });

@@ -10,6 +10,7 @@ import {
   tableToolsLabel,
 } from "./tiptap-i18n.js";
 import {
+  bindPointerActivation,
   createElement,
   createFloatingDismissController,
   defaultDocument,
@@ -667,32 +668,12 @@ function guardPointerEvent(event) {
 
 function bindPointerCommand(button, command, run) {
   if (!button || typeof run !== "function") return;
-  let pointerHandled = false;
   const execute = () => {
     if (command?.disabled) return false;
     return run() !== false;
   };
 
-  button.addEventListener("pointerdown", (event) => {
-    guardPointerEvent(event);
-    pointerHandled = execute();
-  });
-  button.addEventListener("click", (event) => {
-    guardPointerEvent(event);
-    if (!pointerHandled) {
-      execute();
-    }
-    pointerHandled = false;
-  });
-  button.addEventListener("auxclick", (event) => {
-    guardPointerEvent(event);
-    pointerHandled = false;
-  });
-  button.addEventListener("contextmenu", (event) => {
-    guardPointerEvent(event);
-    pointerHandled = false;
-  });
-  button.addEventListener("mousedown", (event) => event.preventDefault());
+  bindPointerActivation(button, execute);
 }
 
 export function selectTableAxis(editor, grid, axis, index) {

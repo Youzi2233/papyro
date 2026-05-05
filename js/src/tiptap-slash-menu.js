@@ -10,6 +10,7 @@ import {
 import { insertSlashParagraphAfterBlock } from "./tiptap-block-handle.js";
 import {
   clamp,
+  bindPointerActivation,
   commandElementId,
   createElement,
   createFloatingDismissController,
@@ -188,14 +189,7 @@ class TiptapSlashMenuView {
         cell.addEventListener("pointerenter", () => {
           this.#updateTablePickerSize(row, col);
         });
-        cell.addEventListener("pointerdown", (event) => {
-          event.preventDefault();
-          event.stopPropagation?.();
-          chooseTableSize(tablePicker, row, col);
-        });
-        cell.addEventListener("mousedown", (event) => {
-          event.preventDefault();
-        });
+        bindPointerActivation(cell, () => chooseTableSize(tablePicker, row, col));
         tablePickerGrid.appendChild(cell);
       }
     }
@@ -219,14 +213,7 @@ class TiptapSlashMenuView {
       description.textContent = option.description;
       copy.append(title, description);
       item.append(tone, copy);
-      item.addEventListener("pointerdown", (event) => {
-        event.preventDefault();
-        event.stopPropagation?.();
-        chooseCalloutKind(calloutPicker, option.kind);
-      });
-      item.addEventListener("mousedown", (event) => {
-        event.preventDefault();
-      });
+      bindPointerActivation(item, () => chooseCalloutKind(calloutPicker, option.kind));
       calloutPicker.appendChild(item);
     });
     root.append(list, empty, tablePicker, calloutPicker);
@@ -289,14 +276,7 @@ class TiptapSlashMenuView {
       copy.append(title, description);
 
       item.append(icon, copy, group);
-      item.addEventListener("pointerdown", (event) => {
-        event.preventDefault();
-        event.stopPropagation?.();
-        state.choose(command.id);
-      });
-      item.addEventListener("mousedown", (event) => {
-        event.preventDefault();
-      });
+      bindPointerActivation(item, () => state.choose(command.id));
       this.#list.appendChild(item);
     });
 

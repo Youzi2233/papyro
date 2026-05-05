@@ -179,3 +179,37 @@ export function scrollActiveDescendantIntoView(root, ownerId, commands, selected
 
   return false;
 }
+
+export function bindPointerActivation(element, run) {
+  if (!element || typeof run !== "function") return;
+
+  let pointerHandled = false;
+  const guard = (event) => {
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+  };
+  const execute = () => run() !== false;
+
+  element.addEventListener("pointerdown", (event) => {
+    guard(event);
+    pointerHandled = execute();
+  });
+  element.addEventListener("click", (event) => {
+    guard(event);
+    if (!pointerHandled) {
+      execute();
+    }
+    pointerHandled = false;
+  });
+  element.addEventListener("auxclick", (event) => {
+    guard(event);
+    pointerHandled = false;
+  });
+  element.addEventListener("contextmenu", (event) => {
+    guard(event);
+    pointerHandled = false;
+  });
+  element.addEventListener("mousedown", (event) => {
+    event.preventDefault();
+  });
+}

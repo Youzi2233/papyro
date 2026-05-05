@@ -437,6 +437,87 @@ test("Tiptap slash menu forwards table picker dimensions to the command", () => 
   ]);
 });
 
+test("Tiptap slash menu command items support click fallback without double-run", () => {
+  const { calls, editor } = createEditor("/h2");
+  const documentRef = createDocument();
+  const controller = createTiptapSlashMenuController({
+    dom: { document: documentRef },
+  });
+  controller.attach({ editor, root: {} });
+  const item = documentRef.body.children[0].children[0].children[0];
+  const events = [];
+  const event = () => ({
+    preventDefault() {
+      events.push("preventDefault");
+    },
+    stopPropagation() {
+      events.push("stopPropagation");
+    },
+  });
+
+  item.onclick(event());
+
+  assert.deepEqual(calls.slice(-3), [
+    ["deleteRange", 0, 3],
+    ["toggleHeading", 2],
+    ["focus"],
+  ]);
+  assert.equal(controller.state.open, false);
+
+  calls.length = 0;
+  const second = createTiptapSlashMenuController({
+    dom: { document: documentRef },
+  });
+  const fresh = createEditor("/h2");
+  second.attach({ editor: fresh.editor, root: {} });
+  const freshItem = documentRef.body.children[1].children[0].children[0];
+  freshItem.onpointerdown(event());
+  freshItem.onclick(event());
+
+  assert.deepEqual(fresh.calls.slice(-3), [
+    ["deleteRange", 0, 3],
+    ["toggleHeading", 2],
+    ["focus"],
+  ]);
+});
+
+test("Tiptap slash table picker supports click fallback without double-run", () => {
+  const { calls, editor } = createEditor("/table");
+  const documentRef = createDocument();
+  const controller = createTiptapSlashMenuController({
+    dom: { document: documentRef },
+  });
+  controller.attach({ editor, root: {} });
+  const cells = documentRef.body.children[0].querySelectorAll(".mn-tiptap-table-size-picker-cell");
+  const target = cells.find((cell) => cell.dataset.row === "4" && cell.dataset.col === "3");
+  const event = () => ({ preventDefault() {}, stopPropagation() {} });
+
+  target.onclick(event());
+
+  assert.deepEqual(calls.slice(-3), [
+    ["deleteRange", 0, 6],
+    ["insertTable", 4, 3, true],
+    ["focus"],
+  ]);
+
+  const fresh = createEditor("/table");
+  const second = createTiptapSlashMenuController({
+    dom: { document: documentRef },
+  });
+  second.attach({ editor: fresh.editor, root: {} });
+  const freshTarget = documentRef.body.children[1]
+    .querySelectorAll(".mn-tiptap-table-size-picker-cell")
+    .find((cell) => cell.dataset.row === "4" && cell.dataset.col === "3");
+  freshTarget.onpointerdown(event());
+  freshTarget.onclick(event());
+
+  assert.deepEqual(fresh.calls.slice(-3), [
+    ["deleteRange", 0, 6],
+    ["insertTable", 4, 3, true],
+    ["focus"],
+  ]);
+});
+
 test("Tiptap slash menu forwards callout kind choices to the command", () => {
   const { calls, editor } = createEditor("/callout");
   const view = createViewSpy();
