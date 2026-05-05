@@ -1,5 +1,5 @@
 use crate::parser::MarkdownBlockHintSet;
-use papyro_core::models::ViewMode;
+use papyro_core::models::{AppLanguage, ViewMode};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -44,6 +44,7 @@ pub enum EditorCommand {
     },
     SetPreferences {
         auto_link_paste: bool,
+        language: AppLanguage,
     },
     InsertMarkdown {
         markdown: String,
@@ -166,12 +167,13 @@ mod tests {
     fn serializes_set_preferences_command() {
         let value = serde_json::to_value(EditorCommand::SetPreferences {
             auto_link_paste: false,
+            language: AppLanguage::Chinese,
         })
         .unwrap();
 
         assert_eq!(
             value,
-            json!({ "type": "set_preferences", "auto_link_paste": false })
+            json!({ "type": "set_preferences", "auto_link_paste": false, "language": "Chinese" })
         );
     }
 

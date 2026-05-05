@@ -238,6 +238,8 @@ Tasks:
 - [x] Add the first Papyro-native block action menu controller.
 - [x] Match the official Tiptap Notion-like template quality bar for block menus: copy as Markdown, duplicate block, and delete are now available from the block menu, with pointer-first menu activation to avoid WebView/ProseMirror focus races.
 - [x] Wire the block action menu's advertised shortcuts so Ctrl/Cmd+C copies, Ctrl/Cmd+D duplicates, and Delete/Backspace removes the selected block while the menu is open.
+- [x] Stabilize block handle menus so left-click opens actions immediately, right-click does not leak the native WebView menu, and moving from the handle into a floating menu keeps the menu open until an outside click.
+- [x] Make the `+` insertion control create a slash trigger on the next line and open the insertion menu at that caret position instead of behaving like a hidden block action.
 - [x] Add a table-size picker to the slash/`+` insertion menu so users can insert 1x1 through 6x6 tables instead of only the fixed 3x2 default.
 - [x] Add the first Tiptap table floating toolbar with row/column insertion and deletion, cell merge/split, header toggles, and table deletion.
 - [x] Upgrade the Tiptap table toolbar into grouped column, row, cell, header, navigation, repair, and delete commands so table editing feels closer to mature document editors.
@@ -259,6 +261,7 @@ Tasks:
 - [x] Preserve Tiptap `save_requested`, `paste_image_requested`, and `runtime_error` protocol behavior; keep `runtime_ready` host-owned.
 - [x] Preserve Tiptap undo/redo through a dedicated history command controller and stable Rust message routing, without leaking history actions into selection-only format UI.
 - [x] Preserve Tiptap `set_preferences` state updates through a tested controller.
+- [x] Carry the app language through `set_preferences` so Tiptap slash menus, block actions, table toolbar labels, and handle affordances follow Chinese/English UI settings.
 - [x] Preserve Tiptap `auto_link_paste` behavior for selected-text URL paste.
 - [x] Guard slash and block action menu keyboard handling during IME composition so Chinese input confirmation is not mistaken for menu navigation or command execution.
 - [x] Preserve `set_block_hints` as a Tiptap migration compatibility message.

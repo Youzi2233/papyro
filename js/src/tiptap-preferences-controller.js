@@ -34,6 +34,9 @@ export class TiptapPreferencesController {
 
     this.#preferences = nextPreferences;
     this.attach(entry);
+    entry?.blockActionMenu?.refresh?.();
+    entry?.slashMenu?.refresh?.(entry?.editor);
+    entry?.tableToolbar?.refresh?.(entry?.editor);
     return {
       changed: true,
       preferences: this.preferences,

@@ -213,6 +213,8 @@ flowchart LR
 - [x] 增加第一版 Papyro 原生块操作菜单 controller。
 - [x] 对齐 Tiptap 官方 Notion-like editor template 的块菜单质量基线：块菜单补齐复制为 Markdown、重复块和删除等常用动作，并把菜单点击切到 pointer 事件，减少 WebView/ProseMirror 焦点竞争导致的无响应。
 - [x] 接通块操作菜单已展示的快捷键：菜单打开时 Ctrl/Cmd+C 复制、Ctrl/Cmd+D 重复、Delete/Backspace 删除当前块。
+- [x] 稳定块操作柄菜单：左键点击立即打开动作菜单，右键不再泄漏 WebView 原生菜单，鼠标从操作柄移入浮层菜单时保持菜单打开，直到外部点击再关闭。
+- [x] 让 `+` 插入入口在下一行创建 slash 触发符并在该光标位置打开插入菜单，而不是混入块动作菜单语义。
 - [x] 给 slash/`+` 插入菜单增加表格尺寸选择器，可直接选择 1x1 到 6x6 的表格尺寸，避免普通用户只能插入固定 3x2 表格。
 - [x] 增加第一版 Tiptap 表格浮动工具条，支持插入/删除行列、合并/拆分单元格、切换表头和删除表格。
 - [x] 把 Tiptap 表格工具条升级为列、行、单元格、表头、导航、修复、删除分组命令，让表格编辑更接近成熟文档产品。
@@ -235,6 +237,7 @@ flowchart LR
 - [x] 保持 Tiptap `save_requested`、`paste_image_requested` 和 `runtime_error` 协议行为；`runtime_ready` 继续由 editor host 负责。
 - [x] 通过独立 history command controller 保持 Tiptap 撤销/重做协议，并接入稳定 Rust 消息路由，同时避免把撤销/重做混进只服务选区的浮动格式栏。
 - [x] 通过测试覆盖的 controller 保持 Tiptap `set_preferences` 状态更新。
+- [x] 通过 `set_preferences` 把应用语言传入 Tiptap runtime，让 slash 菜单、块操作、表格工具条和操作柄文案跟随中英文设置。
 - [x] 保持 Tiptap 选中文字后粘贴 URL 的 `auto_link_paste` 行为。
 - [x] 在 IME composition 期间保护 slash 菜单和块操作菜单的键盘处理，避免中文输入确认被误当成菜单导航或命令执行。
 - [x] 把 `set_block_hints` 保留为 Tiptap 迁移期兼容消息。

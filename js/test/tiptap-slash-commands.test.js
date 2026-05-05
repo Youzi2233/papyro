@@ -110,6 +110,22 @@ test("Tiptap slash command query ranks exact aliases before fuzzy matches", () =
   );
 });
 
+test("Tiptap slash command query localizes visible command labels", () => {
+  const controller = createTiptapSlashCommandController();
+  const englishCommand = controller.query("h1")[0];
+
+  assert.deepEqual(controller.query("h1", { language: "Chinese" })[0], {
+    id: "heading-1",
+    title: "一级标题",
+    description: "大型章节标题",
+    group: "文本",
+    aliases: ["h1", "title"],
+    keywords: ["heading", "headline", "标题", "一级标题"],
+    priority: 20,
+    run: englishCommand.run,
+  });
+});
+
 test("Tiptap slash commands call rich editor commands when available", () => {
   const { calls, editor } = createFakeEditor();
   const controller = createTiptapSlashCommandController();

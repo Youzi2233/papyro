@@ -1,6 +1,13 @@
 import { createTiptapSlashCommandController } from "./tiptap-slash-commands.js";
 import { PAPYRO_CALLOUT_KIND_OPTIONS } from "./tiptap-markdown-snippets.js";
 import {
+  calloutOptionLabel,
+  insertTableLabel,
+  markdownCommandsLabel,
+  noCommandsLabel,
+  tableSizeLabel,
+} from "./tiptap-i18n.js";
+import {
   clamp,
   commandElementId,
   createElement,
@@ -29,6 +36,10 @@ function chooseCalloutKind(calloutPicker, kind) {
   calloutPicker?._choose?.(kind);
 }
 
+function entryLanguage(entry) {
+  return entry?.preferences?.language ?? "english";
+}
+
 function isTriggerBoundary(character) {
   return !character || /\s/.test(character);
 }
@@ -52,7 +63,19 @@ function textSelectionContext(editor) {
   };
 }
 
-function placeMenu(element, editor, range, anchorRect = null) {
+function coordsRectAtPos(editor, pos) {
+  if (!Number.isFinite(pos) || typeof editor?.view?.coordsAtPos !== "function") {
+    return null;
+  }
+
+  try {
+    return editor.view.coordsAtPos(pos);
+  } catch (_error) {
+    return null;
+  }
+}
+
+function placeMenu(element, editor, range, anchorRect = null, placement = "bottom") {
   if (element && anchorRect) {
     positionFloatingElement(element, anchorRect, {
       viewport: viewportSize(editor?.view?.dom, defaultWindow(editor?.view?.dom?.ownerDocument)),
@@ -61,7 +84,7 @@ function placeMenu(element, editor, range, anchorRect = null) {
         height: 220,
         margin: 10,
       },
-      placement: "bottom",
+      placement,
     });
     return;
   }
@@ -116,6 +139,7 @@ class TiptapSlashMenuView {
   #tablePicker = null;
   #tablePickerLabel = null;
   #calloutPicker = null;
+  #language = "english";
 
   constructor({ document = defaultDocument(), ownerId = "mn-tiptap-slash-menu" } = {}) {
     this.#document = document;
@@ -136,9 +160,9 @@ class TiptapSlashMenuView {
 
     root.id = this.#ownerId;
     root.role = "listbox";
-    root.setAttribute("aria-label", "Markdown block commands");
-    empty.textContent = "No commands";
-    tablePickerLabel.textContent = "Table 3 x 2";
+    root.setAttribute("aria-label", markdownCommandsLabel(this.#language));
+    empty.textContent = noCommandsLabel(this.#language);
+    tablePickerLabel.textContent = tableSizeLabel(this.#language, 3, 2);
     for (let row = 1; row <= TABLE_GRID_ROWS; row += 1) {
       for (let col = 1; col <= TABLE_GRID_COLS; col += 1) {
         const cell = createElement(this.#document, "button", "mn-tiptap-table-size-picker-cell");
@@ -146,7 +170,7 @@ class TiptapSlashMenuView {
         cell.type = "button";
         cell.dataset.row = String(row);
         cell.dataset.col = String(col);
-        cell.setAttribute("aria-label", `Insert ${row} by ${col} table`);
+        cell.setAttribute("aria-label", insertTableLabel(this.#language, row, col));
         cell.addEventListener("pointerenter", () => {
           this.#updateTablePickerSize(row, col);
         });
@@ -176,7 +200,7 @@ class TiptapSlashMenuView {
 
       item.type = "button";
       item.dataset.calloutKind = option.kind;
-      item.setAttribute("aria-label", `Insert ${option.title} callout`);
+      item.setAttribute("aria-label", calloutOptionLabel(this.#language, option.title));
       title.textContent = option.title;
       description.textContent = option.description;
       copy.append(title, description);
@@ -205,6 +229,18 @@ class TiptapSlashMenuView {
 
   update(state, editor) {
     if (!this.#root || !this.#list || !this.#empty || !state.open) return;
+
+    this.#language = state.language ?? "english";
+    this.#root.setAttribute("aria-label", markdownCommandsLabel(this.#language));
+    this.#empty.textContent = noCommandsLabel(this.#language);
+    this.#root
+      .querySelectorAll?.(".mn-tiptap-table-size-picker-cell")
+      ?.forEach?.((cell) => {
+        cell.setAttribute(
+          "aria-label",
+          insertTableLabel(this.#language, cell.dataset?.row, cell.dataset?.col),
+        );
+      });
 
     this.#list.replaceChildren();
     state.commands.forEach((command, index) => {
@@ -246,7 +282,7 @@ class TiptapSlashMenuView {
     updateActiveDescendant(this.#root, this.#ownerId, state.commands, state.selectedIndex);
     scrollActiveDescendantIntoView(this.#root, this.#ownerId, state.commands, state.selectedIndex);
     setHidden(this.#root, false);
-    placeMenu(this.#root, editor, state.range, state.anchorRect);
+    placeMenu(this.#root, editor, state.range, state.anchorRect, state.placement);
   }
 
   hide() {
@@ -289,7 +325,7 @@ class TiptapSlashMenuView {
 
   #updateTablePickerSize(rows, cols) {
     if (!this.#tablePicker || !this.#tablePickerLabel) return;
-    this.#tablePickerLabel.textContent = `Table ${rows} x ${cols}`;
+    this.#tablePickerLabel.textContent = tableSizeLabel(this.#language, rows, cols);
     this.#tablePicker
       .querySelectorAll?.(".mn-tiptap-table-size-picker-cell")
       ?.forEach?.((cell) => {
@@ -313,6 +349,7 @@ export class TiptapSlashMenuController {
     selectedIndex: 0,
     deleteRangeBeforeRun: true,
     anchorRect: null,
+    placement: "bottom",
   };
   #editor = null;
   #entry = null;
@@ -373,7 +410,10 @@ export class TiptapSlashMenuController {
       return this.state;
     }
 
-    const commands = this.#commands.query(trigger.query, { limit: this.#maxItems });
+    const commands = this.#commands.query(trigger.query, {
+      limit: this.#maxItems,
+      language: entryLanguage(this.#entry),
+    });
     const previousCommandId = this.#state.commands[this.#state.selectedIndex]?.id;
     const nextSelectedIndex = clamp(
       commands.findIndex((command) => command.id === previousCommandId),
@@ -392,11 +432,13 @@ export class TiptapSlashMenuController {
       selectedIndex: nextSelectedIndex < 0 ? 0 : nextSelectedIndex,
       deleteRangeBeforeRun: true,
       anchorRect: null,
+      placement: "bottom",
     };
     this.#view.update?.(
       {
         ...this.#state,
-      choose: (commandId, options) => this.choose(commandId, options),
+        language: entryLanguage(this.#entry),
+        choose: (commandId, options) => this.choose(commandId, options),
       },
       editor,
     );
@@ -417,28 +459,36 @@ export class TiptapSlashMenuController {
     }
 
     this.#editor.commands?.focus?.(position);
-    this.#editor.commands?.insertContentAt?.(position, "\n", {
+    this.#editor.commands?.insertContentAt?.(position, "\n/", {
       contentType: "markdown",
     });
     this.#editor.commands?.focus?.();
+    const slashPosition = position + 1;
+    this.#editor.commands?.setTextSelection?.(slashPosition + 1);
+    const slashRect = coordsRectAtPos(this.#editor, slashPosition + 1);
 
-    const commands = this.#commands.query("", { limit: this.#maxItems });
+    const commands = this.#commands.query("", {
+      limit: this.#maxItems,
+      language: entryLanguage(this.#entry),
+    });
     this.#state = {
       open: true,
       query: "",
       range: {
-        from: position,
-        to: position,
+        from: slashPosition,
+        to: slashPosition + 1,
       },
       commands,
       selectedIndex: 0,
-      deleteRangeBeforeRun: false,
-      anchorRect,
+      deleteRangeBeforeRun: true,
+      anchorRect: slashRect ?? anchorRect,
+      placement: "bottom",
     };
     this.#view.update?.(
       {
         ...this.#state,
-      choose: (commandId, options) => this.choose(commandId, options),
+        language: entryLanguage(this.#entry),
+        choose: (commandId, options) => this.choose(commandId, options),
       },
       this.#editor,
     );
@@ -456,7 +506,8 @@ export class TiptapSlashMenuController {
     this.#view.update?.(
       {
         ...this.#state,
-      choose: (commandId, options) => this.choose(commandId, options),
+        language: entryLanguage(this.#entry),
+        choose: (commandId, options) => this.choose(commandId, options),
       },
       this.#editor,
     );
@@ -523,6 +574,7 @@ export class TiptapSlashMenuController {
       selectedIndex: 0,
       deleteRangeBeforeRun: true,
       anchorRect: null,
+      placement: "bottom",
     };
     this.#view.hide?.();
     this.#dismiss.close();

@@ -214,12 +214,8 @@ test("Tiptap block action menu opens for Hybrid block targets", () => {
       "highlight-yellow",
       "highlight-blue",
       "highlight-green",
-      "table",
-      "math-block",
       "code-block",
-      "mermaid",
       "divider",
-      "image",
       "copy-block",
       "duplicate-block",
       "delete",
@@ -416,13 +412,12 @@ test("Tiptap block action menu renders grouped command sections", () => {
       "Blocks",
       "Color",
       "Highlight",
-      "Advanced",
       "Actions",
       "Danger",
     ],
   );
   assert.equal(list.children[0].children[1].dataset.commandId, "insert-before");
-  assert.equal(list.children[6].children[1].dataset.commandId, "table");
+  assert.equal(list.children[6].children[1].dataset.commandId, "copy-block");
 });
 
 test("Tiptap block action menu renders callout kind sections for callout blocks", () => {
@@ -447,7 +442,6 @@ test("Tiptap block action menu renders callout kind sections for callout blocks"
       "Callout",
       "Color",
       "Highlight",
-      "Advanced",
       "Actions",
       "Danger",
     ],

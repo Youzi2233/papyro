@@ -398,7 +398,10 @@ test("Tiptap runtime handles baseline Rust messages", () => {
 
   assert.equal(registry.get("tab-a").dioxus.id, "dioxus-a");
   assert.equal(registry.get("tab-a").viewMode, "source");
-  assert.deepEqual(registry.get("tab-a").preferences, { autoLinkPaste: false });
+  assert.deepEqual(registry.get("tab-a").preferences, {
+    autoLinkPaste: false,
+    language: "english",
+  });
   assert.equal(registry.get("tab-a").blockHints.revision, 7);
   assert.equal(registry.get("tab-a").dom.dataset.viewMode, "source");
   assert.deepEqual(calls, [
@@ -413,6 +416,8 @@ test("Tiptap runtime handles baseline Rust messages", () => {
     ["blockHandleRefresh"],
     ["slashMenuRefresh"],
     ["formatToolbarRefresh"],
+    ["tableToolbarRefresh"],
+    ["slashMenuRefresh"],
     ["tableToolbarRefresh"],
     ["blockHintsApply", 7],
     ["toggleHeading", 2],
@@ -718,15 +723,18 @@ test("Tiptap runtime routes source mode insert and focus through source pane", (
 test("Tiptap runtime applies preferences through the injected controller", () => {
   const preferenceCalls = [];
   const preferencesControllerFactory = () => ({
-    preferences: { autoLinkPaste: true },
+    preferences: { autoLinkPaste: true, language: "english" },
     attach(entry) {
       preferenceCalls.push(["attach"]);
-      entry.preferences = { autoLinkPaste: true };
+      entry.preferences = { autoLinkPaste: true, language: "english" };
       return entry.preferences;
     },
     apply(entry, message) {
-      preferenceCalls.push(["apply", message.auto_link_paste]);
-      entry.preferences = { autoLinkPaste: message.auto_link_paste !== false };
+      preferenceCalls.push(["apply", message.auto_link_paste, message.language]);
+      entry.preferences = {
+        autoLinkPaste: message.auto_link_paste !== false,
+        language: message.language,
+      };
       return { changed: true, preferences: entry.preferences };
     },
   });
@@ -740,10 +748,14 @@ test("Tiptap runtime applies preferences through the injected controller", () =>
   runtime.handleRustMessage("tab-a", {
     type: "set_preferences",
     auto_link_paste: false,
+    language: "Chinese",
   });
 
-  assert.deepEqual(preferenceCalls, [["attach"], ["apply", false]]);
-  assert.deepEqual(registry.get("tab-a").preferences, { autoLinkPaste: false });
+  assert.deepEqual(preferenceCalls, [["attach"], ["apply", false, "Chinese"]]);
+  assert.deepEqual(registry.get("tab-a").preferences, {
+    autoLinkPaste: false,
+    language: "Chinese",
+  });
 });
 
 test("Tiptap runtime reports parse failures without touching the editor", () => {

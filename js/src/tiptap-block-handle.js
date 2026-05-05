@@ -1,4 +1,8 @@
 import {
+  blockHandleActionsLabel,
+  blockHandleInsertLabel,
+} from "./tiptap-i18n.js";
+import {
   createElement,
   defaultDocument,
   defaultWindow,
@@ -250,9 +254,8 @@ class TiptapBlockHandleView {
     dropIndicator.style.pointerEvents = "none";
 
     insertButton.type = "button";
-    insertButton.title = "Insert block below";
-    insertButton.setAttribute("aria-label", "Insert block below");
     insertButton.addEventListener("pointerdown", (event) => {
+      if (event.button && event.button !== 0) return;
       event.preventDefault();
       event.stopPropagation?.();
       this.#onInsert?.(event);
@@ -261,11 +264,14 @@ class TiptapBlockHandleView {
       event.preventDefault();
       event.stopPropagation?.();
     });
+    insertButton.addEventListener("contextmenu", (event) => {
+      event.preventDefault();
+      event.stopPropagation?.();
+    });
 
     actionButton.type = "button";
-    actionButton.title = "Block actions";
-    actionButton.setAttribute("aria-label", "Block actions");
     actionButton.addEventListener("pointerdown", (event) => {
+      if (event.button && event.button !== 0) return;
       event.preventDefault();
       event.stopPropagation?.();
       this.#onDragStart?.(event);
@@ -273,7 +279,15 @@ class TiptapBlockHandleView {
     actionButton.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation?.();
+    });
+    actionButton.addEventListener("contextmenu", (event) => {
+      event.preventDefault();
+      event.stopPropagation?.();
       this.#onAction?.(event);
+    });
+    root.addEventListener("contextmenu", (event) => {
+      event.preventDefault();
+      event.stopPropagation?.();
     });
 
     insertButton.appendChild(insertIcon);
@@ -314,6 +328,16 @@ class TiptapBlockHandleView {
 
     this.#root.dataset.blockKind = state.target.kind;
     this.#root.dataset.dragging = state.dragging ? "true" : "false";
+    this.#insertButton.title = state.labels?.insert ?? "Insert block below";
+    this.#insertButton.setAttribute(
+      "aria-label",
+      state.labels?.insert ?? "Insert block below",
+    );
+    this.#actionButton.title = state.labels?.actions ?? "Block actions";
+    this.#actionButton.setAttribute(
+      "aria-label",
+      state.labels?.actions ?? "Block actions",
+    );
     this.#root.style.left = `${left}px`;
     this.#root.style.top = `${top}px`;
     this.#root.style.width = `${bridgeWidth + BRIDGE_PADDING}px`;
@@ -395,7 +419,6 @@ export class TiptapBlockHandleController {
   #root = null;
   #removeListeners = [];
   #drag = null;
-  #suppressNextAction = false;
   #state = {
     open: false,
     target: null,
@@ -425,6 +448,15 @@ export class TiptapBlockHandleController {
     };
   }
 
+  contains(target) {
+    return (
+      this.#view.contains?.(target) ||
+      this.#menu?.contains?.(target) ||
+      this.#insertMenu?.contains?.(target) ||
+      false
+    );
+  }
+
   attach({ editor, root, entry } = {}) {
     this.#editor = editor ?? null;
     this.#entry = entry ?? null;
@@ -441,7 +473,7 @@ export class TiptapBlockHandleController {
 
     const onMouseMove = (event) => this.handlePointerMove(event);
     const onMouseLeave = (event) => {
-      if (this.#view.contains?.(event?.relatedTarget)) return;
+      if (this.contains(event?.relatedTarget)) return;
       if (this.#state.open && this.#view.containsPointer?.(event, this.#state.target)) {
         this.#updateView();
         return;
@@ -478,6 +510,11 @@ export class TiptapBlockHandleController {
       return this.state;
     }
 
+    if (this.#hasOpenFloatingMenu()) {
+      this.#updateView();
+      return this.state;
+    }
+
     const target = blockTargetFromEvent(event, this.#editor);
     if (!target) {
       if (
@@ -506,11 +543,6 @@ export class TiptapBlockHandleController {
   }
 
   openActions() {
-    if (this.#suppressNextAction) {
-      this.#suppressNextAction = false;
-      return false;
-    }
-
     return this.#openActions();
   }
 
@@ -547,8 +579,7 @@ export class TiptapBlockHandleController {
       return false;
     }
 
-    this.#selectTarget(this.#state.target);
-    this.#menu?.close?.();
+    this.#openActions();
     this.#insertMenu?.close?.();
     this.#drag = {
       source: this.#state.target,
@@ -581,6 +612,8 @@ export class TiptapBlockHandleController {
 
     this.#drag.moved = true;
     event?.preventDefault?.();
+    this.#menu?.close?.();
+    this.#insertMenu?.close?.();
     const documentRef = this.#root?.ownerDocument ?? defaultDocument();
     const target = dropTargetFromEvent(event, this.#editor, documentRef);
     const drop = blockDropPlacement(target, y);
@@ -603,12 +636,10 @@ export class TiptapBlockHandleController {
     this.#cleanupDrag();
 
     if (!moved) {
-      this.#suppressNextAction = true;
-      return this.#openActions();
+      return true;
     }
 
     event?.preventDefault?.();
-    this.#suppressNextAction = true;
     const ok = moveTiptapBlock(this.#editor, drag.source, drop);
     this.close();
     return ok;
@@ -665,9 +696,14 @@ export class TiptapBlockHandleController {
   }
 
   #updateView() {
+    const language = this.#entry?.preferences?.language ?? "english";
     this.#view.update?.(
       {
         ...this.#state,
+        labels: {
+          insert: blockHandleInsertLabel(language),
+          actions: blockHandleActionsLabel(language),
+        },
         dragging: !!this.#drag,
         openActions: () => this.openActions(),
         openInsert: () => this.openInsert(),
@@ -699,6 +735,10 @@ export class TiptapBlockHandleController {
     this.#root
       ?.querySelectorAll?.(`.${SELECTED_CLASS}`)
       ?.forEach?.((block) => block.classList.remove(SELECTED_CLASS));
+  }
+
+  #hasOpenFloatingMenu() {
+    return this.#menu?.state?.open === true || this.#insertMenu?.state?.open === true;
   }
 
   close() {

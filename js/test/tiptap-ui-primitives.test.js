@@ -128,6 +128,30 @@ test("Tiptap UI primitives position top and left placements predictably", () => 
   assert.equal(menu.style.top, "40px");
 });
 
+test("Tiptap UI primitives position right placement with viewport fallback", () => {
+  const menu = createElement(createDocument(), "div", "");
+  menu.offsetWidth = 180;
+  menu.offsetHeight = 120;
+
+  positionFloatingElement(menu, { left: 80, right: 108, top: 44, bottom: 72 }, {
+    viewport: { width: 420, height: 300 },
+    size: { width: 180, height: 120, margin: 10 },
+    placement: "right",
+  });
+
+  assert.equal(menu.style.left, "120px");
+  assert.equal(menu.style.top, "44px");
+
+  positionFloatingElement(menu, { left: 360, right: 388, top: 60, bottom: 88 }, {
+    viewport: { width: 420, height: 300 },
+    size: { width: 180, height: 120, margin: 10 },
+    placement: "right",
+  });
+
+  assert.equal(menu.style.left, "168px");
+  assert.equal(menu.style.top, "60px");
+});
+
 test("Tiptap UI primitives expose viewport size and active descendant helpers", () => {
   const root = createElement(createDocument(), "div", "");
   updateActiveDescendant(root, "menu", [{ id: "one" }, { id: "two" }], 1);

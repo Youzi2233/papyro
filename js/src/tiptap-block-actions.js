@@ -7,6 +7,7 @@ import {
   PAPYRO_HIGHLIGHT_OPTIONS,
   PAPYRO_TEXT_COLOR_OPTIONS,
 } from "./tiptap-text-style.js";
+import { localizeBlockAction, normalizeTiptapLanguage } from "./tiptap-i18n.js";
 
 function normalizeCommandId(value) {
   return String(value ?? "").trim().toLowerCase();
@@ -377,6 +378,7 @@ export const PAPYRO_TIPTAP_BLOCK_ACTIONS = Object.freeze([
     group: "Advanced",
     icon: "table",
     priority: 50,
+    enabled: () => false,
     run: ({ editor }) =>
       runEditorCommand(
         editor,
@@ -392,6 +394,7 @@ export const PAPYRO_TIPTAP_BLOCK_ACTIONS = Object.freeze([
     group: "Advanced",
     icon: "math",
     priority: 51,
+    enabled: () => false,
     run: ({ editor }) =>
       runEditorCommand(
         editor,
@@ -407,6 +410,7 @@ export const PAPYRO_TIPTAP_BLOCK_ACTIONS = Object.freeze([
     group: "Advanced",
     icon: "mermaid",
     priority: 52,
+    enabled: () => false,
     run: ({ editor }) =>
       runEditorCommand(
         editor,
@@ -422,6 +426,7 @@ export const PAPYRO_TIPTAP_BLOCK_ACTIONS = Object.freeze([
     group: "Advanced",
     icon: "image",
     priority: 53,
+    enabled: () => false,
     run: ({ editor }) =>
       runEditorCommand(
         editor,
@@ -470,9 +475,11 @@ export const PAPYRO_TIPTAP_BLOCK_ACTIONS = Object.freeze([
 
 export class TiptapBlockActionController {
   #commands;
+  #language;
 
-  constructor(commands = PAPYRO_TIPTAP_BLOCK_ACTIONS) {
+  constructor(commands = PAPYRO_TIPTAP_BLOCK_ACTIONS, { language = "english" } = {}) {
     this.#commands = Object.freeze([...commands]);
+    this.#language = normalizeTiptapLanguage(language);
   }
 
   get commands() {
@@ -484,7 +491,12 @@ export class TiptapBlockActionController {
     return this.#commands.find((command) => command.id === id) ?? null;
   }
 
+  setLanguage(language) {
+    this.#language = normalizeTiptapLanguage(language);
+  }
+
   list(context = {}) {
+    const language = normalizeTiptapLanguage(context.language ?? context.entry?.preferences?.language ?? this.#language);
     return this.#commands
       .filter((command) => command.enabled(context) !== false)
       .sort((left, right) => left.priority - right.priority)
@@ -496,7 +508,8 @@ export class TiptapBlockActionController {
         icon: command.icon,
         shortcut: command.shortcut,
         tone: command.tone,
-      }));
+      }))
+      .map((command) => localizeBlockAction(command, language));
   }
 
   run(commandId, context = {}) {

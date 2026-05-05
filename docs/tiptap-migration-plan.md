@@ -167,6 +167,8 @@ flowchart TD
   - The block handle now keeps callbacks stable across repeated hover refreshes and triggers `+` insertion on pointer interaction so WebView click ordering does not leave the control inert.
   - The block handle hover bridge now survives the gutter gap between text and floating controls, so `+` insertion and action handles remain reachable during pointer movement.
   - The block action menu now moves closer to the official Notion-like template's Drag Context Menu with copy-as-Markdown, duplicate-block, delete actions, and the advertised Ctrl/Cmd+C, Ctrl/Cmd+D, and Delete/Backspace shortcuts; the slash/`+` insertion menu adds a 1x1 through 6x6 table-size picker so table insertion is no longer fixed to one default shape.
+  - The block action handle now opens its menu immediately from left-click, suppresses the native WebView context menu on right-click, highlights the active block while the menu is open, and keeps the floating menu alive when the pointer moves from the gutter controls into the menu surface.
+  - The `+` handle now inserts a slash trigger on the next line and opens the insertion menu at that caret position, keeping block actions and content insertion as separate, predictable affordances.
   - The floating format toolbar now exposes a density state, switches to compact controls in narrow viewports or constrained selection positions, and runs commands from pointerdown to avoid WebView focus races.
   - The slash/`+` insertion menu, block action menu, floating format toolbar, and table toolbar now share a dismiss lifecycle: outside clicks, scrolling, and window changes close overlays, while interactions inside the current block or table keep context alive.
   - Slash and block action menus now share active-descendant scrolling so keyboard navigation keeps the selected command visible in long menus.
@@ -190,6 +192,7 @@ flowchart TD
 - [x] Keep `runtime_ready` host-owned: Dioxus emits it after `ensureEditor` and `attachChannel`, so the Tiptap adapter must not duplicate it.
 - [x] Preserve `destroy` semantics, including stale host instance protection.
 - [x] Preserve `set_preferences` state updates through a Tiptap preferences controller.
+- [x] Preserve app language changes through `set_preferences` so Tiptap chrome can localize slash commands, block actions, handle labels, and table toolbar commands without remounting the editor.
 - [x] Treat `set_block_hints` as a compatibility message through a Tiptap block hints controller.
 - [x] Preserve `auto_link_paste` for selected-text URL paste through a Tiptap paste controller.
 - [x] Slash and block action menus now yield keyboard handling during IME composition so Chinese input confirmation is not consumed as menu navigation or command execution.

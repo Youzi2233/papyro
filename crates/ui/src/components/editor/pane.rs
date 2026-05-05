@@ -218,6 +218,7 @@ pub fn EditorPane(
 ) -> Element {
     let _ = (on_settings, on_quick_open, on_command_palette);
     let perf_started_at = perf_timer();
+    let i18n = use_i18n();
     let app = use_app_context();
     let editor_services = app.editor_services;
     let commands = app.commands;
@@ -240,6 +241,7 @@ pub fn EditorPane(
     };
     let editor_typography = EditorTypography::from_surface_model(&surface_model);
     let auto_link_paste = surface_model.auto_link_paste;
+    let app_language = i18n.language();
     let outline_visible = surface_model.outline_visible;
     let editor_style = editor_style(&editor_typography);
     let bridges: EditorBridgeMap = use_context_provider(|| Signal::new(HashMap::new()));
@@ -402,6 +404,7 @@ pub fn EditorPane(
                                                 host.is_active,
                                                 auto_link_paste,
                                             ),
+                                            language: app_language,
                                         }
                                     }
                                         }
@@ -447,6 +450,7 @@ pub fn EditorPane(
                                         false,
                                         auto_link_paste,
                                     ),
+                                    language: app_language,
                                 }
                             }
                         }

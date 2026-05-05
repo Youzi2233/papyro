@@ -304,13 +304,49 @@ test("Tiptap block actions expose menu metadata in priority order", () => {
   const controller = createTiptapBlockActionController();
   const commands = controller.list({ editor, target: { pos: 2, node: paragraph } });
 
-  assert.deepEqual(commands.find((command) => command.id === "table"), {
-    id: "table",
-    title: "Table",
-    description: "Insert a 3 by 2 table",
-    group: "Advanced",
-    icon: "table",
-    shortcut: "",
+  assert.deepEqual(commands.find((command) => command.id === "copy-block"), {
+    id: "copy-block",
+    title: "Copy block",
+    description: "Copy this block as Markdown",
+    group: "Actions",
+    icon: "copy",
+    shortcut: "Ctrl C",
+    tone: "default",
+  });
+});
+
+test("Tiptap block action menu keeps content insertion in the slash menu", () => {
+  const { editor, paragraph } = createStyleEditor();
+  const controller = createTiptapBlockActionController();
+  const commandIds = controller
+    .list({ editor, target: { pos: 2, node: paragraph } })
+    .map((command) => command.id);
+
+  assert.equal(commandIds.includes("table"), false);
+  assert.equal(commandIds.includes("math-block"), false);
+  assert.equal(commandIds.includes("mermaid"), false);
+  assert.equal(commandIds.includes("image"), false);
+});
+
+test("Tiptap block actions localize menu labels from editor preferences", () => {
+  const { editor, paragraph } = createStyleEditor();
+  const controller = createTiptapBlockActionController();
+
+  const command = controller
+    .list({
+      editor,
+      entry: { preferences: { language: "Chinese" } },
+      target: { pos: 2, node: paragraph },
+    })
+    .find((item) => item.id === "copy-block");
+
+  assert.deepEqual(command, {
+    id: "copy-block",
+    title: "复制当前块",
+    description: "以 Markdown 复制当前块",
+    group: "操作",
+    icon: "copy",
+    shortcut: "Ctrl C",
     tone: "default",
   });
 });

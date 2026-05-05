@@ -133,12 +133,17 @@ function createViewSpy() {
 
 function createMenuSpy() {
   const calls = [];
+  let open = false;
   return {
     calls,
+    get state() {
+      return { open };
+    },
     attach({ root }) {
       calls.push(["attach", root?.tagName ?? ""]);
     },
     close() {
+      open = false;
       calls.push(["close"]);
     },
     destroy() {
@@ -149,6 +154,7 @@ function createMenuSpy() {
       return event.key === "Escape";
     },
     open(target) {
+      open = true;
       calls.push(["open", target.kind, target.pos]);
     },
   };
@@ -156,12 +162,17 @@ function createMenuSpy() {
 
 function createInsertMenuSpy() {
   const calls = [];
+  let open = false;
   return {
     calls,
+    get state() {
+      return { open };
+    },
     attach({ root }) {
       calls.push(["attach", root?.tagName ?? ""]);
     },
     close() {
+      open = false;
       calls.push(["close"]);
     },
     destroy() {
@@ -172,6 +183,7 @@ function createInsertMenuSpy() {
       return event.key === "ArrowDown";
     },
     openAtBlock(target) {
+      open = true;
       calls.push(["openAtBlock", target.kind, target.pos, target.node.nodeSize]);
       return true;
     },
@@ -234,6 +246,49 @@ test("Tiptap block handle stays open while moving through the handle hover bridg
 
   assert.equal(controller.state.open, true);
   assert.notDeepEqual(view.calls.at(-1), ["hide"]);
+});
+
+test("Tiptap block handle stays open when the pointer enters an open floating menu", () => {
+  const { block, editor } = createEditor();
+  const menu = createMenuSpy();
+  const view = createViewSpy();
+  const controller = createTiptapBlockHandleController({ menu, view });
+  const menuElement = { id: "menu" };
+  controller.attach({ editor, root: editor.view.dom, entry: { viewMode: "hybrid" } });
+  controller.handlePointerMove({ target: block });
+  view.openActions();
+  menu.contains = (target) => target === menuElement;
+
+  editor.view.dom.listeners.get("mouseleave")({ relatedTarget: menuElement });
+
+  assert.equal(controller.state.open, true);
+  assert.equal(menu.state.open, true);
+  assert.notDeepEqual(view.calls.at(-1), ["hide"]);
+});
+
+test("Tiptap block handle localizes handle control labels", () => {
+  const { block, editor } = createEditor();
+  const view = {
+    ...createViewSpy(),
+    labels: null,
+    update(state) {
+      this.labels = state.labels;
+      createViewSpy().update?.(state);
+    },
+  };
+  const controller = createTiptapBlockHandleController({ view });
+  controller.attach({
+    editor,
+    root: editor.view.dom,
+    entry: { viewMode: "hybrid", preferences: { language: "Chinese" } },
+  });
+
+  controller.handlePointerMove({ target: block });
+
+  assert.deepEqual(view.labels, {
+    insert: "在下方插入块",
+    actions: "块操作",
+  });
 });
 
 test("Tiptap block handle keeps the bridge alive before the floating handle is the related target", () => {
@@ -363,13 +418,64 @@ test("Tiptap block handle treats a non-moving pointer gesture as an action click
 
   assert.equal(view.startDrag({ clientX: 10, clientY: 10, preventDefault() {} }), true);
   assert.equal(controller.finishDrag({ preventDefault() {} }), true);
-  assert.equal(view.openActions(), false);
+  assert.equal(view.openActions(), true);
 
   assert.deepEqual(menu.calls, [
     ["attach", "DIV"],
-    ["close"],
+    ["open", "paragraph", 7],
     ["open", "paragraph", 7],
   ]);
+});
+
+test("Tiptap block handle opens actions immediately on the handle pointer gesture", () => {
+  const { block, editor } = createEditor();
+  const menu = createMenuSpy();
+  const view = createViewSpy();
+  const controller = createTiptapBlockHandleController({ menu, view });
+  controller.attach({ editor, root: editor.view.dom, entry: { viewMode: "hybrid" } });
+  controller.handlePointerMove({ target: block });
+
+  assert.equal(view.startDrag({ clientX: 10, clientY: 10, preventDefault() {} }), true);
+
+  assert.equal(menu.state.open, true);
+  assert.deepEqual(menu.calls, [
+    ["attach", "DIV"],
+    ["open", "paragraph", 7],
+  ]);
+});
+
+test("Tiptap block handle keeps the action menu stable while the pointer leaves the block", () => {
+  const { block, editor } = createEditor();
+  const outside = createElement({ tagName: "SECTION" });
+  const menu = createMenuSpy();
+  const view = createViewSpy();
+  const controller = createTiptapBlockHandleController({ menu, view });
+  controller.attach({ editor, root: editor.view.dom, entry: { viewMode: "hybrid" } });
+  controller.handlePointerMove({ target: block });
+  view.openActions();
+
+  controller.handlePointerMove({ target: outside });
+
+  assert.equal(controller.state.open, true);
+  assert.equal(menu.state.open, true);
+  assert.notDeepEqual(view.calls.at(-1), ["hide"]);
+});
+
+test("Tiptap block handle closes menus when dragging really starts", () => {
+  const { block, editor } = createEditor();
+  const menu = createMenuSpy();
+  const insertMenu = createInsertMenuSpy();
+  const view = createViewSpy();
+  const controller = createTiptapBlockHandleController({ insertMenu, menu, view });
+  controller.attach({ editor, root: editor.view.dom, entry: { viewMode: "hybrid" } });
+  controller.handlePointerMove({ target: block });
+
+  view.startDrag({ clientX: 10, clientY: 10, preventDefault() {} });
+  controller.handleDragMove({ clientX: 40, clientY: 10, preventDefault() {}, target: block });
+
+  assert.equal(menu.state.open, false);
+  assert.equal(insertMenu.state.open, false);
+  assert.equal(view.calls.some((call) => call[0] === "drag"), true);
 });
 
 test("Tiptap block drop placement targets before and after positions", () => {

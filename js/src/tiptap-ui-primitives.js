@@ -116,6 +116,14 @@ export function positionFloatingElement(element, rect, { viewport, size, placeme
         ? clamp(fallbackLeft, margin, viewport.width - width - margin)
         : clamp(preferredLeft, margin, viewport.width - width - margin);
     top = clamp(rect.top, margin, Math.max(margin, viewport.height - height - margin));
+  } else if (placement === "right") {
+    const preferredLeft = rect.right + 12;
+    const fallbackLeft = rect.left - width - 12;
+    left =
+      preferredLeft + width + margin > viewport.width
+        ? clamp(fallbackLeft, margin, viewport.width - width - margin)
+        : clamp(preferredLeft, margin, viewport.width - width - margin);
+    top = clamp(rect.top, margin, Math.max(margin, viewport.height - height - margin));
   } else {
     const preferredTop = rect.bottom + 8;
     top =

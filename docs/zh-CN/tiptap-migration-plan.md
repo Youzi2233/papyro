@@ -179,6 +179,8 @@ flowchart TD
   - 块操作柄现在在重复 hover 刷新后仍保持回调稳定，并在 pointer 交互阶段触发 `+` 插入，避免 WebView click 顺序导致控件无响应。
   - 块操作柄 hover bridge 现在能覆盖正文与浮动控件之间的沟槽空隙，鼠标移向 `+` 和操作柄时不会提前消失。
   - 块操作菜单继续向官方 Notion-like template 的 Drag Context Menu 靠齐，新增复制为 Markdown、重复块和删除动作，并接通 Ctrl/Cmd+C、Ctrl/Cmd+D、Delete/Backspace 等已展示快捷键；slash/`+` 插入菜单新增 1x1 到 6x6 表格尺寸选择器，避免固定尺寸表格破坏写作流。
+  - 块操作柄现在左键点击即可立即打开菜单，右键会阻止 WebView 原生菜单泄漏；菜单打开时当前块保持高亮，鼠标从沟槽控件移入浮层菜单不会误关闭。
+  - `+` 操作柄现在会在下一行插入 slash 触发符，并在该光标位置打开插入菜单，让块动作和内容插入两个入口语义清晰分离。
   - 浮动格式栏现在暴露 density 状态，在窄窗口或选区空间受限时自动切换为 compact 控件，并从 pointerdown 执行命令以减少 WebView 焦点竞争。
   - slash/`+` 插入菜单、块操作菜单、浮动格式栏和表格工具条共享浮层 dismiss 生命周期：外部点击、滚动和窗口变化会关闭浮层，点击当前块或表格内部会保持上下文不丢失。
   - slash 菜单和块操作菜单共享 active-descendant 滚动逻辑，键盘导航长菜单时会保持当前命令可见。
@@ -202,6 +204,7 @@ flowchart TD
 - [x] 明确 `runtime_ready` 归 editor host 所有：Dioxus 在 `ensureEditor` 和 `attachChannel` 后发送，Tiptap adapter 不重复发送。
 - [x] 保持 `destroy` 语义，包括 stale host instance 保护。
 - [x] 通过 Tiptap preferences controller 保持 `set_preferences` 状态更新。
+- [x] 通过 `set_preferences` 保持应用语言变化，让 Tiptap chrome 可以在不重建编辑器的情况下本地化 slash 命令、块操作、操作柄文案和表格工具条命令。
 - [x] 通过 Tiptap block hints controller 对 `set_block_hints` 做兼容处理。
 - [x] 通过 Tiptap paste controller 保持选中文字后粘贴 URL 的 `auto_link_paste` 行为。
 - [x] slash 菜单和块操作菜单在 IME composition 期间会让出键盘处理，避免中文输入确认被菜单导航或命令执行吞掉。

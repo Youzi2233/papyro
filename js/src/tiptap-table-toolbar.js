@@ -1,4 +1,13 @@
 import {
+  addColumnRightLabel,
+  addRowBelowLabel,
+  localizeTableCommand,
+  selectTableColumnLabel,
+  selectTableLabel,
+  selectTableRowLabel,
+  tableToolsLabel,
+} from "./tiptap-i18n.js";
+import {
   createElement,
   createFloatingDismissController,
   defaultDocument,
@@ -312,6 +321,10 @@ function enabledCommandIds(commands) {
     .map((command) => command.id);
 }
 
+function entryLanguage(entry) {
+  return entry?.preferences?.language ?? "english";
+}
+
 function nextEnabledCommandId(commands, currentId, direction) {
   const ids = enabledCommandIds(commands);
   if (ids.length === 0) return null;
@@ -408,18 +421,11 @@ class TiptapTableToolbarView {
     if (!root || !list || !addRowButton || !addColumnButton || !tableSelectButton) return;
 
     root.role = "toolbar";
-    root.setAttribute("aria-label", "Table tools");
     addRowButton.type = "button";
     addRowButton.textContent = "+";
-    addRowButton.title = "Add row below";
-    addRowButton.setAttribute("aria-label", "Add row below");
     addColumnButton.type = "button";
     addColumnButton.textContent = "+";
-    addColumnButton.title = "Add column right";
-    addColumnButton.setAttribute("aria-label", "Add column right");
     tableSelectButton.type = "button";
-    tableSelectButton.title = "Select table";
-    tableSelectButton.setAttribute("aria-label", "Select table");
     root.appendChild(list);
     mountFloatingRoot(root, container, this.#document);
     mountFloatingRoot(addRowButton, container, this.#document);
@@ -440,6 +446,11 @@ class TiptapTableToolbarView {
     if (!this.#root || !this.#list || !state.open) return;
 
     this.#list.replaceChildren();
+    this.#root.setAttribute("aria-label", tableToolsLabel(state.language));
+    this.#addRowButton.title = addRowBelowLabel(state.language);
+    this.#addRowButton.setAttribute("aria-label", addRowBelowLabel(state.language));
+    this.#addColumnButton.title = addColumnRightLabel(state.language);
+    this.#addColumnButton.setAttribute("aria-label", addColumnRightLabel(state.language));
     let lastGroup = null;
     state.commands.forEach((command) => {
       if (lastGroup && lastGroup !== command.group) {
@@ -533,6 +544,8 @@ class TiptapTableToolbarView {
 
     this.#tableSelectButton.style.left = `${rect.left - TABLE_AXIS_HANDLE_SIZE - 6}px`;
     this.#tableSelectButton.style.top = `${rect.top - TABLE_AXIS_HANDLE_SIZE - 6}px`;
+    this.#tableSelectButton.title = selectTableLabel(state.language);
+    this.#tableSelectButton.setAttribute("aria-label", selectTableLabel(state.language));
     this.#tableSelectButton.onpointerdown = (event) => {
       event.preventDefault();
       event.stopPropagation?.();
@@ -554,8 +567,8 @@ class TiptapTableToolbarView {
       const button = createElement(this.#document, "button", "mn-tiptap-table-axis-handle row");
       if (!button) return;
       button.type = "button";
-      button.title = `Select row ${index + 1}`;
-      button.setAttribute("aria-label", `Select row ${index + 1}`);
+      button.title = selectTableRowLabel(state.language, index);
+      button.setAttribute("aria-label", selectTableRowLabel(state.language, index));
       button.style.left = `${tableRect.left - TABLE_AXIS_HANDLE_SIZE - 6}px`;
       button.style.top = `${rect.top + Math.max(0, rect.height - TABLE_AXIS_HANDLE_SIZE) / 2}px`;
       button.addEventListener("pointerdown", (event) => {
@@ -574,8 +587,8 @@ class TiptapTableToolbarView {
       const button = createElement(this.#document, "button", "mn-tiptap-table-axis-handle column");
       if (!button) return;
       button.type = "button";
-      button.title = `Select column ${index + 1}`;
-      button.setAttribute("aria-label", `Select column ${index + 1}`);
+      button.title = selectTableColumnLabel(state.language, index);
+      button.setAttribute("aria-label", selectTableColumnLabel(state.language, index));
       button.style.left = `${rect.left + Math.max(0, rect.width - TABLE_AXIS_HANDLE_SIZE) / 2}px`;
       button.style.top = `${tableRect.top - TABLE_AXIS_HANDLE_SIZE - 6}px`;
       button.addEventListener("pointerdown", (event) => {
@@ -665,6 +678,7 @@ export class TiptapTableToolbarController {
     commands: [],
     activeCommandId: null,
     keyboardActive: false,
+    language: "english",
   };
 
   constructor({ view = null, dom = {} } = {}) {
@@ -711,11 +725,12 @@ export class TiptapTableToolbarController {
       return this.state;
     }
 
+    const language = entryLanguage(this.#entry);
     const commands = TABLE_COMMANDS.filter(
       (command) => typeof editor.commands?.[command.command] === "function",
     ).map((command) => {
       const disabled = !canRunEditorCommand(editor, command.command, command.args);
-      return {
+      return localizeTableCommand({
         ...command,
         disabled,
         active:
@@ -723,7 +738,7 @@ export class TiptapTableToolbarController {
           command.args?.length >= 2 &&
           normalizeCellAttributeValue(command.args[0], cellValue(editor, command.args[0])) ===
             normalizeCellAttributeValue(command.args[0], command.args[1]),
-      };
+      }, language);
     });
     const activeCommandId = commands.some(
       (command) => command.id === this.#state.activeCommandId && !command.disabled,
@@ -739,6 +754,7 @@ export class TiptapTableToolbarController {
       commands,
       activeCommandId,
       keyboardActive: this.#state.keyboardActive,
+      language,
     };
     this.#view.update?.({
       ...this.#state,
@@ -867,6 +883,7 @@ export class TiptapTableToolbarController {
       commands: [],
       activeCommandId: null,
       keyboardActive: false,
+      language: "english",
     };
     this.#view.hide?.();
     this.#dismiss.close();

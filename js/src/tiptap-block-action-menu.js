@@ -57,7 +57,7 @@ function placeMenu(element, target, fallbackWindow, anchorRect = null) {
       height: DEFAULT_HEIGHT,
       margin: DEFAULT_MARGIN,
     },
-    placement: "left",
+    placement: "right",
   });
 }
 
@@ -248,7 +248,12 @@ export class TiptapBlockActionMenuController {
     this.#state = {
       open: true,
       target,
-      commands: this.#commands.list({ editor: this.#editor, entry: this.#entry, target }),
+      commands: this.#commands.list({
+        editor: this.#editor,
+        entry: this.#entry,
+        language: this.#entry?.preferences?.language,
+        target,
+      }),
       selectedIndex: 0,
       anchorRect,
     };
@@ -261,6 +266,11 @@ export class TiptapBlockActionMenuController {
     );
     this.#dismiss.open();
     return this.state;
+  }
+
+  refresh() {
+    if (!this.#state.open || !this.#state.target) return this.state;
+    return this.open(this.#state.target, { anchorRect: this.#state.anchorRect });
   }
 
   moveSelection(delta) {

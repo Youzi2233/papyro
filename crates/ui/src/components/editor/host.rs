@@ -7,15 +7,21 @@ use crate::context::use_app_context;
 use crate::perf::{perf_timer, trace_editor_set_preferences, trace_editor_set_view_mode};
 use crate::view_model::EditorHostInitialContent;
 use dioxus::prelude::*;
-use papyro_core::models::ViewMode;
+use papyro_core::models::{AppLanguage, ViewMode};
 use papyro_editor::parser::MarkdownBlockHintSet;
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 struct EditorCommandCache {
     view_mode: Option<ViewMode>,
-    auto_link_paste: Option<bool>,
+    preferences: Option<EditorPreferencesCache>,
     block_hints_revision: Option<u64>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct EditorPreferencesCache {
+    auto_link_paste: bool,
+    language: AppLanguage,
 }
 
 #[component]
@@ -26,6 +32,7 @@ pub(super) fn EditorHost(
     block_hints: Option<MarkdownBlockHintSet>,
     view_mode: ViewMode,
     auto_link_paste: bool,
+    language: AppLanguage,
 ) -> Element {
     let app = use_app_context();
     let commands = app.commands;
@@ -193,6 +200,7 @@ pub(super) fn EditorHost(
                                     command_cache,
                                     &tab_id,
                                     auto_link_paste,
+                                    language,
                                 );
                             }
                         }
@@ -251,14 +259,26 @@ pub(super) fn EditorHost(
     ));
 
     use_effect(use_reactive(
-        (&tab_id, &is_visible, &auto_link_paste, &runtime_ready),
-        move |(tab_id, is_visible, auto_link_paste, runtime_ready)| {
+        (
+            &tab_id,
+            &is_visible,
+            &auto_link_paste,
+            &language,
+            &runtime_ready,
+        ),
+        move |(tab_id, is_visible, auto_link_paste, language, runtime_ready)| {
             if !is_visible || !runtime_ready {
                 return;
             }
 
             if let Some(bridge) = bridges.read().get(&tab_id) {
-                send_set_preferences(&bridge.eval, command_cache, &tab_id, auto_link_paste);
+                send_set_preferences(
+                    &bridge.eval,
+                    command_cache,
+                    &tab_id,
+                    auto_link_paste,
+                    language,
+                );
             }
         },
     ));
@@ -358,14 +378,19 @@ fn send_set_preferences(
     mut command_cache: Signal<EditorCommandCache>,
     tab_id: &str,
     auto_link_paste: bool,
+    language: AppLanguage,
 ) {
-    let changed = command_cache.with_mut(|cache| record_preferences_change(cache, auto_link_paste));
+    let changed =
+        command_cache.with_mut(|cache| record_preferences_change(cache, auto_link_paste, language));
     if !changed {
         return;
     }
 
     let started_at = perf_timer();
-    let _ = eval.send(EditorCommand::SetPreferences { auto_link_paste });
+    let _ = eval.send(EditorCommand::SetPreferences {
+        auto_link_paste,
+        language,
+    });
     trace_editor_set_preferences(tab_id, auto_link_paste, started_at);
 }
 
@@ -415,12 +440,17 @@ fn bridge_instance_matches(current_instance_id: Option<&str>, requested_instance
 fn record_preferences_change(
     command_cache: &mut EditorCommandCache,
     auto_link_paste: bool,
+    language: AppLanguage,
 ) -> bool {
-    if command_cache.auto_link_paste == Some(auto_link_paste) {
+    let preferences = EditorPreferencesCache {
+        auto_link_paste,
+        language,
+    };
+    if command_cache.preferences == Some(preferences) {
         return false;
     }
 
-    command_cache.auto_link_paste = Some(auto_link_paste);
+    command_cache.preferences = Some(preferences);
     true
 }
 
@@ -457,10 +487,31 @@ mod tests {
     fn preferences_change_is_idempotent() {
         let mut cache = EditorCommandCache::default();
 
-        assert!(record_preferences_change(&mut cache, true));
-        assert!(!record_preferences_change(&mut cache, true));
-        assert!(record_preferences_change(&mut cache, false));
-        assert!(!record_preferences_change(&mut cache, false));
+        assert!(record_preferences_change(
+            &mut cache,
+            true,
+            AppLanguage::English
+        ));
+        assert!(!record_preferences_change(
+            &mut cache,
+            true,
+            AppLanguage::English
+        ));
+        assert!(record_preferences_change(
+            &mut cache,
+            true,
+            AppLanguage::Chinese
+        ));
+        assert!(record_preferences_change(
+            &mut cache,
+            false,
+            AppLanguage::Chinese
+        ));
+        assert!(!record_preferences_change(
+            &mut cache,
+            false,
+            AppLanguage::Chinese
+        ));
     }
 
     #[test]

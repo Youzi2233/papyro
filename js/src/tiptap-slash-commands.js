@@ -3,6 +3,7 @@ import {
   createMarkdownTable,
   normalizeCalloutKind,
 } from "./tiptap-markdown-snippets.js";
+import { localizeSlashCommand, normalizeTiptapLanguage } from "./tiptap-i18n.js";
 
 const DEFAULT_LIMIT = 8;
 
@@ -291,9 +292,11 @@ export const PAPYRO_TIPTAP_SLASH_COMMANDS = Object.freeze([
 
 export class TiptapSlashCommandController {
   #commands;
+  #language;
 
-  constructor(commands = PAPYRO_TIPTAP_SLASH_COMMANDS) {
+  constructor(commands = PAPYRO_TIPTAP_SLASH_COMMANDS, { language = "english" } = {}) {
     this.#commands = Object.freeze([...commands]);
+    this.#language = normalizeTiptapLanguage(language);
   }
 
   get commands() {
@@ -305,7 +308,12 @@ export class TiptapSlashCommandController {
     return this.#commands.find((command) => command.id === id) ?? null;
   }
 
-  query(query, { limit = DEFAULT_LIMIT } = {}) {
+  setLanguage(language) {
+    this.#language = normalizeTiptapLanguage(language);
+  }
+
+  query(query, { limit = DEFAULT_LIMIT, language = this.#language } = {}) {
+    const locale = normalizeTiptapLanguage(language);
     return this.#commands
       .map((command, index) => ({
         command,
@@ -315,7 +323,7 @@ export class TiptapSlashCommandController {
       .filter((match) => match.score !== null)
       .sort((a, b) => a.score - b.score || a.command.priority - b.command.priority || a.index - b.index)
       .slice(0, Math.max(0, limit))
-      .map((match) => match.command);
+      .map((match) => localizeSlashCommand(match.command, locale));
   }
 
   run(commandId, context = {}) {

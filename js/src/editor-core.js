@@ -38,20 +38,29 @@ export function normalizeEditorPreferences(preferences = {}) {
 
   return {
     autoLinkPaste: autoLinkPaste !== false,
+    language: String(preferences.language ?? preferences.app_language ?? preferences.appLanguage ?? "english"),
   };
 }
 
 export function nextEditorPreferences(currentPreferences, preferences) {
+  const current = normalizeEditorPreferences(currentPreferences);
+  const nextAutoLinkPaste = preferences.auto_link_paste ?? preferences.autoLinkPaste;
+  const nextLanguage = preferences.language ?? preferences.app_language ?? preferences.appLanguage;
+
   return {
-    ...normalizeEditorPreferences(currentPreferences),
-    ...normalizeEditorPreferences(preferences),
+    ...current,
+    ...(nextAutoLinkPaste === undefined ? {} : { autoLinkPaste: nextAutoLinkPaste !== false }),
+    ...(nextLanguage === undefined ? {} : { language: String(nextLanguage) }),
   };
 }
 
 export function editorPreferencesEqual(left, right) {
   const normalizedLeft = normalizeEditorPreferences(left);
   const normalizedRight = normalizeEditorPreferences(right);
-  return normalizedLeft.autoLinkPaste === normalizedRight.autoLinkPaste;
+  return (
+    normalizedLeft.autoLinkPaste === normalizedRight.autoLinkPaste &&
+    normalizedLeft.language === normalizedRight.language
+  );
 }
 
 export function setEditorPreferences(entry, preferences) {

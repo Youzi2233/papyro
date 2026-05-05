@@ -663,6 +663,7 @@ test("attach_view_to_tab initializes runtime entry without echoing content", () 
   assert.equal(registry.get("tab-a").suppressChange, false);
   assert.deepEqual(registry.get("tab-a").preferences, {
     autoLinkPaste: true,
+    language: "english",
   });
   assert.deepEqual(sent, []);
 });
@@ -757,6 +758,7 @@ test("markdown_link_paste_change wraps selected text with a plain URL", () => {
 test("markdown_link_paste_change respects preferences and URL shape", () => {
   assert.deepEqual(normalizeEditorPreferences({ autoLinkPaste: false }), {
     autoLinkPaste: false,
+    language: "english",
   });
   assert.equal(
     markdownLinkPasteChange("docs", 0, 4, "https://example.test", {
@@ -1740,6 +1742,7 @@ test("set_preferences stores editor preferences on entry", () => {
   assert.equal(result, "preferences_updated");
   assert.deepEqual(registry.get("tab-a").preferences, {
     autoLinkPaste: false,
+    language: "english",
   });
 });
 

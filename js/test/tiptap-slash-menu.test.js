@@ -36,6 +36,10 @@ function createEditor(text, cursor = text.length) {
         calls.push(["focus"]);
         return true;
       },
+      setTextSelection: (pos) => {
+        calls.push(["setTextSelection", pos]);
+        return true;
+      },
       insertContentAt: (pos, content, options) => {
         calls.push(["insertContentAt", pos, content, options.contentType]);
         return true;
@@ -62,7 +66,10 @@ function createEditor(text, cursor = text.length) {
       },
     },
     view: {
-      coordsAtPos: () => ({ left: 120, right: 120, top: 40, bottom: 60 }),
+      coordsAtPos: (pos) => {
+        calls.push(["coordsAtPos", pos]);
+        return { left: 120, right: 120, top: 40, bottom: 60 };
+      },
       dom: {
         ownerDocument: {
           documentElement: {
@@ -381,8 +388,11 @@ test("Tiptap slash menu opens as a block insert menu without deleting a trigger"
 
   assert.deepEqual(calls, [
     ["focus"],
-    ["insertContentAt", 8, "\n", "markdown"],
+    ["insertContentAt", 8, "\n/", "markdown"],
     ["focus"],
+    ["setTextSelection", 10],
+    ["coordsAtPos", 10],
+    ["deleteRange", 9, 10],
     ["setParagraph"],
     ["focus"],
   ]);
