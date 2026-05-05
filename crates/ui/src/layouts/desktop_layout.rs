@@ -32,8 +32,8 @@ pub fn DesktopLayout() -> Element {
 
     let sidebar_collapsed = (app.sidebar_collapsed)();
 
-    // Global keyboard shortcuts that must work while CodeMirror has focus.
-    // Registered via JS to ensure it fires even when CodeMirror has focus.
+    // Global keyboard shortcuts that must work while the editor runtime has focus.
+    // Registered via JS so focused editable surfaces do not swallow app commands.
     use_effect(move || {
         let mut eval = document::eval(
             r#"

@@ -247,7 +247,7 @@ Tasks:
 - [x] Add Tiptap code block options with language metadata, fenced Markdown round-trip coverage, and shared code styling.
 - [x] Migrate task lists, tables, math, Mermaid, images, and code blocks.
 - [x] Remove CodeMirror npm dependencies and obsolete JS runtime tests.
-- [ ] Remove remaining `.cm-*` CSS and rename the host surface to semantic Tiptap/editor classes.
+- [x] Remove remaining `.cm-*` CSS and rename the host surface to semantic Tiptap/editor classes.
 - [ ] Finish full acceptance checks and push the completed migration.
 
 ## Phase 4.5 - Themes, Typography, And Markdown Styles

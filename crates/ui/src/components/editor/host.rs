@@ -325,7 +325,7 @@ pub(super) fn EditorHost(
         div { class: "mn-editor-runtime-frame",
             div {
                 id: "{container_id}",
-                class: if show_fallback { "mn-codemirror-host initializing" } else { "mn-codemirror-host" },
+                class: if show_fallback { "mn-editor-runtime-host initializing" } else { "mn-editor-runtime-host" },
             }
             if show_fallback {
                 FallbackEditor {

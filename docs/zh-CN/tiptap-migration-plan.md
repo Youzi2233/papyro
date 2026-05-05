@@ -213,7 +213,8 @@ flowchart TD
   - 生成 bundle 现在从 `editor-tiptap-entry` 构建，只安装 Tiptap adapter，并把共享滚动、大纲和 Mermaid 预览桥接放进 `editor-host-runtime`。
 - [x] 移除 CodeMirror npm 依赖和 `codemirror-lang-mermaid`。
   - `js/package.json` 现在只保留 Tiptap、KaTeX、Mermaid 和 esbuild 相关依赖。旧 CodeMirror runtime 文件和测试已删除。
-- [ ] 清理 `.cm-*` 专属 CSS，保留迁移后的 `.mn-editor-*` 和 `.mn-tiptap-*` 语义类。
+- [x] 清理 `.cm-*` 专属 CSS，保留迁移后的 `.mn-editor-*` 和 `.mn-tiptap-*` 语义类。
+  - Dioxus host 容器现在使用 `mn-editor-runtime-host`，桌面 Markdown 样式中不再保留 CodeMirror host 或 `.cm-*` selector。
 - [x] 确认 bundle 生成物同步且行数预算通过。
 
 ### 7. 验收

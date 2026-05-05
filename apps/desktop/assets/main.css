@@ -112,7 +112,7 @@
     --mn-status-gap:                 8px;
     --mn-status-meta-gap:            12px;
 
-    /* Editor internals - consumed by CodeMirror */
+    /* Editor internals - consumed by Tiptap and fallback surfaces */
     --mn-editor-bg:          #ffffff;
     --mn-editor-ink:         var(--mn-ink);
     --mn-active-line:        rgba(37, 99, 235, 0.055);

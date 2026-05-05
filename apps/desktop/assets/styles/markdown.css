@@ -132,7 +132,7 @@
 }
 
 
-/* 閳光偓閳光偓 CodeMirror host 閳光偓閳光偓 */
+/* 閳光偓閳光偓 Editor runtime host 閳光偓閳光偓 */
 .mn-editor-edit {
     flex: 1;
     min-height: 0;
@@ -159,9 +159,8 @@
     pointer-events: none;
     overflow: hidden;
 }
-/* Keep inactive tabs in layout with `visibility: hidden` instead of
- * `display: none` so CodeMirror's internal size cache stays correct and tab
- * switching is a pure visibility flip 閳?no re-measure, no flash. */
+/* Keep inactive tabs mounted offscreen so editor instances can be reused
+ * without remount flashes during tab switches. */
 .mn-editor-host-slot {
     position: absolute;
     inset: 0;
@@ -189,8 +188,9 @@
     min-height: 0;
     contain: layout paint;
 }
-.mn-codemirror-host {
+.mn-editor-runtime-host {
     flex: 1;
+    min-width: 0;
     min-height: 0;
     width: 100%;
     overflow: hidden;
@@ -999,36 +999,11 @@
     line-height: var(--mn-line-caption);
 }
 
-.mn-codemirror-host.initializing {
+.mn-editor-runtime-host.initializing {
     position: absolute;
     inset: 0;
     opacity: 0;
     pointer-events: none;
-}
-
-.mn-codemirror-host .cm-editor {
-    width: 100%;
-    height: 100%;
-    min-height: 0;
-}
-
-.mn-codemirror-host .cm-scroller {
-    height: 100%;
-    min-height: 0;
-    padding: var(--mn-document-pad-top) var(--mn-document-pad-x) var(--mn-document-pad-bottom);
-}
-
-.mn-codemirror-host .cm-content {
-    min-height: 100%;
-    width: 100%;
-    max-width: var(--mn-document-measure);
-    margin-inline: auto;
-}
-
-.mn-codemirror-host .cm-gutters {
-    min-height: 100%;
-    padding-top: var(--mn-document-pad-top);
-    padding-right: var(--mn-document-gutter-gap);
 }
 
 .mn-editor-fallback {
@@ -1118,11 +1093,11 @@
     caret-color: var(--mn-accent);
 }
 
-[data-theme="dark"] .mn-codemirror-host {
+[data-theme="dark"] .mn-editor-runtime-host {
     box-shadow: none;
 }
 @media (prefers-color-scheme: dark) {
-    :root:not([data-theme]) .mn-codemirror-host {
+    :root:not([data-theme]) .mn-editor-runtime-host {
         box-shadow: none;
     }
 }
