@@ -4,13 +4,55 @@ import assert from "node:assert/strict";
 import {
   TABLE_COMMANDS,
   createTiptapTableToolbarController,
+  selectTableAxis,
 } from "../src/tiptap-table-toolbar.js";
 
 function createTableHarness(commandOverrides = {}) {
   const calls = [];
+  const cells = [];
+  const rows = Array.from({ length: 2 }, (_, rowIndex) => {
+    const rowCells = Array.from({ length: 3 }, (_, columnIndex) => {
+      const cell = {
+        nodeType: 1,
+        rowIndex,
+        columnIndex,
+        parentElement: null,
+        closest(selector) {
+          return selector.includes("table") ? table : null;
+        },
+        getBoundingClientRect: () => ({
+          left: 120 + columnIndex * 80,
+          top: 90 + rowIndex * 34,
+          width: 80,
+          height: 34,
+          right: 200 + columnIndex * 80,
+          bottom: 124 + rowIndex * 34,
+        }),
+      };
+      cells.push(cell);
+      return cell;
+    });
+    return {
+      cells: rowCells,
+      getBoundingClientRect: () => ({
+        left: 120,
+        top: 90 + rowIndex * 34,
+        width: 240,
+        height: 34,
+        right: 360,
+        bottom: 124 + rowIndex * 34,
+      }),
+      querySelectorAll(selector) {
+        return selector === "th,td" ? rowCells : [];
+      },
+    };
+  });
   const table = {
     className: "mn-tiptap-table",
-    getBoundingClientRect: () => ({ left: 120, top: 90, right: 520, bottom: 220 }),
+    getBoundingClientRect: () => ({ left: 120, top: 90, right: 360, bottom: 158 }),
+    querySelectorAll(selector) {
+      return selector === "tr" ? rows : [];
+    },
     ownerDocument: {
       documentElement: {
         clientWidth: 1000,
@@ -18,15 +60,14 @@ function createTableHarness(commandOverrides = {}) {
       },
     },
   };
-  const cell = {
-    nodeType: 1,
-    parentElement: table,
-    closest(selector) {
-      return selector.includes("table") ? table : null;
-    },
-  };
+  rows.forEach((row) =>
+    row.cells.forEach((cell) => {
+      cell.parentElement = row;
+    }),
+  );
+  const cell = cells[0];
   const root = {
-    contains: (target) => target === table || target === cell,
+    contains: (target) => target === table || cells.includes(target),
   };
   const editor = {
     state: {
@@ -38,6 +79,9 @@ function createTableHarness(commandOverrides = {}) {
       dom: root,
       domAtPos() {
         return { node: cell };
+      },
+      posAtDOM(target) {
+        return cells.indexOf(target) + 10;
       },
     },
     commands: {
@@ -236,4 +280,94 @@ test("Tiptap table toolbar quick add buttons run row and column insertion", () =
     ["addColumnAfter"],
     ["focus"],
   ]);
+});
+
+test("Tiptap table toolbar axis handles select rows and columns", () => {
+  const created = [];
+  const documentRef = {
+    createElement(tagName) {
+      const element = {
+        tagName,
+        children: [],
+        className: "",
+        dataset: {},
+        hidden: false,
+        style: {},
+        classList: {
+          toggle(name, enabled) {
+            element.hidden = enabled && name === "hidden";
+          },
+        },
+        appendChild(child) {
+          this.children.push(child);
+        },
+        replaceChildren(...children) {
+          this.children = children;
+        },
+        setAttribute(name, value) {
+          this[name] = value;
+        },
+        addEventListener(name, handler) {
+          this[`on${name}`] = handler;
+        },
+        contains(target) {
+          return target === this;
+        },
+        remove() {
+          this.removed = true;
+        },
+      };
+      created.push(element);
+      return element;
+    },
+    body: {
+      children: [],
+      appendChild(child) {
+        this.children.push(child);
+      },
+    },
+  };
+  const { calls, editor } = createTableHarness();
+  editor.commands.setCellSelection = (selection) => {
+    calls.push(["setCellSelection", selection.anchorCell, selection.headCell]);
+    return true;
+  };
+  const controller = createTiptapTableToolbarController({
+    dom: { document: documentRef },
+  });
+
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  const rowHandle = created.find((element) =>
+    String(element.className).includes("mn-tiptap-table-axis-handle row"),
+  );
+  const columnHandle = created.find((element) =>
+    String(element.className).includes("mn-tiptap-table-axis-handle column"),
+  );
+
+  rowHandle.onpointerdown({ preventDefault() {}, stopPropagation() {} });
+  columnHandle.onpointerdown({ preventDefault() {}, stopPropagation() {} });
+
+  assert.deepEqual(calls, [
+    ["setCellSelection", 10, 12],
+    ["focus"],
+    ["setCellSelection", 10, 13],
+    ["focus"],
+  ]);
+});
+
+test("selectTableAxis rejects missing table selection commands", () => {
+  assert.equal(selectTableAxis({ commands: {} }, [], "row", 0), false);
+  assert.equal(
+    selectTableAxis(
+      {
+        commands: {
+          setCellSelection: () => false,
+        },
+      },
+      [{ cells: [{ pos: 1 }] }],
+      "row",
+      0,
+    ),
+    false,
+  );
 });

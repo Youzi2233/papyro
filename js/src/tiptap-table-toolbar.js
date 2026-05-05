@@ -126,10 +126,53 @@ export const TABLE_COMMANDS = Object.freeze([
   },
 ]);
 
+const TABLE_AXIS_HANDLE_SIZE = 22;
+
 function closestTableElement(target, editorDom) {
   if (!target?.closest || !editorDom?.contains) return null;
   const table = target.closest(".mn-tiptap-table, table");
   return table && editorDom.contains(table) ? table : null;
+}
+
+function tableRows(table) {
+  return Array.from(table?.querySelectorAll?.("tr") ?? []);
+}
+
+function tableCells(row) {
+  return Array.from(row?.querySelectorAll?.("th,td") ?? []);
+}
+
+function tableSelectionGrid(table, view) {
+  if (!table || typeof view?.posAtDOM !== "function") return [];
+
+  return tableRows(table)
+    .map((row, rowIndex) => ({
+      row,
+      rowIndex,
+      cells: tableCells(row)
+        .map((cell, columnIndex) => {
+          try {
+            const pos = view.posAtDOM(cell, 0);
+            return Number.isFinite(pos)
+              ? {
+                  cell,
+                  columnIndex,
+                  pos,
+                  rect: cell.getBoundingClientRect?.(),
+                }
+              : null;
+          } catch (_error) {
+            return null;
+          }
+        })
+        .filter(Boolean),
+      rect: row.getBoundingClientRect?.(),
+    }))
+    .filter((row) => row.cells.length > 0);
+}
+
+function firstRowCells(grid) {
+  return grid.find((row) => row.cells.length > 0)?.cells ?? [];
 }
 
 function activeTableContext(editor) {
@@ -145,6 +188,7 @@ function activeTableContext(editor) {
   return {
     table,
     rect: table.getBoundingClientRect?.(),
+    grid: tableSelectionGrid(table, view),
   };
 }
 
@@ -156,6 +200,30 @@ function runEditorCommand(editor, commandName) {
   return ok;
 }
 
+export function selectTableAxis(editor, grid, axis, index) {
+  if (!editor || typeof editor.commands?.setCellSelection !== "function") return false;
+  const axisIndex = Number(index);
+  if (!Number.isInteger(axisIndex) || axisIndex < 0) return false;
+
+  let positions = [];
+  if (axis === "row") {
+    positions = grid?.[axisIndex]?.cells?.map((cell) => cell.pos) ?? [];
+  } else if (axis === "column") {
+    positions = (grid ?? [])
+      .map((row) => row.cells.find((cell) => cell.columnIndex === axisIndex)?.pos)
+      .filter(Number.isFinite);
+  }
+
+  if (positions.length === 0) return false;
+  const ok =
+    editor.commands.setCellSelection({
+      anchorCell: positions[0],
+      headCell: positions[positions.length - 1],
+    }) !== false;
+  if (ok) editor.commands?.focus?.();
+  return ok;
+}
+
 class TiptapTableToolbarView {
   #document;
   #window;
@@ -163,6 +231,8 @@ class TiptapTableToolbarView {
   #list = null;
   #addRowButton = null;
   #addColumnButton = null;
+  #rowHandles = [];
+  #columnHandles = [];
 
   constructor({ document = defaultDocument(), window = defaultWindow(document) } = {}) {
     this.#document = document;
@@ -241,6 +311,7 @@ class TiptapTableToolbarView {
 
     setHidden(this.#root, false);
     this.#updateQuickAdd(state);
+    this.#updateAxisHandles(state);
     positionFloatingElement(this.#root, state.rect, {
       viewport: viewportSize(state.table, this.#window),
       size: {
@@ -277,10 +348,65 @@ class TiptapTableToolbarView {
     setHidden(this.#addColumnButton, !addColumn);
   }
 
+  #updateAxisHandles(state) {
+    this.#clearAxisHandles();
+    const tableRect = state.rect;
+    const grid = state.grid ?? [];
+    if (!tableRect || grid.length === 0) return;
+
+    grid.forEach((row, index) => {
+      const rect = row.rect;
+      if (!rect) return;
+      const button = createElement(this.#document, "button", "mn-tiptap-table-axis-handle row");
+      if (!button) return;
+      button.type = "button";
+      button.title = `Select row ${index + 1}`;
+      button.setAttribute("aria-label", `Select row ${index + 1}`);
+      button.style.left = `${tableRect.left - TABLE_AXIS_HANDLE_SIZE - 6}px`;
+      button.style.top = `${rect.top + Math.max(0, rect.height - TABLE_AXIS_HANDLE_SIZE) / 2}px`;
+      button.addEventListener("pointerdown", (event) => {
+        event.preventDefault();
+        event.stopPropagation?.();
+        state.selectAxis("row", index);
+      });
+      button.addEventListener("mousedown", (event) => event.preventDefault());
+      mountFloatingRoot(button, state.table, this.#document);
+      this.#rowHandles.push(button);
+    });
+
+    firstRowCells(grid).forEach((cell, index) => {
+      const rect = cell.rect;
+      if (!rect) return;
+      const button = createElement(this.#document, "button", "mn-tiptap-table-axis-handle column");
+      if (!button) return;
+      button.type = "button";
+      button.title = `Select column ${index + 1}`;
+      button.setAttribute("aria-label", `Select column ${index + 1}`);
+      button.style.left = `${rect.left + Math.max(0, rect.width - TABLE_AXIS_HANDLE_SIZE) / 2}px`;
+      button.style.top = `${tableRect.top - TABLE_AXIS_HANDLE_SIZE - 6}px`;
+      button.addEventListener("pointerdown", (event) => {
+        event.preventDefault();
+        event.stopPropagation?.();
+        state.selectAxis("column", index);
+      });
+      button.addEventListener("mousedown", (event) => event.preventDefault());
+      mountFloatingRoot(button, state.table, this.#document);
+      this.#columnHandles.push(button);
+    });
+  }
+
+  #clearAxisHandles() {
+    this.#rowHandles.forEach((button) => button.remove?.());
+    this.#columnHandles.forEach((button) => button.remove?.());
+    this.#rowHandles = [];
+    this.#columnHandles = [];
+  }
+
   hide() {
     setHidden(this.#root, true);
     setHidden(this.#addRowButton, true);
     setHidden(this.#addColumnButton, true);
+    this.#clearAxisHandles();
   }
 
   contains(target) {
@@ -288,6 +414,8 @@ class TiptapTableToolbarView {
       this.#root?.contains?.(target) ||
       this.#addRowButton?.contains?.(target) ||
       this.#addColumnButton?.contains?.(target) ||
+      this.#rowHandles.some((button) => button.contains?.(target)) ||
+      this.#columnHandles.some((button) => button.contains?.(target)) ||
       false
     );
   }
@@ -296,6 +424,7 @@ class TiptapTableToolbarView {
     this.#root?.remove?.();
     this.#addRowButton?.remove?.();
     this.#addColumnButton?.remove?.();
+    this.#clearAxisHandles();
     this.#root = null;
     this.#list = null;
     this.#addRowButton = null;
@@ -311,6 +440,7 @@ export class TiptapTableToolbarController {
     open: false,
     table: null,
     rect: null,
+    grid: [],
     commands: [],
   };
 
@@ -353,6 +483,7 @@ export class TiptapTableToolbarController {
       open: true,
       table: context.table,
       rect: context.rect,
+      grid: context.grid,
       commands: TABLE_COMMANDS.filter(
         (command) => typeof editor.commands?.[command.command] === "function",
       ),
@@ -360,6 +491,7 @@ export class TiptapTableToolbarController {
     this.#view.update?.({
       ...this.#state,
       run: (commandId) => this.run(commandId),
+      selectAxis: (axis, index) => this.selectAxis(axis, index),
     });
     return this.state;
   }
@@ -372,12 +504,19 @@ export class TiptapTableToolbarController {
     return ok;
   }
 
+  selectAxis(axis, index) {
+    const ok = selectTableAxis(this.#editor, this.#state.grid, axis, index);
+    this.refresh(this.#editor);
+    return ok;
+  }
+
   close() {
     if (!this.#state.open) return;
     this.#state = {
       open: false,
       table: null,
       rect: null,
+      grid: [],
       commands: [],
     };
     this.#view.hide?.();

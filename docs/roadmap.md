@@ -238,6 +238,7 @@ Tasks:
 - [x] Add the first Tiptap table floating toolbar with row/column insertion and deletion, cell merge/split, header toggles, and table deletion.
 - [x] Upgrade the Tiptap table toolbar into grouped column, row, cell, header, navigation, repair, and delete commands so table editing feels closer to mature document editors.
 - [x] Add table-edge quick add controls for inserting a row below and a column to the right without opening the full toolbar.
+- [x] Add row and column edge handles for tables: clicking the left row rail or top column rail selects the full row/column and reuses the table toolbar for follow-up operations.
 - [x] Add shared Tiptap UI primitives for popover placement, menu active-descendant state, toolbar roots, and visibility handling.
 - [x] Add advanced block action menus and responsive editor toolbar behavior.
 - [x] Fix Tiptap Hybrid scroll-container constraints so long documents scroll inside the editor host instead of being clipped by the outer shell.

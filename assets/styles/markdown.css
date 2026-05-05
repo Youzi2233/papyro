@@ -786,6 +786,48 @@
     display: none;
 }
 
+.mn-tiptap-table-axis-handle {
+    position: fixed;
+    z-index: 161;
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border: var(--mn-border-default);
+    border-radius: 6px;
+    background: var(--mn-surface-raised);
+    color: var(--mn-ink-3);
+    box-shadow: var(--mn-shadow-xs);
+    padding: 0;
+}
+
+.mn-tiptap-table-axis-handle:hover,
+.mn-tiptap-table-axis-handle:focus-visible {
+    outline: 0;
+    border-color: var(--mn-accent);
+    color: var(--mn-accent);
+    box-shadow: var(--mn-focus-ring-sm);
+}
+
+.mn-tiptap-table-axis-handle::before {
+    content: "";
+    display: block;
+    border-radius: var(--mn-radius-round);
+    background: currentColor;
+}
+
+.mn-tiptap-table-axis-handle.row::before {
+    width: 12px;
+    height: 2px;
+    box-shadow: 0 -4px 0 currentColor, 0 4px 0 currentColor;
+}
+
+.mn-tiptap-table-axis-handle.column::before {
+    width: 2px;
+    height: 12px;
+    box-shadow: -4px 0 0 currentColor, 4px 0 0 currentColor;
+}
+
 .mn-tiptap-format-toolbar-list {
     display: flex;
     align-items: center;
