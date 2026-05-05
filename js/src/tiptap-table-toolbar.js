@@ -888,7 +888,7 @@ class TiptapTableToolbarView {
       button.type = "button";
       button.title = command.title;
       button.setAttribute("aria-label", command.title);
-      button.textContent = command.label;
+      button.textContent = state.mode === "context" ? command.title : command.label;
       button.dataset.commandId = command.id;
       button.dataset.group = command.group;
       button.dataset.icon = command.icon ?? command.id;

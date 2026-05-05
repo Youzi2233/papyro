@@ -260,6 +260,7 @@ Tasks:
 - [x] Make the table cell action trigger select and highlight the focused cell before opening its menu, while preserving existing multi-cell selections, so users can always see which cells the menu will affect.
 - [x] Refine the table cell action trigger into a quieter semantic control with selection-kind state and `aria-expanded`, so single-cell, multi-cell, row, column, and table menus are visually and accessibly distinct.
 - [x] Order table context menus by user intent: common insert/header actions appear first, destructive row/column/table deletion is visually quieter and placed last.
+- [x] Use full action labels in table context menus while keeping the keyboard toolbar compact, so row/column/cell menus read like user actions instead of terse developer controls.
 - [x] Add table cell alignment commands: left, center, and right use Tiptap `setCellAttribute('align', ...)` so pipe table alignment remains part of the Markdown document model.
 - [x] Make table toolbar command buttons pointer-first so WebView focus ordering does not swallow table operations.
 - [x] Normalize table toolbar active alignment states so default/left/center/right cells reflect the actual Markdown table state.

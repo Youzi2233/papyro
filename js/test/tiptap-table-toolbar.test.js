@@ -1221,14 +1221,17 @@ test("Tiptap table toolbar separates destructive row actions from ordinary comma
   assert.deepEqual(
     rowGroup.children
       .filter((element) => element.dataset.commandId)
-      .map((element) => element.dataset.commandId),
-    ["add-row-after", "add-row-before"],
+      .map((element) => [element.dataset.commandId, element.textContent]),
+    [
+      ["add-row-after", "Insert row below"],
+      ["add-row-before", "Insert row above"],
+    ],
   );
   assert.deepEqual(
     headerGroup.children
       .filter((element) => element.dataset.commandId)
-      .map((element) => element.dataset.commandId),
-    ["toggle-header-row"],
+      .map((element) => [element.dataset.commandId, element.textContent]),
+    [["toggle-header-row", "Toggle header row"]],
   );
 });
 
