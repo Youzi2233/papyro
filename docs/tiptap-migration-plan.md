@@ -198,6 +198,7 @@ flowchart TD
 - [x] Images preserve local image URLs, paste image requests, and Markdown image syntax.
 - [x] Code blocks preserve language metadata and highlighting strategy.
 - [x] Callouts/admonitions parse and serialize `> [!NOTE]` style Markdown, expose a reusable Tiptap node, and are available from slash/`+` insertion and block actions.
+- [x] A release-smoke Markdown fixture now runs through automated round-trip coverage for headings, Chinese text, lists, tasks, callouts, code, aligned tables, math, Mermaid, and images.
 
 ### 6. Remove CodeMirror
 

@@ -210,6 +210,7 @@ flowchart TD
 - [x] Image：本地图片 URL、粘贴图片请求和 Markdown 图片语法保持兼容。
 - [x] Code block：语言信息、代码文本和高亮主题策略明确。
 - [x] Callout/admonition：解析并序列化 `> [!NOTE]` 风格 Markdown，提供可复用 Tiptap node，并接入 slash/`+` 插入和块操作菜单。
+- [x] 发布 smoke Markdown fixture 已接入自动化 round-trip 覆盖，覆盖标题、中文、列表、任务、callout、代码、对齐表格、公式、Mermaid 和图片。
 
 ### 6. 删除 CodeMirror 依赖
 

@@ -258,6 +258,7 @@ Tasks:
 - [x] Add Tiptap image extensions with local URL Markdown round-trip coverage and shared paste/drop protocol support.
 - [x] Add Tiptap code block options with language metadata, fenced Markdown round-trip coverage, and shared code styling.
 - [x] Add Tiptap callout/admonition blocks with `> [!NOTE]`-style Markdown round-trip coverage, slash/`+` insertion, block action insertion, and token-based styling.
+- [x] Add a release-smoke Markdown fixture to automated round-trip coverage so headings, Chinese text, lists, tasks, callouts, code, aligned tables, math, Mermaid, and images stay guarded before manual QA.
 - [x] Migrate task lists, tables, math, Mermaid, images, and code blocks.
 - [x] Remove CodeMirror npm dependencies and obsolete JS runtime tests.
 - [x] Remove remaining `.cm-*` CSS and rename the host surface to semantic Tiptap/editor classes.

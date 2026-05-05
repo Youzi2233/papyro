@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 
 import {
   createPapyroMarkdownManager,
@@ -52,6 +53,11 @@ fn main() {
 }
 \`\`\`
 `;
+
+const releaseSmokeFixture = readFileSync(
+  new URL("./fixtures/tiptap-release-smoke.md", import.meta.url),
+  "utf8",
+);
 
 function collectNodeTypes(node, types = []) {
   if (!node || typeof node !== "object") return types;
@@ -284,6 +290,93 @@ test("Tiptap Markdown manager parses the baseline Markdown blocks", () => {
       text: "Ship the Tiptap migration in small, tested pieces.",
     },
   ]);
+});
+
+test("Tiptap release smoke fixture preserves editor-critical block semantics", () => {
+  const { parsed, serialized, reparsed } = roundTripTiptapMarkdown(releaseSmokeFixture);
+  const nodeTypes = collectNodeTypes(parsed);
+  const marks = collectMarks(parsed);
+  const tasks = collectTaskItems(parsed);
+  const tables = collectTables(parsed);
+  const math = collectMath(parsed);
+  const mermaid = collectMermaid(parsed);
+  const images = collectImages(parsed);
+  const codeBlocks = collectCodeBlocks(parsed);
+  const callouts = collectCallouts(parsed);
+
+  assert.deepEqual(
+    parsed.content
+      .filter((node) => node.type === "heading")
+      .map((node) => node.attrs.level),
+    [1, 2, 3, 2],
+  );
+  assert.ok(nodeTypes.includes("paragraph"));
+  assert.ok(nodeTypes.includes("bulletList"));
+  assert.ok(nodeTypes.includes("orderedList"));
+  assert.ok(nodeTypes.includes("taskList"));
+  assert.ok(nodeTypes.includes("table"));
+  assert.ok(nodeTypes.includes("inlineMath"));
+  assert.ok(nodeTypes.includes("mathBlock"));
+  assert.ok(nodeTypes.includes("mermaidBlock"));
+  assert.ok(nodeTypes.includes("image"));
+  assert.ok(nodeTypes.includes("calloutBlock"));
+  assert.ok(marks.includes("bold"));
+  assert.ok(marks.includes("italic"));
+  assert.ok(marks.includes("code"));
+  assert.ok(marks.includes("strike"));
+  assert.ok(marks.includes("link"));
+  assert.deepEqual(tasks, [
+    { checked: false, text: "Unchecked task" },
+    { checked: true, text: "Checked task" },
+  ]);
+  assert.deepEqual(tables, [
+    [
+      [
+        { type: "tableHeader", align: "left", text: "Name" },
+        { type: "tableHeader", align: "right", text: "Count" },
+        { type: "tableHeader", align: "center", text: "Status" },
+      ],
+      [
+        { type: "tableCell", align: "left", text: "Alpha" },
+        { type: "tableCell", align: "right", text: "12" },
+        { type: "tableCell", align: "center", text: "Ready" },
+      ],
+      [
+        { type: "tableCell", align: "left", text: "Beta" },
+        { type: "tableCell", align: "right", text: "3" },
+        { type: "tableCell", align: "center", text: "Draft" },
+      ],
+    ],
+  ]);
+  assert.deepEqual(math, [
+    { type: "inlineMath", source: "a^2 + b^2 = c^2", singleLine: false },
+    { type: "mathBlock", source: "\\int_0^1 x^2 dx = \\frac{1}{3}", singleLine: false },
+  ]);
+  assert.deepEqual(mermaid, [
+    'flowchart LR\n    source["Source"] --> hybrid["Hybrid"]\n    hybrid --> preview["Preview"]',
+  ]);
+  assert.deepEqual(images, [
+    { src: "assets/example.png", alt: "Local image", title: "" },
+  ]);
+  assert.deepEqual(codeBlocks, [
+    {
+      language: "rust",
+      text: 'fn main() {\n    println!("hello tiptap");\n}',
+    },
+  ]);
+  assert.deepEqual(callouts, [
+    {
+      kind: "NOTE",
+      text: "Callout content should round-trip through Markdown.",
+    },
+  ]);
+  assert.deepEqual(reparsed, parsed);
+  assert.match(serialized, /^# Tiptap Smoke/m);
+  assert.match(serialized, /^### Nested Heading/m);
+  assert.match(serialized, /中文输入法测试/);
+  assert.match(serialized, /^\| Name  | Count | Status \|/m);
+  assert.match(serialized, /^\$\$\n\\int_0\^1 x\^2 dx = \\frac\{1\}\{3\}\n\$\$/m);
+  assert.match(serialized, /^```mermaid\nflowchart LR/m);
 });
 
 test("Tiptap Markdown serialization keeps semantic Markdown output", () => {
