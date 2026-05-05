@@ -219,17 +219,21 @@ flowchart TD
 
 ### 7. 验收
 
-- [ ] `npm --prefix js run build`
-- [ ] `npm --prefix js test`
-- [ ] `cargo fmt --check`
-- [ ] `cargo clippy --workspace --all-targets --all-features -- -D warnings`
-- [ ] `cargo test --workspace`
-- [ ] `node scripts/check-ui-primitives.js`
-- [ ] `node scripts/check-ui-a11y.js`
-- [ ] `node scripts/check-ui-contrast.js`
-- [ ] `node scripts/report-file-lines.js`
-- [ ] `git diff --check`
-- [ ] 手工 smoke：Source/Hybrid/Preview、中文 IME、粘贴、撤销、表格、公式、Mermaid、图片、大纲、保存失败、外部文件打开。
+- [x] `npm --prefix js run build`
+- [x] `npm --prefix js test`
+- [x] `cargo fmt --check`
+- [x] `cargo clippy --workspace --all-targets --all-features -- -D warnings`
+- [x] `cargo test --workspace`
+- [x] `node scripts/check-ui-primitives.js`
+- [x] `node scripts/check-ui-a11y.js`
+- [x] `node scripts/check-ui-contrast.js`
+- [x] `node scripts/check-markdown-style-smoke.js`
+- [x] `node scripts/check-markdown-style-smoke.js --self-test`
+- [x] `node scripts/check-perf-smoke.js --self-test`
+- [x] `node scripts/report-ui-tokens.js`
+- [x] `node scripts/report-file-lines.js`
+- [x] `git diff --check`
+- [ ] 发布前手工 smoke：Source/Hybrid/Preview、中文 IME、粘贴、撤销、表格、公式、Mermaid、图片、大纲、保存失败、外部文件打开。
 
 ## 关键风险和处理策略
 

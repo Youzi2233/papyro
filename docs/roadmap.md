@@ -248,7 +248,8 @@ Tasks:
 - [x] Migrate task lists, tables, math, Mermaid, images, and code blocks.
 - [x] Remove CodeMirror npm dependencies and obsolete JS runtime tests.
 - [x] Remove remaining `.cm-*` CSS and rename the host surface to semantic Tiptap/editor classes.
-- [ ] Finish full acceptance checks and push the completed migration.
+- [x] Finish full automated acceptance checks and push the completed migration.
+- [ ] Complete release-candidate manual smoke for Source/Hybrid/Preview, Chinese IME, paste, undo, tables, math, Mermaid, images, outline, failed saves, and OS-opened Markdown files.
 
 ## Phase 4.5 - Themes, Typography, And Markdown Styles
 
