@@ -160,7 +160,9 @@ flowchart TD
 - [x] Add a Papyro block handle controller as the hover entry point for future block actions.
 - [x] Add the first Papyro block action menu controller for basic insert, transform, and delete actions.
 - [x] Add reusable UI primitives for Tiptap popover placement, menu active-descendant state, toolbar roots, and shared visibility handling.
-- [ ] Add advanced block action menus and responsive editor toolbar behavior on top of the shared Tiptap UI primitives.
+- [x] Add advanced block action menus and responsive editor toolbar behavior on top of the shared Tiptap UI primitives.
+  - The block action menu now uses a reusable command model with grouped Insert/Text/Lists/Blocks/Advanced/Danger sections, rich Tiptap commands where available, Markdown fallbacks, keyboard navigation, and token-based desktop/mobile styling.
+  - The floating format toolbar now exposes a density state and switches to compact controls in narrow viewports or constrained selection positions.
 - [x] Source uses a source editor pane synchronized through `MarkdownSyncController`.
 - [x] Add `MarkdownSyncController` as the canonical Markdown state boundary for Tiptap runtime updates.
 - [x] Preview remains Rust-rendered HTML.

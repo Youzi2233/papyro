@@ -25,6 +25,7 @@ function createEditor() {
   const editor = {
     commands: {
       focus: (pos) => calls.push(["focus", pos ?? null]),
+      insertContent: () => true,
       setParagraph: () => {
         calls.push(["setParagraph"]);
         return true;
@@ -59,6 +60,53 @@ function createViewSpy() {
   };
 }
 
+function createDocument() {
+  const body = {
+    children: [],
+    appendChild(child) {
+      this.children.push(child);
+      child.parentNode = this;
+    },
+  };
+
+  function createElement(tagName) {
+    return {
+      tagName: tagName.toUpperCase(),
+      children: [],
+      className: "",
+      dataset: {},
+      style: {},
+      attributes: new Map(),
+      classList: {
+        values: new Set(),
+        toggle(name, enabled) {
+          if (enabled) this.values.add(name);
+          else this.values.delete(name);
+        },
+      },
+      append(...children) {
+        this.children.push(...children);
+      },
+      appendChild(child) {
+        this.children.push(child);
+      },
+      addEventListener() {},
+      replaceChildren(...children) {
+        this.children = children;
+      },
+      remove() {},
+      setAttribute(name, value) {
+        this.attributes.set(name, value);
+      },
+    };
+  }
+
+  return {
+    body,
+    createElement,
+  };
+}
+
 test("Tiptap block action menu opens for Hybrid block targets", () => {
   const { editor } = createEditor();
   const view = createViewSpy();
@@ -70,7 +118,25 @@ test("Tiptap block action menu opens for Hybrid block targets", () => {
   assert.equal(controller.state.open, true);
   assert.deepEqual(
     controller.state.commands.map((command) => command.id),
-    ["insert-before", "insert-after", "paragraph", "heading-2", "delete"],
+    [
+      "insert-before",
+      "insert-after",
+      "paragraph",
+      "heading-1",
+      "heading-2",
+      "heading-3",
+      "bullet-list",
+      "ordered-list",
+      "task-list",
+      "blockquote",
+      "code-block",
+      "divider",
+      "table",
+      "math-block",
+      "mermaid",
+      "image",
+      "delete",
+    ],
   );
   assert.deepEqual(view.calls[0], ["mount", "root"]);
   assert.equal(view.calls[1][0], "update");
@@ -118,6 +184,26 @@ test("Tiptap block action menu runs the selected command", () => {
     ["focus", null],
   ]);
   assert.deepEqual(view.calls.at(-1), ["hide"]);
+});
+
+test("Tiptap block action menu renders grouped command sections", () => {
+  const { editor } = createEditor();
+  const documentRef = createDocument();
+  const controller = createTiptapBlockActionMenuController({
+    dom: { document: documentRef },
+  });
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+
+  controller.open(createTarget());
+
+  const menu = documentRef.body.children[0];
+  const list = menu.children[0];
+  assert.deepEqual(
+    list.children.map((section) => section.children[0].textContent),
+    ["Insert", "Text", "Lists", "Blocks", "Advanced", "Danger"],
+  );
+  assert.equal(list.children[0].children[1].dataset.commandId, "insert-before");
+  assert.equal(list.children[4].children[1].dataset.commandId, "table");
 });
 
 test("Tiptap block action menu closes on Escape", () => {

@@ -29,6 +29,18 @@ function insertMarkdownAt(editor, markdown, pos) {
   return editorCommand(editor, "insertContent", markdown, { contentType: "markdown" });
 }
 
+function insertMarkdown(editor, markdown) {
+  return editorCommand(editor, "insertContent", markdown, { contentType: "markdown" });
+}
+
+function runEditorCommand(editor, commandName, args = [], fallbackMarkdown = null) {
+  const ok = editorCommand(editor, commandName, ...args);
+  if (!ok && typeof fallbackMarkdown === "string") {
+    return insertMarkdown(editor, fallbackMarkdown);
+  }
+  return ok;
+}
+
 function targetEndPos(target) {
   const nodeSize = target?.node?.nodeSize ?? target?.block?.pmViewDesc?.node?.nodeSize ?? 0;
   return Number.isFinite(target?.pos) ? target.pos + Math.max(1, nodeSize) : null;
@@ -43,7 +55,22 @@ function deleteTarget(editor, target) {
   return editorCommand(editor, "deleteNode", target?.kind);
 }
 
-function createCommand({ id, title, description, group, tone = "default", run }) {
+function canRunEditorCommand(editor, commandName) {
+  return typeof editor?.commands?.[commandName] === "function";
+}
+
+function createCommand({
+  id,
+  title,
+  description,
+  group,
+  icon,
+  shortcut = "",
+  priority = 100,
+  tone = "default",
+  enabled = () => true,
+  run,
+}) {
   if (!id || typeof run !== "function") {
     throw new TypeError("Tiptap block actions require an id and run function");
   }
@@ -53,7 +80,11 @@ function createCommand({ id, title, description, group, tone = "default", run })
     title,
     description,
     group,
+    icon,
+    shortcut,
+    priority,
     tone,
+    enabled,
     run,
   });
 }
@@ -64,6 +95,9 @@ export const PAPYRO_TIPTAP_BLOCK_ACTIONS = Object.freeze([
     title: "Insert above",
     description: "Add a paragraph before this block",
     group: "Insert",
+    icon: "plus-top",
+    shortcut: "Enter",
+    priority: 10,
     run: ({ editor, target }) => insertMarkdownAt(editor, "\n", target?.pos),
   }),
   createCommand({
@@ -71,27 +105,173 @@ export const PAPYRO_TIPTAP_BLOCK_ACTIONS = Object.freeze([
     title: "Insert below",
     description: "Add a paragraph after this block",
     group: "Insert",
+    icon: "plus-bottom",
+    shortcut: "Shift Enter",
+    priority: 11,
     run: ({ editor, target }) => insertMarkdownAt(editor, "\n", targetEndPos(target)),
   }),
   createCommand({
     id: "paragraph",
-    title: "Turn into paragraph",
+    title: "Paragraph",
     description: "Use plain body text",
-    group: "Transform",
+    group: "Text",
+    icon: "paragraph",
+    priority: 20,
     run: ({ editor }) => editorCommand(editor, "setParagraph"),
   }),
   createCommand({
+    id: "heading-1",
+    title: "Heading 1",
+    description: "Large section title",
+    group: "Text",
+    icon: "heading-1",
+    priority: 21,
+    run: ({ editor }) => runEditorCommand(editor, "toggleHeading", [{ level: 1 }], "# "),
+  }),
+  createCommand({
     id: "heading-2",
-    title: "Turn into heading",
+    title: "Heading 2",
     description: "Use a medium section title",
-    group: "Transform",
-    run: ({ editor }) => editorCommand(editor, "toggleHeading", { level: 2 }),
+    group: "Text",
+    icon: "heading-2",
+    priority: 22,
+    run: ({ editor }) => runEditorCommand(editor, "toggleHeading", [{ level: 2 }], "## "),
+  }),
+  createCommand({
+    id: "heading-3",
+    title: "Heading 3",
+    description: "Small subsection title",
+    group: "Text",
+    icon: "heading-3",
+    priority: 23,
+    run: ({ editor }) => runEditorCommand(editor, "toggleHeading", [{ level: 3 }], "### "),
+  }),
+  createCommand({
+    id: "bullet-list",
+    title: "Bullet list",
+    description: "Turn this block into bullets",
+    group: "Lists",
+    icon: "bullet-list",
+    priority: 30,
+    run: ({ editor }) => runEditorCommand(editor, "toggleBulletList", [], "- "),
+  }),
+  createCommand({
+    id: "ordered-list",
+    title: "Numbered list",
+    description: "Turn this block into steps",
+    group: "Lists",
+    icon: "ordered-list",
+    priority: 31,
+    run: ({ editor }) => runEditorCommand(editor, "toggleOrderedList", [], "1. "),
+  }),
+  createCommand({
+    id: "task-list",
+    title: "Task list",
+    description: "Create Markdown checkboxes",
+    group: "Lists",
+    icon: "task-list",
+    priority: 32,
+    run: ({ editor }) =>
+      canRunEditorCommand(editor, "toggleTaskList")
+        ? editorCommand(editor, "toggleTaskList")
+        : insertMarkdown(editor, "- [ ] "),
+  }),
+  createCommand({
+    id: "blockquote",
+    title: "Quote",
+    description: "Highlight a quoted passage",
+    group: "Blocks",
+    icon: "quote",
+    priority: 40,
+    run: ({ editor }) => runEditorCommand(editor, "toggleBlockquote", [], "> "),
+  }),
+  createCommand({
+    id: "code-block",
+    title: "Code block",
+    description: "Use a fenced code block",
+    group: "Blocks",
+    icon: "code-block",
+    priority: 41,
+    run: ({ editor }) =>
+      runEditorCommand(editor, "toggleCodeBlock", [], "```\ncode\n```"),
+  }),
+  createCommand({
+    id: "divider",
+    title: "Divider",
+    description: "Insert a horizontal rule",
+    group: "Blocks",
+    icon: "divider",
+    priority: 42,
+    run: ({ editor }) => runEditorCommand(editor, "setHorizontalRule", [], "\n---\n"),
+  }),
+  createCommand({
+    id: "table",
+    title: "Table",
+    description: "Insert a 3 by 2 table",
+    group: "Advanced",
+    icon: "table",
+    priority: 50,
+    run: ({ editor }) =>
+      runEditorCommand(
+        editor,
+        "insertTable",
+        [{ rows: 3, cols: 2, withHeaderRow: true }],
+        "\n| Column | Notes |\n| --- | --- |\n|  |  |\n",
+      ),
+  }),
+  createCommand({
+    id: "math-block",
+    title: "Math block",
+    description: "Insert a display formula",
+    group: "Advanced",
+    icon: "math",
+    priority: 51,
+    run: ({ editor }) =>
+      runEditorCommand(
+        editor,
+        "setMathBlock",
+        [{ source: "x^2 + y^2 = z^2" }],
+        "\n$$\n\n$$\n",
+      ),
+  }),
+  createCommand({
+    id: "mermaid",
+    title: "Mermaid diagram",
+    description: "Insert a flowchart block",
+    group: "Advanced",
+    icon: "mermaid",
+    priority: 52,
+    run: ({ editor }) =>
+      runEditorCommand(
+        editor,
+        "setMermaidBlock",
+        [{ source: "flowchart TD\n  A --> B" }],
+        "\n```mermaid\nflowchart TD\n  A --> B\n```\n",
+      ),
+  }),
+  createCommand({
+    id: "image",
+    title: "Image",
+    description: "Insert Markdown image syntax",
+    group: "Advanced",
+    icon: "image",
+    priority: 53,
+    run: ({ editor }) =>
+      runEditorCommand(
+        editor,
+        "setImage",
+        [{ src: "assets/image.png", alt: "alt text", title: "" }],
+        "![alt text](assets/image.png)",
+      ),
   }),
   createCommand({
     id: "delete",
     title: "Delete block",
     description: "Remove this block",
     group: "Danger",
+    icon: "delete",
+    shortcut: "Del",
+    priority: 90,
     tone: "danger",
     run: ({ editor, target }) => deleteTarget(editor, target),
   }),
@@ -113,14 +293,19 @@ export class TiptapBlockActionController {
     return this.#commands.find((command) => command.id === id) ?? null;
   }
 
-  list() {
-    return this.#commands.map((command) => ({
-      id: command.id,
-      title: command.title,
-      description: command.description,
-      group: command.group,
-      tone: command.tone,
-    }));
+  list(context = {}) {
+    return this.#commands
+      .filter((command) => command.enabled(context) !== false)
+      .sort((left, right) => left.priority - right.priority)
+      .map((command) => ({
+        id: command.id,
+        title: command.title,
+        description: command.description,
+        group: command.group,
+        icon: command.icon,
+        shortcut: command.shortcut,
+        tone: command.tone,
+      }));
   }
 
   run(commandId, context = {}) {

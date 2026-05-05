@@ -119,6 +119,7 @@ export class TiptapFormatCommandController {
       title: command.title,
       ariaLabel: command.ariaLabel,
       icon: command.icon,
+      priority: command.priority,
       active: command.active(context) === true,
     }));
   }

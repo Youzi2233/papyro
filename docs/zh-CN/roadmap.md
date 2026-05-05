@@ -207,7 +207,7 @@ flowchart LR
 - [x] 增加第一版 Papyro 原生块操作柄 controller。
 - [x] 增加第一版 Papyro 原生块操作菜单 controller。
 - [x] 增加共享 Tiptap UI primitives，用于 popover 定位、菜单 active-descendant 状态、toolbar root 和显隐处理。
-- [ ] 增加高级块操作菜单和响应式编辑器 toolbar 行为。
+- [x] 增加高级块操作菜单和响应式编辑器 toolbar 行为。
 - [x] 通过 runtime 测试保持 Tiptap `content_changed`、`insert_markdown` 和 `set_view_mode` 协议行为。
 - [x] 保持 Tiptap `save_requested`、`paste_image_requested` 和 `runtime_error` 协议行为；`runtime_ready` 继续由 editor host 负责。
 - [x] 通过测试覆盖的 controller 保持 Tiptap `set_preferences` 状态更新。

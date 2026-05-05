@@ -1266,6 +1266,248 @@ small {
     font: inherit;
 }
 
+.mn-tiptap-slash-menu,
+.mn-tiptap-block-action-menu,
+.mn-tiptap-format-toolbar {
+    position: fixed;
+    z-index: 160;
+    border: 1px solid var(--mn-border);
+    border-radius: 14px;
+    background: var(--mn-panel);
+    color: var(--mn-text);
+    box-shadow: var(--mn-shadow);
+    user-select: none;
+}
+
+.mn-tiptap-slash-menu.hidden,
+.mn-tiptap-block-action-menu.hidden,
+.mn-tiptap-format-toolbar.hidden,
+.mn-tiptap-slash-menu-empty.hidden,
+.mn-tiptap-block-handle.hidden {
+    display: none;
+}
+
+.mn-tiptap-format-toolbar {
+    display: flex;
+    padding: 5px;
+}
+
+.mn-tiptap-format-toolbar-list {
+    display: flex;
+    gap: 3px;
+}
+
+.mn-tiptap-format-toolbar-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 30px;
+    height: 30px;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--mn-muted);
+    padding: 0 8px;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.mn-tiptap-format-toolbar[data-density="compact"] .mn-tiptap-format-toolbar-button {
+    width: 34px;
+    padding: 0;
+}
+
+.mn-tiptap-format-toolbar-button:hover,
+.mn-tiptap-format-toolbar-button.active {
+    background: var(--mn-accent-wash);
+    color: var(--mn-text);
+}
+
+.mn-tiptap-format-toolbar-icon {
+    display: none;
+}
+
+.mn-tiptap-format-toolbar-button[data-command-id="italic"] .mn-tiptap-format-toolbar-label {
+    font-style: italic;
+}
+
+.mn-tiptap-format-toolbar-button[data-command-id="strike"] .mn-tiptap-format-toolbar-label {
+    text-decoration: line-through;
+}
+
+.mn-tiptap-format-toolbar-button[data-command-id="code"] {
+    font-family: "SFMono-Regular", Consolas, monospace;
+    font-size: 12px;
+}
+
+.mn-tiptap-block-handle {
+    position: fixed;
+    z-index: 155;
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+}
+
+.mn-tiptap-block-handle-button {
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    border: 1px solid var(--mn-border);
+    border-radius: 10px;
+    background: var(--mn-panel);
+    color: var(--mn-muted);
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+}
+
+.mn-tiptap-block-handle-icon {
+    position: relative;
+    display: block;
+    width: 14px;
+    height: 14px;
+}
+
+.mn-tiptap-block-handle-icon::before,
+.mn-tiptap-block-handle-icon::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    width: 3px;
+    height: 3px;
+    border-radius: 999px;
+    background: currentColor;
+    box-shadow: 0 5px 0 currentColor, 0 10px 0 currentColor;
+}
+
+.mn-tiptap-block-handle-icon::before { left: 3px; }
+.mn-tiptap-block-handle-icon::after { right: 3px; }
+
+.mn-tiptap-slash-menu,
+.mn-tiptap-block-action-menu {
+    width: min(336px, calc(100vw - 20px));
+    max-height: min(480px, calc(100vh - 20px));
+    padding: 8px;
+    overflow: hidden;
+}
+
+.mn-tiptap-slash-menu-list,
+.mn-tiptap-block-action-menu-list {
+    display: grid;
+    gap: 6px;
+    overflow-y: auto;
+}
+
+.mn-tiptap-slash-menu-item,
+.mn-tiptap-block-action-menu-item {
+    display: grid;
+    width: 100%;
+    min-height: 44px;
+    border-radius: 11px;
+    background: transparent;
+    color: var(--mn-text);
+    padding: 8px 10px;
+    text-align: left;
+}
+
+.mn-tiptap-slash-menu-item {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "title group" "description group";
+    gap: 2px 10px;
+}
+
+.mn-tiptap-slash-menu-item:hover,
+.mn-tiptap-slash-menu-item.active,
+.mn-tiptap-block-action-menu-item:hover,
+.mn-tiptap-block-action-menu-item.active {
+    background: var(--mn-accent-wash);
+}
+
+.mn-tiptap-slash-menu-title,
+.mn-tiptap-block-action-menu-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.mn-tiptap-slash-menu-description,
+.mn-tiptap-block-action-menu-description,
+.mn-tiptap-slash-menu-group,
+.mn-tiptap-block-action-menu-section-title,
+.mn-tiptap-block-action-menu-shortcut,
+.mn-tiptap-slash-menu-empty {
+    color: var(--mn-muted);
+    font-size: 12px;
+}
+
+.mn-tiptap-slash-menu-description {
+    grid-area: description;
+}
+
+.mn-tiptap-slash-menu-title {
+    grid-area: title;
+}
+
+.mn-tiptap-slash-menu-group {
+    grid-area: group;
+    align-self: center;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.mn-tiptap-block-action-menu-section {
+    display: grid;
+    gap: 2px;
+}
+
+.mn-tiptap-block-action-menu-section-title {
+    padding: 2px 8px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.mn-tiptap-block-action-menu-item {
+    grid-template-columns: 30px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+}
+
+.mn-tiptap-block-action-menu-icon {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 10px;
+    background: var(--mn-accent-wash);
+    color: var(--mn-muted);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.mn-tiptap-block-action-menu-icon::before { content: "□"; }
+.mn-tiptap-block-action-menu-icon.paragraph::before { content: "P"; }
+.mn-tiptap-block-action-menu-icon.heading-1::before { content: "H1"; }
+.mn-tiptap-block-action-menu-icon.heading-2::before { content: "H2"; }
+.mn-tiptap-block-action-menu-icon.heading-3::before { content: "H3"; }
+.mn-tiptap-block-action-menu-icon.ordered-list::before { content: "1."; }
+.mn-tiptap-block-action-menu-icon.quote::before { content: "\""; }
+.mn-tiptap-block-action-menu-icon.code-block::before { content: "{}"; }
+.mn-tiptap-block-action-menu-icon.math::before { content: "fx"; }
+.mn-tiptap-block-action-menu-icon.plus-top::before,
+.mn-tiptap-block-action-menu-icon.plus-bottom::before { content: "+"; }
+
+.mn-tiptap-block-action-menu-copy {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+}
+
+.mn-tiptap-block-action-menu-item[data-tone="danger"],
+.mn-tiptap-block-action-menu-item[data-tone="danger"] .mn-tiptap-block-action-menu-icon {
+    color: var(--mn-accent-dark);
+}
+
 .mn-preview-notice {
     margin-bottom: 12px;
     padding: 10px 12px;

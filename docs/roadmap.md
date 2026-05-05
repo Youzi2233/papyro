@@ -232,7 +232,7 @@ Tasks:
 - [x] Add the first Papyro-native block handle controller.
 - [x] Add the first Papyro-native block action menu controller.
 - [x] Add shared Tiptap UI primitives for popover placement, menu active-descendant state, toolbar roots, and visibility handling.
-- [ ] Add advanced block action menus and responsive editor toolbar behavior.
+- [x] Add advanced block action menus and responsive editor toolbar behavior.
 - [x] Preserve Tiptap `content_changed`, `insert_markdown`, and `set_view_mode` protocol behavior with runtime tests.
 - [x] Preserve Tiptap `save_requested`, `paste_image_requested`, and `runtime_error` protocol behavior; keep `runtime_ready` host-owned.
 - [x] Preserve Tiptap `set_preferences` state updates through a tested controller.

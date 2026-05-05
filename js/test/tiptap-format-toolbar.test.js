@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 
 import { createTiptapFormatToolbarController } from "../src/tiptap-format-toolbar.js";
 
-function createEditor({ selected = true, active = [] } = {}) {
+function createEditor({ selected = true, active = [], viewportWidth = 1000 } = {}) {
   const calls = [];
   const activeMarks = new Set(active);
   const editor = {
@@ -44,7 +44,7 @@ function createEditor({ selected = true, active = [] } = {}) {
       dom: {
         ownerDocument: {
           documentElement: {
-            clientWidth: 1000,
+            clientWidth: viewportWidth,
             clientHeight: 800,
           },
         },
@@ -66,6 +66,7 @@ function createViewSpy() {
       calls.push([
         "update",
         state.range,
+        state.density,
         state.commands.map((command) => [command.id, command.active]),
       ]);
       this.run = state.run;
@@ -97,8 +98,20 @@ test("Tiptap format toolbar opens for non-empty Hybrid selections", () => {
       ["code", false],
     ],
   );
+  assert.equal(controller.state.density, "regular");
   assert.deepEqual(view.calls[0], ["mount", "root"]);
   assert.equal(view.calls[1][0], "update");
+});
+
+test("Tiptap format toolbar switches to compact density in narrow viewports", () => {
+  const { editor } = createEditor({ viewportWidth: 420 });
+  const view = createViewSpy();
+  const controller = createTiptapFormatToolbarController({ view });
+
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+
+  assert.equal(controller.state.density, "compact");
+  assert.equal(view.calls[1][2], "compact");
 });
 
 test("Tiptap format toolbar stays closed for collapsed selections", () => {

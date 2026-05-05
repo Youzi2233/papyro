@@ -11,9 +11,28 @@ import {
   viewportSize,
 } from "./tiptap-ui-primitives.js";
 
-const DEFAULT_WIDTH = 280;
-const DEFAULT_HEIGHT = 248;
+const DEFAULT_WIDTH = 336;
+const DEFAULT_HEIGHT = 420;
 const DEFAULT_MARGIN = 10;
+
+function groupedCommands(commands) {
+  const groups = [];
+  const groupByName = new Map();
+  commands.forEach((command, index) => {
+    const groupName = command.group || "Actions";
+    let group = groupByName.get(groupName);
+    if (!group) {
+      group = {
+        name: groupName,
+        commands: [],
+      };
+      groupByName.set(groupName, group);
+      groups.push(group);
+    }
+    group.commands.push({ ...command, index });
+  });
+  return groups;
+}
 
 function placeMenu(element, target, fallbackWindow) {
   const rect = target?.block?.getBoundingClientRect?.();
@@ -69,33 +88,67 @@ class TiptapBlockActionMenuView {
     if (!this.#root || !this.#list || !state.open) return;
 
     this.#list.replaceChildren();
-    state.commands.forEach((command, index) => {
-      const item = createElement(this.#document, "button", "mn-tiptap-block-action-menu-item");
-      const title = createElement(this.#document, "span", "mn-tiptap-block-action-menu-title");
-      const description = createElement(
+    groupedCommands(state.commands).forEach((group) => {
+      const section = createElement(
         this.#document,
-        "span",
-        "mn-tiptap-block-action-menu-description",
+        "section",
+        "mn-tiptap-block-action-menu-section",
       );
-      const group = createElement(this.#document, "span", "mn-tiptap-block-action-menu-group");
-      if (!item || !title || !description || !group) return;
+      const heading = createElement(
+        this.#document,
+        "div",
+        "mn-tiptap-block-action-menu-section-title",
+      );
+      if (!section || !heading) return;
 
-      item.type = "button";
-      item.id = commandElementId(this.#ownerId, index);
-      item.role = "menuitem";
-      item.dataset.commandId = command.id;
-      item.dataset.tone = command.tone;
-      item.tabIndex = index === state.selectedIndex ? 0 : -1;
-      item.classList.toggle("active", index === state.selectedIndex);
-      title.textContent = command.title;
-      description.textContent = command.description;
-      group.textContent = command.group;
-      item.append(title, group, description);
-      item.addEventListener("mousedown", (event) => {
-        event.preventDefault();
-        state.run(command.id);
+      section.role = "group";
+      section.setAttribute("aria-label", group.name);
+      heading.textContent = group.name;
+      section.appendChild(heading);
+
+      group.commands.forEach((command) => {
+        const item = createElement(this.#document, "button", "mn-tiptap-block-action-menu-item");
+        const icon = createElement(
+          this.#document,
+          "span",
+          `mn-tiptap-block-action-menu-icon ${command.icon ?? "block"}`,
+        );
+        const copy = createElement(this.#document, "span", "mn-tiptap-block-action-menu-copy");
+        const title = createElement(this.#document, "span", "mn-tiptap-block-action-menu-title");
+        const description = createElement(
+          this.#document,
+          "span",
+          "mn-tiptap-block-action-menu-description",
+        );
+        const shortcut = createElement(
+          this.#document,
+          "span",
+          "mn-tiptap-block-action-menu-shortcut",
+        );
+        if (!item || !icon || !copy || !title || !description || !shortcut) return;
+
+        item.type = "button";
+        item.id = commandElementId(this.#ownerId, command.index);
+        item.role = "menuitem";
+        item.dataset.commandId = command.id;
+        item.dataset.tone = command.tone;
+        item.tabIndex = command.index === state.selectedIndex ? 0 : -1;
+        item.classList.toggle("active", command.index === state.selectedIndex);
+        icon.setAttribute("aria-hidden", "true");
+        title.textContent = command.title;
+        description.textContent = command.description;
+        shortcut.textContent = command.shortcut ?? "";
+        shortcut.hidden = !command.shortcut;
+        copy.append(title, description);
+        item.append(icon, copy, shortcut);
+        item.addEventListener("mousedown", (event) => {
+          event.preventDefault();
+          state.run(command.id);
+        });
+        section.appendChild(item);
       });
-      this.#list.appendChild(item);
+
+      this.#list.appendChild(section);
     });
 
     updateActiveDescendant(this.#root, this.#ownerId, state.commands, state.selectedIndex);

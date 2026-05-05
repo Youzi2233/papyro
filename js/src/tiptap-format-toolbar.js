@@ -9,6 +9,10 @@ import {
   viewportSize,
 } from "./tiptap-ui-primitives.js";
 
+const REGULAR_TOOLBAR_WIDTH = 224;
+const COMPACT_TOOLBAR_WIDTH = 168;
+const TOOLBAR_HEIGHT = 38;
+
 function selectionContext(editor) {
   const state = editor?.state ?? editor?.view?.state;
   const selection = state?.selection;
@@ -38,17 +42,38 @@ function selectionRect(editor, range) {
   };
 }
 
-function placeToolbar(element, editor, range, fallbackWindow) {
+function shouldUseCompactToolbar(editor, range, fallbackWindow) {
+  const viewport = viewportSize(editor?.view?.dom, fallbackWindow);
+  if (viewport.width <= 520) {
+    return true;
+  }
+
+  const rect = selectionRect(editor, range);
+  if (!rect) {
+    return false;
+  }
+
+  const availableWidth =
+    Math.min(viewport.width, Math.max(rect.right ?? rect.left, rect.left) + REGULAR_TOOLBAR_WIDTH) -
+    Math.max(0, rect.left - REGULAR_TOOLBAR_WIDTH);
+  return availableWidth < REGULAR_TOOLBAR_WIDTH + 24;
+}
+
+function toolbarSize(density) {
+  return {
+    width: density === "compact" ? COMPACT_TOOLBAR_WIDTH : REGULAR_TOOLBAR_WIDTH,
+    height: TOOLBAR_HEIGHT,
+    margin: 10,
+  };
+}
+
+function placeToolbar(element, editor, range, fallbackWindow, density) {
   const rect = selectionRect(editor, range);
   if (!element || !rect) return;
 
   positionFloatingElement(element, rect, {
     viewport: viewportSize(editor?.view?.dom, fallbackWindow),
-    size: {
-      width: 184,
-      height: 38,
-      margin: 10,
-    },
+    size: toolbarSize(density),
     placement: "top",
   });
 }
@@ -84,6 +109,8 @@ class TiptapFormatToolbarView {
   update(state, editor) {
     if (!this.#root || !this.#list || !state.open) return;
 
+    const density = state.density ?? "regular";
+    this.#root.dataset.density = density;
     this.#list.replaceChildren();
     state.commands.forEach((command) => {
       const button = createElement(
@@ -105,6 +132,7 @@ class TiptapFormatToolbarView {
       button.setAttribute("aria-pressed", String(command.active));
       button.classList.toggle("active", command.active);
       button.dataset.commandId = command.id;
+      button.dataset.priority = String(command.priority ?? 100);
       text.textContent = command.label;
       button.append(icon, text);
       button.addEventListener("mousedown", (event) => {
@@ -115,7 +143,7 @@ class TiptapFormatToolbarView {
     });
 
     setHidden(this.#root, false);
-    placeToolbar(this.#root, editor, state.range, this.#window);
+    placeToolbar(this.#root, editor, state.range, this.#window, density);
   }
 
   hide() {
@@ -137,6 +165,7 @@ export class TiptapFormatToolbarController {
   #state = {
     open: false,
     range: null,
+    density: "regular",
     commands: [],
   };
 
@@ -184,6 +213,9 @@ export class TiptapFormatToolbarController {
     this.#state = {
       open: true,
       range,
+      density: shouldUseCompactToolbar(editor, range, defaultWindow(editor?.view?.dom?.ownerDocument))
+        ? "compact"
+        : "regular",
       commands: this.#commands.states({ editor, entry: this.#entry }),
     };
     this.#view.update?.(
@@ -212,6 +244,7 @@ export class TiptapFormatToolbarController {
     this.#state = {
       open: false,
       range: null,
+      density: "regular",
       commands: [],
     };
     this.#view.hide?.();

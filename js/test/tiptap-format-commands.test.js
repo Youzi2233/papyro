@@ -55,6 +55,15 @@ test("Tiptap format commands report active marks", () => {
       ["code", true],
     ],
   );
+  assert.deepEqual(
+    controller.states({ editor }).map((command) => [command.id, command.priority]),
+    [
+      ["bold", 10],
+      ["italic", 20],
+      ["strike", 30],
+      ["code", 40],
+    ],
+  );
 });
 
 test("Tiptap format command controller runs editor mark commands", () => {
