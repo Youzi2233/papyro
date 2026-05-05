@@ -58,6 +58,10 @@ function createEditor() {
         calls.push(["setCalloutBlock", attrs.kind, attrs.text]);
         return true;
       },
+      setCalloutKind: (attrs) => {
+        calls.push(["setCalloutKind", attrs.kind, attrs.pos]);
+        return true;
+      },
       toggleBulletList: () => {
         calls.push(["toggleBulletList"]);
         return true;
@@ -110,6 +114,10 @@ test("Tiptap block actions expose stable command ids", () => {
       "task-list",
       "blockquote",
       "callout",
+      "callout-kind-note",
+      "callout-kind-tip",
+      "callout-kind-warning",
+      "callout-kind-danger",
       "code-block",
       "divider",
       "table",
@@ -235,6 +243,34 @@ test("Tiptap block actions expose menu metadata in priority order", () => {
   });
 });
 
+test("Tiptap block actions show callout kind actions only for callout blocks", () => {
+  const controller = createTiptapBlockActionController();
+
+  assert.equal(
+    controller
+      .list({ target: { kind: "paragraph" } })
+      .some((command) => command.id === "callout-kind-tip"),
+    false,
+  );
+  assert.deepEqual(
+    controller
+      .list({
+        target: {
+          kind: "calloutBlock",
+          node: { type: { name: "calloutBlock" }, nodeSize: 6 },
+        },
+      })
+      .filter((command) => command.group === "Callout")
+      .map((command) => command.id),
+    [
+      "callout-kind-note",
+      "callout-kind-tip",
+      "callout-kind-warning",
+      "callout-kind-danger",
+    ],
+  );
+});
+
 test("Tiptap block actions create rich advanced blocks when available", () => {
   const { calls, editor } = createEditor();
   const controller = createTiptapBlockActionController();
@@ -255,6 +291,24 @@ test("Tiptap block actions create rich callout blocks when available", () => {
   assert.deepEqual(calls, [
     ["focus", 3],
     ["setCalloutBlock", "NOTE", "Callout text"],
+    ["focus", null],
+  ]);
+});
+
+test("Tiptap block actions switch existing callout kinds", () => {
+  const { calls, editor } = createEditor();
+  const controller = createTiptapBlockActionController();
+
+  assert.equal(
+    controller.run("callout-kind-warning", {
+      editor,
+      target: { pos: 11, kind: "calloutBlock", node: { type: "calloutBlock" } },
+    }).ok,
+    true,
+  );
+  assert.deepEqual(calls, [
+    ["focus", 11],
+    ["setCalloutKind", "WARNING", 11],
     ["focus", null],
   ]);
 });

@@ -155,6 +155,52 @@ export const PapyroCalloutBlock = Node.create({
               },
             ],
           }),
+      setCalloutKind:
+        (attributes = {}) =>
+        ({ state, tr, dispatch }) => {
+          const kind = normalizeCalloutKind(attributes.kind);
+          const explicitPos = Number(attributes.pos);
+          const explicitNode = Number.isSafeInteger(explicitPos)
+            ? state.doc.nodeAt(explicitPos)
+            : null;
+
+          if (explicitNode?.type?.name === this.name) {
+            dispatch?.(
+              tr.setNodeMarkup(explicitPos, undefined, {
+                ...explicitNode.attrs,
+                kind,
+              }),
+            );
+            return true;
+          }
+
+          for (let depth = state.selection.$from.depth; depth > 0; depth -= 1) {
+            const node = state.selection.$from.node(depth);
+            if (node?.type?.name !== this.name) continue;
+            dispatch?.(
+              tr.setNodeMarkup(state.selection.$from.before(depth), undefined, {
+                ...node.attrs,
+                kind,
+              }),
+            );
+            return true;
+          }
+
+          let changed = false;
+          state.doc.nodesBetween(state.selection.from, state.selection.to, (node, pos) => {
+            if (node.type.name !== this.name) return true;
+            tr.setNodeMarkup(pos, undefined, {
+              ...node.attrs,
+              kind,
+            });
+            changed = true;
+            return false;
+          });
+          if (changed) {
+            dispatch?.(tr);
+          }
+          return changed;
+        },
     };
   },
 });

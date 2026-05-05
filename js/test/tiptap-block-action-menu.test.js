@@ -20,6 +20,17 @@ function createTarget() {
   };
 }
 
+function createCalloutTarget() {
+  return {
+    ...createTarget(),
+    kind: "calloutBlock",
+    node: {
+      type: { name: "calloutBlock" },
+      nodeSize: 8,
+    },
+  };
+}
+
 function createEditor() {
   const calls = [];
   const editor = {
@@ -207,6 +218,33 @@ test("Tiptap block action menu renders grouped command sections", () => {
   );
   assert.equal(list.children[0].children[1].dataset.commandId, "insert-before");
   assert.equal(list.children[4].children[1].dataset.commandId, "table");
+});
+
+test("Tiptap block action menu renders callout kind sections for callout blocks", () => {
+  const { editor } = createEditor();
+  const documentRef = createDocument();
+  const controller = createTiptapBlockActionMenuController({
+    dom: { document: documentRef },
+  });
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+
+  controller.open(createCalloutTarget());
+
+  const menu = documentRef.body.children[0];
+  const list = menu.children[0];
+  assert.deepEqual(
+    list.children.map((section) => section.children[0].textContent),
+    ["Insert", "Text", "Lists", "Blocks", "Callout", "Advanced", "Actions", "Danger"],
+  );
+  assert.deepEqual(
+    list.children[4].children.slice(1).map((item) => item.dataset.commandId),
+    [
+      "callout-kind-note",
+      "callout-kind-tip",
+      "callout-kind-warning",
+      "callout-kind-danger",
+    ],
+  );
 });
 
 test("Tiptap block action menu closes on Escape", () => {

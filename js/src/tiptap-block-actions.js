@@ -1,4 +1,7 @@
-import { createMarkdownCallout } from "./tiptap-markdown-snippets.js";
+import {
+  createMarkdownCallout,
+  PAPYRO_CALLOUT_KIND_OPTIONS,
+} from "./tiptap-markdown-snippets.js";
 
 function normalizeCommandId(value) {
   return String(value ?? "").trim().toLowerCase();
@@ -126,6 +129,18 @@ function duplicateTarget(editor, target) {
 
 function canRunEditorCommand(editor, commandName) {
   return typeof editor?.commands?.[commandName] === "function";
+}
+
+function targetNodeName(target) {
+  return target?.node?.type?.name ?? target?.node?.type ?? target?.kind ?? "";
+}
+
+function isCalloutTarget(target) {
+  return targetNodeName(target) === "calloutBlock";
+}
+
+function setCalloutKind(editor, target, kind) {
+  return editorCommand(editor, "setCalloutKind", { kind, pos: target?.pos });
 }
 
 function createCommand({
@@ -269,6 +284,18 @@ export const PAPYRO_TIPTAP_BLOCK_ACTIONS = Object.freeze([
         createMarkdownCallout(),
       ),
   }),
+  ...PAPYRO_CALLOUT_KIND_OPTIONS.map((option, index) =>
+    createCommand({
+      id: `callout-kind-${option.kind.toLowerCase()}`,
+      title: option.title,
+      description: `Switch callout to ${option.title.toLowerCase()}`,
+      group: "Callout",
+      icon: "callout",
+      priority: 44 + index,
+      enabled: ({ target }) => isCalloutTarget(target),
+      run: ({ editor, target }) => setCalloutKind(editor, target, option.kind),
+    }),
+  ),
   createCommand({
     id: "code-block",
     title: "Code block",
