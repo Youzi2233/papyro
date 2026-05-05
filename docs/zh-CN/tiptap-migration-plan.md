@@ -196,7 +196,7 @@ flowchart TD
 - [x] Task list：checkbox 直接切换并 round-trip 为 `- [ ]` / `- [x]`。
 - [x] Table：从 pipe table 解析到文档表格，支持新增/删除行列和单元格导航。
 - [x] Math：inline/display 公式有编辑态、预览态和错误反馈。
-- [ ] Mermaid：保留源码编辑和渲染预览，失败时显示错误。
+- [x] Mermaid：保留源码编辑和渲染预览，失败时显示错误。
 - [ ] Image：本地图片 URL、粘贴图片请求和 Markdown 图片语法保持兼容。
 - [ ] Code block：语言信息、代码文本和高亮主题策略明确。
 

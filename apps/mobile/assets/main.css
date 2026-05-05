@@ -1160,6 +1160,49 @@ small {
     white-space: pre-wrap;
 }
 
+.mn-tiptap-mermaid-block {
+    cursor: default;
+}
+
+.mn-tiptap-mermaid-block[data-mermaid-editing="true"] {
+    display: grid;
+    min-height: 220px;
+    padding: 0;
+    overflow: hidden;
+}
+
+.mn-tiptap-mermaid-preview {
+    min-width: 0;
+}
+
+.mn-tiptap-mermaid-editor {
+    display: grid;
+    grid-template-columns: 1fr;
+    min-height: 220px;
+}
+
+.mn-tiptap-mermaid-source {
+    width: 100%;
+    min-height: 180px;
+    resize: vertical;
+    border: 0;
+    border-bottom: 1px solid var(--mn-border);
+    outline: 0;
+    background: transparent;
+    color: var(--mn-text);
+    caret-color: var(--mn-accent);
+    padding: 14px 16px;
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    font-size: .9em;
+    line-height: 1.55;
+}
+
+.mn-tiptap-mermaid-preview-pane {
+    min-width: 0;
+    padding: 14px 16px;
+    overflow: auto;
+}
+
 .mn-preview-notice {
     margin-bottom: 12px;
     padding: 10px 12px;

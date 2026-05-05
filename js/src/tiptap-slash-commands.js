@@ -234,7 +234,12 @@ export const PAPYRO_TIPTAP_SLASH_COMMANDS = Object.freeze([
     keywords: ["chart", "graph", "图表", "流程图"],
     priority: 52,
     run: ({ editor }) =>
-      insertMarkdown(editor, "\n```mermaid\nflowchart TD\n  A --> B\n```\n"),
+      runEditorCommand(
+        editor,
+        "setMermaidBlock",
+        [{ source: "flowchart TD\n  A --> B" }],
+        "\n```mermaid\nflowchart TD\n  A --> B\n```\n",
+      ),
   }),
 ]);
 

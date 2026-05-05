@@ -47,6 +47,10 @@ function createFakeEditor() {
         calls.push(["setMathBlock", attrs.source]);
         return true;
       },
+      setMermaidBlock: (attrs) => {
+        calls.push(["setMermaidBlock", attrs.source]);
+        return true;
+      },
       toggleOrderedList: () => {
         calls.push(["toggleOrderedList"]);
         return true;
@@ -132,6 +136,21 @@ test("Tiptap slash commands create rich math blocks when the math extension is a
   });
   assert.deepEqual(calls, [
     ["setMathBlock", "x^2 + y^2 = z^2"],
+    ["focus"],
+  ]);
+});
+
+test("Tiptap slash commands create rich Mermaid blocks when the Mermaid extension is available", () => {
+  const { calls, editor } = createFakeEditor();
+  const controller = createTiptapSlashCommandController();
+
+  assert.deepEqual(controller.run("mermaid", { editor }), {
+    ok: true,
+    commandId: "mermaid",
+    error: null,
+  });
+  assert.deepEqual(calls, [
+    ["setMermaidBlock", "flowchart TD\n  A --> B"],
     ["focus"],
   ]);
 });
