@@ -1405,9 +1405,39 @@ test("Tiptap table toolbar replaces native context menus inside table cells", ()
   assert.equal(controller.state.menuOpen, true);
   assert.equal(root.hidden, false);
   assert.equal(root.dataset.selectionKind, "cell");
+  assert.equal(root.style.left, "125px");
+  assert.equal(root.style.top, "132px");
 
   controller.destroy();
   assert.equal(editor.view.dom.listeners.size, 0);
+});
+
+test("Tiptap table toolbar anchors right-click menus to the pointer", () => {
+  const { created, documentRef } = createDocument();
+  const { cells, editor } = createTableHarness({
+    mergeCells: () => true,
+    setCellAttribute: () => true,
+  });
+  const controller = createTiptapTableToolbarController({
+    dom: { document: documentRef },
+  });
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+
+  editor.view.dom.listeners.get("contextmenu")({
+    target: cells[1],
+    clientX: 310,
+    clientY: 240,
+    preventDefault() {},
+    stopPropagation() {},
+  });
+
+  const root = created.find((element) =>
+    String(element.className).includes("mn-tiptap-table-toolbar"),
+  );
+  assert.equal(controller.state.menuAnchorRect.left, 310);
+  assert.equal(controller.state.menuAnchorRect.top, 240);
+  assert.equal(root.style.left, "195px");
+  assert.equal(root.style.top, "248px");
 });
 
 test("selectTableAxis rejects missing table selection commands", () => {

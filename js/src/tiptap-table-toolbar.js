@@ -522,6 +522,7 @@ function tableSelectionRect(grid, selection, tableRect) {
 }
 
 function tableMenuAnchorRect(state) {
+  if (state?.menuAnchorRect) return state.menuAnchorRect;
   if (state?.mode === "keyboard") return state?.rect ?? null;
 
   const selectionKind = state?.selection?.kind ?? "cell";
@@ -530,6 +531,15 @@ function tableMenuAnchorRect(state) {
   }
 
   return state?.selectionRect ?? state?.cellRect ?? state?.rect ?? null;
+}
+
+function pointerAnchorRect(event, fallbackRect = null) {
+  const x = Number(event?.clientX);
+  const y = Number(event?.clientY);
+  if (Number.isFinite(x) && Number.isFinite(y)) {
+    return normalizedRect({ left: x, top: y, right: x, bottom: y });
+  }
+  return normalizedRect(fallbackRect);
 }
 
 function activeCellFromEditor(editor, grid = []) {
@@ -1172,6 +1182,7 @@ export class TiptapTableToolbarController {
     cell: null,
     cellRect: null,
     selectionRect: null,
+    menuAnchorRect: null,
     grid: [],
     selection: tableSelectionState(null, []),
     commands: [],
@@ -1245,6 +1256,10 @@ export class TiptapTableToolbarController {
     const previousKind = this.#state.selection.kind;
     const previousPositions = this.#state.selection.positions ?? new Set();
     const context = activeTableContext(editor);
+    const previousMenuAnchorRect =
+      this.#state.open && this.#state.menuOpen && previousTable === context?.table
+        ? this.#state.menuAnchorRect
+        : null;
     if (!context?.rect) {
       this.close();
       return this.state;
@@ -1293,6 +1308,7 @@ export class TiptapTableToolbarController {
       cell: context.cell,
       cellRect: context.cell?.getBoundingClientRect?.() ?? null,
       selectionRect: context.selectionRect,
+      menuAnchorRect: previousMenuAnchorRect,
       grid: context.grid,
       selection: context.selection,
       commands,
@@ -1304,6 +1320,7 @@ export class TiptapTableToolbarController {
       this.#state.menuOpen = false;
       this.#state.mode = "context";
       this.#state.keyboardActive = false;
+      this.#state.menuAnchorRect = null;
     }
     this.#view.update?.({
       ...this.#state,
@@ -1358,6 +1375,7 @@ export class TiptapTableToolbarController {
         ...this.#state,
         menuOpen: true,
         mode: "keyboard",
+        menuAnchorRect: null,
         keyboardActive: true,
       };
       this.#view.update?.({
@@ -1451,8 +1469,9 @@ export class TiptapTableToolbarController {
     }
 
     this.#editor.commands?.focus?.();
+    const anchorRect = pointerAnchorRect(event, cell?.getBoundingClientRect?.());
     this.refresh(this.#editor);
-    return this.toggleMenu("context", { open: true });
+    return this.toggleMenu("context", { open: true, anchorRect });
   }
 
   run(commandId) {
@@ -1471,7 +1490,7 @@ export class TiptapTableToolbarController {
     return ok;
   }
 
-  toggleMenu(mode = "context", { open = null } = {}) {
+  toggleMenu(mode = "context", { open = null, anchorRect = null } = {}) {
     if (!this.#state.open) return false;
     const nextMode = mode === "keyboard" ? "keyboard" : "context";
     const nextOpen = open === null ? !(this.#state.menuOpen && this.#state.mode === nextMode) : !!open;
@@ -1487,6 +1506,9 @@ export class TiptapTableToolbarController {
       ...this.#state,
       menuOpen: nextOpen,
       mode: nextMode,
+      menuAnchorRect: nextOpen
+        ? normalizedRect(anchorRect) ?? this.#state.menuAnchorRect ?? null
+        : null,
       activeCommandId,
       keyboardActive: nextMode === "keyboard" && nextOpen ? this.#state.keyboardActive : false,
     };
@@ -1533,6 +1555,7 @@ export class TiptapTableToolbarController {
       mode: "context",
       activeCommandId: firstEnabledCommandId(this.#state.commands, "context", this.#state.selection.kind),
       keyboardActive: false,
+      menuAnchorRect: null,
     };
     this.#view.update?.({
       ...this.#state,
@@ -1556,6 +1579,7 @@ export class TiptapTableToolbarController {
       cell: null,
       cellRect: null,
       selectionRect: null,
+      menuAnchorRect: null,
       grid: [],
       selection: tableSelectionState(null, []),
       commands: [],
