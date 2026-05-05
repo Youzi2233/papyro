@@ -225,6 +225,7 @@ flowchart LR
 - [x] 增加表格单元格背景色命令：清除、黄色、蓝色、绿色通过 Tiptap `setCellAttribute('backgroundColor', ...)` 写入单元格属性，并在工具条中显示当前背景状态。
 - [x] 增加共享 Tiptap UI primitives，用于 popover 定位、菜单 active-descendant 状态、toolbar root 和显隐处理。
 - [x] 表格工具条尊重 Tiptap `editor.can()`，当前状态不可执行的行、列、单元格和修复操作会显示为 disabled，而不是伪装成可点击。
+- [x] 增加 Tiptap 表格工具条键盘访问：在表格选区内 Shift+F10 打开工具条，方向键在可用命令间移动，Enter/Space 执行当前命令，Escape 关闭。
 - [x] 给 slash/`+` 插入菜单、块操作菜单、浮动格式栏和表格工具条接入共享浮层 dismiss 生命周期：外部点击、滚动和窗口变化会稳定收起，点击当前块或表格内部不会误关。
 - [x] slash 菜单和块操作菜单的键盘导航会自动把当前选项滚入可视区，长菜单也能稳定键盘操作。
 - [x] 增加高级块操作菜单和响应式编辑器 toolbar 行为。

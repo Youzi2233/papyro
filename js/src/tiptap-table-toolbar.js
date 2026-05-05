@@ -185,6 +185,11 @@ export const TABLE_COMMANDS = Object.freeze([
 
 const TABLE_AXIS_HANDLE_SIZE = 22;
 
+function isTableToolbarActivation(event) {
+  const key = String(event?.key ?? "").toLowerCase();
+  return key === "f10" && event?.shiftKey && !event?.altKey && !event?.ctrlKey && !event?.metaKey;
+}
+
 function closestTableElement(target, editorDom) {
   if (!target?.closest || !editorDom?.contains) return null;
   const table = target.closest(".mn-tiptap-table, table");
@@ -299,6 +304,41 @@ function normalizeCellAttributeValue(name, value) {
     return align === "left" ? null : align || null;
   }
   return value ?? null;
+}
+
+function enabledCommandIds(commands) {
+  return (commands ?? [])
+    .filter((command) => !command.disabled)
+    .map((command) => command.id);
+}
+
+function nextEnabledCommandId(commands, currentId, direction) {
+  const ids = enabledCommandIds(commands);
+  if (ids.length === 0) return null;
+  const currentIndex = ids.indexOf(currentId);
+  const startIndex = currentIndex < 0 ? 0 : currentIndex;
+  return ids[(startIndex + direction + ids.length) % ids.length];
+}
+
+function commandButtonById(root, commandId) {
+  if (!root || !commandId) return null;
+  const selector = `[data-command-id="${commandId}"]`;
+  if (typeof root.querySelector === "function") {
+    try {
+      const found = root.querySelector(selector);
+      if (found) return found;
+    } catch (_error) {
+      // Fall through to the small tree walk used by tests and non-standard DOMs.
+    }
+  }
+
+  const children = Array.from(root.children ?? []);
+  for (const child of children) {
+    if (child?.dataset?.commandId === commandId) return child;
+    const found = commandButtonById(child, commandId);
+    if (found) return found;
+  }
+  return null;
 }
 
 export function selectTableAxis(editor, grid, axis, index) {
@@ -420,7 +460,9 @@ class TiptapTableToolbarView {
       button.dataset.group = command.group;
       button.dataset.tone = command.tone ?? "default";
       button.dataset.active = command.active ? "true" : "false";
+      button.dataset.keyboardActive = state.activeCommandId === command.id ? "true" : "false";
       button.dataset.disabled = command.disabled ? "true" : "false";
+      button.tabIndex = state.activeCommandId === command.id ? 0 : -1;
       button.disabled = !!command.disabled;
       button.setAttribute("aria-disabled", command.disabled ? "true" : "false");
       button.addEventListener("pointerdown", (event) => {
@@ -436,6 +478,8 @@ class TiptapTableToolbarView {
     });
 
     setHidden(this.#root, false);
+    this.#root.dataset.keyboardActive = state.keyboardActive ? "true" : "false";
+    this.#root.onkeydown = (event) => state.handleKeyDown?.(event);
     this.#updateQuickAdd(state);
     this.#updateTableHandle(state);
     this.#updateAxisHandles(state);
@@ -572,6 +616,28 @@ class TiptapTableToolbarView {
     );
   }
 
+  setActiveCommand(commandId, keyboardActive = true) {
+    if (!this.#root) return false;
+
+    const buttons = Array.from(this.#list?.children ?? []).filter(
+      (child) => child?.dataset?.commandId,
+    );
+    buttons.forEach((button) => {
+      const active = button.dataset.commandId === commandId;
+      button.dataset.keyboardActive = active ? "true" : "false";
+      button.tabIndex = active ? 0 : -1;
+    });
+    this.#root.dataset.keyboardActive = keyboardActive ? "true" : "false";
+    return true;
+  }
+
+  focusCommand(commandId) {
+    const button = commandButtonById(this.#root, commandId);
+    if (!button) return false;
+    button.focus?.();
+    return true;
+  }
+
   destroy() {
     this.#root?.remove?.();
     this.#addRowButton?.remove?.();
@@ -597,6 +663,8 @@ export class TiptapTableToolbarController {
     rect: null,
     grid: [],
     commands: [],
+    activeCommandId: null,
+    keyboardActive: false,
   };
 
   constructor({ view = null, dom = {} } = {}) {
@@ -643,33 +711,128 @@ export class TiptapTableToolbarController {
       return this.state;
     }
 
+    const commands = TABLE_COMMANDS.filter(
+      (command) => typeof editor.commands?.[command.command] === "function",
+    ).map((command) => {
+      const disabled = !canRunEditorCommand(editor, command.command, command.args);
+      return {
+        ...command,
+        disabled,
+        active:
+          command.command === "setCellAttribute" &&
+          command.args?.length >= 2 &&
+          normalizeCellAttributeValue(command.args[0], cellValue(editor, command.args[0])) ===
+            normalizeCellAttributeValue(command.args[0], command.args[1]),
+      };
+    });
+    const activeCommandId = commands.some(
+      (command) => command.id === this.#state.activeCommandId && !command.disabled,
+    )
+      ? this.#state.activeCommandId
+      : enabledCommandIds(commands)[0] ?? null;
+
     this.#state = {
       open: true,
       table: context.table,
       rect: context.rect,
       grid: context.grid,
-      commands: TABLE_COMMANDS.filter(
-        (command) => typeof editor.commands?.[command.command] === "function",
-      ).map((command) => {
-        const disabled = !canRunEditorCommand(editor, command.command, command.args);
-        return {
-          ...command,
-          disabled,
-          active:
-            command.command === "setCellAttribute" &&
-            command.args?.length >= 2 &&
-            normalizeCellAttributeValue(command.args[0], cellValue(editor, command.args[0])) ===
-              normalizeCellAttributeValue(command.args[0], command.args[1]),
-        };
-      }),
+      commands,
+      activeCommandId,
+      keyboardActive: this.#state.keyboardActive,
     };
     this.#view.update?.({
       ...this.#state,
       run: (commandId) => this.run(commandId),
       selectAxis: (axis, index) => this.selectAxis(axis, index),
+      handleKeyDown: (event) => this.handleKeyDown(event),
     });
     this.#dismiss.open();
     return this.state;
+  }
+
+  setActiveCommand(commandId, { focus = false, keyboardActive = true } = {}) {
+    if (!this.#state.open) return false;
+    const command = this.#state.commands.find((item) => item.id === commandId && !item.disabled);
+    if (!command) return false;
+
+    this.#state = {
+      ...this.#state,
+      activeCommandId: command.id,
+      keyboardActive,
+    };
+    this.#view.setActiveCommand?.(command.id, keyboardActive);
+    if (focus) this.#view.focusCommand?.(command.id);
+    return true;
+  }
+
+  #moveActiveCommand(direction, event) {
+    const nextId = nextEnabledCommandId(
+      this.#state.commands,
+      this.#state.activeCommandId,
+      direction,
+    );
+    if (!nextId) return false;
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+    return this.setActiveCommand(nextId, { focus: true, keyboardActive: true });
+  }
+
+  handleKeyDown(event) {
+    if (!this.#state.open && isTableToolbarActivation(event)) {
+      this.refresh(this.#editor);
+    }
+
+    if (!this.#state.open) return false;
+
+    if (isTableToolbarActivation(event)) {
+      const firstId = enabledCommandIds(this.#state.commands)[0] ?? null;
+      if (!firstId) return false;
+      event?.preventDefault?.();
+      event?.stopPropagation?.();
+      return this.setActiveCommand(firstId, { focus: true, keyboardActive: true });
+    }
+
+    const key = String(event?.key ?? "");
+    if (key === "Escape") {
+      event?.preventDefault?.();
+      event?.stopPropagation?.();
+      this.close();
+      return true;
+    }
+
+    const targetInsideToolbar = this.contains(event?.target);
+    if (!targetInsideToolbar && !this.#state.keyboardActive) return false;
+
+    if (key === "ArrowRight" || key === "ArrowDown") {
+      return this.#moveActiveCommand(1, event);
+    }
+    if (key === "ArrowLeft" || key === "ArrowUp") {
+      return this.#moveActiveCommand(-1, event);
+    }
+    if (key === "Home") {
+      const firstId = enabledCommandIds(this.#state.commands)[0] ?? null;
+      if (!firstId) return false;
+      event?.preventDefault?.();
+      event?.stopPropagation?.();
+      return this.setActiveCommand(firstId, { focus: true, keyboardActive: true });
+    }
+    if (key === "End") {
+      const ids = enabledCommandIds(this.#state.commands);
+      const lastId = ids.at(-1) ?? null;
+      if (!lastId) return false;
+      event?.preventDefault?.();
+      event?.stopPropagation?.();
+      return this.setActiveCommand(lastId, { focus: true, keyboardActive: true });
+    }
+    if (key === "Enter" || key === " ") {
+      const commandId = this.#state.activeCommandId;
+      if (!commandId) return false;
+      event?.preventDefault?.();
+      event?.stopPropagation?.();
+      return this.run(commandId);
+    }
+
+    return false;
   }
 
   run(commandId) {
@@ -679,8 +842,12 @@ export class TiptapTableToolbarController {
       this.refresh(this.#editor);
       return false;
     }
+    const keepToolbarFocus = this.#state.keyboardActive;
     const ok = runEditorCommand(this.#editor, command.command, command.args);
     this.refresh(this.#editor);
+    if (keepToolbarFocus && this.#state.open && this.#state.activeCommandId) {
+      this.#view.focusCommand?.(this.#state.activeCommandId);
+    }
     return ok;
   }
 
@@ -698,6 +865,8 @@ export class TiptapTableToolbarController {
       rect: null,
       grid: [],
       commands: [],
+      activeCommandId: null,
+      keyboardActive: false,
     };
     this.#view.hide?.();
     this.#dismiss.close();

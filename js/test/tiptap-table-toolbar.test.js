@@ -140,6 +140,7 @@ function createViewSpy() {
 function createDocument() {
   const created = [];
   const documentRef = {
+    activeElement: null,
     createElement(tagName) {
       const element = {
         tagName,
@@ -166,7 +167,11 @@ function createDocument() {
           this[`on${name}`] = handler;
         },
         contains(target) {
-          return target === this;
+          return target === this || this.children.some((child) => child.contains?.(target));
+        },
+        focus() {
+          documentRef.activeElement = this;
+          this.focused = true;
         },
         remove() {
           this.removed = true;
@@ -515,6 +520,125 @@ test("Tiptap table toolbar quick add buttons run row and column insertion", () =
     ["addColumnAfter"],
     ["focus"],
   ]);
+});
+
+test("Tiptap table toolbar supports keyboard navigation and execution", () => {
+  const { created, documentRef } = createDocument();
+  const { calls, editor } = createTableHarness();
+  editor.commands.addColumnBefore = commandSpy(calls, "addColumnBefore");
+  editor.commands.deleteColumn = commandSpy(calls, "deleteColumn");
+  editor.commands.deleteTable = commandSpy(calls, "deleteTable");
+  editor.can = () => ({
+    addColumnBefore: () => true,
+    deleteColumn: () => false,
+    deleteTable: () => true,
+  });
+  const controller = createTiptapTableToolbarController({
+    dom: { document: documentRef },
+  });
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  const events = [];
+  const keyboardEvent = (key, extra = {}) => ({
+    key,
+    ...extra,
+    preventDefault() {
+      events.push(["preventDefault", key]);
+    },
+    stopPropagation() {
+      events.push(["stopPropagation", key]);
+    },
+  });
+
+  assert.equal(
+    controller.handleKeyDown(keyboardEvent("F10", { shiftKey: true })),
+    true,
+  );
+  assert.equal(controller.state.activeCommandId, "add-column-before");
+  assert.equal(documentRef.activeElement?.dataset?.commandId, "add-column-before");
+
+  assert.equal(controller.handleKeyDown(keyboardEvent("ArrowRight")), true);
+  assert.equal(controller.state.activeCommandId, "delete-table");
+  assert.equal(documentRef.activeElement?.dataset?.commandId, "delete-table");
+
+  assert.equal(controller.handleKeyDown(keyboardEvent("Enter")), true);
+  assert.deepEqual(calls, [["deleteTable"], ["focus"]]);
+  assert.equal(documentRef.activeElement?.dataset?.commandId, "delete-table");
+
+  const disabled = created.find((element) => element.dataset.commandId === "delete-column");
+  assert.equal(disabled.tabIndex, -1);
+  assert.equal(disabled.dataset.keyboardActive, "false");
+});
+
+test("Tiptap table toolbar handles keyboard events after focus enters the toolbar", () => {
+  const { created, documentRef } = createDocument();
+  const { editor } = createTableHarness();
+  editor.commands.addColumnBefore = () => true;
+  editor.commands.deleteTable = () => true;
+  const controller = createTiptapTableToolbarController({
+    dom: { document: documentRef },
+  });
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+
+  const root = created.find((element) =>
+    String(element.className).includes("mn-tiptap-table-toolbar"),
+  );
+  const prevented = [];
+  root.onkeydown({
+    key: "End",
+    target: root,
+    preventDefault() {
+      prevented.push("default");
+    },
+    stopPropagation() {
+      prevented.push("propagation");
+    },
+  });
+
+  assert.equal(controller.state.activeCommandId, "delete-table");
+  assert.deepEqual(prevented, ["default", "propagation"]);
+});
+
+test("Tiptap table toolbar closes from keyboard Escape", () => {
+  const { editor } = createTableHarness();
+  editor.commands.deleteTable = () => true;
+  const view = createViewSpy();
+  const controller = createTiptapTableToolbarController({ view });
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+
+  assert.equal(
+    controller.handleKeyDown({
+      key: "Escape",
+      preventDefault() {},
+      stopPropagation() {},
+    }),
+    true,
+  );
+
+  assert.equal(controller.state.open, false);
+  assert.deepEqual(view.calls.at(-1), ["hide"]);
+});
+
+test("Tiptap table toolbar activation refreshes a closed table context", () => {
+  const { editor } = createTableHarness();
+  editor.commands.deleteTable = () => true;
+  const view = createViewSpy();
+  const controller = createTiptapTableToolbarController({ view });
+  controller.attach({ editor, root: {}, entry: { viewMode: "preview" } });
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  controller.close();
+
+  assert.equal(
+    controller.handleKeyDown({
+      key: "F10",
+      shiftKey: true,
+      preventDefault() {},
+      stopPropagation() {},
+    }),
+    true,
+  );
+
+  assert.equal(controller.state.open, true);
+  assert.equal(controller.state.activeCommandId, "delete-table");
 });
 
 test("Tiptap table toolbar axis handles select tables rows and columns", () => {

@@ -903,6 +903,14 @@
     color: var(--mn-ink);
 }
 
+.mn-tiptap-table-toolbar-button:focus-visible,
+.mn-tiptap-table-toolbar-button[data-keyboard-active="true"] {
+    outline: 0;
+    background: var(--mn-accent-wash);
+    color: var(--mn-ink);
+    box-shadow: var(--mn-ring-focus-sm);
+}
+
 .mn-tiptap-table-toolbar-button:disabled {
     cursor: not-allowed;
     opacity: var(--mn-primitive-disabled-opacity, 0.45);

@@ -112,6 +112,10 @@ function createRuntimeHarness({
       close: () => calls.push(["tableToolbarClose"]),
       contains: () => false,
       destroy: () => calls.push(["tableToolbarDestroy"]),
+      handleKeyDown: (event) => {
+        calls.push(["tableToolbarKeyDown", event.key]);
+        return event.key === "F10" && event.shiftKey;
+      },
       refresh: () => calls.push(["tableToolbarRefresh"]),
     }));
 
@@ -1051,7 +1055,29 @@ test("Tiptap runtime wires slash menu keyboard handling through editor props", (
   const handled = editor.options.editorProps.handleKeyDown(null, { key: "ArrowDown" });
 
   assert.equal(handled, true);
-  assert.deepEqual(calls, [["slashMenuKeyDown", "ArrowDown"]]);
+  assert.deepEqual(calls, [
+    ["tableToolbarKeyDown", "ArrowDown"],
+    ["slashMenuKeyDown", "ArrowDown"],
+  ]);
+});
+
+test("Tiptap runtime lets table toolbar keyboard handling win before slash menu", () => {
+  const { calls, registry, runtime } = createRuntimeHarness();
+  runtime.ensureEditor({
+    tabId: "tab-a",
+    containerId: "editor-root",
+    initialContent: "# Note",
+  });
+  calls.length = 0;
+
+  const editor = registry.get("tab-a").editor;
+  const handled = editor.options.editorProps.handleKeyDown(null, {
+    key: "F10",
+    shiftKey: true,
+  });
+
+  assert.equal(handled, true);
+  assert.deepEqual(calls, [["tableToolbarKeyDown", "F10"]]);
 });
 
 test("Tiptap runtime does not consume slash menu keys during IME composition", () => {

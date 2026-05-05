@@ -249,6 +249,7 @@ Tasks:
 - [x] Normalize table toolbar active alignment states so default/left/center/right cells reflect the actual Markdown table state.
 - [x] Add shared Tiptap UI primitives for popover placement, menu active-descendant state, toolbar roots, and visibility handling.
 - [x] Respect Tiptap `editor.can()` in the table toolbar so unavailable row, column, cell, and repair actions render disabled instead of looking clickable.
+- [x] Add keyboard access to the Tiptap table toolbar: Shift+F10 opens it from a table selection, arrow keys move between enabled commands, Enter/Space runs the focused command, and Escape closes it.
 - [x] Add shared floating dismiss lifecycle to the slash/`+` insertion menu, block action menu, floating format toolbar, and table toolbar so outside clicks, scrolling, and window changes close overlays while the current block/table bridge stays interactive.
 - [x] Keep slash and block action menu keyboard navigation scrolled to the active item so long Notion-like menus remain usable from the keyboard.
 - [x] Add advanced block action menus and responsive editor toolbar behavior.
