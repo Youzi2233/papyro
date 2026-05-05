@@ -161,6 +161,32 @@ function createTableHarness(commandOverrides = {}) {
   return { calls, cells, editor, table };
 }
 
+function toolbarCommandIds(created) {
+  const root = created.find((element) =>
+    String(element.className).includes("mn-tiptap-table-toolbar"),
+  );
+  const walk = (element) => [
+    ...(element?.dataset?.commandId ? [element.dataset.commandId] : []),
+    ...(element?.children ?? []).flatMap(walk),
+  ];
+  return walk(root).filter(Boolean);
+}
+
+function toolbarCommandButton(created, commandId) {
+  const root = created.find((element) =>
+    String(element.className).includes("mn-tiptap-table-toolbar"),
+  );
+  const find = (element) => {
+    if (element?.dataset?.commandId === commandId) return element;
+    for (const child of element?.children ?? []) {
+      const found = find(child);
+      if (found) return found;
+    }
+    return null;
+  };
+  return find(root);
+}
+
 function commandSpy(calls, name, result = true) {
   return () => {
     calls.push([name]);
@@ -346,10 +372,10 @@ test("Tiptap table toolbar disables commands rejected by editor.can", () => {
   const { created, documentRef } = createDocument();
   const { calls, editor } = createTableHarness();
   editor.commands.addRowAfter = commandSpy(calls, "addRowAfter");
-  editor.commands.mergeCells = commandSpy(calls, "mergeCells");
+  editor.commands.setCellAttribute = commandSpy(calls, "setCellAttribute");
   editor.can = () => ({
     addRowAfter: () => false,
-    mergeCells: () => false,
+    setCellAttribute: () => false,
   });
   const controller = createTiptapTableToolbarController({
     dom: { document: documentRef },
@@ -365,16 +391,22 @@ test("Tiptap table toolbar disables commands rejected by editor.can", () => {
     controller.state.commands.map((command) => [command.id, command.disabled]),
     [
       ["add-row-after", true],
-      ["merge-cells", true],
+      ["align-left", true],
+      ["align-center", true],
+      ["align-right", true],
+      ["cell-bg-clear", true],
+      ["cell-bg-yellow", true],
+      ["cell-bg-blue", true],
+      ["cell-bg-green", true],
     ],
   );
 
-  const mergeButton = created.find((element) => element.dataset.commandId === "merge-cells");
-  assert.equal(mergeButton.disabled, true);
-  assert.equal(mergeButton.dataset.disabled, "true");
-  assert.equal(mergeButton["aria-disabled"], "true");
-  mergeButton.onpointerdown({ preventDefault() {}, stopPropagation() {} });
-  assert.equal(controller.run("merge-cells"), false);
+  const alignButton = toolbarCommandButton(created, "align-center");
+  assert.equal(alignButton.disabled, true);
+  assert.equal(alignButton.dataset.disabled, "true");
+  assert.equal(alignButton["aria-disabled"], "true");
+  alignButton.onpointerdown({ preventDefault() {}, stopPropagation() {} });
+  assert.equal(controller.run("align-center"), false);
 
   const rowButton = created.find((element) =>
     String(element.className).includes("mn-tiptap-table-add-row"),
@@ -639,7 +671,10 @@ test("Tiptap table toolbar controls fall back to click events", () => {
   const { calls, editor } = createTableHarness();
   editor.commands.addRowAfter = commandSpy(calls, "addRowAfter");
   editor.commands.addColumnAfter = commandSpy(calls, "addColumnAfter");
-  editor.commands.mergeCells = commandSpy(calls, "mergeCells");
+  editor.commands.setCellAttribute = (name, value) => {
+    calls.push(["setCellAttribute", name, value]);
+    return true;
+  };
   const controller = createTiptapTableToolbarController({
     dom: { document: documentRef },
   });
@@ -658,15 +693,15 @@ test("Tiptap table toolbar controls fall back to click events", () => {
   rowButton.onclick({ preventDefault() {}, stopPropagation() {} });
   columnButton.onclick({ preventDefault() {}, stopPropagation() {} });
   trigger.onclick({ preventDefault() {}, stopPropagation() {} });
-  const mergeButton = created.find((element) => element.dataset.commandId === "merge-cells");
-  mergeButton.onclick({ preventDefault() {}, stopPropagation() {} });
+  const alignButton = toolbarCommandButton(created, "align-center");
+  alignButton.onclick({ preventDefault() {}, stopPropagation() {} });
 
   assert.deepEqual(calls, [
     ["addRowAfter"],
     ["focus"],
     ["addColumnAfter"],
     ["focus"],
-    ["mergeCells"],
+    ["setCellAttribute", "align", "center"],
     ["focus"],
   ]);
 });
@@ -722,7 +757,6 @@ test("Tiptap table toolbar keeps complex command chrome hidden until requested",
       .filter((element) => element.dataset.commandId)
       .map((element) => element.dataset.commandId),
     [
-      "merge-cells",
       "align-left",
       "align-center",
       "align-right",
@@ -1047,6 +1081,65 @@ test("Tiptap table toolbar scopes context commands to row and column selections"
       .filter((id) => ["add-column-before", "add-column-after", "delete-column", "toggle-header-column", "merge-cells"].includes(id)),
     ["add-column-before", "add-column-after", "delete-column", "toggle-header-column"],
   );
+});
+
+test("Tiptap table toolbar keeps cell and axis context menus focused", () => {
+  const { created, documentRef } = createDocument();
+  const { editor } = createTableHarness({
+    addRowBefore: () => true,
+    addRowAfter: () => true,
+    deleteRow: () => true,
+    toggleHeaderRow: () => true,
+    addColumnBefore: () => true,
+    addColumnAfter: () => true,
+    deleteColumn: () => true,
+    toggleHeaderColumn: () => true,
+    mergeCells: () => true,
+    splitCell: () => true,
+    setCellAttribute: () => true,
+    fixTables: () => true,
+    deleteTable: () => true,
+  });
+  const controller = createTiptapTableToolbarController({
+    dom: { document: documentRef },
+  });
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+
+  const trigger = created.find((element) =>
+    String(element.className).includes("mn-tiptap-table-cell-menu-trigger"),
+  );
+  trigger.onpointerdown({ preventDefault() {}, stopPropagation() {} });
+  assert.deepEqual(toolbarCommandIds(created), [
+    "align-left",
+    "align-center",
+    "align-right",
+    "cell-bg-clear",
+    "cell-bg-yellow",
+    "cell-bg-blue",
+    "cell-bg-green",
+  ]);
+
+  const rowHandle = created.find((element) =>
+    String(element.className).includes("mn-tiptap-table-axis-handle row") && !element.removed,
+  );
+  rowHandle.onpointerdown({ preventDefault() {}, stopPropagation() {} });
+  assert.deepEqual(toolbarCommandIds(created).filter((id) => id.includes("row")), [
+    "add-row-before",
+    "add-row-after",
+    "delete-row",
+    "toggle-header-row",
+  ]);
+  assert.equal(toolbarCommandIds(created).includes("cell-bg-yellow"), false);
+
+  const tableHandle = created.find((element) =>
+    String(element.className).includes("mn-tiptap-table-axis-handle table") && !element.removed,
+  );
+  tableHandle.onpointerdown({ preventDefault() {}, stopPropagation() {} });
+  assert.deepEqual(toolbarCommandIds(created), [
+    "toggle-header-row",
+    "toggle-header-column",
+    "delete-table",
+  ]);
 });
 
 test("Tiptap table toolbar anchors row and column menus to the active selection", () => {

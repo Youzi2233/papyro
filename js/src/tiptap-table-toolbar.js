@@ -228,8 +228,6 @@ export const TABLE_COMMANDS = Object.freeze([
 const TABLE_AXIS_HANDLE_SIZE = 22;
 const TABLE_MENU_COMMAND_SCOPE = Object.freeze({
   cell: new Set([
-    "merge-cells",
-    "split-cell",
     "align-left",
     "align-center",
     "align-right",
@@ -240,7 +238,6 @@ const TABLE_MENU_COMMAND_SCOPE = Object.freeze({
   ]),
   cells: new Set([
     "merge-cells",
-    "split-cell",
     "align-left",
     "align-center",
     "align-right",
@@ -254,34 +251,16 @@ const TABLE_MENU_COMMAND_SCOPE = Object.freeze({
     "add-row-after",
     "delete-row",
     "toggle-header-row",
-    "align-left",
-    "align-center",
-    "align-right",
-    "cell-bg-clear",
-    "cell-bg-yellow",
-    "cell-bg-blue",
-    "cell-bg-green",
   ]),
   column: new Set([
     "add-column-before",
     "add-column-after",
     "delete-column",
     "toggle-header-column",
-    "align-left",
-    "align-center",
-    "align-right",
-    "cell-bg-clear",
-    "cell-bg-yellow",
-    "cell-bg-blue",
-    "cell-bg-green",
   ]),
   table: new Set([
     "toggle-header-row",
     "toggle-header-column",
-    "align-left",
-    "align-center",
-    "align-right",
-    "fix-table",
     "delete-table",
   ]),
 });
