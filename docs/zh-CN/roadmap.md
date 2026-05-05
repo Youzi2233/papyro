@@ -219,6 +219,7 @@ flowchart LR
 - [x] 增加表格左上角整表选择 handle：点击即可选中整张表，便于继续执行删除、表头、对齐和单元格样式操作。
 - [x] 增加表格单元格对齐命令：左对齐、居中、右对齐通过 Tiptap `setCellAttribute('align', ...)` 写入文档模型，并保持 Markdown pipe table 对齐语义。
 - [x] 表格工具条主命令统一为 pointer-first 触发，避免 WebView 焦点顺序吞掉表格操作。
+- [x] 归一化表格工具条 active 对齐状态，让默认、左对齐、居中和右对齐能准确反映 Markdown 表格状态。
 - [x] 增加表格单元格背景色命令：清除、黄色、蓝色、绿色通过 Tiptap `setCellAttribute('backgroundColor', ...)` 写入单元格属性，并在工具条中显示当前背景状态。
 - [x] 增加共享 Tiptap UI primitives，用于 popover 定位、菜单 active-descendant 状态、toolbar root 和显隐处理。
 - [x] 给 slash/`+` 插入菜单、块操作菜单、浮动格式栏和表格工具条接入共享浮层 dismiss 生命周期：外部点击、滚动和窗口变化会稳定收起，点击当前块或表格内部不会误关。

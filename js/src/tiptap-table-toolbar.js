@@ -280,6 +280,14 @@ function cellValue(editor, name) {
   return null;
 }
 
+function normalizeCellAttributeValue(name, value) {
+  if (name === "align") {
+    const align = String(value ?? "").trim().toLowerCase();
+    return align === "left" ? null : align || null;
+  }
+  return value ?? null;
+}
+
 export function selectTableAxis(editor, grid, axis, index) {
   if (!editor || typeof editor.commands?.setCellSelection !== "function") return false;
   const axisIndex = Number(index);
@@ -622,7 +630,8 @@ export class TiptapTableToolbarController {
         active:
           command.command === "setCellAttribute" &&
           command.args?.length >= 2 &&
-          cellValue(editor, command.args[0]) === command.args[1],
+          normalizeCellAttributeValue(command.args[0], cellValue(editor, command.args[0])) ===
+            normalizeCellAttributeValue(command.args[0], command.args[1]),
       })),
     };
     this.#view.update?.({

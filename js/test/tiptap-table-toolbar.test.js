@@ -344,6 +344,46 @@ test("Tiptap table toolbar sets cell alignment attributes", () => {
   ]);
 });
 
+test("Tiptap table toolbar normalizes active cell alignment states", () => {
+  const { editor } = createTableHarness();
+  const activeCell = editor.view.domAtPos().node;
+  editor.view.domAtPos = () => ({ node: activeCell });
+  editor.commands.setCellAttribute = () => true;
+  const view = createViewSpy();
+  const controller = createTiptapTableToolbarController({ view });
+
+  activeCell.style.textAlign = "left";
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  assert.deepEqual(
+    controller.state.commands.map((command) => [command.id, command.active]),
+    [
+      ["align-left", true],
+      ["align-center", false],
+      ["align-right", false],
+      ["cell-bg-clear", true],
+      ["cell-bg-yellow", false],
+      ["cell-bg-blue", false],
+      ["cell-bg-green", false],
+    ],
+  );
+
+  activeCell.style.textAlign = "";
+  activeCell.setAttribute("align", "right");
+  controller.refresh(editor);
+  assert.deepEqual(
+    controller.state.commands.map((command) => [command.id, command.active]),
+    [
+      ["align-left", false],
+      ["align-center", false],
+      ["align-right", true],
+      ["cell-bg-clear", true],
+      ["cell-bg-yellow", false],
+      ["cell-bg-blue", false],
+      ["cell-bg-green", false],
+    ],
+  );
+});
+
 test("Tiptap table toolbar sets cell background attributes", () => {
   const { calls, editor } = createTableHarness();
   editor.commands.setCellAttribute = (name, value) => {
