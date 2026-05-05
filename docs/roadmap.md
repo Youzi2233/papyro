@@ -263,7 +263,8 @@ Tasks:
 - [x] Remove remaining `.cm-*` CSS and rename the host surface to semantic Tiptap/editor classes.
 - [x] Finish full automated acceptance checks and push the completed migration.
 - [x] Implement full block drag-and-drop reordering through the Papyro block action handle with a tested ProseMirror transaction mover and drop indicator.
-- [ ] Complete release-candidate manual smoke for Source/Hybrid/Preview, Chinese IME, paste, undo, tables, math, Mermaid, images, outline, failed saves, and OS-opened Markdown files.
+- [x] Define the release-candidate [Tiptap Release Smoke Checklist](tiptap-release-smoke.md).
+- [ ] Execute release-candidate manual smoke for Source/Hybrid/Preview, Chinese IME, paste, undo, tables, math, Mermaid, images, outline, failed saves, and OS-opened Markdown files.
 
 ## Phase 4.5 - Themes, Typography, And Markdown Styles
 

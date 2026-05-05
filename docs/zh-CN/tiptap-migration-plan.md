@@ -238,7 +238,8 @@ flowchart TD
 - [x] `node scripts/report-file-lines.js`
 - [x] `git diff --check`
 - [x] 块拖拽排序通过 Papyro 操作柄完成，并用 JS 测试覆盖 transaction 移动逻辑。
-- [ ] 发布前手工 smoke：Source/Hybrid/Preview、中文 IME、粘贴、撤销、表格、公式、Mermaid、图片、大纲、保存失败、外部文件打开。
+- [x] 文档化专项 [Tiptap 发布候选 Smoke 检查清单](tiptap-release-smoke.md)。
+- [ ] 执行发布前手工 smoke：Source/Hybrid/Preview、中文 IME、粘贴、撤销、表格、公式、Mermaid、图片、大纲、保存失败、外部文件打开。
 
 ## 关键风险和处理策略
 

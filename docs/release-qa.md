@@ -54,6 +54,8 @@ Do not continue if any earlier step fails.
 
 ## 5. Editor Modes
 
+For the Tiptap migration branch, also complete the focused [Tiptap Release Smoke Checklist](tiptap-release-smoke.md).
+
 - [ ] Open a Markdown file with headings, lists, tables, links, images, code blocks, math, and Mermaid.
 - [ ] Switch between Source, Hybrid, and Preview without losing scroll context.
 - [ ] Confirm Preview renders code highlighting, tables, math, and Mermaid.

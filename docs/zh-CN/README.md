@@ -12,6 +12,7 @@
 | 理解代码结构 | [架构导览](architecture.md) |
 | 安全地开始开发 | [开发规范](development-standards.md) |
 | 修改 Markdown 编辑器 | [编辑器指南](editor.md) |
+| 验收 Tiptap 编辑器运行时 | [Tiptap 发布候选 Smoke 检查清单](tiptap-release-smoke.md) |
 | 修改主题或 Markdown 样式 | [主题系统](theme-system.md) |
 | 选择 Markdown 样式参考 | [Markdown 样式参考调研](markdown-style-references.md) |
 | 重构 UI/UX 体系 | [UI/UX 对标与改版决策](ui-ux-benchmark.md) |

@@ -54,6 +54,8 @@ flowchart LR
 
 ## 5. 编辑器模式
 
+在 Tiptap 迁移分支上，还要完成专项的 [Tiptap 发布候选 Smoke 检查清单](tiptap-release-smoke.md)。
+
 - [ ] 打开包含标题、列表、表格、链接、图片、代码块、数学公式和 Mermaid 的 Markdown 文件。
 - [ ] 在 Source、Hybrid、Preview 之间切换，确认不会丢失滚动上下文。
 - [ ] 确认 Preview 能渲染代码高亮、表格、数学公式和 Mermaid。

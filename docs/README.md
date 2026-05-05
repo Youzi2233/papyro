@@ -12,6 +12,7 @@ This directory is intentionally small. Older phase notes, duplicated design draf
 | Understand the codebase | [Architecture](architecture.md) |
 | Start coding safely | [Development standards](development-standards.md) |
 | Work on Markdown editing | [Editor guide](editor.md) |
+| Validate the Tiptap editor runtime | [Tiptap release smoke checklist](tiptap-release-smoke.md) |
 | Change themes or Markdown styles | [Theme system](theme-system.md) |
 | Choose Markdown style references | [Markdown style references](markdown-style-references.md) |
 | Redesign UI/UX systems | [UI/UX benchmark](ui-ux-benchmark.md) |
