@@ -268,6 +268,25 @@ const TABLE_MENU_COMMAND_SCOPE = Object.freeze({
     "delete-table",
   ]),
 });
+const TABLE_COMMAND_CONTEXT_ORDER = Object.freeze({
+  row: [
+    "add-row-after",
+    "add-row-before",
+    "toggle-header-row",
+    "delete-row",
+  ],
+  column: [
+    "add-column-after",
+    "add-column-before",
+    "toggle-header-column",
+    "delete-column",
+  ],
+  table: [
+    "toggle-header-row",
+    "toggle-header-column",
+    "delete-table",
+  ],
+});
 const CONTEXTUAL_TABLE_COMMAND_IDS = TABLE_MENU_COMMAND_SCOPE.cell;
 const SELECTION_TABLE_COMMAND_IDS = new Set([
   "merge-cells",
@@ -604,7 +623,15 @@ function visibleCommands(commands, mode = "context", selectionKind = "cell") {
   const allowed = mode === "keyboard"
     ? KEYBOARD_TABLE_COMMAND_IDS
     : TABLE_MENU_COMMAND_SCOPE[selectionKind] ?? SELECTION_TABLE_COMMAND_IDS;
-  return (commands ?? []).filter((command) => allowed.has(command.id));
+  const visible = (commands ?? []).filter((command) => allowed.has(command.id));
+  const order = mode === "context" ? TABLE_COMMAND_CONTEXT_ORDER[selectionKind] : null;
+  if (!order) return visible;
+  return [...visible].sort((left, right) => {
+    const leftIndex = order.indexOf(left.id);
+    const rightIndex = order.indexOf(right.id);
+    return (leftIndex < 0 ? Number.MAX_SAFE_INTEGER : leftIndex) -
+      (rightIndex < 0 ? Number.MAX_SAFE_INTEGER : rightIndex);
+  });
 }
 
 function firstEnabledCommandId(commands, mode = "context", selectionKind = "cell") {

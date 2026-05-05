@@ -1151,6 +1151,16 @@
     color: var(--mn-danger);
 }
 
+.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-button[data-tone="danger"] {
+    margin-top: 3px;
+    background: color-mix(in srgb, var(--mn-danger) 7%, transparent);
+}
+
+.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-button[data-tone="danger"]:hover:not(:disabled),
+.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-button[data-tone="danger"][data-keyboard-active="true"] {
+    background: color-mix(in srgb, var(--mn-danger) 12%, transparent);
+}
+
 .mn-tiptap-table-cell-menu-trigger {
     position: fixed;
     z-index: 164;

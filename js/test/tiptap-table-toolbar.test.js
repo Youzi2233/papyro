@@ -1072,7 +1072,7 @@ test("Tiptap table toolbar scopes context commands to row and column selections"
       .filter((element) => element.dataset.commandId)
       .map((element) => element.dataset.commandId)
       .filter((id) => ["add-row-before", "add-row-after", "delete-row", "toggle-header-row", "merge-cells"].includes(id)),
-    ["add-row-before", "add-row-after", "delete-row", "toggle-header-row"],
+    ["add-row-after", "add-row-before", "toggle-header-row", "delete-row"],
   );
 
   const columnHandle = created.find((element) =>
@@ -1086,7 +1086,7 @@ test("Tiptap table toolbar scopes context commands to row and column selections"
       .filter((element) => element.dataset.commandId && !element.removed)
       .map((element) => element.dataset.commandId)
       .filter((id) => ["add-column-before", "add-column-after", "delete-column", "toggle-header-column", "merge-cells"].includes(id)),
-    ["add-column-before", "add-column-after", "delete-column", "toggle-header-column"],
+    ["add-column-after", "add-column-before", "toggle-header-column", "delete-column"],
   );
 });
 
@@ -1131,10 +1131,10 @@ test("Tiptap table toolbar keeps cell and axis context menus focused", () => {
   );
   rowHandle.onpointerdown({ preventDefault() {}, stopPropagation() {} });
   assert.deepEqual(toolbarCommandIds(created).filter((id) => id.includes("row")), [
-    "add-row-before",
     "add-row-after",
-    "delete-row",
+    "add-row-before",
     "toggle-header-row",
+    "delete-row",
   ]);
   assert.equal(toolbarCommandIds(created).includes("cell-bg-yellow"), false);
 
