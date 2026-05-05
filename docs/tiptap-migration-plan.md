@@ -169,7 +169,8 @@ flowchart TD
 ### 4. Rust/JS Protocol Compatibility
 
 - [ ] Preserve `content_changed`, `save_requested`, `paste_image_requested`, `runtime_ready`, and `runtime_error`.
-- [ ] Preserve `insert_markdown`, `set_view_mode`, `set_preferences`, and `destroy`.
+- [ ] Preserve `insert_markdown`, `set_view_mode`, and `destroy`.
+- [x] Preserve `set_preferences` state updates through a Tiptap preferences controller.
 - [ ] Treat `set_block_hints` as a compatibility message during the Tiptap phase.
 - [ ] Preserve `auto_link_paste`.
 

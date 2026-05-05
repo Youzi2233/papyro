@@ -230,7 +230,8 @@ Tasks:
 - [x] Add the first Papyro-native block handle controller.
 - [x] Add the first Papyro-native block action menu controller.
 - [ ] Add advanced block action menus and responsive editor toolbar primitives.
-- [ ] Preserve Rust/JS protocol compatibility for `content_changed`, `insert_markdown`, `set_view_mode`, `set_preferences`, `destroy`, and `runtime_error`.
+- [ ] Preserve Rust/JS protocol compatibility for `content_changed`, `insert_markdown`, `set_view_mode`, `destroy`, and `runtime_error`.
+- [x] Preserve Tiptap `set_preferences` state updates through a tested controller.
 - [ ] Migrate task lists, tables, math, Mermaid, images, and code blocks.
 - [ ] Remove CodeMirror dependencies, `.cm-*` CSS, and obsolete tests.
 - [ ] Finish full acceptance checks and push the completed migration.

@@ -31,6 +31,7 @@ function createRuntimeHarness({
   }),
   blockHandleControllerFactory,
   formatToolbarControllerFactory,
+  preferencesControllerFactory,
   slashMenuControllerFactory,
 } = {}) {
   const calls = [];
@@ -140,6 +141,7 @@ function createRuntimeHarness({
     markdownManagerFactory,
     blockHandleControllerFactory: createBlockHandle,
     formatToolbarControllerFactory: createFormatToolbar,
+    ...(preferencesControllerFactory ? { preferencesControllerFactory } : {}),
     slashMenuControllerFactory: createSlashMenu,
     navigation: {
       attachPreviewScroll: () => "preview-scroll",
@@ -230,6 +232,10 @@ test("Tiptap runtime handles baseline Rust messages", () => {
   runtime.handleRustMessage("tab-a", { type: "set_content", content: "## Updated" });
   runtime.handleRustMessage("tab-a", { type: "insert_markdown", markdown: "\n- item" });
   runtime.handleRustMessage("tab-a", {
+    type: "set_preferences",
+    auto_link_paste: false,
+  });
+  runtime.handleRustMessage("tab-a", {
     type: "run_slash_command",
     command_id: "heading-2",
   });
@@ -241,6 +247,7 @@ test("Tiptap runtime handles baseline Rust messages", () => {
 
   assert.equal(registry.get("tab-a").dioxus.id, "dioxus-a");
   assert.equal(registry.get("tab-a").viewMode, "source");
+  assert.deepEqual(registry.get("tab-a").preferences, { autoLinkPaste: false });
   assert.equal(registry.get("tab-a").dom.dataset.viewMode, "source");
   assert.deepEqual(calls, [
     ["syncOutline", "tab-a", "hybrid"],
@@ -266,6 +273,37 @@ test("Tiptap runtime handles baseline Rust messages", () => {
       content: "## Updated\n- item",
     },
   ]);
+});
+
+test("Tiptap runtime applies preferences through the injected controller", () => {
+  const preferenceCalls = [];
+  const preferencesControllerFactory = () => ({
+    preferences: { autoLinkPaste: true },
+    attach(entry) {
+      preferenceCalls.push(["attach"]);
+      entry.preferences = { autoLinkPaste: true };
+      return entry.preferences;
+    },
+    apply(entry, message) {
+      preferenceCalls.push(["apply", message.auto_link_paste]);
+      entry.preferences = { autoLinkPaste: message.auto_link_paste !== false };
+      return { changed: true, preferences: entry.preferences };
+    },
+  });
+  const { registry, runtime } = createRuntimeHarness({ preferencesControllerFactory });
+  runtime.ensureEditor({
+    tabId: "tab-a",
+    containerId: "editor-root",
+    initialContent: "# Note",
+  });
+
+  runtime.handleRustMessage("tab-a", {
+    type: "set_preferences",
+    auto_link_paste: false,
+  });
+
+  assert.deepEqual(preferenceCalls, [["attach"], ["apply", false]]);
+  assert.deepEqual(registry.get("tab-a").preferences, { autoLinkPaste: false });
 });
 
 test("Tiptap runtime reports parse failures without touching the editor", () => {

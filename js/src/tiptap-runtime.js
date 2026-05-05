@@ -9,6 +9,7 @@ import { createTiptapBlockHandleController } from "./tiptap-block-handle.js";
 import { createTiptapFormatCommandController } from "./tiptap-format-commands.js";
 import { createTiptapFormatToolbarController } from "./tiptap-format-toolbar.js";
 import { createTiptapModeController } from "./tiptap-mode-controller.js";
+import { createTiptapPreferencesController } from "./tiptap-preferences-controller.js";
 import { createTiptapSlashCommandController } from "./tiptap-slash-commands.js";
 import { createTiptapSlashMenuController } from "./tiptap-slash-menu.js";
 import {
@@ -63,6 +64,7 @@ function createEntry({
   blockHandle,
   formatCommands,
   formatToolbar,
+  preferencesController,
   slashCommands,
   slashMenu,
 }) {
@@ -78,6 +80,8 @@ function createEntry({
     blockHandle,
     formatCommands,
     formatToolbar,
+    preferences: preferencesController.preferences,
+    preferencesController,
     slashCommands,
     slashMenu,
   };
@@ -96,6 +100,7 @@ export function createTiptapEditorRuntime({
   blockHandleControllerFactory = createTiptapBlockHandleController,
   formatCommandControllerFactory = createTiptapFormatCommandController,
   formatToolbarControllerFactory = createTiptapFormatToolbarController,
+  preferencesControllerFactory = createTiptapPreferencesController,
   slashCommandControllerFactory = createTiptapSlashCommandController,
   slashMenuControllerFactory = createTiptapSlashMenuController,
   navigation,
@@ -133,6 +138,10 @@ export function createTiptapEditorRuntime({
   const createFormatToolbarController = requireFunction(
     formatToolbarControllerFactory,
     "formatToolbarControllerFactory",
+  );
+  const createPreferencesController = requireFunction(
+    preferencesControllerFactory,
+    "preferencesControllerFactory",
   );
   const createSlashCommandController = requireFunction(
     slashCommandControllerFactory,
@@ -213,6 +222,7 @@ export function createTiptapEditorRuntime({
         document: documentRef,
       },
     });
+    const preferencesController = createPreferencesController();
     const slashCommands = createSlashCommandController();
     const slashMenu = createSlashMenuController({
       commandController: slashCommands,
@@ -269,10 +279,12 @@ export function createTiptapEditorRuntime({
       blockHandle,
       formatCommands,
       formatToolbar,
+      preferencesController,
       slashCommands,
       slashMenu,
     });
     modeController.apply(entry, modeController.mode);
+    preferencesController.attach(entry);
     blockHandle.attach({ editor, root, entry });
     formatToolbar.attach({ editor, root, entry });
     slashMenu.attach({ editor, root, entry });
@@ -323,6 +335,8 @@ export function createTiptapEditorRuntime({
         entry.editor.commands?.insertContent?.(message.markdown ?? "", {
           contentType: "markdown",
         });
+      } else if (message.type === "set_preferences") {
+        entry.preferencesController.apply(entry, message);
       } else if (message.type === "run_slash_command") {
         const result = entry.slashCommands.run(message.command_id ?? message.commandId, {
           editor: entry.editor,
