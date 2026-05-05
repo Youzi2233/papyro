@@ -1079,6 +1079,7 @@ small {
 
 .mn-tiptap-table-header,
 .mn-tiptap-table-cell {
+    position: relative;
     min-width: 96px;
     padding: 8px 10px;
     border: 1px solid var(--mn-border);
@@ -1096,6 +1097,8 @@ small {
     margin: 0;
 }
 
+.mn-tiptap-table-cell.selectedCell::after, .mn-tiptap-table-header.selectedCell::after, .mn-tiptap-table-cell.mn-tiptap-table-cell-selected::after, .mn-tiptap-table-header.mn-tiptap-table-cell-selected::after { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: color-mix(in srgb, var(--mn-accent) 16%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--mn-accent) 44%, transparent); }
+.mn-tiptap-table-cell > *, .mn-tiptap-table-header > * { position: relative; z-index: 2; }
 .mn-tiptap-inline-math,
 .mn-tiptap-math-block {
     color: var(--mn-text);
@@ -1391,7 +1394,9 @@ small {
 .mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-list { display: grid; gap: 3px; }
 .mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-button { justify-content: flex-start; width: 100%; height: 30px; padding: 0 9px; }
 .mn-tiptap-table-cell-menu-trigger { position: fixed; z-index: 160; display: grid; place-items: center; width: 22px; height: 22px; border: 1px solid var(--mn-border); border-radius: 999px; background: var(--mn-panel); color: var(--mn-muted); box-shadow: var(--mn-shadow); padding: 0; font-size: 10px; font-weight: 700; line-height: 1; }
+.mn-tiptap-table-cell-menu-trigger::before { content: ""; display: block; width: 4px; height: 4px; border-radius: 999px; background: currentColor; box-shadow: -5px 0 0 currentColor, 5px 0 0 currentColor; }
 .mn-tiptap-table-cell-menu-trigger:hover, .mn-tiptap-table-cell-menu-trigger[data-open="true"] { background: var(--mn-accent-wash); color: var(--mn-accent); }
+.mn-tiptap-table-axis-handle[data-active="true"] { background: var(--mn-accent-wash); color: var(--mn-accent); }
 
 .mn-tiptap-slash-menu,
 .mn-tiptap-block-action-menu {

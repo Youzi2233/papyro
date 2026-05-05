@@ -195,8 +195,6 @@ test("Tiptap block action menu opens for Hybrid block targets", () => {
   assert.deepEqual(
     controller.state.commands.map((command) => command.id),
     [
-      "insert-before",
-      "insert-after",
       "paragraph",
       "heading-1",
       "heading-2",
@@ -273,7 +271,6 @@ test("Tiptap block action menu runs the selected command", () => {
   const controller = createTiptapBlockActionMenuController({ view });
   controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
   controller.open(createTarget());
-  controller.moveSelection(2);
 
   assert.equal(controller.handleKeyDown({ key: "Enter", preventDefault() {} }), true);
 
@@ -406,7 +403,6 @@ test("Tiptap block action menu renders grouped command sections", () => {
   assert.deepEqual(
     list.children.map((section) => section.children[0].textContent),
     [
-      "Insert",
       "Text",
       "Lists",
       "Blocks",
@@ -416,8 +412,8 @@ test("Tiptap block action menu renders grouped command sections", () => {
       "Danger",
     ],
   );
-  assert.equal(list.children[0].children[1].dataset.commandId, "insert-before");
-  assert.equal(list.children[6].children[1].dataset.commandId, "copy-block");
+  assert.equal(list.children[0].children[1].dataset.commandId, "paragraph");
+  assert.equal(list.children[5].children[1].dataset.commandId, "copy-block");
 });
 
 test("Tiptap block action menu renders callout kind sections for callout blocks", () => {
@@ -435,7 +431,6 @@ test("Tiptap block action menu renders callout kind sections for callout blocks"
   assert.deepEqual(
     list.children.map((section) => section.children[0].textContent),
     [
-      "Insert",
       "Text",
       "Lists",
       "Blocks",
@@ -447,7 +442,7 @@ test("Tiptap block action menu renders callout kind sections for callout blocks"
     ],
   );
   assert.deepEqual(
-    list.children[4].children.slice(1).map((item) => item.dataset.commandId),
+    list.children[3].children.slice(1).map((item) => item.dataset.commandId),
     [
       "callout-kind-note",
       "callout-kind-tip",

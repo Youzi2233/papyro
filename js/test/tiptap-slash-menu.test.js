@@ -41,7 +41,7 @@ function createEditor(text, cursor = text.length) {
         return true;
       },
       insertContentAt: (pos, content, options) => {
-        calls.push(["insertContentAt", pos, content, options.contentType]);
+        calls.push(["insertContentAt", pos, content, options]);
         return true;
       },
       insertContent: (content, options) => {
@@ -387,10 +387,14 @@ test("Tiptap slash menu opens as a block insert menu without deleting a trigger"
   assert.equal(controller.handleKeyDown({ key: "Enter", preventDefault() {} }), true);
 
   assert.deepEqual(calls, [
-    ["focus"],
-    ["insertContentAt", 8, "\n/", "markdown"],
-    ["focus"],
+    [
+      "insertContentAt",
+      8,
+      { type: "paragraph", content: [{ type: "text", text: "/" }] },
+      { updateSelection: true },
+    ],
     ["setTextSelection", 10],
+    ["focus"],
     ["coordsAtPos", 10],
     ["deleteRange", 9, 10],
     ["setParagraph"],

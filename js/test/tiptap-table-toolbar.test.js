@@ -19,7 +19,26 @@ function createTableHarness(commandOverrides = {}) {
         columnIndex,
         parentElement: null,
         attributes: new Map(),
+        classes: new Set(),
         style: {},
+        classList: {
+          add(name) {
+            cell.classes.add(name);
+          },
+          remove(name) {
+            cell.classes.delete(name);
+          },
+          toggle(name, enabled) {
+            if (enabled) {
+              cell.classes.add(name);
+            } else {
+              cell.classes.delete(name);
+            }
+          },
+          contains(name) {
+            return cell.classes.has(name);
+          },
+        },
         closest(selector) {
           return selector.includes("table") ? table : null;
         },
@@ -61,7 +80,11 @@ function createTableHarness(commandOverrides = {}) {
     contains: (target) => target === table || cells.includes(target),
     getBoundingClientRect: () => ({ left: 120, top: 90, right: 360, bottom: 158 }),
     querySelectorAll(selector) {
-      return selector === "tr" ? rows : [];
+      if (selector === "tr") return rows;
+      if (selector === ".mn-tiptap-table-cell-selected") {
+        return cells.filter((cell) => cell.classes.has("mn-tiptap-table-cell-selected"));
+      }
+      return [];
     },
     ownerDocument: {
       documentElement: {
@@ -100,7 +123,7 @@ function createTableHarness(commandOverrides = {}) {
     },
   };
 
-  return { calls, editor, table };
+  return { calls, cells, editor, table };
 }
 
 function commandSpy(calls, name, result = true) {
@@ -738,6 +761,71 @@ test("Tiptap table toolbar axis handles select tables rows and columns", () => {
     ["setCellSelection", 10, 13],
     ["focus"],
   ]);
+});
+
+test("Tiptap table toolbar reflects selected rows columns and cells in chrome", () => {
+  const { cells, created, documentRef, editor } = (() => {
+    const { created, documentRef } = createDocument();
+    const harness = createTableHarness();
+    return { ...harness, created, documentRef };
+  })();
+  editor.commands.mergeCells = () => true;
+  editor.state.selection = {
+    from: 4,
+    $anchorCell: { pos: 10 },
+    $headCell: { pos: 12 },
+    forEachCell(callback) {
+      [10, 11, 12].forEach((pos) => callback({}, pos));
+    },
+  };
+  const controller = createTiptapTableToolbarController({
+    dom: { document: documentRef },
+  });
+
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+
+  const root = created.find((element) =>
+    String(element.className).includes("mn-tiptap-table-toolbar"),
+  );
+  const rowHandles = created.filter((element) =>
+    String(element.className).includes("mn-tiptap-table-axis-handle row"),
+  );
+  const columnHandles = created.filter((element) =>
+    String(element.className).includes("mn-tiptap-table-axis-handle column"),
+  );
+  assert.equal(root.dataset.selectionKind, "row");
+  assert.equal(rowHandles[0].dataset.active, "true");
+  assert.equal(rowHandles[1].dataset.active, "false");
+  assert.deepEqual(columnHandles.map((handle) => handle.dataset.active), [
+    "false",
+    "false",
+    "false",
+  ]);
+  assert.deepEqual(
+    cells.map((cell) => cell.classes.has("mn-tiptap-table-cell-selected")),
+    [true, true, true, false, false, false],
+  );
+
+  controller.close();
+  assert.equal(cells.some((cell) => cell.classes.has("mn-tiptap-table-cell-selected")), false);
+});
+
+test("Tiptap table toolbar positions the cell menu trigger inside the selected cell", () => {
+  const { created, documentRef } = createDocument();
+  const { editor } = createTableHarness();
+  editor.commands.mergeCells = () => true;
+  const controller = createTiptapTableToolbarController({
+    dom: { document: documentRef },
+  });
+
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+
+  const trigger = created.find((element) =>
+    String(element.className).includes("mn-tiptap-table-cell-menu-trigger"),
+  );
+  assert.equal(trigger.style.left, "149px");
+  assert.equal(trigger.style.top, "96px");
+  assert.equal(trigger.textContent ?? "", "");
 });
 
 test("selectTableAxis rejects missing table selection commands", () => {

@@ -6,6 +6,7 @@ import {
   selectTableLabel,
   selectTableRowLabel,
   tableCellActionsLabel,
+  tableSelectionActionsLabel,
   tableToolsLabel,
 } from "./tiptap-i18n.js";
 import {
@@ -280,8 +281,82 @@ function firstRowCells(grid) {
   return grid.find((row) => row.cells.length > 0)?.cells ?? [];
 }
 
-function activeCellFromEditor(editor) {
+function selectionCellPositions(selection) {
+  const positions = [];
+  if (typeof selection?.forEachCell === "function") {
+    try {
+      selection.forEachCell((_node, pos) => {
+        if (Number.isFinite(pos) && !positions.includes(pos)) {
+          positions.push(pos);
+        }
+      });
+    } catch (_error) {
+      // Some lightweight test doubles expose only anchor/head positions.
+    }
+  }
+
+  [selection?.$anchorCell?.pos, selection?.$headCell?.pos].forEach((pos) => {
+    if (Number.isFinite(pos) && !positions.includes(pos)) {
+      positions.push(pos);
+    }
+  });
+  return positions;
+}
+
+function cellByPosition(grid, pos) {
+  if (!Number.isFinite(pos)) return null;
+  return (grid ?? [])
+    .flatMap((row) => row.cells)
+    .find((cell) => cell.pos === pos) ?? null;
+}
+
+function tableSelectionState(selection, grid) {
+  const positions = new Set(selectionCellPositions(selection));
+  const rows = [];
+  const columns = [];
+  const totalCellCount = (grid ?? []).reduce((count, row) => count + row.cells.length, 0);
+
+  (grid ?? []).forEach((row, rowIndex) => {
+    if (row.cells.length > 0 && row.cells.every((cell) => positions.has(cell.pos))) {
+      rows.push(rowIndex);
+    }
+  });
+
+  firstRowCells(grid).forEach((_cell, columnIndex) => {
+    const columnCells = (grid ?? [])
+      .map((row) => row.cells.find((item) => item.columnIndex === columnIndex))
+      .filter(Boolean);
+    if (columnCells.length > 0 && columnCells.every((cell) => positions.has(cell.pos))) {
+      columns.push(columnIndex);
+    }
+  });
+
+  const selectedCount = positions.size;
+  const tableSelected = totalCellCount > 0 && selectedCount === totalCellCount;
+  const kind = tableSelected
+    ? "table"
+    : rows.length > 0
+      ? "row"
+      : columns.length > 0
+        ? "column"
+        : selectedCount > 1
+          ? "cells"
+          : "cell";
+
+  return {
+    kind,
+    positions,
+    rows,
+    columns,
+    table: tableSelected,
+  };
+}
+
+function activeCellFromEditor(editor, grid = []) {
   const selection = editor?.state?.selection;
+  const selectedHeadCell = cellByPosition(grid, selection?.$headCell?.pos);
+  if (selectedHeadCell?.cell) return selectedHeadCell.cell;
+
   const view = editor?.view;
   const domAtPos = typeof view?.domAtPos === "function" && Number.isFinite(selection?.from)
     ? view.domAtPos(selection.from)
@@ -301,12 +376,14 @@ function activeTableContext(editor) {
   const node = domAtPos?.node?.nodeType === 1 ? domAtPos.node : domAtPos?.node?.parentElement;
   const table = closestTableElement(node, view?.dom);
   if (!table) return null;
+  const grid = tableSelectionGrid(table, view);
 
   return {
     table,
     rect: table.getBoundingClientRect?.(),
-    grid: tableSelectionGrid(table, view),
-    cell: activeCellFromEditor(editor),
+    grid,
+    selection: tableSelectionState(selection, grid),
+    cell: activeCellFromEditor(editor, grid),
   };
 }
 
@@ -331,8 +408,8 @@ function canRunEditorCommand(editor, commandName, args = []) {
   }
 }
 
-function cellValue(editor, name) {
-  const cell = activeCellFromEditor(editor);
+function cellValue(editor, name, grid = []) {
+  const cell = activeCellFromEditor(editor, grid);
   if (!cell) return null;
 
   if (name === "backgroundColor") {
@@ -437,6 +514,7 @@ class TiptapTableToolbarView {
   #cellMenuButton = null;
   #rowHandles = [];
   #columnHandles = [];
+  #lastTable = null;
 
   constructor({ document = defaultDocument(), window = defaultWindow(document) } = {}) {
     this.#document = document;
@@ -477,7 +555,7 @@ class TiptapTableToolbarView {
     addColumnButton.textContent = "+";
     tableSelectButton.type = "button";
     cellMenuButton.type = "button";
-    cellMenuButton.textContent = "•••";
+    cellMenuButton.setAttribute("aria-hidden", "false");
     cellMenuButton.setAttribute("aria-haspopup", "menu");
     root.appendChild(list);
     mountFloatingRoot(root, container, this.#document);
@@ -505,13 +583,19 @@ class TiptapTableToolbarView {
     this.#root.setAttribute("aria-label", tableToolsLabel(state.language));
     this.#root.dataset.mode = state.mode;
     this.#root.dataset.open = state.menuOpen ? "true" : "false";
+    this.#root.dataset.selectionKind = state.selection?.kind ?? "cell";
+    this.#lastTable = state.table ?? null;
     this.#addRowButton.title = addRowBelowLabel(state.language);
     this.#addRowButton.setAttribute("aria-label", addRowBelowLabel(state.language));
     this.#addColumnButton.title = addColumnRightLabel(state.language);
     this.#addColumnButton.setAttribute("aria-label", addColumnRightLabel(state.language));
     if (this.#cellMenuButton) {
-      this.#cellMenuButton.title = tableCellActionsLabel(state.language);
-      this.#cellMenuButton.setAttribute("aria-label", tableCellActionsLabel(state.language));
+      const cellMenuLabel =
+        state.selection?.kind === "cells"
+          ? tableSelectionActionsLabel(state.language)
+          : tableCellActionsLabel(state.language);
+      this.#cellMenuButton.title = cellMenuLabel;
+      this.#cellMenuButton.setAttribute("aria-label", cellMenuLabel);
       this.#cellMenuButton.dataset.open = state.menuOpen ? "true" : "false";
       this.#cellMenuButton.onpointerdown = (event) => {
         event.preventDefault();
@@ -561,6 +645,7 @@ class TiptapTableToolbarView {
     setHidden(this.#root, !state.menuOpen || menuCommands.length === 0);
     this.#root.dataset.keyboardActive = state.keyboardActive ? "true" : "false";
     this.#root.onkeydown = (event) => state.handleKeyDown?.(event);
+    this.#applySelectionState(state);
     this.#updateQuickAdd(state);
     this.#updateTableHandle(state);
     this.#updateCellMenuTrigger(state);
@@ -618,6 +703,7 @@ class TiptapTableToolbarView {
     this.#tableSelectButton.style.top = `${rect.top - TABLE_AXIS_HANDLE_SIZE - 6}px`;
     this.#tableSelectButton.title = selectTableLabel(state.language);
     this.#tableSelectButton.setAttribute("aria-label", selectTableLabel(state.language));
+    this.#tableSelectButton.dataset.active = state.selection?.table ? "true" : "false";
     this.#tableSelectButton.onpointerdown = (event) => {
       event.preventDefault();
       event.stopPropagation?.();
@@ -635,7 +721,7 @@ class TiptapTableToolbarView {
       return;
     }
 
-    this.#cellMenuButton.style.left = `${rect.right - 11}px`;
+    this.#cellMenuButton.style.left = `${rect.left + Math.max(0, rect.width - 22) / 2}px`;
     this.#cellMenuButton.style.top = `${rect.top + Math.max(0, rect.height - 22) / 2}px`;
     setHidden(this.#cellMenuButton, !state.cellRect);
   }
@@ -654,6 +740,7 @@ class TiptapTableToolbarView {
       button.type = "button";
       button.title = selectTableRowLabel(state.language, index);
       button.setAttribute("aria-label", selectTableRowLabel(state.language, index));
+      button.dataset.active = state.selection?.rows?.includes?.(index) ? "true" : "false";
       button.style.left = `${tableRect.left - TABLE_AXIS_HANDLE_SIZE - 6}px`;
       button.style.top = `${rect.top + Math.max(0, rect.height - TABLE_AXIS_HANDLE_SIZE) / 2}px`;
       button.addEventListener("pointerdown", (event) => {
@@ -674,6 +761,7 @@ class TiptapTableToolbarView {
       button.type = "button";
       button.title = selectTableColumnLabel(state.language, index);
       button.setAttribute("aria-label", selectTableColumnLabel(state.language, index));
+      button.dataset.active = state.selection?.columns?.includes?.(index) ? "true" : "false";
       button.style.left = `${rect.left + Math.max(0, rect.width - TABLE_AXIS_HANDLE_SIZE) / 2}px`;
       button.style.top = `${tableRect.top - TABLE_AXIS_HANDLE_SIZE - 6}px`;
       button.addEventListener("pointerdown", (event) => {
@@ -694,13 +782,33 @@ class TiptapTableToolbarView {
     this.#columnHandles = [];
   }
 
+  #applySelectionState(state) {
+    state.table
+      ?.querySelectorAll?.(".mn-tiptap-table-cell-selected")
+      ?.forEach?.((cell) => cell.classList?.remove?.("mn-tiptap-table-cell-selected"));
+
+    const selectedPositions = state.selection?.positions ?? new Set();
+    (state.grid ?? []).forEach((row) => {
+      row.cells.forEach((cell) => {
+        cell.cell?.classList?.toggle?.(
+          "mn-tiptap-table-cell-selected",
+          selectedPositions.has(cell.pos),
+        );
+      });
+    });
+  }
+
   hide() {
     setHidden(this.#root, true);
     setHidden(this.#addRowButton, true);
     setHidden(this.#addColumnButton, true);
     setHidden(this.#tableSelectButton, true);
     setHidden(this.#cellMenuButton, true);
+    this.#lastTable
+      ?.querySelectorAll?.(".mn-tiptap-table-cell-selected")
+      ?.forEach?.((cell) => cell.classList?.remove?.("mn-tiptap-table-cell-selected"));
     this.#clearAxisHandles();
+    this.#lastTable = null;
   }
 
   contains(target) {
@@ -768,6 +876,7 @@ export class TiptapTableToolbarController {
     cell: null,
     cellRect: null,
     grid: [],
+    selection: tableSelectionState(null, []),
     commands: [],
     activeCommandId: null,
     keyboardActive: false,
@@ -796,6 +905,12 @@ export class TiptapTableToolbarController {
     return {
       ...this.#state,
       commands: this.#state.commands.map((command) => ({ ...command })),
+      selection: {
+        ...this.#state.selection,
+        positions: new Set(this.#state.selection?.positions ?? []),
+        rows: [...(this.#state.selection?.rows ?? [])],
+        columns: [...(this.#state.selection?.columns ?? [])],
+      },
     };
   }
 
@@ -829,7 +944,7 @@ export class TiptapTableToolbarController {
         active:
           command.command === "setCellAttribute" &&
           command.args?.length >= 2 &&
-          normalizeCellAttributeValue(command.args[0], cellValue(editor, command.args[0])) ===
+          normalizeCellAttributeValue(command.args[0], cellValue(editor, command.args[0], context.grid)) ===
             normalizeCellAttributeValue(command.args[0], command.args[1]),
       }, language);
     });
@@ -852,6 +967,7 @@ export class TiptapTableToolbarController {
       cell: context.cell,
       cellRect: context.cell?.getBoundingClientRect?.() ?? null,
       grid: context.grid,
+      selection: context.selection,
       commands,
       activeCommandId,
       keyboardActive: this.#state.keyboardActive,
@@ -1043,6 +1159,7 @@ export class TiptapTableToolbarController {
       cell: null,
       cellRect: null,
       grid: [],
+      selection: tableSelectionState(null, []),
       commands: [],
       activeCommandId: null,
       keyboardActive: false,

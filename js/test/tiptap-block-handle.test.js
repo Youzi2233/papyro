@@ -5,6 +5,7 @@ import {
   blockDropPlacement,
   createTiptapBlockMove,
   createTiptapBlockHandleController,
+  insertSlashParagraphAfterBlock,
 } from "../src/tiptap-block-handle.js";
 
 function createElement({ tagName = "P", parent = null, rect = null } = {}) {
@@ -72,8 +73,16 @@ function createEditor({ block = null } = {}) {
     },
     commands: {
       focus: () => calls.push(["focus"]),
+      insertContentAt: (position, value, options) => {
+        calls.push(["insertContentAt", position, value, options]);
+        return true;
+      },
       setNodeSelection: (pos) => {
         calls.push(["setNodeSelection", pos]);
+        return true;
+      },
+      setTextSelection: (pos) => {
+        calls.push(["setTextSelection", pos]);
         return true;
       },
     },
@@ -424,6 +433,7 @@ test("Tiptap block handle treats a non-moving pointer gesture as an action click
     ["attach", "DIV"],
     ["open", "paragraph", 7],
     ["open", "paragraph", 7],
+    ["open", "paragraph", 7],
   ]);
 });
 
@@ -444,6 +454,59 @@ test("Tiptap block handle opens actions immediately on the handle pointer gestur
   ]);
 });
 
+test("Tiptap block handle suppresses right-click native menus and opens actions", () => {
+  const { block, editor } = createEditor();
+  const menu = createMenuSpy();
+  const view = createViewSpy();
+  const controller = createTiptapBlockHandleController({ menu, view });
+  let prevented = 0;
+  let stopped = 0;
+  controller.attach({ editor, root: editor.view.dom, entry: { viewMode: "hybrid" } });
+  controller.handlePointerMove({ target: block });
+
+  assert.equal(
+    view.startDrag({
+      button: 2,
+      clientX: 10,
+      clientY: 10,
+      preventDefault() {
+        prevented += 1;
+      },
+      stopPropagation() {
+        stopped += 1;
+      },
+    }),
+    true,
+  );
+
+  assert.equal(menu.state.open, true);
+  assert.equal(prevented, 1);
+  assert.equal(stopped, 1);
+  assert.deepEqual(menu.calls, [
+    ["attach", "DIV"],
+    ["open", "paragraph", 7],
+  ]);
+});
+
+test("Tiptap block handle opens actions from a non-moving pointer gesture", () => {
+  const { block, editor } = createEditor();
+  const menu = createMenuSpy();
+  const view = createViewSpy();
+  const controller = createTiptapBlockHandleController({ menu, view });
+  controller.attach({ editor, root: editor.view.dom, entry: { viewMode: "hybrid" } });
+  controller.handlePointerMove({ target: block });
+
+  view.startDrag({ clientX: 10, clientY: 10, preventDefault() {} });
+  assert.equal(controller.finishDrag({ preventDefault() {} }), true);
+
+  assert.equal(menu.state.open, true);
+  assert.deepEqual(menu.calls, [
+    ["attach", "DIV"],
+    ["open", "paragraph", 7],
+    ["open", "paragraph", 7],
+  ]);
+});
+
 test("Tiptap block handle keeps the action menu stable while the pointer leaves the block", () => {
   const { block, editor } = createEditor();
   const outside = createElement({ tagName: "SECTION" });
@@ -455,6 +518,22 @@ test("Tiptap block handle keeps the action menu stable while the pointer leaves 
   view.openActions();
 
   controller.handlePointerMove({ target: outside });
+
+  assert.equal(controller.state.open, true);
+  assert.equal(menu.state.open, true);
+  assert.notDeepEqual(view.calls.at(-1), ["hide"]);
+});
+
+test("Tiptap block handle stays open when the editor mouse leaves with a floating menu open", () => {
+  const { block, editor } = createEditor();
+  const menu = createMenuSpy();
+  const view = createViewSpy();
+  const controller = createTiptapBlockHandleController({ menu, view });
+  controller.attach({ editor, root: editor.view.dom, entry: { viewMode: "hybrid" } });
+  controller.handlePointerMove({ target: block });
+  view.openActions();
+
+  editor.view.dom.listeners.get("mouseleave")({ relatedTarget: null });
 
   assert.equal(controller.state.open, true);
   assert.equal(menu.state.open, true);
@@ -559,6 +638,29 @@ test("Tiptap block move creates an adjusted ProseMirror transaction", () => {
     ["canReplaceWith", 0, 0, "paragraph"],
     ["insert", 16, node],
     ["scrollIntoView"],
+  ]);
+});
+
+test("Tiptap block handle inserts a slash paragraph after the current block", () => {
+  const { block, calls, editor } = createEditor();
+  const target = {
+    block,
+    kind: "paragraph",
+    pos: 7,
+    node: { nodeSize: 6 },
+  };
+
+  const range = insertSlashParagraphAfterBlock(editor, target);
+
+  assert.deepEqual(range, { from: 14, to: 15 });
+  assert.deepEqual(calls, [
+    [
+      "insertContentAt",
+      13,
+      { type: "paragraph", content: [{ type: "text", text: "/" }] },
+      { updateSelection: true },
+    ],
+    ["setTextSelection", 15],
   ]);
 });
 

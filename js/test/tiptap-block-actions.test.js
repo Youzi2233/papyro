@@ -165,8 +165,6 @@ test("Tiptap block actions expose stable command ids", () => {
   assert.deepEqual(
     PAPYRO_TIPTAP_BLOCK_ACTIONS.map((command) => command.id),
     [
-      "insert-before",
-      "insert-after",
       "paragraph",
       "heading-1",
       "heading-2",
@@ -199,23 +197,6 @@ test("Tiptap block actions expose stable command ids", () => {
       "delete",
     ],
   );
-});
-
-test("Tiptap block actions insert paragraphs around the target block", () => {
-  const { calls, editor } = createEditor();
-  const controller = createTiptapBlockActionController();
-  const target = { pos: 5, node: { nodeSize: 8 } };
-
-  assert.deepEqual(controller.run("insert-after", { editor, target }), {
-    ok: true,
-    commandId: "insert-after",
-    error: null,
-  });
-  assert.deepEqual(calls, [
-    ["focus", 5],
-    ["insertContentAt", 13, "\n", "markdown"],
-    ["focus", null],
-  ]);
 });
 
 test("Tiptap block actions transform the active block", () => {

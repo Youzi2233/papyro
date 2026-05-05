@@ -207,26 +207,6 @@ function createCommand({
 
 export const PAPYRO_TIPTAP_BLOCK_ACTIONS = Object.freeze([
   createCommand({
-    id: "insert-before",
-    title: "Insert above",
-    description: "Add a paragraph before this block",
-    group: "Insert",
-    icon: "plus-top",
-    shortcut: "Enter",
-    priority: 10,
-    run: ({ editor, target }) => insertMarkdownAt(editor, "\n", target?.pos),
-  }),
-  createCommand({
-    id: "insert-after",
-    title: "Insert below",
-    description: "Add a paragraph after this block",
-    group: "Insert",
-    icon: "plus-bottom",
-    shortcut: "Shift Enter",
-    priority: 11,
-    run: ({ editor, target }) => insertMarkdownAt(editor, "\n", targetEndPos(target)),
-  }),
-  createCommand({
     id: "paragraph",
     title: "Paragraph",
     description: "Use plain body text",

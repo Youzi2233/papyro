@@ -34,7 +34,11 @@ const CONTROL_GAP = 4;
 const BRIDGE_PADDING = 8;
 const SELECTED_CLASS = "mn-tiptap-block-selected";
 const DRAGGING_CLASS = "mn-tiptap-block-dragging";
-const DRAG_THRESHOLD_PX = 5;
+const DRAG_THRESHOLD_PX = 10;
+const PARAGRAPH_SLASH_NODE = Object.freeze({
+  type: "paragraph",
+  content: [{ type: "text", text: "/" }],
+});
 
 function isElement(value) {
   return value && value.nodeType === 1;
@@ -117,6 +121,28 @@ function targetEquals(left, right) {
 function targetEndPos(target) {
   const nodeSize = target?.node?.nodeSize ?? target?.block?.pmViewDesc?.node?.nodeSize ?? 0;
   return Number.isFinite(target?.pos) ? target.pos + Math.max(1, nodeSize) : null;
+}
+
+export function insertSlashParagraphAfterBlock(editor, target) {
+  const position = targetEndPos(target);
+  if (!Number.isFinite(position)) return null;
+
+  const inserted = editor?.commands?.insertContentAt?.(
+    position,
+    PARAGRAPH_SLASH_NODE,
+    { updateSelection: true },
+  );
+  if (inserted === false) return null;
+
+  const slashPosition = position + 1;
+  if (typeof editor?.commands?.setTextSelection === "function") {
+    editor.commands.setTextSelection(slashPosition + 1);
+  }
+
+  return {
+    from: slashPosition,
+    to: slashPosition + 1,
+  };
 }
 
 function dropTargetFromEvent(event, editor, fallbackDocument) {
@@ -218,6 +244,7 @@ class TiptapBlockHandleView {
   #actionButton = null;
   #dropIndicator = null;
   #onAction = null;
+  #onContextAction = null;
   #onInsert = null;
   #onDragStart = null;
 
@@ -255,7 +282,11 @@ class TiptapBlockHandleView {
 
     insertButton.type = "button";
     insertButton.addEventListener("pointerdown", (event) => {
-      if (event.button && event.button !== 0) return;
+      if (event.button && event.button !== 0) {
+        event.preventDefault();
+        event.stopPropagation?.();
+        return;
+      }
       event.preventDefault();
       event.stopPropagation?.();
       this.#onInsert?.(event);
@@ -271,9 +302,20 @@ class TiptapBlockHandleView {
 
     actionButton.type = "button";
     actionButton.addEventListener("pointerdown", (event) => {
-      if (event.button && event.button !== 0) return;
+      if (event.button === 2) {
+        event.preventDefault();
+        event.stopPropagation?.();
+        this.#onContextAction?.(event);
+        return;
+      }
+      if (event.button && event.button !== 0) {
+        event.preventDefault();
+        event.stopPropagation?.();
+        return;
+      }
       event.preventDefault();
       event.stopPropagation?.();
+      this.#onAction?.(event);
       this.#onDragStart?.(event);
     });
     actionButton.addEventListener("click", (event) => {
@@ -308,6 +350,7 @@ class TiptapBlockHandleView {
     if (!this.#root || !this.#actionButton || !state.open || !state.target?.block) return;
 
     this.#onAction = state.openActions ?? null;
+    this.#onContextAction = state.openActions ?? null;
     this.#onInsert = state.openInsert ?? null;
     this.#onDragStart = state.startDrag ?? null;
     const rect = state.target.block.getBoundingClientRect?.();
@@ -474,6 +517,10 @@ export class TiptapBlockHandleController {
     const onMouseMove = (event) => this.handlePointerMove(event);
     const onMouseLeave = (event) => {
       if (this.contains(event?.relatedTarget)) return;
+      if (this.#hasOpenFloatingMenu()) {
+        this.#updateView();
+        return;
+      }
       if (this.#state.open && this.#view.containsPointer?.(event, this.#state.target)) {
         this.#updateView();
         return;
@@ -573,6 +620,18 @@ export class TiptapBlockHandleController {
       return false;
     }
 
+    if (event?.button === 2) {
+      event.preventDefault?.();
+      event.stopPropagation?.();
+      return this.#openActions();
+    }
+
+    if (event?.button && event.button !== 0) {
+      event.preventDefault?.();
+      event.stopPropagation?.();
+      return false;
+    }
+
     const x = Number(event?.clientX);
     const y = Number(event?.clientY);
     if (!Number.isFinite(x) || !Number.isFinite(y)) {
@@ -636,6 +695,7 @@ export class TiptapBlockHandleController {
     this.#cleanupDrag();
 
     if (!moved) {
+      this.#openActions();
       return true;
     }
 

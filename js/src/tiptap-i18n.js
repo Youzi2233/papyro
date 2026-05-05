@@ -33,6 +33,7 @@ const GROUP_LABELS = Object.freeze({
   Lists: "列表",
   Navigate: "导航",
   Rows: "行",
+  Selection: "选择",
   Table: "表格",
   Text: "文本",
 });
@@ -190,6 +191,10 @@ export function tableToolsLabel(language) {
 
 export function tableCellActionsLabel(language) {
   return localizedText(language, "Cell actions", "单元格操作");
+}
+
+export function tableSelectionActionsLabel(language) {
+  return localizedText(language, "Selection actions", "选区操作");
 }
 
 export function addRowBelowLabel(language) {

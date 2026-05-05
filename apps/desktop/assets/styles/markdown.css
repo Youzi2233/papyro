@@ -387,6 +387,7 @@
 
 .mn-tiptap-table-header,
 .mn-tiptap-table-cell {
+    position: relative;
     min-width: 96px;
     padding: var(--mn-markdown-table-cell-pad);
     border: var(--mn-markdown-table-border);
@@ -410,6 +411,25 @@
 .mn-tiptap-table-cell p,
 .mn-tiptap-table-header p {
     margin: 0;
+}
+
+.mn-tiptap-table-cell.selectedCell::after,
+.mn-tiptap-table-header.selectedCell::after,
+.mn-tiptap-table-cell.mn-tiptap-table-cell-selected::after,
+.mn-tiptap-table-header.mn-tiptap-table-cell-selected::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background: color-mix(in srgb, var(--mn-accent) 16%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--mn-accent) 44%, transparent);
+}
+
+.mn-tiptap-table-cell > *,
+.mn-tiptap-table-header > * {
+    position: relative;
+    z-index: 2;
 }
 
 .mn-tiptap-inline-math,
@@ -973,6 +993,16 @@
     line-height: 1;
 }
 
+.mn-tiptap-table-cell-menu-trigger::before {
+    content: "";
+    display: block;
+    width: 4px;
+    height: 4px;
+    border-radius: var(--mn-radius-round);
+    background: currentColor;
+    box-shadow: -5px 0 0 currentColor, 5px 0 0 currentColor;
+}
+
 .mn-tiptap-table-cell-menu-trigger.hidden {
     display: none;
 }
@@ -1027,9 +1057,11 @@
 }
 
 .mn-tiptap-table-axis-handle:hover,
-.mn-tiptap-table-axis-handle:focus-visible {
+.mn-tiptap-table-axis-handle:focus-visible,
+.mn-tiptap-table-axis-handle[data-active="true"] {
     outline: 0;
     border-color: var(--mn-accent);
+    background: var(--mn-accent-wash);
     color: var(--mn-accent);
     box-shadow: var(--mn-focus-ring-sm);
 }

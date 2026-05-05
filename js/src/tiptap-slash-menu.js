@@ -7,6 +7,7 @@ import {
   noCommandsLabel,
   tableSizeLabel,
 } from "./tiptap-i18n.js";
+import { insertSlashParagraphAfterBlock } from "./tiptap-block-handle.js";
 import {
   clamp,
   commandElementId,
@@ -76,7 +77,7 @@ function coordsRectAtPos(editor, pos) {
 }
 
 function placeMenu(element, editor, range, anchorRect = null, placement = "bottom") {
-  if (element && anchorRect) {
+  if (element && usableAnchorRect(anchorRect)) {
     positionFloatingElement(element, anchorRect, {
       viewport: viewportSize(editor?.view?.dom, defaultWindow(editor?.view?.dom?.ownerDocument)),
       size: {
@@ -104,6 +105,16 @@ function placeMenu(element, editor, range, anchorRect = null, placement = "botto
     },
     placement: "bottom",
   });
+}
+
+function usableAnchorRect(rect) {
+  if (!rect) return false;
+  const left = Number(rect.left);
+  const top = Number(rect.top);
+  const right = Number(rect.right);
+  const bottom = Number(rect.bottom);
+  if (![left, top, right, bottom].every(Number.isFinite)) return false;
+  return Math.abs(left) + Math.abs(top) > 0 || right > left || bottom > top;
 }
 
 export function findSlashTrigger(
@@ -452,20 +463,14 @@ export class TiptapSlashMenuController {
       return this.state;
     }
 
-    const position = blockInsertPosition(target);
-    if (!Number.isFinite(position)) {
+    const range = insertSlashParagraphAfterBlock(this.#editor, target);
+    if (!range) {
       this.close();
       return this.state;
     }
 
-    this.#editor.commands?.focus?.(position);
-    this.#editor.commands?.insertContentAt?.(position, "\n/", {
-      contentType: "markdown",
-    });
     this.#editor.commands?.focus?.();
-    const slashPosition = position + 1;
-    this.#editor.commands?.setTextSelection?.(slashPosition + 1);
-    const slashRect = coordsRectAtPos(this.#editor, slashPosition + 1);
+    const slashRect = coordsRectAtPos(this.#editor, range.to);
 
     const commands = this.#commands.query("", {
       limit: this.#maxItems,
@@ -474,10 +479,7 @@ export class TiptapSlashMenuController {
     this.#state = {
       open: true,
       query: "",
-      range: {
-        from: slashPosition,
-        to: slashPosition + 1,
-      },
+      range,
       commands,
       selectedIndex: 0,
       deleteRangeBeforeRun: true,
@@ -595,9 +597,4 @@ export class TiptapSlashMenuController {
 
 export function createTiptapSlashMenuController(options) {
   return new TiptapSlashMenuController(options);
-}
-
-function blockInsertPosition(target) {
-  const nodeSize = target?.node?.nodeSize ?? target?.block?.pmViewDesc?.node?.nodeSize ?? 0;
-  return Number.isFinite(target?.pos) ? target.pos + Math.max(1, nodeSize) : null;
 }

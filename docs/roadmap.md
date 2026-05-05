@@ -238,8 +238,9 @@ Tasks:
 - [x] Add the first Papyro-native block action menu controller.
 - [x] Match the official Tiptap Notion-like template quality bar for block menus: copy as Markdown, duplicate block, and delete are now available from the block menu, with pointer-first menu activation to avoid WebView/ProseMirror focus races.
 - [x] Wire the block action menu's advertised shortcuts so Ctrl/Cmd+C copies, Ctrl/Cmd+D duplicates, and Delete/Backspace removes the selected block while the menu is open.
-- [x] Stabilize block handle menus so left-click opens actions immediately, right-click does not leak the native WebView menu, and moving from the handle into a floating menu keeps the menu open until an outside click.
-- [x] Make the `+` insertion control create a slash trigger on the next line and open the insertion menu at that caret position instead of behaving like a hidden block action.
+- [x] Stabilize block handle menus so left-click opens actions immediately, right-click does not leak the native WebView menu, small pointer jitter does not become an accidental drag, and moving from the handle into a floating menu keeps the menu open until an outside click.
+- [x] Make the `+` insertion control create a dedicated slash paragraph on the next line and open the insertion menu at that caret position instead of behaving like a hidden block action.
+- [x] Keep the block action menu focused on current-block actions and styles, with insertion owned by `+` and slash commands.
 - [x] Add a table-size picker to the slash/`+` insertion menu so users can insert 1x1 through 6x6 tables instead of only the fixed 3x2 default.
 - [x] Add the first Tiptap table floating toolbar with row/column insertion and deletion, cell merge/split, header toggles, and table deletion.
 - [x] Upgrade the Tiptap table toolbar into grouped column, row, cell, header, navigation, repair, and delete commands so table editing feels closer to mature document editors.
@@ -247,6 +248,7 @@ Tasks:
 - [x] Add row and column edge handles for tables: clicking the left row rail or top column rail selects the full row/column and reuses the table toolbar for follow-up operations.
 - [x] Add a top-left whole-table handle so one click selects the full table before delete, header, alignment, and cell-style operations.
 - [x] Replace the always-visible table command strip with a lighter Notion-like table surface: edge `+` controls stay visible for quick row/column insertion, while cell merge, alignment, and color actions live behind a current-cell context trigger.
+- [x] Add clear table selection feedback: ProseMirror `selectedCell` and Papyro row/column/table selections render a visible overlay, active edge handles show selected state, and the current-cell trigger is centered with localized labels.
 - [x] Add table cell alignment commands: left, center, and right use Tiptap `setCellAttribute('align', ...)` so pipe table alignment remains part of the Markdown document model.
 - [x] Make table toolbar command buttons pointer-first so WebView focus ordering does not swallow table operations.
 - [x] Normalize table toolbar active alignment states so default/left/center/right cells reflect the actual Markdown table state.

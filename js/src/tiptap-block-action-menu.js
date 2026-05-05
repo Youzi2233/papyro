@@ -47,7 +47,9 @@ function shortcutCommandFromEvent(event) {
 }
 
 function placeMenu(element, target, fallbackWindow, anchorRect = null) {
-  const rect = anchorRect ?? target?.block?.getBoundingClientRect?.();
+  const rect = usableAnchorRect(anchorRect)
+    ? anchorRect
+    : target?.block?.getBoundingClientRect?.();
   if (!element || !rect) return;
 
   positionFloatingElement(element, rect, {
@@ -59,6 +61,16 @@ function placeMenu(element, target, fallbackWindow, anchorRect = null) {
     },
     placement: "right",
   });
+}
+
+function usableAnchorRect(rect) {
+  if (!rect) return false;
+  const left = Number(rect.left);
+  const top = Number(rect.top);
+  const right = Number(rect.right);
+  const bottom = Number(rect.bottom);
+  if (![left, top, right, bottom].every(Number.isFinite)) return false;
+  return Math.abs(left) + Math.abs(top) > 0 || right > left || bottom > top;
 }
 
 class TiptapBlockActionMenuView {
