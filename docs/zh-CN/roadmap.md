@@ -214,6 +214,7 @@ flowchart LR
 - [x] 保持 Tiptap `destroy` 语义，并保护 stale instance 不误删新 runtime。
 - [x] 增加 Tiptap task list 扩展，并用 checked/unchecked Markdown round-trip 测试覆盖。
 - [x] 增加 Tiptap table 扩展，并用 pipe table round-trip 和富表格插入命令测试覆盖。
+- [x] 增加 Tiptap math 扩展，并用 inline/display Markdown round-trip 和 KaTeX 预览/错误态测试覆盖。
 - [ ] 迁移 task list、table、math、Mermaid、image 和 code block。
 - [ ] 清理 CodeMirror 依赖、`.cm-*` CSS 和旧测试。
 - [ ] 完成全量验收并推送最终迁移提交。

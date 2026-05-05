@@ -222,7 +222,8 @@ export const PAPYRO_TIPTAP_SLASH_COMMANDS = Object.freeze([
     aliases: ["math", "formula"],
     keywords: ["latex", "equation", "公式", "数学"],
     priority: 51,
-    run: ({ editor }) => insertMarkdown(editor, "\n$$\n\n$$\n"),
+    run: ({ editor }) =>
+      runEditorCommand(editor, "setMathBlock", [{ source: "x^2 + y^2 = z^2" }], "\n$$\n\n$$\n"),
   }),
   createCommand({
     id: "mermaid",

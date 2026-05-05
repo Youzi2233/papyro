@@ -43,6 +43,10 @@ function createFakeEditor() {
         calls.push(["insertTable", attrs.rows, attrs.cols, attrs.withHeaderRow]);
         return true;
       },
+      setMathBlock: (attrs) => {
+        calls.push(["setMathBlock", attrs.source]);
+        return true;
+      },
       toggleOrderedList: () => {
         calls.push(["toggleOrderedList"]);
         return true;
@@ -113,6 +117,21 @@ test("Tiptap slash commands create rich tables when the table extension is avail
   });
   assert.deepEqual(calls, [
     ["insertTable", 3, 2, true],
+    ["focus"],
+  ]);
+});
+
+test("Tiptap slash commands create rich math blocks when the math extension is available", () => {
+  const { calls, editor } = createFakeEditor();
+  const controller = createTiptapSlashCommandController();
+
+  assert.deepEqual(controller.run("math-block", { editor }), {
+    ok: true,
+    commandId: "math-block",
+    error: null,
+  });
+  assert.deepEqual(calls, [
+    ["setMathBlock", "x^2 + y^2 = z^2"],
     ["focus"],
   ]);
 });

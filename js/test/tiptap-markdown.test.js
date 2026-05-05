@@ -15,6 +15,7 @@ const markdownFixture = `# Papyro Guide
 Papyro 支持本地 Markdown 笔记，也要稳定处理中文内容。
 
 A paragraph with **bold**, *italic*, \`inline code\`, ~~strike~~, and [docs](https://example.com).
+Inline math $e^{i\\pi} + 1 = 0$ remains editable.
 
 > Quote line
 
@@ -31,6 +32,10 @@ A paragraph with **bold**, *italic*, \`inline code\`, ~~strike~~, and [docs](htt
 | --- | :---: |
 | Source | Done |
 | Table | Next |
+
+$$
+x^2 + y^2 = z^2
+$$
 
 \`\`\`rust
 fn main() {
@@ -112,12 +117,31 @@ function collectTables(node, tables = []) {
   return tables;
 }
 
+function collectMath(node, math = []) {
+  if (!node || typeof node !== "object") return math;
+
+  if (node.type === "inlineMath" || node.type === "mathBlock") {
+    math.push({
+      type: node.type,
+      source: node.attrs?.source ?? "",
+      singleLine: node.attrs?.singleLine ?? false,
+    });
+  }
+
+  for (const child of node.content ?? []) {
+    collectMath(child, math);
+  }
+
+  return math;
+}
+
 test("Tiptap Markdown manager parses the baseline Markdown blocks", () => {
   const doc = parseTiptapMarkdown(markdownFixture);
   const nodeTypes = collectNodeTypes(doc);
   const marks = collectMarks(doc);
   const tasks = collectTaskItems(doc);
   const tables = collectTables(doc);
+  const math = collectMath(doc);
 
   assert.deepEqual(doc.content.slice(0, 2).map((node) => node.attrs.level), [1, 2]);
   assert.ok(nodeTypes.includes("paragraph"));
@@ -130,6 +154,8 @@ test("Tiptap Markdown manager parses the baseline Markdown blocks", () => {
   assert.ok(nodeTypes.includes("tableRow"));
   assert.ok(nodeTypes.includes("tableHeader"));
   assert.ok(nodeTypes.includes("tableCell"));
+  assert.ok(nodeTypes.includes("inlineMath"));
+  assert.ok(nodeTypes.includes("mathBlock"));
   assert.ok(nodeTypes.includes("codeBlock"));
   assert.ok(marks.includes("bold"));
   assert.ok(marks.includes("italic"));
@@ -156,6 +182,10 @@ test("Tiptap Markdown manager parses the baseline Markdown blocks", () => {
       ],
     ],
   ]);
+  assert.deepEqual(math, [
+    { type: "inlineMath", source: "e^{i\\pi} + 1 = 0", singleLine: false },
+    { type: "mathBlock", source: "x^2 + y^2 = z^2", singleLine: false },
+  ]);
 });
 
 test("Tiptap Markdown serialization keeps semantic Markdown output", () => {
@@ -170,6 +200,7 @@ test("Tiptap Markdown serialization keeps semantic Markdown output", () => {
   assert.match(output, /`inline code`/);
   assert.match(output, /~~strike~~/);
   assert.match(output, /\[docs\]\(https:\/\/example\.com\)/);
+  assert.match(output, /\$e\^\{i\\pi\} \+ 1 = 0\$/);
   assert.match(output, /^> Quote line/m);
   assert.match(output, /^- First item/m);
   assert.match(output, /^- \[ \] Draft task/m);
@@ -178,6 +209,7 @@ test("Tiptap Markdown serialization keeps semantic Markdown output", () => {
   assert.match(output, /^\| Feature | Status \|/m);
   assert.match(output, /^\| ------- | :------: \|/m);
   assert.match(output, /^\| Source  | Done   \|/m);
+  assert.match(output, /^\$\$\nx\^2 \+ y\^2 = z\^2\n\$\$/m);
   assert.match(output, /^```rust\nfn main\(\) \{/m);
 });
 
@@ -221,6 +253,29 @@ test("Tiptap Markdown pipe tables round trip headers, cells, and alignment", () 
   assert.match(serialized, /^\| Feature | Status \|/m);
   assert.match(serialized, /^\| ------- | :------: \|/m);
   assert.deepEqual(collectTables(reparsed), collectTables(parsed));
+});
+
+test("Tiptap Markdown math round trips inline, display, and single-line syntax", () => {
+  const markdown = [
+    "Inline $a^2 + b^2 = c^2$ math.",
+    "",
+    "$$",
+    "\\int_0^1 x^2 dx",
+    "$$",
+    "",
+    "$$E = mc^2$$",
+  ].join("\n");
+  const { parsed, serialized, reparsed } = roundTripTiptapMarkdown(markdown);
+
+  assert.deepEqual(collectMath(parsed), [
+    { type: "inlineMath", source: "a^2 + b^2 = c^2", singleLine: false },
+    { type: "mathBlock", source: "\\int_0^1 x^2 dx", singleLine: false },
+    { type: "mathBlock", source: "E = mc^2", singleLine: true },
+  ]);
+  assert.match(serialized, /\$a\^2 \+ b\^2 = c\^2\$/);
+  assert.match(serialized, /^\$\$\n\\int_0\^1 x\^2 dx\n\$\$/m);
+  assert.match(serialized, /^\$\$E = mc\^2\$\$/m);
+  assert.deepEqual(collectMath(reparsed), collectMath(parsed));
 });
 
 test("Tiptap Markdown round trip is stable at the document JSON level", () => {

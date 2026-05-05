@@ -1088,6 +1088,78 @@ small {
     margin: 0;
 }
 
+.mn-tiptap-inline-math,
+.mn-tiptap-math-block {
+    color: var(--mn-text);
+    font-family: Georgia, "Times New Roman", serif;
+}
+
+.mn-tiptap-inline-math {
+    display: inline-flex;
+    align-items: baseline;
+    min-width: 1.5ch;
+    border-radius: 6px;
+    padding: 0 2px;
+    vertical-align: baseline;
+}
+
+.mn-tiptap-inline-math-preview {
+    display: inline-flex;
+    align-items: baseline;
+}
+
+.mn-tiptap-math-block {
+    display: block;
+    min-width: 0;
+    margin: 0 0 1rem;
+    padding: 14px 16px;
+    border: 1px solid var(--mn-border);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.58);
+    overflow-x: auto;
+}
+
+.mn-tiptap-math-preview {
+    display: flex;
+    justify-content: center;
+    min-width: max-content;
+}
+
+.mn-tiptap-inline-math[data-math-editing="true"],
+.mn-tiptap-math-block[data-math-editing="true"] {
+    border-color: color-mix(in srgb, var(--mn-accent) 44%, var(--mn-border));
+    box-shadow: var(--mn-ring-focus);
+}
+
+.mn-tiptap-inline-math-source,
+.mn-tiptap-math-source {
+    width: 100%;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--mn-text);
+    caret-color: var(--mn-accent);
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    font-size: .9em;
+    line-height: 1.55;
+}
+
+.mn-tiptap-inline-math-source {
+    min-width: 12ch;
+}
+
+.mn-tiptap-math-source {
+    min-height: 96px;
+    resize: vertical;
+}
+
+.mn-tiptap-math-error {
+    color: var(--mn-accent-dark);
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    font-size: .92em;
+    white-space: pre-wrap;
+}
+
 .mn-preview-notice {
     margin-bottom: 12px;
     padding: 10px 12px;

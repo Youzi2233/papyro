@@ -239,6 +239,7 @@ Tasks:
 - [x] Preserve Tiptap `destroy` semantics with stale instance protection.
 - [x] Add Tiptap task list extensions with checked/unchecked Markdown round-trip coverage.
 - [x] Add Tiptap table extensions with pipe table round-trip coverage and rich insert command support.
+- [x] Add Tiptap math extensions with inline/display Markdown round-trip coverage and KaTeX preview/error states.
 - [ ] Migrate task lists, tables, math, Mermaid, images, and code blocks.
 - [ ] Remove CodeMirror dependencies, `.cm-*` CSS, and obsolete tests.
 - [ ] Finish full acceptance checks and push the completed migration.
