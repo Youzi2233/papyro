@@ -37,6 +37,15 @@ function groupedCommands(commands) {
   return groups;
 }
 
+function shortcutCommandFromEvent(event) {
+  const key = String(event?.key ?? "").toLowerCase();
+  const primaryModifier = event?.ctrlKey || event?.metaKey;
+  if (primaryModifier && !event?.altKey && key === "c") return "copy-block";
+  if (primaryModifier && !event?.altKey && key === "d") return "duplicate-block";
+  if (key === "delete" || key === "backspace") return "delete";
+  return null;
+}
+
 function placeMenu(element, target, fallbackWindow, anchorRect = null) {
   const rect = anchorRect ?? target?.block?.getBoundingClientRect?.();
   if (!element || !rect) return;
@@ -287,6 +296,15 @@ export class TiptapBlockActionMenuController {
   handleKeyDown(event) {
     if (!this.#state.open) return false;
     if (isComposingKeyboardEvent(event)) return false;
+
+    const shortcutCommandId = shortcutCommandFromEvent(event);
+    if (
+      shortcutCommandId &&
+      this.#state.commands.some((command) => command.id === shortcutCommandId)
+    ) {
+      event.preventDefault();
+      return this.run(shortcutCommandId);
+    }
 
     if (event.key === "ArrowDown") {
       event.preventDefault();

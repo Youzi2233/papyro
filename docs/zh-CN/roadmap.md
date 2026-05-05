@@ -212,6 +212,7 @@ flowchart LR
 - [x] 稳定块操作柄 hover bridge：鼠标从正文移动到浮动句柄/`+` 控件时不会因为沟槽空隙导致控件提前消失。
 - [x] 增加第一版 Papyro 原生块操作菜单 controller。
 - [x] 对齐 Tiptap 官方 Notion-like editor template 的块菜单质量基线：块菜单补齐复制为 Markdown、重复块和删除等常用动作，并把菜单点击切到 pointer 事件，减少 WebView/ProseMirror 焦点竞争导致的无响应。
+- [x] 接通块操作菜单已展示的快捷键：菜单打开时 Ctrl/Cmd+C 复制、Ctrl/Cmd+D 重复、Delete/Backspace 删除当前块。
 - [x] 给 slash/`+` 插入菜单增加表格尺寸选择器，可直接选择 1x1 到 6x6 的表格尺寸，避免普通用户只能插入固定 3x2 表格。
 - [x] 增加第一版 Tiptap 表格浮动工具条，支持插入/删除行列、合并/拆分单元格、切换表头和删除表格。
 - [x] 把 Tiptap 表格工具条升级为列、行、单元格、表头、导航、修复、删除分组命令，让表格编辑更接近成熟文档产品。

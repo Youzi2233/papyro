@@ -290,6 +290,63 @@ test("Tiptap block action menu runs the selected command", () => {
   assert.deepEqual(view.calls.at(-1), ["hide"]);
 });
 
+test("Tiptap block action menu runs advertised keyboard shortcuts", () => {
+  const { calls, editor } = createEditor();
+  const view = createViewSpy();
+  const controller = createTiptapBlockActionMenuController({ view });
+  let prevented = 0;
+  editor.commands.insertContentAt = (pos, markdown, options) => {
+    calls.push(["insertContentAt", pos, markdown, options.contentType]);
+    return true;
+  };
+  editor.commands.deleteRange = (range) => {
+    calls.push(["deleteRange", range.from, range.to]);
+    return true;
+  };
+  editor.state.doc.textBetween = (from, to) => {
+    calls.push(["textBetween", from, to]);
+    return "Block text";
+  };
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  controller.open(createTarget());
+
+  assert.equal(
+    controller.handleKeyDown({
+      key: "d",
+      ctrlKey: true,
+      preventDefault() {
+        prevented += 1;
+      },
+    }),
+    true,
+  );
+  assert.equal(prevented, 1);
+  assert.deepEqual(calls, [
+    ["focus", 4],
+    ["textBetween", 4, 10],
+    ["insertContentAt", 10, "\nBlock text\n", "markdown"],
+    ["focus", null],
+  ]);
+
+  calls.length = 0;
+  controller.open(createTarget());
+  assert.equal(
+    controller.handleKeyDown({
+      key: "Delete",
+      preventDefault() {
+        prevented += 1;
+      },
+    }),
+    true,
+  );
+  assert.equal(prevented, 2);
+  assert.deepEqual(calls, [
+    ["focus", 4],
+    ["deleteRange", 4, 10],
+    ["focus", null],
+  ]);
+});
+
 test("Tiptap block action menu yields keyboard handling during IME composition", () => {
   const { calls, editor } = createEditor();
   const view = createViewSpy();

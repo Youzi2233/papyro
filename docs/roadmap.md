@@ -237,6 +237,7 @@ Tasks:
 - [x] Keep the block handle hover bridge alive while moving from text to floating controls so the action and insert affordances do not disappear across the gutter gap.
 - [x] Add the first Papyro-native block action menu controller.
 - [x] Match the official Tiptap Notion-like template quality bar for block menus: copy as Markdown, duplicate block, and delete are now available from the block menu, with pointer-first menu activation to avoid WebView/ProseMirror focus races.
+- [x] Wire the block action menu's advertised shortcuts so Ctrl/Cmd+C copies, Ctrl/Cmd+D duplicates, and Delete/Backspace removes the selected block while the menu is open.
 - [x] Add a table-size picker to the slash/`+` insertion menu so users can insert 1x1 through 6x6 tables instead of only the fixed 3x2 default.
 - [x] Add the first Tiptap table floating toolbar with row/column insertion and deletion, cell merge/split, header toggles, and table deletion.
 - [x] Upgrade the Tiptap table toolbar into grouped column, row, cell, header, navigation, repair, and delete commands so table editing feels closer to mature document editors.
