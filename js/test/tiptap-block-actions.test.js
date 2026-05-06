@@ -186,6 +186,19 @@ test("Tiptap block actions expose stable command ids", () => {
       "highlight-yellow",
       "highlight-blue",
       "highlight-green",
+      "code-language-auto",
+      "code-language-plaintext",
+      "code-language-javascript",
+      "code-language-typescript",
+      "code-language-rust",
+      "code-language-python",
+      "code-language-json",
+      "code-language-bash",
+      "code-language-markdown",
+      "code-language-html",
+      "code-language-css",
+      "code-language-sql",
+      "code-language-yaml",
       "code-block",
       "divider",
       "table",
@@ -472,6 +485,36 @@ test("Tiptap block actions show callout kind actions only for callout blocks", (
       "callout-kind-tip",
       "callout-kind-warning",
       "callout-kind-danger",
+    ],
+  );
+});
+
+test("Tiptap block actions show code language actions only for code blocks", () => {
+  const controller = createTiptapBlockActionController();
+
+  assert.equal(
+    controller
+      .list({ target: { kind: "paragraph" } })
+      .some((command) => command.id === "code-language-rust"),
+    false,
+  );
+  assert.deepEqual(
+    controller
+      .list({
+        target: {
+          kind: "code_block",
+          node: { type: { name: "codeBlock" }, nodeSize: 6 },
+        },
+      })
+      .filter((command) => command.group === "Code language")
+      .map((command) => command.id)
+      .slice(0, 5),
+    [
+      "code-language-auto",
+      "code-language-plaintext",
+      "code-language-javascript",
+      "code-language-typescript",
+      "code-language-rust",
     ],
   );
 });

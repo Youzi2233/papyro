@@ -284,6 +284,13 @@ flowchart LR
 - [x] 给 slash/`+` 插入菜单、块操作菜单、浮动格式栏和表格工具条接入共享浮层 dismiss 生命周期：外部点击、滚动和窗口变化会稳定收起，点击当前块或表格内部不会误关。
 - [x] slash 菜单和块操作菜单的键盘导航会自动把当前选项滚入可视区，长菜单也能稳定键盘操作。
 - [x] slash/`+` 插入菜单按文本、列表、块、高级能力分成安静的分组，移除每一行右侧重复分组标签，让插入体验更接近成熟文档编辑器。
+- [ ] 重新设计块句柄和 `+` 插入入口：两个 icon 要在同一视觉中心线上对齐，保留约 8px 呼吸间距，并且不允许依赖长按才能打开菜单。
+- [ ] 把过宽的扁平命令面板收敛成更窄的 Notion-like 面板，并为 “Turn into” 和代码语言等二级动作增加右侧 hover 子菜单。
+- [ ] 块选中反馈要覆盖完整语义块，包括普通文本和行内代码混排的内容，而不是只框住普通文本字形。
+- [ ] 为表格紧挨代码块等复杂块场景增加明确的中间插入入口，让用户不必理解 ProseMirror 光标边界也能在中间回车插入段落。
+- [ ] 把表格 chrome 重构为低噪声 hover 揭示：行/列 handle 只在当前边缘附近出现，单元格操作触发器默认是边缘小点，复杂命令继续收进作用域菜单。
+- [ ] 把表格快捷新增行/列控件打磨成整行/整列边缘轨道，中间放置 `+` icon，避免孤立悬浮按钮的粗糙感。
+- [ ] 验证 Hybrid 模式下表格列宽拖拽调整能力，并在发布前记录 Tiptap 限制或补齐实现。
 - [x] 给块操作菜单增加显式分组布局元数据和独立危险操作区，让本地化分组名、色块式样式组和删除等破坏性动作不再依赖脆弱的 CSS 结构探测。
 - [x] 把浮动块句柄自身也纳入块操作菜单和 `+` 插入菜单的安全边界，菜单打开后用户再点击或经过句柄不会被误判为外部点击而提前关闭。
 - [x] 增加高级块操作菜单和响应式编辑器 toolbar 行为。
@@ -304,6 +311,7 @@ flowchart LR
 - [x] 增加 Tiptap Mermaid 扩展，并用 fenced code round-trip 和共享预览/错误渲染测试覆盖。
 - [x] 增加 Tiptap image 扩展，并用本地 URL Markdown round-trip 和共享粘贴/拖拽协议测试覆盖。
 - [x] 增加 Tiptap code block 配置，并用语言元数据、fenced Markdown round-trip 和共享代码样式测试覆盖。
+- [x] 将 Tiptap 代码块升级为 `CodeBlockLowlight`，在 Hybrid 代码块上展示当前语言，支持通过块菜单切换语言，并保持 fenced Markdown 语言元数据不丢失。
 - [x] 增加 Tiptap callout/admonition block，支持 `> [!NOTE]` 风格 Markdown round-trip、slash/`+` 插入、块操作菜单插入和 token 化样式。
 - [x] 增加发布 smoke Markdown fixture 的自动化 round-trip 覆盖，确保标题、中文、列表、任务、callout、代码、对齐表格、公式、Mermaid 和图片在手工 QA 前先有测试守护。
 - [x] 增加专用 Tiptap 发布 smoke fixture checker，并接入完整本地检查脚本。

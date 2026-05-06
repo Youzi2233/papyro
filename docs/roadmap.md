@@ -301,6 +301,13 @@ Tasks:
 - [x] Add shared floating dismiss lifecycle to the slash/`+` insertion menu, block action menu, floating format toolbar, and table toolbar so outside clicks, scrolling, and window changes close overlays while the current block/table bridge stays interactive.
 - [x] Keep slash and block action menu keyboard navigation scrolled to the active item so long Notion-like menus remain usable from the keyboard.
 - [x] Group the slash/`+` insertion menu into quiet Text/List/Block/Advanced sections and remove repeated right-side group tags, making insertion feel closer to mature document editors.
+- [ ] Redesign block handle and `+` insertion affordances so the icons align on one optical center, keep an 8px breathing gap, and never require long-press timing to open menus.
+- [ ] Replace oversized flat command panels with narrower Notion-like panels and nested hover submenus for secondary actions such as "Turn into" and code language changes.
+- [ ] Make block selection feedback cover the whole semantic block, including mixed text and inline-code ranges, instead of only the plain text glyph run.
+- [ ] Add an explicit insert-between affordance for adjacent complex blocks such as table followed by code block, so users can add a paragraph between them without knowing ProseMirror cursor edge cases.
+- [ ] Rework table chrome into a low-noise hover-revealed system: row/column handles show only near the active edge, cell action trigger starts as a tiny edge dot, and dense commands stay in scoped menus.
+- [ ] Polish table quick-add controls into full row/column edge rails with centered plus icons, matching mature document-editor affordances instead of isolated floating buttons.
+- [ ] Validate table column resizing affordances in Hybrid mode and document any Tiptap limitations before release.
 - [x] Give the block action menu explicit group layout metadata and a separated danger section so localized labels, swatch-style groups, and destructive actions do not depend on fragile CSS structure detection.
 - [x] Add advanced block action menus and responsive editor toolbar behavior.
 - [x] Fix Tiptap Hybrid scroll-container constraints so long documents scroll inside the editor host instead of being clipped by the outer shell.
@@ -320,6 +327,7 @@ Tasks:
 - [x] Add Tiptap Mermaid extensions with fenced code round-trip coverage and shared preview/error rendering.
 - [x] Add Tiptap image extensions with local URL Markdown round-trip coverage and shared paste/drop protocol support.
 - [x] Add Tiptap code block options with language metadata, fenced Markdown round-trip coverage, and shared code styling.
+- [x] Upgrade Tiptap code blocks to `CodeBlockLowlight`, show the current language on Hybrid code blocks, add block-menu language switching, and keep fenced Markdown language metadata intact.
 - [x] Add Tiptap callout/admonition blocks with `> [!NOTE]`-style Markdown round-trip coverage, slash/`+` insertion, block action insertion, and token-based styling.
 - [x] Add a release-smoke Markdown fixture to automated round-trip coverage so headings, Chinese text, lists, tasks, callouts, code, aligned tables, math, Mermaid, and images stay guarded before manual QA.
 - [x] Add a dedicated Tiptap release-smoke fixture checker and wire it into the full local check scripts.

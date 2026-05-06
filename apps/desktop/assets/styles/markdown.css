@@ -627,6 +627,15 @@
     font: inherit;
 }
 
+.mn-tiptap-code-block[data-code-language] { padding-top: calc(var(--mn-markdown-code-block-pad-y) + 24px); }
+.mn-tiptap-code-block[data-code-language]::before { content: attr(data-code-language); position: absolute; top: 9px; right: 12px; border: var(--mn-border-subtle); border-radius: var(--mn-radius-xs); background: color-mix(in srgb, var(--mn-surface-raised) 88%, transparent); color: var(--mn-ink-3); padding: 2px 7px; font-family: var(--mn-font-ui); font-size: 10px; font-weight: var(--mn-weight-semibold); line-height: 1.4; text-transform: uppercase; pointer-events: none; }
+.mn-tiptap-code-block .hljs-comment, .mn-tiptap-code-block .hljs-quote { color: var(--mn-ink-3); font-style: italic; }
+.mn-tiptap-code-block .hljs-keyword, .mn-tiptap-code-block .hljs-selector-tag, .mn-tiptap-code-block .hljs-built_in, .mn-tiptap-code-block .hljs-name { color: var(--mn-accent-strong); font-weight: var(--mn-weight-semibold); }
+.mn-tiptap-code-block .hljs-string, .mn-tiptap-code-block .hljs-regexp, .mn-tiptap-code-block .hljs-symbol { color: var(--mn-success); }
+.mn-tiptap-code-block .hljs-number, .mn-tiptap-code-block .hljs-literal, .mn-tiptap-code-block .hljs-variable { color: var(--mn-warning); }
+.mn-tiptap-code-block .hljs-title, .mn-tiptap-code-block .hljs-section, .mn-tiptap-code-block .hljs-function { color: color-mix(in srgb, var(--mn-accent) 84%, var(--mn-ink)); }
+.mn-tiptap-code-block .hljs-attr, .mn-tiptap-code-block .hljs-attribute, .mn-tiptap-code-block .hljs-property, .mn-tiptap-code-block .hljs-meta { color: var(--mn-danger); }
+
 .mn-tiptap-editor > *:first-child { margin-top: 0; }
 .mn-tiptap-editor > *:last-child { margin-bottom: 0; }
 .mn-tiptap-block-selected {
@@ -2010,7 +2019,8 @@
 .mn-tiptap-block-action-menu-icon.highlight.blue { color: var(--mn-accent); }
 .mn-tiptap-block-action-menu-icon.highlight.green { color: var(--mn-success); }
 
-.mn-tiptap-block-action-menu-icon.code-block::before {
+.mn-tiptap-block-action-menu-icon.code-block::before,
+.mn-tiptap-block-action-menu-icon.code-language::before {
     border: 0;
     content: "{}";
 }

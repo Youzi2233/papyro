@@ -3,6 +3,10 @@ import {
   PAPYRO_CALLOUT_KIND_OPTIONS,
 } from "./tiptap-markdown-snippets.js";
 import {
+  PAPYRO_CODE_LANGUAGE_OPTIONS,
+  setCodeBlockLanguage,
+} from "./tiptap-code-block.js";
+import {
   applyMarkToBlockText,
   PAPYRO_HIGHLIGHT_OPTIONS,
   PAPYRO_TEXT_COLOR_OPTIONS,
@@ -160,6 +164,11 @@ function targetNodeName(target) {
 
 function isCalloutTarget(target) {
   return targetNodeName(target) === "calloutBlock";
+}
+
+function isCodeBlockTarget(target) {
+  const name = targetNodeName(target);
+  return name === "codeBlock" || name === "code_block";
 }
 
 function setCalloutKind(editor, target, kind) {
@@ -358,6 +367,20 @@ export const PAPYRO_TIPTAP_BLOCK_ACTIONS = Object.freeze([
       priority: 40 + index,
       enabled: ({ editor, target }) => canHighlightTarget(editor, target),
       run: ({ editor, target }) => setTargetHighlight(editor, target, option.color),
+    }),
+  ),
+  ...PAPYRO_CODE_LANGUAGE_OPTIONS.map((option, index) =>
+    createCommand({
+      id: `code-language-${option.id}`,
+      title: option.label,
+      description: option.language
+        ? `Highlight this block as ${option.label}`
+        : "Let Papyro auto-detect this code block",
+      group: "Code language",
+      icon: "code-language",
+      priority: 50 + index,
+      enabled: ({ target }) => isCodeBlockTarget(target),
+      run: ({ editor, target }) => setCodeBlockLanguage(editor, option.language, target?.pos),
     }),
   ),
   createCommand({
