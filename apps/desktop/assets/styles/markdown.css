@@ -646,9 +646,9 @@
     z-index: 150;
     display: grid;
     grid-template-rows: auto minmax(0, 1fr) auto auto auto;
-    width: min(392px, calc(100vw - 20px));
-    max-height: min(456px, calc(100vh - 20px));
-    padding: 7px;
+    width: min(408px, calc(100vw - 20px));
+    max-height: min(472px, calc(100vh - 20px));
+    padding: 6px;
     border: var(--mn-border-default);
     border-radius: 8px;
     background:
@@ -702,8 +702,8 @@
 .mn-tiptap-slash-menu-list {
     display: grid;
     align-content: start;
-    gap: 5px;
-    padding: 7px 1px 2px;
+    gap: 4px;
+    padding: 6px 1px 2px;
     overflow-y: auto;
     scrollbar-gutter: stable;
 }
@@ -725,16 +725,16 @@
 
 .mn-tiptap-slash-menu-item {
     display: grid;
-    grid-template-columns: 30px minmax(0, 1fr);
+    grid-template-columns: 28px minmax(0, 1fr);
     align-items: center;
-    gap: 10px;
+    gap: 9px;
     width: 100%;
-    min-height: 42px;
+    min-height: 40px;
     border: 0;
     border-radius: 6px;
     background: transparent;
     color: var(--mn-ink-2);
-    padding: 7px 9px 7px 8px;
+    padding: 6px 8px 6px 7px;
     text-align: left;
     font: inherit;
     transition:
@@ -754,8 +754,8 @@
     position: relative;
     display: grid;
     place-items: center;
-    width: 30px;
-    height: 30px;
+    width: 28px;
+    height: 28px;
     border: var(--mn-border-subtle);
     border-radius: 6px;
     background: color-mix(in srgb, var(--mn-surface-sunken) 70%, transparent);
@@ -1783,8 +1783,8 @@
     z-index: 165;
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
-    width: min(336px, calc(100vw - 20px));
-    max-height: min(432px, calc(100vh - 20px));
+    width: min(344px, calc(100vw - 20px));
+    max-height: min(444px, calc(100vh - 20px));
     padding: 6px;
     border: var(--mn-border-default);
     border-radius: 8px;
@@ -1808,8 +1808,8 @@
 .mn-tiptap-block-action-menu-list {
     display: grid;
     align-content: start;
-    gap: 6px;
-    padding: 7px 2px 2px;
+    gap: 4px;
+    padding: 6px 2px 2px;
     overflow-y: auto;
     scrollbar-gutter: stable;
 }
@@ -1831,11 +1831,11 @@
 
 .mn-tiptap-block-action-menu-item {
     display: grid;
-    grid-template-columns: 28px minmax(0, 1fr) auto;
+    grid-template-columns: 26px minmax(0, 1fr) auto;
     align-items: center;
-    gap: 9px;
+    gap: 8px;
     width: 100%;
-    min-height: 40px;
+    min-height: 38px;
     border: 0;
     border-radius: 7px;
     background: transparent;
@@ -1860,8 +1860,8 @@
     position: relative;
     display: grid;
     place-items: center;
-    width: 28px;
-    height: 28px;
+    width: 26px;
+    height: 26px;
     border: var(--mn-border-subtle);
     border-radius: 7px;
     background: color-mix(in srgb, var(--mn-surface-sunken) 78%, transparent);
