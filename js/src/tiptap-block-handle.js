@@ -122,6 +122,35 @@ function targetStillMounted(target, editorDom) {
   return isElement(target?.block) && isElement(editorDom) && editorDom.contains?.(target.block);
 }
 
+function blockElementFromPosition(editor, pos) {
+  const editorDom = editor?.view?.dom;
+  if (!isElement(editorDom) || !Number.isFinite(pos)) return null;
+
+  let node = null;
+  try {
+    node = typeof editor?.view?.nodeDOM === "function" ? editor.view.nodeDOM(pos) : null;
+  } catch (_error) {
+    node = null;
+  }
+
+  const element = isElement(node) ? node : node?.parentElement;
+  return closestBlockElement(element, editorDom);
+}
+
+function refreshTargetFromPosition(target, editor) {
+  if (targetStillMounted(target, editor?.view?.dom)) return target;
+
+  const block = blockElementFromPosition(editor, target?.pos);
+  if (!block) return null;
+
+  return {
+    block,
+    kind: blockKind(block),
+    pos: target.pos,
+    node: blockNode(editor, block, target.pos) ?? target.node,
+  };
+}
+
 function targetEndPos(target) {
   const nodeSize = target?.node?.nodeSize ?? target?.block?.pmViewDesc?.node?.nodeSize ?? 0;
   return Number.isFinite(target?.pos) ? target.pos + Math.max(1, nodeSize) : null;
@@ -613,8 +642,15 @@ export class TiptapBlockHandleController {
         return;
       }
 
-      if (targetStillMounted(this.#state.target, this.#editor?.view?.dom)) {
+      const liveTarget = refreshTargetFromPosition(this.#state.target, this.#editor);
+      if (liveTarget) {
+        this.#state = {
+          ...this.#state,
+          target: liveTarget,
+        };
         this.#updateView();
+      } else if (this.#insertMenu?.state?.open === true) {
+        this.#view.hide?.();
       } else {
         this.close();
       }
@@ -652,8 +688,15 @@ export class TiptapBlockHandleController {
     }
 
     if (this.#hasOpenFloatingMenu()) {
-      if (targetStillMounted(this.#state.target, this.#editor?.view?.dom)) {
+      const liveTarget = refreshTargetFromPosition(this.#state.target, this.#editor);
+      if (liveTarget) {
+        this.#state = {
+          ...this.#state,
+          target: liveTarget,
+        };
         this.#updateView();
+      } else if (this.#insertMenu?.state?.open === true) {
+        this.#view.hide?.();
       } else {
         this.close();
       }
@@ -765,6 +808,7 @@ export class TiptapBlockHandleController {
     };
     this.#root?.classList?.add?.(DRAGGING_CLASS);
     this.#bindDragListeners();
+    this.#openActions({ anchorRect: this.#drag.anchorRect });
     this.#updateView();
     return true;
   }
@@ -892,6 +936,17 @@ export class TiptapBlockHandleController {
   }
 
   #updateView() {
+    const liveTarget = refreshTargetFromPosition(this.#state.target, this.#editor);
+    if (liveTarget) {
+      this.#state = {
+        ...this.#state,
+        target: liveTarget,
+      };
+    } else if (this.#state.open && this.#insertMenu?.state?.open === true) {
+      this.#view.hide?.();
+      return;
+    }
+
     const language = this.#entry?.preferences?.language ?? "english";
     this.#view.update?.(
       {

@@ -493,7 +493,7 @@ test("Tiptap block handle exposes active menu state to the handle view", () => {
   assert.equal(view.states.at(-1).insertOpen, true);
 });
 
-test("Tiptap block handle treats a non-moving pointer gesture as an action click", () => {
+test("Tiptap block handle opens actions immediately while preserving a drag gesture", () => {
   const { block, editor } = createEditor();
   const menu = createMenuSpy();
   const view = createViewSpy();
@@ -502,7 +502,7 @@ test("Tiptap block handle treats a non-moving pointer gesture as an action click
   controller.handlePointerMove({ target: block });
 
   assert.equal(view.startDrag({ clientX: 10, clientY: 10, preventDefault() {} }), true);
-  assert.equal(menu.state.open, false);
+  assert.equal(menu.state.open, true);
   assert.equal(controller.finishDrag({ preventDefault() {} }), true);
 
   assert.deepEqual(menu.calls, [
@@ -546,7 +546,7 @@ test("Tiptap block handle click fallback opens actions without pointer capture",
   ]);
 });
 
-test("Tiptap block handle waits for release before opening actions", () => {
+test("Tiptap block handle keeps an immediate action menu through pointer release", () => {
   const { block, editor } = createEditor();
   const menu = createMenuSpy();
   const view = createViewSpy();
@@ -556,8 +556,11 @@ test("Tiptap block handle waits for release before opening actions", () => {
 
   assert.equal(view.startDrag({ clientX: 10, clientY: 10, preventDefault() {} }), true);
 
-  assert.equal(menu.state.open, false);
-  assert.deepEqual(menu.calls, [["attach", "DIV"]]);
+  assert.equal(menu.state.open, true);
+  assert.deepEqual(menu.calls, [
+    ["attach", "DIV"],
+    ["open", "paragraph", 7, [10, 10]],
+  ]);
 
   assert.equal(view.releaseAction({ clientX: 10, clientY: 10, preventDefault() {} }), true);
 
@@ -697,6 +700,26 @@ test("Tiptap block handle keeps open floating menus during editor scroll", () =>
   editor.view.dom.listeners.get("scroll")({ target: editor.view.dom });
 
   assert.equal(controller.state.open, true);
+  assert.equal(menu.state.open, true);
+  assert.deepEqual(view.calls.at(-1), ["update", "paragraph", 7]);
+});
+
+test("Tiptap block handle retargets open menus after ProseMirror remounts block DOM", () => {
+  const { block, editor, root } = createEditor();
+  const remountedBlock = createElement({ tagName: "P", parent: root });
+  const menu = createMenuSpy();
+  const view = createViewSpy();
+  editor.view.nodeDOM = (pos) => (pos === 7 ? remountedBlock : null);
+  const controller = createTiptapBlockHandleController({ menu, view });
+  controller.attach({ editor, root: editor.view.dom, entry: { viewMode: "hybrid" } });
+  controller.handlePointerMove({ target: block });
+  view.openActions();
+  block.parentNode = null;
+
+  controller.handlePointerMove({ target: { id: "outside" } });
+
+  assert.equal(controller.state.open, true);
+  assert.equal(controller.state.target.block, remountedBlock);
   assert.equal(menu.state.open, true);
   assert.deepEqual(view.calls.at(-1), ["update", "paragraph", 7]);
 });
