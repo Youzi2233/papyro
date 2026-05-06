@@ -281,6 +281,31 @@ test("Tiptap block action menu scrolls keyboard selections into view", () => {
   ]);
 });
 
+test("Tiptap block action menu activates hovered and focused commands", () => {
+  const { editor } = createEditor();
+  const documentRef = createDocument();
+  const controller = createTiptapBlockActionMenuController({
+    dom: { document: documentRef },
+  });
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  controller.open(createTarget());
+
+  const menu = documentRef.body.children[0];
+  const duplicate = findCommandItem(menu, "duplicate-block");
+
+  duplicate.onpointerenter?.({ preventDefault() {}, stopPropagation() {} });
+  assert.equal(controller.state.selectedIndex, 1);
+  assert.equal(findCommandItem(menu, "duplicate-block").classList.values.has("active"), true);
+  assert.equal(findCommandItem(menu, "copy-block").classList.values.has("active"), false);
+  assert.equal(menu.attributes.get("aria-activedescendant"), "mn-tiptap-block-action-menu-item-1");
+
+  const deleteBlock = findCommandItem(menu, "delete");
+  deleteBlock.onfocus?.({ preventDefault() {}, stopPropagation() {} });
+  assert.equal(controller.state.commands[controller.state.selectedIndex].id, "delete");
+  assert.equal(findCommandItem(menu, "delete").classList.values.has("active"), true);
+  assert.equal(findCommandItem(menu, "duplicate-block").classList.values.has("active"), false);
+});
+
 test("Tiptap block action menu runs the selected command", () => {
   const { calls, editor } = createEditor();
   const view = createViewSpy();

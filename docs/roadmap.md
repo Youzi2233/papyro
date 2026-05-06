@@ -258,6 +258,7 @@ Tasks:
 - [x] Make block-handle clicks open the action menu on pointer release like a document editor context handle, while preserving threshold-based drag sorting and retargeting open menus after ProseMirror remounts the block DOM.
 - [x] Keep block-handle pointerdown as drag preparation only: the action menu no longer flashes open before a real drag decision, which prevents small pointer movement from closing the menu immediately after it appears.
 - [x] Make slash and `+` insertion command details follow pointer hover and focus, so advanced affordances like the table-size picker respond to the command under the cursor instead of requiring keyboard navigation first.
+- [x] Make block action menu hover and focus update the same selected command state as keyboard navigation, so mouse and keyboard interactions share one active-descendant model.
 - [x] Add a table-size picker to the slash/`+` insertion menu so users can insert 1x1 through 6x6 tables instead of only the fixed 3x2 default.
 - [x] Add the first Tiptap table floating toolbar with row/column insertion and deletion, cell merge/split, header toggles, and table deletion.
 - [x] Upgrade the Tiptap table toolbar into grouped column, row, cell, header, navigation, repair, and delete commands so table editing feels closer to mature document editors.

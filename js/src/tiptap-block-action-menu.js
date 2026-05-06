@@ -207,6 +207,8 @@ class TiptapBlockActionMenuView {
         shortcut.hidden = !command.shortcut;
         copy.append(title, description);
         item.append(icon, copy, shortcut);
+        item.addEventListener("pointerenter", () => state.activate(command.index));
+        item.addEventListener("focus", () => state.activate(command.index));
         bindPointerActivation(item, () => state.run(command.id));
         section.appendChild(item);
       });
@@ -343,6 +345,7 @@ export class TiptapBlockActionMenuController {
       {
         ...this.#state,
         run: (commandId) => this.run(commandId),
+        activate: (nextIndex) => this.setSelection(nextIndex),
       },
       this.#editor,
     );
@@ -358,14 +361,30 @@ export class TiptapBlockActionMenuController {
   moveSelection(delta) {
     if (!this.#state.open || this.#state.commands.length === 0) return this.state;
     const count = this.#state.commands.length;
+    return this.setSelection((this.#state.selectedIndex + delta + count) % count);
+  }
+
+  setSelection(index) {
+    const selectedIndex = Number(index);
+    if (
+      !this.#state.open ||
+      !Number.isInteger(selectedIndex) ||
+      selectedIndex < 0 ||
+      selectedIndex >= this.#state.commands.length ||
+      selectedIndex === this.#state.selectedIndex
+    ) {
+      return this.state;
+    }
+
     this.#state = {
       ...this.#state,
-      selectedIndex: (this.#state.selectedIndex + delta + count) % count,
+      selectedIndex,
     };
     this.#view.update?.(
       {
         ...this.#state,
         run: (commandId) => this.run(commandId),
+        activate: (nextIndex) => this.setSelection(nextIndex),
       },
       this.#editor,
     );
