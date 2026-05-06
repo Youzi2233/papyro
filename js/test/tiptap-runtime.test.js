@@ -1231,6 +1231,38 @@ test("Tiptap runtime keeps slash insert menus stable when editor blur is interna
   ]);
 });
 
+test("Tiptap runtime refreshes block insert menus without closing them on selection updates", () => {
+  const { calls, registry, runtime } = createRuntimeHarness({
+    slashMenuControllerFactory: () => ({
+      attach: ({ root }) => calls.push(["slashMenuAttach", root.className]),
+      close: () => calls.push(["slashMenuClose"]),
+      destroy: () => calls.push(["slashMenuDestroy"]),
+      handleKeyDown: () => false,
+      refresh: () => calls.push(["slashMenuRefresh"]),
+      shouldKeepOpenOnEditorBlur: () => true,
+      get state() {
+        return { open: true, cleanupRangeOnClose: true };
+      },
+    }),
+  });
+  runtime.ensureEditor({
+    tabId: "tab-a",
+    containerId: "editor-root",
+    initialContent: "# Note",
+  });
+  calls.length = 0;
+
+  registry.get("tab-a").editor.emit("selectionUpdate", { editor: registry.get("tab-a").editor });
+
+  assert.deepEqual(calls, [
+    ["blockHandleRefresh"],
+    ["slashMenuRefresh"],
+    ["formatToolbarRefresh"],
+    ["tableToolbarRefresh"],
+    ["syncOutline", "tab-a", "hybrid"],
+  ]);
+});
+
 test("Tiptap runtime keeps table context menus stable when editor blur is internal", () => {
   const container = createContainer();
   const activeElement = { id: "table-menu" };

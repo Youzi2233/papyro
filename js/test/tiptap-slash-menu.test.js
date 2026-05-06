@@ -492,6 +492,55 @@ test("Tiptap slash menu falls back to the block edge when inserted caret coords 
   assert.deepEqual(view.calls.at(-1).at(-1), { left: 96, top: 78, bottom: 78 });
 });
 
+test("Tiptap slash insert menu keeps block insertion state across selection refreshes", () => {
+  const { editor } = createEditor("plain");
+  const view = createViewSpy();
+  const controller = createTiptapSlashMenuController({ view });
+  controller.attach({ editor, root: {} });
+
+  controller.openAtBlock({
+    block: {
+      getBoundingClientRect: () => ({
+        left: 96,
+        top: 44,
+        right: 420,
+        bottom: 78,
+        width: 324,
+        height: 34,
+      }),
+    },
+    pos: 3,
+    node: {
+      nodeSize: 5,
+    },
+  });
+  const anchor = controller.state.anchorRect;
+  editor.state.doc = createDoc("plain\n/");
+  editor.state.selection = {
+    empty: true,
+    from: 10,
+    $from: {
+      start: () => 9,
+    },
+  };
+
+  controller.refresh(editor);
+
+  assert.equal(controller.state.open, true);
+  assert.equal(controller.state.query, "");
+  assert.deepEqual(controller.state.range, { from: 9, to: 10 });
+  assert.equal(controller.state.cleanupRangeOnClose, true);
+  assert.equal(controller.state.anchorRect, anchor);
+  assert.deepEqual(view.calls.at(-1).slice(0, 6), [
+    "update",
+    "",
+    controller.state.commands.map((command) => command.id),
+    0,
+    { from: 9, to: 10 },
+    true,
+  ]);
+});
+
 test("Tiptap slash menu removes temporary block insert triggers on cancel", () => {
   const { calls, editor } = createEditor("plain");
   const view = createViewSpy();

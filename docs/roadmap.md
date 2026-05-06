@@ -254,6 +254,7 @@ Tasks:
 - [x] Keep command panels open during editor-internal scroll and WebView scroll restoration races while preserving outside-scroll dismissal, so a tiny pointer move after opening a handle or `+` menu no longer collapses the panel.
 - [x] Tighten slash/`+` and block-action panel visuals with a quieter command-panel shell, smaller icon wells, stable scrollbar gutters, and a restrained selected-item rail instead of generic button-list styling.
 - [x] Treat the floating block handle itself as a safe boundary for block action and `+` insertion menus, so clicking or moving back through the handle does not dismiss the open command panel before the user can choose an action.
+- [x] Keep `+` block insertion menus in insertion mode across Tiptap selection/update refreshes, preserving the temporary slash range, anchor, and cleanup semantics so normal WebView refreshes do not collapse or retarget the menu.
 - [x] Add a table-size picker to the slash/`+` insertion menu so users can insert 1x1 through 6x6 tables instead of only the fixed 3x2 default.
 - [x] Add the first Tiptap table floating toolbar with row/column insertion and deletion, cell merge/split, header toggles, and table deletion.
 - [x] Upgrade the Tiptap table toolbar into grouped column, row, cell, header, navigation, repair, and delete commands so table editing feels closer to mature document editors.

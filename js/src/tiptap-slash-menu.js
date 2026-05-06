@@ -207,6 +207,21 @@ export function findSlashTrigger(
   };
 }
 
+function triggerRange(context, trigger) {
+  if (!context || !trigger) return null;
+  return {
+    from: context.blockStart + trigger.from,
+    to: context.blockStart + trigger.to,
+  };
+}
+
+function rangeEquals(left, right) {
+  return Number.isFinite(left?.from) &&
+    Number.isFinite(left?.to) &&
+    left.from === right?.from &&
+    left.to === right?.to;
+}
+
 class TiptapSlashMenuView {
   #document;
   #ownerId;
@@ -594,6 +609,33 @@ export class TiptapSlashMenuController {
       return this.state;
     }
 
+    if (
+      this.#state.open &&
+      this.#state.cleanupRangeOnClose &&
+      rangeEquals(this.#state.range, triggerRange(context, trigger))
+    ) {
+      const commands = this.#commands.query("", {
+        limit: this.#maxItems,
+        language: entryLanguage(this.#entry),
+      });
+      this.#state = {
+        ...this.#state,
+        commands,
+        selectedIndex: Math.min(this.#state.selectedIndex, Math.max(0, commands.length - 1)),
+        query: "",
+      };
+      this.#view.update?.(
+        {
+          ...this.#state,
+          language: entryLanguage(this.#entry),
+          choose: (commandId, options) => this.choose(commandId, options),
+        },
+        editor,
+      );
+      this.#dismiss.open();
+      return this.state;
+    }
+
     const commands = this.#commands.query(trigger.query, {
       limit: this.#maxItems,
       language: entryLanguage(this.#entry),
@@ -608,10 +650,7 @@ export class TiptapSlashMenuController {
     this.#state = {
       open: true,
       query: trigger.query,
-      range: {
-        from: context.blockStart + trigger.from,
-        to: context.blockStart + trigger.to,
-      },
+      range: triggerRange(context, trigger),
       commands,
       selectedIndex: nextSelectedIndex < 0 ? 0 : nextSelectedIndex,
       deleteRangeBeforeRun: true,
