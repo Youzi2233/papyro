@@ -634,14 +634,19 @@ export class TiptapSlashMenuController {
       this.#state.cleanupRangeOnClose &&
       rangeEquals(this.#state.range, triggerRange(context, trigger))
     ) {
+      const previousCommandId = this.#state.commands[this.#state.selectedIndex]?.id;
       const commands = this.#commands.query("", {
         limit: this.#maxItems,
         language: entryLanguage(this.#entry),
       });
+      const retainedIndex = commands.findIndex((command) => command.id === previousCommandId);
       this.#state = {
         ...this.#state,
         commands,
-        selectedIndex: Math.min(this.#state.selectedIndex, Math.max(0, commands.length - 1)),
+        selectedIndex:
+          retainedIndex >= 0
+            ? retainedIndex
+            : Math.min(this.#state.selectedIndex, Math.max(0, commands.length - 1)),
         query: "",
       };
       this.#view.update?.(

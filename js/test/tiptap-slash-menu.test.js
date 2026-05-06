@@ -573,6 +573,53 @@ test("Tiptap slash insert menu keeps block insertion state across selection refr
   ]);
 });
 
+test("Tiptap slash insert menu keeps hovered command details across refreshes", () => {
+  const { editor } = createEditor("plain");
+  const documentRef = createDocument();
+  const controller = createTiptapSlashMenuController({
+    dom: { document: documentRef },
+  });
+  controller.attach({ editor, root: {} });
+
+  controller.openAtBlock({
+    block: {
+      getBoundingClientRect: () => ({
+        left: 96,
+        top: 44,
+        right: 420,
+        bottom: 78,
+        width: 324,
+        height: 34,
+      }),
+    },
+    pos: 3,
+    node: {
+      nodeSize: 5,
+    },
+  });
+  const menu = documentRef.body.children[0];
+  slashMenuCommandItem(menu, "table").onpointerenter?.({
+    preventDefault() {},
+    stopPropagation() {},
+  });
+  editor.state.doc = createDoc("plain\n/");
+  editor.state.selection = {
+    empty: true,
+    from: 10,
+    $from: {
+      start: () => 9,
+    },
+  };
+
+  controller.refresh(editor);
+
+  assert.equal(controller.state.commands[controller.state.selectedIndex].id, "table");
+  assert.equal(
+    findElementByClass(documentRef.body.children[0], "mn-tiptap-table-size-picker").hidden,
+    false,
+  );
+});
+
 test("Tiptap slash menu removes temporary block insert triggers on cancel", () => {
   const { calls, editor } = createEditor("plain");
   const view = createViewSpy();
