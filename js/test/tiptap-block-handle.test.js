@@ -713,6 +713,40 @@ test("Tiptap block handle retargets open menus after ProseMirror remounts block 
   assert.deepEqual(view.calls.at(-1), ["update", "paragraph", 7]);
 });
 
+test("Tiptap block handle keeps the action menu open while a block DOM is temporarily missing", () => {
+  const { block, editor } = createEditor();
+  const menu = createMenuSpy();
+  const view = createViewSpy();
+  const controller = createTiptapBlockHandleController({ menu, view });
+  controller.attach({ editor, root: editor.view.dom, entry: { viewMode: "hybrid" } });
+  controller.handlePointerMove({ target: block });
+  view.openActions();
+  block.parentNode = null;
+
+  controller.handlePointerMove({ target: { id: "outside" } });
+
+  assert.equal(controller.state.open, true);
+  assert.equal(menu.state.open, true);
+  assert.deepEqual(view.calls.at(-1), ["hide"]);
+});
+
+test("Tiptap block handle keeps the insert menu open while a block DOM is temporarily missing", () => {
+  const { block, editor } = createEditor();
+  const insertMenu = createInsertMenuSpy();
+  const view = createViewSpy();
+  const controller = createTiptapBlockHandleController({ insertMenu, view });
+  controller.attach({ editor, root: editor.view.dom, entry: { viewMode: "hybrid" } });
+  controller.handlePointerMove({ target: block });
+  view.openInsert();
+  block.parentNode = null;
+
+  controller.handlePointerMove({ target: { id: "outside" } });
+
+  assert.equal(controller.state.open, true);
+  assert.equal(insertMenu.state.open, true);
+  assert.deepEqual(view.calls.at(-1), ["hide"]);
+});
+
 test("Tiptap block handle stays open when the editor mouse leaves with a floating menu open", () => {
   const { block, editor } = createEditor();
   const menu = createMenuSpy();

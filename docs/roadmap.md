@@ -257,6 +257,7 @@ Tasks:
 - [x] Keep `+` block insertion menus in insertion mode across Tiptap selection/update refreshes, preserving the temporary slash range, anchor, and cleanup semantics so normal WebView refreshes do not collapse or retarget the menu.
 - [x] Make block-handle clicks open the action menu on pointer release like a document editor context handle, while preserving threshold-based drag sorting and retargeting open menus after ProseMirror remounts the block DOM.
 - [x] Keep block-handle pointerdown as drag preparation only: the action menu no longer flashes open before a real drag decision, which prevents small pointer movement from closing the menu immediately after it appears.
+- [x] Keep open block action and `+` insertion panels alive when ProseMirror temporarily unmounts the source block during slash insertion or selection refresh; the handle chrome can hide, but the command panel stays open until an explicit outside dismissal.
 - [x] Make slash and `+` insertion command details follow pointer hover and focus, so advanced affordances like the table-size picker respond to the command under the cursor instead of requiring keyboard navigation first.
 - [x] Make block action menu hover and focus update the same selected command state as keyboard navigation, so mouse and keyboard interactions share one active-descendant model.
 - [x] Add a table-size picker to the slash/`+` insertion menu so users can insert 1x1 through 6x6 tables instead of only the fixed 3x2 default.

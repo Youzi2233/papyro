@@ -649,7 +649,7 @@ export class TiptapBlockHandleController {
           target: liveTarget,
         };
         this.#updateView();
-      } else if (this.#insertMenu?.state?.open === true) {
+      } else if (this.#hasOpenFloatingMenu()) {
         this.#view.hide?.();
       } else {
         this.close();
@@ -695,7 +695,7 @@ export class TiptapBlockHandleController {
           target: liveTarget,
         };
         this.#updateView();
-      } else if (this.#insertMenu?.state?.open === true) {
+      } else if (this.#hasOpenFloatingMenu()) {
         this.#view.hide?.();
       } else {
         this.close();
@@ -941,7 +941,7 @@ export class TiptapBlockHandleController {
         ...this.#state,
         target: liveTarget,
       };
-    } else if (this.#state.open && this.#insertMenu?.state?.open === true) {
+    } else if (this.#state.open && this.#hasOpenFloatingMenu()) {
       this.#view.hide?.();
       return;
     }
