@@ -968,6 +968,12 @@ class TiptapTableToolbarView {
       button.tabIndex = state.activeCommandId === command.id ? 0 : -1;
       button.disabled = !!command.disabled;
       button.setAttribute("aria-disabled", command.disabled ? "true" : "false");
+      button.addEventListener("pointerenter", () =>
+        state.setActiveCommand?.(command.id, { keyboardActive: false }),
+      );
+      button.addEventListener("focus", () =>
+        state.setActiveCommand?.(command.id, { keyboardActive: true }),
+      );
       bindPointerCommand(button, command, () => state.run(command.id));
       const visual = createElement(
         this.#document,
@@ -1454,6 +1460,7 @@ export class TiptapTableToolbarController {
       selectAxis: (axis, index) => this.selectAxis(axis, index),
       toggleMenu: (mode, options) => this.toggleMenu(mode, options),
       openCellMenu: (mode, options) => this.openCellMenu(mode, options),
+      setActiveCommand: (commandId, options) => this.setActiveCommand(commandId, options),
       handleKeyDown: (event) => this.handleKeyDown(event),
     });
     this.#dismiss.open();
@@ -1510,6 +1517,7 @@ export class TiptapTableToolbarController {
         selectAxis: (axis, index) => this.selectAxis(axis, index),
         toggleMenu: (mode, options) => this.toggleMenu(mode, options),
         openCellMenu: (mode, options) => this.openCellMenu(mode, options),
+        setActiveCommand: (commandId, options) => this.setActiveCommand(commandId, options),
         handleKeyDown: (keyboardEvent) => this.handleKeyDown(keyboardEvent),
       });
       const firstId = enabledCommandIds(visibleCommands(this.#state.commands, "keyboard", this.#state.selection.kind))[0] ?? null;
@@ -1644,6 +1652,7 @@ export class TiptapTableToolbarController {
       selectAxis: (axis, index) => this.selectAxis(axis, index),
       toggleMenu: (menuMode, options) => this.toggleMenu(menuMode, options),
       openCellMenu: (menuMode, options) => this.openCellMenu(menuMode, options),
+      setActiveCommand: (commandId, options) => this.setActiveCommand(commandId, options),
       handleKeyDown: (event) => this.handleKeyDown(event),
     });
     return true;
@@ -1689,6 +1698,7 @@ export class TiptapTableToolbarController {
       selectAxis: (selectedAxis, selectedIndex) => this.selectAxis(selectedAxis, selectedIndex),
       toggleMenu: (menuMode, options) => this.toggleMenu(menuMode, options),
       openCellMenu: (menuMode, options) => this.openCellMenu(menuMode, options),
+      setActiveCommand: (commandId, options) => this.setActiveCommand(commandId, options),
       handleKeyDown: (event) => this.handleKeyDown(event),
     });
     return ok;

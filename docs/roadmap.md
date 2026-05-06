@@ -284,6 +284,7 @@ Tasks:
 - [x] Make table toolbar command buttons pointer-first so WebView focus ordering does not swallow table operations.
 - [x] Keep table context menus stable across editor blur and WebView focus races, so clicking row/column/cell actions or moving focus through table chrome no longer dismisses the menu before users can choose a command.
 - [x] Normalize table toolbar active alignment states so default/left/center/right cells reflect the actual Markdown table state.
+- [x] Make table context menu hover and focus sync the active command state, matching keyboard navigation and keeping table command panels predictable for mixed mouse/keyboard use.
 - [x] Add shared Tiptap UI primitives for popover placement, menu active-descendant state, toolbar roots, and visibility handling.
 - [x] Respect Tiptap `editor.can()` in the table toolbar so unavailable row, column, cell, and repair actions render disabled instead of looking clickable.
 - [x] Add keyboard access to the Tiptap table toolbar: Shift+F10 opens it from a table selection, arrow keys move between enabled commands, Enter/Space runs the focused command, and Escape closes it.

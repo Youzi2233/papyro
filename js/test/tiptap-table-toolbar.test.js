@@ -998,6 +998,40 @@ test("Tiptap table toolbar supports keyboard navigation and execution", () => {
   assert.equal(disabled.dataset.keyboardActive, "false");
 });
 
+test("Tiptap table context menu syncs hover and focus active commands", () => {
+  const { created, documentRef } = createDocument();
+  const { editor } = createTableHarness({
+    mergeCells: () => true,
+    setCellAttribute: () => true,
+  });
+  const controller = createTiptapTableToolbarController({
+    dom: { document: documentRef },
+  });
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  const trigger = created.find((element) =>
+    String(element.className).includes("mn-tiptap-table-cell-menu-trigger"),
+  );
+  trigger.onpointerdown({ preventDefault() {}, stopPropagation() {} });
+
+  const root = created.find((element) =>
+    String(element.className).includes("mn-tiptap-table-toolbar"),
+  );
+  const center = toolbarCommandButton(created, "align-center");
+  const green = toolbarCommandButton(created, "cell-bg-green");
+
+  center.onpointerenter?.({ preventDefault() {}, stopPropagation() {} });
+  assert.equal(controller.state.activeCommandId, "align-center");
+  assert.equal(root.dataset.keyboardActive, "false");
+  assert.equal(center.dataset.keyboardActive, "true");
+  assert.equal(toolbarCommandButton(created, "align-left").dataset.keyboardActive, "false");
+
+  green.onfocus?.({ preventDefault() {}, stopPropagation() {} });
+  assert.equal(controller.state.activeCommandId, "cell-bg-green");
+  assert.equal(root.dataset.keyboardActive, "true");
+  assert.equal(green.dataset.keyboardActive, "true");
+  assert.equal(center.dataset.keyboardActive, "false");
+});
+
 test("Tiptap table toolbar handles keyboard events after focus enters the toolbar", () => {
   const { created, documentRef } = createDocument();
   const { editor } = createTableHarness();
