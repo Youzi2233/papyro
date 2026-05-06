@@ -122,6 +122,7 @@ function createRuntimeHarness({
         return event.key === "F10" && event.shiftKey;
       },
       refresh: () => calls.push(["tableToolbarRefresh"]),
+      shouldKeepOpenOnEditorBlur: () => false,
     }));
 
   class FakeTiptapEditor {
@@ -1227,5 +1228,47 @@ test("Tiptap runtime keeps slash insert menus stable when editor blur is interna
     ["blockHandleClose"],
     ["formatToolbarClose"],
     ["tableToolbarClose"],
+  ]);
+});
+
+test("Tiptap runtime keeps table context menus stable when editor blur is internal", () => {
+  const container = createContainer();
+  const activeElement = { id: "table-menu" };
+  const documentRef = {
+    getElementById: (containerId) => (containerId === "editor-root" ? container : null),
+    get activeElement() {
+      return activeElement;
+    },
+  };
+  const { calls, registry, runtime } = createRuntimeHarness({
+    container,
+    document: documentRef,
+    tableToolbarControllerFactory: () => ({
+      attach: ({ root }) => calls.push(["tableToolbarAttach", root.className]),
+      close: () => calls.push(["tableToolbarClose"]),
+      contains: (target) => target === activeElement,
+      destroy: () => calls.push(["tableToolbarDestroy"]),
+      handleKeyDown: () => false,
+      refresh: () => calls.push(["tableToolbarRefresh"]),
+      shouldKeepOpenOnEditorBlur: (target) => {
+        calls.push(["tableToolbarBlurGuard", target.id]);
+        return true;
+      },
+    }),
+  });
+  runtime.ensureEditor({
+    tabId: "tab-a",
+    containerId: "editor-root",
+    initialContent: "# Note",
+  });
+  calls.length = 0;
+
+  registry.get("tab-a").editor.emit("blur");
+
+  assert.deepEqual(calls, [
+    ["tableToolbarBlurGuard", "table-menu"],
+    ["blockHandleClose"],
+    ["slashMenuClose"],
+    ["formatToolbarClose"],
   ]);
 });

@@ -449,6 +449,8 @@ export function createTiptapEditorRuntime({
           entry?.blockHandle?.shouldKeepOpenOnEditorBlur?.(activeElement) === true;
         const keepSlashMenuOpen =
           entry?.slashMenu?.shouldKeepOpenOnEditorBlur?.(activeElement) === true;
+        const keepTableToolbarOpen =
+          entry?.tableToolbar?.shouldKeepOpenOnEditorBlur?.(activeElement) === true;
         if (!keepBlockHandleOpen) {
           entry?.blockHandle?.close();
         }
@@ -458,7 +460,7 @@ export function createTiptapEditorRuntime({
         if (!entry?.formatToolbar?.contains?.(activeElement)) {
           entry?.formatToolbar?.close();
         }
-        if (!entry?.tableToolbar?.contains?.(activeElement)) {
+        if (!keepTableToolbarOpen && !entry?.tableToolbar?.contains?.(activeElement)) {
           entry?.tableToolbar?.close();
         }
       });

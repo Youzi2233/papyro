@@ -1647,3 +1647,31 @@ test("Tiptap table toolbar stays open for pointer events inside the active table
   assert.equal(controller.state.open, true);
   assert.notDeepEqual(view.calls.at(-1), ["hide"]);
 });
+
+test("Tiptap table toolbar keeps editor blur stable for table chrome and WebView focus races", () => {
+  const { editor, table } = createTableHarness({
+    mergeCells: () => true,
+    setCellAttribute: () => true,
+  });
+  const view = createViewSpy();
+  const documentRef = {
+    body: { id: "body" },
+  };
+  const toolbarTarget = { id: "table-toolbar" };
+  view.setContainedTarget(toolbarTarget);
+  const controller = createTiptapTableToolbarController({
+    dom: { document: documentRef },
+    view,
+  });
+
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+
+  assert.equal(controller.shouldKeepOpenOnEditorBlur(toolbarTarget), true);
+  assert.equal(controller.shouldKeepOpenOnEditorBlur(table), true);
+  assert.equal(controller.shouldKeepOpenOnEditorBlur(null), true);
+  assert.equal(controller.shouldKeepOpenOnEditorBlur(documentRef.body), true);
+  assert.equal(controller.shouldKeepOpenOnEditorBlur({ id: "outside" }), false);
+
+  controller.close();
+  assert.equal(controller.shouldKeepOpenOnEditorBlur(toolbarTarget), false);
+});

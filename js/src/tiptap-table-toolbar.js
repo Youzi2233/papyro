@@ -1247,6 +1247,7 @@ class TiptapTableToolbarView {
 export class TiptapTableToolbarController {
   #view;
   #dismiss;
+  #document = null;
   #editor = null;
   #entry = null;
   #removeListeners = [];
@@ -1271,6 +1272,7 @@ export class TiptapTableToolbarController {
   constructor({ view = null, dom = {} } = {}) {
     const documentRef = dom.document ?? defaultDocument();
     const windowRef = dom.window ?? defaultWindow(documentRef);
+    this.#document = documentRef;
     this.#view =
       view ??
       new TiptapTableToolbarView({
@@ -1305,6 +1307,16 @@ export class TiptapTableToolbarController {
     this.#view.mount?.(root);
     this.#bind(editor?.view?.dom ?? root);
     this.refresh(editor);
+  }
+
+  shouldKeepOpenOnEditorBlur(activeElement = null) {
+    return Boolean(
+      this.#state.open &&
+        (this.contains(activeElement) ||
+          this.#state.table?.contains?.(activeElement) ||
+          activeElement == null ||
+          activeElement === this.#document?.body),
+    );
   }
 
   #bind(target) {
