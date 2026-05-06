@@ -384,6 +384,8 @@ class TiptapSlashMenuView {
         copy.append(title, description);
 
         item.append(icon, copy);
+        item.addEventListener("pointerenter", () => state.activate(command.index));
+        item.addEventListener("focus", () => state.activate(command.index));
         bindPointerActivation(item, () => state.choose(command.id));
         section.appendChild(item);
       });
@@ -536,6 +538,15 @@ export class TiptapSlashMenuController {
     this.#externalContains = typeof contains === "function" ? contains : () => false;
   }
 
+  #viewState() {
+    return {
+      ...this.#state,
+      language: entryLanguage(this.#entry),
+      choose: (commandId, options) => this.choose(commandId, options),
+      activate: (nextIndex) => this.setSelection(nextIndex),
+    };
+  }
+
   #shouldDismiss(event) {
     if (event?.type !== "focusin") return true;
     const target = event?.target;
@@ -577,11 +588,7 @@ export class TiptapSlashMenuController {
     if (!context) {
       if (this.#state.open && this.#state.cleanupRangeOnClose) {
         this.#view.update?.(
-          {
-            ...this.#state,
-            language: entryLanguage(this.#entry),
-            choose: (commandId, options) => this.choose(commandId, options),
-          },
+          this.#viewState(),
           editor,
         );
         this.#dismiss.open();
@@ -595,11 +602,7 @@ export class TiptapSlashMenuController {
     if (!trigger) {
       if (this.#state.open && this.#state.cleanupRangeOnClose) {
         this.#view.update?.(
-          {
-            ...this.#state,
-            language: entryLanguage(this.#entry),
-            choose: (commandId, options) => this.choose(commandId, options),
-          },
+          this.#viewState(),
           editor,
         );
         this.#dismiss.open();
@@ -625,11 +628,7 @@ export class TiptapSlashMenuController {
         query: "",
       };
       this.#view.update?.(
-        {
-          ...this.#state,
-          language: entryLanguage(this.#entry),
-          choose: (commandId, options) => this.choose(commandId, options),
-        },
+        this.#viewState(),
         editor,
       );
       this.#dismiss.open();
@@ -659,11 +658,7 @@ export class TiptapSlashMenuController {
       placement: "bottom",
     };
     this.#view.update?.(
-      {
-        ...this.#state,
-        language: entryLanguage(this.#entry),
-        choose: (commandId, options) => this.choose(commandId, options),
-      },
+      this.#viewState(),
       editor,
     );
     this.#dismiss.open();
@@ -701,11 +696,7 @@ export class TiptapSlashMenuController {
       placement: "bottom",
     };
     this.#view.update?.(
-      {
-        ...this.#state,
-        language: entryLanguage(this.#entry),
-        choose: (commandId, options) => this.choose(commandId, options),
-      },
+      this.#viewState(),
       this.#editor,
     );
     this.#dismiss.open();
@@ -720,11 +711,30 @@ export class TiptapSlashMenuController {
       selectedIndex: (this.#state.selectedIndex + delta + count) % count,
     };
     this.#view.update?.(
-      {
-        ...this.#state,
-        language: entryLanguage(this.#entry),
-        choose: (commandId, options) => this.choose(commandId, options),
-      },
+      this.#viewState(),
+      this.#editor,
+    );
+    return this.state;
+  }
+
+  setSelection(index) {
+    const selectedIndex = Number(index);
+    if (
+      !this.#state.open ||
+      !Number.isInteger(selectedIndex) ||
+      selectedIndex < 0 ||
+      selectedIndex >= this.#state.commands.length ||
+      selectedIndex === this.#state.selectedIndex
+    ) {
+      return this.state;
+    }
+
+    this.#state = {
+      ...this.#state,
+      selectedIndex,
+    };
+    this.#view.update?.(
+      this.#viewState(),
       this.#editor,
     );
     return this.state;

@@ -339,6 +339,33 @@ test("Tiptap slash menu scrolls keyboard selections into view", () => {
   ]);
 });
 
+test("Tiptap slash menu activates command details on pointer hover", () => {
+  const { editor } = createEditor("/");
+  const documentRef = createDocument();
+  const controller = createTiptapSlashMenuController({
+    dom: { document: documentRef },
+  });
+  controller.attach({ editor, root: {} });
+
+  const menu = documentRef.body.children[0];
+  const paragraphItem = slashMenuCommandItem(menu, "paragraph");
+  const tableItem = slashMenuCommandItem(menu, "table");
+  const tablePicker = findElementByClass(menu, "mn-tiptap-table-size-picker");
+  assert.equal(tablePicker.hidden, true);
+
+  tableItem.onpointerenter?.({ preventDefault() {}, stopPropagation() {} });
+  assert.equal(controller.state.commands[controller.state.selectedIndex].id, "table");
+  assert.equal(tablePicker.hidden, false);
+  assert.equal(slashMenuCommandItem(menu, "table")["aria-selected"], "true");
+  assert.equal(slashMenuCommandItem(menu, "paragraph")["aria-selected"], "false");
+
+  slashMenuCommandItem(menu, "paragraph").onfocus?.({ preventDefault() {}, stopPropagation() {} });
+  assert.equal(controller.state.selectedIndex, 0);
+  assert.equal(tablePicker.hidden, true);
+  assert.equal(slashMenuCommandItem(menu, "paragraph")["aria-selected"], "true");
+  assert.equal(slashMenuCommandItem(menu, "table")["aria-selected"], "false");
+});
+
 test("Tiptap slash menu runs selected command and removes trigger text", () => {
   const { calls, editor } = createEditor("/h2");
   const view = createViewSpy();
