@@ -242,6 +242,7 @@ export class TiptapBlockActionMenuController {
   #commands;
   #view;
   #dismiss;
+  #document = null;
   #externalContains = () => false;
   #editor = null;
   #entry = null;
@@ -261,6 +262,7 @@ export class TiptapBlockActionMenuController {
     this.#commands = commandController;
     const documentRef = dom.document ?? defaultDocument();
     const windowRef = dom.window ?? defaultWindow(documentRef);
+    this.#document = documentRef;
     this.#view =
       view ??
       new TiptapBlockActionMenuView({
@@ -274,6 +276,7 @@ export class TiptapBlockActionMenuController {
         this.contains(target) ||
         this.#externalContains(target) ||
         this.#state.target?.block?.contains?.(target),
+      shouldDismiss: (event) => this.#shouldDismiss(event),
       onDismiss: () => this.close(),
     });
   }
@@ -294,6 +297,16 @@ export class TiptapBlockActionMenuController {
 
   setExternalContains(contains) {
     this.#externalContains = typeof contains === "function" ? contains : () => false;
+  }
+
+  #shouldDismiss(event) {
+    if (event?.type !== "focusin") return true;
+    const target = event?.target;
+    return !(
+      target == null ||
+      target === this.#document?.body ||
+      this.#editor?.view?.dom?.contains?.(target)
+    );
   }
 
   open(target, { anchorRect = null } = {}) {

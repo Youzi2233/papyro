@@ -29,6 +29,7 @@ export function createFloatingDismissController({
   document: documentRef = defaultDocument(),
   window: windowRef = defaultWindow(documentRef),
   contains = () => false,
+  shouldDismiss = () => true,
   onDismiss = () => {},
 } = {}) {
   let removeListeners = [];
@@ -41,7 +42,8 @@ export function createFloatingDismissController({
   };
 
   const dismissIfOutside = (event) => {
-    if (contains(event?.target)) return;
+    if (contains(event?.target, event)) return;
+    if (shouldDismiss(event) === false) return;
     onDismiss(event);
   };
   const dismissPointer = (event) => {

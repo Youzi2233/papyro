@@ -719,6 +719,30 @@ test("Tiptap slash menu treats registered external targets as internal", () => {
   assert.notDeepEqual(view.calls.at(-1), ["hide"]);
 });
 
+test("Tiptap slash menu ignores editor focus races but still closes on outside focus", () => {
+  const { editor } = createEditor("/table");
+  const view = createViewSpy();
+  const documentRef = createDismissDocument();
+  controllerAttachEditorDocument(editor, documentRef);
+  const controller = createTiptapSlashMenuController({
+    dom: { document: documentRef },
+    view,
+  });
+  controller.attach({ editor, root: {} });
+
+  documentRef.emit("focusin", { type: "focusin", target: editor.view.dom });
+  assert.equal(controller.state.open, true);
+
+  documentRef.emit("focusin", { type: "focusin", target: { id: "outside-focus" } });
+  assert.equal(controller.state.open, false);
+  assert.deepEqual(view.calls.at(-1), ["hide"]);
+});
+
+function controllerAttachEditorDocument(editor, documentRef) {
+  editor.view.dom.contains = (target) => target === editor.view.dom;
+  editor.view.dom.ownerDocument = documentRef;
+}
+
 test("Tiptap slash menu keeps editor blur stable while a command panel is open", () => {
   const { editor } = createEditor("/table");
   const view = createViewSpy();

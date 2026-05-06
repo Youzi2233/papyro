@@ -284,3 +284,30 @@ test("Tiptap floating dismiss treats pointer mouse and focus events consistently
   controller.close();
   assert.equal(listeners.size, 0);
 });
+
+test("Tiptap floating dismiss lets controllers guard focus races without weakening outside clicks", () => {
+  const listeners = new Map();
+  const calls = [];
+  const editorTarget = { id: "editor" };
+  const documentRef = {
+    addEventListener(type, listener) {
+      listeners.set(type, listener);
+    },
+    removeEventListener(type, listener) {
+      if (listeners.get(type) === listener) {
+        listeners.delete(type);
+      }
+    },
+  };
+  const controller = createFloatingDismissController({
+    document: documentRef,
+    shouldDismiss: (event) => event.type !== "focusin" || event.target !== editorTarget,
+    onDismiss: (event) => calls.push(event.type),
+  });
+
+  controller.open();
+  listeners.get("focusin")({ type: "focusin", target: editorTarget });
+  listeners.get("pointerdown")({ type: "pointerdown", target: editorTarget });
+
+  assert.deepEqual(calls, ["pointerdown"]);
+});

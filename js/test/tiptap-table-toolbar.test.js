@@ -1675,3 +1675,27 @@ test("Tiptap table toolbar keeps editor blur stable for table chrome and WebView
   controller.close();
   assert.equal(controller.shouldKeepOpenOnEditorBlur(toolbarTarget), false);
 });
+
+test("Tiptap table toolbar keeps focus races inside the editor from dismissing menus", () => {
+  const { editor } = createTableHarness({
+    mergeCells: () => true,
+    setCellAttribute: () => true,
+  });
+  const view = createViewSpy();
+  const documentRef = createDismissDocument();
+  const editorDom = editor.view.dom;
+  const containsTableTarget = editorDom.contains.bind(editorDom);
+  editorDom.contains = (target) => target === editorDom || containsTableTarget(target);
+  const controller = createTiptapTableToolbarController({
+    dom: { document: documentRef },
+    view,
+  });
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+
+  documentRef.emit("focusin", { type: "focusin", target: editorDom });
+  assert.equal(controller.state.open, true);
+
+  documentRef.emit("focusin", { type: "focusin", target: { id: "outside-focus" } });
+  assert.equal(controller.state.open, false);
+  assert.deepEqual(view.calls.at(-1), ["hide"]);
+});

@@ -1284,6 +1284,7 @@ export class TiptapTableToolbarController {
       window: windowRef,
       contains: (target) =>
         this.contains(target) || this.#state.table?.contains?.(target),
+      shouldDismiss: (event) => this.#shouldDismiss(event),
       onDismiss: () => this.close(),
     });
   }
@@ -1316,6 +1317,16 @@ export class TiptapTableToolbarController {
           this.#state.table?.contains?.(activeElement) ||
           activeElement == null ||
           activeElement === this.#document?.body),
+    );
+  }
+
+  #shouldDismiss(event) {
+    if (event?.type !== "focusin") return true;
+    const target = event?.target;
+    return !(
+      target == null ||
+      target === this.#document?.body ||
+      this.#editor?.view?.dom?.contains?.(target)
     );
   }
 

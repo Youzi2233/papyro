@@ -584,3 +584,26 @@ test("Tiptap block action menu treats registered external targets as internal", 
   assert.equal(controller.state.open, true);
   assert.notDeepEqual(view.calls.at(-1), ["hide"]);
 });
+
+test("Tiptap block action menu survives editor focus races until focus leaves the surface", () => {
+  const { editor } = createEditor();
+  const view = createViewSpy();
+  const documentRef = createDismissDocument();
+  const editorDom = {
+    contains: (target) => target === editorDom,
+  };
+  editor.view = { dom: editorDom };
+  const controller = createTiptapBlockActionMenuController({
+    dom: { document: documentRef },
+    view,
+  });
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  controller.open(createTarget());
+
+  documentRef.emit("focusin", { type: "focusin", target: editorDom });
+  assert.equal(controller.state.open, true);
+
+  documentRef.emit("focusin", { type: "focusin", target: { id: "outside-focus" } });
+  assert.equal(controller.state.open, false);
+  assert.deepEqual(view.calls.at(-1), ["hide"]);
+});

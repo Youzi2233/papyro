@@ -496,6 +496,7 @@ export class TiptapSlashMenuController {
       document: documentRef,
       window: windowRef,
       contains: (target) => this.contains(target) || this.#externalContains(target),
+      shouldDismiss: (event) => this.#shouldDismiss(event),
       onDismiss: () => this.close(),
     });
   }
@@ -517,6 +518,16 @@ export class TiptapSlashMenuController {
 
   setExternalContains(contains) {
     this.#externalContains = typeof contains === "function" ? contains : () => false;
+  }
+
+  #shouldDismiss(event) {
+    if (event?.type !== "focusin") return true;
+    const target = event?.target;
+    return !(
+      target == null ||
+      target === this.#document?.body ||
+      this.#editor?.view?.dom?.contains?.(target)
+    );
   }
 
   shouldKeepOpenOnEditorBlur(activeElement = null) {
