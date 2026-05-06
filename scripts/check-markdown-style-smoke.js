@@ -79,6 +79,10 @@ const TIPTAP_COMMAND_PANEL_REQUIREMENTS = [
   ["Tiptap block action panel", ".mn-tiptap-block-action-menu", "user-select: none"],
   ["Tiptap block action active rhythm", ".mn-tiptap-block-action-menu-item.active", "box-shadow: inset 2px 0 0"],
   ["Tiptap block action list scrolling", ".mn-tiptap-block-action-menu-list", "scrollbar-gutter: stable"],
+  ["Tiptap table command panel", ".mn-tiptap-table-toolbar[data-mode=\"context\"]", "scrollbar-gutter: stable"],
+  ["Tiptap table command rows", ".mn-tiptap-table-toolbar-button-label", "box-shadow: inset 2px 0 0"],
+  ["Tiptap table command icons", ".mn-tiptap-table-toolbar-button[data-icon=\"row-below\"]", "mn-tiptap-table-toolbar-button-visual::after"],
+  ["Tiptap table merge icon", ".mn-tiptap-table-toolbar-button[data-icon=\"merge\"]", ".mn-tiptap-table-toolbar-button[data-icon=\"split\"]"],
 ];
 
 function main() {
@@ -207,6 +211,13 @@ ${TIPTAP_COMMAND_PANEL_REQUIREMENTS.map(
   assert(
     checkCssText(missingCommandPanel).some((failure) =>
       failure.includes("Tiptap slash command list scrolling"),
+    ),
+  );
+
+  const missingTablePanel = css.replaceAll(".mn-tiptap-table-toolbar-button-label", ".mn-tiptap-table-toolbar-copy");
+  assert(
+    checkCssText(missingTablePanel).some((failure) =>
+      failure.includes("Tiptap table command rows"),
     ),
   );
 

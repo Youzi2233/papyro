@@ -1211,7 +1211,7 @@ test("Tiptap table toolbar anchors multi-cell actions to the head cell", () => {
 
   assert.equal(root.hidden, false);
   assert.equal(trigger["aria-expanded"], "true");
-  assert.equal(root.style.left, "108px");
+  assert.equal(root.style.left, "102px");
   assert.equal(root.style.top, "132px");
 });
 
@@ -1359,6 +1359,81 @@ test("Tiptap table toolbar separates destructive row actions from ordinary comma
   assert.equal(eyebrow.textContent, "Table");
   assert.equal(title.textContent, "Row actions");
   assert.equal(subtitle.textContent, "Row 1");
+});
+
+test("Tiptap table context menu renders text commands as command rows", () => {
+  const { created, documentRef } = createDocument();
+  const { editor } = createTableHarness({
+    addRowBefore: () => true,
+    addRowAfter: () => true,
+    deleteRow: () => true,
+    toggleHeaderRow: () => true,
+  });
+  const controller = createTiptapTableToolbarController({
+    dom: { document: documentRef },
+  });
+
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  const rowHandle = created.find((element) =>
+    String(element.className).includes("mn-tiptap-table-axis-handle row"),
+  );
+  rowHandle.onpointerdown({ preventDefault() {}, stopPropagation() {} });
+
+  const insertBelow = toolbarCommandButton(created, "add-row-after");
+  const headerRow = toolbarCommandButton(created, "toggle-header-row");
+  const deleteRow = toolbarCommandButton(created, "delete-row");
+
+  assert.equal(insertBelow.dataset.variant, "text");
+  assert.equal(insertBelow.children.length, 2);
+  assert.equal(
+    String(insertBelow.children[0].className).includes("mn-tiptap-table-toolbar-button-visual"),
+    true,
+  );
+  assert.equal(insertBelow.children[0].dataset.icon, "row-below");
+  assert.equal(
+    String(insertBelow.children[1].className).includes("mn-tiptap-table-toolbar-button-label"),
+    true,
+  );
+  assert.equal(insertBelow.children[1].textContent, "Insert row below");
+  assert.equal(headerRow.children[0].dataset.icon, "header-row");
+  assert.equal(headerRow.children[1].textContent, "Toggle header row");
+  assert.equal(deleteRow.children[0].dataset.icon, "delete-row");
+  assert.equal(deleteRow.children[1].textContent, "Delete current row");
+});
+
+test("Tiptap table range context menu keeps merge commands visually explicit", () => {
+  const { created, documentRef } = createDocument();
+  const { editor } = createTableHarness({
+    mergeCells: () => true,
+    splitCell: () => true,
+    setCellAttribute: () => true,
+  });
+  editor.state.selection = {
+    from: 4,
+    $anchorCell: { pos: 10 },
+    $headCell: { pos: 11 },
+    forEachCell(callback) {
+      [10, 11].forEach((pos) => callback({}, pos));
+    },
+  };
+  const controller = createTiptapTableToolbarController({
+    dom: { document: documentRef },
+  });
+
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  const trigger = created.find((element) =>
+    String(element.className).includes("mn-tiptap-table-cell-menu-trigger"),
+  );
+  trigger.onpointerdown({ preventDefault() {}, stopPropagation() {} });
+
+  const mergeCells = toolbarCommandButton(created, "merge-cells");
+  assert.equal(mergeCells.dataset.variant, "text");
+  assert.equal(mergeCells.children[0].dataset.icon, "merge");
+  assert.equal(
+    String(mergeCells.children[0].className).includes("mn-tiptap-table-toolbar-button-visual"),
+    true,
+  );
+  assert.equal(mergeCells.children[1].textContent, "Merge selected cells");
 });
 
 test("Tiptap table toolbar keeps cell and axis context menus focused", () => {
@@ -1540,7 +1615,7 @@ test("Tiptap table toolbar replaces native context menus inside table cells", ()
   assert.equal(controller.state.menuOpen, true);
   assert.equal(root.hidden, false);
   assert.equal(root.dataset.selectionKind, "cell");
-  assert.equal(root.style.left, "108px");
+  assert.equal(root.style.left, "102px");
   assert.equal(root.style.top, "132px");
 
   controller.destroy();
@@ -1571,7 +1646,7 @@ test("Tiptap table toolbar anchors right-click menus to the pointer", () => {
   );
   assert.equal(controller.state.menuAnchorRect.left, 310);
   assert.equal(controller.state.menuAnchorRect.top, 240);
-  assert.equal(root.style.left, "178px");
+  assert.equal(root.style.left, "172px");
   assert.equal(root.style.top, "248px");
 });
 

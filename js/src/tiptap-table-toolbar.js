@@ -233,7 +233,7 @@ const TABLE_ADD_ROW_WIDTH = 42;
 const TABLE_ADD_ROW_HEIGHT = 22;
 const TABLE_ADD_COLUMN_WIDTH = 22;
 const TABLE_ADD_COLUMN_HEIGHT = 42;
-const TABLE_CONTEXT_MENU_WIDTH = 264;
+const TABLE_CONTEXT_MENU_WIDTH = 276;
 const TABLE_KEYBOARD_MENU_WIDTH = 520;
 const TABLE_MENU_COMMAND_SCOPE = Object.freeze({
   cell: new Set([
@@ -965,16 +965,26 @@ class TiptapTableToolbarView {
       button.disabled = !!command.disabled;
       button.setAttribute("aria-disabled", command.disabled ? "true" : "false");
       bindPointerCommand(button, command, () => state.run(command.id));
-      if (command.variant === "icon" || command.variant === "swatch") {
-        const visual = createElement(
-          this.#document,
-          "span",
-          "mn-tiptap-table-toolbar-button-visual",
-        );
-        if (visual) {
-          visual.setAttribute("aria-hidden", "true");
-          visual.dataset.icon = command.icon ?? command.id;
+      const visual = createElement(
+        this.#document,
+        "span",
+        "mn-tiptap-table-toolbar-button-visual",
+      );
+      if (visual) {
+        visual.setAttribute("aria-hidden", "true");
+        visual.dataset.icon = command.icon ?? command.id;
+        if (command.variant === "icon" || command.variant === "swatch") {
           button.replaceChildren(visual);
+        } else if (state.mode === "context") {
+          const label = createElement(
+            this.#document,
+            "span",
+            "mn-tiptap-table-toolbar-button-label",
+          );
+          if (label) {
+            label.textContent = command.title;
+            button.replaceChildren(visual, label);
+          }
         }
       }
       commandGroups.at(-1)?.appendChild(button);

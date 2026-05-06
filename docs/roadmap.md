@@ -274,6 +274,7 @@ Tasks:
 - [x] Use full action labels in table context menus while keeping the keyboard toolbar compact, so row/column/cell menus read like user actions instead of terse developer controls.
 - [x] Promote table context menus into localized command panels with a Table eyebrow, selection-specific titles, concise selection summaries, and wider Notion-like spacing so users know exactly whether they are editing a cell, range, row, column, or whole table.
 - [x] Add table cell alignment commands: left, center, and right use Tiptap `setCellAttribute('align', ...)` so pipe table alignment remains part of the Markdown document model.
+- [x] Refine table context menus into explicit command rows with stable icon wells, CSS-drawn row/column/header/merge/delete glyphs, stable scrollbar gutters, and a restrained active rail so table operations feel intentional instead of button-strip-like.
 - [x] Make table toolbar command buttons pointer-first so WebView focus ordering does not swallow table operations.
 - [x] Keep table context menus stable across editor blur and WebView focus races, so clicking row/column/cell actions or moving focus through table chrome no longer dismisses the menu before users can choose a command.
 - [x] Normalize table toolbar active alignment states so default/left/center/right cells reflect the actual Markdown table state.
