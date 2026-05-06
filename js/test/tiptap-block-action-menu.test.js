@@ -312,6 +312,33 @@ test("Tiptap block action menu activates hovered and focused commands", () => {
   assert.equal(findCommandItem(menu, "duplicate-block").classList.values.has("active"), false);
 });
 
+test("Tiptap block action menu refresh preserves the active command", () => {
+  const { editor } = createEditor();
+  const documentRef = createDocument();
+  const controller = createTiptapBlockActionMenuController({
+    dom: { document: documentRef },
+  });
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  controller.open(createTarget());
+
+  const menu = documentRef.body.children[0];
+  findCommandItem(menu, "highlight-blue").onpointerenter?.({
+    preventDefault() {},
+    stopPropagation() {},
+  });
+
+  controller.refresh();
+
+  assert.equal(
+    controller.state.commands[controller.state.selectedIndex].id,
+    "highlight-blue",
+  );
+  assert.equal(
+    documentRef.body.children[0].attributes.get("aria-activedescendant"),
+    `mn-tiptap-block-action-menu-item-${controller.state.selectedIndex}`,
+  );
+});
+
 test("Tiptap block action menu runs the selected command", () => {
   const { calls, editor } = createEditor();
   const view = createViewSpy();

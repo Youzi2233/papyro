@@ -338,12 +338,15 @@ export class TiptapBlockActionMenuController {
     );
   }
 
-  open(target, { anchorRect = null } = {}) {
+  open(target, { anchorRect = null, preserveSelection = false } = {}) {
     if (!this.#editor || this.#entry?.viewMode !== "hybrid" || !target?.block) {
       this.close();
       return this.state;
     }
 
+    const previousCommandId = preserveSelection
+      ? this.#state.commands[this.#state.selectedIndex]?.id
+      : null;
     this.#state = {
       open: true,
       target,
@@ -357,6 +360,12 @@ export class TiptapBlockActionMenuController {
       anchorRect,
       language: this.#entry?.preferences?.language,
     };
+    const retainedIndex = this.#state.commands.findIndex(
+      (command) => command.id === previousCommandId,
+    );
+    if (retainedIndex >= 0) {
+      this.#state.selectedIndex = retainedIndex;
+    }
     this.#view.update?.(
       {
         ...this.#state,
@@ -371,7 +380,10 @@ export class TiptapBlockActionMenuController {
 
   refresh() {
     if (!this.#state.open || !this.#state.target) return this.state;
-    return this.open(this.#state.target, { anchorRect: this.#state.anchorRect });
+    return this.open(this.#state.target, {
+      anchorRect: this.#state.anchorRect,
+      preserveSelection: true,
+    });
   }
 
   moveSelection(delta) {
@@ -399,7 +411,7 @@ export class TiptapBlockActionMenuController {
     const viewState = {
       ...this.#state,
       run: (commandId) => this.run(commandId),
-      activate: (nextIndex) => this.setSelection(nextIndex),
+      activate: (nextIndex, options) => this.setSelection(nextIndex, options),
     };
     if (this.#view.updateSelection?.(viewState, { scroll }, this.#editor) !== true) {
       this.#view.update?.(viewState, this.#editor);
