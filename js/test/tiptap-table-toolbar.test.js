@@ -1206,13 +1206,21 @@ test("Tiptap table toolbar anchors multi-cell actions to the head cell", () => {
   assert.equal(trigger.style.top, "96px");
   assert.equal(trigger.dataset.selectionKind, "cells");
   assert.equal(trigger.dataset.selectedCount, "2");
+  trigger.getBoundingClientRect = () => ({
+    left: 229,
+    top: 96,
+    right: 253,
+    bottom: 120,
+    width: 24,
+    height: 24,
+  });
 
   trigger.onpointerdown({ preventDefault() {}, stopPropagation() {} });
 
   assert.equal(root.hidden, false);
   assert.equal(trigger["aria-expanded"], "true");
-  assert.equal(root.style.left, "102px");
-  assert.equal(root.style.top, "132px");
+  assert.equal(root.style.left, "103px");
+  assert.equal(root.style.top, "128px");
 });
 
 test("Tiptap table toolbar renders localized context headers for table selections", () => {
@@ -1463,6 +1471,7 @@ test("Tiptap table toolbar keeps cell and axis context menus focused", () => {
   );
   trigger.onpointerdown({ preventDefault() {}, stopPropagation() {} });
   assert.deepEqual(toolbarCommandIds(created), [
+    "split-cell",
     "align-left",
     "align-center",
     "align-right",

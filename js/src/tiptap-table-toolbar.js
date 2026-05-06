@@ -237,6 +237,7 @@ const TABLE_CONTEXT_MENU_WIDTH = 276;
 const TABLE_KEYBOARD_MENU_WIDTH = 520;
 const TABLE_MENU_COMMAND_SCOPE = Object.freeze({
   cell: new Set([
+    "split-cell",
     "align-left",
     "align-center",
     "align-right",
@@ -918,7 +919,10 @@ class TiptapTableToolbarView {
         state.selection?.positions?.size ?? 0,
       );
       this.#cellMenuButton.setAttribute("aria-expanded", state.menuOpen ? "true" : "false");
-      this.#cellMenuButton._mnRun = () => state.openCellMenu?.("context") !== false;
+      this.#cellMenuButton._mnRun = () =>
+        state.openCellMenu?.("context", {
+          anchorRect: this.#cellMenuButton?.getBoundingClientRect?.(),
+        }) !== false;
       if (!this.#cellMenuButton._mnBound) {
         bindPointerCommand(this.#cellMenuButton, null, () => this.#cellMenuButton?._mnRun?.());
         this.#cellMenuButton._mnBound = true;
@@ -1645,7 +1649,7 @@ export class TiptapTableToolbarController {
     return true;
   }
 
-  openCellMenu(mode = "context", { open = null } = {}) {
+  openCellMenu(mode = "context", { open = null, anchorRect = null } = {}) {
     if (!this.#state.open) return false;
     const isPlainCellContext =
       this.#state.selection?.kind === "cell" &&
@@ -1665,7 +1669,7 @@ export class TiptapTableToolbarController {
         this.refresh(this.#editor);
       }
     }
-    return this.toggleMenu(mode, { open });
+    return this.toggleMenu(mode, { open, anchorRect });
   }
 
   selectAxis(axis, index) {
