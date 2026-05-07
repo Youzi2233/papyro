@@ -7,6 +7,10 @@ function createHarness() {
   const calls = [];
   const listeners = new Map();
   const documentListeners = new Map();
+  const pushEvent = (events, name) => (event) => {
+    events.push(name);
+    event?.();
+  };
   const cells = [];
   let table = null;
   const rows = Array.from({ length: 2 }, (_, rowIndex) => {
@@ -176,14 +180,15 @@ function createHarness() {
     },
   };
 
-  return { calls, cells, documentListeners, documentRef, editor, root };
+  return { calls, cells, documentListeners, documentRef, editor, pushEvent, root };
 }
 
-test("Tiptap table cell pointerdown selects the clicked cell", () => {
-  const { calls, cells, editor, root } = createHarness();
+test("Tiptap table cell pointerdown preserves native text editing", () => {
+  const { calls, cells, documentListeners, editor, pushEvent, root } = createHarness();
   const controller = createTiptapTableToolbarController({
     dom: { document: root.ownerDocument },
   });
+  const events = [];
 
   controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
   assert.equal(
@@ -192,54 +197,77 @@ test("Tiptap table cell pointerdown selects the clicked cell", () => {
       button: 0,
       clientX: 220,
       clientY: 96,
-      preventDefault() {},
-      stopPropagation() {},
+      preventDefault: pushEvent(events, "preventDefault:down"),
+      stopPropagation: pushEvent(events, "stopPropagation:down"),
     }),
-    true,
+    false,
   );
 
-  assert.deepEqual(calls.slice(0, 2), [
-    ["setCellSelection", 11, 11],
-    ["focus"],
-  ]);
-  assert.equal(controller.state.selection.kind, "cell");
-  assert.deepEqual([...controller.state.selection.positions], [11]);
+  documentListeners.get("pointerup").at(-1)({
+    target: cells[1],
+    preventDefault: pushEvent(events, "preventDefault:up"),
+    stopPropagation: pushEvent(events, "stopPropagation:up"),
+  });
+
+  assert.deepEqual(events, []);
+  assert.deepEqual(calls, []);
   assert.equal(cells[1].classes.has("mn-tiptap-table-cell-selected"), false);
-  assert.equal(controller.state.selection.kind, "cell");
-  assert.deepEqual([...controller.state.selection.positions], [11]);
+  assert.equal(controller.state.selection.positions.size, 0);
+  assert.equal(documentListeners.has("pointermove"), false);
 });
 
 test("Tiptap table cell drag extends the selected cell range", () => {
-  const { calls, cells, documentListeners, editor, root } = createHarness();
+  const { calls, cells, documentListeners, editor, pushEvent, root } = createHarness();
   const controller = createTiptapTableToolbarController({
     dom: { document: root.ownerDocument },
   });
+  const events = [];
 
   controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
-  root.listeners.get("pointerdown")({
+  assert.equal(
+    root.listeners.get("pointerdown")({
+      target: cells[0],
+      button: 0,
+      clientX: 120,
+      clientY: 94,
+      preventDefault: pushEvent(events, "preventDefault:down"),
+      stopPropagation: pushEvent(events, "stopPropagation:down"),
+    }),
+    false,
+  );
+  const dragMove = documentListeners.get("pointermove").at(-1);
+  const dragEnd = documentListeners.get("pointerup").at(-1);
+  dragMove({
     target: cells[0],
-    button: 0,
-    clientX: 120,
-    clientY: 94,
-    preventDefault() {},
-    stopPropagation() {},
+    clientX: 121,
+    clientY: 95,
+    preventDefault: pushEvent(events, "preventDefault:move-small"),
+    stopPropagation: pushEvent(events, "stopPropagation:move-small"),
   });
-  documentListeners.get("pointermove").at(-1)({
+  dragMove({
     target: cells[3],
     clientX: 230,
     clientY: 134,
-    preventDefault() {},
-    stopPropagation() {},
+    preventDefault: pushEvent(events, "preventDefault:move"),
+    stopPropagation: pushEvent(events, "stopPropagation:move"),
   });
-  documentListeners.get("pointerup").at(-1)({ preventDefault() {}, stopPropagation() {} });
+  dragEnd({
+    target: cells[3],
+    preventDefault: pushEvent(events, "preventDefault:up"),
+    stopPropagation: pushEvent(events, "stopPropagation:up"),
+  });
 
   assert.deepEqual(calls.filter((call) => call[0] === "setCellSelection"), [
-    ["setCellSelection", 10, 10],
     ["setCellSelection", 10, 13],
   ]);
-  assert.equal(controller.state.selection.kind, "cell");
+  assert.deepEqual(events, [
+    "preventDefault:move",
+    "stopPropagation:move",
+    "preventDefault:up",
+    "stopPropagation:up",
+  ]);
   controller.refresh(editor);
   assert.equal(controller.state.selection.kind, "table");
   assert.deepEqual([...controller.state.selection.positions], [10, 11, 12, 13]);
-  assert.equal((documentListeners.get("pointermove") ?? []).length, 1);
+  assert.equal(documentListeners.has("pointermove"), false);
 });

@@ -546,21 +546,19 @@ export class TiptapTableToolbarController {
     const selectable = typeof this.#editor?.commands?.setCellSelection === "function";
     if (!selectable) return false;
 
-    event?.preventDefault?.();
-    event?.stopPropagation?.();
     this.#cellDrag = {
       table,
       anchor: start,
       head: start,
       moved: false,
+      selected: false,
       startX: Number(event?.clientX),
       startY: Number(event?.clientY),
       removeListeners: [],
     };
 
-    this.#selectCellRange(start.pos, start.pos);
     this.#bindCellDragListeners();
-    return true;
+    return false;
   }
 
   #selectCellRange(anchorPos, headPos) {
@@ -627,9 +625,12 @@ export class TiptapTableToolbarController {
         ? Math.hypot(x - drag.startX, y - drag.startY)
         : 0;
     if (distance > 3) drag.moved = true;
-    if (nextHead.pos === drag.head?.pos && drag.moved) return false;
+    if (!drag.moved) return false;
+    if (!drag.selected && nextHead.pos === drag.anchor?.pos) return false;
+    if (drag.selected && nextHead.pos === drag.head?.pos) return false;
 
     drag.head = nextHead;
+    drag.selected = true;
     event?.preventDefault?.();
     event?.stopPropagation?.();
     return this.#selectCellRange(drag.anchor.pos, nextHead.pos);
@@ -641,8 +642,10 @@ export class TiptapTableToolbarController {
     drag.removeListeners?.forEach?.((remove) => remove());
     drag.removeListeners = [];
     this.#cellDrag = null;
-    event?.preventDefault?.();
-    event?.stopPropagation?.();
+    if (drag.selected) {
+      event?.preventDefault?.();
+      event?.stopPropagation?.();
+    }
     return true;
   }
 
