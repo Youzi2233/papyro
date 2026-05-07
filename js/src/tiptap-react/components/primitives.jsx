@@ -7,12 +7,20 @@ export function CommandIconFrame({
   icon,
   children,
   dataIcon = icon,
+  data = {},
 }) {
+  const dataProps = Object.fromEntries(
+    Object.entries(data)
+      .filter(([, value]) => value !== undefined)
+      .map(([key, value]) => [`data-${key}`, String(value)]),
+  );
+
   return (
     <span
       className={`${className} ${icon ?? "block"}`}
       aria-hidden="true"
       data-icon={dataIcon ?? icon ?? "block"}
+      {...dataProps}
     >
       {children}
     </span>

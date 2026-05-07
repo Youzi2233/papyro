@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  commandMenuGroupTone,
   commandMenuSidePanelId,
   commandMenuSidePanel,
   commandMenuSidePanelWidth,
@@ -62,6 +63,16 @@ test("React command menu model exposes side panel contracts", () => {
   assert.equal(commandMenuSidePanelId("menu", "callout"), "menu-callout-panel");
   assert.equal(commandMenuSidePanelId("menu", "code-language"), "menu-code-language-panel");
   assert.equal(commandMenuSidePanelId("menu", "none"), undefined);
+});
+
+test("React command menu model exposes semantic icon group tones", () => {
+  assert.equal(commandMenuGroupTone({ id: "paragraph", group: "Text" }), "text");
+  assert.equal(commandMenuGroupTone({ id: "task-list", group: "Lists" }), "lists");
+  assert.equal(commandMenuGroupTone({ id: "code-block", group: "Blocks" }), "blocks");
+  assert.equal(commandMenuGroupTone({ id: "table", group: "Data" }), "data");
+  assert.equal(commandMenuGroupTone({ id: "image", group: "Media" }), "media");
+  assert.equal(commandMenuGroupTone({ id: "mermaid", group: "Advanced" }), "advanced");
+  assert.equal(commandMenuGroupTone({ id: "table", group: "鏁版嵁" }), "data");
 });
 
 test("React command menu model keeps command indexes stable across grouped full menus", () => {

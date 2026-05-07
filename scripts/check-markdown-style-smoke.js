@@ -90,6 +90,8 @@ const TIPTAP_COMMAND_PANEL_REQUIREMENTS = [
   ["Tiptap slash command panel", ".mn-tiptap-slash-menu", "user-select: none"],
   ["Tiptap slash command active rhythm", ".mn-tiptap-slash-menu-item.active", "border-color: color-mix"],
   ["Tiptap slash command list scrolling", ".mn-tiptap-slash-menu-list", "scrollbar-gutter: stable"],
+  ["Tiptap slash command grouped icons", ".mn-tiptap-slash-menu-icon[data-command-group=\"data\"]", "--mn-command-icon-accent"],
+  ["Tiptap slash command icon system", ".mn-tiptap-command-icon-svg", "width: 15px"],
   ["Tiptap block action panel", ".mn-tiptap-block-action-menu", "user-select: none"],
   ["Tiptap block action active rhythm", ".mn-tiptap-block-action-menu-item.active", "border-color: color-mix"],
   ["Tiptap block action list scrolling", ".mn-tiptap-block-action-menu-list", "scrollbar-gutter: stable"],

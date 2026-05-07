@@ -16,6 +16,7 @@ import {
 } from "./tiptap-i18n.js";
 import { insertSlashParagraphAfterBlock } from "./tiptap-block-handle.js";
 import {
+  commandMenuGroupTone,
   commandMenuSidePanel,
   commandMenuSidePanelId,
 } from "./tiptap-react/commands/command-menu-model.js";
@@ -480,6 +481,7 @@ class TiptapSlashMenuView {
         item.tabIndex = -1;
         icon.setAttribute("aria-hidden", "true");
         icon.dataset.icon = command.icon ?? "paragraph";
+        icon.dataset.commandGroup = commandMenuGroupTone(command);
         title.textContent = command.title;
         description.textContent = command.description ?? "";
         copy.append(title, description);

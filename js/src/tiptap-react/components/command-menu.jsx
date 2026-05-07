@@ -18,6 +18,7 @@ import {
 import {
   commandMenuSidePanelId,
   commandMenuSidePanel,
+  commandMenuGroupTone,
   groupCommandsForMenu,
 } from "../commands/command-menu-model.js";
 import { usePointerActivation } from "../hooks/use-pointer-activation.js";
@@ -27,14 +28,19 @@ import { CommandIconFrame, CommandRow, CommandText } from "./primitives.jsx";
 const TABLE_GRID_ROWS = 6;
 const TABLE_GRID_COLS = 6;
 
-function CommandIcon({ icon }) {
+function CommandIcon({ command }) {
+  const icon = command?.icon ?? "paragraph";
+  const groupTone = commandMenuGroupTone(command);
   return (
     <CommandIconFrame
       className="mn-tiptap-slash-menu-icon"
-      icon={icon ?? "paragraph"}
-      dataIcon={icon ?? "paragraph"}
+      icon={icon}
+      dataIcon={icon}
+      data={{
+        "command-group": groupTone,
+      }}
     >
-      <CommandMenuIcon icon={icon ?? "paragraph"} />
+      <CommandMenuIcon icon={icon} />
     </CommandIconFrame>
   );
 }
@@ -69,7 +75,7 @@ function CommandItem({ command, ownerId, selected, activePanel, activate, choose
       onFocus={() => activate(command.index, { scroll: true })}
       activation={activation}
     >
-      <CommandIcon icon={command.icon} />
+      <CommandIcon command={command} />
       <CommandText
         className="mn-tiptap-slash-menu-copy"
         titleClassName="mn-tiptap-slash-menu-title"

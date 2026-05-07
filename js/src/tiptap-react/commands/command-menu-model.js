@@ -18,6 +18,35 @@ function commandGroupRank(groupName) {
   return index < 0 ? COMMAND_GROUP_ORDER.length : index;
 }
 
+export function commandMenuGroupTone(command = {}) {
+  const groupName = String(command?.group ?? "Text").trim().toLowerCase();
+  const commandId = String(command?.id ?? "").trim().toLowerCase();
+  const searchable = `${groupName} ${commandId}`;
+  const tones = new Map([
+    ["text", "text"],
+    ["lists", "lists"],
+    ["blocks", "blocks"],
+    ["data", "data"],
+    ["media", "media"],
+    ["advanced", "advanced"],
+  ]);
+  const byLabel = tones.get(groupName);
+  if (byLabel) return byLabel;
+
+  const aliases = {
+    text: ["paragraph", "heading"],
+    lists: ["list", "task"],
+    blocks: ["quote", "callout", "code", "divider"],
+    data: ["table"],
+    media: ["image"],
+    advanced: ["math", "mermaid"],
+  };
+  for (const [tone, markers] of Object.entries(aliases)) {
+    if (markers.some((marker) => searchable.includes(marker))) return tone;
+  }
+  return "text";
+}
+
 export function groupCommandsForMenu(commands = []) {
   const groups = [];
   const byName = new Map();
