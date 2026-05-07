@@ -17,7 +17,7 @@ test("Papyro table extensions expose the TableKit boundary", () => {
   assert.equal(extensions[0].options.table.handleWidth, 6);
   assert.equal(extensions[0].options.table.cellMinWidth, 96);
   assert.equal(extensions[0].options.table.lastColumnResizable, true);
-  assert.equal(extensions[0].options.table.allowTableNodeSelection, true);
+  assert.equal(extensions[0].options.table.allowTableNodeSelection, false);
 });
 
 test("Papyro table cell background extension adds cell attributes", () => {

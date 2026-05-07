@@ -79,12 +79,12 @@ test("Tiptap table geometry classifies low-noise hover intent", () => {
   assert.equal(classify(3, 108, 128), "row-handle");
   assert.equal(classify(1, 204, 92), "cell");
   assert.equal(classify(1, 204, 76), "column-handle");
-  assert.equal(classify(5, 356, 140), "add-column");
-  assert.equal(classify(3, 160, 154), "add-row");
-  assert.equal(classify(5, 359, 152), "add-column");
-  assert.equal(classify(5, 318, 156), "add-row");
+  assert.equal(classify(5, 356, 140), "cell");
+  assert.equal(classify(3, 160, 154), "block-after");
+  assert.equal(classify(5, 359, 152), "block-after");
+  assert.equal(classify(5, 318, 156), "block-after");
   assert.equal(classify(0, 194, 115), "cell");
-  assert.equal(classify(0, 195, 107), "cell-menu");
+  assert.equal(classify(0, 195, 107), "cell");
   assert.equal(classify(0, 195, 123), "cell");
 });
 
@@ -104,11 +104,11 @@ test("Tiptap table geometry infers gutter handles from table coordinates", () =>
 
   assert.equal(classify(table, 108, 128), "row-handle");
   assert.equal(classify(table, 204, 76), "column-handle");
-  assert.equal(classify(table, 160, 154), "add-row");
-  assert.equal(classify(table, 356, 140), "add-column");
+  assert.equal(classify(table, 160, 162), "add-row");
+  assert.equal(classify(table, 366, 140), "add-column");
 });
 
-test("Tiptap table geometry reserves the bottom edge for inserting between complex blocks", () => {
+test("Tiptap table geometry reserves the outer bottom rail for adding rows", () => {
   const { grid, table, tableRect } = createTableGeometryHarness();
 
   const hover = tableHoverWithIntent({
@@ -122,7 +122,7 @@ test("Tiptap table geometry reserves the bottom edge for inserting between compl
       columnHandleHeight: 20,
   });
 
-  assert.equal(hover.edge, "block-after");
+  assert.equal(hover.edge, "add-row");
   assert.equal(hover.block, table);
 });
 
@@ -132,13 +132,13 @@ test("Tiptap table geometry positions quick add rails on real grid edges", () =>
   assert.deepEqual(tableQuickAddGeometry(grid, tableRect), {
     row: {
       left: 120,
-      top: 160,
+      top: 161,
       width: 240,
       height: 12,
       rail: 240,
     },
     column: {
-      left: 362,
+      left: 363,
       top: 90,
       width: 12,
       height: 68,
@@ -147,7 +147,7 @@ test("Tiptap table geometry positions quick add rails on real grid edges", () =>
   });
 });
 
-test("Tiptap table geometry positions axis handles and scoped cell menus", () => {
+test("Tiptap table geometry positions row column handles and scoped cell menus", () => {
   const { grid, tableRect } = createTableGeometryHarness();
   const axis = tableAxisHandleGeometry(grid, tableRect);
 

@@ -3,7 +3,6 @@ import {
   addRowBelowLabel,
   insertBlockAfterLabel,
   selectTableColumnLabel,
-  selectTableLabel,
   selectTableRowLabel,
   tableContextEyebrowLabel,
   tableContextSubtitleLabel,
@@ -42,8 +41,8 @@ import {
 const TABLE_AXIS_HANDLE_SIZE = 12;
 export const TABLE_ROW_HANDLE_WIDTH = 20;
 export const TABLE_COLUMN_HANDLE_HEIGHT = 20;
-const TABLE_ADD_ROW_HEIGHT = 14;
-const TABLE_ADD_COLUMN_WIDTH = 14;
+const TABLE_ADD_ROW_HEIGHT = 12;
+const TABLE_ADD_COLUMN_WIDTH = 12;
 const TABLE_CONTEXT_MENU_WIDTH = 176;
 const TABLE_KEYBOARD_MENU_WIDTH = 520;
 const TABLE_TOOLBAR_OWNER_ID = "mn-tiptap-table-toolbar";
@@ -54,10 +53,10 @@ function tableMenuAnchorRect(state) {
 
   const selectionKind = state?.selection?.kind ?? "cell";
   if (selectionKind === "cell" || selectionKind === "cells") {
-    return state?.cellRect ?? state?.selectionRect ?? state?.rect ?? null;
+    return state?.cellRect ?? state?.menuRect ?? state?.selectionRect ?? state?.rect ?? null;
   }
 
-  return state?.selectionRect ?? state?.cellRect ?? state?.rect ?? null;
+  return state?.menuRect ?? state?.selectionRect ?? state?.cellRect ?? state?.rect ?? null;
 }
 
 function commandButtonById(root, commandId) {
@@ -89,6 +88,17 @@ function bindPointerCommand(button, command, run) {
   };
 
   bindPointerActivation(button, execute);
+}
+
+function hoveredCellIsSelected(state) {
+  const hoverCell = state?.hover?.cell ?? null;
+  if (!hoverCell) return false;
+  const selected = state?.selection?.positions;
+  if (!selected || selected.size === 0) return false;
+  const match = (state?.grid ?? [])
+    .flatMap((row) => row.cells ?? [])
+    .find((cell) => cell.cell === hoverCell);
+  return Number.isFinite(match?.pos) && selected.has(match.pos);
 }
 
 function syncTableToolbarActiveCommand(
@@ -128,13 +138,13 @@ export class TiptapTableToolbarView {
   #list = null;
   #addRowButton = null;
   #addColumnButton = null;
-  #tableSelectButton = null;
   #cellMenuButton = null;
   #blockInsertButton = null;
   #rowHandles = [];
   #columnHandles = [];
   #selectionBackdrop = null;
   #lastTable = null;
+  #lastActiveCell = null;
   #menuCommands = [];
 
   constructor({ document = defaultDocument(), window = defaultWindow(document) } = {}) {
@@ -161,11 +171,6 @@ export class TiptapTableToolbarView {
       "button",
       "mn-tiptap-table-quick-add mn-tiptap-table-add-column hidden",
     );
-    const tableSelectButton = createElement(
-      this.#document,
-      "button",
-      "mn-tiptap-table-axis-handle table hidden",
-    );
     const cellMenuButton = createElement(
       this.#document,
       "button",
@@ -190,7 +195,6 @@ export class TiptapTableToolbarView {
       !list ||
       !addRowButton ||
       !addColumnButton ||
-      !tableSelectButton ||
       !cellMenuButton ||
       !blockInsertButton ||
       !selectionBackdrop
@@ -201,7 +205,6 @@ export class TiptapTableToolbarView {
     header.append(eyebrow, title, subtitle);
     addRowButton.type = "button";
     addColumnButton.type = "button";
-    tableSelectButton.type = "button";
     cellMenuButton.type = "button";
     cellMenuButton.setAttribute("aria-hidden", "false");
     cellMenuButton.setAttribute("aria-haspopup", "menu");
@@ -210,7 +213,6 @@ export class TiptapTableToolbarView {
     mountFloatingRoot(root, container, this.#document);
     mountFloatingRoot(addRowButton, container, this.#document);
     mountFloatingRoot(addColumnButton, container, this.#document);
-    mountFloatingRoot(tableSelectButton, container, this.#document);
     mountFloatingRoot(cellMenuButton, container, this.#document);
     mountFloatingRoot(blockInsertButton, container, this.#document);
     mountFloatingRoot(selectionBackdrop, container, this.#document);
@@ -222,14 +224,12 @@ export class TiptapTableToolbarView {
     this.#list = list;
     this.#addRowButton = addRowButton;
     this.#addColumnButton = addColumnButton;
-    this.#tableSelectButton = tableSelectButton;
     this.#cellMenuButton = cellMenuButton;
     this.#blockInsertButton = blockInsertButton;
     this.#selectionBackdrop = selectionBackdrop;
     setHidden(root, true);
     setHidden(addRowButton, true);
     setHidden(addColumnButton, true);
-    setHidden(tableSelectButton, true);
     setHidden(cellMenuButton, true);
     setHidden(blockInsertButton, true);
     setHidden(selectionBackdrop, true);
@@ -251,6 +251,10 @@ export class TiptapTableToolbarView {
       this.#lastTable
         .querySelectorAll?.(".mn-tiptap-table-cell-selected")
         ?.forEach?.((cell) => cell.classList?.remove?.("mn-tiptap-table-cell-selected"));
+      this.#lastTable
+        .querySelectorAll?.(".mn-tiptap-table-cell-active")
+        ?.forEach?.((cell) => cell.classList?.remove?.("mn-tiptap-table-cell-active"));
+      this.#lastActiveCell = null;
     }
     this.#lastTable = state.table ?? null;
     if (this.#header && this.#eyebrow && this.#title && this.#subtitle) {
@@ -383,9 +387,9 @@ export class TiptapTableToolbarView {
     );
     this.#root.onkeydown = (event) => state.handleKeyDown?.(event);
     this.#applySelectionState(state);
+    this.#applyActiveCellState(state);
     this.#updateSelectionBackdrop(state);
     this.#updateQuickAdd(state);
-    this.#updateTableHandle(state);
     this.#updateCellMenuTrigger(state);
     this.#updateComplexBlockInsert(state);
     this.#updateAxisHandles(state);
@@ -475,53 +479,29 @@ export class TiptapTableToolbarView {
     setHidden(this.#addColumnButton, !showColumn);
   }
 
-  #updateTableHandle(state) {
-    const rect = state.rect;
-    if (!this.#tableSelectButton) return;
-    if (!rect) {
-      setHidden(this.#tableSelectButton, true);
-      return;
-    }
-    const tableHandle = tableAxisHandleGeometry(state.grid, rect, {
-      handleSize: TABLE_AXIS_HANDLE_SIZE,
-      rowHandleWidth: TABLE_ROW_HANDLE_WIDTH,
-      columnHandleHeight: TABLE_COLUMN_HANDLE_HEIGHT,
-    }).table;
-    if (!tableHandle) {
-      setHidden(this.#tableSelectButton, true);
-      return;
-    }
-
-    this.#tableSelectButton.style.left = `${tableHandle.left}px`;
-    this.#tableSelectButton.style.top = `${tableHandle.top}px`;
-    this.#tableSelectButton.style.width = `${tableHandle.width}px`;
-    this.#tableSelectButton.style.height = `${tableHandle.height}px`;
-    this.#tableSelectButton.title = selectTableLabel(state.language);
-    this.#tableSelectButton.setAttribute("aria-label", selectTableLabel(state.language));
-    this.#tableSelectButton.dataset.active = state.selection?.table ? "true" : "false";
-    this.#tableSelectButton._mnRun = () => {
-      state.selectAxis("table", 0);
-      return state.toggleMenu("context", { open: true });
-    };
-    if (!this.#tableSelectButton._mnBound) {
-      bindPointerCommand(this.#tableSelectButton, null, () => this.#tableSelectButton?._mnRun?.());
-      this.#tableSelectButton._mnBound = true;
-    }
-    setHidden(
-      this.#tableSelectButton,
-      (state.grid ?? []).length === 0 ||
-        (!state.selection?.table && state.hover?.edge !== "table-corner"),
-    );
-  }
-
   #updateCellMenuTrigger(state) {
     const selectionKind = state.selection?.kind ?? "cell";
     const hoveredCell = selectionKind === "cell" ? state.hover?.cell ?? null : null;
-    const edgeHovered = hoveredCell && state.hover?.edge === "cell-menu";
+    const hoverSelected = hoveredCellIsSelected(state);
+    const edgeHovered = Boolean(hoveredCell && hoverSelected);
     const selectedCount = state.selection?.positions?.size ?? 0;
+    const singleSelectedCell =
+      selectionKind === "cell" &&
+      selectedCount === 1 &&
+      (state.cellRect || state.cell);
+    const selectionRect =
+      selectedCount > 1
+        ? state.menuRect ?? state.selectionRect
+        : state.menuOpen
+          ? tableMenuAnchorRect(state)
+          : null;
     const rect =
+      (selectedCount > 1 ? normalizedRect(selectionRect) : null) ??
       normalizedRect(edgeHovered ? hoveredCell?.getBoundingClientRect?.() : null) ??
-      (selectedCount > 1 || state.menuOpen ? tableMenuAnchorRect(state) : null);
+      (singleSelectedCell && selectionKind === "cell"
+        ? normalizedRect(state.cellRect ?? state.cell?.getBoundingClientRect?.())
+        : null) ??
+      normalizedRect(selectionRect);
     if (!this.#cellMenuButton) return;
     if (!rect) {
       setHidden(this.#cellMenuButton, true);
@@ -543,7 +523,7 @@ export class TiptapTableToolbarView {
     this.#cellMenuButton.dataset.placement = trigger.placement;
     setHidden(
       this.#cellMenuButton,
-      !state.menuOpen && selectedCount <= 1 && !edgeHovered,
+      !state.menuOpen && !edgeHovered && !singleSelectedCell && selectedCount <= 1,
     );
   }
 
@@ -606,8 +586,25 @@ export class TiptapTableToolbarView {
       rowHandleWidth: TABLE_ROW_HANDLE_WIDTH,
       columnHandleHeight: TABLE_COLUMN_HANDLE_HEIGHT,
     });
+    const hoverSelected = hoveredCellIsSelected(state);
+    const hoverRowIndex =
+      state.hover?.cell &&
+      !hoverSelected &&
+      state.hover?.columnIndex === 0
+        ? state.hover.rowIndex
+        : null;
+    const hoverColumnIndex =
+      state.hover?.cell &&
+      !hoverSelected &&
+      state.hover?.rowIndex === 0
+        ? state.hover.columnIndex
+        : null;
 
-    geometry.rows.forEach((handle) => {
+    const rowHandle = Number.isInteger(hoverRowIndex)
+      ? geometry.rows.find((handle) => handle.index === hoverRowIndex)
+      : null;
+    if (rowHandle) {
+      const handle = rowHandle;
       const index = handle.index;
       const active = state.selection?.rows?.includes?.(index);
       const button = createElement(this.#document, "button", "mn-tiptap-table-axis-handle row");
@@ -631,13 +628,19 @@ export class TiptapTableToolbarView {
       });
       mountFloatingRoot(button, state.table, this.#document);
       const visible =
-        active ||
-        (state.hover?.edge === "row-handle" && state.hover?.rowIndex === index);
+        !active &&
+        state.selection?.kind === "cell" &&
+        hoverRowIndex === index &&
+        !state.menuOpen;
       setHidden(button, !visible);
       this.#rowHandles.push(button);
-    });
+    }
 
-    geometry.columns.forEach((handle) => {
+    const columnHandle = Number.isInteger(hoverColumnIndex)
+      ? geometry.columns.find((handle) => handle.index === hoverColumnIndex)
+      : null;
+    if (columnHandle) {
+      const handle = columnHandle;
       const index = handle.index;
       const active = state.selection?.columns?.includes?.(index);
       const button = createElement(this.#document, "button", "mn-tiptap-table-axis-handle column");
@@ -661,11 +664,13 @@ export class TiptapTableToolbarView {
       });
       mountFloatingRoot(button, state.table, this.#document);
       const visible =
-        active ||
-        (state.hover?.edge === "column-handle" && state.hover?.columnIndex === index);
+        !active &&
+        state.selection?.kind === "cell" &&
+        hoverColumnIndex === index &&
+        !state.menuOpen;
       setHidden(button, !visible);
       this.#columnHandles.push(button);
-    });
+    }
   }
 
   #clearAxisHandles() {
@@ -691,19 +696,42 @@ export class TiptapTableToolbarView {
     });
   }
 
+  #applyActiveCellState(state) {
+    if (this.#lastActiveCell && this.#lastActiveCell !== state.cell) {
+      this.#lastActiveCell.classList?.remove?.("mn-tiptap-table-cell-active");
+    }
+
+    const showActive =
+      state.selection?.kind === "cell" &&
+      (state.selection?.positions?.size ?? 0) === 0 &&
+      state.cell;
+
+    if (showActive) {
+      state.cell.classList?.add?.("mn-tiptap-table-cell-active");
+      this.#lastActiveCell = state.cell;
+      return;
+    }
+
+    this.#lastActiveCell?.classList?.remove?.("mn-tiptap-table-cell-active");
+    this.#lastActiveCell = null;
+  }
+
   hide() {
     setHidden(this.#root, true);
     setHidden(this.#addRowButton, true);
     setHidden(this.#addColumnButton, true);
-    setHidden(this.#tableSelectButton, true);
     setHidden(this.#cellMenuButton, true);
     setHidden(this.#blockInsertButton, true);
     setHidden(this.#selectionBackdrop, true);
     this.#lastTable
       ?.querySelectorAll?.(".mn-tiptap-table-cell-selected")
       ?.forEach?.((cell) => cell.classList?.remove?.("mn-tiptap-table-cell-selected"));
+    this.#lastTable
+      ?.querySelectorAll?.(".mn-tiptap-table-cell-active")
+      ?.forEach?.((cell) => cell.classList?.remove?.("mn-tiptap-table-cell-active"));
     this.#clearAxisHandles();
     this.#lastTable = null;
+    this.#lastActiveCell = null;
   }
 
   contains(target) {
@@ -711,7 +739,6 @@ export class TiptapTableToolbarView {
       this.#root?.contains?.(target) ||
       this.#addRowButton?.contains?.(target) ||
       this.#addColumnButton?.contains?.(target) ||
-      this.#tableSelectButton?.contains?.(target) ||
       this.#cellMenuButton?.contains?.(target) ||
       this.#blockInsertButton?.contains?.(target) ||
       this.#selectionBackdrop?.contains?.(target) ||
@@ -747,7 +774,6 @@ export class TiptapTableToolbarView {
     this.#root?.remove?.();
     this.#addRowButton?.remove?.();
     this.#addColumnButton?.remove?.();
-    this.#tableSelectButton?.remove?.();
     this.#cellMenuButton?.remove?.();
     this.#blockInsertButton?.remove?.();
     this.#selectionBackdrop?.remove?.();
@@ -760,10 +786,10 @@ export class TiptapTableToolbarView {
     this.#list = null;
     this.#addRowButton = null;
     this.#addColumnButton = null;
-    this.#tableSelectButton = null;
     this.#cellMenuButton = null;
     this.#blockInsertButton = null;
     this.#selectionBackdrop = null;
+    this.#lastActiveCell = null;
     this.#menuCommands = [];
   }
 }

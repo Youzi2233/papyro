@@ -1120,7 +1120,7 @@
     z-index: 164;
     display: grid;
     place-items: center;
-    width: 10px;
+    width: 11px;
     height: 18px;
     border: 1px solid transparent;
     border-radius: var(--mn-radius-round);
@@ -1132,12 +1132,12 @@
     font-size: 10px;
     font-weight: var(--mn-weight-semibold);
     line-height: 1;
-    transform: translateX(-50%);
+    transform: translate(-50%, -50%);
     opacity: .62;
 }
 
 .mn-tiptap-table-cell-menu-trigger[data-placement="center"] {
-    width: 10px;
+    width: 11px;
     height: 18px;
     color: color-mix(in srgb, var(--mn-accent) 56%, var(--mn-ink-3));
     opacity: .62;
@@ -1166,8 +1166,8 @@
 .mn-tiptap-table-cell-menu-trigger[data-selection-kind="row"],
 .mn-tiptap-table-cell-menu-trigger[data-selection-kind="column"],
 .mn-tiptap-table-cell-menu-trigger[data-selection-kind="table"] {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
 }
 
 .mn-tiptap-table-cell-menu-trigger.hidden {
@@ -1205,7 +1205,7 @@
     place-items: center;
     min-width: 0;
     border: 0;
-    border-radius: 7px;
+    border-radius: 6px;
     background: transparent;
     color: color-mix(in srgb, var(--mn-accent) 58%, var(--mn-ink-3));
     box-shadow: none;
@@ -1226,8 +1226,8 @@
 .mn-tiptap-table-quick-add[data-edge="row"]::before,
 .mn-tiptap-table-quick-add[data-edge="column"]::before,
 .mn-tiptap-complex-block-insert::before {
-    opacity: .07;
-    background: color-mix(in srgb, var(--mn-accent) 9%, transparent);
+    opacity: .1;
+    background: color-mix(in srgb, var(--mn-accent) 11%, transparent);
     transition: opacity var(--mn-transition-fast);
 }
 
@@ -1259,25 +1259,25 @@
 
 .mn-tiptap-table-add-row {
     min-width: 42px;
-    height: 13px;
+    height: 12px;
 }
 
 .mn-tiptap-table-add-row[data-edge="row"]::before {
     width: 100%;
-    height: 9px;
-    border-radius: 6px;
+    height: 8px;
+    border-radius: var(--mn-radius-round);
     transform: translate(-50%, -50%);
 }
 
 .mn-tiptap-table-add-column {
-    width: 13px;
+    width: 12px;
     min-height: 42px;
 }
 
 .mn-tiptap-table-add-column[data-edge="column"]::before {
-    width: 9px;
+    width: 8px;
     height: 100%;
-    border-radius: 6px;
+    border-radius: var(--mn-radius-round);
     transform: translate(-50%, -50%);
 }
 
@@ -1295,7 +1295,7 @@
 
 .mn-tiptap-table-quick-add:hover::before,
 .mn-tiptap-table-quick-add:focus-visible::before {
-    opacity: .22;
+    opacity: .28;
 }
 
 .mn-tiptap-table-quick-add.hidden {
@@ -1389,19 +1389,22 @@
 
 .mn-tiptap-table-axis-handle.row,
 .mn-tiptap-table-axis-handle.column {
-    border-color: color-mix(in srgb, var(--mn-border) 28%, transparent);
-    background: color-mix(in srgb, var(--mn-surface-raised) 82%, transparent);
-    color: color-mix(in srgb, var(--mn-ink-3) 58%, transparent);
-    opacity: .88;
-    backdrop-filter: blur(6px);
+    border-color: color-mix(in srgb, var(--mn-border) 34%, transparent);
+    background: color-mix(in srgb, var(--mn-surface-raised) 92%, transparent);
+    color: color-mix(in srgb, var(--mn-ink-3) 64%, transparent);
+    opacity: .96;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 2px 6px color-mix(in srgb, #000 5%, transparent);
 }
 
 .mn-tiptap-table-axis-handle.row {
-    border-radius: 999px 6px 6px 999px;
+    width: 18px;
+    border-radius: 999px;
 }
 
 .mn-tiptap-table-axis-handle.column {
-    border-radius: 999px 999px 6px 6px;
+    height: 18px;
+    border-radius: 999px;
 }
 
 .mn-tiptap-table-axis-handle::before {
@@ -1414,23 +1417,17 @@
 .mn-tiptap-table-axis-handle.row::before {
     width: 2.2px;
     height: 2.2px;
-    box-shadow: 0 -4px 0 currentColor, 0 4px 0 currentColor;
+    box-shadow: 0 -4.5px 0 currentColor, 0 4.5px 0 currentColor;
 }
 
 .mn-tiptap-table-axis-handle.column::before {
     width: 2.2px;
     height: 2.2px;
-    box-shadow: -4px 0 0 currentColor, 4px 0 0 currentColor;
+    box-shadow: -4.5px 0 0 currentColor, 4.5px 0 0 currentColor;
 }
 
 .mn-tiptap-table-axis-handle.table::before {
-    width: 11px;
-    height: 11px;
-    border: 1.5px solid currentColor;
-    border-radius: 3px;
-    background:
-        linear-gradient(currentColor, currentColor) 50% 50% / 100% 1px no-repeat,
-        linear-gradient(currentColor, currentColor) 50% 50% / 1px 100% no-repeat;
+    display: none;
 }
 
 .mn-tiptap-format-toolbar-list {

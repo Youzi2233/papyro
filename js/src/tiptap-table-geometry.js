@@ -1,6 +1,6 @@
 const COMPLEX_BLOCK_SELECTOR = ".mn-tiptap-table, table, .mn-tiptap-code-block, pre";
 const EDGE_HOT_ZONE_PX = 12;
-const TABLE_CELL_MENU_EDGE_HOT_ZONE_PX = 5;
+const TABLE_CELL_MENU_EDGE_HOT_ZONE_PX = 4;
 const TABLE_CELL_MENU_CENTER_HOT_ZONE_PX = 8;
 
 export function closestTableElement(target, editorDom) {
@@ -65,6 +65,7 @@ export function tableSelectionGrid(table, view) {
             return Number.isFinite(pos)
               ? {
                   cell,
+                  rowIndex,
                   columnIndex,
                   pos,
                   rect: normalizedRect(cell.getBoundingClientRect?.()),
@@ -163,8 +164,16 @@ export function tableSelectionState(selection, grid) {
   };
 }
 
-function tableSelectionRect(grid, selection, tableRect) {
+function tableSelectionRect(grid, selection, tableRect, rawSelection = null) {
   if (selection?.table) return normalizedRect(tableRect);
+
+  const positions = selection?.positions ?? new Set();
+  const selectedCells = (grid ?? [])
+    .flatMap((row) => row.cells)
+    .filter((cell) => positions.has(cell.pos));
+  const selectedColumns = new Set(selectedCells.map((cell) => cell.columnIndex));
+  const selectedRows = new Set(selectedCells.map((cell) => cell.rowIndex));
+  const selectedRects = selectedCells.map((cell) => cell.rect).filter(Boolean);
 
   if (selection?.rows?.length > 0) {
     return unionRects(
@@ -184,8 +193,17 @@ function tableSelectionRect(grid, selection, tableRect) {
     );
   }
 
-  const positions = selection?.positions ?? new Set();
   if (positions.size > 0) {
+    if (selectedColumns.size > 1 || selectedRows.size > 1) {
+      return unionRects(selectedRects);
+    }
+
+    const headPos = Number.isFinite(rawSelection?.$headCell?.pos)
+      ? rawSelection.$headCell.pos
+      : [...positions].at(-1);
+    const headCell = cellByPosition(grid, headPos);
+    if (headCell?.rect) return normalizedRect(headCell.rect);
+
     return unionRects(
       (grid ?? [])
         .flatMap((row) => row.cells)
@@ -195,6 +213,19 @@ function tableSelectionRect(grid, selection, tableRect) {
   }
 
   return null;
+}
+
+export function tableSelectionMenuRect(grid, selection, tableRect, rawSelection = null) {
+  const positions = selection?.positions ?? new Set();
+  if (selection?.kind === "cells" && positions.size > 1) {
+    const headPos = Number.isFinite(rawSelection?.$headCell?.pos)
+      ? rawSelection.$headCell.pos
+      : [...positions].at(-1);
+    const headCell = cellByPosition(grid, headPos);
+    if (headCell?.rect) return normalizedRect(headCell.rect);
+  }
+
+  return tableSelectionRect(grid, selection, tableRect, rawSelection);
 }
 
 export function lastTableRowRect(grid, fallbackRect = null) {
@@ -213,6 +244,24 @@ export function lastTableColumnRect(grid, fallbackRect = null) {
   ) ?? normalizedRect(fallbackRect);
 }
 
+function cellAtPoint(grid, clientX, clientY) {
+  const x = Number(clientX);
+  const y = Number(clientY);
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+
+  for (const row of grid ?? []) {
+    for (const item of row?.cells ?? []) {
+      const rect = normalizedRect(item?.rect ?? item?.cell?.getBoundingClientRect?.());
+      if (!rect || x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+        continue;
+      }
+      return item;
+    }
+  }
+
+  return null;
+}
+
 export function pointerAnchorRect(event, fallbackRect = null) {
   const x = Number(event?.clientX);
   const y = Number(event?.clientY);
@@ -226,6 +275,7 @@ export function tableQuickAddGeometry(grid, tableRect, {
   rowHeight = 12,
   columnWidth = 12,
   minimumRailSize = 42,
+  gap = 3,
 } = {}) {
   const rect = normalizedRect(tableRect);
   if (!rect) return { row: null, column: null };
@@ -238,8 +288,8 @@ export function tableQuickAddGeometry(grid, tableRect, {
   return {
     row: rowRect
       ? {
-          left: rowRect.left,
-          top: rowRect.bottom + 2,
+        left: rowRect.left,
+          top: rowRect.bottom + gap,
           width: rowWidth,
           height: rowHeight,
           rail: rowWidth,
@@ -247,7 +297,7 @@ export function tableQuickAddGeometry(grid, tableRect, {
       : null,
     column: columnRect
       ? {
-          left: columnRect.right + 2,
+          left: columnRect.right + gap,
           top: columnRect.top,
           width: columnWidth,
           height: columnHeight,
@@ -276,13 +326,16 @@ export function tableAxisHandleGeometry(grid, tableRect, {
     rows: (grid ?? [])
       .map((row, index) => {
         const rowRect = normalizedRect(row?.rect);
+        const firstCellRect = normalizedRect(row?.cells?.[0]?.rect);
         if (!rowRect) return null;
+        const top = firstCellRect?.top ?? rowRect.top;
+        const height = Math.max(handleSize, firstCellRect?.height ?? rowRect.height);
         return {
           index,
           left: rect.left - rowHandleWidth - gap,
-          top: rowRect.top,
+          top,
           width: rowHandleWidth,
-          height: Math.max(handleSize, rowRect.height),
+          height,
         };
       })
       .filter(Boolean),
@@ -328,8 +381,11 @@ export function tableCellMenuTriggerGeometry({
 
 export function activeCellFromEditor(editor, grid = []) {
   const selection = editor?.state?.selection;
-  const selectedHeadCell = cellByPosition(grid, selection?.$headCell?.pos);
-  if (selectedHeadCell?.cell) return selectedHeadCell.cell;
+  const positions = selectionCellPositions(selection);
+  if (positions.length === 1) {
+    const selectedHeadCell = cellByPosition(grid, positions[0]);
+    if (selectedHeadCell?.cell) return selectedHeadCell.cell;
+  }
 
   const view = editor?.view;
   const domAtPos = typeof view?.domAtPos === "function" && Number.isFinite(selection?.from)
@@ -359,7 +415,8 @@ export function activeTableContext(editor) {
     rect,
     grid,
     selection: tableSelection,
-    selectionRect: tableSelectionRect(grid, tableSelection, rect),
+    selectionRect: tableSelectionRect(grid, tableSelection, rect, selection),
+    menuRect: tableSelectionMenuRect(grid, tableSelection, rect, selection),
     cell: activeCellFromEditor(editor, grid),
   };
 }
@@ -499,23 +556,15 @@ function tableHoverContextAtPoint(table, grid, clientX, clientY) {
   const y = Number(clientY);
   if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
 
-  for (const row of grid ?? []) {
-    const rowRect = normalizedRect(row?.rect);
-    const rowMatches = rowRect && y >= rowRect.top && y <= rowRect.bottom;
-    for (const item of row?.cells ?? []) {
-      const rect = normalizedRect(item?.rect ?? item?.cell?.getBoundingClientRect?.());
-      if (!rect) continue;
-      const verticalMatch = rowMatches || (y >= rect.top && y <= rect.bottom);
-      const horizontalMatch = x >= rect.left && x <= rect.right;
-      if (!verticalMatch || !horizontalMatch) continue;
-      return {
-        table: true,
-        rowIndex: row.rowIndex,
-        columnIndex: item.columnIndex,
-        cell: item.cell,
-        cellRect: rect,
-      };
-    }
+  const item = cellAtPoint(grid, x, y);
+  if (item) {
+    return {
+      table: true,
+      rowIndex: item.rowIndex,
+      columnIndex: item.columnIndex,
+      cell: item.cell,
+      cellRect: normalizedRect(item.rect ?? item.cell?.getBoundingClientRect?.()),
+    };
   }
 
   return null;
@@ -558,6 +607,62 @@ function tableColumnHoverContextAtX(table, grid, clientX) {
   }
 
   return null;
+}
+
+function tableLastRowHoverContextAtX(table, grid, clientX, clientY) {
+  const row = [...(grid ?? [])].reverse().find((candidate) => candidate?.rect);
+  const rowRect = normalizedRect(row?.rect);
+  const x = Number(clientX);
+  const y = Number(clientY);
+  if (
+    !row ||
+    !rowRect ||
+    !Number.isFinite(x) ||
+    !Number.isFinite(y) ||
+    x < rowRect.left ||
+    x > rowRect.right
+  ) {
+    return null;
+  }
+
+  const matchedCell = cellAtPoint(grid, x, y) ?? row.cells[0] ?? null;
+
+  return {
+    table: true,
+    rowIndex: row.rowIndex,
+    columnIndex: matchedCell?.columnIndex ?? 0,
+    cell: matchedCell?.cell ?? null,
+    cellRect: normalizedRect(matchedCell?.rect ?? matchedCell?.cell?.getBoundingClientRect?.()) ?? rowRect,
+  };
+}
+
+function tableLastColumnHoverContextAtY(table, grid, clientY) {
+  const firstRow = firstRowCells(grid);
+  const lastColumnIndex = firstRow.at(-1)?.columnIndex;
+  const columnRect = lastTableColumnRect(grid);
+  const y = Number(clientY);
+  if (
+    !Number.isInteger(lastColumnIndex) ||
+    !columnRect ||
+    !Number.isFinite(y) ||
+    y < columnRect.top ||
+    y > columnRect.bottom
+  ) {
+    return null;
+  }
+
+  const matchedCell =
+    cellAtPoint(grid, Math.max(columnRect.left, columnRect.right - 1), y) ??
+    firstRow.find((item) => item.columnIndex === lastColumnIndex) ??
+    null;
+
+  return {
+    table: true,
+    rowIndex: matchedCell?.rowIndex ?? 0,
+    columnIndex: lastColumnIndex,
+    cell: matchedCell?.cell ?? null,
+    cellRect: normalizedRect(matchedCell?.rect ?? matchedCell?.cell?.getBoundingClientRect?.()) ?? columnRect,
+  };
 }
 
 export function sameTableHover(left, right) {
@@ -627,9 +732,6 @@ export function tableHoverWithIntent({
   rowHandleWidth = 18,
   columnHandleHeight = 18,
 } = {}) {
-  let hover = tableHoverContext(target, table, grid);
-  if (!hover) return null;
-
   const normalizedTableRect = normalizedRect(tableRect);
   const x = Number(clientX);
   const y = Number(clientY);
@@ -644,11 +746,47 @@ export function tableHoverWithIntent({
     Number.isFinite(y) &&
     y >= normalizedTableRect.top - columnHandleHeight - 6 &&
     y <= normalizedTableRect.top - 1;
+  const insideBottomRail =
+    normalizedTableRect &&
+    Number.isFinite(x) &&
+    Number.isFinite(y) &&
+    x >= normalizedTableRect.left &&
+    x <= normalizedTableRect.right &&
+    y >= normalizedTableRect.bottom + 1 &&
+    y <= normalizedTableRect.bottom + 18;
+  const insideRightRail =
+    normalizedTableRect &&
+    Number.isFinite(x) &&
+    Number.isFinite(y) &&
+    x >= normalizedTableRect.right + 1 &&
+    x <= normalizedTableRect.right + 18 &&
+    y >= normalizedTableRect.top &&
+    y <= normalizedTableRect.bottom;
+
+  let hover = tableHoverContext(target, table, grid);
+
+  if (!hover) {
+    if (insideLeftGutter) {
+      hover = tableRowHoverContextAtY(table, grid, y);
+    } else if (insideTopGutter) {
+      hover = tableColumnHoverContextAtX(table, grid, x);
+    } else if (insideBottomRail) {
+      hover = tableLastRowHoverContextAtX(table, grid, x, y);
+    } else if (insideRightRail) {
+      hover = tableLastColumnHoverContextAtY(table, grid, y);
+    }
+  }
+
+  if (!hover) return null;
 
   if (!hover.cell && insideLeftGutter) {
     hover = tableRowHoverContextAtY(table, grid, y) ?? hover;
   } else if (!hover.cell && insideTopGutter) {
     hover = tableColumnHoverContextAtX(table, grid, x) ?? hover;
+  } else if (!hover.cell && insideBottomRail) {
+    hover = tableLastRowHoverContextAtX(table, grid, x, y) ?? hover;
+  } else if (!hover.cell && insideRightRail) {
+    hover = tableLastColumnHoverContextAtY(table, grid, y) ?? hover;
   } else if (!hover.cell) {
     hover = tableHoverContextAtPoint(table, grid, x, y) ?? hover;
   }
@@ -669,18 +807,10 @@ export function tableHoverWithIntent({
   }
 
   const nearTableBottom = hoverIsNearTableBottom(normalizedTableRect, y);
-  const wantsAddColumn =
-    Number.isFinite(x) &&
-    hoverIsAtLastColumn(hover, grid) &&
-    hoverIsNearRightEdge(hover, x);
-  const wantsAddRow =
-    Number.isFinite(y) &&
-    hoverIsAtLastRow(hover, grid) &&
-    hoverIsNearBottomEdge(hover, y);
+  const wantsAddColumn = insideRightRail && hoverIsAtLastColumn(hover, grid);
+  const wantsAddRow = insideBottomRail && hoverIsAtLastRow(hover, grid);
 
-  if (insideLeftGutter && insideTopGutter) {
-    hover.edge = "table-corner";
-  } else if (wantsAddColumn && wantsAddRow) {
+  if (wantsAddColumn && wantsAddRow) {
     hover.edge = (cellRect.right - x) <= (cellRect.bottom - y) ? "add-column" : "add-row";
   } else if (wantsAddColumn) {
     hover.edge = "add-column";
@@ -692,8 +822,6 @@ export function tableHoverWithIntent({
     !nearTableBottom
   ) {
     hover.edge = "row-handle";
-  } else if (hoverIsNearCellMenuEdge(hover, x, y)) {
-    hover.edge = "cell-menu";
   } else if (
     insideTopGutter &&
     hover.rowIndex === 0 &&

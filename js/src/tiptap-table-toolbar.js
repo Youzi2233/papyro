@@ -51,6 +51,7 @@ function emptyTableToolbarState(language = "english") {
     cell: null,
     cellRect: null,
     selectionRect: null,
+    menuRect: null,
     menuAnchorRect: null,
     grid: [],
     selection: tableSelectionState(null, []),
@@ -188,6 +189,19 @@ export class TiptapTableToolbarController {
     );
   }
 
+  #render() {
+    this.#view.update?.({
+      ...this.#state,
+      run: (commandId) => this.run(commandId),
+      selectAxis: (axis, index) => this.selectAxis(axis, index),
+      insertParagraphAfterBlock: (block) => this.insertParagraphAfterBlock(block),
+      toggleMenu: (mode, options) => this.toggleMenu(mode, options),
+      openCellMenu: (mode, options) => this.openCellMenu(mode, options),
+      setActiveCommand: (commandId, options) => this.setActiveCommand(commandId, options),
+      handleKeyDown: (event) => this.handleKeyDown(event),
+    });
+  }
+
   #bind(target) {
     this.#unbind();
     if (!target?.addEventListener) return;
@@ -231,10 +245,7 @@ export class TiptapTableToolbarController {
     if (!context?.rect) {
       if (this.#state.open) {
         this.#state = emptyTableToolbarState(language);
-        this.#view.update?.({
-          ...this.#state,
-          insertParagraphAfterBlock: (block) => this.insertParagraphAfterBlock(block),
-        });
+        this.#render();
         this.#dismiss.close();
       }
       return this.state;
@@ -299,6 +310,7 @@ export class TiptapTableToolbarController {
       cell: context.cell,
       cellRect: context.cell?.getBoundingClientRect?.() ?? null,
       selectionRect: context.selectionRect,
+      menuRect: context.menuRect,
       menuAnchorRect: previousMenuAnchorRect,
       grid: context.grid,
       selection: context.selection,
@@ -317,16 +329,7 @@ export class TiptapTableToolbarController {
       this.#state.menuAnchorRect = null;
       this.#state.hover = null;
     }
-    this.#view.update?.({
-      ...this.#state,
-      run: (commandId) => this.run(commandId),
-      selectAxis: (axis, index) => this.selectAxis(axis, index),
-      insertParagraphAfterBlock: (block) => this.insertParagraphAfterBlock(block),
-      toggleMenu: (mode, options) => this.toggleMenu(mode, options),
-      openCellMenu: (mode, options) => this.openCellMenu(mode, options),
-      setActiveCommand: (commandId, options) => this.setActiveCommand(commandId, options),
-      handleKeyDown: (event) => this.handleKeyDown(event),
-    });
+    this.#render();
     this.#dismiss.open();
     return this.state;
   }
@@ -375,16 +378,7 @@ export class TiptapTableToolbarController {
         menuAnchorRect: null,
         keyboardActive: true,
       };
-      this.#view.update?.({
-        ...this.#state,
-        run: (commandId) => this.run(commandId),
-        selectAxis: (axis, index) => this.selectAxis(axis, index),
-        insertParagraphAfterBlock: (block) => this.insertParagraphAfterBlock(block),
-        toggleMenu: (mode, options) => this.toggleMenu(mode, options),
-        openCellMenu: (mode, options) => this.openCellMenu(mode, options),
-        setActiveCommand: (commandId, options) => this.setActiveCommand(commandId, options),
-        handleKeyDown: (keyboardEvent) => this.handleKeyDown(keyboardEvent),
-      });
+      this.#render();
       const firstId = enabledTableCommandIds(visibleTableCommands(this.#state.commands, "keyboard", this.#state.selection.kind))[0] ?? null;
       if (!firstId) return false;
       event?.preventDefault?.();
@@ -495,10 +489,7 @@ export class TiptapTableToolbarController {
         complexBlock: complexHover.block,
         complexRect: complexHover.rect,
       };
-      this.#view.update?.({
-        ...this.#state,
-        insertParagraphAfterBlock: (block) => this.insertParagraphAfterBlock(block),
-      });
+      this.#render();
       return true;
     }
 
@@ -518,16 +509,7 @@ export class TiptapTableToolbarController {
       ...this.#state,
       hover,
     };
-    this.#view.update?.({
-      ...this.#state,
-      run: (commandId) => this.run(commandId),
-      selectAxis: (axis, index) => this.selectAxis(axis, index),
-      insertParagraphAfterBlock: (block) => this.insertParagraphAfterBlock(block),
-      toggleMenu: (mode, options) => this.toggleMenu(mode, options),
-      openCellMenu: (mode, options) => this.openCellMenu(mode, options),
-      setActiveCommand: (commandId, options) => this.setActiveCommand(commandId, options),
-      handleKeyDown: (keyboardEvent) => this.handleKeyDown(keyboardEvent),
-    });
+    this.#render();
     return true;
   }
 
@@ -545,24 +527,12 @@ export class TiptapTableToolbarController {
         ...this.#state,
         hover: null,
       };
-      this.#view.update?.({
-        ...this.#state,
-        run: (commandId) => this.run(commandId),
-        selectAxis: (axis, index) => this.selectAxis(axis, index),
-        insertParagraphAfterBlock: (block) => this.insertParagraphAfterBlock(block),
-        toggleMenu: (mode, options) => this.toggleMenu(mode, options),
-        openCellMenu: (mode, options) => this.openCellMenu(mode, options),
-        setActiveCommand: (commandId, options) => this.setActiveCommand(commandId, options),
-        handleKeyDown: (keyboardEvent) => this.handleKeyDown(keyboardEvent),
-      });
+      this.#render();
       return true;
     }
 
     this.#state = emptyTableToolbarState(entryLanguage(this.#entry));
-    this.#view.update?.({
-      ...this.#state,
-      insertParagraphAfterBlock: (block) => this.insertParagraphAfterBlock(block),
-    });
+    this.#render();
     return true;
   }
 
@@ -639,16 +609,7 @@ export class TiptapTableToolbarController {
         ...this.#state,
         hover: null,
       };
-      this.#view.update?.({
-        ...this.#state,
-        run: (commandId) => this.run(commandId),
-        selectAxis: (axis, index) => this.selectAxis(axis, index),
-        insertParagraphAfterBlock: (nextBlock) => this.insertParagraphAfterBlock(nextBlock),
-        toggleMenu: (mode, options) => this.toggleMenu(mode, options),
-        openCellMenu: (mode, options) => this.openCellMenu(mode, options),
-        setActiveCommand: (commandId, options) => this.setActiveCommand(commandId, options),
-        handleKeyDown: (event) => this.handleKeyDown(event),
-      });
+      this.#render();
       const result = this.#insertMenu.openAtBlock(target, {
         anchorRect: targetBlock?.getBoundingClientRect?.(),
       });
@@ -689,16 +650,7 @@ export class TiptapTableToolbarController {
       activeCommandId,
       keyboardActive: nextMode === "keyboard" && nextOpen ? this.#state.keyboardActive : false,
     };
-    this.#view.update?.({
-      ...this.#state,
-      run: (commandId) => this.run(commandId),
-      selectAxis: (axis, index) => this.selectAxis(axis, index),
-      insertParagraphAfterBlock: (block) => this.insertParagraphAfterBlock(block),
-      toggleMenu: (menuMode, options) => this.toggleMenu(menuMode, options),
-      openCellMenu: (menuMode, options) => this.openCellMenu(menuMode, options),
-      setActiveCommand: (commandId, options) => this.setActiveCommand(commandId, options),
-      handleKeyDown: (event) => this.handleKeyDown(event),
-    });
+    this.#render();
     return true;
   }
 
@@ -732,23 +684,14 @@ export class TiptapTableToolbarController {
     this.refresh(this.#editor);
     this.#state = {
       ...this.#state,
-      menuOpen: false,
+      menuOpen: this.#state.menuOpen,
       mode: "context",
       activeCommandId: firstEnabledTableCommandId(this.#state.commands, "context", this.#state.selection.kind),
       keyboardActive: false,
-      menuAnchorRect: null,
+      menuAnchorRect: this.#state.menuAnchorRect,
       hover: null,
     };
-    this.#view.update?.({
-      ...this.#state,
-      run: (commandId) => this.run(commandId),
-      selectAxis: (selectedAxis, selectedIndex) => this.selectAxis(selectedAxis, selectedIndex),
-      insertParagraphAfterBlock: (block) => this.insertParagraphAfterBlock(block),
-      toggleMenu: (menuMode, options) => this.toggleMenu(menuMode, options),
-      openCellMenu: (menuMode, options) => this.openCellMenu(menuMode, options),
-      setActiveCommand: (commandId, options) => this.setActiveCommand(commandId, options),
-      handleKeyDown: (event) => this.handleKeyDown(event),
-    });
+    this.#render();
     return ok;
   }
 

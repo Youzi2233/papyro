@@ -51,7 +51,7 @@ export function createPapyroTableExtensions() {
         handleWidth: 6,
         cellMinWidth: 96,
         lastColumnResizable: true,
-        allowTableNodeSelection: true,
+        allowTableNodeSelection: false,
       },
       tableRow: {
         HTMLAttributes: {

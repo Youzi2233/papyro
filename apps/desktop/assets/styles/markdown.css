@@ -377,13 +377,15 @@
     position: relative;
     overflow-x: auto;
     margin: 0 0 var(--mn-markdown-block-gap);
-    padding: 20px 18px 18px 22px;
+    padding: 22px 24px 24px 24px;
     border-radius: var(--mn-radius-sm);
 }
 
 .mn-tiptap-table {
     width: 100%;
     border-collapse: collapse;
+    border-spacing: 0;
+    background: var(--mn-border);
     font-family: var(--mn-font-ui);
     font-size: .92em;
     table-layout: fixed;
@@ -395,7 +397,31 @@
     min-width: 96px;
     padding: var(--mn-markdown-table-cell-pad);
     border: var(--mn-markdown-table-border);
+    background-clip: padding-box;
+    cursor: text;
     vertical-align: top;
+    transition:
+        background-color var(--mn-transition-fast),
+        box-shadow var(--mn-transition-fast);
+}
+
+.mn-tiptap-table-cell:hover,
+.mn-tiptap-table-header:hover {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--mn-accent) 28%, transparent);
+}
+
+.mn-tiptap-table-cell:hover *,
+.mn-tiptap-table-header:hover * {
+    cursor: text;
+}
+
+.mn-tiptap-table-cell::before,
+.mn-tiptap-table-header::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
 }
 
 .mn-tiptap-table-header {
@@ -415,21 +441,39 @@
 .mn-tiptap-table-cell p,
 .mn-tiptap-table-header p {
     margin: 0;
+    min-height: 1.45em;
+}
+
+.mn-tiptap-table-cell.selectedCell,
+.mn-tiptap-table-header.selectedCell,
+.mn-tiptap-table-cell.mn-tiptap-table-cell-selected,
+.mn-tiptap-table-header.mn-tiptap-table-cell-selected,
+.mn-tiptap-table-cell.mn-tiptap-table-cell-active,
+.mn-tiptap-table-header.mn-tiptap-table-cell-active {
+    z-index: 2;
 }
 
 .mn-tiptap-table-cell.selectedCell::after,
 .mn-tiptap-table-header.selectedCell::after,
 .mn-tiptap-table-cell.mn-tiptap-table-cell-selected::after,
-.mn-tiptap-table-header.mn-tiptap-table-cell-selected::after {
+.mn-tiptap-table-header.mn-tiptap-table-cell-selected::after,
+.mn-tiptap-table-cell.mn-tiptap-table-cell-active::after,
+.mn-tiptap-table-header.mn-tiptap-table-cell-active::after {
     content: "";
     position: absolute;
     inset: 0;
     z-index: 1;
     pointer-events: none;
-    background: color-mix(in srgb, var(--mn-accent) 8%, transparent);
+    background: color-mix(in srgb, var(--mn-accent) 7%, transparent);
     box-shadow:
-        inset 0 0 0 1.5px color-mix(in srgb, var(--mn-accent) 58%, transparent),
-        inset 0 0 0 999px color-mix(in srgb, var(--mn-accent) 3%, transparent);
+        inset 0 0 0 2px var(--mn-accent),
+        inset 0 0 0 999px color-mix(in srgb, var(--mn-accent) 2.5%, transparent);
+}
+
+.mn-tiptap-table-cell.mn-tiptap-table-cell-active::after,
+.mn-tiptap-table-header.mn-tiptap-table-cell-active::after {
+    background: transparent;
+    box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--mn-accent) 86%, transparent);
 }
 
 .mn-tiptap-table-cell.mn-tiptap-table-cell-selected,
@@ -446,15 +490,16 @@
 .mn-tiptap-table-header > * {
     position: relative;
     z-index: 2;
+    min-height: 1.45em;
 }
 
 .mn-tiptap-editor .column-resize-handle {
     position: absolute;
     top: 0;
-    right: -5px;
+    right: -9px;
     bottom: 0;
-    z-index: 4;
-    width: 10px;
+    z-index: 7;
+    width: 18px;
     background: transparent;
     opacity: 0;
     pointer-events: auto;
@@ -469,18 +514,12 @@
     content: "";
     position: absolute;
     top: 0;
-    right: 4px;
+    right: 8px;
     bottom: 0;
     width: 2px;
     border-radius: var(--mn-radius-round);
     background: color-mix(in srgb, var(--mn-accent) 62%, transparent);
     opacity: .52;
-}
-
-.mn-tiptap-editor .selectedCell .column-resize-handle,
-.mn-tiptap-table-cell.mn-tiptap-table-cell-selected .column-resize-handle,
-.mn-tiptap-table-header.mn-tiptap-table-cell-selected .column-resize-handle {
-    opacity: 0;
 }
 
 .mn-tiptap-table-cell:hover > .column-resize-handle,
@@ -491,7 +530,7 @@
 
 .mn-tiptap-editor .column-resize-handle:hover,
 .mn-tiptap-editor.resize-cursor .column-resize-handle {
-    width: 12px;
+    width: 18px;
     opacity: 1;
 }
 
