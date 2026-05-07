@@ -1,4 +1,8 @@
 import { createTiptapSlashCommandController } from "./tiptap-slash-commands.js";
+import {
+  PAPYRO_CODE_LANGUAGE_OPTIONS,
+  codeBlockLanguageUiLabel,
+} from "./tiptap-code-block.js";
 import { PAPYRO_CALLOUT_KIND_OPTIONS } from "./tiptap-markdown-snippets.js";
 import {
   calloutOptionLabel,
@@ -43,6 +47,10 @@ function chooseTableSize(tablePicker, rows, cols) {
 
 function chooseCalloutKind(calloutPicker, kind) {
   calloutPicker?._choose?.(kind);
+}
+
+function chooseCodeLanguage(codeLanguagePicker, language) {
+  codeLanguagePicker?._choose?.(language);
 }
 
 function groupedCommands(commands) {
@@ -148,6 +156,7 @@ const MAIN_MENU_HEIGHT = 360;
 const SIDE_PANEL_GAP = 8;
 const TABLE_PICKER_WIDTH = 166;
 const CALLOUT_PICKER_WIDTH = 166;
+const CODE_LANGUAGE_PICKER_WIDTH = 176;
 const SIDE_PANEL_INTENT_DELAY_MS = 80;
 
 function placeMenu(element, editor, range, anchorRect = null, placement = "bottom") {
@@ -283,6 +292,7 @@ class TiptapSlashMenuView {
   #tablePicker = null;
   #tablePickerLabel = null;
   #calloutPicker = null;
+  #codeLanguagePicker = null;
   #language = "english";
   #hoverTimer = null;
 
@@ -304,7 +314,8 @@ class TiptapSlashMenuView {
     const tablePickerLabel = createElement(this.#document, "div", "mn-tiptap-table-size-picker-label");
     const tablePickerGrid = createElement(this.#document, "div", "mn-tiptap-table-size-picker-grid");
     const calloutPicker = createElement(this.#document, "div", "mn-tiptap-callout-kind-picker hidden");
-    if (!root || !header || !eyebrow || !title || !list || !empty || !tablePicker || !tablePickerLabel || !tablePickerGrid || !calloutPicker) return;
+    const codeLanguagePicker = createElement(this.#document, "div", "mn-tiptap-code-language-picker hidden");
+    if (!root || !header || !eyebrow || !title || !list || !empty || !tablePicker || !tablePickerLabel || !tablePickerGrid || !calloutPicker || !codeLanguagePicker) return;
 
     root.id = this.#ownerId;
     root.role = "listbox";
@@ -314,6 +325,9 @@ class TiptapSlashMenuView {
     tablePicker.setAttribute("aria-label", tableSizeLabel(this.#language, 3, 2));
     calloutPicker.id = commandMenuSidePanelId(this.#ownerId, "callout");
     calloutPicker.role = "menu";
+    codeLanguagePicker.id = commandMenuSidePanelId(this.#ownerId, "code-language");
+    codeLanguagePicker.role = "menu";
+    codeLanguagePicker.setAttribute("aria-label", codeBlockLanguageUiLabel(this.#language, null));
     eyebrow.textContent = markdownCommandsLabel(this.#language);
     title.textContent = insertBlockMenuTitleLabel(this.#language);
     empty.textContent = noCommandsLabel(this.#language);
@@ -357,8 +371,26 @@ class TiptapSlashMenuView {
       bindPointerActivation(item, () => chooseCalloutKind(calloutPicker, option.kind));
       calloutPicker.appendChild(item);
     });
+    PAPYRO_CODE_LANGUAGE_OPTIONS.forEach((option) => {
+      const item = createElement(this.#document, "button", "mn-tiptap-code-language-option");
+      const token = createElement(this.#document, "span", "mn-tiptap-code-language-option-token");
+      const title = createElement(this.#document, "span", "mn-tiptap-code-language-option-title");
+      if (!item || !token || !title) return;
+
+      item.type = "button";
+      item.role = "menuitem";
+      item.dataset.languageId = option.id;
+      item.dataset.languageValue = option.language ?? "";
+      token.setAttribute("aria-hidden", "true");
+      token.textContent = (option.language ?? "auto").slice(0, 2).toUpperCase();
+      title.textContent = codeBlockLanguageUiLabel(this.#language, option.language);
+      item.setAttribute("aria-label", title.textContent);
+      item.append(token, title);
+      bindPointerActivation(item, () => chooseCodeLanguage(codeLanguagePicker, option.language));
+      codeLanguagePicker.appendChild(item);
+    });
     header.append(eyebrow, title);
-    root.append(header, list, empty, tablePicker, calloutPicker);
+    root.append(header, list, empty, tablePicker, calloutPicker, codeLanguagePicker);
     mountFloatingRoot(root, container, this.#document);
 
     this.#root = root;
@@ -370,6 +402,7 @@ class TiptapSlashMenuView {
     this.#tablePicker = tablePicker;
     this.#tablePickerLabel = tablePickerLabel;
     this.#calloutPicker = calloutPicker;
+    this.#codeLanguagePicker = codeLanguagePicker;
     setHidden(root, true);
   }
 
@@ -396,6 +429,7 @@ class TiptapSlashMenuView {
         );
       });
     this.#updateCalloutOptionLabels();
+    this.#updateCodeLanguageOptionLabels();
 
     this.#list.replaceChildren();
     groupedCommands(state.commands).forEach((commandGroup) => {
@@ -513,6 +547,7 @@ class TiptapSlashMenuView {
     this.#tablePicker = null;
     this.#tablePickerLabel = null;
     this.#calloutPicker = null;
+    this.#codeLanguagePicker = null;
   }
 
   #updateTablePicker(state) {
@@ -520,11 +555,19 @@ class TiptapSlashMenuView {
     const selectedCommand = state.commands[state.selectedIndex];
     const showPicker = selectedCommand?.id === "table";
     const showCalloutPicker = selectedCommand?.id === "callout";
+    const showCodeLanguagePicker = selectedCommand?.id === "code-block";
     if (this.#root) {
-      this.#root.dataset.sidePanel = showPicker ? "table" : showCalloutPicker ? "callout" : "none";
+      this.#root.dataset.sidePanel = showPicker
+        ? "table"
+        : showCalloutPicker
+          ? "callout"
+          : showCodeLanguagePicker
+            ? "code-language"
+            : "none";
     }
     setHidden(this.#tablePicker, !showPicker);
     setHidden(this.#calloutPicker, !showCalloutPicker);
+    setHidden(this.#codeLanguagePicker, !showCodeLanguagePicker);
     if (showPicker) {
       this.#tablePicker._choose = (rows, cols) => state.choose("table", { tableSize: { rows, cols } });
       this.#updateTablePickerSize(3, 2);
@@ -540,6 +583,15 @@ class TiptapSlashMenuView {
         ? (kind) => state.choose("callout", { calloutKind: kind })
         : null;
     }
+    if (this.#codeLanguagePicker) {
+      this.#codeLanguagePicker.setAttribute(
+        "aria-label",
+        showCodeLanguagePicker ? selectedCommand.title : "",
+      );
+      this.#codeLanguagePicker._choose = showCodeLanguagePicker
+        ? (language) => state.choose("code-block", { codeLanguage: language })
+        : null;
+    }
   }
 
   #syncSidePanelPlacement(state, editor) {
@@ -550,7 +602,9 @@ class TiptapSlashMenuView {
         ? TABLE_PICKER_WIDTH
         : selectedCommand?.id === "callout"
           ? CALLOUT_PICKER_WIDTH
-          : 0;
+          : selectedCommand?.id === "code-block"
+            ? CODE_LANGUAGE_PICKER_WIDTH
+            : 0;
     if (!panelWidth) {
       this.#root.dataset.sidePlacement = "right";
       return;
@@ -565,7 +619,9 @@ class TiptapSlashMenuView {
           ? 166
           : selectedCommand?.id === "callout"
             ? 188
-            : 0;
+            : selectedCommand?.id === "code-block"
+              ? 286
+              : 0;
       const top = clamp(
         itemRect.top - rootRect.top - 6,
         4,
@@ -605,6 +661,21 @@ class TiptapSlashMenuView {
         item.setAttribute("aria-label", calloutOptionLabel(this.#language, localizedOption.title));
         if (title) title.textContent = localizedOption.title;
         if (description) description.textContent = localizedOption.description;
+      });
+  }
+
+  #updateCodeLanguageOptionLabels() {
+    this.#codeLanguagePicker
+      ?.querySelectorAll?.(".mn-tiptap-code-language-option")
+      ?.forEach?.((item) => {
+        const option = PAPYRO_CODE_LANGUAGE_OPTIONS.find(
+          (candidate) => candidate.id === item.dataset?.languageId,
+        );
+        if (!option) return;
+        const title = codeBlockLanguageUiLabel(this.#language, option.language);
+        const titleElement = item.querySelector?.(".mn-tiptap-code-language-option-title");
+        item.setAttribute("aria-label", title);
+        if (titleElement) titleElement.textContent = title;
       });
   }
 

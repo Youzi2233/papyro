@@ -78,6 +78,7 @@ function commandItemByIndex(root, index) {
 function activePanelHeight(panel) {
   if (panel === "table") return 166;
   if (panel === "callout") return 188;
+  if (panel === "code-language") return 286;
   return 0;
 }
 

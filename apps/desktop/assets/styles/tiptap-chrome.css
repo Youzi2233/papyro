@@ -374,7 +374,8 @@
 }
 
 .mn-tiptap-slash-menu[data-side-panel="table"] .mn-tiptap-slash-menu-item[data-command-id="table"],
-.mn-tiptap-slash-menu[data-side-panel="callout"] .mn-tiptap-slash-menu-item[data-command-id="callout"] {
+.mn-tiptap-slash-menu[data-side-panel="callout"] .mn-tiptap-slash-menu-item[data-command-id="callout"],
+.mn-tiptap-slash-menu[data-side-panel="code-language"] .mn-tiptap-slash-menu-item[data-command-id="code-block"] {
     background: color-mix(in srgb, var(--mn-accent) 6%, transparent);
     color: var(--mn-ink);
     border-color: color-mix(in srgb, var(--mn-accent) 17%, transparent);
@@ -436,6 +437,7 @@
 
 .mn-tiptap-slash-menu-item[data-command-id="table"] .mn-tiptap-slash-menu-copy::after,
 .mn-tiptap-slash-menu-item[data-command-id="callout"] .mn-tiptap-slash-menu-copy::after,
+.mn-tiptap-slash-menu-item[data-command-id="code-block"] .mn-tiptap-slash-menu-copy::after,
 .mn-tiptap-block-action-submenu-trigger .mn-tiptap-block-action-menu-copy::after {
     content: "";
     position: absolute;
@@ -450,12 +452,14 @@
 
 .mn-tiptap-slash-menu-item[data-command-id="table"] .mn-tiptap-slash-menu-copy,
 .mn-tiptap-slash-menu-item[data-command-id="callout"] .mn-tiptap-slash-menu-copy,
+.mn-tiptap-slash-menu-item[data-command-id="code-block"] .mn-tiptap-slash-menu-copy,
 .mn-tiptap-block-action-submenu-trigger .mn-tiptap-block-action-menu-copy {
     padding-right: 11px;
 }
 
 .mn-tiptap-slash-menu-item[data-command-id="table"],
 .mn-tiptap-slash-menu-item[data-command-id="callout"],
+.mn-tiptap-slash-menu-item[data-command-id="code-block"],
 .mn-tiptap-block-action-submenu-trigger {
     position: relative;
 }
@@ -503,7 +507,8 @@
 }
 
 .mn-tiptap-table-size-picker::before,
-.mn-tiptap-callout-kind-picker::before {
+.mn-tiptap-callout-kind-picker::before,
+.mn-tiptap-code-language-picker::before {
     content: "";
     position: absolute;
     top: 0;
@@ -518,7 +523,8 @@
 }
 
 .mn-tiptap-slash-menu[data-side-placement="left"] .mn-tiptap-table-size-picker::before,
-.mn-tiptap-slash-menu[data-side-placement="left"] .mn-tiptap-callout-kind-picker::before {
+.mn-tiptap-slash-menu[data-side-placement="left"] .mn-tiptap-callout-kind-picker::before,
+.mn-tiptap-slash-menu[data-side-placement="left"] .mn-tiptap-code-language-picker::before {
     right: -8px;
     left: auto;
 }
@@ -658,6 +664,80 @@
     color: var(--mn-ink-3);
     font-size: var(--mn-type-caption);
     line-height: var(--mn-line-caption);
+}
+
+.mn-tiptap-code-language-picker {
+    position: absolute;
+    top: var(--mn-slash-side-panel-top, 4px);
+    left: calc(100% + 8px);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 3px;
+    width: 176px;
+    max-height: 286px;
+    margin: 0;
+    padding: 6px;
+    overflow-y: auto;
+    border: var(--mn-border-default);
+    border-radius: 10px;
+    background: var(--mn-surface-raised);
+    box-shadow: 0 18px 38px color-mix(in srgb, #000 12%, transparent), var(--mn-shadow-lg);
+}
+
+.mn-tiptap-slash-menu[data-side-placement="left"] .mn-tiptap-code-language-picker {
+    right: calc(100% + 8px);
+    left: auto;
+}
+
+.mn-tiptap-code-language-picker.hidden {
+    display: none;
+}
+
+.mn-tiptap-code-language-option {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr);
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    min-height: 30px;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--mn-ink-2);
+    padding: 4px 7px;
+    text-align: left;
+    font: inherit;
+}
+
+.mn-tiptap-code-language-option:hover,
+.mn-tiptap-code-language-option:focus-visible {
+    border-color: color-mix(in srgb, var(--mn-accent) 18%, transparent);
+    background: color-mix(in srgb, var(--mn-accent) 6%, transparent);
+    color: var(--mn-ink);
+}
+
+.mn-tiptap-code-language-option-token {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 20px;
+    border: var(--mn-border-subtle);
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--mn-surface-sunken) 80%, transparent);
+    color: color-mix(in srgb, var(--mn-ink-3) 86%, transparent);
+    font-size: 9px;
+    font-weight: var(--mn-weight-semibold);
+    line-height: 1;
+}
+
+.mn-tiptap-code-language-option-title {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: var(--mn-type-caption);
+    font-weight: var(--mn-weight-medium);
+    line-height: var(--mn-line-control);
 }
 
 .mn-tiptap-format-toolbar {

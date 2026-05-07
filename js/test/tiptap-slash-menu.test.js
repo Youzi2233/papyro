@@ -52,6 +52,10 @@ function createEditor(text, cursor = text.length) {
         calls.push(["insertTable", attrs.rows, attrs.cols, attrs.withHeaderRow]);
         return true;
       },
+      toggleCodeBlock: (attrs = null) => {
+        calls.push(["toggleCodeBlock", attrs?.language ?? null]);
+        return true;
+      },
       setCalloutBlock: (attrs) => {
         calls.push(["setCalloutBlock", attrs.kind, attrs.text]);
         return true;
@@ -455,8 +459,11 @@ test("Tiptap slash menu activates command details on pointer hover", () => {
   const menu = documentRef.body.children[0];
   const paragraphItem = slashMenuCommandItem(menu, "paragraph");
   const tableItem = slashMenuCommandItem(menu, "table");
+  const codeBlockItem = slashMenuCommandItem(menu, "code-block");
   const tablePicker = findElementByClass(menu, "mn-tiptap-table-size-picker");
+  const codeLanguagePicker = findElementByClass(menu, "mn-tiptap-code-language-picker");
   assert.equal(tablePicker.hidden, true);
+  assert.equal(codeLanguagePicker.hidden, true);
   const initialScrollCount = documentRef.scrollCalls.length;
 
   tableItem.onpointerenter?.({ preventDefault() {}, stopPropagation() {} });
@@ -472,6 +479,20 @@ test("Tiptap slash menu activates command details on pointer hover", () => {
   assert.equal(slashMenuCommandItem(menu, "table").dataset.sidePanel, "table");
   assert.equal(tablePicker.id, "mn-tiptap-slash-menu-table-panel");
   assert.equal(tablePicker.role, "menu");
+
+  codeBlockItem.onpointerenter?.({ preventDefault() {}, stopPropagation() {} });
+  assert.equal(controller.state.commands[controller.state.selectedIndex].id, "code-block");
+  assert.equal(codeLanguagePicker.hidden, false);
+  assert.equal(slashMenuCommandItem(menu, "code-block")["aria-haspopup"], "menu");
+  assert.equal(slashMenuCommandItem(menu, "code-block")["aria-expanded"], "true");
+  assert.equal(
+    slashMenuCommandItem(menu, "code-block")["aria-controls"],
+    "mn-tiptap-slash-menu-code-language-panel",
+  );
+  assert.equal(slashMenuCommandItem(menu, "code-block").dataset.sidePanel, "code-language");
+  assert.equal(codeLanguagePicker.id, "mn-tiptap-slash-menu-code-language-panel");
+  assert.equal(codeLanguagePicker.role, "menu");
+
   assert.equal(slashMenuCommandItem(menu, "paragraph")["aria-selected"], "false");
   assert.equal(slashMenuCommandItem(menu, "paragraph")["aria-haspopup"], undefined);
   assert.equal(slashMenuCommandItem(menu, "paragraph")["aria-controls"], undefined);
@@ -481,6 +502,7 @@ test("Tiptap slash menu activates command details on pointer hover", () => {
   assert.equal(controller.state.selectedIndex, 0);
   assert.equal(documentRef.scrollCalls.length, initialScrollCount + 1);
   assert.equal(tablePicker.hidden, true);
+  assert.equal(codeLanguagePicker.hidden, true);
   assert.equal(slashMenuCommandItem(menu, "paragraph")["aria-selected"], "true");
   assert.equal(slashMenuCommandItem(menu, "table")["aria-selected"], "false");
   assert.equal(slashMenuCommandItem(menu, "table")["aria-expanded"], "false");
@@ -873,6 +895,45 @@ test("Tiptap slash table picker supports click fallback without double-run", () 
   ]);
 });
 
+test("Tiptap slash code language picker supports click fallback without double-run", () => {
+  const { calls, editor } = createEditor("/code");
+  const documentRef = createDocument();
+  const controller = createTiptapSlashMenuController({
+    dom: { document: documentRef },
+  });
+  controller.attach({ editor, root: {} });
+  const picker = findElementByClass(documentRef.body.children[0], "mn-tiptap-code-language-picker");
+  const rust = picker
+    .querySelectorAll(".mn-tiptap-code-language-option")
+    .find((option) => option.dataset.languageId === "rust");
+  const event = () => ({ preventDefault() {}, stopPropagation() {} });
+
+  rust.onclick(event());
+
+  assert.deepEqual(calls.slice(-3), [
+    ["deleteRange", 0, 5],
+    ["toggleCodeBlock", "rust"],
+    ["focus"],
+  ]);
+
+  const fresh = createEditor("/code");
+  const second = createTiptapSlashMenuController({
+    dom: { document: documentRef },
+  });
+  second.attach({ editor: fresh.editor, root: {} });
+  const freshRust = documentRef.body.children[1]
+    .querySelectorAll(".mn-tiptap-code-language-option")
+    .find((option) => option.dataset.languageId === "rust");
+  freshRust.onpointerdown(event());
+  freshRust.onclick(event());
+
+  assert.deepEqual(fresh.calls.slice(-3), [
+    ["deleteRange", 0, 5],
+    ["toggleCodeBlock", "rust"],
+    ["focus"],
+  ]);
+});
+
 test("Tiptap slash menu forwards callout kind choices to the command", () => {
   const { calls, editor } = createEditor("/callout");
   const view = createViewSpy();
@@ -908,6 +969,35 @@ test("Tiptap slash menu localizes callout kind picker choices", () => {
     option.querySelector(".mn-tiptap-callout-kind-description").textContent,
     "普通补充信息",
   );
+});
+
+test("Tiptap slash menu localizes code language picker choices", () => {
+  const { editor } = createEditor("/code");
+  const documentRef = createDocument();
+  const controller = createTiptapSlashMenuController({
+    dom: { document: documentRef },
+  });
+
+  controller.attach({
+    editor,
+    root: {},
+    entry: { preferences: { language: "Chinese" } },
+  });
+
+  const picker = findElementByClass(documentRef.body.children[0], "mn-tiptap-code-language-picker");
+  const auto = picker
+    .querySelectorAll(".mn-tiptap-code-language-option")
+    .find((option) => option.dataset.languageId === "auto");
+  const plaintext = picker
+    .querySelectorAll(".mn-tiptap-code-language-option")
+    .find((option) => option.dataset.languageId === "plaintext");
+
+  assert.equal(auto.querySelector(".mn-tiptap-code-language-option-title").textContent, auto["aria-label"]);
+  assert.equal(
+    plaintext.querySelector(".mn-tiptap-code-language-option-title").textContent,
+    plaintext["aria-label"],
+  );
+  assert.notEqual(plaintext["aria-label"], "Plain text");
 });
 
 test("Tiptap slash menu closes on outside pointer events", () => {

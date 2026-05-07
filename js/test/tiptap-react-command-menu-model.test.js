@@ -50,14 +50,17 @@ test("React command menu model applies the canonical command group order", () =>
 test("React command menu model exposes side panel contracts", () => {
   assert.equal(commandMenuSidePanel({ id: "table" }), "table");
   assert.equal(commandMenuSidePanel({ id: "callout" }), "callout");
+  assert.equal(commandMenuSidePanel({ id: "code-block" }), "code-language");
   assert.equal(commandMenuSidePanel({ id: "paragraph" }), "none");
   assert.equal(commandMenuSidePanel(null), "none");
 
   assert.equal(commandMenuSidePanelWidth("table"), 166);
   assert.equal(commandMenuSidePanelWidth("callout"), 166);
+  assert.equal(commandMenuSidePanelWidth("code-language"), 176);
   assert.equal(commandMenuSidePanelWidth("none"), 0);
   assert.equal(commandMenuSidePanelId("menu", "table"), "menu-table-panel");
   assert.equal(commandMenuSidePanelId("menu", "callout"), "menu-callout-panel");
+  assert.equal(commandMenuSidePanelId("menu", "code-language"), "menu-code-language-panel");
   assert.equal(commandMenuSidePanelId("menu", "none"), undefined);
 });
 

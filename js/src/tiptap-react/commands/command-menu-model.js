@@ -45,12 +45,14 @@ export function groupCommandsForMenu(commands = []) {
 export function commandMenuSidePanel(command) {
   if (command?.id === "table") return "table";
   if (command?.id === "callout") return "callout";
+  if (command?.id === "code-block") return "code-language";
   return "none";
 }
 
 export function commandMenuSidePanelWidth(panel) {
   if (panel === "table") return 166;
   if (panel === "callout") return 166;
+  if (panel === "code-language") return 176;
   return 0;
 }
 

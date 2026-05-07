@@ -174,7 +174,7 @@ node scripts/report-file-lines.js
 - [x] 核心插入命令按 Text、Lists、Blocks、Data、Media、Advanced 分组。
 - [ ] 等命令使用历史存在后再增加 Recent 分组。
 - [ ] 支持表格尺寸、callout 样式、代码语言、未来 diagram/math 模板的二级详情面板。
-  - 当前覆盖：表格尺寸和 callout 样式面板已实现，并锚定到当前激活命令行。
+  - 当前覆盖：表格尺寸、callout 样式和代码语言面板已实现，并锚定到当前激活命令行。
 - [x] 修复键盘导航，ArrowDown 必须能到达每一项，不能没到表格就回到第一项。
 - [x] 支持 Home 和 End 在完整插入命令列表中跳转。
 - [x] 详情面板跟随当前命令右侧定位，不要飘到右上角奇怪位置。

@@ -1,5 +1,9 @@
 import React, { useMemo, useState } from "react";
 
+import {
+  PAPYRO_CODE_LANGUAGE_OPTIONS,
+  codeBlockLanguageUiLabel,
+} from "../../tiptap-code-block.js";
 import { PAPYRO_CALLOUT_KIND_OPTIONS } from "../../tiptap-markdown-snippets.js";
 import {
   calloutOptionLabel,
@@ -176,6 +180,50 @@ function CalloutKindOption({ option, language, choose }) {
   );
 }
 
+function CodeLanguagePicker({ id, language, choose }) {
+  return (
+    <div
+      id={id}
+      className="mn-tiptap-code-language-picker"
+      role="menu"
+      aria-label={codeBlockLanguageUiLabel(language, null)}
+    >
+      {PAPYRO_CODE_LANGUAGE_OPTIONS.map((option) => (
+        <CodeLanguageOption
+          key={option.id}
+          option={option}
+          language={language}
+          choose={choose}
+        />
+      ))}
+    </div>
+  );
+}
+
+function CodeLanguageOption({ option, language, choose }) {
+  const title = codeBlockLanguageUiLabel(language, option.language);
+  const activation = usePointerActivation(() =>
+    choose("code-block", { codeLanguage: option.language }),
+  );
+
+  return (
+    <button
+      type="button"
+      className="mn-tiptap-code-language-option"
+      data-language-id={option.id}
+      data-language-value={option.language ?? ""}
+      role="menuitem"
+      aria-label={title}
+      {...activation}
+    >
+      <span className="mn-tiptap-code-language-option-token" aria-hidden="true">
+        {(option.language ?? "auto").slice(0, 2).toUpperCase()}
+      </span>
+      <span className="mn-tiptap-code-language-option-title">{title}</span>
+    </button>
+  );
+}
+
 export function PapyroSlashCommandMenu({
   ownerId,
   state,
@@ -234,6 +282,9 @@ export function PapyroSlashCommandMenu({
       ) : null}
       {sidePanel === "callout" ? (
         <CalloutKindPicker id={sidePanelId} language={language} choose={state.choose} />
+      ) : null}
+      {sidePanel === "code-language" ? (
+        <CodeLanguagePicker id={sidePanelId} language={language} choose={state.choose} />
       ) : null}
     </>
   );

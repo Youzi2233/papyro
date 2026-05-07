@@ -3,6 +3,7 @@ import {
   createMarkdownTable,
   normalizeCalloutKind,
 } from "./tiptap-markdown-snippets.js";
+import { normalizeCodeBlockLanguage } from "./tiptap-code-block.js";
 import { localizeSlashCommand, normalizeTiptapLanguage } from "./tiptap-i18n.js";
 
 const DEFAULT_LIMIT = 8;
@@ -44,6 +45,17 @@ function runEditorCommand(editor, commandName, args = [], fallbackMarkdown) {
     return insertMarkdown(editor, fallbackMarkdown);
   }
   return ok;
+}
+
+function normalizeSlashCodeLanguage(language) {
+  const raw = String(language ?? "").trim().toLowerCase();
+  if (!raw || raw === "auto") return null;
+  return normalizeCodeBlockLanguage(raw);
+}
+
+export function createMarkdownCodeBlock(language = null) {
+  const normalized = normalizeSlashCodeLanguage(language);
+  return `\`\`\`${normalized ?? ""}\ncode\n\`\`\``;
 }
 
 function refreshTableChrome(entry, editor) {
@@ -229,8 +241,15 @@ export const PAPYRO_TIPTAP_SLASH_COMMANDS = Object.freeze([
     aliases: ["code", "fence"],
     keywords: ["programming", "代码", "代码块"],
     priority: 42,
-    run: ({ editor }) =>
-      runEditorCommand(editor, "toggleCodeBlock", [], "```\ncode\n```"),
+    run: ({ editor, codeLanguage = null }) => {
+      const language = normalizeSlashCodeLanguage(codeLanguage);
+      return runEditorCommand(
+        editor,
+        "toggleCodeBlock",
+        language ? [{ language }] : [],
+        createMarkdownCodeBlock(language),
+      );
+    },
   }),
   createCommand({
     id: "divider",

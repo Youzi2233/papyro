@@ -174,7 +174,7 @@ Tasks:
 - [x] Separate core insert commands into Text, Lists, Blocks, Data, Media, and Advanced groups.
 - [ ] Add a Recent group after command usage history exists.
 - [ ] Support nested detail panels for table size, callout style, code language, and future diagram/math templates.
-  - Current coverage: table size and callout style panels are implemented and anchored to the active command row.
+  - Current coverage: table size, callout style, and code language panels are implemented and anchored to the active command row.
 - [x] Fix keyboard navigation so ArrowDown can reach every command and never loops before the last item.
 - [x] Support Home and End navigation across the full insert command list.
 - [x] Position detail panels beside the selected command, not at awkward top-right coordinates.

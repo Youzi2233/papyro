@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  createMarkdownCodeBlock,
   createMarkdownCallout,
   createMarkdownTable,
   createTiptapSlashCommandController,
@@ -37,8 +38,8 @@ function createFakeEditor() {
         calls.push(["toggleBulletList"]);
         return true;
       },
-      toggleCodeBlock: () => {
-        calls.push(["toggleCodeBlock"]);
+      toggleCodeBlock: (attrs = null) => {
+        calls.push(["toggleCodeBlock", attrs?.language ?? null]);
         return true;
       },
       toggleHeading: (attrs) => {
@@ -227,6 +228,21 @@ test("Tiptap slash commands create rich callout blocks when available", () => {
   ]);
 });
 
+test("Tiptap slash commands create code blocks with requested languages", () => {
+  const { calls, editor } = createFakeEditor();
+  const controller = createTiptapSlashCommandController();
+
+  assert.deepEqual(controller.run("code-block", { editor, codeLanguage: "rust" }), {
+    ok: true,
+    commandId: "code-block",
+    error: null,
+  });
+  assert.deepEqual(calls, [
+    ["toggleCodeBlock", "rust"],
+    ["focus"],
+  ]);
+});
+
 test("Tiptap slash commands create requested callout kinds", () => {
   const { calls, editor } = createFakeEditor();
   const controller = createTiptapSlashCommandController();
@@ -366,6 +382,31 @@ test("Tiptap slash commands fall back to Markdown for callouts", () => {
   assert.equal(createMarkdownCallout(), "\n> [!NOTE]\n> Callout text\n");
   assert.deepEqual(calls, [
     ["insertContent", "\n> [!TIP]\n> Callout text\n", "markdown"],
+    ["focus"],
+  ]);
+});
+
+test("Tiptap slash commands fall back to Markdown for code block languages", () => {
+  const calls = [];
+  const editor = {
+    commands: {
+      focus: () => calls.push(["focus"]),
+      insertContent: (content, options) => {
+        calls.push(["insertContent", content, options.contentType]);
+        return true;
+      },
+    },
+  };
+  const controller = createTiptapSlashCommandController();
+
+  assert.deepEqual(controller.run("code-block", { editor, codeLanguage: "typescript" }), {
+    ok: true,
+    commandId: "code-block",
+    error: null,
+  });
+  assert.equal(createMarkdownCodeBlock("ts"), "```typescript\ncode\n```");
+  assert.deepEqual(calls, [
+    ["insertContent", "```typescript\ncode\n```", "markdown"],
     ["focus"],
   ]);
 });
