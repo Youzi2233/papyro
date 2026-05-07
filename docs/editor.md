@@ -128,6 +128,8 @@ The command palette includes insertion commands for common writing structures: t
 
 Hybrid table widgets support direct cell editing, Tab/Shift+Tab cell navigation, and row/column actions relative to the focused cell. The Markdown source remains the storage format, but normal table edits should not require hand-aligning pipe syntax.
 
+Clicking blank space inside a table cell should focus the editable cell through Tiptap/ProseMirror coordinates and refresh the active-cell chrome. Clicking text or inline content inside the cell stays on the native text-editing path, and dragging across cells is the explicit range-selection gesture.
+
 Hybrid selection color is driven by the shared `--mn-hybrid-selection` token. Code blocks, inline code, links, table inputs, and Mermaid source editors should therefore use the same selection tone as normal editor text instead of mixing native browser blue with custom editor selection layers.
 
 Hybrid pointer behavior must distinguish glyphs from line-height whitespace. Hovering or clicking directly on text uses edit semantics for that line. Hovering the vertical gap below a glyph run stays in normal semantics and should target the next line when selecting. Hovering the gap above a glyph run should target the previous line. Selection backgrounds should be clipped to glyph/text rectangles and must not paint the whole line-height gap.

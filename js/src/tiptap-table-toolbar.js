@@ -75,6 +75,13 @@ function entryLanguage(entry) {
   return entry?.preferences?.language ?? "english";
 }
 
+function isDirectTableCellTarget(target, cell) {
+  if (!target || !cell) return false;
+  if (target === cell) return true;
+  const tagName = String(target?.tagName ?? "").toLowerCase();
+  return (tagName === "td" || tagName === "th") && target === cell;
+}
+
 export function selectTableAxis(editor, grid, axis, index) {
   if (!editor || typeof editor.commands?.setCellSelection !== "function") return false;
   const axisIndex = Number(index);
@@ -552,6 +559,7 @@ export class TiptapTableToolbarController {
       head: start,
       moved: false,
       selected: false,
+      blankClick: isDirectTableCellTarget(event?.target, cell),
       startX: Number(event?.clientX),
       startY: Number(event?.clientY),
       removeListeners: [],
@@ -645,7 +653,49 @@ export class TiptapTableToolbarController {
     if (drag.selected) {
       event?.preventDefault?.();
       event?.stopPropagation?.();
+    } else if (drag.blankClick) {
+      this.#focusBlankCellClick(drag, event);
     }
+    return true;
+  }
+
+  #focusBlankCellClick(drag, event) {
+    if (!drag?.anchor?.cell || !this.#editor) return false;
+    const view = this.#editor.view;
+    let targetPos = null;
+    const x = Number(event?.clientX);
+    const y = Number(event?.clientY);
+    if (
+      Number.isFinite(x) &&
+      Number.isFinite(y) &&
+      typeof view?.posAtCoords === "function"
+    ) {
+      try {
+        const result = view.posAtCoords({ left: x, top: y });
+        if (Number.isFinite(result?.pos)) {
+          targetPos = result.pos;
+        }
+      } catch (_error) {
+        // Fall back to the cell start below.
+      }
+    }
+
+    if (!Number.isFinite(targetPos) && typeof view?.posAtDOM === "function") {
+      try {
+        const cellStart = view.posAtDOM(drag.anchor.cell, 0);
+        if (Number.isFinite(cellStart)) {
+          targetPos = cellStart + 1;
+        }
+      } catch (_error) {
+        // Keep native behavior if ProseMirror cannot resolve the cell.
+      }
+    }
+
+    if (Number.isFinite(targetPos) && typeof this.#editor.commands?.setTextSelection === "function") {
+      this.#editor.commands.setTextSelection(targetPos);
+    }
+    this.#editor.commands?.focus?.();
+    this.refresh(this.#editor);
     return true;
   }
 

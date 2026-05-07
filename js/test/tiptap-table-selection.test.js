@@ -147,6 +147,13 @@ function createHarness() {
     },
     commands: {
       addRowAfter: () => true,
+      setTextSelection(pos) {
+        calls.push(["setTextSelection", pos]);
+        editor.state.selection = { from: pos };
+        const activeIndex = Math.max(0, Math.min(cells.length - 1, pos - 11));
+        editor.view.domAtPos = () => ({ node: cells[activeIndex] });
+        return true;
+      },
       setCellAttribute: () => true,
       focus: () => calls.push(["focus"]),
       setCellSelection(selection) {
@@ -180,11 +187,55 @@ function createHarness() {
     },
   };
 
-  return { calls, cells, documentListeners, documentRef, editor, pushEvent, root };
+  return { calls, cells, documentListeners, documentRef, editor, pushEvent, root, table };
 }
 
-test("Tiptap table cell pointerdown preserves native text editing", () => {
+test("Tiptap table inline content pointerdown preserves native text editing", () => {
+  const { calls, cells, documentListeners, editor, pushEvent, root, table } = createHarness();
+  const inline = {
+    closest(selector) {
+      if (selector === "th,td") return cells[1];
+      if (selector.includes("table")) return table;
+      return null;
+    },
+  };
+  const controller = createTiptapTableToolbarController({
+    dom: { document: root.ownerDocument },
+  });
+  const events = [];
+
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  assert.equal(
+    root.listeners.get("pointerdown")({
+      target: inline,
+      button: 0,
+      clientX: 220,
+      clientY: 96,
+      preventDefault: pushEvent(events, "preventDefault:down"),
+      stopPropagation: pushEvent(events, "stopPropagation:down"),
+    }),
+    false,
+  );
+
+  documentListeners.get("pointerup").at(-1)({
+    target: inline,
+    preventDefault: pushEvent(events, "preventDefault:up"),
+    stopPropagation: pushEvent(events, "stopPropagation:up"),
+  });
+
+  assert.deepEqual(events, []);
+  assert.deepEqual(calls, []);
+  assert.equal(cells[1].classes.has("mn-tiptap-table-cell-selected"), false);
+  assert.equal(controller.state.selection.positions.size, 0);
+  assert.equal(documentListeners.has("pointermove"), false);
+});
+
+test("Tiptap table blank cell clicks focus the editable cell", () => {
   const { calls, cells, documentListeners, editor, pushEvent, root } = createHarness();
+  editor.view.posAtCoords = ({ left, top }) => {
+    calls.push(["posAtCoords", left, top]);
+    return { pos: 12 };
+  };
   const controller = createTiptapTableToolbarController({
     dom: { document: root.ownerDocument },
   });
@@ -205,15 +256,50 @@ test("Tiptap table cell pointerdown preserves native text editing", () => {
 
   documentListeners.get("pointerup").at(-1)({
     target: cells[1],
+    clientX: 220,
+    clientY: 96,
     preventDefault: pushEvent(events, "preventDefault:up"),
     stopPropagation: pushEvent(events, "stopPropagation:up"),
   });
 
   assert.deepEqual(events, []);
+  assert.deepEqual(calls, [["posAtCoords", 220, 96], ["setTextSelection", 12], ["focus"]]);
+  assert.equal(controller.state.cell, cells[1]);
+  assert.equal(controller.state.cellRect?.left, 190);
+});
+
+test("Tiptap table inline content clicks stay native", () => {
+  const { calls, cells, documentListeners, editor, root, table } = createHarness();
+  const inline = {
+    closest(selector) {
+      if (selector === "th,td") return cells[1];
+      if (selector.includes("table")) return table;
+      return null;
+    },
+  };
+  editor.view.posAtCoords = () => {
+    calls.push(["posAtCoords"]);
+    return { pos: 12 };
+  };
+  const controller = createTiptapTableToolbarController({
+    dom: { document: root.ownerDocument },
+  });
+
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  root.listeners.get("pointerdown")({
+    target: inline,
+    button: 0,
+    clientX: 220,
+    clientY: 96,
+  });
+
+  documentListeners.get("pointerup").at(-1)({
+    target: inline,
+    clientX: 220,
+    clientY: 96,
+  });
+
   assert.deepEqual(calls, []);
-  assert.equal(cells[1].classes.has("mn-tiptap-table-cell-selected"), false);
-  assert.equal(controller.state.selection.positions.size, 0);
-  assert.equal(documentListeners.has("pointermove"), false);
 });
 
 test("Tiptap table cell drag extends the selected cell range", () => {
