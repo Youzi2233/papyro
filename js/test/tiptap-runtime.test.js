@@ -34,6 +34,7 @@ function createRuntimeHarness({
   historyCommandControllerFactory,
   blockHintsControllerFactory,
   blockHandleControllerFactory,
+  blockHandleViewFactory,
   formatToolbarControllerFactory,
   pasteControllerFactory,
   preferencesControllerFactory,
@@ -232,6 +233,7 @@ function createRuntimeHarness({
     ...(clipboard ? { clipboard } : {}),
     blockHintsControllerFactory: createBlockHintsController,
     blockHandleControllerFactory: createBlockHandle,
+    ...(blockHandleViewFactory ? { blockHandleViewFactory } : {}),
     ...(formatCommandControllerFactory ? { formatCommandControllerFactory } : {}),
     formatToolbarControllerFactory: createFormatToolbar,
     ...(historyCommandControllerFactory ? { historyCommandControllerFactory } : {}),
@@ -283,6 +285,40 @@ test("Tiptap runtime creates an editor instance and registry entry", () => {
     ["slashMenuAttach", "mn-tiptap-runtime"],
     ["tableToolbarAttach", "mn-tiptap-runtime"],
   ]);
+});
+
+test("Tiptap runtime injects a custom block handle view", () => {
+  const { calls, runtime } = createRuntimeHarness({
+    blockHandleControllerFactory: ({ view }) => ({
+      attach: ({ root }) => calls.push(["blockHandleAttach", root.className]),
+      close: () => calls.push(["blockHandleClose"]),
+      destroy: () => calls.push(["blockHandleDestroy"]),
+      refresh: () => calls.push(["blockHandleRefresh"]),
+      shouldKeepOpenOnEditorBlur: () => false,
+      view,
+    }),
+    blockHandleViewFactory: ({ document }) => {
+      calls.push(["blockHandleViewFactory", Boolean(document)]);
+      return { kind: "react-block-handle-view" };
+    },
+  });
+
+  runtime.ensureEditor({
+    tabId: "tab-a",
+    containerId: "editor-root",
+    initialContent: "# Note",
+  });
+
+  assert.ok(
+    calls.some(
+      (call) => call[0] === "blockHandleViewFactory" && call[1] === true,
+    ),
+  );
+  assert.ok(
+    calls.some(
+      (call) => call[0] === "blockHandleAttach" && call[1] === "mn-tiptap-runtime",
+    ),
+  );
 });
 
 test("Tiptap runtime attaches editor chrome and syncs outline on selection changes", () => {

@@ -209,6 +209,8 @@ Tasks:
 
 - [ ] Evaluate replacing local handle code with `@tiptap/extension-drag-handle-react` and `@tiptap/extension-node-range`.
 - [ ] React-render the handle with two distinct controls: drag/action handle and insert `+`.
+  - Done for the visual view: desktop/mobile bundle entry now injects a React block-handle view while the existing controller still owns behavior.
+  - Still required: move behavior to the official `DragHandle`/`NodeRange` integration.
 - [ ] Open the block action menu on normal click beside the pointer, not after long press.
 - [ ] Block native WebView context menus on right-click and show only Papyro actions.
 - [ ] Highlight the whole semantic block, including inline code and mixed marks.

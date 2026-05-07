@@ -209,6 +209,8 @@ node scripts/check-editor-markdown-gate.js
 
 - [ ] 评估用 `@tiptap/extension-drag-handle-react` 和 `@tiptap/extension-node-range` 替换本地句柄代码。
 - [ ] 用 React 渲染句柄，明确分成拖拽/操作句柄和插入 `+` 两个控件。
+  - 视觉 view 已完成：桌面端/移动端 bundle 入口现在注入 React block-handle view，现有 controller 仍负责行为。
+  - 仍需继续：把行为迁移到官方 `DragHandle`/`NodeRange` 集成。
 - [ ] 普通点击时在点击点右侧打开块操作菜单，而不是长按才可能打开。
 - [ ] 右键阻止 WebView 原生菜单，只展示 Papyro 动作。
 - [ ] 高亮完整语义 block，包括行内代码和混合 mark。

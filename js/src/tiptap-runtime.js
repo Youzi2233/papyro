@@ -228,6 +228,7 @@ export function createTiptapEditorRuntime({
   blockActionMenuViewFactory = null,
   blockHintsControllerFactory = createTiptapBlockHintsController,
   blockHandleControllerFactory = createTiptapBlockHandleController,
+  blockHandleViewFactory = null,
   formatCommandControllerFactory = createTiptapFormatCommandController,
   formatToolbarControllerFactory = createTiptapFormatToolbarController,
   historyCommandControllerFactory = createTiptapHistoryCommandController,
@@ -439,6 +440,10 @@ export function createTiptapEditorRuntime({
     const blockHandle = createBlockHandleController({
       menu: blockActionMenu,
       insertMenu: slashMenu,
+      view:
+        typeof blockHandleViewFactory === "function"
+          ? blockHandleViewFactory({ document: documentRef })
+          : null,
       dom: {
         document: documentRef,
       },

@@ -26,3 +26,7 @@ export {
   createTiptapReactBlockActionMenuView,
   TiptapReactBlockActionMenuView,
 } from "./block-action-menu-view.jsx";
+export {
+  createTiptapReactBlockHandleView,
+  TiptapReactBlockHandleView,
+} from "./block-handle-view.jsx";
