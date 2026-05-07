@@ -4,31 +4,32 @@ import {
   blockActionTargetLabel,
   blockHandleActionsLabel,
 } from "../../tiptap-i18n.js";
-import { commandElementId } from "../../tiptap-ui-primitives.js";
 import {
   blockActionSubmenuGroups,
   commandSubmenuId,
   groupBlockActionCommands,
 } from "../commands/block-action-menu-model.js";
 import { usePointerActivation } from "../hooks/use-pointer-activation.js";
+import { CommandIconFrame, CommandRow, CommandText } from "./primitives.jsx";
 
 function MenuIcon({ icon }) {
   return (
-    <span
-      className={`mn-tiptap-block-action-menu-icon ${icon ?? "block"}`}
-      aria-hidden="true"
+    <CommandIconFrame
+      className="mn-tiptap-block-action-menu-icon"
+      icon={icon ?? "block"}
     />
   );
 }
 
 function CommandCopy({ command }) {
   return (
-    <span className="mn-tiptap-block-action-menu-copy">
-      <span className="mn-tiptap-block-action-menu-title">{command.title}</span>
-      <span className="mn-tiptap-block-action-menu-description">
-        {command.description ?? ""}
-      </span>
-    </span>
+    <CommandText
+      className="mn-tiptap-block-action-menu-copy"
+      titleClassName="mn-tiptap-block-action-menu-title"
+      descriptionClassName="mn-tiptap-block-action-menu-description"
+      title={command.title}
+      description={command.description}
+    />
   );
 }
 
@@ -42,26 +43,29 @@ function BlockActionCommandItem({
   const activation = usePointerActivation(() => run(command.id));
 
   return (
-    <button
-      type="button"
-      id={commandElementId(ownerId, command.index)}
-      className={`mn-tiptap-block-action-menu-item${selected ? " active" : ""}`}
+    <CommandRow
+      ownerId={ownerId}
+      index={command.index}
+      selected={selected}
+      className="mn-tiptap-block-action-menu-item"
       role="menuitem"
-      data-command-id={command.id}
-      data-command-index={String(command.index)}
-      data-submenu=""
-      data-tone={command.tone}
       tabIndex={selected ? 0 : -1}
+      data={{
+        "command-id": command.id,
+        "command-index": command.index,
+        submenu: "",
+        tone: command.tone,
+      }}
       onPointerMove={() => activate(command.index, { scroll: false })}
       onFocus={() => activate(command.index, { scroll: true })}
-      {...activation}
+      activation={activation}
     >
       <MenuIcon icon={command.icon} />
       <CommandCopy command={command} />
       <span className="mn-tiptap-block-action-menu-shortcut" hidden={!command.shortcut}>
         {command.shortcut ?? ""}
       </span>
-    </button>
+    </CommandRow>
   );
 }
 
@@ -74,22 +78,25 @@ function SubmenuTrigger({
   const selected = group.trigger.index === selectedIndex;
 
   return (
-    <button
-      type="button"
-      id={commandElementId(ownerId, group.trigger.index)}
-      className={`mn-tiptap-block-action-menu-item mn-tiptap-block-action-submenu-trigger${selected ? " active" : ""}`}
+    <CommandRow
+      ownerId={ownerId}
+      index={group.trigger.index}
+      selected={selected}
+      className="mn-tiptap-block-action-menu-item mn-tiptap-block-action-submenu-trigger"
       role="menuitem"
-      data-command-id={group.trigger.id}
-      data-command-index={String(group.trigger.index)}
-      data-submenu-trigger={group.id}
       tabIndex={selected ? 0 : -1}
+      data={{
+        "command-id": group.trigger.id,
+        "command-index": group.trigger.index,
+        "submenu-trigger": group.id,
+      }}
       onPointerMove={() => activate(group.trigger.index, { scroll: false })}
       onFocus={() => activate(group.trigger.index, { scroll: true })}
     >
       <MenuIcon icon={group.id === "code-language" ? "code-language" : "turn-into"} />
       <CommandCopy command={{ title: group.name, description: group.description }} />
       <span className="mn-tiptap-block-action-submenu-arrow" aria-hidden="true" />
-    </button>
+    </CommandRow>
   );
 }
 
@@ -105,16 +112,19 @@ function SubmenuPanelItem({
   const activation = usePointerActivation(() => run(command.id));
 
   return (
-    <button
-      type="button"
-      id={commandElementId(ownerId, commandIndex)}
-      className={`mn-tiptap-block-action-submenu-item${selected ? " active" : ""}`}
+    <CommandRow
+      ownerId={ownerId}
+      index={commandIndex}
+      selected={selected}
+      className="mn-tiptap-block-action-submenu-item"
       role="menuitem"
-      data-command-id={command.id}
-      data-command-index={String(commandIndex)}
-      data-submenu={groupId}
-      data-active={command.active ? "true" : "false"}
       tabIndex={selected ? 0 : -1}
+      data={{
+        "command-id": command.id,
+        "command-index": commandIndex,
+        submenu: groupId,
+        active: command.active ? "true" : "false",
+      }}
       onPointerMove={() => {
         if (commandIndex >= 0) {
           activate(commandIndex, { scroll: false });
@@ -125,11 +135,11 @@ function SubmenuPanelItem({
           activate(commandIndex, { scroll: true });
         }
       }}
-      {...activation}
+      activation={activation}
     >
       <MenuIcon icon={command.icon} />
       <CommandCopy command={command} />
-    </button>
+    </CommandRow>
   );
 }
 

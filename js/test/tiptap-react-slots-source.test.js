@@ -14,6 +14,18 @@ const officialDragHandleBridgeSource = readFileSync(
   new URL("../src/tiptap-react/official-drag-handle-bridge.jsx", import.meta.url),
   "utf8",
 );
+const commandMenuSource = readFileSync(
+  new URL("../src/tiptap-react/components/command-menu.jsx", import.meta.url),
+  "utf8",
+);
+const blockActionMenuSource = readFileSync(
+  new URL("../src/tiptap-react/components/block-action-menu.jsx", import.meta.url),
+  "utf8",
+);
+const primitivesSource = readFileSync(
+  new URL("../src/tiptap-react/components/primitives.jsx", import.meta.url),
+  "utf8",
+);
 
 test("React island slots register the official drag handle bridge by default", () => {
   assert.match(
@@ -34,4 +46,16 @@ test("official drag handle bridge keeps Tiptap callbacks stable across renders",
   assert.match(officialDragHandleBridgeSource, /entryRef\.current\s*=\s*entry/u);
   assert.match(officialDragHandleBridgeSource, /onNodeChange=\{handleNodeChange\}/u);
   assert.match(officialDragHandleBridgeSource, /onElementDragEnd=\{handleElementDragEnd\}/u);
+});
+
+test("React command chrome uses shared menu primitives", () => {
+  assert.match(primitivesSource, /export function CommandRow/u);
+  assert.match(primitivesSource, /export function CommandText/u);
+  assert.match(primitivesSource, /export function CommandIconFrame/u);
+  assert.match(commandMenuSource, /from "\.\/primitives\.jsx"/u);
+  assert.match(commandMenuSource, /<CommandRow/u);
+  assert.match(commandMenuSource, /<CommandText/u);
+  assert.match(blockActionMenuSource, /from "\.\/primitives\.jsx"/u);
+  assert.match(blockActionMenuSource, /<CommandRow/u);
+  assert.match(blockActionMenuSource, /<CommandText/u);
 });

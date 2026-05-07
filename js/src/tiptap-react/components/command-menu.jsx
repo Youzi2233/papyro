@@ -16,28 +16,26 @@ import {
   tableSizeLabel,
 } from "../../tiptap-i18n.js";
 import {
-  commandElementId,
-} from "../../tiptap-ui-primitives.js";
-import {
   commandMenuSidePanelId,
   commandMenuSidePanel,
   groupCommandsForMenu,
 } from "../commands/command-menu-model.js";
 import { usePointerActivation } from "../hooks/use-pointer-activation.js";
 import { CommandMenuIcon } from "./command-icons.jsx";
+import { CommandIconFrame, CommandRow, CommandText } from "./primitives.jsx";
 
 const TABLE_GRID_ROWS = 6;
 const TABLE_GRID_COLS = 6;
 
 function CommandIcon({ icon }) {
   return (
-    <span
-      className={`mn-tiptap-slash-menu-icon ${icon ?? "paragraph"}`}
-      aria-hidden="true"
-      data-icon={icon ?? "paragraph"}
+    <CommandIconFrame
+      className="mn-tiptap-slash-menu-icon"
+      icon={icon ?? "paragraph"}
+      dataIcon={icon ?? "paragraph"}
     >
       <CommandMenuIcon icon={icon ?? "paragraph"} />
-    </span>
+    </CommandIconFrame>
   );
 }
 
@@ -48,32 +46,38 @@ function CommandItem({ command, ownerId, selected, activePanel, activate, choose
   const panelId = commandMenuSidePanelId(ownerId, panel);
 
   return (
-    <button
-      type="button"
-      id={commandElementId(ownerId, command.index)}
-      className={`mn-tiptap-slash-menu-item${selected ? " active" : ""}`}
+    <CommandRow
+      ownerId={ownerId}
+      index={command.index}
+      selected={selected}
+      className="mn-tiptap-slash-menu-item"
       role="option"
-      aria-selected={String(selected)}
-      aria-haspopup={hasSidePanel ? "menu" : undefined}
-      aria-expanded={hasSidePanel ? String(activePanel === panel) : undefined}
-      aria-controls={hasSidePanel ? panelId : undefined}
-      data-command-id={command.id}
-      data-command-index={String(command.index)}
-      data-group={command.group ?? ""}
-      data-side-panel={panel}
       tabIndex={-1}
+      aria={{
+        "aria-selected": String(selected),
+        "aria-haspopup": hasSidePanel ? "menu" : undefined,
+        "aria-expanded": hasSidePanel ? String(activePanel === panel) : undefined,
+        "aria-controls": hasSidePanel ? panelId : undefined,
+      }}
+      data={{
+        "command-id": command.id,
+        "command-index": command.index,
+        group: command.group ?? "",
+        "side-panel": panel,
+      }}
       onPointerMove={() => activate(command.index, { scroll: false })}
       onFocus={() => activate(command.index, { scroll: true })}
-      {...activation}
+      activation={activation}
     >
       <CommandIcon icon={command.icon} />
-      <span className="mn-tiptap-slash-menu-copy">
-        <span className="mn-tiptap-slash-menu-title">{command.title}</span>
-        <span className="mn-tiptap-slash-menu-description">
-          {command.description ?? ""}
-        </span>
-      </span>
-    </button>
+      <CommandText
+        className="mn-tiptap-slash-menu-copy"
+        titleClassName="mn-tiptap-slash-menu-title"
+        descriptionClassName="mn-tiptap-slash-menu-description"
+        title={command.title}
+        description={command.description}
+      />
+    </CommandRow>
   );
 }
 
