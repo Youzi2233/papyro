@@ -251,6 +251,14 @@
     cursor: grabbing;
 }
 
+.mn-tiptap-official-drag-handle-bridge {
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
 .mn-tiptap-slash-menu {
     --mn-slash-side-panel-top: 4px;
     position: fixed;

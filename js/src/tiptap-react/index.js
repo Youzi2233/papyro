@@ -30,3 +30,6 @@ export {
   createTiptapReactBlockHandleView,
   TiptapReactBlockHandleView,
 } from "./block-handle-view.jsx";
+export {
+  PapyroOfficialDragHandleBridge,
+} from "./official-drag-handle-bridge.jsx";

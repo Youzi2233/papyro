@@ -1,5 +1,7 @@
 import React from "react";
 
+import { PapyroOfficialDragHandleBridge } from "./official-drag-handle-bridge.jsx";
+
 export function renderIslandSlot(SlotComponent, runtime) {
   if (!SlotComponent) return null;
   if (React.isValidElement(SlotComponent)) return SlotComponent;
@@ -14,7 +16,7 @@ export function createPapyroTiptapReactComponents(components = {}) {
     BeforeContent: null,
     EditorContent: null,
     AfterContent: null,
-    OverlayLayer: null,
+    OverlayLayer: PapyroOfficialDragHandleBridge,
     ...components,
   };
 }
