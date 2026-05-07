@@ -130,7 +130,7 @@ Hybrid table widgets support direct cell editing, Tab/Shift+Tab cell navigation,
 
 Clicking blank space inside a table cell should focus the editable cell through Tiptap/ProseMirror coordinates and refresh the active-cell chrome. Clicking text or inline content inside the cell stays on the native text-editing path, and dragging across cells is the explicit range-selection gesture.
 
-Block handles must target semantic block owners. Tables, code blocks, display math, and Mermaid blocks expose one outer block-level handle; hovering inside table cells or inside complex block controls must not create child paragraph or child-control handles. Table-specific row, column, cell, and range controls belong to the table overlay, not to the generic block handle.
+Block handles must target semantic block owners. Tables, code blocks, images, display math, and Mermaid blocks expose one outer block-level handle; hovering inside table cells or inside complex block controls must not create child paragraph or child-control handles. Table-specific row, column, cell, and range controls belong to the table overlay, not to the generic block handle.
 
 Hybrid selection color is driven by the shared `--mn-hybrid-selection` token. Code blocks, inline code, links, table inputs, and Mermaid source editors should therefore use the same selection tone as normal editor text instead of mixing native browser blue with custom editor selection layers.
 

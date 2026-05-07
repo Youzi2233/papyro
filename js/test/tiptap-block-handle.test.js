@@ -347,6 +347,14 @@ test("Tiptap block handle targets complex block chrome instead of child controls
       type: "codeBlock",
     },
     {
+      className: "mn-tiptap-image",
+      tagName: "SPAN",
+      childTagName: "IMG",
+      kind: "image",
+      pos: 36,
+      type: "image",
+    },
+    {
       className: "mn-tiptap-math-block",
       tagName: "DIV",
       childTagName: "SPAN",

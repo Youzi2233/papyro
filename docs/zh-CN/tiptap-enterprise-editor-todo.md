@@ -214,8 +214,8 @@ node scripts/check-editor-markdown-gate.js
 - [ ] 高亮完整语义 block，包括行内代码和混合 mark。
 - [ ] 实现可靠拖拽排序、drop indicator 和 transaction 级测试。
 - [ ] 复杂节点只显示 block 级句柄：表格、代码块、图片、公式、Mermaid 不出现每个子元素的句柄。
-  - 兼容句柄路径已覆盖：表格、代码块、独立公式和 Mermaid 的内部元素会归属到外层复杂 block。
-  - 仍需继续：补图片覆盖，并在最终 React 句柄里基于官方 drag-handle/node-range API 落地。
+  - 兼容句柄路径已覆盖：表格、代码块、图片 node view、独立公式和 Mermaid 的内部元素会归属到外层复杂 block。
+  - 仍需继续：在最终 React 句柄里基于官方 drag-handle/node-range API 落地。
 - [ ] 增加块动作：复制 Markdown、重复、删除、重置格式、文字颜色、高亮、turn into、上移/下移。
 
 验收标准：

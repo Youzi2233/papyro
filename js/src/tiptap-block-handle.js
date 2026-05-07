@@ -30,6 +30,7 @@ const BLOCK_SELECTOR = [
 const COMPLEX_BLOCK_SELECTOR = [
   ".mn-tiptap-table",
   ".mn-tiptap-code-block",
+  ".mn-tiptap-image",
   ".mn-tiptap-math-block",
   ".mn-tiptap-mermaid-block",
   ".mn-mermaid-block",
@@ -110,6 +111,9 @@ function blockKind(block) {
   }
   if (block?.classList?.contains?.("mn-tiptap-code-block") || tagName === "pre") {
     return "code_block";
+  }
+  if (block?.classList?.contains?.("mn-tiptap-image")) {
+    return "image";
   }
   if (
     block?.classList?.contains?.("mn-tiptap-math-block") ||
