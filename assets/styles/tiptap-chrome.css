@@ -1197,8 +1197,9 @@
 }
 
 .mn-tiptap-complex-block-insert {
-    height: 18px;
-    color: color-mix(in srgb, var(--mn-ink-3) 72%, var(--mn-accent));
+    height: 16px;
+    color: color-mix(in srgb, var(--mn-accent) 64%, var(--mn-ink-3));
+    opacity: .88;
 }
 
 .mn-tiptap-complex-block-insert::before {
@@ -1209,33 +1210,33 @@
         linear-gradient(
             90deg,
             transparent 0,
-            transparent calc(50% - 21px),
-            color-mix(in srgb, var(--mn-accent) 22%, var(--mn-border)) calc(50% - 21px),
-            color-mix(in srgb, var(--mn-accent) 22%, var(--mn-border)) calc(50% - 10px),
-            transparent calc(50% - 10px),
-            transparent calc(50% + 10px),
-            color-mix(in srgb, var(--mn-accent) 22%, var(--mn-border)) calc(50% + 10px),
-            color-mix(in srgb, var(--mn-accent) 22%, var(--mn-border)) calc(50% + 21px),
-            transparent calc(50% + 21px),
+            transparent calc(50% - 28px),
+            color-mix(in srgb, var(--mn-accent) 18%, var(--mn-border)) calc(50% - 28px),
+            color-mix(in srgb, var(--mn-accent) 18%, var(--mn-border)) calc(50% - 12px),
+            transparent calc(50% - 12px),
+            transparent calc(50% + 12px),
+            color-mix(in srgb, var(--mn-accent) 18%, var(--mn-border)) calc(50% + 12px),
+            color-mix(in srgb, var(--mn-accent) 18%, var(--mn-border)) calc(50% + 28px),
+            transparent calc(50% + 28px),
             transparent 100%
         );
-    opacity: .72;
+    opacity: .54;
     transform: translate(-50%, -50%);
     transition: opacity var(--mn-transition-fast);
 }
 
 .mn-tiptap-complex-block-insert::after {
-    width: 15px;
-    height: 15px;
-    border: 1px solid color-mix(in srgb, var(--mn-accent) 18%, var(--mn-border));
+    width: 14px;
+    height: 14px;
+    border: 1px solid color-mix(in srgb, var(--mn-accent) 20%, var(--mn-border));
     border-radius: var(--mn-radius-round);
     background:
-        linear-gradient(currentColor, currentColor) 50% 50% / 7px 1.2px no-repeat,
-        linear-gradient(currentColor, currentColor) 50% 50% / 1.2px 7px no-repeat,
-        color-mix(in srgb, var(--mn-surface-raised) 94%, var(--mn-editor-bg));
+        linear-gradient(currentColor, currentColor) 50% 50% / 6px 1.1px no-repeat,
+        linear-gradient(currentColor, currentColor) 50% 50% / 1.1px 6px no-repeat,
+        color-mix(in srgb, var(--mn-editor-bg) 92%, var(--mn-surface-raised));
     box-shadow:
-        0 1px 4px color-mix(in srgb, #000 6%, transparent),
-        0 0 0 2px color-mix(in srgb, var(--mn-editor-bg) 84%, transparent);
+        0 1px 3px color-mix(in srgb, #000 5%, transparent),
+        0 0 0 3px color-mix(in srgb, var(--mn-editor-bg) 90%, transparent);
     transform: translate(-50%, -50%);
     z-index: 1;
 }
@@ -1247,7 +1248,7 @@
 
 .mn-tiptap-complex-block-insert:hover::before,
 .mn-tiptap-complex-block-insert:focus-visible::before {
-    opacity: 1;
+    opacity: .82;
 }
 
 .mn-tiptap-complex-block-insert:hover::after,
@@ -1255,12 +1256,12 @@
     border-color: color-mix(in srgb, var(--mn-accent) 42%, var(--mn-border));
     color: var(--mn-accent);
     background:
-        linear-gradient(currentColor, currentColor) 50% 50% / 7px 1.2px no-repeat,
-        linear-gradient(currentColor, currentColor) 50% 50% / 1.2px 7px no-repeat,
+        linear-gradient(currentColor, currentColor) 50% 50% / 6px 1.1px no-repeat,
+        linear-gradient(currentColor, currentColor) 50% 50% / 1.1px 6px no-repeat,
         var(--mn-surface-raised);
     box-shadow:
-        0 2px 8px color-mix(in srgb, #000 9%, transparent),
-        0 0 0 2px color-mix(in srgb, var(--mn-accent) 8%, transparent);
+        0 2px 7px color-mix(in srgb, #000 8%, transparent),
+        0 0 0 2px color-mix(in srgb, var(--mn-accent) 7%, transparent);
 }
 
 .mn-tiptap-complex-block-insert.hidden {
