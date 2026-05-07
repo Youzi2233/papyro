@@ -47,6 +47,7 @@ const BRIDGE_PADDING = 24;
 const SELECTED_CLASS = "mn-tiptap-block-selected";
 const DRAGGING_CLASS = "mn-tiptap-block-dragging";
 const DRAG_THRESHOLD_PX = 10;
+const TABLE_STRUCTURE_NODE_TYPES = new Set(["tableRow", "tableCell", "tableHeader"]);
 const PARAGRAPH_SLASH_NODE = Object.freeze({
   type: "paragraph",
   content: [{ type: "text", text: "/" }],
@@ -148,6 +149,27 @@ function blockTargetFromEvent(event, editor) {
     kind: blockKind(block),
     pos,
     node: blockNode(editor, block, pos),
+  };
+}
+
+export function blockTargetFromOfficialDragHandle({ editor, node = null, pos = null } = {}) {
+  const officialPos = Number(pos);
+  if (!editor || !node || !Number.isFinite(officialPos)) {
+    return null;
+  }
+
+  if (TABLE_STRUCTURE_NODE_TYPES.has(String(node?.type?.name ?? ""))) {
+    return null;
+  }
+
+  const block = blockElementFromPosition(editor, officialPos);
+  if (!block) return null;
+
+  return {
+    block,
+    kind: blockKind(block),
+    pos: officialPos,
+    node: node ?? blockNode(editor, block, officialPos),
   };
 }
 
@@ -807,6 +829,54 @@ export class TiptapBlockHandleController {
         this.#updateView();
         return this.state;
       }
+      this.close();
+      return this.state;
+    }
+
+    if (targetEquals(this.#state.target, target) && this.#state.open) {
+      this.#updateView();
+      return this.state;
+    }
+
+    this.#state = {
+      open: true,
+      target,
+    };
+    this.#updateView();
+    return this.state;
+  }
+
+  handleOfficialNodeChange(data = {}) {
+    if (this.#drag) {
+      return this.state;
+    }
+
+    if (!this.#editor || this.#entry?.viewMode !== "hybrid") {
+      this.close();
+      return this.state;
+    }
+
+    if (this.#hasOpenFloatingMenu()) {
+      const liveTarget = refreshTargetFromPosition(this.#state.target, this.#editor);
+      if (liveTarget) {
+        this.#state = {
+          ...this.#state,
+          target: liveTarget,
+        };
+        this.#updateView();
+      } else {
+        this.#view.hide?.();
+      }
+      return this.state;
+    }
+
+    const target = blockTargetFromOfficialDragHandle({
+      editor: this.#editor,
+      node: data.node,
+      pos: data.pos,
+    });
+
+    if (!target) {
       this.close();
       return this.state;
     }

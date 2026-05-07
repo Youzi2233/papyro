@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  blockTargetFromOfficialDragHandle,
   blockDropPlacement,
   createTiptapBlockMove,
   createTiptapBlockHandleController,
@@ -393,6 +394,87 @@ test("Tiptap block handle targets complex block chrome instead of child controls
     assert.equal(controller.state.target.block, block);
     assert.equal(controller.state.target.pos, scenario.pos);
   }
+});
+
+test("Tiptap block handle maps official drag handle node changes to block targets", () => {
+  const { block, editor } = createEditor();
+  editor.view.nodeDOM = (pos) => (pos === 7 ? block : null);
+  const node = { nodeSize: 6, type: { name: "paragraph" } };
+
+  const target = blockTargetFromOfficialDragHandle({ editor, node, pos: 7 });
+
+  assert.equal(target.kind, "paragraph");
+  assert.equal(target.block, block);
+  assert.equal(target.pos, 7);
+  assert.equal(target.node, node);
+});
+
+test("Tiptap block handle rejects official table structure node targets", () => {
+  const { block, editor } = createEditor();
+  editor.view.nodeDOM = (pos) => (pos === 7 ? block : null);
+
+  for (const type of ["tableRow", "tableCell", "tableHeader"]) {
+    assert.equal(
+      blockTargetFromOfficialDragHandle({
+        editor,
+        node: { nodeSize: 6, type: { name: type } },
+        pos: 7,
+      }),
+      null,
+    );
+  }
+});
+
+test("Tiptap block handle opens from official drag handle node changes", () => {
+  const { block, editor } = createEditor();
+  editor.view.nodeDOM = (pos) => (pos === 7 ? block : null);
+  const view = createViewSpy();
+  const controller = createTiptapBlockHandleController({ view });
+  controller.attach({ editor, root: editor.view.dom, entry: { viewMode: "hybrid" } });
+
+  controller.handleOfficialNodeChange({
+    node: { nodeSize: 6, type: { name: "paragraph" } },
+    pos: 7,
+  });
+
+  assert.equal(controller.state.open, true);
+  assert.equal(controller.state.target.kind, "paragraph");
+  assert.equal(controller.state.target.pos, 7);
+  assert.deepEqual(view.calls, [
+    ["mount", ""],
+    ["update", "paragraph", 7],
+  ]);
+});
+
+test("Tiptap block handle keeps open menus anchored during official hover changes", () => {
+  const { block, editor, root } = createEditor();
+  const nextBlock = createElement({ tagName: "H2", parent: root });
+  const menu = createMenuSpy();
+  const view = createViewSpy();
+  editor.view.nodeDOM = (pos) => {
+    if (pos === 7) return block;
+    if (pos === 17) return nextBlock;
+    return null;
+  };
+  editor.state.doc.nodeAt = (pos) =>
+    pos === 17 ? { nodeSize: 5, type: { name: "heading" } } : { nodeSize: 6 };
+  const controller = createTiptapBlockHandleController({ menu, view });
+  controller.attach({ editor, root: editor.view.dom, entry: { viewMode: "hybrid" } });
+  controller.handleOfficialNodeChange({
+    node: { nodeSize: 6, type: { name: "paragraph" } },
+    pos: 7,
+  });
+  view.openActions();
+
+  controller.handleOfficialNodeChange({
+    node: { nodeSize: 5, type: { name: "heading" } },
+    pos: 17,
+  });
+
+  assert.equal(controller.state.open, true);
+  assert.equal(controller.state.target.block, block);
+  assert.equal(menu.state.open, true);
+  assert.deepEqual(view.calls.at(-1), ["update", "paragraph", 7]);
 });
 
 test("Tiptap block handle closes outside Hybrid mode", () => {
