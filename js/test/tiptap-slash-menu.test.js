@@ -319,7 +319,7 @@ test("Tiptap slash menu keyboard selection clamps through command results", () =
 test("Tiptap slash menu keyboard selection can reach table without wrapping", () => {
   const { editor } = createEditor("/");
   const view = createViewSpy();
-  const controller = createTiptapSlashMenuController({ view, maxItems: 12 });
+  const controller = createTiptapSlashMenuController({ view });
   controller.attach({ editor, root: {} });
 
   while (controller.state.commands[controller.state.selectedIndex]?.id !== "table") {
@@ -327,12 +327,32 @@ test("Tiptap slash menu keyboard selection can reach table without wrapping", ()
   }
 
   assert.equal(controller.state.commands[controller.state.selectedIndex].id, "table");
+  assert.deepEqual(
+    controller.state.commands.map((command) => command.id),
+    [
+      "paragraph",
+      "heading-1",
+      "heading-2",
+      "heading-3",
+      "bullet-list",
+      "ordered-list",
+      "task-list",
+      "blockquote",
+      "callout",
+      "code-block",
+      "divider",
+      "table",
+      "math-block",
+      "mermaid",
+      "image",
+    ],
+  );
   while (controller.state.selectedIndex < controller.state.commands.length - 1) {
     controller.moveSelection(1);
   }
-  assert.equal(controller.state.commands.at(-1).id, "table");
+  assert.equal(controller.state.commands.at(-1).id, "image");
   controller.moveSelection(1);
-  assert.equal(controller.state.commands[controller.state.selectedIndex].id, "table");
+  assert.equal(controller.state.commands[controller.state.selectedIndex].id, "image");
 });
 
 test("Tiptap slash menu renders command icons for block insertion", () => {

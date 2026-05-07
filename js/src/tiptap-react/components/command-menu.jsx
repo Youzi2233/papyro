@@ -19,6 +19,7 @@ import {
   groupCommandsForMenu,
 } from "../commands/command-menu-model.js";
 import { usePointerActivation } from "../hooks/use-pointer-activation.js";
+import { CommandMenuIcon } from "./command-icons.jsx";
 
 const TABLE_GRID_ROWS = 6;
 const TABLE_GRID_COLS = 6;
@@ -29,7 +30,9 @@ function CommandIcon({ icon }) {
       className={`mn-tiptap-slash-menu-icon ${icon ?? "paragraph"}`}
       aria-hidden="true"
       data-icon={icon ?? "paragraph"}
-    />
+    >
+      <CommandMenuIcon icon={icon ?? "paragraph"} />
+    </span>
   );
 }
 

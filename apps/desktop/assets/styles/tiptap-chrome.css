@@ -231,9 +231,9 @@
     z-index: 150;
     display: grid;
     grid-template-rows: auto minmax(0, 1fr) auto auto auto;
-    width: min(184px, calc(100vw - 20px));
-    max-height: min(360px, calc(100vh - 20px));
-    padding: 4px;
+    width: min(236px, calc(100vw - 20px));
+    max-height: min(420px, calc(100vh - 20px));
+    padding: 6px;
     border: var(--mn-border-default);
     border-radius: 8px;
     background:
@@ -243,7 +243,7 @@
             var(--mn-surface-raised)
         );
     color: var(--mn-ink);
-    box-shadow: 0 12px 28px color-mix(in srgb, #000 10%, transparent), var(--mn-shadow-lg);
+    box-shadow: 0 18px 42px color-mix(in srgb, #000 13%, transparent), var(--mn-shadow-lg);
     overflow: visible;
     font-family: var(--mn-font-ui);
     user-select: none;
@@ -289,7 +289,7 @@
     align-content: start;
     gap: 1px;
     padding: 2px 0;
-    max-height: 312px;
+    max-height: 358px;
     overflow-y: auto;
     scrollbar-gutter: stable;
 }
@@ -311,16 +311,16 @@
 
 .mn-tiptap-slash-menu-item {
     display: grid;
-    grid-template-columns: 20px minmax(0, 1fr);
+    grid-template-columns: 24px minmax(0, 1fr);
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     width: 100%;
-    min-height: 28px;
+    min-height: 34px;
     border: 1px solid transparent;
-    border-radius: 5px;
+    border-radius: 7px;
     background: transparent;
     color: var(--mn-ink-2);
-    padding: 4px 8px 4px 5px;
+    padding: 5px 9px 5px 6px;
     text-align: left;
     font: inherit;
     transition:
@@ -349,157 +349,36 @@
     position: relative;
     display: grid;
     place-items: center;
-    width: 20px;
-    height: 20px;
-    border: 1px solid color-mix(in srgb, var(--mn-border) 42%, transparent);
-    border-radius: 5px;
-    background: color-mix(in srgb, var(--mn-surface-sunken) 62%, transparent);
-    color: color-mix(in srgb, var(--mn-ink-2) 76%, transparent);
-    font-size: 9px;
+    width: 24px;
+    height: 24px;
+    border: 1px solid color-mix(in srgb, var(--mn-border) 54%, transparent);
+    border-radius: 7px;
+    background: color-mix(in srgb, var(--mn-surface-sunken) 72%, transparent);
+    color: color-mix(in srgb, var(--mn-ink-2) 84%, transparent);
+    font-size: 10px;
     font-weight: var(--mn-weight-semibold);
     line-height: 1;
 }
 
 .mn-tiptap-slash-menu-item:hover .mn-tiptap-slash-menu-icon,
 .mn-tiptap-slash-menu-item.active .mn-tiptap-slash-menu-icon {
-    background: color-mix(in srgb, var(--mn-accent) 8%, var(--mn-surface-raised));
+    background: color-mix(in srgb, var(--mn-accent) 10%, var(--mn-surface-raised));
     border-color: color-mix(in srgb, var(--mn-accent) 28%, var(--mn-border));
     color: var(--mn-accent);
 }
 
-.mn-tiptap-slash-menu-icon::before {
-    content: "";
+.mn-tiptap-command-icon-svg {
     display: block;
-    width: 14px;
-    height: 14px;
-    border: 1.4px solid currentColor;
-    border-radius: 3px;
+    width: 16px;
+    height: 16px;
 }
 
-.mn-tiptap-slash-menu-icon.paragraph::before {
-    width: 12px;
-    height: 13px;
-    border: 0;
-    background:
-        linear-gradient(currentColor, currentColor) 0 1.5px / 12px 1.2px no-repeat,
-        linear-gradient(currentColor, currentColor) 0 6px / 8px 1.2px no-repeat,
-        linear-gradient(currentColor, currentColor) 0 10.5px / 11px 1.2px no-repeat;
-}
-
-.mn-tiptap-slash-menu-icon.heading-1::before,
-.mn-tiptap-slash-menu-icon.heading-2::before,
-.mn-tiptap-slash-menu-icon.heading-3::before {
-    border: 0;
-    color: currentColor;
-    font-size: 9px;
+.mn-tiptap-command-icon-text {
+    display: block;
+    font-size: 10px;
     font-weight: var(--mn-weight-bold);
     letter-spacing: 0;
-    line-height: 14px;
-    text-align: center;
-}
-
-.mn-tiptap-slash-menu-icon.heading-1::before { content: "H1"; }
-.mn-tiptap-slash-menu-icon.heading-2::before { content: "H2"; }
-.mn-tiptap-slash-menu-icon.heading-3::before { content: "H3"; }
-
-.mn-tiptap-slash-menu-icon.ordered-list::before {
-    border: 0;
-    width: 15px;
-    height: 13px;
-    background:
-        linear-gradient(currentColor, currentColor) 7px 2px / 8px 1.3px no-repeat,
-        linear-gradient(currentColor, currentColor) 7px 8px / 8px 1.3px no-repeat;
-}
-
-.mn-tiptap-slash-menu-icon.ordered-list::after {
-    content: "1";
-    position: absolute;
-    left: 4px;
-    top: 3px;
-    font-size: 7px;
-    font-weight: var(--mn-weight-bold);
     line-height: 1;
-}
-
-.mn-tiptap-slash-menu-icon.math::before {
-    border: 0;
-    content: "fx";
-    font-size: 9px;
-    font-weight: var(--mn-weight-bold);
-    line-height: 14px;
-}
-
-.mn-tiptap-slash-menu-icon.bullet-list::before {
-    border: 0;
-    width: 15px;
-    height: 13px;
-    background:
-        radial-gradient(circle, currentColor 0 1.5px, transparent 2px) 0 1px / 5px 5px no-repeat,
-        radial-gradient(circle, currentColor 0 1.5px, transparent 2px) 0 8px / 5px 5px no-repeat,
-        linear-gradient(currentColor, currentColor) 7px 2px / 9px 1.5px no-repeat,
-        linear-gradient(currentColor, currentColor) 7px 9px / 9px 1.5px no-repeat;
-}
-
-.mn-tiptap-slash-menu-icon.task-list::before {
-    border: 1.3px solid currentColor;
-    border-radius: 3px;
-    background:
-        linear-gradient(135deg, transparent 46%, currentColor 48% 60%, transparent 62%) 3px 5px / 8px 6px no-repeat;
-}
-
-.mn-tiptap-slash-menu-icon.quote::before {
-    border: 0;
-    width: 14px;
-    height: 13px;
-    background:
-        linear-gradient(currentColor, currentColor) 3px 3px / 8px 1.4px no-repeat,
-        linear-gradient(currentColor, currentColor) 3px 7px / 6px 1.4px no-repeat,
-        linear-gradient(currentColor, currentColor) 3px 11px / 9px 1.4px no-repeat;
-}
-
-.mn-tiptap-slash-menu-icon.callout::before {
-    width: 16px;
-    height: 14px;
-    border-radius: 5px;
-    background:
-        linear-gradient(currentColor, currentColor) 4px 4px / 8px 1.5px no-repeat,
-        linear-gradient(currentColor, currentColor) 4px 8px / 5px 1.5px no-repeat;
-}
-
-.mn-tiptap-slash-menu-icon.code-block::before {
-    border: 0;
-    content: "{}";
-    font-family: var(--mn-markdown-mono-font);
-    font-size: 9px;
-    font-weight: var(--mn-weight-bold);
-    line-height: 14px;
-}
-.mn-tiptap-slash-menu-icon.divider::before {
-    height: 1.5px;
-    border: 0;
-    border-radius: var(--mn-radius-round);
-    background: currentColor;
-}
-.mn-tiptap-slash-menu-icon.table::before {
-    border: 1.3px solid currentColor;
-    border-radius: 3px;
-    background:
-        linear-gradient(currentColor, currentColor) 50% 50% / 100% 1.1px no-repeat,
-        linear-gradient(currentColor, currentColor) 50% 50% / 1.1px 100% no-repeat;
-}
-.mn-tiptap-slash-menu-icon.mermaid::before {
-    border: 0;
-    border-radius: 0;
-    background:
-        radial-gradient(circle, currentColor 0 2px, transparent 2.2px) 1px 1px / 5px 5px no-repeat,
-        radial-gradient(circle, currentColor 0 2px, transparent 2.2px) 9px 8px / 5px 5px no-repeat,
-        linear-gradient(135deg, transparent 45%, currentColor 47% 55%, transparent 57%) 4px 4px / 8px 7px no-repeat;
-}
-.mn-tiptap-slash-menu-icon.image::before {
-    border-radius: 3px;
-    background:
-        radial-gradient(circle, currentColor 0 1.4px, transparent 1.6px) 3px 3px / 4px 4px no-repeat,
-        linear-gradient(135deg, transparent 50%, currentColor 51% 61%, transparent 62%) 2px 7px / 10px 6px no-repeat;
 }
 
 .mn-tiptap-slash-menu-copy {

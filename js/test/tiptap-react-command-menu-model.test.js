@@ -44,3 +44,18 @@ test("React command menu model exposes side panel contracts", () => {
   assert.equal(commandMenuSidePanelWidth("callout"), 164);
   assert.equal(commandMenuSidePanelWidth("none"), 0);
 });
+
+test("React command menu model keeps command indexes stable across grouped full menus", () => {
+  const groups = groupCommandsForMenu([
+    { id: "paragraph", group: "Text", index: 0 },
+    { id: "heading-1", group: "Text", index: 1 },
+    { id: "table", group: "Advanced", index: 11 },
+    { id: "math-block", group: "Advanced", index: 12 },
+    { id: "image", group: "Advanced", index: 14 },
+  ]);
+
+  assert.deepEqual(
+    groups.flatMap((group) => group.commands.map((command) => command.index)),
+    [0, 1, 11, 12, 14],
+  );
+});

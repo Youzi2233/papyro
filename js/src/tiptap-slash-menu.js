@@ -27,7 +27,7 @@ import {
   viewportSize,
 } from "./tiptap-ui-primitives.js";
 
-const DEFAULT_MAX_ITEMS = 12;
+const DEFAULT_MAX_ITEMS = 15;
 const DEFAULT_MAX_QUERY_LENGTH = 48;
 const TABLE_GRID_ROWS = 6;
 const TABLE_GRID_COLS = 6;
