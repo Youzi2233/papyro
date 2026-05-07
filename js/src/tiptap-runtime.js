@@ -235,6 +235,7 @@ export function createTiptapEditorRuntime({
   sourcePaneControllerFactory = createTiptapSourcePaneController,
   slashCommandControllerFactory = createTiptapSlashCommandController,
   slashMenuControllerFactory = createTiptapSlashMenuController,
+  slashMenuViewFactory = null,
   tableToolbarControllerFactory = createTiptapTableToolbarController,
   mountControllerFactory = createLegacyMountController,
   clipboard = {},
@@ -416,6 +417,10 @@ export function createTiptapEditorRuntime({
     const slashCommands = createSlashCommandController();
     const slashMenu = createSlashMenuController({
       commandController: slashCommands,
+      view:
+        typeof slashMenuViewFactory === "function"
+          ? slashMenuViewFactory({ document: documentRef })
+          : null,
       dom: {
         document: documentRef,
       },

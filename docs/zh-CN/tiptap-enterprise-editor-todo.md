@@ -496,9 +496,15 @@ git diff --check
 3. 增加或更新聚焦的 React component、hook、command 或 extension module。
 4. 先补单元/契约测试，再做大范围视觉打磨。
 5. JS 改动后重新构建生成 bundle。
-6. 运行对应验证命令。
+6. 运行对应验证命令；涉及编辑器时必须包含 Markdown 渲染和 round-trip smoke。
 7. 行为、架构或已知限制发生变化时同步更新文档。
 8. 使用英文 Conventional Commit 提交。
+
+编辑器代码提交闸门：
+
+- Tiptap/editor 代码如果导致 Markdown fixture 渲染或 round-trip smoke 失败，不能提交。
+- 编辑器 runtime 改动提交前至少运行 `npm --prefix js test`、`npm --prefix js run build` 和 `node scripts/check-tiptap-release-smoke.js`。
+- 如果改动影响 Markdown 解析、序列化、Preview 一致性或 node view，提交前必须新增或更新 fixture。
 
 提交示例：
 

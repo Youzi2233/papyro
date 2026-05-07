@@ -18,3 +18,7 @@ export {
   createTiptapLegacyMountController,
   createTiptapReactMountController,
 } from "./mount-controller.jsx";
+export {
+  createTiptapReactSlashMenuView,
+  TiptapReactSlashMenuView,
+} from "./slash-menu-view.jsx";
