@@ -1,7 +1,7 @@
 const COMPLEX_BLOCK_SELECTOR = ".mn-tiptap-table, table, .mn-tiptap-code-block, pre";
 const EDGE_HOT_ZONE_PX = 12;
 const TABLE_CELL_MENU_EDGE_HOT_ZONE_PX = 5;
-const TABLE_CELL_MENU_CENTER_HOT_ZONE_PX = 6;
+const TABLE_CELL_MENU_CENTER_HOT_ZONE_PX = 8;
 
 export function closestTableElement(target, editorDom) {
   if (!target?.closest || !editorDom?.contains) return null;
@@ -313,14 +313,11 @@ export function tableCellMenuTriggerGeometry({
 
   const centeredCellSelection = selectionKind === "cells" && selectedCount > 1;
   const edgeCellTrigger = selectionKind === "cell" && edgeHovered;
-  const left = centeredCellSelection
-    ? normalized.right
-    : edgeCellTrigger
-      ? normalized.right + 1
-      : normalized.right - 5;
+  const handleHeight = 18;
+  const left = normalized.right;
   const top = selectionKind === "column"
-    ? normalized.bottom - 8
-    : normalized.top + Math.max(0, normalized.height - 16) / 2;
+    ? normalized.bottom - handleHeight / 2
+    : normalized.top + Math.max(0, normalized.height - handleHeight) / 2;
 
   return {
     left,
@@ -497,6 +494,72 @@ export function tableHoverContext(target, table, grid) {
   };
 }
 
+function tableHoverContextAtPoint(table, grid, clientX, clientY) {
+  const x = Number(clientX);
+  const y = Number(clientY);
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+
+  for (const row of grid ?? []) {
+    const rowRect = normalizedRect(row?.rect);
+    const rowMatches = rowRect && y >= rowRect.top && y <= rowRect.bottom;
+    for (const item of row?.cells ?? []) {
+      const rect = normalizedRect(item?.rect ?? item?.cell?.getBoundingClientRect?.());
+      if (!rect) continue;
+      const verticalMatch = rowMatches || (y >= rect.top && y <= rect.bottom);
+      const horizontalMatch = x >= rect.left && x <= rect.right;
+      if (!verticalMatch || !horizontalMatch) continue;
+      return {
+        table: true,
+        rowIndex: row.rowIndex,
+        columnIndex: item.columnIndex,
+        cell: item.cell,
+        cellRect: rect,
+      };
+    }
+  }
+
+  return null;
+}
+
+function tableRowHoverContextAtY(table, grid, clientY) {
+  const y = Number(clientY);
+  if (!Number.isFinite(y)) return null;
+
+  for (const row of grid ?? []) {
+    const rowRect = normalizedRect(row?.rect);
+    const firstCell = row?.cells?.[0] ?? null;
+    if (!rowRect || y < rowRect.top || y > rowRect.bottom) continue;
+    return {
+      table: true,
+      rowIndex: row.rowIndex,
+      columnIndex: 0,
+      cell: firstCell?.cell ?? null,
+      cellRect: normalizedRect(firstCell?.rect ?? firstCell?.cell?.getBoundingClientRect?.()) ?? rowRect,
+    };
+  }
+
+  return null;
+}
+
+function tableColumnHoverContextAtX(table, grid, clientX) {
+  const x = Number(clientX);
+  if (!Number.isFinite(x)) return null;
+
+  for (const item of firstRowCells(grid)) {
+    const rect = normalizedRect(item?.rect ?? item?.cell?.getBoundingClientRect?.());
+    if (!rect || x < rect.left || x > rect.right) continue;
+    return {
+      table: true,
+      rowIndex: 0,
+      columnIndex: item.columnIndex,
+      cell: item.cell,
+      cellRect: rect,
+    };
+  }
+
+  return null;
+}
+
 export function sameTableHover(left, right) {
   return (
     left?.table === right?.table &&
@@ -564,13 +627,33 @@ export function tableHoverWithIntent({
   rowHandleWidth = 18,
   columnHandleHeight = 18,
 } = {}) {
-  const hover = tableHoverContext(target, table, grid);
+  let hover = tableHoverContext(target, table, grid);
   if (!hover) return null;
 
   const normalizedTableRect = normalizedRect(tableRect);
-  const cellRect = normalizedRect(hover.cellRect);
   const x = Number(clientX);
   const y = Number(clientY);
+
+  const insideLeftGutter =
+    normalizedTableRect &&
+    Number.isFinite(x) &&
+    x >= normalizedTableRect.left - rowHandleWidth - 6 &&
+    x <= normalizedTableRect.left - 1;
+  const insideTopGutter =
+    normalizedTableRect &&
+    Number.isFinite(y) &&
+    y >= normalizedTableRect.top - columnHandleHeight - 6 &&
+    y <= normalizedTableRect.top - 1;
+
+  if (!hover.cell && insideLeftGutter) {
+    hover = tableRowHoverContextAtY(table, grid, y) ?? hover;
+  } else if (!hover.cell && insideTopGutter) {
+    hover = tableColumnHoverContextAtX(table, grid, x) ?? hover;
+  } else if (!hover.cell) {
+    hover = tableHoverContextAtPoint(table, grid, x, y) ?? hover;
+  }
+
+  const cellRect = normalizedRect(hover.cellRect);
   hover.clientX = Number.isFinite(x) ? x : null;
   hover.clientY = Number.isFinite(y) ? y : null;
   hover.block = table;
@@ -595,13 +678,7 @@ export function tableHoverWithIntent({
     hoverIsAtLastRow(hover, grid) &&
     hoverIsNearBottomEdge(hover, y);
 
-  if (
-    normalizedTableRect &&
-    Number.isFinite(x) &&
-    Number.isFinite(y) &&
-    x <= normalizedTableRect.left + rowHandleWidth + 4 &&
-    y <= normalizedTableRect.top + columnHandleHeight + 4
-  ) {
+  if (insideLeftGutter && insideTopGutter) {
     hover.edge = "table-corner";
   } else if (wantsAddColumn && wantsAddRow) {
     hover.edge = (cellRect.right - x) <= (cellRect.bottom - y) ? "add-column" : "add-row";
@@ -610,18 +687,17 @@ export function tableHoverWithIntent({
   } else if (wantsAddRow) {
     hover.edge = "add-row";
   } else if (
-    Number.isFinite(x) &&
+    insideLeftGutter &&
     hover.columnIndex === 0 &&
-    x <= cellRect.left + rowHandleWidth + 2 &&
     !nearTableBottom
   ) {
     hover.edge = "row-handle";
   } else if (hoverIsNearCellMenuEdge(hover, x, y)) {
     hover.edge = "cell-menu";
   } else if (
-    Number.isFinite(y) &&
+    insideTopGutter &&
     hover.rowIndex === 0 &&
-    y <= cellRect.top + columnHandleHeight + 2
+    !nearTableBottom
   ) {
     hover.edge = "column-handle";
   } else if (nearTableBottom) {

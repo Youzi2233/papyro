@@ -235,6 +235,27 @@ function syncActiveCommand(root, ownerId, commands, selectedIndex, { scroll = tr
   });
 }
 
+function commandItemByIndex(root, index) {
+  if (!root || !Number.isInteger(index)) return null;
+  const selector = `[data-command-index="${index}"]`;
+  if (typeof root.querySelector === "function") {
+    try {
+      const found = root.querySelector(selector);
+      if (found) return found;
+    } catch (_error) {
+      // Fall through to the small tree walk used by tests and non-standard DOMs.
+    }
+  }
+
+  const children = Array.from(root.children ?? []);
+  for (const child of children) {
+    if (Number(child?.dataset?.commandIndex) === index) return child;
+    const found = commandItemByIndex(child, index);
+    if (found) return found;
+  }
+  return null;
+}
+
 class TiptapSlashMenuView {
   #document;
   #ownerId;
@@ -420,10 +441,11 @@ class TiptapSlashMenuView {
     this.#syncSidePanelPlacement(state, editor);
   }
 
-  updateSelection(state, options = {}) {
+  updateSelection(state, options = {}, editor = null) {
     if (!this.#root || !state.open) return false;
     syncActiveCommand(this.#root, this.#ownerId, state.commands, state.selectedIndex, options);
     this.#updateTablePicker(state);
+    this.#syncSidePanelPlacement(state, editor);
     return true;
   }
 
@@ -497,6 +519,28 @@ class TiptapSlashMenuView {
     if (!panelWidth) {
       this.#root.dataset.sidePlacement = "right";
       return;
+    }
+
+    const selectedItem = commandItemByIndex(this.#root, state.selectedIndex);
+    const rootRect = this.#root.getBoundingClientRect?.();
+    const itemRect = selectedItem?.getBoundingClientRect?.();
+    if (rootRect && itemRect) {
+      const panelHeight =
+        selectedCommand?.id === "table"
+          ? 164
+          : selectedCommand?.id === "callout"
+            ? 188
+            : 0;
+      const top = clamp(
+        itemRect.top - rootRect.top - 6,
+        4,
+        Math.max(4, rootRect.height - panelHeight - 4),
+      );
+      if (typeof this.#root.style?.setProperty === "function") {
+        this.#root.style.setProperty("--mn-slash-side-panel-top", `${top}px`);
+      } else if (this.#root.style) {
+        this.#root.style["--mn-slash-side-panel-top"] = `${top}px`;
+      }
     }
 
     const rect = this.#root.getBoundingClientRect?.();
@@ -782,9 +826,11 @@ export class TiptapSlashMenuController {
   moveSelection(delta) {
     if (!this.#state.open || this.#state.commands.length === 0) return this.state;
     const count = this.#state.commands.length;
+    const selectedIndex = clamp(this.#state.selectedIndex + delta, 0, count - 1);
+    if (selectedIndex === this.#state.selectedIndex) return this.state;
     this.#state = {
       ...this.#state,
-      selectedIndex: (this.#state.selectedIndex + delta + count) % count,
+      selectedIndex,
     };
     this.#updateViewSelection({ scroll: true });
     return this.state;

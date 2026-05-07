@@ -1553,13 +1553,70 @@ test("Tiptap table axis handles only reveal on the table row and column gutters"
   assert.equal(visibleAxisHandles("row").length, 0);
   assert.equal(visibleAxisHandles("column").length, 0);
 
-  editor.view.dom.listeners.get("pointermove")({ target: cells[3], clientX: 122, clientY: 128 });
+  editor.view.dom.listeners.get("pointermove")({ target: cells[3], clientX: 108, clientY: 128 });
   assert.equal(visibleAxisHandles("row").length, 1);
   assert.equal(visibleAxisHandles("column").length, 0);
 
-  editor.view.dom.listeners.get("pointermove")({ target: cells[1], clientX: 204, clientY: 92 });
+  editor.view.dom.listeners.get("pointermove")({ target: cells[1], clientX: 204, clientY: 76 });
   assert.equal(visibleAxisHandles("row").length, 0);
   assert.equal(visibleAxisHandles("column").length, 1);
+});
+
+test("Tiptap table row and column handles stay outside editable cells", () => {
+  const { created, documentRef } = createDocument();
+  const { cells, editor } = createTableHarness();
+  const controller = createTiptapTableToolbarController({
+    dom: { document: documentRef },
+  });
+
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+
+  editor.view.dom.listeners.get("pointermove")({ target: cells[3], clientX: 122, clientY: 128 });
+  assert.notEqual(controller.state.hover.edge, "row-handle");
+  editor.view.dom.listeners.get("pointermove")({ target: cells[1], clientX: 204, clientY: 92 });
+  assert.notEqual(controller.state.hover.edge, "column-handle");
+
+  editor.view.dom.listeners.get("pointermove")({ target: cells[3], clientX: 108, clientY: 128 });
+  assert.equal(controller.state.hover.edge, "row-handle");
+  editor.view.dom.listeners.get("pointermove")({ target: cells[1], clientX: 204, clientY: 76 });
+  assert.equal(controller.state.hover.edge, "column-handle");
+
+  const rowHandle = created.find((element) =>
+    String(element.className).includes("mn-tiptap-table-axis-handle row") &&
+    element.dataset.index === "1",
+  );
+  const columnHandle = created.find((element) =>
+    String(element.className).includes("mn-tiptap-table-axis-handle column") &&
+    element.dataset.index === "1",
+  );
+  assert.equal(rowHandle.style.left, "98px");
+  assert.equal(rowHandle.style.width, "20px");
+  assert.equal(columnHandle.style.top, "68px");
+  assert.equal(columnHandle.style.height, "20px");
+});
+
+test("Tiptap table row and column handles activate from gutter coordinates", () => {
+  const { created, documentRef } = createDocument();
+  const { editor, table } = createTableHarness();
+  const controller = createTiptapTableToolbarController({
+    dom: { document: documentRef },
+  });
+
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+
+  editor.view.dom.listeners.get("pointermove")({ target: table, clientX: 108, clientY: 128 });
+  assert.equal(controller.state.hover.edge, "row-handle");
+  editor.view.dom.listeners.get("pointermove")({ target: table, clientX: 204, clientY: 76 });
+  assert.equal(controller.state.hover.edge, "column-handle");
+
+  assert.equal(
+    created.some((element) =>
+      String(element.className).includes("mn-tiptap-table-axis-handle row") &&
+      element.dataset.index === "1" &&
+      !element.hidden,
+    ),
+    true,
+  );
 });
 
 test("Tiptap table toolbar reflects selected rows columns and cells in chrome", () => {
@@ -1655,8 +1712,8 @@ test("Tiptap table toolbar reveals the cell trigger only on the right edge hot z
     clientY: 107,
   });
   assert.equal(trigger.hidden, false);
-  assert.equal(trigger.style.left, "201px");
-  assert.equal(trigger.style.top, "99px");
+  assert.equal(trigger.style.left, "200px");
+  assert.equal(trigger.style.top, "98px");
   assert.equal(controller.state.hover.edge, "cell-menu");
 });
 
@@ -1728,7 +1785,7 @@ test("Tiptap table toolbar anchors multi-cell actions to the head cell", () => {
   );
   assert.equal(controller.state.selection.kind, "cells");
   assert.equal(trigger.style.left, "280px");
-  assert.equal(trigger.style.top, "99px");
+  assert.equal(trigger.style.top, "98px");
   assert.equal(trigger.dataset.selectionKind, "cells");
   assert.equal(trigger.dataset.placement, "center");
   assert.equal(trigger.dataset.selectedCount, "2");
@@ -1745,7 +1802,7 @@ test("Tiptap table toolbar anchors multi-cell actions to the head cell", () => {
 
   assert.equal(root.hidden, false);
   assert.equal(trigger["aria-expanded"], "true");
-  assert.equal(root.style.left, "162px");
+  assert.equal(root.style.left, "152px");
   assert.equal(root.style.top, "121px");
 });
 
@@ -2058,8 +2115,8 @@ test("Tiptap table toolbar anchors row and column menus to the active selection"
   assert.equal(controller.state.selection.kind, "row");
   assert.equal(root.hidden, false);
   assert.equal(root.style.top, "132px");
-  assert.equal(trigger.style.left, "355px");
-  assert.equal(trigger.style.top, "99px");
+  assert.equal(trigger.style.left, "360px");
+  assert.equal(trigger.style.top, "98px");
   assert.equal(backdrop.hidden, false);
   assert.equal(backdrop.style.left, "120px");
   assert.equal(backdrop.style.width, "240px");
@@ -2070,8 +2127,8 @@ test("Tiptap table toolbar anchors row and column menus to the active selection"
 
   assert.equal(controller.state.selection.kind, "column");
   assert.equal(root.style.top, "166px");
-  assert.equal(trigger.style.left, "195px");
-  assert.equal(trigger.style.top, "150px");
+  assert.equal(trigger.style.left, "200px");
+  assert.equal(trigger.style.top, "149px");
   assert.equal(backdrop.style.left, "120px");
   assert.equal(backdrop.style.width, "80px");
   assert.equal(backdrop.style.height, "68px");
@@ -2146,7 +2203,7 @@ test("Tiptap table toolbar replaces native context menus inside table cells", ()
   assert.equal(controller.state.menuOpen, true);
   assert.equal(root.hidden, false);
   assert.equal(root.dataset.selectionKind, "cell");
-  assert.equal(root.style.left, "162px");
+  assert.equal(root.style.left, "152px");
   assert.equal(root.style.top, "132px");
 
   controller.destroy();
@@ -2177,7 +2234,7 @@ test("Tiptap table toolbar anchors right-click menus to the pointer", () => {
   );
   assert.equal(controller.state.menuAnchorRect.left, 310);
   assert.equal(controller.state.menuAnchorRect.top, 240);
-  assert.equal(root.style.left, "232px");
+  assert.equal(root.style.left, "222px");
   assert.equal(root.style.top, "248px");
 });
 

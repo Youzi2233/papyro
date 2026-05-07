@@ -170,7 +170,12 @@ function createDocument() {
       children: [],
       className: "",
       dataset: {},
-      style: {},
+      style: {
+        properties: new Map(),
+        setProperty(name, value) {
+          this.properties.set(name, value);
+        },
+      },
       classList: {
         values: new Set(),
         toggle(name, enabled) {
@@ -192,13 +197,25 @@ function createDocument() {
       },
       querySelectorAll(selector) {
         const results = [];
-        if (!String(selector).startsWith(".")) return results;
-        const className = String(selector).slice(1);
-        walk(this, (child) => {
-          if (String(child.className ?? "").split(/\s+/).includes(className)) {
-            results.push(child);
-          }
-        });
+        const source = String(selector);
+        if (source.startsWith(".")) {
+          const className = source.slice(1);
+          walk(this, (child) => {
+            if (String(child.className ?? "").split(/\s+/).includes(className)) {
+              results.push(child);
+            }
+          });
+          return results;
+        }
+        const commandIndex = /^\[data-command-index="(\d+)"\]$/u.exec(source)?.[1];
+        if (commandIndex) {
+          walk(this, (child) => {
+            if (child.dataset?.commandIndex === commandIndex) {
+              results.push(child);
+            }
+          });
+          return results;
+        }
         return results;
       },
       querySelector(selector) {
@@ -285,7 +302,7 @@ test("Tiptap slash menu opens from editor text and ranks commands", () => {
   ]);
 });
 
-test("Tiptap slash menu keyboard selection wraps through command results", () => {
+test("Tiptap slash menu keyboard selection clamps through command results", () => {
   const { editor } = createEditor("/标题");
   const view = createViewSpy();
   const controller = createTiptapSlashMenuController({ view });
@@ -296,7 +313,26 @@ test("Tiptap slash menu keyboard selection wraps through command results", () =>
   controller.moveSelection(-1);
   assert.equal(controller.state.selectedIndex, 0);
   controller.moveSelection(-1);
-  assert.equal(controller.state.selectedIndex, 2);
+  assert.equal(controller.state.selectedIndex, 0);
+});
+
+test("Tiptap slash menu keyboard selection can reach table without wrapping", () => {
+  const { editor } = createEditor("/");
+  const view = createViewSpy();
+  const controller = createTiptapSlashMenuController({ view, maxItems: 12 });
+  controller.attach({ editor, root: {} });
+
+  while (controller.state.commands[controller.state.selectedIndex]?.id !== "table") {
+    controller.moveSelection(1);
+  }
+
+  assert.equal(controller.state.commands[controller.state.selectedIndex].id, "table");
+  while (controller.state.selectedIndex < controller.state.commands.length - 1) {
+    controller.moveSelection(1);
+  }
+  assert.equal(controller.state.commands.at(-1).id, "table");
+  controller.moveSelection(1);
+  assert.equal(controller.state.commands[controller.state.selectedIndex].id, "table");
 });
 
 test("Tiptap slash menu renders command icons for block insertion", () => {
@@ -337,6 +373,40 @@ test("Tiptap slash menu scrolls keyboard selections into view", () => {
     "mn-tiptap-slash-menu-item-1",
     { block: "nearest", inline: "nearest" },
   ]);
+});
+
+test("Tiptap slash menu anchors side panels beside the active command row", () => {
+  const { editor } = createEditor("/");
+  const documentRef = createDocument();
+  const controller = createTiptapSlashMenuController({
+    dom: { document: documentRef },
+    maxItems: 12,
+  });
+  controller.attach({ editor, root: {} });
+
+  const menu = documentRef.body.children[0];
+  menu.getBoundingClientRect = () => ({
+    left: 100,
+    top: 40,
+    right: 284,
+    bottom: 400,
+    width: 184,
+    height: 360,
+  });
+  slashMenuCommandItem(menu, "table").getBoundingClientRect = () => ({
+    left: 106,
+    top: 252,
+    right: 276,
+    bottom: 280,
+    width: 170,
+    height: 28,
+  });
+
+  controller.setSelection(
+    controller.state.commands.findIndex((command) => command.id === "table"),
+  );
+
+  assert.equal(menu.style.properties.get("--mn-slash-side-panel-top") ?? menu.style["--mn-slash-side-panel-top"], "192px");
 });
 
 test("Tiptap slash menu activates command details on pointer hover", () => {

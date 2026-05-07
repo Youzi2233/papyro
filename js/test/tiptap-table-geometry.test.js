@@ -70,13 +70,15 @@ test("Tiptap table geometry classifies low-noise hover intent", () => {
       tableRect,
       clientX,
       clientY,
-      rowHandleWidth: 18,
-      columnHandleHeight: 18,
+      rowHandleWidth: 20,
+      columnHandleHeight: 20,
     })?.edge;
 
   assert.equal(classify(4, 202, 128), "cell");
-  assert.equal(classify(3, 122, 128), "row-handle");
-  assert.equal(classify(1, 204, 92), "column-handle");
+  assert.equal(classify(3, 122, 128), "cell");
+  assert.equal(classify(3, 108, 128), "row-handle");
+  assert.equal(classify(1, 204, 92), "cell");
+  assert.equal(classify(1, 204, 76), "column-handle");
   assert.equal(classify(5, 356, 140), "add-column");
   assert.equal(classify(3, 160, 154), "add-row");
   assert.equal(classify(5, 359, 152), "add-column");
@@ -84,6 +86,26 @@ test("Tiptap table geometry classifies low-noise hover intent", () => {
   assert.equal(classify(0, 194, 115), "cell");
   assert.equal(classify(0, 195, 107), "cell-menu");
   assert.equal(classify(0, 195, 123), "cell");
+});
+
+test("Tiptap table geometry infers gutter handles from table coordinates", () => {
+  const { grid, table, tableRect } = createTableGeometryHarness();
+  const classify = (target, clientX, clientY) =>
+    tableHoverWithIntent({
+      target,
+      table,
+      grid,
+      tableRect,
+      clientX,
+      clientY,
+      rowHandleWidth: 20,
+      columnHandleHeight: 20,
+    })?.edge;
+
+  assert.equal(classify(table, 108, 128), "row-handle");
+  assert.equal(classify(table, 204, 76), "column-handle");
+  assert.equal(classify(table, 160, 154), "add-row");
+  assert.equal(classify(table, 356, 140), "add-column");
 });
 
 test("Tiptap table geometry reserves the bottom edge for inserting between complex blocks", () => {
@@ -96,8 +118,8 @@ test("Tiptap table geometry reserves the bottom edge for inserting between compl
     tableRect,
     clientX: 240,
     clientY: 160,
-    rowHandleWidth: 18,
-    columnHandleHeight: 18,
+      rowHandleWidth: 20,
+      columnHandleHeight: 20,
   });
 
   assert.equal(hover.edge, "block-after");
@@ -159,7 +181,7 @@ test("Tiptap table geometry positions axis handles and scoped cell menus", () =>
       edgeHovered: true,
       selectedCount: 0,
     }),
-    { left: 201, top: 99, placement: "edge" },
+    { left: 200, top: 98, placement: "edge" },
   );
   assert.deepEqual(
     tableCellMenuTriggerGeometry({
@@ -167,6 +189,6 @@ test("Tiptap table geometry positions axis handles and scoped cell menus", () =>
       selectionKind: "cells",
       selectedCount: 2,
     }),
-    { left: 280, top: 99, placement: "center" },
+    { left: 280, top: 98, placement: "center" },
   );
 });

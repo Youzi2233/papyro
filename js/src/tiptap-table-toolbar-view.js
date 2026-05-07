@@ -40,11 +40,11 @@ import {
 } from "./tiptap-ui-primitives.js";
 
 const TABLE_AXIS_HANDLE_SIZE = 12;
-export const TABLE_ROW_HANDLE_WIDTH = 18;
-export const TABLE_COLUMN_HANDLE_HEIGHT = 18;
-const TABLE_ADD_ROW_HEIGHT = 12;
-const TABLE_ADD_COLUMN_WIDTH = 12;
-const TABLE_CONTEXT_MENU_WIDTH = 156;
+export const TABLE_ROW_HANDLE_WIDTH = 20;
+export const TABLE_COLUMN_HANDLE_HEIGHT = 20;
+const TABLE_ADD_ROW_HEIGHT = 14;
+const TABLE_ADD_COLUMN_WIDTH = 14;
+const TABLE_CONTEXT_MENU_WIDTH = 176;
 const TABLE_KEYBOARD_MENU_WIDTH = 520;
 const TABLE_TOOLBAR_OWNER_ID = "mn-tiptap-table-toolbar";
 
@@ -621,9 +621,13 @@ export class TiptapTableToolbarView {
       button.style.width = `${handle.width}px`;
       button.style.height = `${handle.height}px`;
       button.dataset.axis = "row";
+      button.dataset.index = String(index);
       bindPointerCommand(button, null, () => {
         state.selectAxis("row", index);
-        return state.toggleMenu("context", { open: true });
+        return state.toggleMenu("context", {
+          open: true,
+          anchorRect: button.getBoundingClientRect?.(),
+        });
       });
       mountFloatingRoot(button, state.table, this.#document);
       const visible =
@@ -647,9 +651,13 @@ export class TiptapTableToolbarView {
       button.style.width = `${handle.width}px`;
       button.style.height = `${handle.height}px`;
       button.dataset.axis = "column";
+      button.dataset.index = String(index);
       bindPointerCommand(button, null, () => {
         state.selectAxis("column", index);
-        return state.toggleMenu("context", { open: true });
+        return state.toggleMenu("context", {
+          open: true,
+          anchorRect: button.getBoundingClientRect?.(),
+        });
       });
       mountFloatingRoot(button, state.table, this.#document);
       const visible =
