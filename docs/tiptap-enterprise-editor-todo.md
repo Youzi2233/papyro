@@ -447,6 +447,7 @@ Tasks:
 - [ ] Add performance traces for editor open, tab switch, mode switch, command menu open, table edit, and save.
 - [ ] Rebuild generated bundles and desktop/mobile copies.
 - [ ] Run full automated checks.
+- [ ] Run the real mounted editor smoke gate before committing editor runtime changes.
 - [ ] Execute manual Tiptap release smoke in the desktop WebView.
 
 Acceptance criteria:
@@ -463,6 +464,7 @@ npm --prefix js run build
 npm --prefix js test
 node scripts/check-workspace-deps.js
 node scripts/check-tiptap-release-smoke.js
+node scripts/check-tiptap-runtime-smoke.js
 node scripts/check-perf-docs.js
 node scripts/check-ui-a11y.js
 node scripts/check-ui-contrast.js
@@ -503,7 +505,7 @@ Use this loop for every checked item:
 Editor-change commit gate:
 
 - Do not commit Tiptap/editor code if Markdown fixture rendering or round-trip smoke fails.
-- At minimum run `npm --prefix js test`, `npm --prefix js run build`, and `node scripts/check-tiptap-release-smoke.js` before committing editor runtime changes.
+- At minimum run `npm --prefix js test`, `npm --prefix js run build`, `node scripts/check-tiptap-release-smoke.js`, and `node scripts/check-tiptap-runtime-smoke.js` before committing editor runtime changes.
 - If a change touches Markdown parsing, serialization, Preview parity, or node views, add or update a fixture before committing.
 
 Example commit scopes:

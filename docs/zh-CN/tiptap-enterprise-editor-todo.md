@@ -447,6 +447,7 @@ node scripts/check-ui-contrast.js
 - [ ] 为 editor open、tab switch、mode switch、command menu open、table edit、save 增加性能 trace。
 - [ ] 重新构建生成 bundle 和桌面/mobile 副本。
 - [ ] 跑完整自动化检查。
+- [ ] 提交编辑器 runtime 改动前，运行真实挂载的编辑器 smoke gate。
 - [ ] 在桌面 WebView 执行完整 Tiptap release smoke。
 
 验收标准：
@@ -463,6 +464,7 @@ npm --prefix js run build
 npm --prefix js test
 node scripts/check-workspace-deps.js
 node scripts/check-tiptap-release-smoke.js
+node scripts/check-tiptap-runtime-smoke.js
 node scripts/check-perf-docs.js
 node scripts/check-ui-a11y.js
 node scripts/check-ui-contrast.js
@@ -503,7 +505,7 @@ git diff --check
 编辑器代码提交闸门：
 
 - Tiptap/editor 代码如果导致 Markdown fixture 渲染或 round-trip smoke 失败，不能提交。
-- 编辑器 runtime 改动提交前至少运行 `npm --prefix js test`、`npm --prefix js run build` 和 `node scripts/check-tiptap-release-smoke.js`。
+- 编辑器 runtime 改动提交前至少运行 `npm --prefix js test`、`npm --prefix js run build`、`node scripts/check-tiptap-release-smoke.js` 和 `node scripts/check-tiptap-runtime-smoke.js`。
 - 如果改动影响 Markdown 解析、序列化、Preview 一致性或 node view，提交前必须新增或更新 fixture。
 
 提交示例：

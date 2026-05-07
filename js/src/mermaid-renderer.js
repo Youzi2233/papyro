@@ -38,8 +38,13 @@ export function friendlyMermaidErrorMessage(message) {
   return text;
 }
 
-function createMermaidStatus(message, error = false, rawMessage = "") {
-  const wrapper = document.createElement("div");
+function ownerDocumentFor(element) {
+  if (element?.ownerDocument) return element.ownerDocument;
+  return typeof document === "undefined" ? null : document;
+}
+
+function createMermaidStatus(documentRef, message, error = false, rawMessage = "") {
+  const wrapper = documentRef.createElement("div");
   wrapper.className = error
     ? "mn-mermaid-status mn-mermaid-status-error"
     : "mn-mermaid-status";
@@ -47,12 +52,12 @@ function createMermaidStatus(message, error = false, rawMessage = "") {
     wrapper.title = rawMessage;
     wrapper.dataset.mermaidError = rawMessage;
   }
-  const label = document.createElement("div");
+  const label = documentRef.createElement("div");
   label.className = "mn-mermaid-label";
   label.textContent = error ? "Mermaid render failed" : message;
   wrapper.append(label);
   if (error && message) {
-    const detail = document.createElement("div");
+    const detail = documentRef.createElement("div");
     detail.className = "mn-mermaid-detail";
     detail.textContent = friendlyMermaidErrorMessage(message);
     wrapper.append(detail);
@@ -114,12 +119,14 @@ async function renderMermaidSvg(source) {
 export async function renderMermaidIntoElement(element, source) {
   if (!(element instanceof HTMLElement)) return false;
 
+  const documentRef = ownerDocumentFor(element);
+  if (!documentRef) return false;
   const normalizedSource = String(source ?? "").trim();
   const token = String(++mermaidRenderCounter);
   element.dataset.mermaidRenderToken = token;
   element.dataset.mermaidSource = normalizedSource;
   element.dataset.mermaidState = "pending";
-  element.replaceChildren(createMermaidStatus("Rendering Mermaid diagram..."));
+  element.replaceChildren(createMermaidStatus(documentRef, "Rendering Mermaid diagram..."));
 
   try {
     const result = await renderMermaidSvg(normalizedSource);
@@ -129,7 +136,7 @@ export async function renderMermaidIntoElement(element, source) {
       throw new Error(renderError);
     }
 
-    const svgWrapper = document.createElement("div");
+    const svgWrapper = documentRef.createElement("div");
     svgWrapper.className = "mn-mermaid-svg";
     svgWrapper.innerHTML = result.svg ?? "";
     result.bindFunctions?.(svgWrapper);
@@ -142,7 +149,7 @@ export async function renderMermaidIntoElement(element, source) {
 
     const message = error instanceof Error ? error.message : String(error);
     element.dataset.mermaidState = "error";
-    element.replaceChildren(createMermaidStatus(message, true, message));
+    element.replaceChildren(createMermaidStatus(documentRef, message, true, message));
     return false;
   }
 }
@@ -155,8 +162,10 @@ function mermaidSourceFromElement(element) {
   );
 }
 
-export function renderPreviewMermaid(root = document) {
-  const scope = root instanceof Element || root instanceof Document ? root : document;
+export function renderPreviewMermaid(root = ownerDocumentFor(null)) {
+  const documentRef = ownerDocumentFor(root);
+  if (!documentRef) return 0;
+  const scope = root instanceof Element || root instanceof Document ? root : documentRef;
   let count = 0;
   for (const block of scope.querySelectorAll(".mn-preview .mn-mermaid-block")) {
     if (!(block instanceof HTMLElement)) continue;
