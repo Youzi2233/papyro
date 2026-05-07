@@ -2,9 +2,11 @@ import React, { useCallback, useMemo, useRef } from "react";
 import { DragHandle } from "@tiptap/extension-drag-handle-react";
 
 import { createPapyroOfficialDragHandleConfig } from "../tiptap-official-drag-handle.js";
+import { officialDragHandleBridgeState } from "./official-drag-handle-bridge-state.js";
 
 export function PapyroOfficialDragHandleBridge({ editor, entry = null }) {
   const config = useMemo(() => createPapyroOfficialDragHandleConfig(), []);
+  const bridgeState = officialDragHandleBridgeState({ editor, entry });
   const entryRef = useRef(entry);
   entryRef.current = entry;
   const handleNodeChange = useCallback((data) => {
@@ -14,7 +16,7 @@ export function PapyroOfficialDragHandleBridge({ editor, entry = null }) {
     entryRef.current?.blockHandle?.cancelDrag?.();
   }, []);
 
-  if (!editor || !entry?.blockHandle) return null;
+  if (!bridgeState.active) return null;
 
   return (
     <DragHandle
@@ -26,7 +28,11 @@ export function PapyroOfficialDragHandleBridge({ editor, entry = null }) {
       onNodeChange={handleNodeChange}
       onElementDragEnd={handleElementDragEnd}
     >
-      <span aria-hidden="true" />
+      <span
+        aria-hidden="true"
+        data-view-mode={bridgeState.viewMode}
+        data-state={bridgeState.reason}
+      />
     </DragHandle>
   );
 }

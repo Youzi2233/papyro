@@ -9,6 +9,9 @@ import {
   papyroDragHandlePluginKey,
   papyroTableOverlayRule,
 } from "../src/tiptap-official-drag-handle.js";
+import {
+  officialDragHandleBridgeState as reactBridgeState,
+} from "../src/tiptap-react/official-drag-handle-bridge-state.js";
 
 function node(name, extra = {}) {
   return {
@@ -96,5 +99,34 @@ test("Papyro drag handle rules leave table internals to table overlay", () => {
       parent: node("tableCell"),
     }),
     1000,
+  );
+});
+
+test("Papyro React drag handle bridge only activates for editable Hybrid mode", () => {
+  const editor = { isEditable: true, isDestroyed: false };
+  const blockHandle = { handleOfficialNodeChange() {} };
+
+  assert.deepEqual(
+    reactBridgeState({ editor, entry: { viewMode: "hybrid", blockHandle } }),
+    { active: true, viewMode: "hybrid", reason: "active" },
+  );
+  assert.deepEqual(
+    reactBridgeState({ editor, entry: { viewMode: "source", blockHandle } }),
+    { active: false, viewMode: "source", reason: "inactive-view-mode" },
+  );
+  assert.deepEqual(
+    reactBridgeState({
+      editor: { ...editor, isEditable: false },
+      entry: { viewMode: "hybrid", blockHandle },
+    }),
+    { active: false, viewMode: "hybrid", reason: "read-only-editor" },
+  );
+  assert.deepEqual(
+    reactBridgeState({ editor, entry: { viewMode: "hybrid" } }),
+    { active: false, viewMode: "hybrid", reason: "missing-block-handle" },
+  );
+  assert.deepEqual(
+    reactBridgeState({ editor: { ...editor, isDestroyed: true }, entry: { blockHandle } }),
+    { active: false, viewMode: "hybrid", reason: "destroyed-editor" },
   );
 });
