@@ -27,6 +27,17 @@ const BLOCK_SELECTOR = [
   "ul",
   "[data-type]",
 ].join(",");
+const COMPLEX_BLOCK_SELECTOR = [
+  ".mn-tiptap-table",
+  ".mn-tiptap-code-block",
+  ".mn-tiptap-math-block",
+  ".mn-tiptap-mermaid-block",
+  ".mn-mermaid-block",
+  "table",
+  "pre",
+  "[data-mn-math='block']",
+  "[data-mn-mermaid='block']",
+].join(",");
 
 const HORIZONTAL_GAP = 22;
 const DEFAULT_HANDLE_SIZE = 24;
@@ -49,19 +60,18 @@ function closestBlockElement(target, editorDom) {
     return null;
   }
 
+  const complexBlock = target.closest?.(COMPLEX_BLOCK_SELECTOR) ?? null;
+  if (
+    complexBlock &&
+    complexBlock !== editorDom &&
+    editorDom.contains?.(complexBlock)
+  ) {
+    return complexBlock;
+  }
+
   const block = target.closest?.(BLOCK_SELECTOR) ?? null;
   if (!block || block === editorDom || !editorDom.contains?.(block)) {
     return null;
-  }
-
-  const table = block.closest?.(".mn-tiptap-table, table") ?? null;
-  if (
-    table &&
-    table !== editorDom &&
-    editorDom.contains?.(table) &&
-    table.classList?.contains?.("mn-tiptap-table") === true
-  ) {
-    return table;
   }
 
   const listItem = block.closest?.("li") ?? null;
@@ -95,12 +105,30 @@ function blockNode(editor, block, pos) {
 
 function blockKind(block) {
   const tagName = String(block?.tagName ?? "").toLowerCase();
+  if (block?.classList?.contains?.("mn-tiptap-table") || tagName === "table") {
+    return "table";
+  }
+  if (block?.classList?.contains?.("mn-tiptap-code-block") || tagName === "pre") {
+    return "code_block";
+  }
+  if (
+    block?.classList?.contains?.("mn-tiptap-math-block") ||
+    block?.getAttribute?.("data-mn-math") === "block"
+  ) {
+    return "math_block";
+  }
+  if (
+    block?.classList?.contains?.("mn-tiptap-mermaid-block") ||
+    block?.classList?.contains?.("mn-mermaid-block") ||
+    block?.getAttribute?.("data-mn-mermaid") === "block"
+  ) {
+    return "mermaid_block";
+  }
   if (!tagName) return "block";
   if (/^h[1-6]$/.test(tagName)) return "heading";
   if (tagName === "p") return "paragraph";
   if (tagName === "li") return "list_item";
   if (tagName === "ul" || tagName === "ol") return "list";
-  if (tagName === "pre") return "code_block";
   if (tagName === "blockquote") return "quote";
   return tagName.replaceAll("-", "_");
 }

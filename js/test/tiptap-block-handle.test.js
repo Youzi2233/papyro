@@ -8,6 +8,28 @@ import {
   insertSlashParagraphAfterBlock,
 } from "../src/tiptap-block-handle.js";
 
+function elementMatchesSelector(element, selector) {
+  const alternatives = String(selector ?? "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+  const tag = String(element?.tagName ?? "").toLowerCase();
+  const classes = element?.classList?.values ?? new Set();
+
+  return alternatives.some((alternative) => {
+    if (alternative.startsWith(".")) {
+      return classes.has(alternative.slice(1));
+    }
+    const dataMath = /^\[data-mn-math=['"]block['"]\]$/u.test(alternative);
+    if (dataMath) return element?.attributes?.get?.("data-mn-math") === "block";
+    const dataMermaid = /^\[data-mn-mermaid=['"]block['"]\]$/u.test(alternative);
+    if (dataMermaid) return element?.attributes?.get?.("data-mn-mermaid") === "block";
+    const dataType = alternative === "[data-type]";
+    if (dataType) return element?.attributes?.has?.("data-type") === true;
+    return alternative === tag;
+  });
+}
+
 function createElement({ tagName = "P", parent = null, rect = null } = {}) {
   const element = {
     nodeType: 1,
@@ -26,18 +48,27 @@ function createElement({ tagName = "P", parent = null, rect = null } = {}) {
       let current = target;
       while (current) {
         if (current === this) return true;
-        current = current.parentNode;
+        current = current.parentNode ?? current.parentElement;
       }
       return false;
     },
     closest(selector) {
       let current = this;
       while (current) {
-        const tag = String(current.tagName ?? "").toLowerCase();
-        if (selector.includes(tag)) return current;
-        current = current.parentNode;
+        if (elementMatchesSelector(current, selector)) return current;
+        current = current.parentNode ?? current.parentElement;
       }
       return null;
+    },
+    matches(selector) {
+      return elementMatchesSelector(this, selector);
+    },
+    attributes: new Map(),
+    getAttribute(name) {
+      return this.attributes.get(name) ?? null;
+    },
+    setAttribute(name, value) {
+      this.attributes.set(name, String(value));
     },
     getBoundingClientRect() {
       return rect ?? { left: 100, top: 40, width: 480, height: 32 };
@@ -281,6 +312,79 @@ test("Tiptap block handle opens on hovered editor blocks", () => {
     ["mount", ""],
     ["update", "paragraph", 7],
   ]);
+});
+
+test("Tiptap block handle targets the outer table from inside table cells", () => {
+  const { editor, root } = createEditor();
+  const table = createElement({ tagName: "TABLE", parent: root });
+  table.classList.add("mn-tiptap-table");
+  const row = createElement({ tagName: "TR", parent: table });
+  const cell = createElement({ tagName: "TD", parent: row });
+  const paragraph = createElement({ tagName: "P", parent: cell });
+  editor.view.posAtDOM = (target) => (target === table ? 21 : 7);
+  editor.state.doc.nodeAt = (pos) =>
+    pos === 21 ? { nodeSize: 42, type: { name: "table" } } : null;
+  const view = createViewSpy();
+  const controller = createTiptapBlockHandleController({ view });
+  controller.attach({ editor, root: editor.view.dom, entry: { viewMode: "hybrid" } });
+
+  controller.handlePointerMove({ target: paragraph });
+
+  assert.equal(controller.state.open, true);
+  assert.equal(controller.state.target.kind, "table");
+  assert.equal(controller.state.target.block, table);
+  assert.equal(controller.state.target.pos, 21);
+});
+
+test("Tiptap block handle targets complex block chrome instead of child controls", () => {
+  const scenarios = [
+    {
+      className: "mn-tiptap-code-block",
+      tagName: "PRE",
+      childTagName: "BUTTON",
+      kind: "code_block",
+      pos: 31,
+      type: "codeBlock",
+    },
+    {
+      className: "mn-tiptap-math-block",
+      tagName: "DIV",
+      childTagName: "SPAN",
+      kind: "math_block",
+      pos: 41,
+      type: "mathBlock",
+    },
+    {
+      className: "mn-tiptap-mermaid-block",
+      tagName: "DIV",
+      childTagName: "TEXTAREA",
+      kind: "mermaid_block",
+      pos: 51,
+      type: "mermaidBlock",
+    },
+  ];
+
+  for (const scenario of scenarios) {
+    const { editor, root } = createEditor();
+    const block = createElement({ tagName: scenario.tagName, parent: root });
+    block.classList.add(scenario.className);
+    const child = createElement({ tagName: scenario.childTagName, parent: block });
+    editor.view.posAtDOM = (target) => (target === block ? scenario.pos : 7);
+    editor.state.doc.nodeAt = (pos) =>
+      pos === scenario.pos
+        ? { nodeSize: 12, type: { name: scenario.type } }
+        : null;
+    const view = createViewSpy();
+    const controller = createTiptapBlockHandleController({ view });
+    controller.attach({ editor, root: editor.view.dom, entry: { viewMode: "hybrid" } });
+
+    controller.handlePointerMove({ target: child });
+
+    assert.equal(controller.state.open, true);
+    assert.equal(controller.state.target.kind, scenario.kind);
+    assert.equal(controller.state.target.block, block);
+    assert.equal(controller.state.target.pos, scenario.pos);
+  }
 });
 
 test("Tiptap block handle closes outside Hybrid mode", () => {

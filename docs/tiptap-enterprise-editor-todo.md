@@ -214,6 +214,8 @@ Tasks:
 - [ ] Highlight the whole semantic block, including inline code and mixed marks.
 - [ ] Implement reliable drag reorder with a drop indicator and transaction-level tests.
 - [ ] Limit handle ownership for complex nodes: tables, code blocks, images, math, and Mermaid get one block-level handle, not per-cell or per-child handles.
+  - Done for the compatibility handle path: table, code block, display math, and Mermaid descendants now resolve to the outer complex block.
+  - Still required: image coverage and the final React handle implementation based on official drag-handle/node-range APIs.
 - [ ] Add block actions: copy Markdown, duplicate, delete, reset formatting, text color, highlight, turn into, and move up/down.
 
 Acceptance criteria:
