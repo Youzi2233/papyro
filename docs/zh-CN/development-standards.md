@@ -66,7 +66,13 @@ node scripts/check-workspace-deps.js
 ```bash
 npm --prefix js run build
 npm --prefix js test
+node scripts/check-tiptap-release-smoke.js
+node scripts/check-tiptap-runtime-smoke.js
 ```
+
+Tiptap 或编辑器 runtime 改动如果没有通过 Markdown smoke 检查，不得提交。
+`check-tiptap-runtime-smoke.js` 会真实挂载 Tiptap 编辑器，并确认 Markdown fixture
+可以正常渲染且不会触发 runtime 错误。
 
 生成物必须和源码同提交：
 
@@ -117,6 +123,7 @@ node scripts/check-ui-contrast.js
 node scripts/report-ui-tokens.js
 node scripts/check-tiptap-release-smoke.js
 node scripts/check-tiptap-release-smoke.js --self-test
+node scripts/check-tiptap-runtime-smoke.js
 node scripts/check-perf-docs.js
 npm --prefix js run build
 npm --prefix js test

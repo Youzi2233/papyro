@@ -34,7 +34,7 @@ Use this skill when implementing or reviewing a scoped change.
 | Crate behavior | `cargo check -p PACKAGE` |
 | Shared Rust behavior | `cargo test --workspace` |
 | Dependency direction | `node scripts/check-workspace-deps.js` |
-| Editor JS | `npm --prefix js run build` and `npm --prefix js test` |
+| Editor JS | `npm --prefix js run build`, `npm --prefix js test`, `node scripts/check-tiptap-release-smoke.js`, and `node scripts/check-tiptap-runtime-smoke.js` |
 | UI contrast/a11y | `node scripts/check-ui-a11y.js` and `node scripts/check-ui-contrast.js` |
 | Performance docs | `node scripts/check-perf-docs.js` |
 | Broad change | `scripts/check.ps1` or `scripts/check.sh` |

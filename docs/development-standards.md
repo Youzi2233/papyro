@@ -67,7 +67,13 @@ Then run:
 ```bash
 npm --prefix js run build
 npm --prefix js test
+node scripts/check-tiptap-release-smoke.js
+node scripts/check-tiptap-runtime-smoke.js
 ```
+
+Do not commit Tiptap or editor runtime changes unless the Markdown smoke
+checks pass. `check-tiptap-runtime-smoke.js` mounts a real Tiptap editor and
+must keep rendering the Markdown fixture without runtime errors.
 
 Generated files must be committed with the source change:
 
@@ -123,6 +129,7 @@ node scripts/report-ui-tokens.js --self-test
 node scripts/generate-perf-fixtures.js --self-test
 node scripts/check-tiptap-release-smoke.js
 node scripts/check-tiptap-release-smoke.js --self-test
+node scripts/check-tiptap-runtime-smoke.js
 node scripts/check-perf-smoke.js --self-test
 node scripts/check-perf-docs.js
 node scripts/check-perf-docs.js --self-test
