@@ -303,6 +303,7 @@ Tasks:
 - [ ] Use a React node view for code block chrome if it improves maintainability.
 - [ ] Show language label with a language switcher.
 - [ ] Add copy button, wrap toggle, and optional filename/title metadata if Markdown strategy is defined.
+  - Current coverage: code blocks expose quiet copy and soft-wrap controls in the node-view chrome without changing saved Markdown.
 - [ ] Use a real highlighter theme for light and dark modes.
   - Current coverage: Hybrid code blocks use lowlight `.hljs-*` classes with theme-scoped token palettes and smoke coverage for the core syntax groups.
 - [ ] Preserve fenced code language through Markdown round-trip.

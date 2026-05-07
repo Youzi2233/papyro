@@ -303,6 +303,7 @@ node scripts/check-tiptap-release-smoke.js
 - [ ] 如果能提升可维护性，用 React node view 实现代码块 chrome。
 - [ ] 显示语言标签，并支持切换语言。
 - [ ] 增加复制按钮、自动换行开关；如果定义了 Markdown 策略，再支持 filename/title metadata。
+  - 当前覆盖：代码块 node-view chrome 已提供低噪声复制和软换行控件，不改变保存后的 Markdown。
 - [ ] 亮色和暗色模式都使用真正的代码高亮主题。
   - 当前覆盖：Hybrid 代码块使用 lowlight 的 `.hljs-*` class，并通过主题 token 与 smoke 检查覆盖核心语法分组。
 - [ ] fenced code language 通过 Markdown round-trip 保留。

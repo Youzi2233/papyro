@@ -82,6 +82,8 @@ const TIPTAP_REQUIREMENTS = [
   ["Tiptap image radius", ".mn-tiptap-image", "--mn-markdown-image-radius"],
   ["Tiptap code block padding", ".mn-tiptap-code-block", "--mn-markdown-code-block-pad-y"],
   ["Tiptap code block mono font", ".mn-tiptap-code-block", "--mn-markdown-mono-font"],
+  ["Tiptap code block toolbar", ".mn-tiptap-code-toolbar", "data-action=\"copy\""],
+  ["Tiptap code block wrap state", ".mn-tiptap-code-block[data-code-wrap=\"true\"] code", "white-space: pre-wrap"],
 ];
 
 const TIPTAP_COMMAND_PANEL_REQUIREMENTS = [

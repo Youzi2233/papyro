@@ -299,6 +299,7 @@ test("Papyro code block node view exposes an editable language menu", () => {
   assert.equal(view.dom.dataset.hasLanguageControl, "true");
   assert.equal(languageButton.textContent, "Rust");
   assert.equal(languageButton["aria-haspopup"], "menu");
+  assert.equal(view.dom.children[1].className, "mn-tiptap-code-toolbar");
   assert.equal(code.className, "language-rust hljs language-rust");
 
   languageButton.onpointerdown({ preventDefault() {}, stopPropagation() {} });
@@ -318,6 +319,133 @@ test("Papyro code block node view exposes an editable language menu", () => {
     ["focus"],
   ]);
   assert.equal(menu.hidden, true);
+});
+
+test("Papyro code block chrome copies code without changing document content", async () => {
+  const previousNavigator = globalThis.navigator;
+  const clipboardWrites = [];
+  Object.defineProperty(globalThis, "navigator", {
+    configurable: true,
+    value: {
+      clipboard: {
+        async writeText(text) {
+          clipboardWrites.push(text);
+        },
+      },
+    },
+  });
+
+  try {
+    const documentRef = createElementFactory();
+    const node = {
+      type: { name: "codeBlock" },
+      attrs: { language: "javascript" },
+      textContent: "const answer = 42;",
+    };
+    const calls = [];
+    const editor = {
+      view: {
+        dom: documentRef.createElement("div"),
+        dispatch() {
+          calls.push(["dispatch"]);
+        },
+      },
+      state: {
+        doc: {
+          nodeAt() {
+            return node;
+          },
+        },
+        tr: {
+          setNodeMarkup() {
+            calls.push(["setNodeMarkup"]);
+            return this;
+          },
+        },
+      },
+      commands: {
+        focus() {
+          calls.push(["focus"]);
+        },
+      },
+    };
+
+    const view = createPapyroCodeBlockNodeView({
+      editor,
+      node,
+      getPos: () => 4,
+      options: createPapyroCodeBlockOptions(),
+    });
+    const toolbar = view.dom.children[1];
+    const copyButton = toolbar.children[0];
+
+    await copyButton.onpointerdown({ preventDefault() {}, stopPropagation() {} });
+
+    assert.deepEqual(clipboardWrites, ["const answer = 42;"]);
+    assert.deepEqual(calls, []);
+    assert.equal(copyButton.dataset.state, "copied");
+    assert.equal(copyButton.attributes.get("aria-label"), "Copied");
+  } finally {
+    Object.defineProperty(globalThis, "navigator", {
+      configurable: true,
+      value: previousNavigator,
+    });
+  }
+});
+
+test("Papyro code block chrome exposes a local soft-wrap toggle", () => {
+  const documentRef = createElementFactory();
+  const node = {
+    type: { name: "codeBlock" },
+    attrs: { language: "rust" },
+    textContent: "fn main() {}",
+  };
+  const editor = {
+    view: {
+      dom: documentRef.createElement("div"),
+      dispatch() {},
+    },
+    state: {
+      doc: {
+        nodeAt() {
+          return node;
+        },
+      },
+      tr: {
+        setNodeMarkup() {
+          return this;
+        },
+      },
+    },
+    commands: {
+      focus() {},
+    },
+  };
+
+  const view = createPapyroCodeBlockNodeView({
+    editor,
+    node,
+    getPos: () => 4,
+    options: createPapyroCodeBlockOptions(),
+  });
+  const wrapButton = view.dom.children[1].children[1];
+
+  assert.equal(view.dom.dataset.codeWrap, "false");
+  assert.equal(wrapButton.attributes.get("aria-pressed"), "false");
+  assert.equal(wrapButton.attributes.get("aria-label"), "Wrap lines");
+
+  wrapButton.onpointerdown({ preventDefault() {}, stopPropagation() {} });
+
+  assert.equal(view.dom.dataset.codeWrap, "true");
+  assert.equal(wrapButton.attributes.get("aria-pressed"), "true");
+  assert.equal(wrapButton.attributes.get("aria-label"), "Disable line wrap");
+
+  wrapButton.onclick({ preventDefault() {}, stopPropagation() {} });
+  assert.equal(view.dom.dataset.codeWrap, "true");
+
+  wrapButton.onclick({ preventDefault() {}, stopPropagation() {} });
+  assert.equal(view.dom.dataset.codeWrap, "false");
+  assert.equal(wrapButton.attributes.get("aria-pressed"), "false");
 });
 
 test("Papyro code block language menu supports keyboard navigation", () => {

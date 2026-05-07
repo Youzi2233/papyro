@@ -21,6 +21,7 @@ const DEFAULT_TAB_SIZE = 2;
 const LANGUAGE_CLASS_PREFIX = "language-";
 const LANGUAGE_MENU_WIDTH = 176;
 const LANGUAGE_MENU_HEIGHT = 286;
+const COPY_FEEDBACK_MS = 1400;
 const codeBlockLowlight = createLowlight(all);
 const CODE_HIGHLIGHT_PLUGIN_KEY = "papyroCodeHighlight";
 const CODE_LANGUAGE_MENU_OWNER_ID_PREFIX = "mn-tiptap-code-language-menu";
@@ -141,6 +142,24 @@ function codeLanguageMenuLabel(language) {
 
 function codeLanguageButtonAriaLabel(language) {
   return localizedText(language, "Change code language", "修改代码语言");
+}
+
+function codeBlockCopyLabel(language) {
+  return localizedText(language, "Copy code", "\u590d\u5236\u4ee3\u7801");
+}
+
+function codeBlockCopiedLabel(language) {
+  return localizedText(language, "Copied", "\u5df2\u590d\u5236");
+}
+
+function codeBlockCopyFailedLabel(language) {
+  return localizedText(language, "Copy failed", "\u590d\u5236\u5931\u8d25");
+}
+
+function codeBlockWrapLabel(language, wrapped) {
+  return wrapped
+    ? localizedText(language, "Disable line wrap", "\u5173\u95ed\u81ea\u52a8\u6362\u884c")
+    : localizedText(language, "Wrap lines", "\u81ea\u52a8\u6362\u884c");
 }
 
 export function codeBlockLanguageUiLabel(language, value) {
@@ -265,16 +284,26 @@ function languageMenuButton(documentRef, option, language) {
   return button;
 }
 
+async function writeCodeToClipboard(text) {
+  const clipboard = globalThis?.navigator?.clipboard;
+  if (typeof clipboard?.writeText !== "function") return false;
+  await clipboard.writeText(String(text ?? ""));
+  return true;
+}
+
 export function createPapyroCodeBlockNodeView({ editor, node, getPos, view = null, options = {} } = {}) {
   const documentRef = view?.dom?.ownerDocument ?? safeEditorView(editor)?.dom?.ownerDocument ?? defaultDocument();
   const windowRef = defaultWindow(documentRef);
   const pre = documentRef?.createElement?.("pre") ?? null;
   const code = documentRef?.createElement?.("code") ?? null;
   const languageButton = documentRef?.createElement?.("button") ?? null;
+  const toolbar = documentRef?.createElement?.("div") ?? null;
+  const copyButton = documentRef?.createElement?.("button") ?? null;
+  const wrapButton = documentRef?.createElement?.("button") ?? null;
   const menu = documentRef?.createElement?.("div") ?? null;
   const menuHeader = documentRef?.createElement?.("div") ?? null;
   const menuList = documentRef?.createElement?.("div") ?? null;
-  if (!pre || !code || !languageButton || !menu || !menuHeader || !menuList) {
+  if (!pre || !code || !languageButton || !toolbar || !copyButton || !wrapButton || !menu || !menuHeader || !menuList) {
     return null;
   }
 
@@ -283,12 +312,17 @@ export function createPapyroCodeBlockNodeView({ editor, node, getPos, view = nul
   let currentNode = node;
   let currentLanguage = editorLanguage(editor, view);
   let codePointerHandled = false;
+  let copyPointerHandled = false;
+  let wrapPointerHandled = false;
+  let copyFeedbackTimer = null;
+  let wrapped = false;
   let languageCommands = [];
   let selectedLanguageIndex = 0;
   const menuOwnerId = `${CODE_LANGUAGE_MENU_OWNER_ID_PREFIX}-${++codeLanguageMenuSequence}`;
 
   pre.className = className;
   pre.dataset.hasLanguageControl = "true";
+  pre.dataset.codeWrap = "false";
   code.setAttribute("spellcheck", "false");
   languageButton.type = "button";
   languageButton.className = "mn-tiptap-code-language-button";
@@ -296,6 +330,20 @@ export function createPapyroCodeBlockNodeView({ editor, node, getPos, view = nul
   languageButton.draggable = false;
   languageButton.setAttribute("aria-haspopup", "menu");
   languageButton.setAttribute("aria-expanded", "false");
+  toolbar.className = "mn-tiptap-code-toolbar";
+  toolbar.contentEditable = "false";
+  copyButton.type = "button";
+  copyButton.className = "mn-tiptap-code-toolbar-button";
+  copyButton.dataset.action = "copy";
+  copyButton.contentEditable = "false";
+  copyButton.draggable = false;
+  wrapButton.type = "button";
+  wrapButton.className = "mn-tiptap-code-toolbar-button";
+  wrapButton.dataset.action = "wrap";
+  wrapButton.contentEditable = "false";
+  wrapButton.draggable = false;
+  wrapButton.setAttribute("aria-pressed", "false");
+  toolbar.append(copyButton, wrapButton);
 
   menu.className = "mn-tiptap-code-language-menu hidden";
   menu.role = "menu";
@@ -435,6 +483,71 @@ export function createPapyroCodeBlockNodeView({ editor, node, getPos, view = nul
     closeMenu();
     return true;
   };
+
+  const clearCopyFeedback = () => {
+    if (copyFeedbackTimer && typeof windowRef?.clearTimeout === "function") {
+      windowRef.clearTimeout(copyFeedbackTimer);
+    }
+    copyFeedbackTimer = null;
+    copyButton.dataset.state = "idle";
+    copyButton.setAttribute("aria-label", codeBlockCopyLabel(currentLanguage));
+    copyButton.title = codeBlockCopyLabel(currentLanguage);
+  };
+  const scheduleCopyFeedbackClear = () => {
+    if (typeof windowRef?.setTimeout !== "function") return;
+    if (copyFeedbackTimer && typeof windowRef.clearTimeout === "function") {
+      windowRef.clearTimeout(copyFeedbackTimer);
+    }
+    copyFeedbackTimer = windowRef.setTimeout(clearCopyFeedback, COPY_FEEDBACK_MS);
+  };
+  const runCopy = async () => {
+    const ok = await writeCodeToClipboard(currentNode?.textContent ?? code.textContent ?? "");
+    const label = ok ? codeBlockCopiedLabel(currentLanguage) : codeBlockCopyFailedLabel(currentLanguage);
+    copyButton.dataset.state = ok ? "copied" : "failed";
+    copyButton.setAttribute("aria-label", label);
+    copyButton.title = label;
+    scheduleCopyFeedbackClear();
+    return ok;
+  };
+  const toggleWrap = () => {
+    wrapped = !wrapped;
+    pre.dataset.codeWrap = wrapped ? "true" : "false";
+    wrapButton.setAttribute("aria-pressed", String(wrapped));
+    const label = codeBlockWrapLabel(currentLanguage, wrapped);
+    wrapButton.setAttribute("aria-label", label);
+    wrapButton.title = label;
+    return true;
+  };
+  copyButton.addEventListener("pointerdown", (event) => {
+    event.preventDefault();
+    event.stopPropagation?.();
+    copyPointerHandled = true;
+    return runCopy();
+  });
+  copyButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation?.();
+    if (!copyPointerHandled) {
+      return runCopy();
+    }
+    copyPointerHandled = false;
+    return true;
+  });
+  wrapButton.addEventListener("pointerdown", (event) => {
+    event.preventDefault();
+    event.stopPropagation?.();
+    wrapPointerHandled = toggleWrap();
+    return wrapPointerHandled;
+  });
+  wrapButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation?.();
+    if (!wrapPointerHandled) {
+      return toggleWrap();
+    }
+    wrapPointerHandled = false;
+    return true;
+  });
   languageButton.addEventListener("pointerdown", (event) => {
     event.preventDefault();
     event.stopPropagation?.();
@@ -558,10 +671,17 @@ export function createPapyroCodeBlockNodeView({ editor, node, getPos, view = nul
     languageButton.textContent = label;
     languageButton.title = codeLanguageButtonAriaLabel(currentLanguage);
     languageButton.setAttribute("aria-label", `${codeLanguageButtonAriaLabel(currentLanguage)}: ${label}`);
+    if (copyButton.dataset.state !== "copied" && copyButton.dataset.state !== "failed") {
+      copyButton.dataset.state = "idle";
+      copyButton.setAttribute("aria-label", codeBlockCopyLabel(currentLanguage));
+      copyButton.title = codeBlockCopyLabel(currentLanguage);
+    }
+    wrapButton.setAttribute("aria-label", codeBlockWrapLabel(currentLanguage, wrapped));
+    wrapButton.title = codeBlockWrapLabel(currentLanguage, wrapped);
   }
 
   sync(node);
-  pre.append(languageButton, code);
+  pre.append(languageButton, toolbar, code);
 
   return {
     dom: pre,
@@ -573,6 +693,9 @@ export function createPapyroCodeBlockNodeView({ editor, node, getPos, view = nul
       return true;
     },
     destroy() {
+      if (copyFeedbackTimer && typeof windowRef?.clearTimeout === "function") {
+        windowRef.clearTimeout(copyFeedbackTimer);
+      }
       dismiss.close();
       menu.remove?.();
     },

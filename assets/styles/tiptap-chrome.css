@@ -89,6 +89,122 @@
     color: color-mix(in srgb, var(--mn-code-token-comment) 82%, var(--mn-code-ink));
 }
 
+.mn-tiptap-code-toolbar {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px;
+    border: 1px solid color-mix(in srgb, var(--mn-code-token-comment) 12%, transparent);
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--mn-code-block-surface) 88%, var(--mn-surface-raised));
+    box-shadow: 0 1px 2px color-mix(in srgb, #000 4%, transparent);
+    opacity: .78;
+    transition:
+        opacity var(--mn-transition-fast),
+        background-color var(--mn-transition-fast),
+        border-color var(--mn-transition-fast);
+}
+
+.mn-tiptap-code-block:hover .mn-tiptap-code-toolbar,
+.mn-tiptap-code-toolbar:focus-within {
+    opacity: 1;
+}
+
+.mn-tiptap-code-toolbar-button {
+    position: relative;
+    display: inline-grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 5px;
+    color: color-mix(in srgb, var(--mn-code-ink) 66%, transparent);
+    background: transparent;
+    transition:
+        background-color var(--mn-transition-fast),
+        color var(--mn-transition-fast),
+        box-shadow var(--mn-transition-fast);
+}
+
+.mn-tiptap-code-toolbar-button:hover,
+.mn-tiptap-code-toolbar-button:focus-visible,
+.mn-tiptap-code-toolbar-button[aria-pressed="true"],
+.mn-tiptap-code-toolbar-button[data-state="copied"] {
+    outline: 0;
+    background: color-mix(in srgb, var(--mn-accent) 10%, transparent);
+    color: color-mix(in srgb, var(--mn-accent) 82%, var(--mn-code-ink));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--mn-accent) 14%, transparent);
+}
+
+.mn-tiptap-code-toolbar-button[data-state="failed"] {
+    background: color-mix(in srgb, var(--mn-danger) 10%, transparent);
+    color: var(--mn-danger);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--mn-danger) 18%, transparent);
+}
+
+.mn-tiptap-code-toolbar-button::before,
+.mn-tiptap-code-toolbar-button::after {
+    content: "";
+    position: absolute;
+    box-sizing: border-box;
+    pointer-events: none;
+}
+
+.mn-tiptap-code-toolbar-button[data-action="copy"]::before {
+    width: 9px;
+    height: 10px;
+    border: 1.4px solid currentColor;
+    border-radius: 2px;
+    transform: translate(2px, -2px);
+}
+
+.mn-tiptap-code-toolbar-button[data-action="copy"]::after {
+    width: 9px;
+    height: 10px;
+    border: 1.4px solid currentColor;
+    border-radius: 2px;
+    transform: translate(-2px, 2px);
+    opacity: .72;
+}
+
+.mn-tiptap-code-toolbar-button[data-state="copied"]::before {
+    width: 7px;
+    height: 11px;
+    border: 0;
+    border-right: 1.8px solid currentColor;
+    border-bottom: 1.8px solid currentColor;
+    border-radius: 0;
+    transform: translateY(-1px) rotate(45deg);
+}
+
+.mn-tiptap-code-toolbar-button[data-state="copied"]::after {
+    display: none;
+}
+
+.mn-tiptap-code-toolbar-button[data-action="wrap"]::before {
+    width: 13px;
+    height: 8px;
+    border-top: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    transform: translateY(-2px);
+}
+
+.mn-tiptap-code-toolbar-button[data-action="wrap"]::after {
+    width: 8px;
+    height: 8px;
+    border-right: 1.6px solid currentColor;
+    border-bottom: 1.6px solid currentColor;
+    transform: translate(3px, 3px) rotate(-45deg);
+}
+
+.mn-tiptap-code-block[data-code-wrap="true"] code {
+    min-width: 0;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
 .mn-tiptap-code-language-menu {
     position: fixed;
     z-index: 166;
