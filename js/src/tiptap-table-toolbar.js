@@ -13,6 +13,7 @@ import {
   normalizedRect,
   pointerAnchorRect,
   sameTableHover,
+  tableCellAtPoint,
   tableHoverContext,
   tableHoverWithIntent,
   tableSelectionState,
@@ -109,6 +110,7 @@ export class TiptapTableToolbarController {
   #entry = null;
   #insertMenu = null;
   #removeListeners = [];
+  #cellDrag = null;
   #state = {
     ...emptyTableToolbarState(),
   };
@@ -208,15 +210,18 @@ export class TiptapTableToolbarController {
 
     const onContextMenu = (event) => this.handleContextMenu(event);
     const onPointerMove = (event) => this.handlePointerMove(event);
+    const onPointerDown = (event) => this.handlePointerDown(event);
     const onPointerLeave = (event) => this.handlePointerLeave(event);
     const onDblClick = (event) => this.handleDoubleClick(event);
     target.addEventListener("contextmenu", onContextMenu, true);
     target.addEventListener("pointermove", onPointerMove, true);
+    target.addEventListener("pointerdown", onPointerDown, true);
     target.addEventListener("pointerleave", onPointerLeave, true);
     target.addEventListener("dblclick", onDblClick, true);
     this.#removeListeners = [
       () => target.removeEventListener?.("contextmenu", onContextMenu, true),
       () => target.removeEventListener?.("pointermove", onPointerMove, true),
+      () => target.removeEventListener?.("pointerdown", onPointerDown, true),
       () => target.removeEventListener?.("pointerleave", onPointerLeave, true),
       () => target.removeEventListener?.("dblclick", onDblClick, true),
     ];
@@ -459,6 +464,10 @@ export class TiptapTableToolbarController {
   }
 
   handlePointerMove(event) {
+    if (this.#cellDrag) {
+      return this.#updateCellDrag(event);
+    }
+
     if (!this.#editor || this.#entry?.viewMode !== "hybrid") return false;
 
     const complexHover = complexBlockHoverContext(event?.target, this.#editor?.view?.dom);
@@ -510,6 +519,130 @@ export class TiptapTableToolbarController {
       hover,
     };
     this.#render();
+    return true;
+  }
+
+  handlePointerDown(event) {
+    if (!this.#editor || this.#entry?.viewMode !== "hybrid") return false;
+    if (event?.button != null && event.button !== 0) return false;
+    if (event?.ctrlKey || event?.metaKey || event?.altKey) return false;
+    if (this.contains(event?.target)) return false;
+    if (event?.target?.closest?.(".column-resize-handle")) return false;
+
+    const table = closestTableElement(event?.target, this.#editor?.view?.dom);
+    if (!table) return false;
+    const cell = closestTableCellElement(event?.target);
+    if (!cell || !table.contains?.(cell)) return false;
+
+    const context =
+      this.#state.table === table && this.#state.grid?.length
+        ? this.#state
+        : activeTableContext(this.#editor);
+    const start = (context?.grid ?? [])
+      .flatMap((row) => row.cells ?? [])
+      .find((item) => item.cell === cell);
+    if (!Number.isFinite(start?.pos)) return false;
+
+    const selectable = typeof this.#editor?.commands?.setCellSelection === "function";
+    if (!selectable) return false;
+
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+    this.#cellDrag = {
+      table,
+      anchor: start,
+      head: start,
+      moved: false,
+      startX: Number(event?.clientX),
+      startY: Number(event?.clientY),
+      removeListeners: [],
+    };
+
+    this.#selectCellRange(start.pos, start.pos);
+    this.#bindCellDragListeners();
+    return true;
+  }
+
+  #selectCellRange(anchorPos, headPos) {
+    if (
+      !Number.isFinite(anchorPos) ||
+      !Number.isFinite(headPos) ||
+      typeof this.#editor?.commands?.setCellSelection !== "function"
+    ) {
+      return false;
+    }
+
+    const ok =
+      this.#editor.commands.setCellSelection({
+        anchorCell: anchorPos,
+        headCell: headPos,
+      }) !== false;
+    if (!ok) return false;
+    this.#editor.commands?.focus?.();
+    this.refresh(this.#editor);
+    return true;
+  }
+
+  #bindCellDragListeners() {
+    const drag = this.#cellDrag;
+    const documentRef = this.#document ?? this.#editor?.view?.dom?.ownerDocument;
+    if (!drag || !documentRef?.addEventListener) return;
+
+    const onMove = (event) => this.#updateCellDrag(event);
+    const onEnd = (event) => this.#finishCellDrag(event);
+    documentRef.addEventListener("pointermove", onMove, true);
+    documentRef.addEventListener("pointerup", onEnd, true);
+    documentRef.addEventListener("dragstart", onEnd, true);
+    drag.removeListeners = [
+      () => documentRef.removeEventListener?.("pointermove", onMove, true),
+      () => documentRef.removeEventListener?.("pointerup", onEnd, true),
+      () => documentRef.removeEventListener?.("dragstart", onEnd, true),
+    ];
+  }
+
+  #updateCellDrag(event) {
+    const drag = this.#cellDrag;
+    if (!drag || !this.#editor) return false;
+
+    const context = activeTableContext(this.#editor);
+    if (!context?.table || context.table !== drag.table) return false;
+
+    const head =
+      tableCellAtPoint(context.grid, event?.clientX, event?.clientY) ??
+      (event?.target ? tableHoverContext(event.target, context.table, context.grid) : null);
+    const nextHead = Number.isFinite(head?.pos)
+      ? head
+      : (context.grid ?? [])
+          .flatMap((row) => row.cells ?? [])
+          .find((item) => item.cell === head?.cell);
+    if (!Number.isFinite(nextHead?.pos)) return false;
+
+    const x = Number(event?.clientX);
+    const y = Number(event?.clientY);
+    const distance =
+      Number.isFinite(x) &&
+      Number.isFinite(y) &&
+      Number.isFinite(drag.startX) &&
+      Number.isFinite(drag.startY)
+        ? Math.hypot(x - drag.startX, y - drag.startY)
+        : 0;
+    if (distance > 3) drag.moved = true;
+    if (nextHead.pos === drag.head?.pos && drag.moved) return false;
+
+    drag.head = nextHead;
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+    return this.#selectCellRange(drag.anchor.pos, nextHead.pos);
+  }
+
+  #finishCellDrag(event) {
+    if (!this.#cellDrag) return false;
+    const drag = this.#cellDrag;
+    drag.removeListeners?.forEach?.((remove) => remove());
+    drag.removeListeners = [];
+    this.#cellDrag = null;
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
     return true;
   }
 

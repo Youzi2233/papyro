@@ -377,7 +377,7 @@
     position: relative;
     overflow-x: auto;
     margin: 0 0 var(--mn-markdown-block-gap);
-    padding: 22px 24px 24px 24px;
+    padding: 20px 18px 18px 18px;
     border-radius: var(--mn-radius-sm);
 }
 
@@ -385,7 +385,7 @@
     width: 100%;
     border-collapse: collapse;
     border-spacing: 0;
-    background: var(--mn-border);
+    background: var(--mn-surface);
     font-family: var(--mn-font-ui);
     font-size: .92em;
     table-layout: fixed;
@@ -397,7 +397,7 @@
     min-width: 96px;
     padding: var(--mn-markdown-table-cell-pad);
     border: var(--mn-markdown-table-border);
-    background-clip: padding-box;
+    background-clip: border-box;
     cursor: text;
     vertical-align: top;
     transition:
@@ -405,8 +405,8 @@
         box-shadow var(--mn-transition-fast);
 }
 
-.mn-tiptap-table-cell:hover,
-.mn-tiptap-table-header:hover {
+.mn-tiptap-table-cell:hover:not(.mn-tiptap-table-cell-selected):not(.selectedCell),
+.mn-tiptap-table-header:hover:not(.mn-tiptap-table-cell-selected):not(.selectedCell) {
     box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--mn-accent) 28%, transparent);
 }
 
@@ -491,6 +491,7 @@
     position: relative;
     z-index: 2;
     min-height: 1.45em;
+    cursor: text;
 }
 
 .mn-tiptap-editor .column-resize-handle {
@@ -524,6 +525,10 @@
 
 .mn-tiptap-table-cell:hover > .column-resize-handle,
 .mn-tiptap-table-header:hover > .column-resize-handle,
+.mn-tiptap-table-cell.mn-tiptap-table-cell-selected > .column-resize-handle,
+.mn-tiptap-table-header.mn-tiptap-table-cell-selected > .column-resize-handle,
+.mn-tiptap-table-cell.selectedCell > .column-resize-handle,
+.mn-tiptap-table-header.selectedCell > .column-resize-handle,
 .mn-tiptap-editor.resize-cursor .column-resize-handle {
     opacity: .7;
 }

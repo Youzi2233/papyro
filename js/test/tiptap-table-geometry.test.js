@@ -80,9 +80,9 @@ test("Tiptap table geometry classifies low-noise hover intent", () => {
   assert.equal(classify(1, 204, 92), "cell");
   assert.equal(classify(1, 204, 76), "column-handle");
   assert.equal(classify(5, 356, 140), "cell");
-  assert.equal(classify(3, 160, 154), "block-after");
-  assert.equal(classify(5, 359, 152), "block-after");
-  assert.equal(classify(5, 318, 156), "block-after");
+  assert.equal(classify(3, 160, 154), "cell");
+  assert.equal(classify(5, 359, 152), "cell");
+  assert.equal(classify(5, 318, 156), "cell");
   assert.equal(classify(0, 194, 115), "cell");
   assert.equal(classify(0, 195, 107), "cell");
   assert.equal(classify(0, 195, 123), "cell");
@@ -132,13 +132,13 @@ test("Tiptap table geometry positions quick add rails on real grid edges", () =>
   assert.deepEqual(tableQuickAddGeometry(grid, tableRect), {
     row: {
       left: 120,
-      top: 161,
+      top: 159,
       width: 240,
       height: 12,
       rail: 240,
     },
     column: {
-      left: 363,
+      left: 361,
       top: 90,
       width: 12,
       height: 68,

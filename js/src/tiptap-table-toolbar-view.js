@@ -41,8 +41,8 @@ import {
 const TABLE_AXIS_HANDLE_SIZE = 12;
 export const TABLE_ROW_HANDLE_WIDTH = 20;
 export const TABLE_COLUMN_HANDLE_HEIGHT = 20;
-const TABLE_ADD_ROW_HEIGHT = 12;
-const TABLE_ADD_COLUMN_WIDTH = 12;
+const TABLE_ADD_ROW_HEIGHT = 14;
+const TABLE_ADD_COLUMN_WIDTH = 14;
 const TABLE_CONTEXT_MENU_WIDTH = 176;
 const TABLE_KEYBOARD_MENU_WIDTH = 520;
 const TABLE_TOOLBAR_OWNER_ID = "mn-tiptap-table-toolbar";
@@ -481,9 +481,6 @@ export class TiptapTableToolbarView {
 
   #updateCellMenuTrigger(state) {
     const selectionKind = state.selection?.kind ?? "cell";
-    const hoveredCell = selectionKind === "cell" ? state.hover?.cell ?? null : null;
-    const hoverSelected = hoveredCellIsSelected(state);
-    const edgeHovered = Boolean(hoveredCell && hoverSelected);
     const selectedCount = state.selection?.positions?.size ?? 0;
     const singleSelectedCell =
       selectionKind === "cell" &&
@@ -497,7 +494,6 @@ export class TiptapTableToolbarView {
           : null;
     const rect =
       (selectedCount > 1 ? normalizedRect(selectionRect) : null) ??
-      normalizedRect(edgeHovered ? hoveredCell?.getBoundingClientRect?.() : null) ??
       (singleSelectedCell && selectionKind === "cell"
         ? normalizedRect(state.cellRect ?? state.cell?.getBoundingClientRect?.())
         : null) ??
@@ -511,7 +507,7 @@ export class TiptapTableToolbarView {
     const trigger = tableCellMenuTriggerGeometry({
       rect,
       selectionKind,
-      edgeHovered: selectionKind === "cell" && (edgeHovered || state.menuOpen),
+      edgeHovered: selectionKind === "cell",
       selectedCount,
     });
     if (!trigger) {
@@ -523,7 +519,7 @@ export class TiptapTableToolbarView {
     this.#cellMenuButton.dataset.placement = trigger.placement;
     setHidden(
       this.#cellMenuButton,
-      !state.menuOpen && !edgeHovered && !singleSelectedCell && selectedCount <= 1,
+      !state.menuOpen && !singleSelectedCell && selectedCount <= 1,
     );
   }
 
@@ -553,6 +549,7 @@ export class TiptapTableToolbarView {
     const show =
       state.hover?.edge === "block-after" &&
       state.hover?.block === block &&
+      block !== state.table &&
       !state.menuOpen;
     setHidden(this.#blockInsertButton, !show);
   }

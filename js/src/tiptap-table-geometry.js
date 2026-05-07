@@ -262,6 +262,10 @@ function cellAtPoint(grid, clientX, clientY) {
   return null;
 }
 
+export function tableCellAtPoint(grid, clientX, clientY) {
+  return cellAtPoint(grid, clientX, clientY);
+}
+
 export function pointerAnchorRect(event, fallbackRect = null) {
   const x = Number(event?.clientX);
   const y = Number(event?.clientY);
@@ -275,7 +279,7 @@ export function tableQuickAddGeometry(grid, tableRect, {
   rowHeight = 12,
   columnWidth = 12,
   minimumRailSize = 42,
-  gap = 3,
+  gap = 1,
 } = {}) {
   const rect = normalizedRect(tableRect);
   if (!rect) return { row: null, column: null };
@@ -797,16 +801,10 @@ export function tableHoverWithIntent({
   hover.block = table;
 
   if (!cellRect) {
-    if (hoverIsNearTableBottom(normalizedTableRect, y)) {
-      hover.edge = "block-after";
-      hover.block = table;
-      return hover;
-    }
     hover.edge = "cell";
     return hover;
   }
 
-  const nearTableBottom = hoverIsNearTableBottom(normalizedTableRect, y);
   const wantsAddColumn = insideRightRail && hoverIsAtLastColumn(hover, grid);
   const wantsAddRow = insideBottomRail && hoverIsAtLastRow(hover, grid);
 
@@ -819,18 +817,15 @@ export function tableHoverWithIntent({
   } else if (
     insideLeftGutter &&
     hover.columnIndex === 0 &&
-    !nearTableBottom
+    !insideBottomRail
   ) {
     hover.edge = "row-handle";
   } else if (
     insideTopGutter &&
     hover.rowIndex === 0 &&
-    !nearTableBottom
+    !insideRightRail
   ) {
     hover.edge = "column-handle";
-  } else if (nearTableBottom) {
-    hover.edge = "block-after";
-    hover.block = table;
   } else {
     hover.edge = "cell";
   }

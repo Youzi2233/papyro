@@ -763,9 +763,9 @@ test("Tiptap table toolbar quick add buttons run row and column insertion", () =
   assert.equal(rowButton.textContent ?? "", "");
   assert.equal(columnButton.textContent ?? "", "");
   assert.equal(rowButton.style.left, "120px");
-  assert.equal(rowButton.style.top, "161px");
+  assert.equal(rowButton.style.top, "159px");
   assert.equal(rowButton.style.properties.get("--mn-table-quick-add-rail"), "240px");
-  assert.equal(columnButton.style.left, "363px");
+  assert.equal(columnButton.style.left, "361px");
   assert.equal(columnButton.style.top, "90px");
   assert.equal(columnButton.style.properties.get("--mn-table-quick-add-rail"), "68px");
 
@@ -823,13 +823,13 @@ test("Tiptap table toolbar exposes an insert-between rail after complex blocks",
   editor.view.dom.listeners.get("pointermove")({
     target: editor.view.domAtPos().node,
     clientX: 160,
-    clientY: 154,
+    clientY: 162,
   });
   insertRail = created.find((element) =>
     String(element.className).includes("mn-tiptap-complex-block-insert"),
   );
 
-  assert.equal(insertRail.hidden, false);
+  assert.equal(insertRail.hidden, true);
 
   assert.equal(controller.insertParagraphAfterTable(), true);
 
@@ -1141,10 +1141,10 @@ test("Tiptap table toolbar anchors quick add buttons to the table grid edges", (
   );
 
   assert.equal(rowButton.style.left, "120px");
-  assert.equal(rowButton.style.top, "161px");
+  assert.equal(rowButton.style.top, "159px");
   assert.equal(rowButton.dataset.edge, "row");
   assert.equal(rowButton.style.properties.get("--mn-table-quick-add-rail"), "240px");
-  assert.equal(columnButton.style.left, "363px");
+  assert.equal(columnButton.style.left, "361px");
   assert.equal(columnButton.style.top, "90px");
   assert.equal(columnButton.dataset.edge, "column");
   assert.equal(columnButton.style.properties.get("--mn-table-quick-add-rail"), "68px");

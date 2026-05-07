@@ -1125,7 +1125,7 @@
     border: 1px solid transparent;
     border-radius: var(--mn-radius-round);
     background: transparent;
-    color: color-mix(in srgb, var(--mn-ink-3) 46%, transparent);
+    color: color-mix(in srgb, var(--mn-accent) 66%, var(--mn-ink-3));
     box-shadow: none;
     padding: 0;
     font-family: var(--mn-font-ui);
@@ -1133,7 +1133,7 @@
     font-weight: var(--mn-weight-semibold);
     line-height: 1;
     transform: translate(-50%, -50%);
-    opacity: .62;
+    opacity: .82;
 }
 
 .mn-tiptap-table-cell-menu-trigger[data-placement="center"] {
@@ -1207,7 +1207,7 @@
     border: 0;
     border-radius: 6px;
     background: transparent;
-    color: color-mix(in srgb, var(--mn-accent) 58%, var(--mn-ink-3));
+    color: color-mix(in srgb, var(--mn-accent) 72%, var(--mn-ink-2));
     box-shadow: none;
     padding: 0;
     transition:
@@ -1226,8 +1226,8 @@
 .mn-tiptap-table-quick-add[data-edge="row"]::before,
 .mn-tiptap-table-quick-add[data-edge="column"]::before,
 .mn-tiptap-complex-block-insert::before {
-    opacity: .1;
-    background: color-mix(in srgb, var(--mn-accent) 11%, transparent);
+    opacity: .22;
+    background: color-mix(in srgb, var(--mn-accent) 18%, var(--mn-surface-raised));
     transition: opacity var(--mn-transition-fast);
 }
 
@@ -1244,38 +1244,38 @@
 }
 
 .mn-tiptap-table-quick-add::before {
-    width: 10px;
+    width: 11px;
     height: 1px;
 }
 
 .mn-tiptap-table-quick-add::after {
-    width: 9px;
-    height: 9px;
+    width: 10px;
+    height: 10px;
     background:
-        linear-gradient(currentColor, currentColor) 50% 50% / 9px 1.15px no-repeat,
-        linear-gradient(currentColor, currentColor) 50% 50% / 1.15px 9px no-repeat;
+        linear-gradient(currentColor, currentColor) 50% 50% / 10px 1.3px no-repeat,
+        linear-gradient(currentColor, currentColor) 50% 50% / 1.3px 10px no-repeat;
     transform: translate(-50%, -50%);
 }
 
 .mn-tiptap-table-add-row {
     min-width: 42px;
-    height: 12px;
+    height: 14px;
 }
 
 .mn-tiptap-table-add-row[data-edge="row"]::before {
     width: 100%;
-    height: 8px;
+    height: 10px;
     border-radius: var(--mn-radius-round);
     transform: translate(-50%, -50%);
 }
 
 .mn-tiptap-table-add-column {
-    width: 12px;
+    width: 14px;
     min-height: 42px;
 }
 
 .mn-tiptap-table-add-column[data-edge="column"]::before {
-    width: 8px;
+    width: 10px;
     height: 100%;
     border-radius: var(--mn-radius-round);
     transform: translate(-50%, -50%);
@@ -1295,7 +1295,7 @@
 
 .mn-tiptap-table-quick-add:hover::before,
 .mn-tiptap-table-quick-add:focus-visible::before {
-    opacity: .28;
+    opacity: .42;
 }
 
 .mn-tiptap-table-quick-add.hidden {
