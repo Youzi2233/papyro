@@ -40,8 +40,8 @@ test("React command menu model exposes side panel contracts", () => {
   assert.equal(commandMenuSidePanel({ id: "paragraph" }), "none");
   assert.equal(commandMenuSidePanel(null), "none");
 
-  assert.equal(commandMenuSidePanelWidth("table"), 158);
-  assert.equal(commandMenuSidePanelWidth("callout"), 164);
+  assert.equal(commandMenuSidePanelWidth("table"), 136);
+  assert.equal(commandMenuSidePanelWidth("callout"), 154);
   assert.equal(commandMenuSidePanelWidth("none"), 0);
 });
 

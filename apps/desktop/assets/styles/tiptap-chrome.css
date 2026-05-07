@@ -231,9 +231,9 @@
     z-index: 150;
     display: grid;
     grid-template-rows: auto minmax(0, 1fr) auto auto auto;
-    width: min(236px, calc(100vw - 20px));
-    max-height: min(420px, calc(100vh - 20px));
-    padding: 6px;
+    width: min(216px, calc(100vw - 20px));
+    max-height: min(390px, calc(100vh - 20px));
+    padding: 5px;
     border: var(--mn-border-default);
     border-radius: 8px;
     background:
@@ -257,7 +257,7 @@
 .mn-tiptap-block-action-menu-header {
     display: grid;
     gap: 2px;
-    padding: 5px 8px;
+    padding: 4px 7px;
     border-bottom: 0;
     background: transparent;
 }
@@ -289,7 +289,7 @@
     align-content: start;
     gap: 1px;
     padding: 2px 0;
-    max-height: 358px;
+    max-height: 326px;
     overflow-y: auto;
     scrollbar-gutter: stable;
 }
@@ -300,7 +300,7 @@
 }
 
 .mn-tiptap-slash-menu-section-title {
-    padding: 4px 10px 3px;
+    padding: 4px 8px 2px;
     color: var(--mn-ink-3);
     font-size: 10px;
     font-weight: var(--mn-weight-semibold);
@@ -311,16 +311,16 @@
 
 .mn-tiptap-slash-menu-item {
     display: grid;
-    grid-template-columns: 24px minmax(0, 1fr);
+    grid-template-columns: 18px minmax(0, 1fr);
     align-items: center;
-    gap: 8px;
+    gap: 7px;
     width: 100%;
-    min-height: 34px;
+    min-height: 30px;
     border: 1px solid transparent;
-    border-radius: 7px;
+    border-radius: 6px;
     background: transparent;
     color: var(--mn-ink-2);
-    padding: 5px 9px 5px 6px;
+    padding: 4px 8px 4px 6px;
     text-align: left;
     font: inherit;
     transition:
@@ -349,12 +349,12 @@
     position: relative;
     display: grid;
     place-items: center;
-    width: 24px;
-    height: 24px;
-    border: 1px solid color-mix(in srgb, var(--mn-border) 54%, transparent);
-    border-radius: 7px;
-    background: color-mix(in srgb, var(--mn-surface-sunken) 72%, transparent);
-    color: color-mix(in srgb, var(--mn-ink-2) 84%, transparent);
+    width: 18px;
+    height: 18px;
+    border: 1px solid transparent;
+    border-radius: 5px;
+    background: transparent;
+    color: color-mix(in srgb, var(--mn-ink-3) 84%, transparent);
     font-size: 10px;
     font-weight: var(--mn-weight-semibold);
     line-height: 1;
@@ -362,15 +362,15 @@
 
 .mn-tiptap-slash-menu-item:hover .mn-tiptap-slash-menu-icon,
 .mn-tiptap-slash-menu-item.active .mn-tiptap-slash-menu-icon {
-    background: color-mix(in srgb, var(--mn-accent) 10%, var(--mn-surface-raised));
-    border-color: color-mix(in srgb, var(--mn-accent) 28%, var(--mn-border));
+    background: color-mix(in srgb, var(--mn-accent) 8%, transparent);
+    border-color: color-mix(in srgb, var(--mn-accent) 16%, transparent);
     color: var(--mn-accent);
 }
 
 .mn-tiptap-command-icon-svg {
     display: block;
-    width: 16px;
-    height: 16px;
+    width: 15px;
+    height: 15px;
 }
 
 .mn-tiptap-command-icon-text {
@@ -403,7 +403,7 @@
 .mn-tiptap-block-action-submenu-trigger .mn-tiptap-block-action-menu-copy::after {
     content: "";
     position: absolute;
-    right: 8px;
+    right: 2px;
     width: 5px;
     height: 5px;
     border-top: 1.4px solid currentColor;
@@ -415,7 +415,7 @@
 .mn-tiptap-slash-menu-item[data-command-id="table"] .mn-tiptap-slash-menu-copy,
 .mn-tiptap-slash-menu-item[data-command-id="callout"] .mn-tiptap-slash-menu-copy,
 .mn-tiptap-block-action-submenu-trigger .mn-tiptap-block-action-menu-copy {
-    padding-right: 13px;
+    padding-right: 11px;
 }
 
 .mn-tiptap-slash-menu-item[data-command-id="table"],
@@ -452,14 +452,14 @@
 .mn-tiptap-table-size-picker {
     position: absolute;
     top: var(--mn-slash-side-panel-top, 4px);
-    left: calc(100% + 6px);
+    left: calc(100% + 5px);
     display: grid;
-    gap: 8px;
-    width: 148px;
+    gap: 7px;
+    width: 136px;
     margin: 0;
-    padding: 8px;
+    padding: 7px;
     border: var(--mn-border-default);
-    border-radius: 7px;
+    border-radius: 8px;
     background: var(--mn-surface-raised);
     box-shadow: 0 16px 34px color-mix(in srgb, #000 11%, transparent), var(--mn-shadow-lg);
 }
@@ -470,12 +470,12 @@
     position: absolute;
     top: 0;
     bottom: 0;
-    left: -8px;
-    width: 8px;
+    left: -7px;
+    width: 7px;
 }
 
 .mn-tiptap-slash-menu[data-side-placement="left"] .mn-tiptap-table-size-picker {
-    right: calc(100% + 6px);
+    right: calc(100% + 5px);
     left: auto;
 }
 
@@ -491,20 +491,20 @@
 
 .mn-tiptap-table-size-picker-label {
     color: var(--mn-ink-3);
-    font-size: var(--mn-type-caption);
+    font-size: 10px;
     font-weight: var(--mn-weight-semibold);
     line-height: var(--mn-line-caption);
 }
 
 .mn-tiptap-table-size-picker-grid {
     display: grid;
-    grid-template-columns: repeat(6, 13px);
-    gap: 4px;
+    grid-template-columns: repeat(6, 12px);
+    gap: 3px;
 }
 
 .mn-tiptap-table-size-picker-cell {
-    width: 13px;
-    height: 13px;
+    width: 12px;
+    height: 12px;
     border: var(--mn-border-default);
     border-radius: 3px;
     background: var(--mn-surface);
@@ -527,11 +527,11 @@
 .mn-tiptap-callout-kind-picker {
     position: absolute;
     top: var(--mn-slash-side-panel-top, 4px);
-    left: calc(100% + 6px);
+    left: calc(100% + 5px);
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     gap: 5px;
-    width: 164px;
+    width: 154px;
     margin: 0;
     padding: 7px;
     border: var(--mn-border-default);
@@ -541,7 +541,7 @@
 }
 
 .mn-tiptap-slash-menu[data-side-placement="left"] .mn-tiptap-callout-kind-picker {
-    right: calc(100% + 6px);
+    right: calc(100% + 5px);
     left: auto;
 }
 
