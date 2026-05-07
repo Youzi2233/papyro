@@ -13,6 +13,7 @@ This directory is intentionally small. Older phase notes, duplicated design draf
 | Start coding safely | [Development standards](development-standards.md) |
 | Work on Markdown editing | [Editor guide](editor.md) |
 | Evolve the Tiptap React editor UI | [Tiptap React runtime plan](tiptap-react-runtime-plan.md) |
+| Choose the official-first Tiptap path | [Tiptap official React strategy](tiptap-official-react-strategy.md) |
 | Validate the Tiptap editor runtime | [Tiptap release smoke checklist](tiptap-release-smoke.md) |
 | Change themes or Markdown styles | [Theme system](theme-system.md) |
 | Choose Markdown style references | [Markdown style references](markdown-style-references.md) |
@@ -62,7 +63,7 @@ If you are unsure where a change belongs:
 - SQLite, filesystem, workspace scan, watcher: `crates/storage`
 - Platform dialogs and shell integration: `crates/platform`
 - Markdown summary, render, protocol structs: `crates/editor`
-- Tiptap runtime behavior: `js/src/tiptap-runtime.js`, `js/src/tiptap-*.js`, `js/src/editor-host-runtime.js`, or shared helpers in `js/src/editor-core.js`
+- Tiptap runtime behavior: `js/src/tiptap-runtime.js`, `js/src/tiptap-*.js`, `js/src/tiptap-react/`, `js/src/editor-host-runtime.js`, or shared helpers in `js/src/editor-runtime-bootstrap.js`
 - Theme tokens or Markdown visual language: `assets/main.css`, `apps/*/assets/main.css`, and [theme-system.md](theme-system.md)
 
 ## Documentation Maintenance Rules

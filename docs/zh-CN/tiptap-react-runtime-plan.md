@@ -1,6 +1,6 @@
 # Tiptap React 运行时方案
 
-[English](../tiptap-react-runtime-plan.md) | [Tiptap 迁移计划](tiptap-migration-plan.md) | [路线图](roadmap.md)
+[English](../tiptap-react-runtime-plan.md) | [Tiptap 迁移计划](tiptap-migration-plan.md) | [官方优先 React 策略](tiptap-official-react-strategy.md) | [路线图](roadmap.md)
 
 这份文档记录 Papyro 编辑器下一步的架构方案。当前 `feat-tiptap` 分支已经切到 Tiptap，但很多高级编辑器 chrome 仍然是手写 DOM controller。下一步要按 Tiptap 官方 React 最佳实践重新收敛编辑器 UI，同时保留 Papyro 现有 Rust/Dioxus 外壳和本地 Markdown 模型。
 
@@ -64,12 +64,14 @@ mount controller 只负责挂载生命周期：
 
 ## React Island 契约
 
-`js/src/tiptap-react-island.jsx` 定义第一版 React 边界：
+`js/src/tiptap-react/` 定义 React 边界。`js/src/tiptap-react-island.jsx` 只保留为旧 import 的兼容 shim，新代码应该从 `js/src/tiptap-react/index.js` 导入。
 
 - `PapyroTiptapReactIsland`
 - `PapyroTiptapEditorContent`
 - `createPapyroTiptapReactComponents`
 - `createTiptapReactMountController`
+- `PapyroTiptapRuntimeProvider`
+- `usePapyroTiptapLanguage`、`usePapyroTiptapViewMode` 等 runtime hooks
 
 island 采用 slot 设计：
 
@@ -129,6 +131,8 @@ js/src/tiptap-react/
 6. 在能提升可维护性的地方，把 code block、callout、math、Mermaid、image、table 迁成聚焦 React node view。
 7. 每完成一个 React 替换，就清理对应过时 DOM-controller CSS 和 JS。
 
+公开 MIT 组件与 Start/Pro 的 Notion-like、table-node、drag-context-menu、slash-dropdown-menu 组件之间的授权边界见 [Tiptap 官方优先 React 策略](tiptap-official-react-strategy.md)。
+
 ## 质量标准
 
 React 迁移完成前必须满足：
@@ -140,4 +144,3 @@ React 迁移完成前必须满足：
 - React 组件必须可复用并使用 Papyro token，不能直接复制官方模板。
 - 表格和块交互要对照官方 Notion-like UX benchmark 验证。
 - 手工 release smoke 覆盖 Source、Hybrid、Preview、中文输入法、粘贴、撤销/重做、表格编辑、代码块语言、公式、Mermaid、图片、大纲、保存失败和系统打开 Markdown 文件。
-

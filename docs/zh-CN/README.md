@@ -13,6 +13,7 @@
 | 安全地开始开发 | [开发规范](development-standards.md) |
 | 修改 Markdown 编辑器 | [编辑器指南](editor.md) |
 | 演进 Tiptap React 编辑器 UI | [Tiptap React 运行时方案](tiptap-react-runtime-plan.md) |
+| 选择 Tiptap 官方优先方案 | [Tiptap 官方优先 React 策略](tiptap-official-react-strategy.md) |
 | 验收 Tiptap 编辑器运行时 | [Tiptap 发布候选 Smoke 检查清单](tiptap-release-smoke.md) |
 | 修改主题或 Markdown 样式 | [主题系统](theme-system.md) |
 | 选择 Markdown 样式参考 | [Markdown 样式参考调研](markdown-style-references.md) |
@@ -62,7 +63,7 @@ flowchart LR
 - SQLite、文件系统、workspace 扫描、watcher：`crates/storage`
 - 平台对话框和系统集成：`crates/platform`
 - Markdown 统计、渲染、协议结构：`crates/editor`
-- Tiptap runtime 行为：`js/src/tiptap-runtime.js`、`js/src/tiptap-*.js`、`js/src/editor-host-runtime.js` 或 `js/src/editor-core.js` 中的共享 helper
+- Tiptap runtime 行为：`js/src/tiptap-runtime.js`、`js/src/tiptap-*.js`、`js/src/tiptap-react/`、`js/src/editor-host-runtime.js` 或 `js/src/editor-runtime-bootstrap.js` 中的共享 helper
 - 主题 token 或 Markdown 视觉语言：`assets/main.css`、`apps/*/assets/main.css` 和 [theme-system.md](theme-system.md)
 
 ## 文档维护规则

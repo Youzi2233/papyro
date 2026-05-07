@@ -58,9 +58,9 @@ points are:
 - `js/src/editor-tiptap-entry.js`
 - `js/src/tiptap-runtime.js`
 - `js/src/tiptap-*.js`
+- `js/src/tiptap-react/`
 - `js/src/editor-host-runtime.js`
 - `js/src/editor-runtime-bootstrap.js`
-- `js/src/editor-core.js`
 
 Then run:
 

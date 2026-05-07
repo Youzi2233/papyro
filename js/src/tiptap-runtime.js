@@ -369,7 +369,7 @@ export function createTiptapEditorRuntime({
       existing.instanceId = instanceId;
       existing.modeController.apply(existing, viewMode ?? existing.viewMode);
       existing.sourcePane.applyMode(existing);
-      existing.reactMount?.refresh?.();
+      existing.reactMount?.refresh?.(existing);
       existing.blockHandle.refresh();
       existing.formatToolbar.refresh(existing.editor);
       existing.tableToolbar.refresh(existing.editor);
@@ -498,8 +498,6 @@ export function createTiptapEditorRuntime({
         }
       });
     }
-    const reactMount = mountController.mount?.({ root, editor }) ?? null;
-
     const entry = createEntry({
       editor,
       dom: root,
@@ -518,8 +516,10 @@ export function createTiptapEditorRuntime({
       slashCommands,
       slashMenu,
       tableToolbar,
-      reactMount,
+      reactMount: null,
     });
+    const reactMount = mountController.mount?.({ root, editor, entry }) ?? null;
+    entry.reactMount = reactMount;
     modeController.apply(entry, modeController.mode);
     blockHintsController.attach(entry);
     preferencesController.attach(entry);
@@ -544,6 +544,7 @@ export function createTiptapEditorRuntime({
       if (!entry) return;
 
       entry.dioxus = dioxus;
+      entry.reactMount?.refresh?.(entry);
       attachEditorScroll(tabId, entry);
       syncOutline(tabId, entry.viewMode);
       const container = entry.dom?.parentElement;
@@ -568,6 +569,7 @@ export function createTiptapEditorRuntime({
         entry.formatToolbar.refresh(entry.editor);
         entry.tableToolbar.refresh(entry.editor);
         syncOutline(tabId, entry.viewMode);
+        entry.reactMount?.refresh?.(entry);
       } else if (message.type === "set_content") {
         const result = entry.markdownSync.setMarkdown(message.content ?? "");
         if (result.ok) {
@@ -597,6 +599,7 @@ export function createTiptapEditorRuntime({
       } else if (message.type === "set_preferences") {
         entry.preferencesController.apply(entry, message);
         syncRuntimeLanguage(entry);
+        entry.reactMount?.refresh?.(entry);
       } else if (message.type === "set_block_hints") {
         entry.blockHintsController.apply(entry, message.hints);
       } else if (message.type === "run_slash_command") {

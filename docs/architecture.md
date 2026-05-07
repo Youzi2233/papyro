@@ -8,7 +8,7 @@ This guide is meant to teach the project, not just list folders. After reading i
 - why the project uses Rust, Dioxus, and JavaScript together
 - how clicks, typing, saving, previewing, and editor events move through the system
 - what each crate owns
-- how Rust and the CodeMirror JavaScript runtime communicate
+- how Rust and the Tiptap/React JavaScript runtime communicate
 - where future work such as file association, multi-window mode, theming, and Hybrid editing belongs
 
 If this is your first time in the repository, read this guide in order. Then use [development standards](development-standards.md), [roadmap](roadmap.md), [editor guide](editor.md), and [performance budget](performance-budget.md) for task-specific work.
@@ -23,14 +23,15 @@ More concretely:
 - SQLite stores metadata such as workspaces, recent files, tags, settings, and recovery drafts
 - Rust owns application state, file operations, storage, safety, and user flows
 - Dioxus 0.7 lets us write UI components in Rust and render them into a desktop WebView
-- CodeMirror owns complex browser editing behavior such as input, selection, IME, undo, highlighting, and decorations
-- JavaScript owns the editor runtime because CodeMirror, Mermaid, KaTeX, and DOM editing APIs live in the browser ecosystem
+- Tiptap/ProseMirror owns complex browser editing behavior such as input, selection, IME, undo, schema-aware blocks, tables, and document-native commands
+- React owns the editor UI island for Tiptap menus, handles, overlays, and future node views
+- JavaScript owns the editor runtime because Tiptap, Mermaid, KaTeX, React, and DOM editing APIs live in the browser ecosystem
 
 ```mermaid
 flowchart TD
     product["Product experience<br/>local Markdown notes"]
     rust["Rust application core<br/>state, flows, storage, safety"]
-    webview["WebView layer<br/>Dioxus UI + CodeMirror JS runtime"]
+    webview["WebView layer<br/>Dioxus UI + Tiptap/React JS runtime"]
 
     product --> rust --> webview
     webview --> rust --> product
@@ -48,7 +49,7 @@ flowchart TD
 | Shell | A platform entry point such as `apps/desktop` or `apps/mobile`. |
 | Runtime | The shared signals, commands, effects, and context created by `crates/app`. |
 | View model | A UI-friendly projection of state from `crates/ui/src/view_model.rs`. |
-| Editor runtime | The CodeMirror runtime built from `js/src/editor.js`. |
+| Editor runtime | The Tiptap/ProseMirror runtime and React island built from `js/src/editor-tiptap-entry.js`. |
 | Protocol | The command/event structs passed between Rust and JavaScript. |
 
 ## 3. Startup Flow
@@ -136,23 +137,24 @@ This keeps the UI close to Rust state without turning the whole app into a JavaS
 
 Complex text editing is a browser ecosystem strength.
 
-CodeMirror already solves hard problems:
+Tiptap sits on ProseMirror and solves hard problems that are expensive to rebuild in Rust or ad hoc DOM code:
 
 - cursor and selection behavior
 - IME composition
 - undo/redo history
-- syntax parsing and highlighting
-- layout and scroll behavior
-- decorations and widgets
-- search UI
+- schema-aware blocks and marks
+- table editing and column resizing
+- node views and extension composition
+- Markdown import/export through tested handlers
+- React-based editor chrome through official `@tiptap/react` APIs
 - paste and keyboard handling
 
-Mermaid, KaTeX, and many Markdown editor integrations also live naturally in JS/DOM.
+Mermaid, KaTeX, React, and many Markdown editor integrations also live naturally in JS/DOM.
 
 Writing all of this from scratch in Rust would be expensive and unlikely to match mature editor behavior. Papyro therefore uses:
 
 - Rust for application truth and data safety
-- JavaScript for browser editor interaction
+- JavaScript for browser editor interaction and React editor chrome
 - a typed JSON protocol between them
 
 ## 5. Repository Map
@@ -169,7 +171,7 @@ Writing all of this from scratch in Rust would be expensive and unlikely to matc
 │  ├─ storage/             # SQLite, filesystem, watcher, workspace scan
 │  ├─ platform/            # dialogs, app data, reveal, external links
 │  └─ editor/              # Markdown summary, HTML render, protocol structs
-├─ js/                     # CodeMirror runtime source, tests, build script
+├─ js/                     # Tiptap runtime, React editor island, tests, build script
 ├─ assets/                 # shared generated/static assets
 ├─ scripts/                # CI and local validation scripts
 ├─ skills/                 # project-local AI skills
@@ -333,7 +335,7 @@ Editor owns Rust-side Markdown capability:
 - code highlighting theme decisions
 - Rust/JS protocol structs
 
-`crates/editor` is not the CodeMirror runtime. The CodeMirror runtime lives in `js/`.
+`crates/editor` is not the Tiptap runtime. The browser editor runtime lives in `js/`.
 
 ### `js/`
 
@@ -341,11 +343,11 @@ The JS directory owns browser editor runtime code.
 
 | File | Role |
 | --- | --- |
-| `js/src/editor.js` | runtime entry, registers `window.papyroEditor` |
-| `js/src/editor-core.js` | testable editor core functions |
-| `js/src/editor-media.js` | Mermaid, KaTeX, image, and table widgets |
-| `js/src/editor-theme.js` | CodeMirror theme and highlight style |
-| `js/test/editor-core.test.js` | JS unit tests |
+| `js/src/editor-tiptap-entry.js` | bundle entry, registers the Tiptap adapter behind `window.papyroEditor` |
+| `js/src/tiptap-runtime.js` | Tiptap lifecycle, Rust message handling, Markdown sync orchestration |
+| `js/src/tiptap-react/` | React island provider, slots, mount controller, and future editor UI components |
+| `js/src/tiptap-*.js` | focused Tiptap controllers, commands, Markdown handlers, and UI helpers |
+| `js/test/tiptap-*.test.js` | JS unit tests for runtime, commands, tables, Markdown, and UI primitives |
 | `js/build.js` | builds and syncs generated editor assets |
 
 Only edit `js/src/*` by hand. Do not edit generated `assets/editor.js` directly.
@@ -373,7 +375,7 @@ RuntimeState
 
 The state is split so unrelated UI areas do not invalidate each other:
 
-- file tree changes should not rebuild CodeMirror
+- file tree changes should not rebuild the Tiptap editor
 - typing should not rerender the whole sidebar
 - theme changes should not recompute Markdown preview
 - tab switching should not rescan the whole workspace
@@ -414,7 +416,7 @@ Example: create a new note.
 
 ```mermaid
 sequenceDiagram
-    participant JS as CodeMirror JS
+    participant JS as Tiptap/React JS
     participant Host as EditorHost
     participant Commands as AppCommands
     participant App as AppDispatcher
@@ -457,7 +459,7 @@ Benefits:
 - Fields stay stable.
 - new capabilities have a clear change point.
 - JS does not know Rust state internals.
-- Rust does not know CodeMirror object internals.
+- Rust does not know Tiptap, ProseMirror, React, or DOM object internals.
 
 ## 12. How Rust Starts The JS Editor
 
@@ -479,11 +481,11 @@ sequenceDiagram
     participant Rust as EditorHost Rust
     participant Eval as Dioxus document::eval
     participant JS as window.papyroEditor
-    participant CM as CodeMirror EditorView
+    participant TT as Tiptap editor
 
     Rust->>Eval: inject bridge script
     Eval->>JS: ensureEditor(tabId, containerId, content, mode)
-    JS->>CM: create or reuse EditorView
+    JS->>TT: create or reuse editor and React island
     Eval->>JS: attachChannel(tabId, dioxus)
     JS-->>Rust: dioxus.send(runtime_ready)
     Rust->>JS: eval.send(set_view_mode)
@@ -497,7 +499,7 @@ The `dioxus` object is provided by Dioxus eval:
 
 ## 13. How JS Registers The Runtime
 
-`js/src/editor.js` registers:
+`js/src/editor-tiptap-entry.js` registers:
 
 ```javascript
 window.papyroEditor = {
@@ -515,7 +517,7 @@ window.papyroEditor = {
 
 | Function | Purpose |
 | --- | --- |
-| `ensureEditor` | create or reuse a CodeMirror `EditorView` |
+| `ensureEditor` | create or reuse a Tiptap editor instance and its React island |
 | `attachChannel` | store the Dioxus communication object |
 | `handleRustMessage` | handle Rust commands |
 | `syncOutline` | sync active heading state |
@@ -549,7 +551,7 @@ Commands are usually sent from:
 
 | Event | Trigger |
 | --- | --- |
-| `RuntimeReady` | CodeMirror runtime is ready |
+| `RuntimeReady` | editor runtime is ready |
 | `RuntimeError` | JS runtime failed |
 | `ContentChanged` | user input changed document text |
 | `SaveRequested` | JS captured a save shortcut |
@@ -559,12 +561,12 @@ Most input follows this path:
 
 ```mermaid
 sequenceDiagram
-    participant CM as CodeMirror updateListener
-    participant JS as editor.js
+    participant TT as Tiptap update listener
+    participant JS as tiptap-runtime.js
     participant Rust as EditorHost
     participant App as AppCommands
 
-    CM->>JS: docChanged
+    TT->>JS: docChanged
     JS->>Rust: dioxus.send(content_changed)
     Rust->>App: commands.content_changed.call(...)
     App->>App: mark dirty + update content
@@ -595,7 +597,7 @@ active document snapshot
 -> MarkdownBlockHintSet
 -> EditorHost
 -> EditorCommand::SetBlockHints
--> JS decorations/widgets
+-> Tiptap runtime compatibility handlers
 ```
 
 Why not all JS?
@@ -606,31 +608,31 @@ Why not all JS?
 
 Why not all Rust?
 
-- CodeMirror decorations, selection, widgets, DOM hit testing, and scroll live in JS.
+- Tiptap document state, selection, node views, DOM hit testing, and scroll live in JS.
 - Browser editor behavior would be awkward to drive directly from Rust.
 
-Hybrid is therefore Rust analysis plus JS presentation.
+Hybrid is therefore Rust analysis plus Tiptap/React presentation. As more editor surfaces move to native Tiptap extensions and React node views, block hints should stay compatibility data rather than a second source of truth.
 
 ## 17. Preview Versus Hybrid
 
 | Capability | Preview | Hybrid |
 | --- | --- | --- |
 | Editable | no | yes |
-| Primary rendering | Rust HTML | CodeMirror decorations/widgets |
-| Mermaid | JS-assisted render | JS widget/edit state |
+| Primary rendering | Rust HTML | Tiptap/ProseMirror document view with React chrome |
+| Mermaid | JS-assisted render | Tiptap node/extension state |
 | Truth source | Rust tab content | Rust tab content plus JS input events |
 
 Preview uses `pulldown-cmark` and `syntect` on the Rust side, then JS helps with Mermaid and scroll/outline behavior.
 
-Hybrid keeps CodeMirror as the editor and uses Rust block hints to make Markdown feel more document-like.
+Hybrid uses Tiptap as the interactive editor and keeps Markdown synchronization explicit so files remain portable.
 
 ## 18. Why Editor Hosts Are Reused
 
-Creating a CodeMirror `EditorView` is expensive. It builds DOM, syntax state, plugins, listeners, and layout caches.
+Creating a Tiptap editor is expensive. It builds a ProseMirror view, extension state, node views, plugins, listeners, layout caches, and the React island around editor chrome.
 
 Papyro therefore keeps a host lifecycle and spare pool:
 
-- opening a tab tries to reuse an existing editor view
+- opening a tab tries to reuse an existing editor host
 - hidden tabs keep their host
 - closed tabs are destroyed or recycled after a delay
 - sidebar, theme, and status changes should not rebuild the editor
@@ -639,8 +641,8 @@ Relevant files:
 
 - `crates/ui/src/components/editor/pane.rs`
 - `crates/ui/src/components/editor/host.rs`
-- `js/src/editor.js`
-- `js/src/editor-core.js`
+- `js/src/tiptap-runtime.js`
+- `js/src/tiptap-react/`
 
 ## 19. Workspace, Tabs, And File Association
 
@@ -732,15 +734,15 @@ Their editor state is local, while storage and settings are supplied through sha
 | Task | Start here | Also check |
 | --- | --- | --- |
 | UI layout/style | `crates/ui/src/components` | `assets/main.css`, `apps/*/assets/main.css` |
-| Theme tokens or Markdown visual style | [theme-system.md](theme-system.md) | `assets/main.css`, `js/src/editor-theme.js` |
+| Theme tokens or Markdown visual style | [theme-system.md](theme-system.md) | `assets/main.css`, `js/src/tiptap-*.js`, `js/src/tiptap-react/` |
 | New UI command | `crates/ui/src/commands.rs` | `crates/app/src/actions.rs` |
 | New app behavior | `crates/app/src/dispatcher.rs` | `handlers/*`, `workspace_flow/*` |
 | File operation | `crates/app/src/workspace_flow` | `crates/storage/src/fs` |
 | Save behavior | `workspace_flow/save.rs` | `crates/storage/src/lib.rs` |
 | File tree behavior | `crates/ui/src/components/sidebar` | `crates/core/src/file_state.rs` |
 | Markdown Preview | `crates/editor/src/renderer/html.rs` | `crates/ui/src/components/editor/preview.rs` |
-| Hybrid editing | `crates/editor/src/parser/blocks.rs` | `js/src/editor.js`, `js/src/editor-core.js` |
-| Paste/selection/IME | `js/src/editor-core.js` | `js/test/editor-core.test.js` |
+| Hybrid editing | `js/src/tiptap-runtime.js`, `js/src/tiptap-*.js` | `js/src/tiptap-react/`, `crates/editor/src/parser/blocks.rs` |
+| Paste/selection/IME | `js/src/tiptap-paste-controller.js`, `js/src/tiptap-ui-primitives.js` | `js/test/tiptap-*.test.js` |
 | Settings field | `crates/core/src/models.rs` | settings UI and storage settings |
 | OS file open | `apps/desktop/src/main.rs` | `crates/app/src/open_requests.rs`, `dispatcher.rs` |
 
@@ -767,13 +769,13 @@ When Rust and JS need a new message:
 1. update `crates/editor/src/protocol.rs`
 2. add serde JSON tests
 3. update Rust sender or receiver in `EditorHost`
-4. handle the message in `js/src/editor-core.js` or `js/src/editor.js`
+4. handle the message in `js/src/tiptap-runtime.js` or a focused `js/src/tiptap-*.js` controller
 5. send JS events with `dioxus.send(...)`
 6. handle events in the Rust `EditorHost` match
 7. add Rust or JS tests
 8. update this guide and [editor.md](editor.md)
 
-Protocol messages should use stable data. Do not pass CodeMirror internal objects.
+Protocol messages should use stable data. Do not pass Tiptap, ProseMirror, React, or DOM internal objects.
 
 ## 24. Performance Boundaries
 
@@ -793,7 +795,7 @@ Before changing these paths, read [performance budget](performance-budget.md).
 
 Ask:
 
-- will this rebuild CodeMirror?
+- will this rebuild the Tiptap editor or React island?
 - will this clone large document text?
 - will this do IO in a render path?
 - will this make sidebar and editor subscribe to each other?
@@ -824,6 +826,6 @@ node scripts/report-file-lines.js
 
 ## 26. Summary
 
-Papyro's core boundary is: Rust owns application truth, Dioxus owns UI composition, CodeMirror JavaScript owns complex editor interaction, and both sides communicate through an explicit protocol.
+Papyro's core boundary is: Rust owns application truth, Dioxus owns UI composition, JavaScript owns complex Tiptap/React editor interaction, and both sides communicate through an explicit protocol.
 
 If you preserve that boundary, features, UI work, Hybrid improvements, file association, and future multi-window work all have clear homes.

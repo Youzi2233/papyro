@@ -39,6 +39,17 @@ mindmap
       storage 可测试
 ```
 
+## 当前架构事实
+
+- `apps/desktop` 和 `apps/mobile` 是薄平台外壳。
+- `crates/app` 负责 runtime、dispatcher、handlers、effects 和 workspace flow。
+- `crates/core` 负责模型、状态、trait 和纯规则。
+- `crates/ui` 负责 Dioxus 组件、布局、view model 和 i18n。
+- `crates/storage` 负责 SQLite、文件系统、workspace 扫描、watcher、metadata 和 recovery。
+- `crates/platform` 负责系统集成。
+- `crates/editor` 负责 Markdown summary、render、block analysis 和 protocol struct。
+- `js/` 负责 Tiptap/ProseMirror runtime、React editor island、Markdown 交互 helper 和生成后的 editor bundle。
+
 ## Phase 1 - 基础和数据安全
 
 - [x] 共享 runtime 收进 `crates/app`。
@@ -175,7 +186,7 @@ flowchart LR
 
 目标：在 `feat-tiptap` 分支把交互式编辑器从 CodeMirror runtime 迁移到 Tiptap/ProseMirror 文档模型，同时保持 Markdown 文件格式、Rust/Dioxus 协议和企业级可维护性。
 
-迁移计划见 [Tiptap 迁移计划](tiptap-migration-plan.md) 和 [Tiptap React 运行时方案](tiptap-react-runtime-plan.md)。
+迁移计划见 [Tiptap 迁移计划](tiptap-migration-plan.md) 和 [Tiptap React 运行时方案](tiptap-react-runtime-plan.md)。决定使用公开 MIT 组件、官方 Tiptap package，还是授权后的 Start/Pro UI 组件时，先看 [Tiptap 官方优先 React 策略](tiptap-official-react-strategy.md)。
 
 企业级要求：
 
@@ -184,6 +195,7 @@ flowchart LR
 - 所有复杂 block 必须有 Markdown round-trip 策略和测试。
 - 迁移期间保留 `window.papyroEditor` facade，避免 Rust/Dioxus 侧被编辑器实现细节污染。
 - 以 Tiptap 官方 Notion-like editor template 作为交互参考，重点借鉴 slash command、浮动格式栏、块插入和响应式编辑器 chrome，但保持 Papyro local-first 和 Markdown-first。
+- 未明确加入授权 CLI 输出前，不复制 Notion-like、table-node、drag-context-menu、slash-dropdown-menu 等 non-open Tiptap UI Components 源码。
 - React 编辑器 UI 必须按可复用 island 分层：runtime mount shell、headless command model、共享 React primitives、extension/node-view 模块和测试。不要把复杂度搬进一个巨型 React 组件。
 - 生成 bundle、桌面/mobile asset、CSS 行数预算、a11y、contrast、primitive usage 和 Rust/JS 测试必须持续通过。
 
@@ -194,6 +206,7 @@ flowchart LR
 - [x] 提交并推送迁移计划。
 - [x] 接入官方 `@tiptap/react` island 挂载基座，同时保留 Rust/Dioxus 编辑器 facade。
 - [x] 文档化 React 版 Tiptap 运行时方案，作为命令面板、拖拽句柄、表格 chrome 和后续 node view 的演进依据。
+- [x] 文档化 Tiptap UI Components 的官方优先 React 策略和授权边界。
 - [ ] 将手写 DOM 编辑器 chrome 逐步迁移为可复用 React 组件和官方 Tiptap React 扩展模式。
 - [x] 抽出第一版 runtime adapter facade 契约和测试。
 - [x] 增加 runtime registry 和可注入的 CodeMirror runtime 工厂模块。

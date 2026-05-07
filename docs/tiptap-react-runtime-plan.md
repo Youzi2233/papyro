@@ -1,6 +1,6 @@
 # Tiptap React Runtime Plan
 
-[简体中文](zh-CN/tiptap-react-runtime-plan.md) | [Tiptap migration plan](tiptap-migration-plan.md) | [Roadmap](roadmap.md)
+[简体中文](zh-CN/tiptap-react-runtime-plan.md) | [Tiptap migration plan](tiptap-migration-plan.md) | [Official React strategy](tiptap-official-react-strategy.md) | [Roadmap](roadmap.md)
 
 This document records the next architecture step for Papyro's Tiptap editor. The current migration branch already runs on Tiptap, but too much advanced editor chrome was built as hand-written DOM controllers. The next step is to align the editor UI with official Tiptap React practices while preserving Papyro's Rust/Dioxus shell and local Markdown model.
 
@@ -64,12 +64,14 @@ It must not own Markdown synchronization, Rust messages, tab lifecycle, or file 
 
 ## React Island Contract
 
-`js/src/tiptap-react-island.jsx` defines the first React boundary:
+`js/src/tiptap-react/` defines the React boundary. `js/src/tiptap-react-island.jsx` remains a compatibility shim for older imports, but new code should import from `js/src/tiptap-react/index.js`.
 
 - `PapyroTiptapReactIsland`
 - `PapyroTiptapEditorContent`
 - `createPapyroTiptapReactComponents`
 - `createTiptapReactMountController`
+- `PapyroTiptapRuntimeProvider`
+- runtime hooks such as `usePapyroTiptapLanguage` and `usePapyroTiptapViewMode`
 
 The island is intentionally slot-based:
 
@@ -129,6 +131,8 @@ Rules:
 6. Convert code block, callout, math, Mermaid, image, and table views into focused React node views where that improves maintainability.
 7. Remove obsolete DOM-controller CSS and JS after each React replacement is complete.
 
+See [Tiptap official React strategy](tiptap-official-react-strategy.md) for the license boundary between public MIT components and the Start/Pro Notion-like, table-node, drag-context-menu, and slash-dropdown-menu components.
+
 ## Quality Bar
 
 Before calling the React migration complete:
@@ -140,4 +144,3 @@ Before calling the React migration complete:
 - React components are reusable and token-based, not one-off copies of the official template.
 - Table and block interactions are validated against the official Notion-like UX benchmark.
 - Manual release smoke covers Source, Hybrid, Preview, Chinese IME, paste, undo/redo, table editing, code block languages, math, Mermaid, images, outline, save failures, and OS-opened Markdown files.
-

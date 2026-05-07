@@ -377,10 +377,15 @@ test("Tiptap runtime can mount through a React island controller", () => {
         className: "mn-tiptap-react-seed",
       };
     },
-    mount: ({ root, editor }) => {
-      mountCalls.push(["reactMount", root.className, editor.markdown]);
+    mount: ({ root, editor, entry }) => {
+      mountCalls.push(["reactMount", root.className, editor.markdown, entry.viewMode]);
       return {
-        refresh: () => mountCalls.push(["reactRefresh"]),
+        refresh: (nextEntry) => mountCalls.push([
+          "reactRefresh",
+          nextEntry?.viewMode,
+          nextEntry?.preferences?.language,
+          Boolean(nextEntry?.dioxus),
+        ]),
         destroy: () => mountCalls.push(["reactDestroy"]),
       };
     },
@@ -400,12 +405,19 @@ test("Tiptap runtime can mount through a React island controller", () => {
     instanceId: "host-b",
     viewMode: "source",
   });
+  runtime.attachChannel("tab-a", { id: "dioxus-a" });
+  runtime.handleRustMessage("tab-a", {
+    type: "set_preferences",
+    language: "Chinese",
+  });
   runtime.handleRustMessage("tab-a", { type: "destroy", instance_id: "host-b" });
 
   assert.deepEqual(mountCalls, [
     ["createEditorElement", "mn-tiptap-runtime"],
-    ["reactMount", "mn-tiptap-runtime", "# React"],
-    ["reactRefresh"],
+    ["reactMount", "mn-tiptap-runtime", "# React", "hybrid"],
+    ["reactRefresh", "source", "english", false],
+    ["reactRefresh", "source", "english", true],
+    ["reactRefresh", "source", "Chinese", true],
     ["reactDestroy"],
   ]);
   assert.deepEqual(

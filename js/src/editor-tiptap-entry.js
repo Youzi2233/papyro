@@ -1,7 +1,7 @@
 import { createEditorRuntimeRegistry } from "./editor-registry.js";
 import { createEditorHostRuntime } from "./editor-host-runtime.js";
 import { installPapyroEditorRuntime } from "./editor-runtime-bootstrap.js";
-import { createTiptapReactMountController } from "./tiptap-react-island.jsx";
+import { createTiptapReactMountController } from "./tiptap-react/index.js";
 import { createTiptapEditorRuntime } from "./tiptap-runtime.js";
 
 const editorRegistry = createEditorRuntimeRegistry();
