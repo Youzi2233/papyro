@@ -268,6 +268,35 @@ test("Tiptap table blank cell clicks focus the editable cell", () => {
   assert.equal(controller.state.cellRect?.left, 190);
 });
 
+test("Tiptap table cell clicks preview the active cell immediately", () => {
+  const { calls, cells, documentListeners, editor, root } = createHarness();
+  const controller = createTiptapTableToolbarController({
+    dom: { document: root.ownerDocument },
+  });
+
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  assert.equal(
+    root.listeners.get("pointerdown")({
+      target: cells[3],
+      button: 0,
+      clientX: 230,
+      clientY: 134,
+    }),
+    false,
+  );
+
+  assert.equal(controller.state.cell, cells[3]);
+  assert.equal(controller.state.hover.cell, cells[3]);
+  assert.equal(controller.state.selection.positions.size, 0);
+
+  documentListeners.get("pointerup").at(-1)({
+    target: cells[3],
+    clientX: 230,
+    clientY: 134,
+  });
+  assert.deepEqual(calls, [["setTextSelection", 14], ["focus"]]);
+});
+
 test("Tiptap table inline content clicks stay native", () => {
   const { calls, cells, documentListeners, editor, root, table } = createHarness();
   const inline = {

@@ -16,6 +16,7 @@ import {
   tableCellAtPoint,
   tableHoverContext,
   tableHoverWithIntent,
+  tableSelectionGrid,
   tableSelectionState,
 } from "./tiptap-table-geometry.js";
 import {
@@ -80,6 +81,36 @@ function isDirectTableCellTarget(target, cell) {
   if (target === cell) return true;
   const tagName = String(target?.tagName ?? "").toLowerCase();
   return (tagName === "td" || tagName === "th") && target === cell;
+}
+
+function tableContextFromElement(editor, table) {
+  if (!editor?.view || !table) return null;
+  const grid = tableSelectionGrid(table, editor.view);
+  const rect = normalizedRect(table.getBoundingClientRect?.());
+  if (!rect || grid.length === 0) return null;
+
+  return {
+    table,
+    rect,
+    grid,
+    selection: tableSelectionState(editor.state?.selection, grid),
+  };
+}
+
+function hoverFromTableCell(cell, event, table) {
+  if (!cell?.cell) return null;
+  const cellRect = normalizedRect(cell.rect ?? cell.cell.getBoundingClientRect?.());
+  return {
+    table: true,
+    rowIndex: cell.rowIndex,
+    columnIndex: cell.columnIndex,
+    cell: cell.cell,
+    cellRect,
+    edge: "cell",
+    block: table,
+    clientX: Number.isFinite(Number(event?.clientX)) ? Number(event.clientX) : null,
+    clientY: Number.isFinite(Number(event?.clientY)) ? Number(event.clientY) : null,
+  };
 }
 
 export function selectTableAxis(editor, grid, axis, index) {
@@ -541,10 +572,13 @@ export class TiptapTableToolbarController {
     const cell = closestTableCellElement(event?.target);
     if (!cell || !table.contains?.(cell)) return false;
 
+    const activeContext = activeTableContext(this.#editor);
     const context =
       this.#state.table === table && this.#state.grid?.length
         ? this.#state
-        : activeTableContext(this.#editor);
+        : activeContext?.table === table
+          ? activeContext
+          : tableContextFromElement(this.#editor, table);
     const start = (context?.grid ?? [])
       .flatMap((row) => row.cells ?? [])
       .find((item) => item.cell === cell);
@@ -565,8 +599,33 @@ export class TiptapTableToolbarController {
       removeListeners: [],
     };
 
+    this.#previewActiveCellFromPointer(context, start, event);
     this.#bindCellDragListeners();
     return false;
+  }
+
+  #previewActiveCellFromPointer(context, start, event) {
+    if (!context?.table || !start?.cell) return false;
+    this.#state = {
+      ...this.#state,
+      open: true,
+      menuOpen: false,
+      mode: "context",
+      table: context.table,
+      rect: context.rect,
+      cell: start.cell,
+      cellRect: normalizedRect(start.rect ?? start.cell.getBoundingClientRect?.()),
+      selectionRect: null,
+      menuRect: null,
+      menuAnchorRect: null,
+      grid: context.grid ?? [],
+      selection: tableSelectionState(null, context.grid ?? []),
+      hover: hoverFromTableCell(start, event, context.table),
+      complexBlock: context.table,
+      complexRect: context.rect,
+    };
+    this.#render();
+    return true;
   }
 
   #selectCellRange(anchorPos, headPos) {
