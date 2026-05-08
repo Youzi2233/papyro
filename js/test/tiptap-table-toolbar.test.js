@@ -1516,6 +1516,41 @@ test("Tiptap table toolbar handles keyboard events after focus enters the toolba
   assert.deepEqual(prevented, ["default", "propagation"]);
 });
 
+test("Tiptap table toolbar yields keyboard handling during IME composition", () => {
+  const { calls, editor } = createTableHarness();
+  editor.commands.deleteTable = () => {
+    calls.push(["deleteTable"]);
+    return true;
+  };
+  const controller = createTiptapTableToolbarController();
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  controller.handleKeyDown({
+    key: "F10",
+    shiftKey: true,
+    preventDefault() {},
+    stopPropagation() {},
+  });
+  const events = [];
+
+  assert.equal(
+    controller.handleKeyDown({
+      key: "Enter",
+      keyCode: 229,
+      preventDefault() {
+        events.push("preventDefault");
+      },
+      stopPropagation() {
+        events.push("stopPropagation");
+      },
+    }),
+    false,
+  );
+
+  assert.equal(controller.state.open, true);
+  assert.deepEqual(calls, []);
+  assert.deepEqual(events, []);
+});
+
 test("Tiptap table toolbar closes from keyboard Escape", () => {
   const { editor } = createTableHarness();
   editor.commands.deleteTable = () => true;

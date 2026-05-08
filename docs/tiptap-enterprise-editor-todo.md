@@ -450,6 +450,7 @@ Tasks:
 - [ ] Use `aria-activedescendant` or roving tab index consistently in menus.
 - [ ] Support Escape, Enter, Space, Arrow keys, Home, End, Tab, Shift+Tab, and Shift+F10 where relevant.
 - [ ] Protect IME composition from menu keyboard handlers.
+  - Current coverage: slash menu, block action menu, code block menus, floating format toolbar, and table toolbar now yield during composition / `keyCode 229` events so IME confirmation does not execute editor commands.
 - [ ] Keep focus rings visible and theme-token based.
 
 Acceptance criteria:

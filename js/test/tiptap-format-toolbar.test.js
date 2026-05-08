@@ -571,6 +571,31 @@ test("Tiptap format toolbar opens and navigates the turn-into submenu by keyboar
   ]);
 });
 
+test("Tiptap format toolbar yields keyboard handling during IME composition", () => {
+  const { calls, editor } = createEditor();
+  const controller = createTiptapFormatToolbarController();
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  const events = [];
+
+  assert.equal(
+    controller.handleKeyDown({
+      key: "Enter",
+      keyCode: 229,
+      preventDefault() {
+        events.push("preventDefault");
+      },
+      stopPropagation() {
+        events.push("stopPropagation");
+      },
+    }),
+    false,
+  );
+
+  assert.equal(controller.state.open, true);
+  assert.deepEqual(calls, []);
+  assert.deepEqual(events, []);
+});
+
 test("Tiptap format toolbar closes from keyboard Escape and returns focus", () => {
   const { calls, editor } = createEditor();
   const controller = createTiptapFormatToolbarController();

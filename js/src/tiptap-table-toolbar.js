@@ -36,6 +36,7 @@ import {
   createFloatingDismissController,
   defaultDocument,
   defaultWindow,
+  isComposingKeyboardEvent,
 } from "./tiptap-ui-primitives.js";
 import {
   TABLE_COLUMN_HANDLE_HEIGHT,
@@ -423,6 +424,8 @@ export class TiptapTableToolbarController {
   }
 
   handleKeyDown(event) {
+    if (isComposingKeyboardEvent(event)) return false;
+
     if (!this.#state.open && isTableToolbarActivation(event)) {
       this.refresh(this.#editor);
     }

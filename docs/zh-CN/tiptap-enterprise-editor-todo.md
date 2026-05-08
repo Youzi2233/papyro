@@ -450,6 +450,7 @@ node scripts/check-tiptap-release-smoke.js
 - [ ] 菜单统一使用 `aria-activedescendant` 或 roving tab index。
 - [ ] 支持 Escape、Enter、Space、方向键、Home、End、Tab、Shift+Tab、Shift+F10 等相关键位。
 - [ ] IME composition 期间保护菜单键盘处理，避免中文输入确认触发命令。
+  - 当前覆盖：slash 菜单、块操作菜单、代码块菜单、浮动格式栏和表格工具栏都会在 composition / `keyCode 229` 事件期间让出键盘处理，避免中文输入确认误执行编辑器命令。
 - [ ] focus ring 可见并使用主题 token。
 
 验收标准：

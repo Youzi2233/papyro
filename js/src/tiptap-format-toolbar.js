@@ -5,6 +5,7 @@ import {
   createFloatingDismissController,
   defaultDocument,
   defaultWindow,
+  isComposingKeyboardEvent,
   mountFloatingRoot,
   positionFloatingElement,
   setHidden,
@@ -529,6 +530,8 @@ export class TiptapFormatToolbarController {
 
   handleKeyDown(event) {
     if (!this.#state.open) return false;
+    if (isComposingKeyboardEvent(event)) return false;
+
     const key = String(event?.key ?? "");
 
     if (key === "Escape") {
