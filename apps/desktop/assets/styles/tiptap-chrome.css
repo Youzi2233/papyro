@@ -325,6 +325,7 @@
 .mn-tiptap-code-language-menu-item:hover,
 .mn-tiptap-code-language-menu-item:focus-visible,
 .mn-tiptap-code-language-menu-item.keyboard-active,
+.mn-tiptap-code-language-menu-item[data-keyboard-active="true"],
 .mn-tiptap-code-language-menu-item[data-active="true"] {
     outline: 0;
     border-color: color-mix(in srgb, var(--mn-accent) 14%, transparent);
@@ -339,7 +340,8 @@
 
 .mn-tiptap-code-language-menu-item[data-active="true"]::before,
 .mn-tiptap-code-language-menu-item:hover::before,
-.mn-tiptap-code-language-menu-item.keyboard-active::before {
+.mn-tiptap-code-language-menu-item.keyboard-active::before,
+.mn-tiptap-code-language-menu-item[data-keyboard-active="true"]::before {
     border-color: color-mix(in srgb, var(--mn-accent) 28%, var(--mn-border));
     background: color-mix(in srgb, var(--mn-accent) 10%, var(--mn-surface-raised));
     color: color-mix(in srgb, var(--mn-accent) 78%, var(--mn-ink));

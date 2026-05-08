@@ -21,10 +21,12 @@ export {
   usePapyroTiptapViewMode,
 } from "./runtime-context.jsx";
 export {
+  activeCodeBlockLanguageCommandIndex,
   codeBlockLanguagePickerLabel,
   createCodeBlockChromeCommands,
   createCodeBlockLanguageChrome,
   createCodeBlockLanguageCommands,
+  nextCodeBlockLanguageCommandIndex,
 } from "./commands/code-block-command-model.js";
 export {
   createTiptapReactCodeBlockNodeViewRenderer,

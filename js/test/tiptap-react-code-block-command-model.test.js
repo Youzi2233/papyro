@@ -2,10 +2,12 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  activeCodeBlockLanguageCommandIndex,
   codeBlockLanguagePickerLabel,
   createCodeBlockChromeCommands,
   createCodeBlockLanguageChrome,
   createCodeBlockLanguageCommands,
+  nextCodeBlockLanguageCommandIndex,
 } from "../src/tiptap-react/commands/code-block-command-model.js";
 
 test("React code block command model exposes stable language commands", () => {
@@ -80,6 +82,21 @@ test("React code block command model marks auto and custom languages", () => {
     }).some((command) => command.id === "code-language-custom-ts-node"),
     false,
   );
+});
+
+test("React code block command model navigates enabled language commands", () => {
+  const commands = createCodeBlockLanguageCommands({
+    language: "english",
+    currentLanguage: "ts-node",
+  });
+
+  assert.equal(commands.at(-1).active, true);
+  assert.equal(commands.at(-1).disabled, true);
+  assert.equal(activeCodeBlockLanguageCommandIndex(commands), commands.length - 1);
+  assert.equal(nextCodeBlockLanguageCommandIndex(commands, commands.length - 1, 1), 0);
+  assert.equal(nextCodeBlockLanguageCommandIndex(commands, 0, -1), commands.length - 2);
+  assert.equal(nextCodeBlockLanguageCommandIndex(commands, -1, 1), 0);
+  assert.equal(nextCodeBlockLanguageCommandIndex(commands, commands.length, -1), commands.length - 2);
 });
 
 test("React code block language chrome exposes explicit and auto-detected states", () => {

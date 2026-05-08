@@ -28,6 +28,12 @@ function normalizeCopyState(copyState) {
   return COPY_STATES.has(normalized) ? normalized : "idle";
 }
 
+function enabledCommandIndexes(commands = []) {
+  return (commands ?? [])
+    .map((command, index) => (command?.disabled ? null : index))
+    .filter((index) => Number.isInteger(index));
+}
+
 function groupLabel(language, groupKey) {
   if (groupKey === CODE_LANGUAGE_GROUP_KEY) {
     return localizedText(language, "Code language", "\u4ee3\u7801\u8bed\u8a00");
@@ -113,6 +119,28 @@ export function createCodeBlockLanguageCommands({
     ? customLanguageCommand(language, selectedLanguage)
     : null;
   return Object.freeze(custom ? [...commands, custom] : commands);
+}
+
+export function activeCodeBlockLanguageCommandIndex(commands = []) {
+  const activeIndex = (commands ?? []).findIndex((command) => command?.active);
+  if (activeIndex >= 0) return activeIndex;
+  return enabledCommandIndexes(commands)[0] ?? 0;
+}
+
+export function nextCodeBlockLanguageCommandIndex(commands = [], currentIndex = 0, direction = 1) {
+  const indexes = enabledCommandIndexes(commands);
+  if (indexes.length === 0) return activeCodeBlockLanguageCommandIndex(commands);
+
+  const current = Number.isInteger(currentIndex) ? currentIndex : indexes[0];
+  const currentEnabledOffset = indexes.indexOf(current);
+  if (currentEnabledOffset >= 0) {
+    return indexes[(currentEnabledOffset + direction + indexes.length) % indexes.length];
+  }
+
+  if (direction < 0) {
+    return [...indexes].reverse().find((index) => index < current) ?? indexes.at(-1);
+  }
+  return indexes.find((index) => index > current) ?? indexes[0];
 }
 
 export function createCodeBlockLanguageChrome({
