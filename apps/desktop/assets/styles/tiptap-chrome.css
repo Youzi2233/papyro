@@ -1009,6 +1009,7 @@
     z-index: 160;
     display: flex;
     align-items: center;
+    max-width: calc(100vw - 20px);
     padding: 5px;
     border: var(--mn-border-default);
     border-radius: var(--mn-radius-md);
@@ -1786,6 +1787,12 @@
     display: flex;
     align-items: center;
     gap: 3px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.mn-tiptap-format-toolbar-list::-webkit-scrollbar {
+    display: none;
 }
 
 .mn-tiptap-format-toolbar-button {
@@ -1854,6 +1861,49 @@
     text-decoration: underline;
     text-decoration-thickness: 1.5px;
     text-underline-offset: 3px;
+}
+
+.mn-tiptap-format-toolbar-button[data-command-id^="text-color-"] {
+    width: 30px;
+    min-width: 30px;
+    padding: 0;
+}
+
+.mn-tiptap-format-toolbar-button[data-command-id^="text-color-"] .mn-tiptap-format-toolbar-label {
+    position: relative;
+    width: 15px;
+    height: 18px;
+    color: var(--mn-ink);
+    font-size: var(--mn-type-caption);
+    font-weight: var(--mn-weight-semibold);
+    line-height: 15px;
+}
+
+.mn-tiptap-format-toolbar-button[data-command-id^="text-color-"] .mn-tiptap-format-toolbar-label::after {
+    content: "";
+    position: absolute;
+    left: 1px;
+    right: 1px;
+    bottom: 0;
+    height: 3px;
+    border-radius: var(--mn-radius-round);
+    background: currentColor;
+}
+
+.mn-tiptap-format-toolbar-button[data-command-id="text-color-ink"] .mn-tiptap-format-toolbar-label {
+    color: var(--mn-ink);
+}
+
+.mn-tiptap-format-toolbar-button[data-command-id="text-color-muted"] .mn-tiptap-format-toolbar-label {
+    color: var(--mn-ink-3);
+}
+
+.mn-tiptap-format-toolbar-button[data-command-id="text-color-accent"] .mn-tiptap-format-toolbar-label {
+    color: var(--mn-accent);
+}
+
+.mn-tiptap-format-toolbar-button[data-command-id="text-color-danger"] .mn-tiptap-format-toolbar-label {
+    color: var(--mn-danger);
 }
 
 .mn-tiptap-format-toolbar-button[data-command-id="highlight"] .mn-tiptap-format-toolbar-label {

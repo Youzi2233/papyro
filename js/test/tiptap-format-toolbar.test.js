@@ -40,12 +40,21 @@ function createEditor({ selected = true, active = [], viewportWidth = 1000 } = {
         calls.push(["toggleHighlight"]);
         return true;
       },
+      setColor: (color) => {
+        calls.push(["setColor", color]);
+        return true;
+      },
+      unsetColor: () => {
+        calls.push(["unsetColor"]);
+        return true;
+      },
       unsetAllMarks: () => {
         calls.push(["unsetAllMarks"]);
         return true;
       },
     },
     isActive: (name) => activeMarks.has(name),
+    getAttributes: (name) => (name === "textStyle" ? { color: null } : {}),
     view: {
       coordsAtPos: (pos) => ({
         left: pos * 10,
@@ -206,6 +215,10 @@ test("Tiptap format toolbar opens for non-empty Hybrid selections", () => {
       ["strike", false],
       ["code", false],
       ["link", false],
+      ["text-color-ink", true],
+      ["text-color-muted", false],
+      ["text-color-accent", false],
+      ["text-color-danger", false],
       ["highlight", false],
       ["clear-formatting", false],
     ],
@@ -302,6 +315,10 @@ test("Tiptap format toolbar exposes official mark commands and clear formatting"
       ["strike", false],
       ["code", false],
       ["link", false],
+      ["text-color-ink", true],
+      ["text-color-muted", false],
+      ["text-color-accent", false],
+      ["text-color-danger", false],
       ["highlight", true],
       ["clear-formatting", false],
     ],
@@ -311,6 +328,18 @@ test("Tiptap format toolbar exposes official mark commands and clear formatting"
   assert.equal(controller.run("clear-formatting"), true);
 
   assert.deepEqual(calls, [["unsetAllMarks"], ["focus"]]);
+});
+
+test("Tiptap format toolbar exposes official text color commands", () => {
+  const { calls, editor } = createEditor();
+  const view = createViewSpy();
+  const controller = createTiptapFormatToolbarController({ view });
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+
+  calls.length = 0;
+  assert.equal(controller.run("text-color-danger"), true);
+
+  assert.deepEqual(calls, [["setColor", "var(--mn-danger)"], ["focus"]]);
 });
 
 test("Tiptap format toolbar buttons run commands from pointerdown", () => {

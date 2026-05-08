@@ -1,4 +1,5 @@
 import { localizedText } from "./tiptap-i18n.js";
+import { PAPYRO_TEXT_COLOR_OPTIONS } from "./tiptap-text-style.js";
 
 function normalizeCommandId(value) {
   return String(value ?? "").trim().toLowerCase();
@@ -27,6 +28,10 @@ function isCommandActive(editor, activeName, activeAttrs) {
   return activeAttrs ? editor.isActive(activeName, activeAttrs) : editor.isActive(activeName);
 }
 
+function textStyleColor(editor) {
+  return editor?.getAttributes?.("textStyle")?.color ?? null;
+}
+
 function formatCommandLanguage(context = {}) {
   return context.language ?? context.entry?.preferences?.language ?? "english";
 }
@@ -38,6 +43,30 @@ const FORMAT_COMMAND_LABELS = Object.freeze({
   strike: ["Strike", "删除线", "Toggle strikethrough", "切换删除线"],
   code: ["Inline code", "行内代码", "Toggle inline code", "切换行内代码"],
   link: ["Link", "链接", "Edit link", "编辑链接"],
+  "text-color-ink": [
+    "Default text",
+    "默认文字",
+    "Use the current editor text color",
+    "使用当前编辑器文字颜色",
+  ],
+  "text-color-muted": [
+    "Muted text",
+    "弱化文字",
+    "De-emphasize supporting text",
+    "弱化辅助文字",
+  ],
+  "text-color-accent": [
+    "Accent text",
+    "强调文字",
+    "Apply accent text color",
+    "应用强调文字颜色",
+  ],
+  "text-color-danger": [
+    "Danger text",
+    "危险文字",
+    "Apply danger text color",
+    "应用危险文字颜色",
+  ],
   highlight: ["Highlight", "高亮", "Toggle highlight", "切换高亮"],
   "clear-formatting": [
     "Clear formatting",
@@ -155,6 +184,19 @@ export const PAPYRO_TIPTAP_FORMAT_COMMANDS = Object.freeze([
     focusAfterRun: false,
     priority: 45,
   }),
+  ...PAPYRO_TEXT_COLOR_OPTIONS.map((option, index) =>
+    createCommand({
+      id: `text-color-${option.id}`,
+      label: "A",
+      title: option.title,
+      ariaLabel: option.description,
+      commandName: option.color ? "setColor" : "unsetColor",
+      commandArgs: option.color ? [option.color] : [],
+      icon: `text-color ${option.id}`,
+      active: ({ editor }) => textStyleColor(editor) === (option.color ?? null),
+      priority: 46 + index,
+    }),
+  ),
   createCommand({
     id: "highlight",
     label: "H",

@@ -10,8 +10,8 @@ import {
   viewportSize,
 } from "./tiptap-ui-primitives.js";
 
-const REGULAR_TOOLBAR_WIDTH = 282;
-const COMPACT_TOOLBAR_WIDTH = 252;
+const REGULAR_TOOLBAR_WIDTH = 410;
+const COMPACT_TOOLBAR_WIDTH = 352;
 const TOOLBAR_HEIGHT = 38;
 
 function selectionContext(editor) {
