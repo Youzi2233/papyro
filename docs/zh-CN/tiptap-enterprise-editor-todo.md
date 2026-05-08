@@ -272,6 +272,7 @@ node scripts/check-tiptap-release-smoke.js
   - 当前覆盖：真实运行时的表格上下文菜单从 editor 入口注入，并由 React 组件渲染。headless 命令模型和 fake-DOM fallback 会保留到其余表格 chrome 完成迁移。
   - 当前覆盖：选中单元格内容现在可以通过 Papyro 命令清空，底层复用官方 `@tiptap/pm/tables` 的 `deleteCellSelection` utility，并已补齐菜单元数据、国际化标签和真实 editor 挂载测试。该命令也支持官方 table-node 的 `resetAttrs` 语义，可在清空内容时同步重置对齐/背景属性；同时提供单独的清除样式菜单项，保留文本内容。
 - [ ] 从细边缘句柄打开行/列操作菜单。
+  - 当前覆盖：行/列上下文菜单现在也暴露与单元格选区一致的清空内容和清除样式动作，轴向选区不需要退回单元格菜单，也能复用官方表格清空/重置语义。
 - [ ] 列边框支持 resize，即使当前已有单元格选中也不能失效。
   - 当前覆盖：已选中的表格单元格不会仅因为选中态就露出列 resize handle；resize chrome 只跟随 hover 或正在 resize 的明确意图。
 - [ ] 增加快捷新增行/列轨道：贴近表格边缘的细长轨道，宽/高跟随整表，中间是 `+`。

@@ -87,12 +87,16 @@ test("Tiptap table command scope orders row column and table menus by intent", (
   assert.deepEqual(commandIds(visibleTableCommands(TABLE_COMMANDS, "context", "row")), [
     "add-row-after",
     "add-row-before",
+    "clear-cell-content",
+    "clear-cell-style",
     "toggle-header-row",
     "delete-row",
   ]);
   assert.deepEqual(commandIds(visibleTableCommands(TABLE_COMMANDS, "context", "column")), [
     "add-column-after",
     "add-column-before",
+    "clear-cell-content",
+    "clear-cell-style",
     "toggle-header-column",
     "delete-column",
   ]);

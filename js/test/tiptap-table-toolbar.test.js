@@ -1952,6 +1952,8 @@ test("Tiptap table toolbar scopes context commands to row and column selections"
     addColumnAfter: () => true,
     deleteColumn: () => true,
     toggleHeaderColumn: () => true,
+    clearSelectedTableCells: () => true,
+    resetSelectedTableCellAttrs: () => true,
     mergeCells: () => true,
     splitCell: () => true,
     setCellAttribute: () => true,
@@ -1971,26 +1973,22 @@ test("Tiptap table toolbar scopes context commands to row and column selections"
     controller.state.commands
       .filter((command) => !command.disabled)
       .map((command) => command.id)
-      .filter((id) => ["add-row-before", "add-row-after", "delete-row", "toggle-header-row", "merge-cells"].includes(id)),
-    ["add-row-before", "add-row-after", "delete-row", "merge-cells", "toggle-header-row"],
+      .filter((id) => ["add-row-before", "add-row-after", "clear-cell-content", "clear-cell-style", "delete-row", "toggle-header-row", "merge-cells"].includes(id)),
+    ["add-row-before", "add-row-after", "delete-row", "merge-cells", "clear-cell-content", "clear-cell-style", "toggle-header-row"],
   );
   assert.deepEqual(
-    created
-      .filter((element) => element.dataset.commandId)
-      .map((element) => element.dataset.commandId)
-      .filter((id) => ["add-row-before", "add-row-after", "delete-row", "toggle-header-row", "merge-cells"].includes(id)),
-    ["add-row-after", "add-row-before", "toggle-header-row", "delete-row"],
+    toolbarCommandIds(created)
+      .filter((id) => ["add-row-before", "add-row-after", "clear-cell-content", "clear-cell-style", "delete-row", "toggle-header-row", "merge-cells"].includes(id)),
+    ["add-row-after", "add-row-before", "clear-cell-content", "clear-cell-style", "toggle-header-row", "delete-row"],
   );
 
   controller.selectAxis("column", 0);
   assert.equal(controller.state.selection.kind, "column");
   assert.equal(controller.toggleMenu("context", { open: true }), true);
   assert.deepEqual(
-    created
-      .filter((element) => element.dataset.commandId && !element.removed)
-      .map((element) => element.dataset.commandId)
-      .filter((id) => ["add-column-before", "add-column-after", "delete-column", "toggle-header-column", "merge-cells"].includes(id)),
-    ["add-column-after", "add-column-before", "toggle-header-column", "delete-column"],
+    toolbarCommandIds(created)
+      .filter((id) => ["add-column-before", "add-column-after", "clear-cell-content", "clear-cell-style", "delete-column", "toggle-header-column", "merge-cells"].includes(id)),
+    ["add-column-after", "add-column-before", "clear-cell-content", "clear-cell-style", "toggle-header-column", "delete-column"],
   );
 });
 
@@ -1999,6 +1997,8 @@ test("Tiptap table toolbar separates destructive row actions from ordinary comma
   const { editor } = createTableHarness({
     addRowBefore: () => true,
     addRowAfter: () => true,
+    clearSelectedTableCells: () => true,
+    resetSelectedTableCellAttrs: () => true,
     deleteRow: () => true,
     toggleHeaderRow: () => true,
   });
@@ -2017,6 +2017,7 @@ test("Tiptap table toolbar separates destructive row actions from ordinary comma
   const groups = tableToolbarList(created).children;
   const dangerGroup = groups.find((element) => element.dataset.layoutGroup === "danger");
   const rowGroup = groups.find((element) => element.dataset.group === "Rows");
+  const cellGroup = groups.find((element) => element.dataset.group === "Cells");
   const headerGroup = groups.find((element) => element.dataset.group === "Headers");
 
   assert.equal(dangerGroup.dataset.groupKey, "danger");
@@ -2037,6 +2038,15 @@ test("Tiptap table toolbar separates destructive row actions from ordinary comma
     ],
   );
   assert.deepEqual(
+    cellGroup.children
+      .filter((element) => element.dataset.commandId)
+      .map((element) => [element.dataset.commandId, element.textContent]),
+    [
+      ["clear-cell-content", "Clear cell content"],
+      ["clear-cell-style", "Clear cell style"],
+    ],
+  );
+  assert.deepEqual(
     headerGroup.children
       .filter((element) => element.dataset.commandId)
       .map((element) => [element.dataset.commandId, element.textContent]),
@@ -2053,6 +2063,8 @@ test("Tiptap table context menu renders text commands as command rows", () => {
   const { editor } = createTableHarness({
     addRowBefore: () => true,
     addRowAfter: () => true,
+    clearSelectedTableCells: () => true,
+    resetSelectedTableCellAttrs: () => true,
     deleteRow: () => true,
     toggleHeaderRow: () => true,
   });
@@ -2066,6 +2078,8 @@ test("Tiptap table context menu renders text commands as command rows", () => {
   rowHandle.onpointerdown({ preventDefault() {}, stopPropagation() {} });
 
   const insertBelow = toolbarCommandButton(created, "add-row-after");
+  const clearContent = toolbarCommandButton(created, "clear-cell-content");
+  const clearStyle = toolbarCommandButton(created, "clear-cell-style");
   const headerRow = toolbarCommandButton(created, "toggle-header-row");
   const deleteRow = toolbarCommandButton(created, "delete-row");
 
@@ -2081,6 +2095,10 @@ test("Tiptap table context menu renders text commands as command rows", () => {
     true,
   );
   assert.equal(insertBelow.children[1].textContent, "Insert row below");
+  assert.equal(clearContent.children[0].dataset.icon, "clear-content");
+  assert.equal(clearContent.children[1].textContent, "Clear cell content");
+  assert.equal(clearStyle.children[0].dataset.icon, "clear-style");
+  assert.equal(clearStyle.children[1].textContent, "Clear cell style");
   assert.equal(headerRow.children[0].dataset.icon, "header-row");
   assert.equal(headerRow.children[1].textContent, "Toggle header row");
   assert.equal(deleteRow.children[0].dataset.icon, "delete-row");

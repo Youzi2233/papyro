@@ -272,6 +272,7 @@ Tasks:
   - Current coverage: the table context menu is injected at the editor entry boundary and rendered by React in the real runtime. The headless command model and fake-DOM fallback remain in place while the rest of table chrome migrates.
   - Current coverage: selected cell content can now be cleared through a Papyro command backed by the official `@tiptap/pm/tables` `deleteCellSelection` utility, with context-menu metadata, i18n labels, and mounted-editor tests. The command also supports the official table-node `resetAttrs` semantics for clearing content while resetting alignment/background attrs, and a separate style-reset menu action keeps text intact.
 - [ ] Add row and column action menus from slim edge handles.
+  - Current coverage: row and column context menus now expose the same clear-content and clear-style actions as cell selections, so axis selections can reuse the official table clear/reset semantics without switching back to a cell menu.
 - [ ] Add resize affordance on column borders that still works while a cell is active.
   - Current coverage: selected table cells no longer reveal column resize handles by selection alone; resize chrome stays tied to hover or active resize intent.
 - [ ] Add quick row and column insertion rails: slim full-width/full-height rails with centered `+`, close enough to the table to be discoverable.

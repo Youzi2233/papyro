@@ -248,12 +248,16 @@ export const TABLE_MENU_COMMAND_SCOPE = Object.freeze({
   row: new Set([
     "add-row-before",
     "add-row-after",
+    "clear-cell-content",
+    "clear-cell-style",
     "delete-row",
     "toggle-header-row",
   ]),
   column: new Set([
     "add-column-before",
     "add-column-after",
+    "clear-cell-content",
+    "clear-cell-style",
     "delete-column",
     "toggle-header-column",
   ]),
@@ -269,12 +273,16 @@ export const TABLE_COMMAND_CONTEXT_ORDER = Object.freeze({
   row: [
     "add-row-after",
     "add-row-before",
+    "clear-cell-content",
+    "clear-cell-style",
     "toggle-header-row",
     "delete-row",
   ],
   column: [
     "add-column-after",
     "add-column-before",
+    "clear-cell-content",
+    "clear-cell-style",
     "toggle-header-column",
     "delete-column",
   ],
