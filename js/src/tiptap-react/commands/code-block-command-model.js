@@ -3,6 +3,7 @@ import {
   codeBlockCopiedLabel,
   codeBlockCopyFailedLabel,
   codeBlockCopyLabel,
+  codeBlockLanguageDisplayLabel,
   codeBlockLanguageOption,
   codeBlockLanguageOptionToken,
   codeBlockLanguageUiLabel,
@@ -112,6 +113,45 @@ export function createCodeBlockLanguageCommands({
     ? customLanguageCommand(language, selectedLanguage)
     : null;
   return Object.freeze(custom ? [...commands, custom] : commands);
+}
+
+export function createCodeBlockLanguageChrome({
+  language = "english",
+  currentLanguage = null,
+  detectedLanguage = null,
+} = {}) {
+  const selectedLanguage = normalizeCodeBlockLanguage(currentLanguage);
+  const normalizedDetectedLanguage = selectedLanguage
+    ? null
+    : normalizeCodeBlockLanguage(detectedLanguage);
+  const commands = createCodeBlockLanguageCommands({
+    language,
+    currentLanguage: selectedLanguage,
+  });
+  const command = commands.find((candidate) => candidate.active) ?? commands[0];
+  const label = codeBlockLanguageDisplayLabel(
+    language,
+    selectedLanguage,
+    normalizedDetectedLanguage,
+  );
+  const actionLabel = localizedText(
+    language,
+    `Change code language: ${label}`,
+    `修改代码语言：${label}`,
+  );
+
+  return Object.freeze({
+    command,
+    label,
+    title: actionLabel,
+    ariaLabel: actionLabel,
+    token: command?.token ?? codeBlockLanguageOptionToken(selectedLanguage),
+    language: selectedLanguage,
+    value: selectedLanguage ?? normalizedDetectedLanguage ?? "auto",
+    mode: selectedLanguage ? "explicit" : "auto",
+    detectedLanguage: normalizedDetectedLanguage ?? "",
+    optionId: command?.optionId ?? "auto",
+  });
 }
 
 export function createCodeBlockChromeCommands({

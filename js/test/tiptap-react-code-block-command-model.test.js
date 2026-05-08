@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   codeBlockLanguagePickerLabel,
   createCodeBlockChromeCommands,
+  createCodeBlockLanguageChrome,
   createCodeBlockLanguageCommands,
 } from "../src/tiptap-react/commands/code-block-command-model.js";
 
@@ -79,6 +80,43 @@ test("React code block command model marks auto and custom languages", () => {
     }).some((command) => command.id === "code-language-custom-ts-node"),
     false,
   );
+});
+
+test("React code block language chrome exposes explicit and auto-detected states", () => {
+  assert.deepEqual(createCodeBlockLanguageChrome({
+    language: "english",
+    currentLanguage: "Rust",
+  }), {
+    command: createCodeBlockLanguageCommands({
+      language: "english",
+      currentLanguage: "rust",
+    }).find((command) => command.id === "code-language-rust"),
+    label: "Rust",
+    title: "Change code language: Rust",
+    ariaLabel: "Change code language: Rust",
+    token: "RS",
+    language: "rust",
+    value: "rust",
+    mode: "explicit",
+    detectedLanguage: "",
+    optionId: "rust",
+  });
+
+  const autoChrome = createCodeBlockLanguageChrome({
+    language: "english",
+    currentLanguage: null,
+    detectedLanguage: "javascript",
+  });
+
+  assert.equal(autoChrome.command.id, "code-language-auto");
+  assert.equal(autoChrome.label, "Auto \u00b7 JavaScript");
+  assert.equal(autoChrome.title, "Change code language: Auto \u00b7 JavaScript");
+  assert.equal(autoChrome.token, "AU");
+  assert.equal(autoChrome.language, null);
+  assert.equal(autoChrome.value, "javascript");
+  assert.equal(autoChrome.mode, "auto");
+  assert.equal(autoChrome.detectedLanguage, "javascript");
+  assert.equal(autoChrome.optionId, "auto");
 });
 
 test("React code block command model localizes language and chrome commands", () => {

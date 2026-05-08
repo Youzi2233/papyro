@@ -7,13 +7,13 @@ import {
 import {
   codeBlockDomAttributes,
   codeBlockHighlightedLanguage,
-  codeBlockLanguageDisplayLabel,
   inferCodeBlockLanguage,
   setCodeBlockLanguage,
 } from "../../tiptap-code-block.js";
 import { usePointerActivation } from "../hooks/use-pointer-activation.js";
 import {
   createCodeBlockChromeCommands,
+  createCodeBlockLanguageChrome,
   createCodeBlockLanguageCommands,
 } from "../commands/code-block-command-model.js";
 import { usePapyroTiptapLanguage } from "../runtime-context.jsx";
@@ -62,7 +62,7 @@ function writeCodeToClipboard(text) {
 }
 
 function CodeLanguageButton({
-  command,
+  chrome,
   expanded,
   onToggle,
 }) {
@@ -74,16 +74,18 @@ function CodeLanguageButton({
       className="mn-tiptap-code-language-button"
       contentEditable={false}
       draggable={false}
-      data-language-badge={command.token}
-      data-language-value={command.language ?? "auto"}
-      data-language-mode={command.language ? "explicit" : "auto"}
+      data-language-badge={chrome.token}
+      data-language-option-id={chrome.optionId}
+      data-language-value={chrome.value}
+      data-language-mode={chrome.mode}
+      data-language-detected={chrome.detectedLanguage}
       aria-haspopup="menu"
       aria-expanded={String(expanded)}
-      aria-label={command.title}
-      title={command.title}
+      aria-label={chrome.ariaLabel}
+      title={chrome.title}
       {...activation}
     >
-      <span className="mn-tiptap-code-language-title">{command.title}</span>
+      <span className="mn-tiptap-code-language-title">{chrome.label}</span>
     </button>
   );
 }
@@ -174,11 +176,6 @@ export function PapyroCodeBlockNodeView({
   const copyTimerRef = useRef(null);
   const currentLanguage = node?.attrs?.language ?? null;
   const detectedLanguage = currentLanguage ? null : inferCodeBlockLanguage(node?.textContent);
-  const displayLabel = codeBlockLanguageDisplayLabel(
-    language,
-    currentLanguage,
-    detectedLanguage,
-  );
   const rootAttributes = useMemo(
     () =>
       codeBlockDomAttributes({
@@ -189,12 +186,15 @@ export function PapyroCodeBlockNodeView({
       }),
     [detectedLanguage, language, node, wrapped],
   );
-  const languageCommands = useMemo(
-    () => createCodeBlockLanguageCommands({ language, currentLanguage }),
-    [currentLanguage, language],
+  const languageChrome = useMemo(
+    () =>
+      createCodeBlockLanguageChrome({
+        language,
+        currentLanguage,
+        detectedLanguage,
+      }),
+    [currentLanguage, detectedLanguage, language],
   );
-  const activeLanguage =
-    languageCommands.find((command) => command.active) ?? languageCommands[0];
   const chromeCommands = useMemo(
     () => createCodeBlockChromeCommands({ language, wrapped, copyState }),
     [copyState, language, wrapped],
@@ -266,7 +266,7 @@ export function PapyroCodeBlockNodeView({
       className="mn-tiptap-code-block-inner"
     >
       <CodeLanguageButton
-        command={activeLanguage}
+        chrome={languageChrome}
         expanded={menuOpen}
         onToggle={() => setMenuOpen((value) => !value)}
       />

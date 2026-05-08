@@ -23,6 +23,7 @@ export {
 export {
   codeBlockLanguagePickerLabel,
   createCodeBlockChromeCommands,
+  createCodeBlockLanguageChrome,
   createCodeBlockLanguageCommands,
 } from "./commands/code-block-command-model.js";
 export {

@@ -119,10 +119,13 @@ test("React runtime context exposes stable editor runtime hooks", () => {
 
 test("React code block chrome exposes a typed command model", () => {
   assert.match(codeBlockCommandModelSource, /export function createCodeBlockLanguageCommands/u);
+  assert.match(codeBlockCommandModelSource, /export function createCodeBlockLanguageChrome/u);
   assert.match(codeBlockCommandModelSource, /export function createCodeBlockChromeCommands/u);
   assert.match(codeBlockCommandModelSource, /PAPYRO_CODE_LANGUAGE_OPTIONS/u);
   assert.match(commandMenuSource, /createCodeBlockLanguageCommands/u);
+  assert.match(codeBlockNodeViewSource, /createCodeBlockLanguageChrome/u);
   assert.match(indexSource, /createCodeBlockLanguageCommands/u);
+  assert.match(indexSource, /createCodeBlockLanguageChrome/u);
 });
 
 test("React code block node view follows Tiptap React node view lifecycle", () => {
