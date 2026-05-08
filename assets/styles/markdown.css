@@ -540,7 +540,7 @@
 .mn-tiptap-table-header.mn-tiptap-table-cell-active > .column-resize-handle {
     right: -8px;
     width: 16px;
-    opacity: .5;
+    opacity: 0;
 }
 
 .mn-tiptap-editor .column-resize-handle {
@@ -577,15 +577,21 @@
 .mn-tiptap-table-cell.mn-tiptap-table-cell-active > .column-resize-handle::before,
 .mn-tiptap-table-header.mn-tiptap-table-cell-active > .column-resize-handle::before {
     right: 7px;
-    width: 1.5px;
+    width: 2px;
     background: color-mix(in srgb, var(--mn-accent) 88%, transparent);
-    opacity: .64;
+    opacity: 0;
 }
 
 .mn-tiptap-table-cell:hover > .column-resize-handle,
 .mn-tiptap-table-header:hover > .column-resize-handle,
 .mn-tiptap-editor.resize-cursor .column-resize-handle {
     opacity: .7;
+}
+
+.mn-tiptap-table-cell:hover > .column-resize-handle::before,
+.mn-tiptap-table-header:hover > .column-resize-handle::before,
+.mn-tiptap-editor.resize-cursor .column-resize-handle::before {
+    opacity: .64;
 }
 
 .mn-tiptap-editor .column-resize-handle:hover,
