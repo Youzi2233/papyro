@@ -179,6 +179,7 @@ Tasks:
   - Current coverage: empty slash and `+` menus promote successfully used commands into a Recent group while preserving `sourceIndex` for diagnostics and tests.
 - [ ] Support nested detail panels for table size, callout style, code language, and future diagram/math templates.
   - Current coverage: table size, callout style, and code language panels are implemented and anchored to the active command row.
+  - Current coverage: the React menu now expands the table size picker inline under the Table command, so the size grid no longer appears as a detached top-right side panel. Callout style and code language still use side panels because they are longer choice lists.
 - [x] Fix keyboard navigation so ArrowDown can reach every command and never loops before the last item.
 - [x] Support Home and End navigation across the full insert command list.
 - [x] Position detail panels beside the selected command, not at awkward top-right coordinates.

@@ -181,6 +181,14 @@ test("React command chrome uses shared menu primitives", () => {
   assert.match(tableContextMenuSource, /<CommandRow/u);
 });
 
+test("React slash table picker expands inline instead of a detached side panel", () => {
+  assert.match(commandMenuSource, /mn-tiptap-slash-menu-item-shell/u);
+  assert.match(commandMenuSource, /inlinePanel\s*=\s*command\?\.id === "table"/u);
+  assert.match(commandMenuSource, /className=\{`mn-tiptap-table-size-picker\$\{inline \? " inline" : ""\}`\}/u);
+  assert.match(commandMenuSource, /data-layout/u);
+  assert.doesNotMatch(commandMenuSource, /sidePanel === "table"/u);
+});
+
 test("React floating chrome shares positioning utilities", () => {
   assert.match(floatingUtilsSource, /export function positionReactFloatingElement/u);
   assert.match(floatingUtilsSource, /export function shouldFlipFloatingSidePanel/u);

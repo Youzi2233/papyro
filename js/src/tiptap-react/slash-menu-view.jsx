@@ -55,6 +55,10 @@ function commandItemByIndex(root, index) {
   }
 }
 
+function reactSlashMenuSidePanel(command) {
+  return command?.id === "table" ? "none" : commandMenuSidePanel(command);
+}
+
 export class TiptapReactSlashMenuView {
   #document;
   #ownerId;
@@ -91,7 +95,7 @@ export class TiptapReactSlashMenuView {
 
     this.#language = state.language ?? "english";
     this.#root.setAttribute("aria-label", markdownCommandsLabel(this.#language));
-    this.#root.dataset.sidePanel = commandMenuSidePanel(
+    this.#root.dataset.sidePanel = reactSlashMenuSidePanel(
       state.commands?.[state.selectedIndex],
     );
 
@@ -143,7 +147,7 @@ export class TiptapReactSlashMenuView {
   #syncSidePanelPlacement(state, editor) {
     if (!this.#root) return;
     const selectedCommand = state.commands?.[state.selectedIndex];
-    const panel = commandMenuSidePanel(selectedCommand);
+    const panel = reactSlashMenuSidePanel(selectedCommand);
     const panelWidth = commandMenuSidePanelWidth(panel);
     if (!panelWidth) {
       this.#root.dataset.sidePlacement = "right";

@@ -99,6 +99,7 @@ const TIPTAP_COMMAND_PANEL_REQUIREMENTS = [
   ["Tiptap slash recent command tone", ".mn-tiptap-slash-menu-icon[data-command-group=\"recent\"]", "--mn-command-icon-accent"],
   ["Tiptap slash command icon system", ".mn-tiptap-command-icon-svg", "width: 15px"],
   ["Tiptap slash fallback icon system", ".mn-tiptap-slash-menu-icon[data-icon-source=\"fallback\"]::before", "data-icon=\"table\""],
+  ["Tiptap slash table inline picker", ".mn-tiptap-table-size-picker.inline", "position: relative"],
   ["Tiptap block action panel", ".mn-tiptap-block-action-menu", "user-select: none"],
   ["Tiptap block action active rhythm", ".mn-tiptap-block-action-menu-item.active", "border-color: color-mix"],
   ["Tiptap block action list scrolling", ".mn-tiptap-block-action-menu-list", "scrollbar-gutter: stable"],
