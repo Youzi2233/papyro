@@ -38,6 +38,7 @@ const BUNDLE_COPIES = [
 ];
 
 const RUNTIME_STYLE_COPIES = [
+  ["assets/styles/markdown.css", "apps/desktop/assets/styles/markdown.css"],
   ["assets/styles/tiptap-chrome.css", "apps/desktop/assets/styles/tiptap-chrome.css"],
 ];
 

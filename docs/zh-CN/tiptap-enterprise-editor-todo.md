@@ -272,6 +272,7 @@ node scripts/check-tiptap-release-smoke.js
   - 当前覆盖：空白单元格表面和空段落表面会走表格聚焦 fallback；已有文字的行内内容继续交给 ProseMirror 原生文本选择，不会启动表格范围拖选。
 - [x] 单元格之间不能有视觉间隙，保证 selection 和 resize border 连续。
   - 当前覆盖：Tiptap 表格单元格使用 collapsed border、border-box 背景绘制，并由样式 smoke 守护连续单元格表面。
+  - 当前打磨：表格网格绘制与编辑器背景隔离，选中单元格保持克制的活跃边框，选中/激活状态下仍保留 resize rail，但不额外增加常驻 chrome。
 - [x] 点击单元格后，用主题色边框高亮当前单元格。
   - 当前覆盖：活跃和选中单元格使用更克制、连续的主题色边框；单元格菜单触发点按真实单元格垂直居中锚定，hover 只作为次级反馈。
 - [ ] 多单元格框选后显示克制遮罩，并在选区边缘显示小操作触发点。
