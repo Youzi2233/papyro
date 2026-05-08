@@ -1,3 +1,5 @@
+import { NodeSelection, TextSelection } from "@tiptap/pm/state";
+
 export function targetEndPos(target) {
   const nodeSize = target?.node?.nodeSize ?? target?.block?.pmViewDesc?.node?.nodeSize ?? 0;
   return Number.isFinite(target?.pos) ? target.pos + Math.max(1, nodeSize) : null;
@@ -72,6 +74,23 @@ export function canMoveTiptapBlock(editor, target, direction) {
   return blockSiblingDrop(editor, target, direction) !== null;
 }
 
+function blockMoveSelection(doc, node, pos) {
+  if (!doc || !node || !Number.isFinite(pos)) {
+    return null;
+  }
+
+  try {
+    if (NodeSelection.isSelectable(node)) {
+      return NodeSelection.create(doc, pos);
+    }
+
+    const resolved = doc.resolve(pos);
+    return TextSelection.near(resolved, 1);
+  } catch (_error) {
+    return null;
+  }
+}
+
 export function createTiptapBlockMove(editor, source, drop) {
   const state = editor?.state;
   const doc = state?.doc;
@@ -114,8 +133,12 @@ export function createTiptapBlockMove(editor, source, drop) {
     }
 
     tr = tr.insert(insertPos, node);
+    const selection = blockMoveSelection(tr.doc, node, insertPos);
+    if (selection && typeof tr.setSelection === "function") {
+      tr = tr.setSelection(selection);
+    }
     tr = typeof tr.scrollIntoView === "function" ? tr.scrollIntoView() : tr;
-    return { tr, pos: insertPos };
+    return { tr, pos: insertPos, selection };
   } catch (_error) {
     return null;
   }
@@ -126,10 +149,12 @@ export function moveTiptapBlock(editor, source, drop) {
   if (!move) return false;
 
   editor?.view?.dispatch?.(move.tr);
-  if (typeof editor?.commands?.setNodeSelection === "function") {
-    editor.commands.setNodeSelection(move.pos);
-  } else {
-    editor?.commands?.setTextSelection?.(move.pos);
+  if (!move.selection) {
+    if (typeof editor?.commands?.setNodeSelection === "function") {
+      editor.commands.setNodeSelection(move.pos);
+    } else {
+      editor?.commands?.setTextSelection?.(move.pos);
+    }
   }
   editor?.commands?.focus?.();
   return true;

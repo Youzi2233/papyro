@@ -244,6 +244,7 @@ Tasks:
 - [ ] Highlight the whole semantic block, including inline code and mixed marks.
   - Current coverage: block-handle actions now prefer Tiptap's official `setNodeSelection` for the semantic block and only fall back to a full textblock range when node selection is unavailable, so mixed inline marks and inline code no longer define the perceived selection boundary.
 - [ ] Implement reliable drag reorder with a drop indicator and transaction-level tests.
+  - Current coverage: the shared block-move helper now creates the ProseMirror selection on the same transaction that reorders the node, so dispatch applies move and selection atomically instead of relying on a second post-dispatch command. Focused tests now exercise real ProseMirror documents for upward/downward moves, sibling drop boundaries, self-drop rejection, and the no-fallback command path when the transaction already carries selection.
 - [ ] Limit handle ownership for complex nodes: tables, code blocks, images, math, and Mermaid get one block-level handle, not per-cell or per-child handles.
   - Done for the compatibility handle path: table, code block, image node view, display math, and Mermaid descendants now resolve to the outer complex block.
   - Still required: the final React handle implementation based on official drag-handle/node-range APIs.
