@@ -22,6 +22,18 @@ const blockActionMenuSource = readFileSync(
   new URL("../src/tiptap-react/components/block-action-menu.jsx", import.meta.url),
   "utf8",
 );
+const slashMenuViewSource = readFileSync(
+  new URL("../src/tiptap-react/slash-menu-view.jsx", import.meta.url),
+  "utf8",
+);
+const blockActionMenuViewSource = readFileSync(
+  new URL("../src/tiptap-react/block-action-menu-view.jsx", import.meta.url),
+  "utf8",
+);
+const floatingUtilsSource = readFileSync(
+  new URL("../src/tiptap-react/utils/floating.js", import.meta.url),
+  "utf8",
+);
 const primitivesSource = readFileSync(
   new URL("../src/tiptap-react/components/primitives.jsx", import.meta.url),
   "utf8",
@@ -58,4 +70,13 @@ test("React command chrome uses shared menu primitives", () => {
   assert.match(blockActionMenuSource, /from "\.\/primitives\.jsx"/u);
   assert.match(blockActionMenuSource, /<CommandRow/u);
   assert.match(blockActionMenuSource, /<CommandText/u);
+});
+
+test("React floating chrome shares positioning utilities", () => {
+  assert.match(floatingUtilsSource, /export function positionReactFloatingElement/u);
+  assert.match(floatingUtilsSource, /export function shouldFlipFloatingSidePanel/u);
+  assert.match(slashMenuViewSource, /from "\.\/utils\/floating\.js"/u);
+  assert.match(blockActionMenuViewSource, /from "\.\/utils\/floating\.js"/u);
+  assert.doesNotMatch(slashMenuViewSource, /positionFloatingElement/u);
+  assert.doesNotMatch(blockActionMenuViewSource, /positionFloatingElement/u);
 });

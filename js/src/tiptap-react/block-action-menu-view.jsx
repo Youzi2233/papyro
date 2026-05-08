@@ -7,40 +7,34 @@ import {
   clamp,
   defaultDocument,
   defaultWindow,
-  positionFloatingElement,
   setHidden,
   syncMenuActiveDescendant,
-  viewportSize,
 } from "../tiptap-ui-primitives.js";
 import { PapyroBlockActionMenu } from "./components/block-action-menu.jsx";
 import {
   blockActionSubmenuPanelWidth,
   commandSubmenuId,
 } from "./commands/block-action-menu-model.js";
+import {
+  positionReactFloatingElement,
+  shouldFlipFloatingSidePanel,
+  usableFloatingRect,
+} from "./utils/floating.js";
 
 const DEFAULT_WIDTH = 168;
 const DEFAULT_HEIGHT = 340;
 const DEFAULT_MARGIN = 10;
 const SUBMENU_GAP = 6;
 
-function usableAnchorRect(rect) {
-  if (!rect) return false;
-  const left = Number(rect.left);
-  const top = Number(rect.top);
-  const right = Number(rect.right);
-  const bottom = Number(rect.bottom);
-  if (![left, top, right, bottom].every(Number.isFinite)) return false;
-  return Math.abs(left) + Math.abs(top) > 0 || right > left || bottom > top;
-}
-
 function placeMenu(element, target, fallbackWindow, anchorRect = null) {
-  const rect = usableAnchorRect(anchorRect)
+  const rect = usableFloatingRect(anchorRect)
     ? anchorRect
     : target?.block?.getBoundingClientRect?.();
-  if (!element || !rect) return;
-
-  positionFloatingElement(element, rect, {
-    viewport: viewportSize(target.block, fallbackWindow),
+  positionReactFloatingElement({
+    element,
+    rect,
+    reference: target?.block,
+    fallbackWindow,
     size: {
       width: DEFAULT_WIDTH,
       height: DEFAULT_HEIGHT,
@@ -152,14 +146,14 @@ export class TiptapReactBlockActionMenuView {
       return;
     }
 
-    const rect = this.#root.getBoundingClientRect?.();
-    const viewport = viewportSize(this.#root, this.#window);
-    const neededWidth = blockActionSubmenuPanelWidth() + SUBMENU_GAP + DEFAULT_MARGIN;
-    const shouldFlip =
-      rect &&
-      rect.right + neededWidth > viewport.width &&
-      rect.left - neededWidth > DEFAULT_MARGIN;
-    this.#root.dataset.sidePlacement = shouldFlip ? "left" : "right";
+    this.#root.dataset.sidePlacement = shouldFlipFloatingSidePanel({
+      root: this.#root,
+      reference: this.#root,
+      panelWidth: blockActionSubmenuPanelWidth(),
+      gap: SUBMENU_GAP,
+      margin: DEFAULT_MARGIN,
+      fallbackWindow: this.#window,
+    }) ? "left" : "right";
   }
 
   #syncSubmenuTop(state) {

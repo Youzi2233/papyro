@@ -11,58 +11,37 @@ import {
   clamp,
   defaultDocument,
   defaultWindow,
-  positionFloatingElement,
   setHidden,
   syncMenuActiveDescendant,
-  viewportSize,
 } from "../tiptap-ui-primitives.js";
 import { markdownCommandsLabel } from "../tiptap-i18n.js";
+import {
+  anchorRectFromEditorRange,
+  positionReactFloatingElement,
+  shouldFlipFloatingSidePanel,
+  usableFloatingRect,
+} from "./utils/floating.js";
 
 const MAIN_MENU_WIDTH = 224;
 const MAIN_MENU_HEIGHT = 390;
 const SIDE_PANEL_GAP = 5;
 
-function usableAnchorRect(rect) {
-  if (!rect) return false;
-  const left = Number(rect.left);
-  const top = Number(rect.top);
-  const right = Number(rect.right);
-  const bottom = Number(rect.bottom);
-  if (![left, top, right, bottom].every(Number.isFinite)) return false;
-  return Math.abs(left) + Math.abs(top) > 0 || right > left || bottom > top;
-}
-
 function placeMenu(element, editor, range, anchorRect = null, placement = "bottom") {
-  if (element && usableAnchorRect(anchorRect)) {
-    positionFloatingElement(element, anchorRect, {
-      viewport: viewportSize(editor?.view?.dom, defaultWindow(editor?.view?.dom?.ownerDocument)),
-      size: {
-        width: MAIN_MENU_WIDTH,
-        height: MAIN_MENU_HEIGHT,
-        margin: 10,
-      },
-      placement,
-    });
-    return;
-  }
-
   const view = editor?.view;
-  if (!element || !view || typeof view.coordsAtPos !== "function" || !range) {
-    return;
-  }
-
-  const rect = view.coordsAtPos(range.to);
-  const fallbackRect = usableAnchorRect(rect) ? rect : anchorRect;
-  if (!usableAnchorRect(fallbackRect)) return;
-
-  positionFloatingElement(element, fallbackRect, {
-    viewport: viewportSize(view.dom, defaultWindow(view.dom?.ownerDocument)),
+  const rect = usableFloatingRect(anchorRect)
+    ? anchorRect
+    : anchorRectFromEditorRange(editor, range);
+  positionReactFloatingElement({
+    element,
+    rect,
+    reference: view?.dom,
+    fallbackWindow: defaultWindow(view?.dom?.ownerDocument),
     size: {
       width: MAIN_MENU_WIDTH,
       height: MAIN_MENU_HEIGHT,
       margin: 10,
     },
-    placement: "bottom",
+    placement,
   });
 }
 
@@ -189,17 +168,14 @@ export class TiptapReactSlashMenuView {
       this.#root.style.setProperty?.("--mn-slash-side-panel-top", `${top}px`);
     }
 
-    const rect = this.#root.getBoundingClientRect?.();
-    const viewport = viewportSize(
-      editor?.view?.dom,
-      defaultWindow(editor?.view?.dom?.ownerDocument),
-    );
-    const neededWidth = panelWidth + SIDE_PANEL_GAP + 10;
-    const shouldFlip =
-      rect &&
-      rect.right + neededWidth > viewport.width &&
-      rect.left - neededWidth > 10;
-    this.#root.dataset.sidePlacement = shouldFlip ? "left" : "right";
+    this.#root.dataset.sidePlacement = shouldFlipFloatingSidePanel({
+      root: this.#root,
+      reference: editor?.view?.dom,
+      panelWidth,
+      gap: SIDE_PANEL_GAP,
+      margin: 10,
+      fallbackWindow: defaultWindow(editor?.view?.dom?.ownerDocument),
+    }) ? "left" : "right";
   }
 }
 

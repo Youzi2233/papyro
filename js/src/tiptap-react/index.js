@@ -33,3 +33,9 @@ export {
 export {
   PapyroOfficialDragHandleBridge,
 } from "./official-drag-handle-bridge.jsx";
+export {
+  anchorRectFromEditorRange,
+  positionReactFloatingElement,
+  shouldFlipFloatingSidePanel,
+  usableFloatingRect,
+} from "./utils/floating.js";
