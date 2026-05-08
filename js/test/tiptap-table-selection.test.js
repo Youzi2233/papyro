@@ -208,7 +208,7 @@ function createHarness() {
   return { calls, cells, documentListeners, documentRef, editor, pushEvent, root, table };
 }
 
-test("Tiptap table inline text content clicks focus and preview the whole cell", () => {
+test("Tiptap table inline text content previews the cell without stealing native selection", () => {
   const { calls, cells, documentListeners, editor, pushEvent, root, table } = createHarness();
   const inline = {
     nodeType: 1,
@@ -240,16 +240,11 @@ test("Tiptap table inline text content clicks focus and preview the whole cell",
     false,
   );
 
-  documentListeners.get("pointerup").at(-1)({
-    target: inline,
-    preventDefault: pushEvent(events, "preventDefault:up"),
-    stopPropagation: pushEvent(events, "stopPropagation:up"),
-  });
-
   assert.deepEqual(events, []);
-  assert.deepEqual(calls, [["setTextSelection", 12], ["focus"]]);
+  assert.deepEqual(calls, []);
   assert.deepEqual([...controller.state.selection.positions], [11]);
   assert.equal(documentListeners.has("pointermove"), false);
+  assert.equal(documentListeners.get("pointerup")?.length, 1);
 });
 
 test("Tiptap table empty paragraph surface focuses like the whole cell", () => {
@@ -408,7 +403,7 @@ test("Tiptap table interactive inline content clicks stay native", () => {
   assert.deepEqual(calls, []);
 });
 
-test("Tiptap table filled paragraph content can start table selection drag", () => {
+test("Tiptap table filled paragraph content preserves native text selection", () => {
   const { calls, cells, documentListeners, editor, pushEvent, root, table } = createHarness();
   const paragraph = {
     nodeType: 1,
@@ -416,6 +411,43 @@ test("Tiptap table filled paragraph content can start table selection drag", () 
     parentElement: cells[0],
     parentNode: cells[0],
     textContent: "Revenue",
+    closest(selector) {
+      if (selector === "th,td") return cells[0];
+      if (selector === ".mn-tiptap-table, table" || selector === "table") return table;
+      return null;
+    },
+  };
+  const controller = createTiptapTableToolbarController({
+    dom: { document: root.ownerDocument },
+  });
+  const events = [];
+
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  root.listeners.get("pointerdown")({
+    target: paragraph,
+    button: 0,
+    clientX: 120,
+    clientY: 94,
+    preventDefault: pushEvent(events, "preventDefault:down"),
+    stopPropagation: pushEvent(events, "stopPropagation:down"),
+  });
+
+  assert.equal(documentListeners.has("pointermove"), false);
+  assert.equal(documentListeners.get("pointerup")?.length, 1);
+  assert.deepEqual(events, []);
+  assert.deepEqual(calls, []);
+  assert.equal(controller.state.cell, cells[0]);
+  assert.deepEqual([...controller.state.selection.positions], [10]);
+});
+
+test("Tiptap table empty paragraph content can start table selection drag", () => {
+  const { calls, cells, documentListeners, editor, pushEvent, root, table } = createHarness();
+  const paragraph = {
+    nodeType: 1,
+    tagName: "P",
+    parentElement: cells[0],
+    parentNode: cells[0],
+    textContent: "",
     closest(selector) {
       if (selector === "th,td") return cells[0];
       if (selector === ".mn-tiptap-table, table" || selector === "table") return table;

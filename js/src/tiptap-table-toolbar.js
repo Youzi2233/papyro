@@ -108,6 +108,19 @@ function isEditableTableCellSurfaceTarget(target, cell) {
   return !isInteractiveCellContent(element, cell);
 }
 
+function isEmptyParagraphSurfaceTarget(target, cell) {
+  const element = elementFromTarget(target);
+  if (!element || !cell || element?.closest?.("th,td") !== cell) return false;
+  const tagName = String(element?.tagName ?? "").toLowerCase();
+  return tagName === "p" && String(element.textContent ?? "").trim().length === 0;
+}
+
+function shouldStartTableCellRangeDrag(target, cell) {
+  if (isDirectTableCellTarget(target, cell)) return true;
+  if (isInteractiveCellContent(target, cell)) return false;
+  return isEmptyParagraphSurfaceTarget(target, cell);
+}
+
 function tableContextFromElement(editor, table) {
   if (!editor?.view || !table) return null;
   const grid = tableSelectionGrid(table, editor.view);
@@ -666,6 +679,7 @@ export class TiptapTableToolbarController {
     const cellSurfaceClick = isEditableTableCellSurfaceTarget(event?.target, cell);
     this.#previewActiveCellFromPointer(context, start, event);
     if (!cellSurfaceClick) return false;
+    if (!shouldStartTableCellRangeDrag(event?.target, cell)) return false;
 
     this.#cellDrag = {
       table,

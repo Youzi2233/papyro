@@ -2853,7 +2853,7 @@ test("Tiptap table toolbar anchors right-click menus to the pointer", () => {
   assert.equal(root.style.top, "248px");
 });
 
-test("Tiptap table toolbar previews selected cells from any editable cell surface", () => {
+test("Tiptap table toolbar previews inline text cell surfaces without stealing text selection", () => {
   const { created, documentRef } = createDocument();
   const { calls, cells, editor } = createTableHarness({
     mergeCells: () => true,
@@ -2914,16 +2914,9 @@ test("Tiptap table toolbar previews selected cells from any editable cell surfac
   assert.equal(trigger.style.left, "200px");
   assert.equal(trigger.style.top, "107px");
 
-  documentRef.listeners.get("pointerup")?.({
-    target: textNode,
-    clientX: 146,
-    clientY: 104,
-  });
-  assert.deepEqual(calls.slice(-3), [
-    ["posAtCoords", 146, 104],
-    ["setTextSelection", 12],
-    ["focus"],
-  ]);
+  assert.equal(documentRef.listeners.has("pointermove"), false);
+  assert.equal(documentRef.listeners.get("pointerup")?.length, 1);
+  assert.deepEqual(calls, []);
   controller.refresh(editor);
   assert.equal(cells[0].classes.has("mn-tiptap-table-cell-selected"), true);
   assert.equal(trigger.hidden, false);
