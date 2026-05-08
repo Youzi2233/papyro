@@ -302,9 +302,16 @@ function createInsertMenuSpy() {
     setContainedTarget(target) {
       containedTarget = target;
     },
-    openAtBlock(target) {
+    openAtBlock(target, options = {}) {
       open = true;
-      calls.push(["openAtBlock", target.kind, target.pos, target.node.nodeSize]);
+      const rect = options.anchorRect ?? null;
+      calls.push([
+        "openAtBlock",
+        target.kind,
+        target.pos,
+        target.node.nodeSize,
+        rect ? [rect.left, rect.top] : null,
+      ]);
       openStateListener({ open });
       return true;
     },
@@ -827,7 +834,28 @@ test("Tiptap block handle insert action works from pointerdown", () => {
 
   assert.equal(view.openInsert({ preventDefault() {}, stopPropagation() {} }), true);
 
-  assert.deepEqual(insertMenu.calls, [["openAtBlock", "paragraph", 7, 6]]);
+  assert.deepEqual(insertMenu.calls, [["openAtBlock", "paragraph", 7, 6, null]]);
+});
+
+test("Tiptap block handle anchors insert menu to the pointer", () => {
+  const { block, editor } = createEditor();
+  const insertMenu = createInsertMenuSpy();
+  const view = createViewSpy();
+  const controller = createTiptapBlockHandleController({ insertMenu, view });
+  controller.attach({ editor, root: editor.view.dom, entry: { viewMode: "hybrid" } });
+  controller.handlePointerMove({ target: block });
+
+  assert.equal(
+    view.openInsert({
+      clientX: 18,
+      clientY: 28,
+      preventDefault() {},
+      stopPropagation() {},
+    }),
+    true,
+  );
+
+  assert.deepEqual(insertMenu.calls, [["openAtBlock", "paragraph", 7, 6, [18, 28]]]);
 });
 
 test("Tiptap block handle destroys listeners and view state", () => {
@@ -901,7 +929,7 @@ test("Tiptap block handle opens the insert menu from the plus action", () => {
   assert.equal(controller.handleKeyDown({ key: "ArrowDown" }), true);
 
   assert.deepEqual(insertMenu.calls, [
-    ["openAtBlock", "paragraph", 7, 6],
+    ["openAtBlock", "paragraph", 7, 6, null],
     ["keydown", "ArrowDown"],
   ]);
   assert.deepEqual(calls.slice(-2), [

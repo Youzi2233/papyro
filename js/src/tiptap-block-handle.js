@@ -925,7 +925,7 @@ export class TiptapBlockHandleController {
     return true;
   }
 
-  openInsert() {
+  openInsert(event = null) {
     if (!this.#state.open || !this.#state.target || this.#entry?.viewMode !== "hybrid") {
       return false;
     }
@@ -933,7 +933,7 @@ export class TiptapBlockHandleController {
     this.#selectTarget(this.#state.target);
     this.#menu?.close?.();
     const opened = this.#insertMenu?.openAtBlock?.(this.#state.target, {
-      anchorRect: this.#view.insertRect?.(),
+      anchorRect: pointerAnchorRect(event, this.#view.insertRect?.()),
     }) !== false;
     this.#syncFloatingMenuState();
     return opened;
@@ -1185,14 +1185,14 @@ export class TiptapBlockHandleController {
       officialTracking: this.#officialTrackingActive,
       floatingViewHidden: this.#officialTrackingActive && !this.#hasOpenFloatingMenu(),
       openActions: (event) => this.openActions(event),
-      openInsert: () => this.openInsert(),
+      openInsert: (event) => this.openInsert(event),
       startDrag: (event) => this.startDrag(event),
       releaseAction: (event) => this.releaseAction(event),
       clickAction: (event) => this.clickAction(event),
       onInsertPointerDown: (event) => {
         event?.preventDefault?.();
         event?.stopPropagation?.();
-        this.openInsert();
+        this.openInsert(event);
       },
       onInsertClick: (event) => {
         event?.preventDefault?.();

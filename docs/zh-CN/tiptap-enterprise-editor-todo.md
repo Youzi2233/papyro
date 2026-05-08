@@ -193,6 +193,7 @@ node scripts/report-file-lines.js
 - [x] 保持 `+` 语义独立：在当前 block 下方插入、在新光标处打开菜单、取消时清理临时 slash 文本。
 - [x] 用共享的 Lucide-backed React 图标系统替换 slash 菜单里临时感较强的 glyph，并为命令分组增加语义化色调。
   - 当前打磨：slash 和 `+` 菜单已改为更克制的中性图标框，表格尺寸二级面板变窄，并同步了定位宽度契约；React 路径使用 Lucide 图标，迁移期 DOM fallback 也有同一套语义化线性图标和 Recent 色调，避免不同渲染路径观感分裂。
+  - 当前打磨：block `+` 会把真实点击锚点传给插入菜单，菜单从用户点击的 affordance 旁边打开，不再漂回旧按钮矩形位置。
 
 验收标准：
 
