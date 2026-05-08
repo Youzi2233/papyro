@@ -50,6 +50,10 @@ export {
   TiptapReactBlockHandleView,
 } from "./block-handle-view.jsx";
 export {
+  createTiptapReactTableChromeRenderer,
+  TiptapReactTableChromeRenderer,
+} from "./table-chrome-renderer.jsx";
+export {
   createTiptapReactTableContextMenuRenderer,
   TiptapReactTableContextMenuRenderer,
 } from "./table-context-menu-renderer.jsx";

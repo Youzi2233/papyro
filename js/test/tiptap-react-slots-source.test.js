@@ -54,6 +54,14 @@ const tableContextMenuSource = readFileSync(
   new URL("../src/tiptap-react/components/table-context-menu.jsx", import.meta.url),
   "utf8",
 );
+const tableChromeSource = readFileSync(
+  new URL("../src/tiptap-react/components/table-chrome.jsx", import.meta.url),
+  "utf8",
+);
+const tableChromeRendererSource = readFileSync(
+  new URL("../src/tiptap-react/table-chrome-renderer.jsx", import.meta.url),
+  "utf8",
+);
 const formatToolbarSource = readFileSync(
   new URL("../src/tiptap-react/components/format-toolbar.jsx", import.meta.url),
   "utf8",
@@ -235,11 +243,26 @@ test("React floating chrome shares positioning utilities", () => {
 
 test("React table context menu is injected at the editor entry boundary", () => {
   assert.match(indexSource, /createTiptapReactTableContextMenuRenderer/u);
+  assert.match(indexSource, /createTiptapReactTableChromeRenderer/u);
   assert.match(indexSource, /createTiptapReactFormatToolbarView/u);
   assert.match(editorEntrySource, /tableMenuRendererFactory:\s*createTiptapReactTableContextMenuRenderer/u);
+  assert.match(editorEntrySource, /tableChromeRendererFactory:\s*createTiptapReactTableChromeRenderer/u);
   assert.match(editorEntrySource, /formatToolbarViewFactory:\s*createTiptapReactFormatToolbarView/u);
   assert.match(tableToolbarViewSource, /menuRendererFactory/u);
+  assert.match(tableToolbarViewSource, /chromeRendererFactory/u);
   assert.doesNotMatch(tableToolbarViewSource, /tiptap-react\/index\.js/u);
+});
+
+test("React table chrome owns the non-menu table overlay rendering path", () => {
+  assert.match(tableChromeRendererSource, /createRoot/u);
+  assert.match(tableChromeRendererSource, /<PapyroTableChrome/u);
+  assert.match(tableChromeSource, /createTableQuickAddChromeState/u);
+  assert.match(tableChromeSource, /createTableCellMenuTriggerChromeState/u);
+  assert.match(tableChromeSource, /createTableAxisHandleChromeState/u);
+  assert.match(tableChromeSource, /createTableSelectionBackdropChromeState/u);
+  assert.match(tableChromeSource, /createComplexBlockInsertChromeState/u);
+  assert.match(tableChromeSource, /usePointerActivation/u);
+  assert.doesNotMatch(tableChromeSource, /createElement\(/u);
 });
 
 test("React format toolbar is injected without changing the runtime command controller", () => {

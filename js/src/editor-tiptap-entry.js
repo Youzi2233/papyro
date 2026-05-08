@@ -10,6 +10,7 @@ import {
   createTiptapReactLinkEditorView,
   createTiptapReactMountController,
   createTiptapReactSlashMenuView,
+  createTiptapReactTableChromeRenderer,
   createTiptapReactTableContextMenuRenderer,
 } from "./tiptap-react/index.js";
 import { createTiptapEditorRuntime } from "./tiptap-runtime.js";
@@ -36,6 +37,7 @@ const tiptapRuntimeAdapter = createTiptapEditorRuntime({
   linkEditorViewFactory: createTiptapReactLinkEditorView,
   mountControllerFactory: createTiptapReactMountController,
   slashMenuViewFactory: createTiptapReactSlashMenuView,
+  tableChromeRendererFactory: createTiptapReactTableChromeRenderer,
   tableMenuRendererFactory: createTiptapReactTableContextMenuRenderer,
   navigation: hostRuntime.navigation,
 });

@@ -134,8 +134,11 @@ export class TiptapTableToolbarView {
   #rowHandles = [];
   #columnHandles = [];
   #selectionBackdrop = null;
+  #chromeRoot = null;
+  #reactChrome = null;
   #reactMenu = null;
   #menuRendererFactory = null;
+  #chromeRendererFactory = null;
   #lastTable = null;
   #lastActiveCell = null;
   #menuCommands = [];
@@ -144,10 +147,12 @@ export class TiptapTableToolbarView {
     document = defaultDocument(),
     window = defaultWindow(document),
     menuRendererFactory = null,
+    chromeRendererFactory = null,
   } = {}) {
     this.#document = document;
     this.#window = window;
     this.#menuRendererFactory = menuRendererFactory;
+    this.#chromeRendererFactory = chromeRendererFactory;
   }
 
   mount(container) {
@@ -184,6 +189,11 @@ export class TiptapTableToolbarView {
       "div",
       "mn-tiptap-table-selection-backdrop hidden",
     );
+    const chromeRoot = createElement(
+      this.#document,
+      "div",
+      "mn-tiptap-table-chrome-root hidden",
+    );
     if (
       !root ||
       !header ||
@@ -195,7 +205,8 @@ export class TiptapTableToolbarView {
       !addColumnButton ||
       !cellMenuButton ||
       !blockInsertButton ||
-      !selectionBackdrop
+      !selectionBackdrop ||
+      !chromeRoot
     ) return;
 
     root.id = TABLE_TOOLBAR_OWNER_ID;
@@ -205,6 +216,13 @@ export class TiptapTableToolbarView {
         ? this.#menuRendererFactory({
             root,
             ownerId: TABLE_TOOLBAR_OWNER_ID,
+          })
+        : null;
+    const reactChrome =
+      typeof this.#chromeRendererFactory === "function"
+        ? this.#chromeRendererFactory({
+            root: chromeRoot,
+            ownerId: `${TABLE_TOOLBAR_OWNER_ID}-chrome`,
           })
         : null;
     addRowButton.type = "button";
@@ -223,6 +241,7 @@ export class TiptapTableToolbarView {
     mountFloatingRoot(cellMenuButton, container, this.#document);
     mountFloatingRoot(blockInsertButton, container, this.#document);
     mountFloatingRoot(selectionBackdrop, container, this.#document);
+    mountFloatingRoot(chromeRoot, container, this.#document);
     this.#root = root;
     this.#header = header;
     this.#eyebrow = eyebrow;
@@ -234,6 +253,8 @@ export class TiptapTableToolbarView {
     this.#cellMenuButton = cellMenuButton;
     this.#blockInsertButton = blockInsertButton;
     this.#selectionBackdrop = selectionBackdrop;
+    this.#chromeRoot = chromeRoot;
+    this.#reactChrome = reactChrome;
     this.#reactMenu = reactMenu;
     setHidden(root, true);
     setHidden(addRowButton, true);
@@ -241,6 +262,7 @@ export class TiptapTableToolbarView {
     setHidden(cellMenuButton, true);
     setHidden(blockInsertButton, true);
     setHidden(selectionBackdrop, true);
+    setHidden(chromeRoot, true);
   }
 
   update(state) {
@@ -333,11 +355,16 @@ export class TiptapTableToolbarView {
     this.#root.onkeydown = (event) => state.handleKeyDown?.(event);
     this.#applySelectionState(state);
     this.#applyActiveCellState(state);
-    this.#updateSelectionBackdrop(state);
-    this.#updateQuickAdd(state);
-    this.#updateCellMenuTrigger(state);
-    this.#updateComplexBlockInsert(state);
-    this.#updateAxisHandles(state);
+    if (this.#reactChrome) {
+      this.#hideLegacyChrome();
+      this.#reactChrome.render(state);
+    } else {
+      this.#updateSelectionBackdrop(state);
+      this.#updateQuickAdd(state);
+      this.#updateCellMenuTrigger(state);
+      this.#updateComplexBlockInsert(state);
+      this.#updateAxisHandles(state);
+    }
     if (!state.menuOpen || menuCommands.length === 0) {
       return;
     }
@@ -635,6 +662,15 @@ export class TiptapTableToolbarView {
     this.#columnHandles = [];
   }
 
+  #hideLegacyChrome() {
+    setHidden(this.#addRowButton, true);
+    setHidden(this.#addColumnButton, true);
+    setHidden(this.#cellMenuButton, true);
+    setHidden(this.#blockInsertButton, true);
+    setHidden(this.#selectionBackdrop, true);
+    this.#clearAxisHandles();
+  }
+
   #applySelectionState(state) {
     state.table
       ?.querySelectorAll?.(".mn-tiptap-table-cell-selected")
@@ -678,6 +714,8 @@ export class TiptapTableToolbarView {
     setHidden(this.#cellMenuButton, true);
     setHidden(this.#blockInsertButton, true);
     setHidden(this.#selectionBackdrop, true);
+    this.#reactChrome?.hide?.();
+    setHidden(this.#chromeRoot, true);
     this.#lastTable
       ?.querySelectorAll?.(".mn-tiptap-table-cell-selected")
       ?.forEach?.((cell) => cell.classList?.remove?.("mn-tiptap-table-cell-selected"));
@@ -697,6 +735,8 @@ export class TiptapTableToolbarView {
       this.#cellMenuButton?.contains?.(target) ||
       this.#blockInsertButton?.contains?.(target) ||
       this.#selectionBackdrop?.contains?.(target) ||
+      this.#reactChrome?.contains?.(target) ||
+      this.#chromeRoot?.contains?.(target) ||
       this.#rowHandles.some((button) => button.contains?.(target)) ||
       this.#columnHandles.some((button) => button.contains?.(target)) ||
       false
@@ -727,12 +767,14 @@ export class TiptapTableToolbarView {
 
   destroy() {
     this.#reactMenu?.destroy?.();
+    this.#reactChrome?.destroy?.();
     this.#root?.remove?.();
     this.#addRowButton?.remove?.();
     this.#addColumnButton?.remove?.();
     this.#cellMenuButton?.remove?.();
     this.#blockInsertButton?.remove?.();
     this.#selectionBackdrop?.remove?.();
+    this.#chromeRoot?.remove?.();
     this.#clearAxisHandles();
     this.#root = null;
     this.#header = null;
@@ -745,8 +787,11 @@ export class TiptapTableToolbarView {
     this.#cellMenuButton = null;
     this.#blockInsertButton = null;
     this.#selectionBackdrop = null;
+    this.#chromeRoot = null;
+    this.#reactChrome = null;
     this.#reactMenu = null;
     this.#menuRendererFactory = null;
+    this.#chromeRendererFactory = null;
     this.#lastActiveCell = null;
     this.#menuCommands = [];
   }

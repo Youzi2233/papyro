@@ -277,6 +277,7 @@ export function createTiptapEditorRuntime({
   slashMenuViewFactory = null,
   tableToolbarControllerFactory = createTiptapTableToolbarController,
   tableMenuRendererFactory = null,
+  tableChromeRendererFactory = null,
   mountControllerFactory = createLegacyMountController,
   clipboard = {},
   layout = {},
@@ -493,6 +494,7 @@ export function createTiptapEditorRuntime({
         document: documentRef,
       },
       menuRendererFactory: tableMenuRendererFactory,
+      chromeRendererFactory: tableChromeRendererFactory,
     });
     const blockHandle = createBlockHandleController({
       menu: blockActionMenu,

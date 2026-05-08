@@ -192,7 +192,13 @@ export class TiptapTableToolbarController {
     ...emptyTableToolbarState(),
   };
 
-  constructor({ view = null, insertMenu = null, dom = {}, menuRendererFactory = null } = {}) {
+  constructor({
+    view = null,
+    insertMenu = null,
+    dom = {},
+    menuRendererFactory = null,
+    chromeRendererFactory = null,
+  } = {}) {
     const documentRef = dom.document ?? defaultDocument();
     const windowRef = dom.window ?? defaultWindow(documentRef);
     this.#document = documentRef;
@@ -203,6 +209,7 @@ export class TiptapTableToolbarController {
         document: documentRef,
         window: windowRef,
         menuRendererFactory,
+        chromeRendererFactory,
       });
     this.#dismiss = createFloatingDismissController({
       document: documentRef,
