@@ -2694,6 +2694,9 @@ test("Tiptap table toolbar previews selected cells from any editable cell surfac
     ["setTextSelection", 12],
     ["focus"],
   ]);
+  controller.refresh(editor);
+  assert.equal(cells[0].classes.has("mn-tiptap-table-cell-selected"), true);
+  assert.equal(trigger.hidden, false);
   assert.equal(controller.state.selection.positions.size, 1);
 });
 

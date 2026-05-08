@@ -172,6 +172,7 @@ export class TiptapTableToolbarController {
   #editor = null;
   #entry = null;
   #insertMenu = null;
+  #visualCellSelection = null;
   #removeListeners = [];
   #cellDrag = null;
   #state = {
@@ -307,11 +308,13 @@ export class TiptapTableToolbarController {
     const previousKind = this.#state.selection.kind;
     const previousPositions = this.#state.selection.positions ?? new Set();
     const context = activeTableContext(editor);
+    const visualCellSelection = this.#visualCellSelectionForContext(context);
     const previousMenuAnchorRect =
       this.#state.open && this.#state.menuOpen && previousTable === context?.table
         ? this.#state.menuAnchorRect
         : null;
     if (!context?.rect) {
+      this.#visualCellSelection = null;
       if (this.#state.open) {
         this.#state = emptyTableToolbarState(language);
         this.#render();
@@ -369,6 +372,16 @@ export class TiptapTableToolbarController {
     )
       ? this.#state.activeCommandId
       : enabledTableCommandIds(currentVisibleCommands)[0] ?? null;
+    const selection = visualCellSelection
+      ? {
+          ...context.selection,
+          positions: new Set([visualCellSelection.pos]),
+          rows: [],
+          columns: [],
+          table: false,
+          kind: "cell",
+        }
+      : context.selection;
 
     this.#state = {
       open: true,
@@ -382,7 +395,7 @@ export class TiptapTableToolbarController {
       menuRect: context.menuRect,
       menuAnchorRect: previousMenuAnchorRect,
       grid: context.grid,
-      selection: context.selection,
+      selection,
       commands,
       activeCommandId,
       keyboardActive: this.#state.keyboardActive,
@@ -401,6 +414,35 @@ export class TiptapTableToolbarController {
     this.#render();
     this.#dismiss.open();
     return this.state;
+  }
+
+  #visualCellSelectionForContext(context) {
+    const visual = this.#visualCellSelection;
+    if (!context?.table || !visual) return null;
+    if (visual.table !== context.table) {
+      this.#visualCellSelection = null;
+      return null;
+    }
+
+    if ((context.selection?.positions?.size ?? 0) > 0) {
+      this.#visualCellSelection = null;
+      return null;
+    }
+
+    const match = (context.grid ?? [])
+      .flatMap((row) => row.cells ?? [])
+      .find((cell) => cell.pos === visual.pos);
+    if (!match?.cell || (context.cell && context.cell !== match.cell)) {
+      this.#visualCellSelection = null;
+      return null;
+    }
+
+    this.#visualCellSelection = {
+      table: context.table,
+      pos: match.pos,
+      cell: match.cell,
+    };
+    return this.#visualCellSelection;
   }
 
   setActiveCommand(commandId, { focus = false, keyboardActive = true } = {}) {
@@ -643,6 +685,11 @@ export class TiptapTableToolbarController {
 
   #previewActiveCellFromPointer(context, start, event) {
     if (!context?.table || !start?.cell) return false;
+    this.#visualCellSelection = {
+      table: context.table,
+      pos: start.pos,
+      cell: start.cell,
+    };
     this.#state = {
       ...this.#state,
       open: true,
@@ -683,6 +730,7 @@ export class TiptapTableToolbarController {
         headCell: headPos,
       }) !== false;
     if (!ok) return false;
+    this.#visualCellSelection = null;
     this.#editor.commands?.focus?.();
     this.refresh(this.#editor);
     return true;
@@ -955,6 +1003,7 @@ export class TiptapTableToolbarController {
       Number.isFinite(pos) &&
       typeof this.#editor?.commands?.setCellSelection === "function"
     ) {
+      this.#visualCellSelection = null;
       const ok =
         this.#editor.commands.setCellSelection({
           anchorCell: pos,
@@ -969,6 +1018,7 @@ export class TiptapTableToolbarController {
   }
 
   selectAxis(axis, index) {
+    this.#visualCellSelection = null;
     const ok = selectTableAxis(this.#editor, this.#state.grid, axis, index);
     this.refresh(this.#editor);
     this.#state = {
@@ -986,6 +1036,7 @@ export class TiptapTableToolbarController {
 
   close() {
     if (!this.#state.open) return;
+    this.#visualCellSelection = null;
     this.#state = emptyTableToolbarState(entryLanguage(this.#entry));
     this.#view.hide?.();
     this.#dismiss.close();

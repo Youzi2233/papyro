@@ -474,7 +474,7 @@
 .mn-tiptap-table-header.mn-tiptap-table-cell-selected,
 .mn-tiptap-table-cell.mn-tiptap-table-cell-active,
 .mn-tiptap-table-header.mn-tiptap-table-cell-active {
-    z-index: 2;
+    z-index: 3;
 }
 
 .mn-tiptap-table-cell.selectedCell::after,
@@ -491,13 +491,13 @@
     background:
         linear-gradient(
             180deg,
-            color-mix(in srgb, var(--mn-accent) 9%, transparent),
-            color-mix(in srgb, var(--mn-accent) 5%, transparent)
+            color-mix(in srgb, var(--mn-accent) 8%, transparent),
+            color-mix(in srgb, var(--mn-accent) 4%, transparent)
         );
     box-shadow:
-        inset 0 0 0 1.5px color-mix(in srgb, var(--mn-accent) 94%, transparent),
-        inset 0 0 0 999px color-mix(in srgb, var(--mn-accent) 3.5%, transparent),
-        0 0 0 1px color-mix(in srgb, var(--mn-editor-bg) 86%, transparent);
+        inset 0 0 0 1.5px color-mix(in srgb, var(--mn-accent) 96%, transparent),
+        inset 0 0 0 999px color-mix(in srgb, var(--mn-accent) 3%, transparent),
+        0 0 0 1px color-mix(in srgb, var(--mn-accent) 18%, transparent);
 }
 
 .mn-tiptap-table-cell.mn-tiptap-table-cell-active::after,
@@ -510,7 +510,8 @@
         );
     box-shadow:
         inset 0 0 0 1.5px color-mix(in srgb, var(--mn-accent) 92%, transparent),
-        0 0 0 1px color-mix(in srgb, var(--mn-accent) 16%, transparent);
+        inset 0 0 0 999px color-mix(in srgb, var(--mn-accent) 2%, transparent),
+        0 0 0 1px color-mix(in srgb, var(--mn-accent) 14%, transparent);
 }
 
 .mn-tiptap-table-cell.mn-tiptap-table-cell-selected,
@@ -539,7 +540,7 @@
 .mn-tiptap-table-header.mn-tiptap-table-cell-active > .column-resize-handle {
     right: -8px;
     width: 16px;
-    opacity: .62;
+    opacity: .5;
 }
 
 .mn-tiptap-editor .column-resize-handle {
@@ -576,9 +577,9 @@
 .mn-tiptap-table-cell.mn-tiptap-table-cell-active > .column-resize-handle::before,
 .mn-tiptap-table-header.mn-tiptap-table-cell-active > .column-resize-handle::before {
     right: 7px;
-    width: 2px;
+    width: 1.5px;
     background: color-mix(in srgb, var(--mn-accent) 88%, transparent);
-    opacity: .72;
+    opacity: .64;
 }
 
 .mn-tiptap-table-cell:hover > .column-resize-handle,
