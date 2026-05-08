@@ -1867,6 +1867,35 @@ test("Tiptap table toolbar activation refreshes a closed table context", () => {
   assert.equal(controller.state.activeCommandId, "delete-table");
 });
 
+test("Tiptap table toolbar opens from keyboard Context Menu keys", () => {
+  const { editor } = createTableHarness();
+  editor.commands.deleteTable = () => true;
+  const view = createViewSpy();
+  const controller = createTiptapTableToolbarController({ view });
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  controller.close();
+  const events = [];
+
+  assert.equal(
+    controller.handleKeyDown({
+      key: "ContextMenu",
+      preventDefault() {
+        events.push("preventDefault");
+      },
+      stopPropagation() {
+        events.push("stopPropagation");
+      },
+    }),
+    true,
+  );
+
+  assert.equal(controller.state.open, true);
+  assert.equal(controller.state.mode, "keyboard");
+  assert.equal(controller.state.menuOpen, true);
+  assert.equal(controller.state.activeCommandId, "delete-table");
+  assert.deepEqual(events, ["preventDefault", "stopPropagation"]);
+});
+
 test("Tiptap table toolbar axis handles select rows and columns", () => {
   const { created, documentRef } = createDocument();
   const { calls, editor } = createTableHarness();

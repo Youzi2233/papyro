@@ -57,6 +57,10 @@ function createRuntimeHarness({
       attach: ({ root }) => calls.push(["blockHandleAttach", root.className]),
       close: () => calls.push(["blockHandleClose"]),
       destroy: () => calls.push(["blockHandleDestroy"]),
+      handleKeyDown: (event) => {
+        calls.push(["blockHandleKeyDown", event.key]);
+        return event.key === "ContextMenu";
+      },
       refresh: () => calls.push(["blockHandleRefresh"]),
       shouldKeepOpenOnEditorBlur: () => false,
     }));
@@ -1386,6 +1390,7 @@ test("Tiptap runtime wires slash menu keyboard handling through editor props", (
   assert.equal(handled, true);
   assert.deepEqual(calls, [
     ["tableToolbarKeyDown", "ArrowDown"],
+    ["blockHandleKeyDown", "ArrowDown"],
     ["slashMenuKeyDown", "ArrowDown"],
   ]);
 });
@@ -1407,6 +1412,27 @@ test("Tiptap runtime lets table toolbar keyboard handling win before slash menu"
 
   assert.equal(handled, true);
   assert.deepEqual(calls, [["tableToolbarKeyDown", "F10"]]);
+});
+
+test("Tiptap runtime wires block handle keyboard handling before slash menu", () => {
+  const { calls, registry, runtime } = createRuntimeHarness();
+  runtime.ensureEditor({
+    tabId: "tab-a",
+    containerId: "editor-root",
+    initialContent: "# Note",
+  });
+  calls.length = 0;
+
+  const editor = registry.get("tab-a").editor;
+  const handled = editor.options.editorProps.handleKeyDown(null, {
+    key: "ContextMenu",
+  });
+
+  assert.equal(handled, true);
+  assert.deepEqual(calls, [
+    ["tableToolbarKeyDown", "ContextMenu"],
+    ["blockHandleKeyDown", "ContextMenu"],
+  ]);
 });
 
 test("Tiptap runtime does not consume slash menu keys during IME composition", () => {

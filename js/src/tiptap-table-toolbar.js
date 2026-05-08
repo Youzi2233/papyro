@@ -70,7 +70,9 @@ function emptyTableToolbarState(language = "english") {
 
 function isTableToolbarActivation(event) {
   const key = String(event?.key ?? "").toLowerCase();
-  return key === "f10" && event?.shiftKey && !event?.altKey && !event?.ctrlKey && !event?.metaKey;
+  if (event?.altKey || event?.ctrlKey || event?.metaKey) return false;
+  if (key === "f10") return !!event?.shiftKey;
+  return key === "contextmenu" || key === "apps";
 }
 
 function entryLanguage(entry) {

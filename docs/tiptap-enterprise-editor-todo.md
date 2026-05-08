@@ -504,6 +504,7 @@ Tasks:
 - [ ] Add accessible labels for icon-only controls.
 - [ ] Use `aria-activedescendant` or roving tab index consistently in menus.
 - [ ] Support Escape, Enter, Space, Arrow keys, Home, End, Tab, Shift+Tab, and Shift+F10 where relevant.
+  - Current coverage: editor-level key routing now sends keyboard events through table toolbar, block handle, then slash menu in that order, so table context menus and block action menus both receive their keyboard entries before slash navigation. Table menus now accept both `Shift+F10` and the keyboard Context Menu / Apps key.
 - [ ] Protect IME composition from menu keyboard handlers.
   - Current coverage: slash menu, block action menu, code block menus, floating format toolbar, and table toolbar now yield during composition / `keyCode 229` events so IME confirmation does not execute editor commands.
 - [ ] Keep focus rings visible and theme-token based.

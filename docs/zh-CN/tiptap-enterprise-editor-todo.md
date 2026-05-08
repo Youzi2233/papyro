@@ -494,6 +494,7 @@ node scripts/check-tiptap-release-smoke.js
 - [ ] icon-only 控件都有 accessible label。
 - [ ] 菜单统一使用 `aria-activedescendant` 或 roving tab index。
 - [ ] 支持 Escape、Enter、Space、方向键、Home、End、Tab、Shift+Tab、Shift+F10 等相关键位。
+  - 当前覆盖：编辑器级键盘路由现在按表格工具栏、块句柄、slash 菜单的顺序分发事件，确保表格上下文菜单和块操作菜单都能先于 slash 导航收到自己的键盘入口。表格菜单现在同时支持 `Shift+F10` 和键盘 Context Menu / Apps 键。
 - [ ] IME composition 期间保护菜单键盘处理，避免中文输入确认触发命令。
   - 当前覆盖：slash 菜单、块操作菜单、代码块菜单、浮动格式栏和表格工具栏都会在 composition / `keyCode 229` 事件期间让出键盘处理，避免中文输入确认误执行编辑器命令。
 - [ ] focus ring 可见并使用主题 token。

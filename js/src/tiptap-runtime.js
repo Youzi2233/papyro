@@ -164,6 +164,7 @@ function defaultEditorOptions({
         }
 
         if (entry?.tableToolbar?.handleKeyDown?.(event)) return true;
+        if (entry?.blockHandle?.handleKeyDown?.(event)) return true;
         return entry?.slashMenu?.handleKeyDown(event) ?? false;
       },
       handlePaste: (view, event, slice) => {
