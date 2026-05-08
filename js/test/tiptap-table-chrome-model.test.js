@@ -167,7 +167,7 @@ test("table chrome model keeps the cell action trigger quiet until selected or e
 test("table chrome model limits axis handles to the hovered first row or column cell", () => {
   const fixture = createGrid();
   const { cells } = fixture;
-  const row = createTableAxisHandleChromeState(baseState({
+  const rowIdle = createTableAxisHandleChromeState(baseState({
     fixture,
     hover: {
       edge: "cell",
@@ -176,13 +176,37 @@ test("table chrome model limits axis handles to the hovered first row or column 
       cell: cells[3].cell,
     },
   }));
+  assert.deepEqual(rowIdle.rows, []);
+  assert.deepEqual(rowIdle.columns, []);
+
+  const row = createTableAxisHandleChromeState(baseState({
+    fixture,
+    hover: {
+      edge: "row-handle",
+      rowIndex: 1,
+      columnIndex: 0,
+      cell: cells[3].cell,
+    },
+  }));
   assert.deepEqual(row.rows.map((handle) => handle.index), [1]);
   assert.deepEqual(row.columns, []);
+
+  const columnIdle = createTableAxisHandleChromeState(baseState({
+    fixture,
+    hover: {
+      edge: "cell",
+      rowIndex: 0,
+      columnIndex: 2,
+      cell: cells[2].cell,
+    },
+  }));
+  assert.deepEqual(columnIdle.rows, []);
+  assert.deepEqual(columnIdle.columns, []);
 
   const column = createTableAxisHandleChromeState(baseState({
     fixture,
     hover: {
-      edge: "cell",
+      edge: "column-handle",
       rowIndex: 0,
       columnIndex: 2,
       cell: cells[2].cell,
@@ -194,7 +218,7 @@ test("table chrome model limits axis handles to the hovered first row or column 
   const selectedHoverState = baseState({
     fixture,
     hover: {
-      edge: "cell",
+      edge: "row-handle",
       rowIndex: 1,
       columnIndex: 0,
       cell: cells[3].cell,

@@ -201,9 +201,17 @@ export function createTableAxisHandleChromeState(state, {
       !["add-row", "add-column", "cell-menu"].includes(hoverEdge),
   );
   const hoverRowIndex =
-    axisHoverAllowed && state?.hover?.columnIndex === 0 ? state.hover.rowIndex : null;
+    axisHoverAllowed &&
+    hoverEdge === "row-handle" &&
+    state?.hover?.columnIndex === 0
+      ? state.hover.rowIndex
+      : null;
   const hoverColumnIndex =
-    axisHoverAllowed && state?.hover?.rowIndex === 0 ? state.hover.columnIndex : null;
+    axisHoverAllowed &&
+    hoverEdge === "column-handle" &&
+    state?.hover?.rowIndex === 0
+      ? state.hover.columnIndex
+      : null;
 
   const rowHandle = Number.isInteger(hoverRowIndex)
     ? geometry.rows.find((handle) => handle.index === hoverRowIndex)
