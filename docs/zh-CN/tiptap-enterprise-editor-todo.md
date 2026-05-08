@@ -363,6 +363,7 @@ node scripts/check-tiptap-release-smoke.js
 - [ ] 支持键盘访问和焦点回到编辑器。
   - 当前覆盖：Hybrid 模式下 `Mod+K` 会打开 Papyro 链接编辑器，遵循 Tiptap Link 扩展文档里自定义链接 UI 的建议；当光标折叠在链接内时，会先用 `extendMarkRange("link")` 扩展到整段链接再编辑。
   - 当前覆盖：`Alt+F10` 可从编辑器选区打开浮动格式栏；方向键、Home/End、Enter/Space 和 Escape 已支持键盘导航、执行、关闭和焦点回到编辑器。
+  - 当前覆盖：React 工具栏和 DOM fallback 已共享 `turn into` 子菜单的 `aria-activedescendant` 契约，包括独立子菜单 owner id、roving tab index，以及仅在键盘导航时触发的滚动同步。
 - [ ] 本地化 label 和 tooltip。
   - 当前覆盖：当前工具栏命令已从共享 Tiptap i18n model 提供英文和简体中文 title 与 accessible label。
 

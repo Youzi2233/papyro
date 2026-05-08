@@ -126,9 +126,18 @@ test("React format toolbar is injected without changing the runtime command cont
   assert.match(formatToolbarSource, /commandElementId/u);
   assert.match(formatToolbarSource, /data-keyboard-active/u);
   assert.match(formatToolbarSource, /aria-pressed=\{String\(command\.active\)\}/u);
+  assert.match(formatToolbarSource, /FORMAT_TOOLBAR_SUBMENU_OWNER_ID/u);
+  assert.match(formatToolbarSource, /role="menu"/u);
+  assert.match(formatToolbarSource, /data-submenu-command-index/u);
+  assert.match(formatToolbarSource, /aria-controls=\{submenuExpanded \? submenuOwnerId : undefined\}/u);
   assert.match(formatToolbarViewSource, /createRoot/u);
   assert.match(formatToolbarViewSource, /positionReactFloatingElement/u);
   assert.match(formatToolbarViewSource, /syncMenuActiveDescendant/u);
+  assert.match(formatToolbarViewSource, /indexDataset:\s*state\.submenuOpen \? "submenuCommandIndex" : "commandIndex"/u);
+  assert.equal(
+    formatToolbarViewSource.includes("state.submenuOpen ? this.#submenuOwnerId : this.#ownerId"),
+    true,
+  );
   assert.match(formatToolbarViewSource, /focusCommand/u);
   assert.match(formatToolbarViewSource, /role = "toolbar"/u);
   assert.doesNotMatch(formatToolbarViewSource, /createElement\(/u);

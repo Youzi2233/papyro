@@ -16,6 +16,7 @@ const REGULAR_TOOLBAR_WIDTH = 448;
 const COMPACT_TOOLBAR_WIDTH = 386;
 const TOOLBAR_HEIGHT = 38;
 const FORMAT_TOOLBAR_OWNER_ID = "mn-tiptap-format-toolbar";
+const FORMAT_TOOLBAR_SUBMENU_OWNER_ID = "mn-tiptap-format-toolbar-submenu";
 
 function selectionContext(editor) {
   const state = editor?.state ?? editor?.view?.state;
@@ -148,6 +149,9 @@ class TiptapFormatToolbarView {
       if (command.id === "turn-into") {
         button.setAttribute("aria-haspopup", "menu");
         button.setAttribute("aria-expanded", String(state.submenuOpen === command.id));
+        if (state.submenuOpen === command.id) {
+          button.setAttribute("aria-controls", FORMAT_TOOLBAR_SUBMENU_OWNER_ID);
+        }
       }
       button.classList.toggle("active", command.active);
       button.dataset.commandId = command.id;
@@ -177,16 +181,22 @@ class TiptapFormatToolbarView {
       this.#list.appendChild(button);
     });
     this.#renderSubmenu(state);
+    const submenuParent = state.commands.find((command) => command.id === state.submenuOpen);
+    const activeCommands = state.submenuOpen ? submenuParent?.children ?? [] : state.commands;
+    const activeIndex = Math.max(
+      0,
+      state.submenuOpen
+        ? activeCommands.findIndex((command) => command.id === state.activeChildCommandId)
+        : activeCommands.findIndex((command) => command.id === state.activeCommandId),
+    );
     syncMenuActiveDescendant(
       this.#root,
-      FORMAT_TOOLBAR_OWNER_ID,
-      state.commands,
-      Math.max(
-        0,
-        state.commands.findIndex((command) => command.id === state.activeCommandId),
-      ),
+      state.submenuOpen ? FORMAT_TOOLBAR_SUBMENU_OWNER_ID : FORMAT_TOOLBAR_OWNER_ID,
+      activeCommands,
+      activeIndex,
       {
         ariaSelected: false,
+        indexDataset: state.submenuOpen ? "submenuCommandIndex" : "commandIndex",
         manageTabIndex: true,
         scroll: state.keyboardActive,
       },
@@ -205,6 +215,7 @@ class TiptapFormatToolbarView {
       return;
     }
 
+    this.#submenu.id = FORMAT_TOOLBAR_SUBMENU_OWNER_ID;
     this.#submenu.dataset.parentCommandId = parent.id;
     this.#submenu.setAttribute("role", "menu");
     this.#submenu.setAttribute("aria-label", parent.title ?? "Turn into");

@@ -48,6 +48,42 @@ function createEditor({ selected = true, active = [], viewportWidth = 1000 } = {
         calls.push(["setColor", color]);
         return true;
       },
+      setParagraph: () => {
+        calls.push(["setParagraph"]);
+        return true;
+      },
+      toggleHeading: (attrs) => {
+        calls.push(["toggleHeading", attrs]);
+        return true;
+      },
+      toggleBulletList: () => {
+        calls.push(["toggleBulletList"]);
+        return true;
+      },
+      toggleOrderedList: () => {
+        calls.push(["toggleOrderedList"]);
+        return true;
+      },
+      toggleTaskList: () => {
+        calls.push(["toggleTaskList"]);
+        return true;
+      },
+      toggleBlockquote: () => {
+        calls.push(["toggleBlockquote"]);
+        return true;
+      },
+      setCalloutBlock: (attrs) => {
+        calls.push(["setCalloutBlock", attrs]);
+        return true;
+      },
+      toggleCodeBlock: () => {
+        calls.push(["toggleCodeBlock"]);
+        return true;
+      },
+      insertContent: (content, options) => {
+        calls.push(["insertContent", content, options]);
+        return true;
+      },
       unsetColor: () => {
         calls.push(["unsetColor"]);
         return true;
@@ -471,6 +507,65 @@ test("Tiptap format toolbar supports keyboard activation and execution", () => {
     ["stopPropagation", "ArrowRight"],
     ["preventDefault", "End"],
     ["stopPropagation", "End"],
+    ["preventDefault", "Enter"],
+    ["stopPropagation", "Enter"],
+  ]);
+});
+
+test("Tiptap format toolbar opens and navigates the turn-into submenu by keyboard", () => {
+  const { created, documentRef } = createDocument();
+  const { calls, editor } = createEditor();
+  const controller = createTiptapFormatToolbarController({
+    dom: { document: documentRef },
+  });
+  const events = [];
+  const keyboardEvent = (key) => ({
+    key,
+    preventDefault() {
+      events.push(["preventDefault", key]);
+    },
+    stopPropagation() {
+      events.push(["stopPropagation", key]);
+    },
+  });
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+
+  assert.equal(
+    controller.setActiveCommand("turn-into", { focus: true, keyboardActive: true }),
+    true,
+  );
+  assert.equal(controller.handleKeyDown(keyboardEvent("ArrowDown")), true);
+
+  const root = created.find((element) =>
+    String(element.className).includes("mn-tiptap-format-toolbar"),
+  );
+  assert.equal(controller.state.submenuOpen, "turn-into");
+  assert.equal(controller.state.activeChildCommandId, "paragraph");
+  assert.equal(
+    root["aria-activedescendant"],
+    "mn-tiptap-format-toolbar-submenu-item-0",
+  );
+  assert.equal(
+    created.some(
+      (element) =>
+        element.dataset?.commandId === "paragraph" &&
+        element.dataset?.submenuCommandIndex === "0",
+    ),
+    true,
+  );
+
+  assert.equal(controller.handleKeyDown(keyboardEvent("ArrowDown")), true);
+  assert.equal(controller.state.activeChildCommandId, "heading-1");
+  assert.equal(documentRef.activeElement?.dataset?.commandId, "heading-1");
+
+  calls.length = 0;
+  assert.equal(controller.handleKeyDown(keyboardEvent("Enter")), true);
+  assert.deepEqual(calls, [["toggleHeading", { level: 1 }], ["focus"]]);
+  assert.deepEqual(events, [
+    ["preventDefault", "ArrowDown"],
+    ["stopPropagation", "ArrowDown"],
+    ["preventDefault", "ArrowDown"],
+    ["stopPropagation", "ArrowDown"],
     ["preventDefault", "Enter"],
     ["stopPropagation", "Enter"],
   ]);

@@ -259,6 +259,57 @@ test("Tiptap UI primitives sync command menu active descendants without forced h
   assert.deepEqual(calls, [[0, { block: "nearest", inline: "nearest" }]]);
 });
 
+test("Tiptap UI primitives sync active descendants with custom index datasets", () => {
+  const calls = [];
+  const command = (index) => ({
+    id: `submenu-item-${index}`,
+    dataset: { submenuCommandIndex: String(index) },
+    children: [],
+    classList: {
+      values: new Set(),
+      toggle(name, enabled) {
+        if (enabled) this.values.add(name);
+        else this.values.delete(name);
+      },
+    },
+    setAttribute(name, value) {
+      this[name] = value;
+    },
+    scrollIntoView(options) {
+      calls.push([index, options]);
+    },
+  });
+  const first = command(0);
+  const second = command(1);
+  const root = {
+    id: "submenu",
+    children: [first, second],
+    setAttribute(name, value) {
+      this[name] = value;
+    },
+  };
+
+  assert.deepEqual(
+    menuCommandItems(root, { indexDataset: "submenuCommandIndex" }),
+    [first, second],
+  );
+  assert.equal(
+    syncMenuActiveDescendant(root, "submenu", [{ id: "one" }, { id: "two" }], 1, {
+      activeClass: "selected",
+      indexDataset: "submenuCommandIndex",
+      manageTabIndex: true,
+    }),
+    true,
+  );
+
+  assert.equal(root["aria-activedescendant"], "submenu-item-1");
+  assert.equal(first.classList.values.has("selected"), false);
+  assert.equal(second.classList.values.has("selected"), true);
+  assert.equal(first.tabIndex, -1);
+  assert.equal(second.tabIndex, 0);
+  assert.deepEqual(calls, [[1, { block: "nearest", inline: "nearest" }]]);
+});
+
 test("Tiptap UI primitives bind pointer activation with click fallback", () => {
   const listeners = new Map();
   const calls = [];

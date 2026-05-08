@@ -10,11 +10,12 @@ import {
   usableFloatingRect,
 } from "./utils/floating.js";
 
-const REGULAR_TOOLBAR_WIDTH = 410;
-const COMPACT_TOOLBAR_WIDTH = 352;
+const REGULAR_TOOLBAR_WIDTH = 448;
+const COMPACT_TOOLBAR_WIDTH = 386;
 const TOOLBAR_HEIGHT = 38;
 const TOOLBAR_MARGIN = 10;
 const FORMAT_TOOLBAR_OWNER_ID = "mn-tiptap-format-toolbar";
+const FORMAT_TOOLBAR_SUBMENU_OWNER_ID = "mn-tiptap-format-toolbar-submenu";
 
 function selectionRect(editor, range) {
   const view = editor?.view;
@@ -60,17 +61,20 @@ export class TiptapReactFormatToolbarView {
   #document;
   #window;
   #ownerId;
+  #submenuOwnerId;
   #root = null;
   #reactRoot = null;
 
   constructor({
     document = typeof globalThis.document === "undefined" ? null : globalThis.document,
     window = document?.defaultView ?? (typeof globalThis.window === "undefined" ? null : globalThis.window),
-    ownerId = "mn-tiptap-format-toolbar",
+    ownerId = FORMAT_TOOLBAR_OWNER_ID,
+    submenuOwnerId = FORMAT_TOOLBAR_SUBMENU_OWNER_ID,
   } = {}) {
     this.#document = document;
     this.#window = window;
     this.#ownerId = ownerId;
+    this.#submenuOwnerId = submenuOwnerId;
   }
 
   mount(container) {
@@ -99,21 +103,29 @@ export class TiptapReactFormatToolbarView {
     this.#root.onkeydown = (event) => state.handleKeyDown?.(event);
 
     flushSync(() => {
-      this.#reactRoot.render(<PapyroFormatToolbar state={state} />);
+      this.#reactRoot.render(
+        <PapyroFormatToolbar
+          state={state}
+          ownerId={this.#ownerId}
+          submenuOwnerId={this.#submenuOwnerId}
+        />,
+      );
     });
+    const submenuCommand = state.commands.find((command) => command.id === state.submenuOpen);
+    const activeCommands = state.submenuOpen ? submenuCommand?.children ?? [] : state.commands;
+    const activeIndex = Math.max(
+      0,
+      state.submenuOpen
+        ? activeCommands.findIndex((command) => command.id === state.activeChildCommandId)
+        : activeCommands.findIndex((command) => command.id === state.activeCommandId),
+    );
     syncMenuActiveDescendant(
       this.#root,
-      FORMAT_TOOLBAR_OWNER_ID,
-      state.submenuOpen ? state.commands.find((command) => command.id === state.submenuOpen)?.children ?? state.commands : state.commands,
-      Math.max(
-        0,
-        state.submenuOpen
-          ? (state.commands.find((command) => command.id === state.submenuOpen)?.children ?? []).findIndex(
-              (command) => command.id === state.activeChildCommandId,
-            )
-          : state.commands.findIndex((command) => command.id === state.activeCommandId),
-      ),
+      state.submenuOpen ? this.#submenuOwnerId : this.#ownerId,
+      activeCommands,
+      activeIndex,
       {
+        indexDataset: state.submenuOpen ? "submenuCommandIndex" : "commandIndex",
         manageTabIndex: true,
         scroll: state.keyboardActive,
       },

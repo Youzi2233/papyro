@@ -228,13 +228,14 @@ export function syncMenuActiveDescendant(
   {
     activeClass = "active",
     ariaSelected = false,
+    indexDataset = "commandIndex",
     manageTabIndex = false,
     scroll = true,
   } = {},
 ) {
   if (!root) return false;
-  menuCommandItems(root).forEach((item) => {
-    const active = Number(item.dataset?.commandIndex) === selectedIndex;
+  menuCommandItems(root, { indexDataset }).forEach((item) => {
+    const active = Number(item.dataset?.[indexDataset]) === selectedIndex;
     item.classList?.toggle?.(activeClass, active);
     if (ariaSelected) {
       item.setAttribute?.("aria-selected", String(active));
