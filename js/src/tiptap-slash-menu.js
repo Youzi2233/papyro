@@ -158,6 +158,7 @@ const MAIN_MENU_WIDTH = 224;
 const MAIN_MENU_HEIGHT = 360;
 const SIDE_PANEL_GAP = 8;
 const SIDE_PANEL_INTENT_DELAY_MS = 80;
+const DEFAULT_TABLE_SIZE = Object.freeze({ rows: 3, cols: 2 });
 
 function placeMenu(element, editor, range, anchorRect = null, placement = "bottom") {
   if (element && usableAnchorRect(anchorRect)) {
@@ -346,7 +347,8 @@ class TiptapSlashMenuView {
         cell.dataset.col = String(col);
         cell.setAttribute("aria-label", insertTableLabel(this.#language, row, col));
         cell.addEventListener("pointerenter", () => {
-          this.#updateTablePickerSize(row, col);
+          tablePicker._setTableSize?.(row, col, { focusPanel: false, scroll: false });
+          this.#updateTablePickerSize(row, col, { keyboardFocus: false });
         });
         bindPointerActivation(cell, () => chooseTableSize(tablePicker, row, col));
         tablePickerGrid.appendChild(cell);
@@ -584,9 +586,16 @@ class TiptapSlashMenuView {
     setHidden(this.#codeLanguagePicker, !showCodeLanguagePicker);
     if (showPicker) {
       this.#tablePicker._choose = (rows, cols) => state.choose("table", { tableSize: { rows, cols } });
-      this.#updateTablePickerSize(3, 2);
+      this.#tablePicker._setTableSize = (rows, cols, options) =>
+        state.setTableSize?.(rows, cols, options);
+      this.#updateTablePickerSize(
+        state.tableSize?.rows ?? DEFAULT_TABLE_SIZE.rows,
+        state.tableSize?.cols ?? DEFAULT_TABLE_SIZE.cols,
+        { keyboardFocus: state.sidePanelFocus === "table" },
+      );
     } else {
       this.#tablePicker._choose = null;
+      this.#tablePicker._setTableSize = null;
     }
     if (this.#calloutPicker) {
       this.#calloutPicker.setAttribute(
@@ -679,10 +688,11 @@ class TiptapSlashMenuView {
       });
   }
 
-  #updateTablePickerSize(rows, cols) {
+  #updateTablePickerSize(rows, cols, { keyboardFocus = false } = {}) {
     if (!this.#tablePicker || !this.#tablePickerLabel) return;
     const label = tableSizeLabel(this.#language, rows, cols);
     this.#tablePicker.setAttribute("aria-label", label);
+    this.#tablePicker.dataset.keyboardFocus = keyboardFocus ? "true" : "false";
     if (this.#tablePickerTitle) {
       this.#tablePickerTitle.textContent = insertTableLabel(this.#language, rows, cols);
     }
@@ -693,6 +703,12 @@ class TiptapSlashMenuView {
         const cellRow = Number(cell.dataset?.row);
         const cellCol = Number(cell.dataset?.col);
         cell.classList?.toggle?.("active", cellRow <= rows && cellCol <= cols);
+        cell.dataset.selected = cellRow === rows && cellCol === cols ? "true" : "false";
+        if (cellRow === rows && cellCol === cols) {
+          cell.setAttribute?.("aria-current", "true");
+        } else {
+          cell.removeAttribute?.("aria-current");
+        }
       });
   }
 }
@@ -711,6 +727,8 @@ export class TiptapSlashMenuController {
     range: null,
     commands: [],
     selectedIndex: 0,
+    sidePanelFocus: "main",
+    tableSize: DEFAULT_TABLE_SIZE,
     deleteRangeBeforeRun: true,
     cleanupRangeOnClose: false,
     anchorRect: null,
@@ -775,6 +793,7 @@ export class TiptapSlashMenuController {
       language: entryLanguage(this.#entry),
       choose: (commandId, options) => this.choose(commandId, options),
       activate: (nextIndex, options) => this.setSelection(nextIndex, options),
+      setTableSize: (rows, cols, options) => this.setTableSize(rows, cols, options),
     };
   }
 
@@ -863,6 +882,10 @@ export class TiptapSlashMenuController {
           retainedIndex >= 0
             ? retainedIndex
             : Math.min(this.#state.selectedIndex, Math.max(0, commands.length - 1)),
+        sidePanelFocus:
+          commands[retainedIndex >= 0 ? retainedIndex : this.#state.selectedIndex]?.id === "table"
+            ? this.#state.sidePanelFocus
+            : "main",
         query: "",
       };
       this.#view.update?.(
@@ -891,6 +914,8 @@ export class TiptapSlashMenuController {
       range: triggerRange(context, trigger),
       commands,
       selectedIndex: nextSelectedIndex < 0 ? 0 : nextSelectedIndex,
+      sidePanelFocus: "main",
+      tableSize: this.#state.tableSize ?? DEFAULT_TABLE_SIZE,
       deleteRangeBeforeRun: true,
       cleanupRangeOnClose: false,
       anchorRect: null,
@@ -930,6 +955,8 @@ export class TiptapSlashMenuController {
       range,
       commands,
       selectedIndex: 0,
+      sidePanelFocus: "main",
+      tableSize: this.#state.tableSize ?? DEFAULT_TABLE_SIZE,
       deleteRangeBeforeRun: true,
       cleanupRangeOnClose: true,
       anchorRect: blockInsertMenuAnchorRect(slashRect, target, anchorRect),
@@ -952,6 +979,7 @@ export class TiptapSlashMenuController {
     this.#state = {
       ...this.#state,
       selectedIndex,
+      sidePanelFocus: "main",
     };
     this.#updateViewSelection({ scroll: true });
     return this.state;
@@ -972,6 +1000,36 @@ export class TiptapSlashMenuController {
     this.#state = {
       ...this.#state,
       selectedIndex,
+      sidePanelFocus:
+        this.#state.commands[selectedIndex]?.id === "table"
+          ? this.#state.sidePanelFocus
+          : "main",
+    };
+    this.#updateViewSelection({ scroll });
+    return this.state;
+  }
+
+  setTableSize(rows, cols, { focusPanel = true, scroll = false } = {}) {
+    if (!this.#state.open) return this.state;
+
+    const nextRows = clamp(Number(rows) || DEFAULT_TABLE_SIZE.rows, 1, TABLE_GRID_ROWS);
+    const nextCols = clamp(Number(cols) || DEFAULT_TABLE_SIZE.cols, 1, TABLE_GRID_COLS);
+    const nextFocus = focusPanel ? "table" : this.#state.sidePanelFocus;
+    if (
+      this.#state.tableSize?.rows === nextRows &&
+      this.#state.tableSize?.cols === nextCols &&
+      this.#state.sidePanelFocus === nextFocus
+    ) {
+      return this.state;
+    }
+
+    this.#state = {
+      ...this.#state,
+      sidePanelFocus: nextFocus,
+      tableSize: {
+        rows: nextRows,
+        cols: nextCols,
+      },
     };
     this.#updateViewSelection({ scroll });
     return this.state;
@@ -1010,6 +1068,65 @@ export class TiptapSlashMenuController {
     if (!this.#state.open) return false;
     if (isComposingKeyboardEvent(event)) return false;
 
+    const activeCommand = this.#state.commands[this.#state.selectedIndex];
+    const tablePanelActive =
+      activeCommand?.id === "table" && this.#state.sidePanelFocus === "table";
+    if (activeCommand?.id === "table" && event.key === "ArrowRight") {
+      event.preventDefault();
+      if (!tablePanelActive) {
+        this.#state = {
+          ...this.#state,
+          sidePanelFocus: "table",
+        };
+        this.#updateViewSelection({ scroll: false });
+        return true;
+      }
+      this.setTableSize(
+        this.#state.tableSize.rows,
+        this.#state.tableSize.cols + 1,
+        { scroll: false },
+      );
+      return true;
+    }
+
+    if (tablePanelActive && event.key === "ArrowLeft") {
+      event.preventDefault();
+      if (this.#state.tableSize.cols <= 1) {
+        this.#state = {
+          ...this.#state,
+          sidePanelFocus: "main",
+        };
+        this.#updateViewSelection({ scroll: false });
+      } else {
+        this.setTableSize(
+          this.#state.tableSize.rows,
+          this.#state.tableSize.cols - 1,
+          { scroll: false },
+        );
+      }
+      return true;
+    }
+
+    if (tablePanelActive && event.key === "ArrowDown") {
+      event.preventDefault();
+      this.setTableSize(
+        this.#state.tableSize.rows + 1,
+        this.#state.tableSize.cols,
+        { scroll: false },
+      );
+      return true;
+    }
+
+    if (tablePanelActive && event.key === "ArrowUp") {
+      event.preventDefault();
+      this.setTableSize(
+        this.#state.tableSize.rows - 1,
+        this.#state.tableSize.cols,
+        { scroll: false },
+      );
+      return true;
+    }
+
     if (event.key === "ArrowDown") {
       event.preventDefault();
       this.moveSelection(1);
@@ -1037,7 +1154,10 @@ export class TiptapSlashMenuController {
     if (event.key === "Enter" || event.key === "Tab") {
       if (this.#state.commands.length === 0) return false;
       event.preventDefault();
-      return this.choose();
+      return this.choose(
+        undefined,
+        activeCommand?.id === "table" ? { tableSize: this.#state.tableSize } : {},
+      );
     }
 
     if (event.key === "Escape") {
@@ -1064,6 +1184,8 @@ export class TiptapSlashMenuController {
       range: null,
       commands: [],
       selectedIndex: 0,
+      sidePanelFocus: "main",
+      tableSize: this.#state.tableSize ?? DEFAULT_TABLE_SIZE,
       deleteRangeBeforeRun: true,
       cleanupRangeOnClose: false,
       anchorRect: null,

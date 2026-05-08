@@ -102,9 +102,10 @@ function SlashCommandItem({
   );
 }
 
-function TableSizePicker({ id, language, choose }) {
-  const [size, setSize] = useState({ rows: 3, cols: 2 });
-  const label = tableSizeLabel(language, size.rows, size.cols);
+function TableSizePicker({ id, language, choose, size, setTableSize, keyboardFocus = false }) {
+  const [hoverSize, setHoverSize] = useState(null);
+  const activeSize = hoverSize ?? size ?? { rows: 3, cols: 2 };
+  const label = tableSizeLabel(language, activeSize.rows, activeSize.cols);
 
   return (
     <div
@@ -113,6 +114,7 @@ function TableSizePicker({ id, language, choose }) {
       role="menu"
       aria-label={label}
       data-layout="floating"
+      data-keyboard-focus={keyboardFocus ? "true" : "false"}
     >
       <div className="mn-tiptap-table-size-picker-header">
         <span className="mn-tiptap-table-size-picker-title">
@@ -130,10 +132,12 @@ function TableSizePicker({ id, language, choose }) {
                 key={`${rowIndex + 1}-${colIndex + 1}`}
                 rows={rowIndex + 1}
                 cols={colIndex + 1}
-                active={rowIndex + 1 <= size.rows && colIndex + 1 <= size.cols}
+                active={rowIndex + 1 <= activeSize.rows && colIndex + 1 <= activeSize.cols}
+                selected={rowIndex + 1 === size.rows && colIndex + 1 === size.cols}
                 language={language}
                 choose={choose}
-                setSize={setSize}
+                setHoverSize={setHoverSize}
+                setTableSize={setTableSize}
               />
             )),
           )}
@@ -147,9 +151,11 @@ function TableSizePickerCell({
   rows,
   cols,
   active,
+  selected,
   language,
   choose,
-  setSize,
+  setHoverSize,
+  setTableSize,
 }) {
   const activation = usePointerActivation(() =>
     choose("table", { tableSize: { rows, cols } }),
@@ -161,8 +167,14 @@ function TableSizePickerCell({
       className={`mn-tiptap-table-size-picker-cell${active ? " active" : ""}`}
       data-row={String(rows)}
       data-col={String(cols)}
+      data-selected={selected ? "true" : "false"}
       aria-label={insertTableLabel(language, rows, cols)}
-      onPointerEnter={() => setSize({ rows, cols })}
+      aria-current={selected ? "true" : undefined}
+      onPointerEnter={() => {
+        setHoverSize({ rows, cols });
+        setTableSize?.(rows, cols, { focusPanel: false, scroll: false });
+      }}
+      onPointerLeave={() => setHoverSize(null)}
       {...activation}
     />
   );
@@ -272,6 +284,9 @@ export function PapyroSlashCommandMenu({
   const selectedCommand = commands[selectedIndex] ?? null;
   const sidePanel = commandMenuSidePanel(selectedCommand);
   const sidePanelId = commandMenuSidePanelId(ownerId, sidePanel);
+  const tableSize = state?.tableSize ?? { rows: 3, cols: 2 };
+  const tablePanelHasFocus =
+    selectedCommand?.id === "table" && state?.sidePanelFocus === "table";
   const groups = useMemo(() => groupCommandsForMenu(commands), [commands]);
   const title = state?.cleanupRangeOnClose
     ? insertBlockMenuTitleLabel(language)
@@ -319,7 +334,14 @@ export function PapyroSlashCommandMenu({
         <CalloutKindPicker id={sidePanelId} language={language} choose={state.choose} />
       ) : null}
       {sidePanel === "table" ? (
-        <TableSizePicker id={sidePanelId} language={language} choose={state.choose} />
+        <TableSizePicker
+          id={sidePanelId}
+          language={language}
+          choose={state.choose}
+          size={tableSize}
+          setTableSize={state.setTableSize}
+          keyboardFocus={tablePanelHasFocus}
+        />
       ) : null}
       {sidePanel === "code-language" ? (
         <CodeLanguagePicker id={sidePanelId} language={language} choose={state.choose} />

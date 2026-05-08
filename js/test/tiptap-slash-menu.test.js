@@ -365,6 +365,53 @@ test("Tiptap slash menu keyboard selection can reach table without wrapping", ()
   assert.equal(controller.state.commands[controller.state.selectedIndex].id, "mermaid");
 });
 
+test("Tiptap slash menu keyboard controls the nested table size panel", () => {
+  const { calls, editor } = createEditor("/");
+  const view = createViewSpy();
+  const controller = createTiptapSlashMenuController({ view });
+  controller.attach({ editor, root: {} });
+
+  while (controller.state.commands[controller.state.selectedIndex]?.id !== "table") {
+    controller.moveSelection(1);
+  }
+
+  assert.equal(controller.state.sidePanelFocus, "main");
+  assert.deepEqual(controller.state.tableSize, { rows: 3, cols: 2 });
+  assert.equal(controller.handleKeyDown({ key: "ArrowRight", preventDefault() {} }), true);
+  assert.equal(controller.state.sidePanelFocus, "table");
+  assert.deepEqual(controller.state.tableSize, { rows: 3, cols: 2 });
+  assert.equal(controller.handleKeyDown({ key: "ArrowRight", preventDefault() {} }), true);
+  assert.equal(controller.handleKeyDown({ key: "ArrowRight", preventDefault() {} }), true);
+  assert.equal(controller.handleKeyDown({ key: "ArrowDown", preventDefault() {} }), true);
+  assert.deepEqual(controller.state.tableSize, { rows: 4, cols: 4 });
+  assert.equal(controller.handleKeyDown({ key: "Enter", preventDefault() {} }), true);
+
+  assert.deepEqual(calls, [
+    ["deleteRange", 0, 1],
+    ["insertTable", 4, 4, true],
+    ["focus"],
+  ]);
+});
+
+test("Tiptap slash menu ArrowLeft exits the table size panel at the first column", () => {
+  const { editor } = createEditor("/");
+  const view = createViewSpy();
+  const controller = createTiptapSlashMenuController({ view });
+  controller.attach({ editor, root: {} });
+
+  while (controller.state.commands[controller.state.selectedIndex]?.id !== "table") {
+    controller.moveSelection(1);
+  }
+
+  controller.setTableSize(3, 1);
+  assert.equal(controller.state.sidePanelFocus, "table");
+  assert.deepEqual(controller.state.tableSize, { rows: 3, cols: 1 });
+
+  assert.equal(controller.handleKeyDown({ key: "ArrowLeft", preventDefault() {} }), true);
+  assert.equal(controller.state.sidePanelFocus, "main");
+  assert.deepEqual(controller.state.tableSize, { rows: 3, cols: 1 });
+});
+
 test("Tiptap slash menu renders command icons for block insertion", () => {
   const { editor } = createEditor("/table");
   const documentRef = createDocument();
@@ -489,6 +536,7 @@ test("Tiptap slash menu activates command details on pointer hover", () => {
   assert.equal(tablePicker.id, "mn-tiptap-slash-menu-table-panel");
   assert.equal(tablePicker.role, "menu");
   assert.equal(String(tablePicker["aria-label"]).includes("3 x 2"), true);
+  assert.equal(tablePicker.dataset.keyboardFocus, "false");
   assert.equal(tablePickerTitle.parentNode, tablePickerHeader);
   assert.equal(tablePickerLabel.parentNode, tablePickerHeader);
   assert.equal(tablePickerLabel.textContent, tablePicker["aria-label"]);
@@ -523,6 +571,38 @@ test("Tiptap slash menu activates command details on pointer hover", () => {
   assert.equal(slashMenuCommandItem(menu, "paragraph")["aria-selected"], "true");
   assert.equal(slashMenuCommandItem(menu, "table")["aria-selected"], "false");
   assert.equal(slashMenuCommandItem(menu, "table")["aria-expanded"], "false");
+});
+
+test("Tiptap slash table picker fallback reflects keyboard size selection", () => {
+  const { editor } = createEditor("/");
+  const documentRef = createDocument();
+  const controller = createTiptapSlashMenuController({
+    dom: { document: documentRef },
+  });
+  controller.attach({ editor, root: {} });
+
+  while (controller.state.commands[controller.state.selectedIndex]?.id !== "table") {
+    controller.moveSelection(1);
+  }
+  assert.equal(controller.handleKeyDown({ key: "ArrowRight", preventDefault() {} }), true);
+  assert.equal(controller.handleKeyDown({ key: "ArrowRight", preventDefault() {} }), true);
+  assert.equal(controller.handleKeyDown({ key: "ArrowDown", preventDefault() {} }), true);
+
+  const menu = documentRef.body.children[0];
+  const tablePicker = findElementByClass(menu, "mn-tiptap-table-size-picker");
+  const cells = tablePicker.querySelectorAll(".mn-tiptap-table-size-picker-cell");
+  const selected = cells.find(
+    (cell) => cell.dataset.row === "4" && cell.dataset.col === "3",
+  );
+
+  assert.equal(tablePicker.dataset.keyboardFocus, "true");
+  assert.equal(tablePicker["aria-label"], "Table 4 x 3");
+  assert.equal(selected.dataset.selected, "true");
+  assert.equal(selected["aria-current"], "true");
+  assert.equal(
+    cells.find((cell) => cell.dataset.row === "3" && cell.dataset.col === "2").dataset.selected,
+    "false",
+  );
 });
 
 test("Tiptap slash menu runs selected command and removes trigger text", () => {
@@ -945,6 +1025,7 @@ test("Tiptap slash table picker supports click fallback without double-run", () 
     findElementByClass(documentRef.body.children[0], "mn-tiptap-table-size-picker-label").textContent,
     "Table 4 x 3",
   );
+  assert.deepEqual(controller.state.tableSize, { rows: 4, cols: 3 });
   target.onclick(event());
 
   assert.deepEqual(calls.slice(-3), [

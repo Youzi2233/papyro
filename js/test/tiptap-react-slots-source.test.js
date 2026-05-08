@@ -208,6 +208,10 @@ test("React slash table picker uses an anchored secondary panel", () => {
   assert.match(commandMenuSource, /commandMenuSidePanel\(command\)/u);
   assert.match(commandMenuSource, /sidePanel === "table"/u);
   assert.match(commandMenuSource, /data-layout/u);
+  assert.match(commandMenuSource, /data-keyboard-focus/u);
+  assert.match(commandMenuSource, /data-selected/u);
+  assert.match(commandMenuSource, /aria-current/u);
+  assert.match(commandMenuSource, /setTableSize/u);
   assert.doesNotMatch(commandMenuSource, /inlinePanel\s*=\s*command\?\.id === "table"/u);
 });
 

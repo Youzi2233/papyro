@@ -181,6 +181,7 @@ Tasks:
 - [ ] Support nested detail panels for table size, callout style, code language, and future diagram/math templates.
   - Current coverage: table size, callout style, and code language panels are implemented and anchored to the active command row.
   - Current coverage: the React menu now shows table size as a compact secondary panel anchored to the active Table command row, so the size grid no longer appears as a detached top-right panel or shifts the main command list. Callout style and code language use the same anchored side-panel contract for longer choice lists.
+  - Current coverage: keyboard users can move into the table size panel with ArrowRight, adjust rows and columns with arrow keys, return to the main list with ArrowLeft at the first column, and insert the selected size with Enter/Tab. Mouse hover updates the previewed size without stealing main-list navigation.
 - [x] Fix keyboard navigation so ArrowDown can reach every command and never loops before the last item.
 - [x] Support Home and End navigation across the full insert command list.
 - [x] Position detail panels beside the selected command, not at awkward top-right coordinates.
