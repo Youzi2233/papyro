@@ -183,6 +183,7 @@ Tasks:
 - [x] Add command filtering with stable active item and scroll-into-view only for keyboard navigation.
 - [x] Keep `+` semantics distinct: insert below the current block, open the menu at the new caret, and clean temporary slash text on cancel.
 - [x] Replace ad hoc slash-menu glyphs with a shared Lucide-backed React icon system and semantic command-group tones.
+  - Current polish: slash and `+` menus now use quieter neutral icon frames, and the table size detail panel is narrower with matching positioning contracts.
 
 Acceptance criteria:
 

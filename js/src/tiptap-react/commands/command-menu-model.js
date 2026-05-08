@@ -79,7 +79,7 @@ export function commandMenuSidePanel(command) {
 }
 
 export function commandMenuSidePanelWidth(panel) {
-  if (panel === "table") return 166;
+  if (panel === "table") return 148;
   if (panel === "callout") return 166;
   if (panel === "code-language") return 176;
   return 0;
