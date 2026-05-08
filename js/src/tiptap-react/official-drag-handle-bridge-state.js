@@ -90,7 +90,7 @@ export function createOfficialDragHandleClickTracker({
 
       const shortClick =
         Math.hypot(clientX - current.clientX, clientY - current.clientY) <= threshold;
-      suppressNextClick = !shortClick;
+      suppressNextClick = true;
       return shortClick;
     },
 

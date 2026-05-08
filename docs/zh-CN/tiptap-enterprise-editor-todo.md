@@ -229,6 +229,7 @@ node scripts/check-editor-markdown-gate.js
   - 仍需继续：把拖拽重排执行完全迁移到官方 drag/drop 路径，并继续收缩兼容 controller。
 - [ ] 普通点击时在点击点右侧打开块操作菜单，而不是长按才可能打开。
   - 当前覆盖：官方 React DragHandle bridge 现在会记录 pointer down/up 距离，短按主键会立即打开块操作菜单；发生拖拽倾向后会抑制 click fallback，真实拖拽继续交给官方 drag path。
+  - 当前覆盖：短按主键已经在 pointer-up 阶段处理后，会吞掉浏览器紧跟着派发的 click fallback，避免块操作菜单被打开两次或锚点异常跳动。
 - [ ] 右键阻止 WebView 原生菜单，只展示 Papyro 动作。
   - 当前覆盖：官方 React DragHandle bridge 现在会在句柄根节点、动作句柄和插入句柄上吞掉 `contextmenu` 与辅助键点击。右键只打开 Papyro 块操作菜单，不再漏出 WebView 的刷新/检查菜单；插入句柄上的非主键点击也会被吞掉，不触发原生浏览器 chrome。
 - [ ] 高亮完整语义 block，包括行内代码和混合 mark。

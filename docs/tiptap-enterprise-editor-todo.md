@@ -231,6 +231,7 @@ Tasks:
   - Still required: move drag reorder execution fully onto the official drag/drop path and reduce the compatibility controller further.
 - [ ] Open the block action menu on normal click beside the pointer, not after long press.
   - Current coverage: the official React DragHandle bridge now tracks pointer down/up distance, opens the block action menu immediately for short primary clicks, suppresses click fallback after drag-like movement, and keeps real drag gestures on the official drag path.
+  - Current coverage: after a short primary click is handled on pointer-up, the immediately following browser click fallback is suppressed so the block action menu is not opened twice or re-anchored unexpectedly.
 - [ ] Block native WebView context menus on right-click and show only Papyro actions.
   - Current coverage: the official React DragHandle bridge now consumes `contextmenu` and auxiliary clicks on the handle root, action handle, and insert handle. Right-click opens Papyro block actions without leaking the WebView refresh/inspect menu, while non-primary insert clicks are swallowed instead of triggering native browser chrome.
 - [ ] Highlight the whole semantic block, including inline code and mixed marks.

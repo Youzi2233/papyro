@@ -154,6 +154,14 @@ test("Papyro React drag handle click tracker opens actions only for short primar
 
   assert.equal(tracker.begin({ button: 0, clientX: 10, clientY: 20 }), true);
   assert.equal(tracker.end({ button: 0, clientX: 12, clientY: 22 }), true);
+  assert.equal(tracker.click(), false);
+  assert.equal(tracker.click(), true);
+
+  assert.equal(tracker.click(), true);
+
+  assert.equal(tracker.begin({ button: 0, clientX: 10, clientY: 20 }), true);
+  assert.equal(tracker.end({ button: 0, clientX: 10, clientY: 20 }), true);
+  assert.equal(tracker.click(), false);
   assert.equal(tracker.click(), true);
 
   assert.equal(tracker.begin({ button: 0, clientX: 10, clientY: 20 }), true);
