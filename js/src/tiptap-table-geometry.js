@@ -1,5 +1,6 @@
 const COMPLEX_BLOCK_SELECTOR = ".mn-tiptap-table, table, .mn-tiptap-code-block, pre";
 const EDGE_HOT_ZONE_PX = 12;
+const COMPLEX_BLOCK_INSERT_HOT_ZONE_PX = 18;
 const TABLE_CELL_MENU_EDGE_HOT_ZONE_PX = 4;
 const TABLE_CELL_MENU_CENTER_HOT_ZONE_PX = 8;
 
@@ -443,8 +444,8 @@ export function hoverIsNearComplexBlockBottom(rect, y) {
   return (
     rect &&
     Number.isFinite(y) &&
-    y >= rect.bottom - EDGE_HOT_ZONE_PX &&
-    y <= rect.bottom + EDGE_HOT_ZONE_PX
+    y >= rect.bottom - COMPLEX_BLOCK_INSERT_HOT_ZONE_PX &&
+    y <= rect.bottom + COMPLEX_BLOCK_INSERT_HOT_ZONE_PX
   );
 }
 

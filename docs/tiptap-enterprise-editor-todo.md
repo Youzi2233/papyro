@@ -311,6 +311,7 @@ Tasks:
   - Current coverage: Hybrid code blocks use lowlight `.hljs-*` classes with theme-scoped token palettes, a light-mode left accent rail, and smoke coverage for the core syntax groups.
 - [ ] Preserve fenced code language through Markdown round-trip.
 - [ ] Add insertion affordance before and after code blocks, especially when adjacent to tables.
+  - Current coverage: the complex-block insert rail has an independent, more forgiving bottom hot zone for table/code adjacency without widening table resize or quick-add intent.
 
 Acceptance criteria:
 

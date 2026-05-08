@@ -1593,9 +1593,10 @@
 }
 
 .mn-tiptap-complex-block-insert {
-    height: 16px;
+    height: 18px;
     color: color-mix(in srgb, var(--mn-accent) 64%, var(--mn-ink-3));
     opacity: .88;
+    cursor: pointer;
 }
 
 .mn-tiptap-complex-block-insert::before {
@@ -1640,6 +1641,7 @@
 .mn-tiptap-complex-block-insert:hover,
 .mn-tiptap-complex-block-insert:focus-visible {
     outline: 0;
+    color: var(--mn-accent);
 }
 
 .mn-tiptap-complex-block-insert:hover::before,

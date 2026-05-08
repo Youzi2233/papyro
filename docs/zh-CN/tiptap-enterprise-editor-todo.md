@@ -311,6 +311,7 @@ node scripts/check-tiptap-release-smoke.js
   - 当前覆盖：Hybrid 代码块使用 lowlight 的 `.hljs-*` class，并通过主题 token、亮色模式左侧强调线与 smoke 检查覆盖核心语法分组。
 - [ ] fenced code language 通过 Markdown round-trip 保留。
 - [ ] 为代码块前后增加插入入口，尤其是表格紧挨代码块的场景。
+  - 当前覆盖：复杂块插入 rail 已有独立且更宽容的底部热区，用于 table/code 相邻处插入，同时不扩大表格 resize 或 quick-add 的意图范围。
 
 验收标准：
 
