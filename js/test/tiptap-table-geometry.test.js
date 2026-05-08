@@ -127,6 +127,43 @@ test("Tiptap table geometry reserves the outer bottom rail for adding rows", () 
   assert.equal(hover.block, table);
 });
 
+test("Tiptap table geometry does not infer table rails from adjacent complex blocks", () => {
+  const { grid, table, tableRect } = createTableGeometryHarness();
+  const codeBlock = {
+    tagName: "PRE",
+    closest() {
+      return null;
+    },
+  };
+
+  assert.equal(
+    tableHoverWithIntent({
+      target: codeBlock,
+      table,
+      grid,
+      tableRect,
+      clientX: 240,
+      clientY: 160,
+      rowHandleWidth: 20,
+      columnHandleHeight: 20,
+    }),
+    null,
+  );
+  assert.equal(
+    tableHoverWithIntent({
+      target: codeBlock,
+      table,
+      grid,
+      tableRect,
+      clientX: 366,
+      clientY: 140,
+      rowHandleWidth: 20,
+      columnHandleHeight: 20,
+    }),
+    null,
+  );
+});
+
 test("Tiptap complex block insert uses a forgiving independent bottom zone", () => {
   const blockRect = normalizedRect(rect(120, 90, 240, 68));
 

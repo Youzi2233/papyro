@@ -578,6 +578,10 @@ export class TiptapTableToolbarController {
       clientY: event?.clientY,
       rowHandleWidth: TABLE_ROW_HANDLE_WIDTH,
       columnHandleHeight: TABLE_COLUMN_HANDLE_HEIGHT,
+      allowRailTarget:
+        event?.target === this.#editor?.view?.dom ||
+        event?.target === this.#state.table ||
+        event?.target?.classList?.contains?.("tableWrapper"),
     });
     if (sameTableHover(hover, this.#state.hover)) return false;
     this.#state = {

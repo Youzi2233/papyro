@@ -738,6 +738,7 @@ export function tableHoverWithIntent({
   clientY,
   rowHandleWidth = 18,
   columnHandleHeight = 18,
+  allowRailTarget = false,
 } = {}) {
   const normalizedTableRect = normalizedRect(tableRect);
   const x = Number(clientX);
@@ -772,7 +773,8 @@ export function tableHoverWithIntent({
 
   let hover = tableHoverContext(target, table, grid);
 
-  if (!hover) {
+  const canInferOuterRail = Boolean(hover || allowRailTarget || target === table);
+  if (!hover && canInferOuterRail) {
     if (insideLeftGutter) {
       hover = tableRowHoverContextAtY(table, grid, y);
     } else if (insideTopGutter) {

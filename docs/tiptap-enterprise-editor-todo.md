@@ -289,6 +289,7 @@ Tasks:
 - [ ] Add quick row and column insertion rails: slim full-width/full-height rails with centered `+`, close enough to the table to be discoverable.
   - Current coverage: quick-add rails are now flush with the real table grid edge, use compact 12px hit chrome, and keep light/dark contrast without reading like debug overlays.
 - [ ] Keep table controls hidden for adjacent code blocks or other non-table content.
+  - Current coverage: quick-add row/column rails now require a table-owned target or explicit editor rail target, so adjacent code blocks and other complex blocks cannot accidentally display table insertion chrome.
 - [ ] Add Markdown round-trip fixtures for alignment, header rows, merged-cell fallback, and cell background metadata if supported.
 
 Acceptance criteria:

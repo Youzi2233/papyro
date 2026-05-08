@@ -1282,6 +1282,69 @@ test("Tiptap table quick add rails appear only on the hovered table edge", () =>
   assert.equal(columnButton.hidden, true);
 });
 
+test("Tiptap table quick add rails ignore adjacent complex block targets", () => {
+  const { created, documentRef } = createDocument();
+  const { editor } = createTableHarness();
+  const codeBlock = {
+    nodeType: 1,
+    tagName: "PRE",
+    className: "mn-tiptap-code-block",
+    parentElement: editor.view.dom,
+    contains(target) {
+      return target === this;
+    },
+    closest(selector) {
+      if (selector.includes(".mn-tiptap-code-block") || selector.includes("pre")) return this;
+      return null;
+    },
+    getBoundingClientRect: () => ({
+      left: 120,
+      top: 158,
+      right: 360,
+      bottom: 230,
+      width: 240,
+      height: 72,
+    }),
+  };
+  editor.commands.addRowAfter = () => true;
+  editor.commands.addColumnAfter = () => true;
+  editor.view.dom.contains = (target) =>
+    target === editor.view.dom || target === codeBlock;
+  const controller = createTiptapTableToolbarController({
+    dom: { document: documentRef },
+  });
+
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  const rowButton = created.find((element) =>
+    String(element.className).includes("mn-tiptap-table-add-row"),
+  );
+  const columnButton = created.find((element) =>
+    String(element.className).includes("mn-tiptap-table-add-column"),
+  );
+  const insertRail = created.find((element) =>
+    String(element.className).includes("mn-tiptap-complex-block-insert"),
+  );
+
+  editor.view.dom.listeners.get("pointermove")({
+    target: codeBlock,
+    clientX: 240,
+    clientY: 160,
+  });
+  assert.equal(rowButton.hidden, true);
+  assert.equal(columnButton.hidden, true);
+  assert.equal(insertRail.hidden, true);
+
+  editor.view.dom.listeners.get("pointermove")({
+    target: codeBlock,
+    clientX: 240,
+    clientY: 224,
+  });
+  assert.equal(rowButton.hidden, true);
+  assert.equal(columnButton.hidden, true);
+  assert.equal(insertRail.hidden, false);
+  assert.equal(insertRail.dataset.blockKind, "complex");
+});
+
 test("Tiptap table toolbar controls fall back to click events", () => {
   const { created, documentRef } = createDocument();
   const { calls, editor } = createTableHarness();
