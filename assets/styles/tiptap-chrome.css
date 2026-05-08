@@ -2016,10 +2016,6 @@
     box-shadow: -4.5px 0 0 currentColor, 4.5px 0 0 currentColor;
 }
 
-.mn-tiptap-table-axis-handle.table::before {
-    display: none;
-}
-
 .mn-tiptap-format-toolbar-list {
     display: flex;
     align-items: center;

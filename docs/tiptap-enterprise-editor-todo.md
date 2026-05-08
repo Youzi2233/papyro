@@ -262,7 +262,8 @@ Decision path:
 
 Tasks:
 
-- [ ] Remove the top-left whole-table selector unless a clear product action requires it.
+- [x] Remove the top-left whole-table selector unless a clear product action requires it.
+  - Current coverage: the table overlay no longer renders a whole-table corner handle; geometry now returns `table: null`, leaving row/column handles as the only axis affordances.
 - [ ] Remove visible handles by default. Show row/column handles only on intentional hover near the first row or first column.
 - [ ] Make the entire cell surface editable and focusable, not only a tiny center area.
   - Current coverage: blank cell surfaces and empty paragraph surfaces now use the table focus fallback, while filled inline content keeps native ProseMirror text selection and does not start table-range dragging.

@@ -396,10 +396,6 @@ export function insertBlockAfterLabel(language) {
   return localizedText(language, "Insert block after", "在下方插入内容块");
 }
 
-export function selectTableLabel(language) {
-  return localizedText(language, "Select table", "选择整张表格");
-}
-
 export function selectTableRowLabel(language, index) {
   const row = Number(index) + 1;
   return localizedText(language, `Select row ${row}`, `选择第 ${row} 行`);

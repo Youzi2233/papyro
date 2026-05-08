@@ -162,7 +162,7 @@ test("Tiptap table geometry positions row column handles and scoped cell menus",
   const { grid, tableRect } = createTableGeometryHarness();
   const axis = tableAxisHandleGeometry(grid, tableRect);
 
-  assert.deepEqual(axis.table, { left: 103, top: 73, width: 12, height: 12 });
+  assert.equal(axis.table, null);
   assert.deepEqual(axis.rows.map((handle) => [
     handle.index,
     handle.left,

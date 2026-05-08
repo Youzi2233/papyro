@@ -330,12 +330,7 @@ export function tableAxisHandleGeometry(grid, tableRect, {
   if (!rect) return { table: null, rows: [], columns: [] };
 
   return {
-    table: {
-      left: rect.left - handleSize - 5,
-      top: rect.top - handleSize - 5,
-      width: handleSize,
-      height: handleSize,
-    },
+    table: null,
     rows: (grid ?? [])
       .map((row, index) => {
         const rowRect = normalizedRect(row?.rect);
