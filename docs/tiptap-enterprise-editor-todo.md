@@ -262,6 +262,7 @@ Tasks:
 - [ ] Ensure cells have no visual gaps, so selection and resize borders look continuous.
 - [ ] On cell click, show a theme-colored active border around that cell.
 - [ ] On cell selection range, show a restrained overlay and a small action trigger on the range edge.
+  - Current coverage: the table cell action trigger idles as a small edge dot and expands into a compact four-dot grip only on hover, focus, or open state.
 - [ ] Add cell action menu: merge, split, alignment, text color, background color, clear formatting, copy, delete contents.
 - [ ] Add row and column action menus from slim edge handles.
 - [ ] Add resize affordance on column borders that still works while a cell is active.
