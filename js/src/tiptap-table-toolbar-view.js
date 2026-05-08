@@ -143,13 +143,20 @@ export class TiptapTableToolbarView {
   #rowHandles = [];
   #columnHandles = [];
   #selectionBackdrop = null;
+  #reactMenu = null;
+  #menuRendererFactory = null;
   #lastTable = null;
   #lastActiveCell = null;
   #menuCommands = [];
 
-  constructor({ document = defaultDocument(), window = defaultWindow(document) } = {}) {
+  constructor({
+    document = defaultDocument(),
+    window = defaultWindow(document),
+    menuRendererFactory = null,
+  } = {}) {
     this.#document = document;
     this.#window = window;
+    this.#menuRendererFactory = menuRendererFactory;
   }
 
   mount(container) {
@@ -202,14 +209,23 @@ export class TiptapTableToolbarView {
 
     root.id = TABLE_TOOLBAR_OWNER_ID;
     root.role = "toolbar";
-    header.append(eyebrow, title, subtitle);
+    const reactMenu =
+      typeof this.#menuRendererFactory === "function"
+        ? this.#menuRendererFactory({
+            root,
+            ownerId: TABLE_TOOLBAR_OWNER_ID,
+          })
+        : null;
     addRowButton.type = "button";
     addColumnButton.type = "button";
     cellMenuButton.type = "button";
     cellMenuButton.setAttribute("aria-hidden", "false");
     cellMenuButton.setAttribute("aria-haspopup", "menu");
     blockInsertButton.type = "button";
-    root.append(header, list);
+    if (!reactMenu) {
+      header.append(eyebrow, title, subtitle);
+      root.append(header, list);
+    }
     mountFloatingRoot(root, container, this.#document);
     mountFloatingRoot(addRowButton, container, this.#document);
     mountFloatingRoot(addColumnButton, container, this.#document);
@@ -227,6 +243,7 @@ export class TiptapTableToolbarView {
     this.#cellMenuButton = cellMenuButton;
     this.#blockInsertButton = blockInsertButton;
     this.#selectionBackdrop = selectionBackdrop;
+    this.#reactMenu = reactMenu;
     setHidden(root, true);
     setHidden(addRowButton, true);
     setHidden(addColumnButton, true);
@@ -242,7 +259,9 @@ export class TiptapTableToolbarView {
       return;
     }
 
-    this.#list.replaceChildren();
+    if (!this.#reactMenu) {
+      this.#list.replaceChildren();
+    }
     this.#root.setAttribute("aria-label", tableToolsLabel(state.language));
     this.#root.dataset.mode = state.mode;
     this.#root.dataset.open = state.menuOpen ? "true" : "false";
@@ -257,7 +276,7 @@ export class TiptapTableToolbarView {
       this.#lastActiveCell = null;
     }
     this.#lastTable = state.table ?? null;
-    if (this.#header && this.#eyebrow && this.#title && this.#subtitle) {
+    if (!this.#reactMenu && this.#header && this.#eyebrow && this.#title && this.#subtitle) {
       this.#eyebrow.textContent = tableContextEyebrowLabel(state.language);
       this.#title.textContent =
         state.mode === "context"
@@ -299,6 +318,52 @@ export class TiptapTableToolbarView {
       ? visibleTableCommands(state.commands, state.mode, state.selection?.kind)
       : [];
     this.#menuCommands = menuCommands;
+    if (this.#reactMenu) {
+      this.#reactMenu.render({
+        state,
+        commands: menuCommands,
+        language: state.language,
+      });
+    } else {
+      this.#renderLegacyMenu(state, menuCommands);
+    }
+
+    setHidden(this.#root, !state.menuOpen || menuCommands.length === 0);
+    syncTableToolbarActiveCommand(
+      this.#root,
+      TABLE_TOOLBAR_OWNER_ID,
+      menuCommands,
+      state.activeCommandId,
+      {
+        keyboardActive: state.keyboardActive,
+        scroll: state.keyboardActive,
+      },
+    );
+    this.#root.onkeydown = (event) => state.handleKeyDown?.(event);
+    this.#applySelectionState(state);
+    this.#applyActiveCellState(state);
+    this.#updateSelectionBackdrop(state);
+    this.#updateQuickAdd(state);
+    this.#updateCellMenuTrigger(state);
+    this.#updateComplexBlockInsert(state);
+    this.#updateAxisHandles(state);
+    if (!state.menuOpen || menuCommands.length === 0) {
+      return;
+    }
+    const anchorRect = tableMenuAnchorRect(state);
+    positionFloatingElement(this.#root, anchorRect, {
+      viewport: viewportSize(state.table, this.#window),
+      size: {
+        width: state.mode === "keyboard" ? TABLE_KEYBOARD_MENU_WIDTH : TABLE_CONTEXT_MENU_WIDTH,
+        height: state.mode === "keyboard" ? 42 : 310,
+        margin: 10,
+      },
+      placement: state.mode === "keyboard" ? "top" : "bottom",
+    });
+  }
+
+  #renderLegacyMenu(state, menuCommands) {
+    if (!this.#list) return;
     const commandGroups = [];
     menuCommands.forEach((command, commandIndex) => {
       const layoutGroup = command.layoutGroup ?? tableCommandLayoutGroup(command);
@@ -373,39 +438,6 @@ export class TiptapTableToolbarView {
       commandGroups.at(-1)?.appendChild(button);
     });
     this.#list.append(...commandGroups);
-
-    setHidden(this.#root, !state.menuOpen || menuCommands.length === 0);
-    syncTableToolbarActiveCommand(
-      this.#root,
-      TABLE_TOOLBAR_OWNER_ID,
-      menuCommands,
-      state.activeCommandId,
-      {
-        keyboardActive: state.keyboardActive,
-        scroll: state.keyboardActive,
-      },
-    );
-    this.#root.onkeydown = (event) => state.handleKeyDown?.(event);
-    this.#applySelectionState(state);
-    this.#applyActiveCellState(state);
-    this.#updateSelectionBackdrop(state);
-    this.#updateQuickAdd(state);
-    this.#updateCellMenuTrigger(state);
-    this.#updateComplexBlockInsert(state);
-    this.#updateAxisHandles(state);
-    if (!state.menuOpen || menuCommands.length === 0) {
-      return;
-    }
-    const anchorRect = tableMenuAnchorRect(state);
-    positionFloatingElement(this.#root, anchorRect, {
-      viewport: viewportSize(state.table, this.#window),
-      size: {
-        width: state.mode === "keyboard" ? TABLE_KEYBOARD_MENU_WIDTH : TABLE_CONTEXT_MENU_WIDTH,
-        height: state.mode === "keyboard" ? 42 : 310,
-        margin: 10,
-      },
-      placement: state.mode === "keyboard" ? "top" : "bottom",
-    });
   }
 
   #updateQuickAdd(state) {
@@ -768,6 +800,7 @@ export class TiptapTableToolbarView {
   }
 
   destroy() {
+    this.#reactMenu?.destroy?.();
     this.#root?.remove?.();
     this.#addRowButton?.remove?.();
     this.#addColumnButton?.remove?.();
@@ -786,6 +819,8 @@ export class TiptapTableToolbarView {
     this.#cellMenuButton = null;
     this.#blockInsertButton = null;
     this.#selectionBackdrop = null;
+    this.#reactMenu = null;
+    this.#menuRendererFactory = null;
     this.#lastActiveCell = null;
     this.#menuCommands = [];
   }

@@ -49,6 +49,8 @@ export function CommandRow({
   selected = false,
   className,
   activeClassName = "active",
+  title,
+  disabled = false,
   role,
   tabIndex = selected ? 0 : -1,
   data = {},
@@ -73,6 +75,8 @@ export function CommandRow({
       type={Component === "button" ? "button" : undefined}
       id={ownerId && Number.isInteger(index) ? commandElementId(ownerId, index) : undefined}
       className={classNames}
+      title={title}
+      disabled={Component === "button" ? disabled : undefined}
       role={role}
       tabIndex={tabIndex}
       onPointerMove={onPointerMove}

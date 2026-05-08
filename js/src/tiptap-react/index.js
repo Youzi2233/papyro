@@ -31,6 +31,10 @@ export {
   TiptapReactBlockHandleView,
 } from "./block-handle-view.jsx";
 export {
+  createTiptapReactTableContextMenuRenderer,
+  TiptapReactTableContextMenuRenderer,
+} from "./table-context-menu-renderer.jsx";
+export {
   PapyroOfficialDragHandleBridge,
 } from "./official-drag-handle-bridge.jsx";
 export {

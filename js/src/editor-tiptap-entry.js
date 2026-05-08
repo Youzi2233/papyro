@@ -6,6 +6,7 @@ import {
   createTiptapReactBlockHandleView,
   createTiptapReactMountController,
   createTiptapReactSlashMenuView,
+  createTiptapReactTableContextMenuRenderer,
 } from "./tiptap-react/index.js";
 import { createTiptapEditorRuntime } from "./tiptap-runtime.js";
 
@@ -24,6 +25,7 @@ const tiptapRuntimeAdapter = createTiptapEditorRuntime({
   blockHandleViewFactory: createTiptapReactBlockHandleView,
   mountControllerFactory: createTiptapReactMountController,
   slashMenuViewFactory: createTiptapReactSlashMenuView,
+  tableMenuRendererFactory: createTiptapReactTableContextMenuRenderer,
   navigation: hostRuntime.navigation,
 });
 

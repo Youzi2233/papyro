@@ -22,6 +22,10 @@ const blockActionMenuSource = readFileSync(
   new URL("../src/tiptap-react/components/block-action-menu.jsx", import.meta.url),
   "utf8",
 );
+const tableContextMenuSource = readFileSync(
+  new URL("../src/tiptap-react/components/table-context-menu.jsx", import.meta.url),
+  "utf8",
+);
 const slashMenuViewSource = readFileSync(
   new URL("../src/tiptap-react/slash-menu-view.jsx", import.meta.url),
   "utf8",
@@ -32,6 +36,14 @@ const blockActionMenuViewSource = readFileSync(
 );
 const floatingUtilsSource = readFileSync(
   new URL("../src/tiptap-react/utils/floating.js", import.meta.url),
+  "utf8",
+);
+const tableToolbarViewSource = readFileSync(
+  new URL("../src/tiptap-table-toolbar-view.js", import.meta.url),
+  "utf8",
+);
+const editorEntrySource = readFileSync(
+  new URL("../src/editor-tiptap-entry.js", import.meta.url),
   "utf8",
 );
 const primitivesSource = readFileSync(
@@ -70,6 +82,8 @@ test("React command chrome uses shared menu primitives", () => {
   assert.match(blockActionMenuSource, /from "\.\/primitives\.jsx"/u);
   assert.match(blockActionMenuSource, /<CommandRow/u);
   assert.match(blockActionMenuSource, /<CommandText/u);
+  assert.match(tableContextMenuSource, /from "\.\/primitives\.jsx"/u);
+  assert.match(tableContextMenuSource, /<CommandRow/u);
 });
 
 test("React floating chrome shares positioning utilities", () => {
@@ -79,4 +93,11 @@ test("React floating chrome shares positioning utilities", () => {
   assert.match(blockActionMenuViewSource, /from "\.\/utils\/floating\.js"/u);
   assert.doesNotMatch(slashMenuViewSource, /positionFloatingElement/u);
   assert.doesNotMatch(blockActionMenuViewSource, /positionFloatingElement/u);
+});
+
+test("React table context menu is injected at the editor entry boundary", () => {
+  assert.match(indexSource, /createTiptapReactTableContextMenuRenderer/u);
+  assert.match(editorEntrySource, /tableMenuRendererFactory:\s*createTiptapReactTableContextMenuRenderer/u);
+  assert.match(tableToolbarViewSource, /menuRendererFactory/u);
+  assert.doesNotMatch(tableToolbarViewSource, /tiptap-react\/index\.js/u);
 });
