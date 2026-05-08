@@ -60,6 +60,13 @@ Invoke-Step "editor.js bundle sync" {
     Assert-SameFile "assets/editor.js" "apps/mobile/assets/editor.js"
 }
 
+Invoke-Step "editor runtime style sync" {
+    Assert-SameFile "assets/styles/markdown.css" "apps/desktop/assets/styles/markdown.css"
+    Assert-SameFile "assets/styles/tiptap-chrome.css" "apps/desktop/assets/styles/tiptap-chrome.css"
+    Assert-SameFile "assets/styles/markdown.css" "apps/mobile/assets/styles/markdown.css"
+    Assert-SameFile "assets/styles/tiptap-chrome.css" "apps/mobile/assets/styles/tiptap-chrome.css"
+}
+
 Write-Host "=== performance trace note ==="
 Write-Host "Runtime interaction traces are manual: `$env:PAPYRO_PERF = '1'; cargo run -p papyro-desktop"
 Write-Host "Validate captured logs with: node scripts/check-perf-smoke.js target/perf-smoke.log"

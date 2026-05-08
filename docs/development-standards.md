@@ -75,13 +75,18 @@ check fails. `check-tiptap-runtime-smoke.js` mounts a real Tiptap editor and
 must keep rendering the Markdown fixture without runtime errors.
 The dedicated editor gate runs JS tests, rebuilds the editor bundle, checks
 Markdown styling, verifies Markdown round-trip behavior, mounts the real Tiptap
-runtime, and confirms desktop/mobile `editor.js` copies are synchronized.
+runtime, and confirms desktop/mobile `editor.js` and editor runtime style copies
+are synchronized.
 
 Generated files must be committed with the source change:
 
 - `assets/editor.js`
 - `apps/desktop/assets/editor.js`
 - `apps/mobile/assets/editor.js`
+- `apps/desktop/assets/styles/markdown.css`
+- `apps/desktop/assets/styles/tiptap-chrome.css`
+- `apps/mobile/assets/styles/markdown.css`
+- `apps/mobile/assets/styles/tiptap-chrome.css`
 
 ## Documentation Rules
 

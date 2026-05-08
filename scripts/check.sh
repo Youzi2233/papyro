@@ -80,6 +80,12 @@ echo "=== editor.js bundle sync ==="
 diff assets/editor.js apps/desktop/assets/editor.js
 diff assets/editor.js apps/mobile/assets/editor.js
 
+echo "=== editor runtime style sync ==="
+diff assets/styles/markdown.css apps/desktop/assets/styles/markdown.css
+diff assets/styles/tiptap-chrome.css apps/desktop/assets/styles/tiptap-chrome.css
+diff assets/styles/markdown.css apps/mobile/assets/styles/markdown.css
+diff assets/styles/tiptap-chrome.css apps/mobile/assets/styles/tiptap-chrome.css
+
 echo "=== performance trace note ==="
 echo "Runtime interaction traces are manual: PAPYRO_PERF=1 cargo run -p papyro-desktop"
 echo "Validate captured logs with: node scripts/check-perf-smoke.js target/perf-smoke.log"

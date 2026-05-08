@@ -8,6 +8,11 @@ const DEFAULT_CSS_GROUPS = [
     "apps/desktop/assets/styles/markdown.css",
     "apps/desktop/assets/styles/tiptap-chrome.css",
   ],
+  [
+    "apps/mobile/assets/main.css",
+    "apps/mobile/assets/styles/markdown.css",
+    "apps/mobile/assets/styles/tiptap-chrome.css",
+  ],
 ];
 
 const REQUIRED_MARKDOWN_TOKENS = [

@@ -74,13 +74,17 @@ node scripts/check-editor-markdown-gate.js
 可以正常渲染且不会触发 runtime 错误。
 专用编辑器闸门会运行 JS 测试、重建 editor bundle、检查 Markdown 样式、验证
 Markdown round-trip、真实挂载 Tiptap runtime，并确认桌面端和移动端的 `editor.js`
-副本保持同步。
+与编辑器 runtime 样式副本保持同步。
 
 生成物必须和源码同提交：
 
 - `assets/editor.js`
 - `apps/desktop/assets/editor.js`
 - `apps/mobile/assets/editor.js`
+- `apps/desktop/assets/styles/markdown.css`
+- `apps/desktop/assets/styles/tiptap-chrome.css`
+- `apps/mobile/assets/styles/markdown.css`
+- `apps/mobile/assets/styles/tiptap-chrome.css`
 
 ## 文档规则
 

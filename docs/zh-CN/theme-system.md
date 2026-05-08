@@ -34,9 +34,10 @@ flowchart TD
 
 - `assets/main.css` 是共享设计源。
 - `apps/desktop/assets/main.css` 是桌面端 runtime 使用的副本。
+- `apps/mobile/assets/main.css` 负责移动端 shell 布局和移动端 token 桥接。
 - `assets/styles/modal.css` 和 `apps/desktop/assets/styles/modal.css` 放弹窗相关样式。
-- `assets/styles/markdown.css` 和 `apps/desktop/assets/styles/markdown.css` 放文档 surface、大纲、Preview 与渲染后 Markdown 的排版节奏样式。
-- `assets/styles/tiptap-chrome.css` 和 `apps/desktop/assets/styles/tiptap-chrome.css` 放 Tiptap runtime 控件样式，包括命令面板、块句柄、表格 chrome 与代码语言菜单。
+- `assets/styles/markdown.css`、`apps/desktop/assets/styles/markdown.css` 和 `apps/mobile/assets/styles/markdown.css` 放文档 surface、大纲、Preview 与渲染后 Markdown 的排版节奏样式。
+- `assets/styles/tiptap-chrome.css`、`apps/desktop/assets/styles/tiptap-chrome.css` 和 `apps/mobile/assets/styles/tiptap-chrome.css` 放 Tiptap runtime 控件样式，包括命令面板、块句柄、表格 chrome 与代码语言菜单。
 - Tiptap node views 通过 Markdown 与 Tiptap chrome 样式中的 CSS class，以及聚焦的 `js/src/tiptap-*.js` 模块消费同一批 token。
 
 如果某个 token 在 app asset 中有副本，同一次提交里必须同步更新。

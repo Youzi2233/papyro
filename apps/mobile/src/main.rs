@@ -3,6 +3,8 @@ use dioxus::prelude::*;
 const FAVICON: Asset = asset!("/assets/favicon.ico");
 const BRAND_LOGO_SRC: &str = "/assets/logo.png";
 const MAIN_CSS: Asset = asset!("/assets/main.css");
+const MARKDOWN_CSS: Asset = asset!("/assets/styles/markdown.css");
+const TIPTAP_CHROME_CSS: Asset = asset!("/assets/styles/tiptap-chrome.css");
 const EDITOR_JS: Asset = asset!("/assets/editor.js");
 
 fn main() {
@@ -28,6 +30,8 @@ fn App() -> Element {
     rsx! {
         document::Link { rel: "icon", href: FAVICON }
         document::Stylesheet { href: MAIN_CSS }
+        document::Stylesheet { href: MARKDOWN_CSS }
+        document::Stylesheet { href: TIPTAP_CHROME_CSS }
         document::Script { "{editor_runtime_bootstrap}" }
         document::Script { src: EDITOR_JS }
         papyro_app::mobile::MobileApp {}

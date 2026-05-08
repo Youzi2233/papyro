@@ -25,7 +25,8 @@ flowchart TD
 规则：
 
 - `assets/main.css` 是共享视觉源；`assets/styles/markdown.css` 用来承载文档 surface、大纲、Preview 与渲染后 Markdown 样式，`assets/styles/tiptap-chrome.css` 承载 Tiptap 命令面板和编辑器控件 chrome，避免主 chrome CSS 预算被挤满。
-- `apps/desktop/assets/main.css` 和 `apps/mobile/assets/main.css` 是运行时副本，CSS 改动时必须同步。
+- `apps/desktop/assets/main.css` 是桌面端运行时副本；`apps/mobile/assets/main.css` 负责移动端 shell 布局和移动端 token 桥接。
+- `assets/styles/markdown.css` 与 `assets/styles/tiptap-chrome.css` 的桌面端、移动端 runtime 副本在共享编辑器 CSS 改动时必须同步。
 - `crates/ui/src/components/primitives.rs` 拥有可复用 Dioxus 控件，并重新导出 `primitives/buttons.rs`、`primitives/empty.rs`、`primitives/feedback.rs`、`primitives/forms.rs`、`primitives/layout.rs`、`primitives/navigation.rs`、`primitives/overlays.rs`、`primitives/results.rs`、`primitives/settings.rs`、`primitives/tabs.rs` 等聚焦的基础组件子模块。
 - 产品组件组合基础组件，不应该重新发明控件行为。
 - layout 模块负责排列产品区域，不拥有按钮、菜单或表单字段样式。
