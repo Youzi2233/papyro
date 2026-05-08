@@ -563,7 +563,11 @@ test("Tiptap format toolbar opens and navigates the turn-into submenu by keyboar
       events.push(["stopPropagation", key]);
     },
   });
-  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  controller.attach({
+    editor,
+    root: {},
+    entry: { viewMode: "hybrid", preferences: { language: "Chinese" } },
+  });
 
   assert.equal(
     controller.setActiveCommand("turn-into", { focus: true, keyboardActive: true }),
@@ -576,6 +580,10 @@ test("Tiptap format toolbar opens and navigates the turn-into submenu by keyboar
   );
   assert.equal(controller.state.submenuOpen, "turn-into");
   assert.equal(controller.state.activeChildCommandId, "paragraph");
+  const submenu = created.find((element) =>
+    String(element.className).includes("mn-tiptap-format-toolbar-submenu"),
+  );
+  assert.equal(submenu["aria-label"], "\u8f6c\u6362\u4e3a");
   assert.equal(
     root["aria-activedescendant"],
     "mn-tiptap-format-toolbar-submenu-item-0",

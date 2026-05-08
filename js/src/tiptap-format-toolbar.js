@@ -1,6 +1,6 @@
 import { createTiptapFormatCommandController } from "./tiptap-format-commands.js";
 import { createPapyroTiptapFormatSnapshot } from "./tiptap-format-snapshot.js";
-import { formatToolbarLabel } from "./tiptap-i18n.js";
+import { blockActionSubmenuLabel, formatToolbarLabel } from "./tiptap-i18n.js";
 import {
   commandElementId,
   createElement,
@@ -226,7 +226,10 @@ class TiptapFormatToolbarView {
     this.#submenu.id = FORMAT_TOOLBAR_SUBMENU_OWNER_ID;
     this.#submenu.dataset.parentCommandId = parent.id;
     this.#submenu.setAttribute("role", "menu");
-    this.#submenu.setAttribute("aria-label", parent.title ?? "Turn into");
+    this.#submenu.setAttribute(
+      "aria-label",
+      parent.title ?? blockActionSubmenuLabel(state.language, "turn-into"),
+    );
     parent.children.forEach((command, index) => {
       const button = createElement(
         this.#document,

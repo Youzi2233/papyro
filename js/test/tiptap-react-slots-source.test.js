@@ -286,6 +286,7 @@ test("React table chrome owns the non-menu table overlay rendering path", () => 
 
 test("React format toolbar is injected without changing the runtime command controller", () => {
   assert.match(formatToolbarSource, /export function PapyroFormatToolbar/u);
+  assert.match(formatToolbarSource, /blockActionSubmenuLabel/u);
   assert.match(formatToolbarSource, /usePointerActivation/u);
   assert.match(formatToolbarSource, /ToolbarButton/u);
   assert.match(formatToolbarSource, /"keyboard-active":\s*keyboardActive \? "true" : "false"/u);
@@ -305,6 +306,7 @@ test("React format toolbar is injected without changing the runtime command cont
   );
   assert.match(formatToolbarViewSource, /focusCommand/u);
   assert.match(formatToolbarViewSource, /role = "toolbar"/u);
+  assert.doesNotMatch(formatToolbarSource, /Turn into/u);
   assert.doesNotMatch(formatToolbarViewSource, /createElement\(/u);
 });
 

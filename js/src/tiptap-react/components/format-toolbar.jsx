@@ -1,5 +1,6 @@
 import React from "react";
 
+import { blockActionSubmenuLabel } from "../../tiptap-i18n.js";
 import { usePointerActivation } from "../hooks/use-pointer-activation.js";
 import { ToolbarButton } from "./primitives.jsx";
 
@@ -109,6 +110,8 @@ export function PapyroFormatToolbar({
 }) {
   const commands = state?.commands ?? [];
   const submenuCommand = commands.find((command) => command.id === state?.submenuOpen);
+  const submenuLabel =
+    submenuCommand?.title ?? blockActionSubmenuLabel(state?.language, "turn-into");
 
   return (
     <div className="mn-tiptap-format-toolbar-shell">
@@ -131,7 +134,7 @@ export function PapyroFormatToolbar({
         id={submenuOwnerId}
         className={`mn-tiptap-format-toolbar-submenu${submenuCommand?.children?.length ? "" : " hidden"}`}
         role="menu"
-        aria-label={submenuCommand?.title ?? "Turn into"}
+        aria-label={submenuLabel}
         data-parent-command-id={submenuCommand?.id ?? ""}
       >
         {submenuCommand?.children?.map((command, commandIndex) => (
