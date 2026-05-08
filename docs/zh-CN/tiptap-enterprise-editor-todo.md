@@ -175,7 +175,8 @@ node scripts/report-file-lines.js
 
 - [x] 用 React command menu 替换 DOM slash menu。
 - [x] 核心插入命令按 Text、Lists、Blocks、Data、Media、Advanced 分组。
-- [ ] 等命令使用历史存在后再增加 Recent 分组。
+- [x] 等命令使用历史存在后再增加 Recent 分组。
+  - 当前覆盖：slash 和 `+` 空查询菜单会把最近成功执行的命令提升到 Recent 分组，并保留原始 `sourceIndex` 方便调试与测试。
 - [ ] 支持表格尺寸、callout 样式、代码语言、未来 diagram/math 模板的二级详情面板。
   - 当前覆盖：表格尺寸、callout 样式和代码语言面板已实现，并锚定到当前激活命令行。
 - [x] 修复键盘导航，ArrowDown 必须能到达每一项，不能没到表格就回到第一项。
@@ -185,7 +186,7 @@ node scripts/report-file-lines.js
 - [x] 命令过滤要保持稳定 active item；只有键盘导航时才强制 scroll into view。
 - [x] 保持 `+` 语义独立：在当前 block 下方插入、在新光标处打开菜单、取消时清理临时 slash 文本。
 - [x] 用共享的 Lucide-backed React 图标系统替换 slash 菜单里临时感较强的 glyph，并为命令分组增加语义化色调。
-  - 当前打磨：slash 和 `+` 菜单已改为更克制的中性图标框，表格尺寸二级面板变窄，并同步了定位宽度契约。
+  - 当前打磨：slash 和 `+` 菜单已改为更克制的中性图标框，表格尺寸二级面板变窄，并同步了定位宽度契约；React 路径使用 Lucide 图标，迁移期 DOM fallback 也有同一套语义化线性图标和 Recent 色调，避免不同渲染路径观感分裂。
 
 验收标准：
 

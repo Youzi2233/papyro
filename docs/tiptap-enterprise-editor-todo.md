@@ -175,7 +175,8 @@ Tasks:
 
 - [x] Replace the DOM slash menu with a React command menu.
 - [x] Separate core insert commands into Text, Lists, Blocks, Data, Media, and Advanced groups.
-- [ ] Add a Recent group after command usage history exists.
+- [x] Add a Recent group after command usage history exists.
+  - Current coverage: empty slash and `+` menus promote successfully used commands into a Recent group while preserving `sourceIndex` for diagnostics and tests.
 - [ ] Support nested detail panels for table size, callout style, code language, and future diagram/math templates.
   - Current coverage: table size, callout style, and code language panels are implemented and anchored to the active command row.
 - [x] Fix keyboard navigation so ArrowDown can reach every command and never loops before the last item.
@@ -185,7 +186,7 @@ Tasks:
 - [x] Add command filtering with stable active item and scroll-into-view only for keyboard navigation.
 - [x] Keep `+` semantics distinct: insert below the current block, open the menu at the new caret, and clean temporary slash text on cancel.
 - [x] Replace ad hoc slash-menu glyphs with a shared Lucide-backed React icon system and semantic command-group tones.
-  - Current polish: slash and `+` menus now use quieter neutral icon frames, and the table size detail panel is narrower with matching positioning contracts.
+  - Current polish: slash and `+` menus now use quieter neutral icon frames, and the table size detail panel is narrower with matching positioning contracts. The React path uses Lucide icons, while the migration DOM fallback now has the same semantic line-icon vocabulary and Recent tone so rendering paths do not split visually.
 
 Acceptance criteria:
 

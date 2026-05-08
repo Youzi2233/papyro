@@ -492,6 +492,7 @@ class TiptapSlashMenuView {
         icon.setAttribute("aria-hidden", "true");
         icon.dataset.icon = command.icon ?? "paragraph";
         icon.dataset.commandGroup = commandMenuGroupTone(command);
+        icon.dataset.iconSource = "fallback";
         title.textContent = command.title;
         description.textContent = command.description ?? "";
         copy.append(title, description);

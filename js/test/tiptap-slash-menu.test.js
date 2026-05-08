@@ -385,6 +385,7 @@ test("Tiptap slash menu renders command icons for block insertion", () => {
   assert.equal(firstItem.dataset.commandId, "table");
   assert.equal(firstItem.dataset.group, "Data");
   assert.equal(icon.dataset.icon, "table");
+  assert.equal(icon.dataset.iconSource, "fallback");
   assert.equal(icon.dataset.commandGroup ?? icon.dataset["command-group"], "data");
   assert.equal(String(icon.className).includes("mn-tiptap-slash-menu-icon table"), true);
   assert.equal(copy.children[0].textContent, "Table");
