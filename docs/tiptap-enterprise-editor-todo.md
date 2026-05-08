@@ -359,6 +359,7 @@ Tasks:
 - [ ] Show language label with a language switcher.
   - Current coverage: code blocks expose a language badge, explicit/auto state data, compact language tokens, and an editable language menu. The language list is now backed by the shared React command model in both the React node view and the migration fallback.
   - Current polish: the visible language chip now shows the effective syntax token (`JS`, `RS`, `TXT`, etc.) instead of a generic "Lang" label, including auto-detected languages.
+  - Current polish: the React language menu now renders each option with a stable language token, localized title, and short explanation so users can understand whether the block is auto-detected, plain text, or syntax-highlighted.
 - [ ] Add copy button, wrap toggle, and optional filename/title metadata if Markdown strategy is defined.
   - Current coverage: code blocks expose quiet copy and soft-wrap controls in the node-view chrome without changing saved Markdown. Copy/wrap labels and states are now represented by the shared React command model for the future React node view.
 - [ ] Use a real highlighter theme for light and dark modes.

@@ -121,6 +121,8 @@ const TIPTAP_COMMAND_PANEL_REQUIREMENTS = [
   ["Tiptap complex insert button", ".mn-tiptap-complex-block-insert::after", "--mn-editor-bg"],
   ["Tiptap code language badge", ".mn-tiptap-code-language-button::before", "data-language-badge"],
   ["Tiptap code language option token", ".mn-tiptap-code-language-menu-item::before", "data-language-token"],
+  ["Tiptap code language option title", ".mn-tiptap-code-language-menu-item-title", "text-overflow: ellipsis"],
+  ["Tiptap code language option description", ".mn-tiptap-code-language-menu-item-description", "font-size: 10px"],
 ];
 
 const TIPTAP_CODE_HIGHLIGHT_REQUIREMENTS = [

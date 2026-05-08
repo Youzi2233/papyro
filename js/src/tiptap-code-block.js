@@ -235,7 +235,7 @@ export function codeBlockDomAttributes({
     "aria-label": localizedText(
       language,
       `Code block, ${label}`,
-      `浠ｇ爜鍧楋紝${label}`,
+      `代码块，${label}`,
     ),
   };
 

@@ -245,7 +245,8 @@ function CodeLanguageMenuItem({ id, command, active, onActive, onChoose }) {
       onFocus={onActive}
       {...activation}
     >
-      {command.title}
+      <span className="mn-tiptap-code-language-menu-item-title">{command.title}</span>
+      <span className="mn-tiptap-code-language-menu-item-description">{command.description}</span>
     </button>
   );
 }
