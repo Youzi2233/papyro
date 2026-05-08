@@ -354,9 +354,11 @@ node scripts/check-tiptap-release-smoke.js
   - 当前覆盖：真实桌面/移动运行时已经在 editor 入口边界注入 React 渲染的格式工具栏 view；现有 controller 和 DOM fallback 暂时保留，用于测试与迁移期稳定性。
 - [ ] 用 Tiptap state selector 获取 active marks，不再 DOM polling。
 - [ ] 增加加粗、斜体、删除线、行内代码、链接、文字颜色、高亮、清除格式、turn into。
+  - 当前覆盖：headless 行内格式命令模型现在已经暴露 Tiptap 官方免费版的加粗、斜体、下划线、删除线、行内代码、高亮和 `unsetAllMarks` 清除格式命令，并把本地化标签同时供给 React view 和 DOM fallback。
 - [ ] 靠近视口边缘时定位稳定。
 - [ ] 支持键盘访问和焦点回到编辑器。
 - [ ] 本地化 label 和 tooltip。
+  - 当前覆盖：当前工具栏命令已从共享 Tiptap i18n model 提供英文和简体中文 title 与 accessible label。
 
 验收标准：
 

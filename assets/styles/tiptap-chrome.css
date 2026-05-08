@@ -1836,6 +1836,11 @@
     font-style: italic;
 }
 
+.mn-tiptap-format-toolbar-button[data-command-id="underline"] .mn-tiptap-format-toolbar-label {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
 .mn-tiptap-format-toolbar-button[data-command-id="strike"] .mn-tiptap-format-toolbar-label {
     text-decoration: line-through;
 }
@@ -1843,6 +1848,34 @@
 .mn-tiptap-format-toolbar-button[data-command-id="code"] {
     font-family: var(--mn-markdown-mono-font);
     font-size: var(--mn-type-small);
+}
+
+.mn-tiptap-format-toolbar-button[data-command-id="highlight"] .mn-tiptap-format-toolbar-label {
+    position: relative;
+    z-index: 0;
+}
+
+.mn-tiptap-format-toolbar-button[data-command-id="highlight"] .mn-tiptap-format-toolbar-label::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    left: -2px;
+    right: -2px;
+    bottom: 2px;
+    height: 7px;
+    border-radius: 3px;
+    background: color-mix(in srgb, var(--mn-warning) 24%, transparent);
+}
+
+.mn-tiptap-format-toolbar-button[data-command-id="clear-formatting"] {
+    color: var(--mn-ink-3);
+    font-size: var(--mn-type-caption);
+    font-weight: var(--mn-weight-medium);
+}
+
+.mn-tiptap-format-toolbar-button[data-command-id="clear-formatting"]:hover,
+.mn-tiptap-format-toolbar-button[data-command-id="clear-formatting"].active {
+    color: var(--mn-ink);
 }
 
 .mn-tiptap-block-handle {

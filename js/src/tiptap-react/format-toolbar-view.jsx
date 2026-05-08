@@ -9,8 +9,8 @@ import {
   usableFloatingRect,
 } from "./utils/floating.js";
 
-const REGULAR_TOOLBAR_WIDTH = 224;
-const COMPACT_TOOLBAR_WIDTH = 168;
+const REGULAR_TOOLBAR_WIDTH = 252;
+const COMPACT_TOOLBAR_WIDTH = 224;
 const TOOLBAR_HEIGHT = 38;
 const TOOLBAR_MARGIN = 10;
 

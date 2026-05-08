@@ -354,9 +354,11 @@ Tasks:
   - Current coverage: the real desktop/mobile runtime now injects a React-rendered format toolbar view at the editor entry boundary, while the existing controller and DOM fallback remain for tests and migration safety.
 - [ ] Use Tiptap state selectors for active marks instead of DOM polling.
 - [ ] Add bold, italic, strike, inline code, link, text color, highlight, clear formatting, and turn into.
+  - Current coverage: the headless inline-format command model now exposes Tiptap's official/free bold, italic, underline, strike, inline code, highlight, and `unsetAllMarks` clear-formatting commands, with localized labels feeding both the React view and DOM fallback.
 - [ ] Keep toolbar placement stable near viewport edges.
 - [ ] Add keyboard access and focus return.
 - [ ] Localize labels and tooltips.
+  - Current coverage: current toolbar commands provide English and Simplified Chinese titles and accessible labels from the shared Tiptap i18n model.
 
 Acceptance criteria:
 

@@ -1,3 +1,5 @@
+import { localizedText } from "./tiptap-i18n.js";
+
 function normalizeCommandId(value) {
   return String(value ?? "").trim().toLowerCase();
 }
@@ -25,20 +27,62 @@ function isCommandActive(editor, activeName, activeAttrs) {
   return activeAttrs ? editor.isActive(activeName, activeAttrs) : editor.isActive(activeName);
 }
 
+function formatCommandLanguage(context = {}) {
+  return context.language ?? context.entry?.preferences?.language ?? "english";
+}
+
+const FORMAT_COMMAND_LABELS = Object.freeze({
+  bold: ["Bold", "加粗", "Toggle bold", "切换加粗"],
+  italic: ["Italic", "斜体", "Toggle italic", "切换斜体"],
+  underline: ["Underline", "下划线", "Toggle underline", "切换下划线"],
+  strike: ["Strike", "删除线", "Toggle strikethrough", "切换删除线"],
+  code: ["Inline code", "行内代码", "Toggle inline code", "切换行内代码"],
+  highlight: ["Highlight", "高亮", "Toggle highlight", "切换高亮"],
+  "clear-formatting": [
+    "Clear formatting",
+    "清除格式",
+    "Clear selected formatting",
+    "清除所选文本格式",
+  ],
+});
+
+function localizeFormatCommand(command, language) {
+  const labels = FORMAT_COMMAND_LABELS[command.id];
+  if (!labels) return command;
+
+  return {
+    ...command,
+    title: localizedText(language, labels[0], labels[1]),
+    ariaLabel: localizedText(language, labels[2], labels[3]),
+  };
+}
+
 function createCommand({
   id,
   label,
   title,
   ariaLabel,
   commandName,
+  commandArgs = [],
   activeName,
   activeAttrs,
+  run,
+  active,
   icon,
   priority = 100,
 }) {
-  if (!id || !commandName) {
-    throw new TypeError("Tiptap format commands require an id and commandName");
+  if (!id || (!commandName && typeof run !== "function")) {
+    throw new TypeError("Tiptap format commands require an id and runnable command");
   }
+
+  const runCommand =
+    typeof run === "function"
+      ? run
+      : ({ editor }) => editorCommand(editor, commandName, ...commandArgs);
+  const activeCommand =
+    typeof active === "function"
+      ? active
+      : ({ editor }) => isCommandActive(editor, activeName ?? id, activeAttrs);
 
   return freezeCommand({
     id,
@@ -46,16 +90,13 @@ function createCommand({
     title,
     ariaLabel: ariaLabel ?? title,
     commandName,
+    commandArgs: Object.freeze([...commandArgs]),
     activeName: activeName ?? id,
     activeAttrs,
     icon: icon ?? id,
     priority,
-    run({ editor }) {
-      return editorCommand(editor, commandName);
-    },
-    active({ editor }) {
-      return isCommandActive(editor, activeName ?? id, activeAttrs);
-    },
+    run: runCommand,
+    active: activeCommand,
   });
 }
 
@@ -77,6 +118,14 @@ export const PAPYRO_TIPTAP_FORMAT_COMMANDS = Object.freeze([
     priority: 20,
   }),
   createCommand({
+    id: "underline",
+    label: "U",
+    title: "Underline",
+    ariaLabel: "Toggle underline",
+    commandName: "toggleUnderline",
+    priority: 25,
+  }),
+  createCommand({
     id: "strike",
     label: "S",
     title: "Strike",
@@ -91,6 +140,23 @@ export const PAPYRO_TIPTAP_FORMAT_COMMANDS = Object.freeze([
     ariaLabel: "Toggle inline code",
     commandName: "toggleCode",
     priority: 40,
+  }),
+  createCommand({
+    id: "highlight",
+    label: "H",
+    title: "Highlight",
+    ariaLabel: "Toggle highlight",
+    commandName: "toggleHighlight",
+    priority: 50,
+  }),
+  createCommand({
+    id: "clear-formatting",
+    label: "Tx",
+    title: "Clear formatting",
+    ariaLabel: "Clear selected formatting",
+    commandName: "unsetAllMarks",
+    active: () => false,
+    priority: 90,
   }),
 ]);
 
@@ -113,15 +179,21 @@ export class TiptapFormatCommandController {
   }
 
   states(context = {}) {
-    return this.#commands.map((command) => ({
-      id: command.id,
-      label: command.label,
-      title: command.title,
-      ariaLabel: command.ariaLabel,
-      icon: command.icon,
-      priority: command.priority,
-      active: command.active(context) === true,
-    }));
+    const language = formatCommandLanguage(context);
+    return this.#commands.map((command) =>
+      localizeFormatCommand(
+        {
+          id: command.id,
+          label: command.label,
+          title: command.title,
+          ariaLabel: command.ariaLabel,
+          icon: command.icon,
+          priority: command.priority,
+          active: command.active(context) === true,
+        },
+        language,
+      ),
+    );
   }
 
   run(commandId, context = {}) {

@@ -32,6 +32,18 @@ function createEditor({ selected = true, active = [], viewportWidth = 1000 } = {
         calls.push(["toggleStrike"]);
         return true;
       },
+      toggleUnderline: () => {
+        calls.push(["toggleUnderline"]);
+        return true;
+      },
+      toggleHighlight: () => {
+        calls.push(["toggleHighlight"]);
+        return true;
+      },
+      unsetAllMarks: () => {
+        calls.push(["unsetAllMarks"]);
+        return true;
+      },
     },
     isActive: (name) => activeMarks.has(name),
     view: {
@@ -172,8 +184,11 @@ test("Tiptap format toolbar opens for non-empty Hybrid selections", () => {
     [
       ["bold", true],
       ["italic", false],
+      ["underline", false],
       ["strike", false],
       ["code", false],
+      ["highlight", false],
+      ["clear-formatting", false],
     ],
   );
   assert.equal(controller.state.density, "regular");
@@ -226,6 +241,31 @@ test("Tiptap format toolbar runs selected commands", () => {
   assert.equal(view.calls[0][0], "update");
 });
 
+test("Tiptap format toolbar exposes official mark commands and clear formatting", () => {
+  const { calls, editor } = createEditor({ active: ["underline", "highlight"] });
+  const view = createViewSpy();
+  const controller = createTiptapFormatToolbarController({ view });
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+
+  assert.deepEqual(
+    controller.state.commands.map((command) => [command.id, command.active]),
+    [
+      ["bold", false],
+      ["italic", false],
+      ["underline", true],
+      ["strike", false],
+      ["code", false],
+      ["highlight", true],
+      ["clear-formatting", false],
+    ],
+  );
+
+  calls.length = 0;
+  assert.equal(controller.run("clear-formatting"), true);
+
+  assert.deepEqual(calls, [["unsetAllMarks"], ["focus"]]);
+});
+
 test("Tiptap format toolbar buttons run commands from pointerdown", () => {
   const { created, documentRef } = createDocument();
   const { calls, editor } = createEditor();
@@ -235,6 +275,7 @@ test("Tiptap format toolbar buttons run commands from pointerdown", () => {
 
   controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
   const button = created.find((element) => element.dataset.commandId === "bold");
+  const clear = created.find((element) => element.dataset.commandId === "clear-formatting");
   const events = [];
 
   button.onpointerdown({
@@ -248,6 +289,7 @@ test("Tiptap format toolbar buttons run commands from pointerdown", () => {
 
   assert.deepEqual(events, ["preventDefault", "stopPropagation"]);
   assert.deepEqual(calls, [["toggleBold"], ["focus"]]);
+  assert.equal(clear.children.at(-1).textContent, "Tx");
 });
 
 test("Tiptap format toolbar closes and destroys view state", () => {
