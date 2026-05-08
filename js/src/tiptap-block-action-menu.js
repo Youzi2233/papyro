@@ -556,6 +556,7 @@ export class TiptapBlockActionMenuController {
   #dismiss;
   #document = null;
   #externalContains = () => false;
+  #openStateListener = () => {};
   #editor = null;
   #entry = null;
   #state = {
@@ -611,6 +612,10 @@ export class TiptapBlockActionMenuController {
 
   setExternalContains(contains) {
     this.#externalContains = typeof contains === "function" ? contains : () => false;
+  }
+
+  setOpenStateListener(listener) {
+    this.#openStateListener = typeof listener === "function" ? listener : () => {};
   }
 
   #shouldDismiss(event) {
@@ -673,6 +678,7 @@ export class TiptapBlockActionMenuController {
       this.#editor,
     );
     this.#dismiss.open();
+    this.#openStateListener(this.state);
     return this.state;
   }
 
@@ -840,6 +846,7 @@ export class TiptapBlockActionMenuController {
     };
     this.#view.hide?.();
     this.#dismiss.close();
+    this.#openStateListener(this.state);
   }
 
   destroy() {

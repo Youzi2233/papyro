@@ -214,6 +214,7 @@ Tasks:
   - Foundation added: `@tiptap/extension-node-range` is now in the editor extension chain with `Mod` pointer selection and Papyro-themed range-selection CSS.
   - Foundation added: official DragHandle adapter options and Papyro exclusion rules are now tested in `js/src/tiptap-official-drag-handle.js`; runtime behavior still needs to switch from the compatibility controller to the official plugin.
   - Foundation added: the React official DragHandle bridge now registers only for editable Hybrid mode with a block-handle controller, so Source/Preview do not keep the official hover plugin active.
+  - Foundation added: block action and insert menus now lock the official DragHandle plugin while floating menus are open, using `lockDragHandle`/`unlockDragHandle` when available and `setMeta("lockDragHandle", ...)` as the React bridge fallback.
 - [ ] React-render the handle with two distinct controls: drag/action handle and insert `+`.
   - Done for the visual view: desktop/mobile bundle entry now injects a React block-handle view while the existing controller still owns behavior.
   - Still required: move behavior to the official `DragHandle`/`NodeRange` integration.

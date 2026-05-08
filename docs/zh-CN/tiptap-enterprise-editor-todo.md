@@ -214,6 +214,7 @@ node scripts/check-editor-markdown-gate.js
   - 基础已接入：`@tiptap/extension-node-range` 已加入编辑器 extension 链，使用 `Mod` 鼠标范围选择，并补齐 Papyro 主题化的 range-selection CSS。
   - 基础已接入：官方 DragHandle adapter 配置和 Papyro 排除规则已在 `js/src/tiptap-official-drag-handle.js` 中测试覆盖；运行时行为仍需从兼容 controller 切到官方 plugin。
   - 基础已接入：React 官方 DragHandle bridge 现在只在可编辑 Hybrid 模式且存在 block-handle controller 时注册，Source/Preview 不再保持官方 hover plugin 激活。
+  - 基础已接入：块操作菜单和插入菜单打开时会锁定官方 DragHandle plugin；优先调用 `lockDragHandle`/`unlockDragHandle`，React bridge 场景下回退到 `setMeta("lockDragHandle", ...)`。
 - [ ] 用 React 渲染句柄，明确分成拖拽/操作句柄和插入 `+` 两个控件。
   - 视觉 view 已完成：桌面端/移动端 bundle 入口现在注入 React block-handle view，现有 controller 仍负责行为。
   - 仍需继续：把行为迁移到官方 `DragHandle`/`NodeRange` 集成。

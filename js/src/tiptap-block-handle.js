@@ -678,6 +678,7 @@ export class TiptapBlockHandleController {
   #drag = null;
   #selectedBlock = null;
   #officialTrackingActive = false;
+  #officialDragHandleLocked = false;
   #state = {
     open: false,
     target: null,
@@ -732,7 +733,9 @@ export class TiptapBlockHandleController {
     this.#view.mount?.(root);
     this.#menu?.attach?.({ editor, root, entry });
     this.#menu?.setExternalContains?.((target) => this.#view.contains?.(target));
+    this.#menu?.setOpenStateListener?.(() => this.#syncOfficialDragHandleLock());
     this.#insertMenu?.setExternalContains?.((target) => this.#view.contains?.(target));
+    this.#insertMenu?.setOpenStateListener?.(() => this.#syncOfficialDragHandleLock());
     this.#bind();
   }
 
@@ -924,6 +927,7 @@ export class TiptapBlockHandleController {
     this.#menu?.open?.(this.#state.target, {
       anchorRect: anchorRect ?? this.#view.actionRect?.(),
     });
+    this.#syncOfficialDragHandleLock();
     return true;
   }
 
@@ -934,9 +938,11 @@ export class TiptapBlockHandleController {
 
     this.#selectTarget(this.#state.target);
     this.#menu?.close?.();
-    return this.#insertMenu?.openAtBlock?.(this.#state.target, {
+    const opened = this.#insertMenu?.openAtBlock?.(this.#state.target, {
       anchorRect: this.#view.insertRect?.(),
     }) !== false;
+    this.#syncOfficialDragHandleLock();
+    return opened;
   }
 
   clickAction(event = null) {
@@ -1009,6 +1015,7 @@ export class TiptapBlockHandleController {
     if (!this.#drag.moved) {
       this.#menu?.close?.();
       this.#insertMenu?.close?.();
+      this.#syncOfficialDragHandleLock();
       this.#root?.classList?.add?.(DRAGGING_CLASS);
     }
     this.#drag.moved = true;
@@ -1187,6 +1194,37 @@ export class TiptapBlockHandleController {
     return this.#menu?.state?.open === true || this.#insertMenu?.state?.open === true;
   }
 
+  #syncOfficialDragHandleLock() {
+    const shouldLock =
+      this.#state.open &&
+      this.#entry?.viewMode === "hybrid" &&
+      this.#hasOpenFloatingMenu();
+    return this.#setOfficialDragHandleLocked(shouldLock);
+  }
+
+  #setOfficialDragHandleLocked(locked) {
+    if (this.#officialDragHandleLocked === locked) {
+      return false;
+    }
+
+    const commands = this.#editor?.commands;
+    let ok = false;
+    if (locked && typeof commands?.lockDragHandle === "function") {
+      ok = commands.lockDragHandle() !== false;
+    } else if (!locked && typeof commands?.unlockDragHandle === "function") {
+      ok = commands.unlockDragHandle() !== false;
+    }
+
+    if (!ok && typeof commands?.setMeta === "function") {
+      ok = commands.setMeta("lockDragHandle", locked) !== false;
+    }
+
+    if (ok) {
+      this.#officialDragHandleLocked = locked;
+    }
+    return ok;
+  }
+
   close() {
     this.cancelDrag();
     if (!this.#state.open) return;
@@ -1198,11 +1236,15 @@ export class TiptapBlockHandleController {
     this.#view.hide?.();
     this.#menu?.close?.();
     this.#insertMenu?.close?.();
+    this.#syncOfficialDragHandleLock();
   }
 
   destroy() {
     this.close();
     this.#unbind();
+    this.#menu?.setOpenStateListener?.(null);
+    this.#insertMenu?.setOpenStateListener?.(null);
+    this.#setOfficialDragHandleLocked(false);
     this.#menu?.destroy?.();
     this.#view.destroy?.();
     this.#editor = null;

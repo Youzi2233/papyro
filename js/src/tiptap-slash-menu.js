@@ -704,6 +704,7 @@ export class TiptapSlashMenuController {
   #dismiss;
   #document = null;
   #externalContains = () => false;
+  #openStateListener = () => {};
   #state = {
     open: false,
     query: "",
@@ -764,6 +765,10 @@ export class TiptapSlashMenuController {
     this.#externalContains = typeof contains === "function" ? contains : () => false;
   }
 
+  setOpenStateListener(listener) {
+    this.#openStateListener = typeof listener === "function" ? listener : () => {};
+  }
+
   #viewState() {
     return {
       ...this.#state,
@@ -818,6 +823,7 @@ export class TiptapSlashMenuController {
           editor,
         );
         this.#dismiss.open();
+        this.#openStateListener(this.state);
         return this.state;
       }
       this.close();
@@ -832,6 +838,7 @@ export class TiptapSlashMenuController {
           editor,
         );
         this.#dismiss.open();
+        this.#openStateListener(this.state);
         return this.state;
       }
       this.close();
@@ -863,6 +870,7 @@ export class TiptapSlashMenuController {
         editor,
       );
       this.#dismiss.open();
+      this.#openStateListener(this.state);
       return this.state;
     }
 
@@ -893,6 +901,7 @@ export class TiptapSlashMenuController {
       editor,
     );
     this.#dismiss.open();
+    this.#openStateListener(this.state);
     return this.state;
   }
 
@@ -931,6 +940,7 @@ export class TiptapSlashMenuController {
       this.#editor,
     );
     this.#dismiss.open();
+    this.#openStateListener(this.state);
     return this.state;
   }
 
@@ -1064,6 +1074,7 @@ export class TiptapSlashMenuController {
     if (shouldCleanupRange) {
       this.#editor.commands.deleteRange(range);
     }
+    this.#openStateListener(this.state);
   }
 
   destroy() {

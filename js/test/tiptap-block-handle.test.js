@@ -213,6 +213,7 @@ function createMenuSpy() {
   let open = false;
   let containedTarget = null;
   let externalContains = () => false;
+  let openStateListener = () => {};
   return {
     calls,
     get state() {
@@ -225,6 +226,7 @@ function createMenuSpy() {
       const wasOpen = open;
       open = false;
       if (wasOpen) calls.push(["close"]);
+      if (wasOpen) openStateListener({ open });
     },
     destroy() {
       calls.push(["destroy"]);
@@ -239,6 +241,9 @@ function createMenuSpy() {
     setExternalContains(contains) {
       externalContains = contains;
     },
+    setOpenStateListener(listener) {
+      openStateListener = typeof listener === "function" ? listener : () => {};
+    },
     externalContains(target) {
       return externalContains(target);
     },
@@ -249,6 +254,7 @@ function createMenuSpy() {
       open = true;
       const rect = options.anchorRect ?? null;
       calls.push(["open", target.kind, target.pos, rect ? [rect.left, rect.top] : null]);
+      openStateListener({ open });
     },
   };
 }
@@ -258,6 +264,7 @@ function createInsertMenuSpy() {
   let open = false;
   let containedTarget = null;
   let externalContains = () => false;
+  let openStateListener = () => {};
   return {
     calls,
     get state() {
@@ -267,8 +274,10 @@ function createInsertMenuSpy() {
       calls.push(["attach", root?.tagName ?? ""]);
     },
     close() {
+      const wasOpen = open;
       open = false;
       calls.push(["close"]);
+      if (wasOpen) openStateListener({ open });
     },
     destroy() {
       calls.push(["destroy"]);
@@ -283,6 +292,9 @@ function createInsertMenuSpy() {
     setExternalContains(contains) {
       externalContains = contains;
     },
+    setOpenStateListener(listener) {
+      openStateListener = typeof listener === "function" ? listener : () => {};
+    },
     externalContains(target) {
       return externalContains(target);
     },
@@ -292,6 +304,7 @@ function createInsertMenuSpy() {
     openAtBlock(target) {
       open = true;
       calls.push(["openAtBlock", target.kind, target.pos, target.node.nodeSize]);
+      openStateListener({ open });
       return true;
     },
   };
@@ -858,6 +871,59 @@ test("Tiptap block handle exposes active menu state to the handle view", () => {
   controller.refresh();
   assert.equal(view.states.at(-1).menuOpen, false);
   assert.equal(view.states.at(-1).insertOpen, true);
+});
+
+test("Tiptap block handle locks the official drag handle while action menus are open", () => {
+  const { block, calls, editor } = createEditor();
+  editor.commands.lockDragHandle = () => {
+    calls.push(["lockDragHandle"]);
+    return true;
+  };
+  editor.commands.unlockDragHandle = () => {
+    calls.push(["unlockDragHandle"]);
+    return true;
+  };
+  const menu = createMenuSpy();
+  const view = createViewSpy();
+  const controller = createTiptapBlockHandleController({ menu, view });
+  controller.attach({ editor, root: editor.view.dom, entry: { viewMode: "hybrid" } });
+  controller.handlePointerMove({ target: block });
+
+  view.openActions();
+  menu.close();
+  controller.close();
+
+  assert.ok(calls.some((call) => call[0] === "lockDragHandle"));
+  assert.ok(calls.some((call) => call[0] === "unlockDragHandle"));
+  assert.deepEqual(
+    calls.filter((call) => call[0] === "setMeta"),
+    [],
+  );
+});
+
+test("Tiptap block handle falls back to drag handle lock metadata for React bridge menus", () => {
+  const { block, calls, editor } = createEditor();
+  editor.commands.setMeta = (key, value) => {
+    calls.push(["setMeta", key, value]);
+    return true;
+  };
+  const insertMenu = createInsertMenuSpy();
+  const view = createViewSpy();
+  const controller = createTiptapBlockHandleController({ insertMenu, view });
+  controller.attach({ editor, root: editor.view.dom, entry: { viewMode: "hybrid" } });
+  controller.handlePointerMove({ target: block });
+
+  view.openInsert();
+  insertMenu.close();
+  controller.close();
+
+  assert.deepEqual(
+    calls.filter((call) => call[0] === "setMeta"),
+    [
+      ["setMeta", "lockDragHandle", true],
+      ["setMeta", "lockDragHandle", false],
+    ],
+  );
 });
 
 test("Tiptap block handle prepares drag without opening actions on pointerdown", () => {
