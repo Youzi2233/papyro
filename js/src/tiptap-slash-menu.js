@@ -154,7 +154,7 @@ function blockInsertMenuAnchorRect(slashRect, target, fallbackRect = null) {
   return fallback;
 }
 
-const MAIN_MENU_WIDTH = 224;
+const MAIN_MENU_WIDTH = 212;
 const MAIN_MENU_HEIGHT = 360;
 const SIDE_PANEL_GAP = 8;
 const SIDE_PANEL_INTENT_DELAY_MS = 80;

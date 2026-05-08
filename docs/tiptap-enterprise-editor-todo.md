@@ -188,6 +188,7 @@ Tasks:
 - [x] Keep `+` semantics distinct: insert below the current block, open the menu at the new caret, and clean temporary slash text on cancel.
 - [x] Replace ad hoc slash-menu glyphs with a shared Lucide-backed React icon system and semantic command-group tones.
   - Current polish: slash and `+` menus now use quieter neutral icon frames, and the table size detail panel is narrower with matching positioning contracts. The React path uses Lucide icons, while the migration DOM fallback now has the same semantic line-icon vocabulary and Recent tone so rendering paths do not split visually.
+  - Current polish: the insert menu width, item rhythm, and inline table picker have been tightened so the table size grid reads as a child control instead of a bulky overlay that blocks scanning lower commands.
 
 Acceptance criteria:
 
@@ -222,6 +223,7 @@ Tasks:
   - Foundation added: block action and insert menus now lock the official DragHandle plugin while floating menus are open, using `lockDragHandle`/`unlockDragHandle` when available and `setMeta("lockDragHandle", ...)` as the React bridge fallback.
 - [ ] React-render the handle with two distinct controls: drag/action handle and insert `+`.
   - Current coverage: desktop/mobile bundle entry injects the React block-handle view for migration fallback, and the official `DragHandle` React bridge now renders the same Papyro `+` and action controls directly inside the official drag-handle element. Official hover tracking and positioning therefore own the visible handle in Hybrid mode, while the old floating view is kept only for menu anchoring, drop indicators, and fallback paths.
+  - Current polish: the `+` and action handle spacing, hit boxes, and idle/active styling are quieter and more separated, avoiding the cramped two-icon cluster that previously made their responsibilities feel ambiguous.
   - Still required: move drag reorder execution fully onto the official drag/drop path and reduce the compatibility controller further.
 - [ ] Open the block action menu on normal click beside the pointer, not after long press.
 - [ ] Block native WebView context menus on right-click and show only Papyro actions.

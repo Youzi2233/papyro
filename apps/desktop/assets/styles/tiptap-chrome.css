@@ -519,11 +519,11 @@
     z-index: 150;
     display: grid;
     grid-template-rows: auto minmax(0, 1fr) auto auto auto;
-    width: min(224px, calc(100vw - 20px));
+    width: min(212px, calc(100vw - 20px));
     max-height: min(390px, calc(100vh - 20px));
-    padding: 6px;
+    padding: 5px;
     border: var(--mn-border-default);
-    border-radius: 9px;
+    border-radius: 8px;
     background:
         linear-gradient(
             180deg,
@@ -578,7 +578,7 @@
     display: grid;
     align-content: start;
     gap: 1px;
-    padding: 3px 0;
+    padding: 2px 0;
     max-height: 326px;
     overflow-y: auto;
     scrollbar-gutter: stable;
@@ -590,7 +590,7 @@
 }
 
 .mn-tiptap-slash-menu-section-title {
-    padding: 5px 8px 2px;
+    padding: 4px 8px 2px;
     color: var(--mn-ink-3);
     font-size: 10px;
     font-weight: var(--mn-weight-semibold);
@@ -601,16 +601,16 @@
 
 .mn-tiptap-slash-menu-item {
     display: grid;
-    grid-template-columns: 21px minmax(0, 1fr);
+    grid-template-columns: 20px minmax(0, 1fr);
     align-items: center;
-    gap: 8px;
+    gap: 7px;
     width: 100%;
-    min-height: 32px;
+    min-height: 30px;
     border: 1px solid transparent;
-    border-radius: 7px;
+    border-radius: 6px;
     background: transparent;
     color: var(--mn-ink-2);
-    padding: 5px 8px 5px 6px;
+    padding: 4px 7px 4px 5px;
     text-align: left;
     font: inherit;
     transition:
@@ -640,10 +640,10 @@
     position: relative;
     display: grid;
     place-items: center;
-    width: 21px;
-    height: 21px;
+    width: 20px;
+    height: 20px;
     border: var(--mn-border-subtle);
-    border-radius: 6px;
+    border-radius: 5px;
     background: color-mix(in srgb, var(--mn-surface-sunken) 68%, var(--mn-surface-raised));
     color: color-mix(in srgb, var(--mn-ink-3) 88%, var(--mn-command-icon-accent));
     font-size: 11px;
@@ -700,8 +700,8 @@
 
 .mn-tiptap-command-icon-svg {
     display: block;
-    width: 15px;
-    height: 15px;
+    width: 14px;
+    height: 14px;
 }
 
 .mn-tiptap-command-icon-text {
@@ -974,7 +974,7 @@
     left: calc(100% + 8px);
     display: grid;
     gap: 9px;
-    width: 176px;
+    width: 166px;
     margin: 0;
     padding: 10px;
     border: var(--mn-border-default);
@@ -995,11 +995,12 @@
     top: auto;
     left: auto;
     width: 100%;
-    gap: 8px;
-    margin: -1px 0 4px;
-    padding: 8px;
+    gap: 7px;
+    margin: 0 0 4px;
+    padding: 7px;
     border-radius: 8px;
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--mn-editor-bg) 58%, transparent);
+    background: color-mix(in srgb, var(--mn-surface-sunken) 54%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--mn-border) 60%, transparent);
 }
 
 .mn-tiptap-table-size-picker::before,
@@ -1050,7 +1051,7 @@
     min-width: 0;
     overflow: hidden;
     color: var(--mn-ink);
-    font-size: 12px;
+    font-size: 11px;
     font-weight: var(--mn-weight-semibold);
     line-height: var(--mn-line-caption);
     text-overflow: ellipsis;
@@ -1069,9 +1070,9 @@
     display: inline-grid;
     width: max-content;
     border: 1px solid color-mix(in srgb, var(--mn-border) 76%, transparent);
-    border-radius: 7px;
-    background: color-mix(in srgb, var(--mn-surface-sunken) 58%, transparent);
-    padding: 6px;
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--mn-surface-raised) 58%, transparent);
+    padding: 5px;
 }
 
 .mn-tiptap-table-size-picker.inline .mn-tiptap-table-size-picker-grid-shell {
@@ -1080,8 +1081,8 @@
 
 .mn-tiptap-table-size-picker-grid {
     display: grid;
-    grid-template-columns: repeat(6, 16px);
-    gap: 4px;
+    grid-template-columns: repeat(6, 15px);
+    gap: 3px;
 }
 
 .mn-tiptap-table-size-picker.inline .mn-tiptap-table-size-picker-grid {
@@ -1089,10 +1090,10 @@
 }
 
 .mn-tiptap-table-size-picker-cell {
-    width: 16px;
-    height: 16px;
+    width: 15px;
+    height: 15px;
     border: 1px solid color-mix(in srgb, var(--mn-border) 82%, transparent);
-    border-radius: 4px;
+    border-radius: 3px;
     background: color-mix(in srgb, var(--mn-surface-raised) 72%, var(--mn-surface-sunken));
     padding: 0;
     transition:
@@ -2498,7 +2499,7 @@
     z-index: 155;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     height: 24px;
     padding-right: var(--mn-block-handle-bridge, 24px);
     user-select: none;
@@ -2517,12 +2518,12 @@
 .mn-tiptap-block-handle-button {
     display: grid;
     place-items: center;
-    width: 23px;
-    height: 23px;
+    width: 22px;
+    height: 22px;
     border: 1px solid transparent;
-    border-radius: 6px;
-    background: color-mix(in srgb, var(--mn-editor-bg) 58%, transparent);
-    color: color-mix(in srgb, var(--mn-ink-3) 46%, transparent);
+    border-radius: 5px;
+    background: color-mix(in srgb, var(--mn-editor-bg) 72%, transparent);
+    color: color-mix(in srgb, var(--mn-ink-3) 54%, transparent);
     box-shadow: none;
     transition:
         background-color var(--mn-transition-fast),
@@ -2545,10 +2546,10 @@
 .mn-tiptap-block-handle[data-insert-open="true"] .mn-tiptap-block-handle-insert,
 .mn-tiptap-block-handle-controls[data-menu-open="true"] .mn-tiptap-block-handle-action,
 .mn-tiptap-block-handle-controls[data-insert-open="true"] .mn-tiptap-block-handle-insert {
-    border-color: color-mix(in srgb, var(--mn-accent) 24%, var(--mn-border));
-    background: color-mix(in srgb, var(--mn-accent) 7%, var(--mn-surface-raised));
+    border-color: color-mix(in srgb, var(--mn-accent) 28%, var(--mn-border));
+    background: color-mix(in srgb, var(--mn-accent) 6%, var(--mn-surface-raised));
     color: var(--mn-accent);
-    box-shadow: 0 2px 8px color-mix(in srgb, #000 6%, transparent);
+    box-shadow: 0 2px 7px color-mix(in srgb, #000 5%, transparent);
     opacity: 1;
 }
 
@@ -2563,36 +2564,36 @@
 .mn-tiptap-block-handle-button:hover,
 .mn-tiptap-block-handle-button:focus-visible {
     outline: 0;
-    border-color: color-mix(in srgb, var(--mn-accent) 20%, var(--mn-border));
-    background: color-mix(in srgb, var(--mn-surface-raised) 92%, var(--mn-accent) 4%);
+    border-color: color-mix(in srgb, var(--mn-accent) 22%, var(--mn-border));
+    background: color-mix(in srgb, var(--mn-surface-raised) 94%, var(--mn-accent) 3%);
     color: var(--mn-accent);
-    box-shadow: 0 2px 8px color-mix(in srgb, #000 6%, transparent);
+    box-shadow: 0 2px 7px color-mix(in srgb, #000 5%, transparent);
     opacity: 1;
-    transform: translateY(-1px);
+    transform: none;
 }
 
 .mn-tiptap-block-handle-icon {
     position: relative;
     display: block;
-    width: 12px;
+    width: 13px;
     height: 14px;
 }
 
 .mn-tiptap-block-insert-icon {
     position: relative;
     display: block;
-    width: 12px;
-    height: 12px;
+    width: 11px;
+    height: 11px;
 }
 
 .mn-tiptap-block-insert-icon::before,
 .mn-tiptap-block-insert-icon::after {
     content: "";
     position: absolute;
-    left: 2px;
-    top: 5.4px;
+    left: 1.5px;
+    top: 5px;
     width: 8px;
-    height: 1.2px;
+    height: 1.25px;
     border-radius: var(--mn-radius-round);
     background: currentColor;
 }
@@ -2605,21 +2606,21 @@
 .mn-tiptap-block-handle-icon::after {
     content: "";
     position: absolute;
-    width: 1.9px;
-    height: 1.9px;
+    width: 2px;
+    height: 2px;
     border-radius: var(--mn-radius-round);
     background: currentColor;
     top: 2px;
 }
 
 .mn-tiptap-block-handle-icon::before {
-    left: 2.7px;
-    box-shadow: 0 4.2px 0 currentColor, 0 8.4px 0 currentColor;
+    left: 2.4px;
+    box-shadow: 0 4.1px 0 currentColor, 0 8.2px 0 currentColor;
 }
 
 .mn-tiptap-block-handle-icon::after {
-    right: 2.7px;
-    box-shadow: 0 4.2px 0 currentColor, 0 8.4px 0 currentColor;
+    right: 2.4px;
+    box-shadow: 0 4.1px 0 currentColor, 0 8.2px 0 currentColor;
 }
 
 .mn-tiptap-block-action-menu {
@@ -2627,11 +2628,11 @@
     z-index: 165;
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
-    width: min(168px, calc(100vw - 20px));
+    width: min(176px, calc(100vw - 20px));
     max-height: min(340px, calc(100vh - 20px));
     padding: 4px;
     border: var(--mn-border-default);
-    border-radius: 8px;
+    border-radius: 9px;
     background:
         linear-gradient(
             180deg,
@@ -2659,7 +2660,7 @@
     display: grid;
     align-content: start;
     gap: 1px;
-    padding: 2px 0;
+    padding: 2px 1px;
     max-height: 274px;
     overflow-y: auto;
     scrollbar-gutter: stable;
@@ -2682,13 +2683,13 @@
 
 .mn-tiptap-block-action-menu-item {
     display: grid;
-    grid-template-columns: 16px minmax(0, 1fr) auto;
+    grid-template-columns: 17px minmax(0, 1fr) auto;
     align-items: center;
-    gap: 6px;
+    gap: 7px;
     width: 100%;
-    min-height: 25px;
+    min-height: 27px;
     border: 1px solid transparent;
-    border-radius: 5px;
+    border-radius: 6px;
     background: transparent;
     color: var(--mn-ink-2);
     padding: 3px 7px 3px 5px;
@@ -2820,8 +2821,8 @@
     position: relative;
     display: grid;
     place-items: center;
-    width: 16px;
-    height: 16px;
+    width: 17px;
+    height: 17px;
     border: var(--mn-border-subtle);
     border-radius: 5px;
     background: color-mix(in srgb, var(--mn-surface-sunken) 66%, transparent);

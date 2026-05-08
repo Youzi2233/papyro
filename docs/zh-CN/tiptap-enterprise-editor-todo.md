@@ -180,6 +180,7 @@ node scripts/report-file-lines.js
 - [ ] 支持表格尺寸、callout 样式、代码语言、未来 diagram/math 模板的二级详情面板。
   - 当前覆盖：表格尺寸、callout 样式和代码语言面板已实现，并锚定到当前激活命令行。
   - 当前覆盖：React 菜单现在会把表格尺寸选择器内联展开在 Table 命令下方，尺寸网格不再作为割裂的右上角侧边面板出现。Callout 样式和代码语言仍保留侧边面板，因为它们是更长的选项列表。
+  - 当前打磨：插入菜单的宽度、项目节奏和内联表格尺寸选择器已进一步收紧，表格尺寸网格更像 Table 命令的子控件，而不是会阻挡下方命令扫描的厚重浮层。
 - [x] 修复键盘导航，ArrowDown 必须能到达每一项，不能没到表格就回到第一项。
 - [x] 支持 Home 和 End 在完整插入命令列表中跳转。
 - [x] 详情面板跟随当前命令右侧定位，不要飘到右上角奇怪位置。
@@ -222,6 +223,7 @@ node scripts/check-editor-markdown-gate.js
   - 基础已接入：块操作菜单和插入菜单打开时会锁定官方 DragHandle plugin；优先调用 `lockDragHandle`/`unlockDragHandle`，React bridge 场景下回退到 `setMeta("lockDragHandle", ...)`。
 - [ ] 用 React 渲染句柄，明确分成拖拽/操作句柄和插入 `+` 两个控件。
   - 当前覆盖：桌面端/移动端 bundle 入口保留 React block-handle view 作为迁移 fallback，官方 `DragHandle` React bridge 现在会在官方 drag-handle 元素内部直接渲染同一套 Papyro `+` 和操作控件。Hybrid 模式下可见句柄的 hover 跟踪和定位由官方插件负责，旧 floating view 只保留菜单锚点、drop indicator 和 fallback 职责。
+  - 当前打磨：`+` 和操作句柄的间距、点击热区和静态/激活样式已进一步细化，避免两个 icon 簇在一起导致职责模糊。
   - 仍需继续：把拖拽重排执行完全迁移到官方 drag/drop 路径，并继续收缩兼容 controller。
 - [ ] 普通点击时在点击点右侧打开块操作菜单，而不是长按才可能打开。
 - [ ] 右键阻止 WebView 原生菜单，只展示 Papyro 动作。

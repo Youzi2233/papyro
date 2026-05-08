@@ -42,7 +42,7 @@ const COMPLEX_BLOCK_SELECTOR = [
 
 const HORIZONTAL_GAP = 22;
 const DEFAULT_HANDLE_SIZE = 24;
-const CONTROL_GAP = 10;
+const CONTROL_GAP = 8;
 const BRIDGE_PADDING = 24;
 const SELECTED_CLASS = "mn-tiptap-block-selected";
 const DRAGGING_CLASS = "mn-tiptap-block-dragging";

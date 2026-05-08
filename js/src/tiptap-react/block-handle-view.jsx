@@ -12,7 +12,7 @@ import {
 
 const HORIZONTAL_GAP = 22;
 const DEFAULT_HANDLE_SIZE = 24;
-const CONTROL_GAP = 10;
+const CONTROL_GAP = 8;
 const BRIDGE_PADDING = 24;
 
 function createElement(documentRef, tagName, className) {

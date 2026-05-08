@@ -23,7 +23,7 @@ import {
   usableFloatingRect,
 } from "./utils/floating.js";
 
-const MAIN_MENU_WIDTH = 224;
+const MAIN_MENU_WIDTH = 212;
 const MAIN_MENU_HEIGHT = 390;
 const SIDE_PANEL_GAP = 5;
 
