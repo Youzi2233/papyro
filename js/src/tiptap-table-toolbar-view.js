@@ -11,14 +11,15 @@ import {
   tableSelectionActionsLabel,
   tableToolsLabel,
 } from "./tiptap-i18n.js";
+import { normalizedRect } from "./tiptap-table-geometry.js";
 import {
-  hoverIsAtLastColumn,
-  hoverIsAtLastRow,
-  normalizedRect,
-  tableAxisHandleGeometry,
-  tableCellMenuTriggerGeometry,
-  tableQuickAddGeometry,
-} from "./tiptap-table-geometry.js";
+  createComplexBlockInsertChromeState,
+  createTableAxisHandleChromeState,
+  createTableCellMenuTriggerChromeState,
+  createTableQuickAddChromeState,
+  createTableSelectionBackdropChromeState,
+  tableMenuAnchorRect,
+} from "./tiptap-table-chrome-model.js";
 import {
   groupTableCommandMenuCommands,
   tableCommandVariant,
@@ -46,18 +47,6 @@ const TABLE_ADD_COLUMN_WIDTH = 14;
 const TABLE_CONTEXT_MENU_WIDTH = 176;
 const TABLE_KEYBOARD_MENU_WIDTH = 520;
 const TABLE_TOOLBAR_OWNER_ID = "mn-tiptap-table-toolbar";
-
-function tableMenuAnchorRect(state) {
-  if (state?.menuAnchorRect) return state.menuAnchorRect;
-  if (state?.mode === "keyboard") return state?.rect ?? null;
-
-  const selectionKind = state?.selection?.kind ?? "cell";
-  if (selectionKind === "cell" || selectionKind === "cells") {
-    return state?.cellRect ?? state?.menuRect ?? state?.selectionRect ?? state?.rect ?? null;
-  }
-
-  return state?.menuRect ?? state?.selectionRect ?? state?.cellRect ?? state?.rect ?? null;
-}
 
 function commandButtonById(root, commandId) {
   if (!root || !commandId) return null;
@@ -88,17 +77,6 @@ function bindPointerCommand(button, command, run) {
   };
 
   bindPointerActivation(button, execute);
-}
-
-function hoveredCellIsSelected(state) {
-  const hoverCell = state?.hover?.cell ?? null;
-  if (!hoverCell) return false;
-  const selected = state?.selection?.positions;
-  if (!selected || selected.size === 0) return false;
-  const match = (state?.grid ?? [])
-    .flatMap((row) => row.cells ?? [])
-    .find((cell) => cell.cell === hoverCell);
-  return Number.isFinite(match?.pos) && selected.has(match.pos);
 }
 
 function axisHandleAnchorRect(button, handle) {
@@ -480,40 +458,32 @@ export class TiptapTableToolbarView {
   }
 
   #updateQuickAdd(state) {
-    const rect = state.rect;
     if (!this.#addRowButton || !this.#addColumnButton) return;
-    if (!rect) {
-      setHidden(this.#addRowButton, true);
-      setHidden(this.#addColumnButton, true);
-      return;
-    }
-
-    const addRow = state.commands.find((command) => command.id === "add-row-after");
-    const addColumn = state.commands.find((command) => command.id === "add-column-after");
-    const geometry = tableQuickAddGeometry(state.grid, rect, {
+    const quickAdd = createTableQuickAddChromeState(state, {
       rowHeight: TABLE_ADD_ROW_HEIGHT,
       columnWidth: TABLE_ADD_COLUMN_WIDTH,
     });
-    if (!geometry.row || !geometry.column) {
+    if (!quickAdd.row || !quickAdd.column) {
       setHidden(this.#addRowButton, true);
       setHidden(this.#addColumnButton, true);
       return;
     }
-    this.#addRowButton.style.left = `${geometry.row.left}px`;
-    this.#addRowButton.style.top = `${geometry.row.top}px`;
-    this.#addRowButton.style.width = `${geometry.row.width}px`;
-    this.#addRowButton.style.height = `${geometry.row.height}px`;
-    this.#addColumnButton.style.left = `${geometry.column.left}px`;
-    this.#addColumnButton.style.top = `${geometry.column.top}px`;
-    this.#addColumnButton.style.width = `${geometry.column.width}px`;
-    this.#addColumnButton.style.height = `${geometry.column.height}px`;
-    this.#addRowButton.dataset.edge = "row";
-    this.#addRowButton.style.setProperty("--mn-table-quick-add-rail", `${geometry.row.rail}px`);
-    this.#addColumnButton.dataset.edge = "column";
-    this.#addColumnButton.style.setProperty("--mn-table-quick-add-rail", `${geometry.column.rail}px`);
 
-    this.#addRowButton._mnCommand = addRow;
-    this.#addColumnButton._mnCommand = addColumn;
+    this.#addRowButton.style.left = `${quickAdd.row.left}px`;
+    this.#addRowButton.style.top = `${quickAdd.row.top}px`;
+    this.#addRowButton.style.width = `${quickAdd.row.width}px`;
+    this.#addRowButton.style.height = `${quickAdd.row.height}px`;
+    this.#addColumnButton.style.left = `${quickAdd.column.left}px`;
+    this.#addColumnButton.style.top = `${quickAdd.column.top}px`;
+    this.#addColumnButton.style.width = `${quickAdd.column.width}px`;
+    this.#addColumnButton.style.height = `${quickAdd.column.height}px`;
+    this.#addRowButton.dataset.edge = quickAdd.row.edge;
+    this.#addRowButton.style.setProperty("--mn-table-quick-add-rail", `${quickAdd.row.rail}px`);
+    this.#addColumnButton.dataset.edge = quickAdd.column.edge;
+    this.#addColumnButton.style.setProperty("--mn-table-quick-add-rail", `${quickAdd.column.rail}px`);
+
+    this.#addRowButton._mnCommand = quickAdd.row.command;
+    this.#addColumnButton._mnCommand = quickAdd.column.command;
     this.#addRowButton._mnRun = () => state.run("add-row-after");
     this.#addColumnButton._mnRun = () => state.run("add-column-after");
     if (!this.#addRowButton._mnBound) {
@@ -530,74 +500,20 @@ export class TiptapTableToolbarView {
       });
       this.#addColumnButton._mnBound = true;
     }
-    this.#addRowButton.disabled = !!addRow?.disabled;
-    this.#addRowButton.dataset.disabled = addRow?.disabled ? "true" : "false";
-    this.#addRowButton.setAttribute("aria-disabled", addRow?.disabled ? "true" : "false");
-    this.#addColumnButton.disabled = !!addColumn?.disabled;
-    this.#addColumnButton.dataset.disabled = addColumn?.disabled ? "true" : "false";
-    this.#addColumnButton.setAttribute("aria-disabled", addColumn?.disabled ? "true" : "false");
-    const showRow =
-      !state.menuOpen &&
-      addRow &&
-      hoverIsAtLastRow(state.hover, state.grid) &&
-      state.hover?.edge === "add-row";
-    const showColumn =
-      !state.menuOpen &&
-      addColumn &&
-      hoverIsAtLastColumn(state.hover, state.grid) &&
-      state.hover?.edge === "add-column";
-    setHidden(this.#addRowButton, !showRow);
-    setHidden(this.#addColumnButton, !showColumn);
+    this.#addRowButton.disabled = quickAdd.row.disabled;
+    this.#addRowButton.dataset.disabled = quickAdd.row.disabled ? "true" : "false";
+    this.#addRowButton.setAttribute("aria-disabled", quickAdd.row.disabled ? "true" : "false");
+    this.#addColumnButton.disabled = quickAdd.column.disabled;
+    this.#addColumnButton.dataset.disabled = quickAdd.column.disabled ? "true" : "false";
+    this.#addColumnButton.setAttribute("aria-disabled", quickAdd.column.disabled ? "true" : "false");
+    setHidden(this.#addRowButton, !quickAdd.row.visible);
+    setHidden(this.#addColumnButton, !quickAdd.column.visible);
   }
 
   #updateCellMenuTrigger(state) {
-    const selectionKind = state.selection?.kind ?? "cell";
-    const selectedCount = state.selection?.positions?.size ?? 0;
-    const edgeIntent = state.hover?.edge === "cell-menu";
-    const menuOpen = state.menuOpen && (
-      selectionKind !== "cell" ||
-      (state.mode === "context" && (
-        state.cell === state.hover?.cell ||
-        (state.selection?.positions?.size ?? 0) > 0
-      ))
-    );
-    const singleSelectedCell =
-      selectionKind === "cell" &&
-      selectedCount === 1 &&
-      (state.cellRect || state.cell);
-    const hoveredEdgeCell =
-      selectionKind === "cell" &&
-      selectedCount === 0 &&
-      edgeIntent &&
-      state.hover?.cell &&
-      (state.hover?.cellRect || state.hover?.cell);
-    const selectionRect =
-      selectedCount > 1
-        ? state.menuRect ?? state.selectionRect
-        : state.menuOpen
-          ? tableMenuAnchorRect(state)
-          : null;
-    const rect =
-      (selectedCount > 1 ? normalizedRect(selectionRect) : null) ??
-      (singleSelectedCell && selectionKind === "cell"
-        ? normalizedRect(state.cellRect ?? state.cell?.getBoundingClientRect?.())
-        : null) ??
-      (hoveredEdgeCell
-        ? normalizedRect(state.hover?.cellRect ?? state.hover?.cell?.getBoundingClientRect?.())
-        : null) ??
-      normalizedRect(selectionRect);
     if (!this.#cellMenuButton) return;
-    if (!rect) {
-      setHidden(this.#cellMenuButton, true);
-      return;
-    }
-
-    const trigger = tableCellMenuTriggerGeometry({
-      rect,
-      selectionKind,
-      edgeHovered: edgeIntent || menuOpen,
-      selectedCount,
-    });
+    const triggerState = createTableCellMenuTriggerChromeState(state);
+    const trigger = triggerState.trigger;
     if (!trigger) {
       setHidden(this.#cellMenuButton, true);
       return;
@@ -605,56 +521,44 @@ export class TiptapTableToolbarView {
     this.#cellMenuButton.style.left = `${trigger.left}px`;
     this.#cellMenuButton.style.top = `${trigger.top}px`;
     this.#cellMenuButton.dataset.placement = trigger.placement;
-    this.#cellMenuButton.dataset.edgeIntent = edgeIntent ? "true" : "false";
-    setHidden(
-      this.#cellMenuButton,
-      !state.menuOpen && !singleSelectedCell && !hoveredEdgeCell && selectedCount <= 1,
-    );
+    this.#cellMenuButton.dataset.edgeIntent = triggerState.edgeIntent ? "true" : "false";
+    setHidden(this.#cellMenuButton, !triggerState.visible);
   }
 
   #updateComplexBlockInsert(state) {
     if (!this.#blockInsertButton) return;
-    const blockRect = normalizedRect(state.complexRect ?? state.rect);
-    const block = state.complexBlock ?? state.table;
-    if (!blockRect || !block) {
+    const insertState = createComplexBlockInsertChromeState(state);
+    if (!insertState.block || !insertState.rect) {
       setHidden(this.#blockInsertButton, true);
       return;
     }
 
     this.#blockInsertButton.title = insertBlockAfterLabel(state.language);
     this.#blockInsertButton.setAttribute("aria-label", insertBlockAfterLabel(state.language));
-    this.#blockInsertButton.style.left = `${blockRect.left}px`;
-    this.#blockInsertButton.style.top = `${blockRect.bottom + 2}px`;
-    this.#blockInsertButton.style.width = `${Math.max(42, blockRect.width)}px`;
+    this.#blockInsertButton.style.left = `${insertState.rect.left}px`;
+    this.#blockInsertButton.style.top = `${insertState.rect.top}px`;
+    this.#blockInsertButton.style.width = `${insertState.rect.width}px`;
     this.#blockInsertButton.dataset.edge = "after-block";
-    this.#blockInsertButton.dataset.blockKind =
-      block === state.table ? "table" : "complex";
-    this.#blockInsertButton._mnRun = () => state.insertParagraphAfterBlock?.(block) !== false;
+    this.#blockInsertButton.dataset.blockKind = insertState.blockKind;
+    this.#blockInsertButton._mnRun = () =>
+      state.insertParagraphAfterBlock?.(insertState.block) !== false;
     if (!this.#blockInsertButton._mnBound) {
       bindPointerCommand(this.#blockInsertButton, null, () => this.#blockInsertButton?._mnRun?.());
       this.#blockInsertButton._mnBound = true;
     }
 
-    const show =
-      state.hover?.edge === "block-after" &&
-      state.hover?.block === block &&
-      block !== state.table &&
-      !state.menuOpen;
-    setHidden(this.#blockInsertButton, !show);
+    setHidden(this.#blockInsertButton, !insertState.visible);
   }
 
   #updateSelectionBackdrop(state) {
     if (!this.#selectionBackdrop) return;
-    const rect = state.selectionRect;
-    const show =
-      rect &&
-      state.selection?.kind !== "cell" &&
-      state.selection?.positions?.size > 0;
-    if (!show) {
+    const backdrop = createTableSelectionBackdropChromeState(state);
+    if (!backdrop.visible || !backdrop.rect) {
       setHidden(this.#selectionBackdrop, true);
       return;
     }
 
+    const rect = backdrop.rect;
     this.#selectionBackdrop.style.left = `${rect.left}px`;
     this.#selectionBackdrop.style.top = `${rect.top}px`;
     this.#selectionBackdrop.style.width = `${Math.max(0, rect.width)}px`;
@@ -664,43 +568,19 @@ export class TiptapTableToolbarView {
 
   #updateAxisHandles(state) {
     this.#clearAxisHandles();
-    const tableRect = state.rect;
-    const grid = state.grid ?? [];
-    if (!tableRect || grid.length === 0 || state.menuOpen) return;
-    const geometry = tableAxisHandleGeometry(grid, tableRect, {
+    const axisChrome = createTableAxisHandleChromeState(state, {
       handleSize: TABLE_AXIS_HANDLE_SIZE,
       rowHandleWidth: TABLE_ROW_HANDLE_WIDTH,
       columnHandleHeight: TABLE_COLUMN_HANDLE_HEIGHT,
     });
-    const hoverSelected = hoveredCellIsSelected(state);
-    const hoverEdge = state.hover?.edge;
-    const axisHoverAllowed =
-      state.hover?.cell &&
-      !hoverSelected &&
-      state.selection?.kind === "cell" &&
-      !["add-row", "add-column", "cell-menu"].includes(hoverEdge);
-    const hoverRowIndex =
-      axisHoverAllowed && state.hover?.columnIndex === 0
-        ? state.hover.rowIndex
-        : null;
-    const hoverColumnIndex =
-      axisHoverAllowed && state.hover?.rowIndex === 0
-        ? state.hover.columnIndex
-        : null;
-
-    const rowHandle = Number.isInteger(hoverRowIndex)
-      ? geometry.rows.find((handle) => handle.index === hoverRowIndex)
-      : null;
-    if (rowHandle) {
-      const handle = rowHandle;
+    for (const handle of axisChrome.rows) {
       const index = handle.index;
-      const active = state.selection?.rows?.includes?.(index);
       const button = createElement(this.#document, "button", "mn-tiptap-table-axis-handle row");
       if (!button) return;
       button.type = "button";
       button.title = selectTableRowLabel(state.language, index);
       button.setAttribute("aria-label", selectTableRowLabel(state.language, index));
-      button.dataset.active = active ? "true" : "false";
+      button.dataset.active = handle.active ? "true" : "false";
       button.style.left = `${handle.left}px`;
       button.style.top = `${handle.top}px`;
       button.style.width = `${handle.width}px`;
@@ -716,28 +596,18 @@ export class TiptapTableToolbarView {
         });
       });
       mountFloatingRoot(button, state.table, this.#document);
-      const visible =
-        !active &&
-        state.selection?.kind === "cell" &&
-        hoverRowIndex === index &&
-        !state.menuOpen;
-      setHidden(button, !visible);
+      setHidden(button, !handle.visible);
       this.#rowHandles.push(button);
     }
 
-    const columnHandle = Number.isInteger(hoverColumnIndex)
-      ? geometry.columns.find((handle) => handle.index === hoverColumnIndex)
-      : null;
-    if (columnHandle) {
-      const handle = columnHandle;
+    for (const handle of axisChrome.columns) {
       const index = handle.index;
-      const active = state.selection?.columns?.includes?.(index);
       const button = createElement(this.#document, "button", "mn-tiptap-table-axis-handle column");
       if (!button) return;
       button.type = "button";
       button.title = selectTableColumnLabel(state.language, index);
       button.setAttribute("aria-label", selectTableColumnLabel(state.language, index));
-      button.dataset.active = active ? "true" : "false";
+      button.dataset.active = handle.active ? "true" : "false";
       button.style.left = `${handle.left}px`;
       button.style.top = `${handle.top}px`;
       button.style.width = `${handle.width}px`;
@@ -753,12 +623,7 @@ export class TiptapTableToolbarView {
         });
       });
       mountFloatingRoot(button, state.table, this.#document);
-      const visible =
-        !active &&
-        state.selection?.kind === "cell" &&
-        hoverColumnIndex === index &&
-        !state.menuOpen;
-      setHidden(button, !visible);
+      setHidden(button, !handle.visible);
       this.#columnHandles.push(button);
     }
   }
