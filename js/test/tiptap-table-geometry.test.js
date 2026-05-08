@@ -8,6 +8,7 @@ import {
   tableHoverWithIntent,
   tableQuickAddGeometry,
   hoverIsNearComplexBlockBottom,
+  sameTableHover,
 } from "../src/tiptap-table-geometry.js";
 
 function rect(left, top, width, height) {
@@ -112,6 +113,8 @@ test("Tiptap table geometry infers gutter handles from table coordinates", () =>
   assert.equal(classify(table, 204, 76), "column-handle");
   assert.equal(classify(table, 160, 162), "add-row");
   assert.equal(classify(table, 366, 140), "add-column");
+  assert.equal(classify(table, 160, 171), undefined);
+  assert.equal(classify(table, 373, 140), undefined);
 });
 
 test("Tiptap table geometry reserves the outer bottom rail for adding rows", () => {
@@ -150,8 +153,36 @@ test("Tiptap table geometry treats flush table edges as quick add rails", () => 
   assert.equal(classify(table, 240, 158), "add-row");
   assert.equal(classify(table, 360, 140), "add-column");
   assert.equal(classify(cells[5], 359, 152), "cell");
-  assert.equal(classify(table, 240, 177), undefined);
-  assert.equal(classify(table, 379, 140), undefined);
+  assert.equal(classify(table, 240, 171), undefined);
+  assert.equal(classify(table, 373, 140), undefined);
+});
+
+test("Tiptap table geometry treats pointer jitter inside one target as the same hover intent", () => {
+  const { cells, grid, table, tableRect } = createTableGeometryHarness();
+  const base = tableHoverWithIntent({
+    target: cells[0],
+    table,
+    grid,
+    tableRect,
+    clientX: 150,
+    clientY: 108,
+    rowHandleWidth: 20,
+    columnHandleHeight: 20,
+  });
+  const moved = tableHoverWithIntent({
+    target: cells[0],
+    table,
+    grid,
+    tableRect,
+    clientX: 160,
+    clientY: 110,
+    rowHandleWidth: 20,
+    columnHandleHeight: 20,
+  });
+
+  assert.equal(base.edge, "cell");
+  assert.equal(moved.edge, "cell");
+  assert.equal(sameTableHover(base, moved), true);
 });
 
 test("Tiptap table geometry does not infer table rails from adjacent complex blocks", () => {

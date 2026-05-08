@@ -4,7 +4,7 @@ const COMPLEX_BLOCK_INSERT_HOT_ZONE_PX = 18;
 const TABLE_AXIS_INNER_HOT_ZONE_PX = 6;
 const TABLE_CELL_MENU_EDGE_HOT_ZONE_PX = 3;
 const TABLE_CELL_MENU_CENTER_HOT_ZONE_PX = 8;
-const TABLE_QUICK_ADD_HOT_ZONE_PX = 18;
+const TABLE_QUICK_ADD_HOT_ZONE_PX = 12;
 
 function elementFromTarget(target) {
   if (!target) return null;
@@ -713,9 +713,7 @@ export function sameTableHover(left, right) {
     left?.rowIndex === right?.rowIndex &&
     left?.columnIndex === right?.columnIndex &&
     left?.cell === right?.cell &&
-    left?.edge === right?.edge &&
-    left?.clientX === right?.clientX &&
-    left?.clientY === right?.clientY
+    left?.edge === right?.edge
   );
 }
 

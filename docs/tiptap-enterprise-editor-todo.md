@@ -307,6 +307,7 @@ Tasks:
 - [ ] Add quick row and column insertion rails: slim full-width/full-height rails with centered `+`, close enough to the table to be discoverable.
   - Current coverage: quick-add rails are now flush with the real table grid edge, use compact 12px hit chrome, and keep light/dark contrast without reading like debug overlays.
   - Current polish: quick-add rails keep the same slim visual rail but now use a larger 18px pointer hit area and treat the table's real bottom/right edge as part of the affordance, so users do not need to hunt for an off-by-one outside gap.
+  - Current polish: the quick-add rail intent zone is now tightened to 12px and the visible rail is 14px, which reduces accidental row/column add controls when moving between adjacent blocks while keeping the edge discoverable. Table hover comparisons ignore ordinary pointer jitter inside the same semantic target, preventing redundant overlay re-renders.
 - [ ] Keep table controls hidden for adjacent code blocks or other non-table content.
   - Current coverage: quick-add row/column rails now require a table-owned target or explicit editor rail target, so adjacent code blocks and other complex blocks cannot accidentally display table insertion chrome.
 - [x] Add Markdown round-trip fixtures for alignment, header rows, merged-cell fallback, and cell background metadata if supported.

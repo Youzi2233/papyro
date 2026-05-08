@@ -2023,23 +2023,23 @@
 
 .mn-tiptap-table-add-row {
     min-width: 42px;
-    height: 18px;
+    height: 14px;
 }
 
 .mn-tiptap-table-add-row[data-edge="row"]::before {
     width: 100%;
-    height: 8px;
+    height: 6px;
     border-radius: var(--mn-radius-round);
     transform: translate(-50%, -50%);
 }
 
 .mn-tiptap-table-add-column {
-    width: 18px;
+    width: 14px;
     min-height: 42px;
 }
 
 .mn-tiptap-table-add-column[data-edge="column"]::before {
-    width: 8px;
+    width: 6px;
     height: 100%;
     border-radius: var(--mn-radius-round);
     transform: translate(-50%, -50%);
