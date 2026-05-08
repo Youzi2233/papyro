@@ -1,5 +1,6 @@
 import { mergeAttributes, Node } from "@tiptap/core";
 
+import { mermaidSourceEditorLabel } from "./tiptap-i18n.js";
 import { renderMermaidIntoElement } from "./mermaid-renderer.js";
 
 const MERMAID_TOKEN = "mermaidBlock";
@@ -7,6 +8,10 @@ const MERMAID_EDIT_RENDER_DELAY_MS = 220;
 
 function normalizeMermaidSource(source) {
   return String(source ?? "").replace(/\r\n?/g, "\n").trim();
+}
+
+function nodeViewLanguage(view) {
+  return view?.dom?.dataset?.language ?? view?.dom?.ownerDocument?.documentElement?.lang ?? "english";
 }
 
 export function tokenizeMermaidBlock(source) {
@@ -53,7 +58,7 @@ function createMermaidNodeView() {
     root.contentEditable = "false";
     root.tabIndex = 0;
     root.setAttribute("role", "button");
-    root.setAttribute("aria-label", "Edit Mermaid diagram source");
+    root.setAttribute("aria-label", mermaidSourceEditorLabel(nodeViewLanguage(view)));
 
     preview.className = "mn-tiptap-mermaid-preview";
     editorShell.className = "mn-tiptap-mermaid-editor";

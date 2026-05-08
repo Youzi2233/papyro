@@ -98,8 +98,9 @@ function createThrowingEditor() {
 
 function createMountedView(documentRef) {
   const transactions = [];
+  const dom = documentRef.createElement("div");
   return {
-    dom: documentRef.createElement("div"),
+    dom,
     dispatch(transaction) {
       transactions.push(transaction);
     },
@@ -143,6 +144,7 @@ test("custom Tiptap math node view uses ProseMirror view before editor mount is 
   const [extension] = createPapyroMathExtensions();
   const documentRef = createFakeDocument();
   const view = createMountedView(documentRef);
+  view.dom.dataset.language = "Chinese";
   const nodeViewFactory = extension.config.addNodeView();
 
   const nodeView = nodeViewFactory({
@@ -153,6 +155,7 @@ test("custom Tiptap math node view uses ProseMirror view before editor mount is 
   });
 
   assert.equal(nodeView.dom.className, "mn-tiptap-inline-math");
+  assert.equal(nodeView.dom.getAttribute("aria-label"), "\u7f16\u8f91\u884c\u5185\u516c\u5f0f\u6e90\u7801");
   assert.equal(nodeView.dom.ownerDocument, documentRef);
   assert.deepEqual(view.transactions, []);
 });
@@ -166,16 +169,19 @@ test("custom Tiptap Mermaid node view uses ProseMirror view before editor mount 
 
   try {
     const [extension] = createPapyroMermaidExtensions();
+    const view = createMountedView(documentRef);
+    view.dom.dataset.language = "Chinese";
     const nodeViewFactory = extension.config.addNodeView();
 
     const nodeView = nodeViewFactory({
       editor: createThrowingEditor(),
       getPos: () => 5,
       node: createNode("mermaidBlock", { source: "" }),
-      view: createMountedView(documentRef),
+      view,
     });
 
     assert.equal(nodeView.dom.className, "mn-mermaid-block mn-tiptap-mermaid-block");
+    assert.equal(nodeView.dom.getAttribute("aria-label"), "\u7f16\u8f91 Mermaid \u56fe\u8868\u6e90\u7801");
     assert.equal(nodeView.dom.ownerDocument, documentRef);
     await Promise.resolve();
     await Promise.resolve();

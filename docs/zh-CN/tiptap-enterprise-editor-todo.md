@@ -491,6 +491,7 @@ node scripts/check-tiptap-release-smoke.js
 任务：
 
 - [ ] 所有新 editor 文案都接入 i18n model。
+  - 当前覆盖：Source 模式 textarea 标签、源码解析 fallback 错误、React island 加载状态，以及 Math/Mermaid 源码编辑 node-view 标签已经接入共享 i18n model，并读取当前编辑器语言。
 - [ ] icon-only 控件都有 accessible label。
 - [ ] 菜单统一使用 `aria-activedescendant` 或 roving tab index。
 - [ ] 支持 Escape、Enter、Space、方向键、Home、End、Tab、Shift+Tab、Shift+F10 等相关键位。

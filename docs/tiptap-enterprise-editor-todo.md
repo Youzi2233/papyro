@@ -501,6 +501,7 @@ Goal: the editor should be usable in Chinese and English with real keyboard and 
 Tasks:
 
 - [ ] Add every new editor string to the i18n model.
+  - Current coverage: source-mode textarea labels, source parse fallback errors, React island loading state, and Math/Mermaid source-editor node-view labels now come from the shared i18n model and read the active editor language.
 - [ ] Add accessible labels for icon-only controls.
 - [ ] Use `aria-activedescendant` or roving tab index consistently in menus.
 - [ ] Support Escape, Enter, Space, Arrow keys, Home, End, Tab, Shift+Tab, and Shift+F10 where relevant.

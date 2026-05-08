@@ -1,3 +1,7 @@
+import {
+  sourceMarkdownParseErrorLabel,
+  sourcePaneLabel,
+} from "./tiptap-i18n.js";
 import { normalizeTiptapViewMode } from "./tiptap-mode-controller.js";
 
 function defaultDocument() {
@@ -6,6 +10,10 @@ function defaultDocument() {
 
 function tabIdForEntry(entry) {
   return entry?.tabId ?? entry?.dom?.dataset?.tabId ?? "";
+}
+
+function entryLanguage(entry) {
+  return entry?.preferences?.language ?? entry?.dom?.dataset?.language ?? "english";
 }
 
 function isSaveShortcut(event) {
@@ -73,7 +81,7 @@ function commitSourceMarkdown(entry, markdown) {
   if (!result?.ok) {
     emit(entry, {
       type: "runtime_error",
-      message: result?.error?.message ?? "Unable to parse Markdown source",
+      message: result?.error?.message ?? sourceMarkdownParseErrorLabel(entryLanguage(entry)),
     });
     return false;
   }
@@ -115,7 +123,7 @@ export class TiptapSourcePaneController {
       textarea.spellcheck = false;
       textarea.autocapitalize = "off";
       textarea.autocomplete = "off";
-      textarea.setAttribute?.("aria-label", "Markdown source");
+      textarea.setAttribute?.("aria-label", sourcePaneLabel(entryLanguage(entry)));
       textarea.setAttribute?.("data-gramm", "false");
       textarea.hidden = true;
       this.#textarea = textarea;
@@ -144,6 +152,7 @@ export class TiptapSourcePaneController {
     if (this.#textarea.parentElement !== root) {
       root.appendChild?.(this.#textarea);
     }
+    this.#textarea.setAttribute?.("aria-label", sourcePaneLabel(entryLanguage(entry)));
     this.setMarkdown(entry.markdownSync?.markdown ?? "");
     this.applyMode(entry);
     return this.#textarea;

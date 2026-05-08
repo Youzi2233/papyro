@@ -1,11 +1,17 @@
 import { mergeAttributes, Node } from "@tiptap/core";
 import katex from "katex";
 
+import { mathSourceEditorLabel } from "./tiptap-i18n.js";
+
 const INLINE_MATH_TOKEN = "inlineMath";
 const MATH_BLOCK_TOKEN = "mathBlock";
 
 function normalizeMathSource(source) {
   return String(source ?? "").replace(/\r\n?/g, "\n").trim();
+}
+
+function nodeViewLanguage(view) {
+  return view?.dom?.dataset?.language ?? view?.dom?.ownerDocument?.documentElement?.lang ?? "english";
 }
 
 function isEscaped(source, index) {
@@ -157,7 +163,7 @@ function createMathNodeView({ displayMode }) {
     root.contentEditable = "false";
     root.tabIndex = 0;
     root.setAttribute("role", "button");
-    root.setAttribute("aria-label", displayMode ? "Edit display math source" : "Edit inline math source");
+    root.setAttribute("aria-label", mathSourceEditorLabel(nodeViewLanguage(view), displayMode));
 
     preview.className = displayMode ? "mn-tiptap-math-preview" : "mn-tiptap-inline-math-preview";
     sourceEditor.className = displayMode

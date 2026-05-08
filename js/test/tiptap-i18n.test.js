@@ -8,13 +8,18 @@ import {
   blockHandleInsertLabel,
   formatToolbarLabel,
   insertTableLabel,
+  loadingEditorLabel,
   localizeCalloutKindOption,
   localizeSlashCommand,
   localizeTableCommand,
   markdownCommandsLabel,
+  mathSourceEditorLabel,
+  mermaidSourceEditorLabel,
   normalizeTiptapLanguage,
   selectTableColumnLabel,
   selectTableRowLabel,
+  sourceMarkdownParseErrorLabel,
+  sourcePaneLabel,
   tableCellActionsLabel,
   tableSelectionActionsLabel,
   tableSizeLabel,
@@ -30,6 +35,15 @@ test("Tiptap i18n normalizes Chinese language values", () => {
 test("Tiptap format toolbar label follows editor language", () => {
   assert.equal(formatToolbarLabel("english"), "Text formatting");
   assert.equal(formatToolbarLabel("Chinese"), "\u6587\u672c\u683c\u5f0f");
+});
+
+test("Tiptap editor surface labels follow editor language", () => {
+  assert.equal(sourcePaneLabel("Chinese"), "Markdown \u6e90\u7801");
+  assert.equal(sourceMarkdownParseErrorLabel("Chinese"), "\u65e0\u6cd5\u89e3\u6790 Markdown \u6e90\u7801");
+  assert.equal(loadingEditorLabel("Chinese"), "\u6b63\u5728\u52a0\u8f7d\u7f16\u8f91\u5668");
+  assert.equal(mermaidSourceEditorLabel("Chinese"), "\u7f16\u8f91 Mermaid \u56fe\u8868\u6e90\u7801");
+  assert.equal(mathSourceEditorLabel("Chinese", true), "\u7f16\u8f91\u5757\u7ea7\u516c\u5f0f\u6e90\u7801");
+  assert.equal(mathSourceEditorLabel("Chinese", false), "\u7f16\u8f91\u884c\u5185\u516c\u5f0f\u6e90\u7801");
 });
 
 test("Tiptap slash commands expose readable Chinese labels", () => {

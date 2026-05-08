@@ -440,6 +440,44 @@ export function formatToolbarLabel(language) {
   return localizedText(language, "Text formatting", "\u6587\u672c\u683c\u5f0f");
 }
 
+export function sourcePaneLabel(language) {
+  return localizedText(language, "Markdown source", "Markdown \u6e90\u7801");
+}
+
+export function sourceMarkdownParseErrorLabel(language) {
+  return localizedText(
+    language,
+    "Unable to parse Markdown source",
+    "\u65e0\u6cd5\u89e3\u6790 Markdown \u6e90\u7801",
+  );
+}
+
+export function loadingEditorLabel(language) {
+  return localizedText(language, "Loading editor", "\u6b63\u5728\u52a0\u8f7d\u7f16\u8f91\u5668");
+}
+
+export function mermaidSourceEditorLabel(language) {
+  return localizedText(
+    language,
+    "Edit Mermaid diagram source",
+    "\u7f16\u8f91 Mermaid \u56fe\u8868\u6e90\u7801",
+  );
+}
+
+export function mathSourceEditorLabel(language, displayMode = false) {
+  return displayMode
+    ? localizedText(
+        language,
+        "Edit display math source",
+        "\u7f16\u8f91\u5757\u7ea7\u516c\u5f0f\u6e90\u7801",
+      )
+    : localizedText(
+        language,
+        "Edit inline math source",
+        "\u7f16\u8f91\u884c\u5185\u516c\u5f0f\u6e90\u7801",
+      );
+}
+
 export function insertBlockMenuTitleLabel(language) {
   return localizedText(language, "Insert block", "\u63d2\u5165\u5185\u5bb9\u5757");
 }

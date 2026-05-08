@@ -58,14 +58,16 @@ function createEntry({
   tabId = "tab-a",
   viewMode = "source",
   parseOk = true,
+  preferences = {},
 } = {}) {
   const messages = [];
   const setContentCalls = [];
   const entry = {
     tabId,
     viewMode,
+    preferences,
     suppressChange: false,
-    dom: { dataset: { tabId } },
+    dom: { dataset: { tabId, language: preferences.language ?? "english" } },
     dioxus: { send: (message) => messages.push(message) },
     markdownSync: {
       markdown,
@@ -121,6 +123,15 @@ test("Tiptap source pane mounts a hidden Markdown textarea by default", () => {
   assert.equal(textarea.hidden, true);
   assert.equal(textarea.value, "# Note");
   assert.equal(textarea.attributes["aria-label"], "Markdown source");
+});
+
+test("Tiptap source pane localizes its textarea accessibility label", () => {
+  const { textarea } = createControllerHarness({
+    preferences: { language: "Chinese" },
+    viewMode: "source",
+  });
+
+  assert.equal(textarea.attributes["aria-label"], "Markdown \u6e90\u7801");
 });
 
 test("Tiptap source pane shows only in source mode", () => {

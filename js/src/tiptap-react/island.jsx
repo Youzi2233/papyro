@@ -1,6 +1,7 @@
 import React from "react";
 import { Tiptap } from "@tiptap/react";
 
+import { loadingEditorLabel } from "../tiptap-i18n.js";
 import { PapyroTiptapRuntimeProvider } from "./runtime-context.jsx";
 import {
   createPapyroTiptapReactComponents,
@@ -19,11 +20,12 @@ export function PapyroTiptapReactIsland({
   components = {},
 }) {
   if (!editor) {
+    const language = entry?.preferences?.language ?? entry?.dom?.dataset?.language ?? "english";
     return (
       <div
         className="mn-tiptap-react-loading"
         role="status"
-        aria-label="Loading editor"
+        aria-label={loadingEditorLabel(language)}
       />
     );
   }
