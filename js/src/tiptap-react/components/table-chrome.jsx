@@ -44,6 +44,15 @@ function tableQuickAddStyle(chrome) {
   return style;
 }
 
+function chromeVisibilityProps(visible) {
+  const isVisible = Boolean(visible);
+  return {
+    "aria-hidden": isVisible ? undefined : "true",
+    "data-visible": isVisible ? "true" : "false",
+    tabIndex: isVisible ? undefined : -1,
+  };
+}
+
 function TableQuickAddButton({ chrome, label, onRun }) {
   const activation = usePointerActivation(() => {
     if (!chrome || chrome.disabled) return false;
@@ -67,6 +76,7 @@ function TableQuickAddButton({ chrome, label, onRun }) {
       aria-disabled={chrome.disabled ? "true" : "false"}
       data-edge={chrome.edge}
       data-disabled={chrome.disabled ? "true" : "false"}
+      {...chromeVisibilityProps(chrome.visible)}
       style={tableQuickAddStyle(chrome)}
       {...activation}
     />
@@ -99,7 +109,6 @@ function TableCellMenuTrigger({ state, onOpenCellMenu }) {
       ].filter(Boolean).join(" ")}
       title={label}
       aria-label={label}
-      aria-hidden="false"
       aria-haspopup="menu"
       aria-expanded={state?.menuOpen ? "true" : "false"}
       data-open={state?.menuOpen ? "true" : "false"}
@@ -107,6 +116,7 @@ function TableCellMenuTrigger({ state, onOpenCellMenu }) {
       data-edge-intent={triggerState.edgeIntent ? "true" : "false"}
       data-selection-kind={selectionKind}
       data-selected-count={String(triggerState.selectedCount)}
+      {...chromeVisibilityProps(triggerState.visible)}
       style={{
         left: px(trigger.left),
         top: px(trigger.top),
@@ -133,6 +143,7 @@ function TableComplexBlockInsert({ chrome, label, onInsert }) {
       aria-label={label}
       data-edge="after-block"
       data-block-kind={chrome.blockKind}
+      {...chromeVisibilityProps(chrome.visible)}
       style={{
         left: px(chrome.rect.left),
         top: px(chrome.rect.top),
@@ -153,6 +164,7 @@ function TableSelectionBackdrop({ chrome }) {
         chrome.visible ? null : "hidden",
       ].filter(Boolean).join(" ")}
       aria-hidden="true"
+      data-visible={chrome.visible ? "true" : "false"}
       style={fixedRectStyle(chrome.rect)}
     />
   );
@@ -179,6 +191,7 @@ function TableAxisHandle({ handle, label, onSelectAxis }) {
       title={label}
       aria-label={label}
       data-active={handle.active ? "true" : "false"}
+      data-visible={handle.visible ? "true" : "false"}
       data-axis={handle.axis}
       data-index={String(handle.index)}
       style={fixedRectStyle(handle)}

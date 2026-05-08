@@ -301,6 +301,16 @@ test("React table chrome owns the non-menu table overlay rendering path", () => 
   assert.doesNotMatch(tableChromeSource, /createElement\(/u);
 });
 
+test("React table chrome exposes explicit hidden state semantics", () => {
+  assert.match(tableChromeSource, /function chromeVisibilityProps\(visible\)/u);
+  assert.match(tableChromeSource, /"data-visible":\s*isVisible \? "true" : "false"/u);
+  assert.match(tableChromeSource, /"aria-hidden":\s*isVisible \? undefined : "true"/u);
+  assert.match(tableChromeSource, /tabIndex:\s*isVisible \? undefined : -1/u);
+  assert.match(tableChromeSource, /\{\.\.\.chromeVisibilityProps\(chrome\.visible\)\}/u);
+  assert.match(tableChromeSource, /\{\.\.\.chromeVisibilityProps\(triggerState\.visible\)\}/u);
+  assert.match(tableChromeSource, /data-visible=\{chrome\.visible \? "true" : "false"\}/u);
+});
+
 test("React format toolbar is injected without changing the runtime command controller", () => {
   assert.match(formatToolbarSource, /export function PapyroFormatToolbar/u);
   assert.match(formatToolbarSource, /blockActionSubmenuLabel/u);

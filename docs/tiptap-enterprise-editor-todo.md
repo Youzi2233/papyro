@@ -302,6 +302,7 @@ Tasks:
 - [ ] On cell selection range, show a restrained overlay and a small action trigger on the range edge.
   - Current coverage: the table cell action trigger idles as a small edge dot and expands into a compact four-dot grip only on hover, focus, or open state.
   - Current polish: the single-cell trigger now has a tested right-edge center intent zone. Ordinary cell hover stays clean, selected cells get a restrained border and right-edge rail, and only deliberate edge hover or an active selection reveals the action point.
+  - Current polish: React-rendered table chrome now exposes a shared `data-visible` contract and removes hidden controls from the accessibility/focus tree, so quick-add rails and cell triggers do not leave inactive focus targets behind.
 - [ ] Add cell action menu: merge, split, alignment, text color, background color, clear formatting, copy, delete contents.
   - Current coverage: the table context menu is injected at the editor entry boundary and rendered by React in the real runtime. The headless command model and fake-DOM fallback remain in place while the rest of table chrome migrates.
   - Current polish: React-rendered table command rows now use the same title-plus-description accessible label contract as the fallback renderer, keeping screen-reader semantics consistent while table chrome continues moving to React.
