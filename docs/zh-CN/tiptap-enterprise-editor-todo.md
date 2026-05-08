@@ -138,7 +138,7 @@ node scripts/check-workspace-deps.js
 - [ ] 增加 `js/src/tiptap-react/components/`、`commands/`、`hooks/`、`extensions/`、`utils/` 模块。
 - [ ] 把共享浮层生命周期迁入 React：外部点击、Escape、焦点回流、滚动、窗口变化、WebView body 焦点竞态。
 - [ ] 增加共享 React primitives：`EditorPopover`、`CommandMenu`、`CommandItem`、`CommandSection`、`IconButton`、`ToolbarButton`、`Kbd`、`VisuallyHidden`。
-  - 当前覆盖：slash、块操作和表格上下文命令行已经共享 React primitives。表格几何、选区遮罩、resize 轨道和快捷新增轨道仍由迁移期 controller 管理。
+  - 当前覆盖：共享 primitive 模块已经导出目标 popover、命令菜单、命令项/分组、图标按钮、工具栏按钮、键盘提示和 visually-hidden 基础组件。slash、块操作和表格上下文命令行复用同一套 primitive row/text/icon 路径，浮动格式栏也已改用共享 toolbar button 契约。表格几何、选区遮罩、resize 轨道和快捷新增轨道仍由迁移期 controller 管理。
 - [ ] 为 insert、block action、inline format、table、code block 定义 typed command model。
 - [ ] 暴露稳定 runtime hooks：editor instance、language、view mode、preferences、command executor、active selection snapshot。
 - [ ] 在 React 替换完成前，把旧 DOM controller 放在 runtime flag 后面，避免双系统同时抢 UI。

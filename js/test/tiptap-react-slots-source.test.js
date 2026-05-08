@@ -92,6 +92,14 @@ test("React command chrome uses shared menu primitives", () => {
   assert.match(primitivesSource, /export function CommandRow/u);
   assert.match(primitivesSource, /export function CommandText/u);
   assert.match(primitivesSource, /export function CommandIconFrame/u);
+  assert.match(primitivesSource, /export function EditorPopover/u);
+  assert.match(primitivesSource, /export function CommandMenu/u);
+  assert.match(primitivesSource, /export function CommandItem/u);
+  assert.match(primitivesSource, /export function CommandSection/u);
+  assert.match(primitivesSource, /export function IconButton/u);
+  assert.match(primitivesSource, /export function ToolbarButton/u);
+  assert.match(primitivesSource, /export function Kbd/u);
+  assert.match(primitivesSource, /export function VisuallyHidden/u);
   assert.match(commandMenuSource, /from "\.\/primitives\.jsx"/u);
   assert.match(commandMenuSource, /<CommandRow/u);
   assert.match(commandMenuSource, /<CommandText/u);
@@ -123,13 +131,13 @@ test("React table context menu is injected at the editor entry boundary", () => 
 test("React format toolbar is injected without changing the runtime command controller", () => {
   assert.match(formatToolbarSource, /export function PapyroFormatToolbar/u);
   assert.match(formatToolbarSource, /usePointerActivation/u);
-  assert.match(formatToolbarSource, /commandElementId/u);
-  assert.match(formatToolbarSource, /data-keyboard-active/u);
-  assert.match(formatToolbarSource, /aria-pressed=\{String\(command\.active\)\}/u);
+  assert.match(formatToolbarSource, /ToolbarButton/u);
+  assert.match(formatToolbarSource, /"keyboard-active":\s*keyboardActive \? "true" : "false"/u);
+  assert.match(formatToolbarSource, /pressed=\{command\.active\}/u);
   assert.match(formatToolbarSource, /FORMAT_TOOLBAR_SUBMENU_OWNER_ID/u);
   assert.match(formatToolbarSource, /role="menu"/u);
-  assert.match(formatToolbarSource, /data-submenu-command-index/u);
-  assert.match(formatToolbarSource, /aria-controls=\{submenuExpanded \? submenuOwnerId : undefined\}/u);
+  assert.match(formatToolbarSource, /"submenu-command-index":\s*commandIndex/u);
+  assert.match(formatToolbarSource, /"aria-controls":\s*submenuExpanded \? submenuOwnerId : undefined/u);
   assert.match(formatToolbarViewSource, /createRoot/u);
   assert.match(formatToolbarViewSource, /positionReactFloatingElement/u);
   assert.match(formatToolbarViewSource, /syncMenuActiveDescendant/u);

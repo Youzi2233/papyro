@@ -138,7 +138,7 @@ Tasks:
 - [ ] Add `js/src/tiptap-react/components/`, `commands/`, `hooks/`, `extensions/`, and `utils/` modules.
 - [ ] Move shared floating-layer lifecycle into React: outside click, Escape, focus return, scroll, resize, and WebView body focus races.
 - [ ] Add shared React primitives: `EditorPopover`, `CommandMenu`, `CommandItem`, `CommandSection`, `IconButton`, `ToolbarButton`, `Kbd`, and `VisuallyHidden`.
-  - Current coverage: slash, block action, and table context command rows now share React primitives. Table geometry, selection overlays, resize rails, and quick-add rails still use the migration-era controller.
+  - Current coverage: the shared primitive module now exports the target popover, command menu, command item/section, icon button, toolbar button, keyboard hint, and visually-hidden building blocks. Slash, block action, and table context command rows share the primitive row/text/icon path, and the floating format toolbar now uses the shared toolbar button contract. Table geometry, selection overlays, resize rails, and quick-add rails still use the migration-era controller.
 - [ ] Add a typed command model for insert, block action, inline format, table, and code block commands.
 - [ ] Expose stable runtime hooks: editor instance, language, view mode, preferences, command executor, and active selection snapshot.
 - [ ] Keep the existing DOM controllers disabled behind a runtime flag while React replacements are tested.

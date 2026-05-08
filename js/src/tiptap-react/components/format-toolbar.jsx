@@ -1,7 +1,7 @@
 import React from "react";
 
-import { commandElementId } from "../../tiptap-ui-primitives.js";
 import { usePointerActivation } from "../hooks/use-pointer-activation.js";
+import { ToolbarButton } from "./primitives.jsx";
 
 const FORMAT_TOOLBAR_OWNER_ID = "mn-tiptap-format-toolbar";
 const FORMAT_TOOLBAR_SUBMENU_OWNER_ID = "mn-tiptap-format-toolbar-submenu";
@@ -22,25 +22,30 @@ function FormatToolbarButton({
   const submenuExpanded = hasSubmenu && submenuOpen === command.id;
 
   return (
-    <button
-      type="button"
-      className={`mn-tiptap-format-toolbar-button${command.active ? " active" : ""}`}
-      id={commandElementId(ownerId, commandIndex)}
+    <ToolbarButton
+      ownerId={ownerId}
+      index={commandIndex}
+      className="mn-tiptap-format-toolbar-button"
       title={command.title}
-      aria-label={command.ariaLabel}
-      aria-pressed={String(command.active)}
-      aria-controls={submenuExpanded ? submenuOwnerId : undefined}
-      data-command-id={command.id}
-      data-command-index={String(commandIndex)}
-      data-priority={String(command.priority ?? 100)}
-      data-keyboard-active={keyboardActive ? "true" : "false"}
-      data-submenu-open={submenuExpanded ? "true" : "false"}
-      aria-haspopup={hasSubmenu ? "menu" : undefined}
-      aria-expanded={hasSubmenu ? String(submenuExpanded) : undefined}
+      ariaLabel={command.ariaLabel}
+      active={command.active}
+      pressed={command.active}
+      commandId={command.id}
+      commandIndex={commandIndex}
+      data={{
+        priority: command.priority ?? 100,
+        "keyboard-active": keyboardActive ? "true" : "false",
+        "submenu-open": submenuExpanded ? "true" : "false",
+      }}
+      aria={{
+        "aria-controls": submenuExpanded ? submenuOwnerId : undefined,
+        "aria-haspopup": hasSubmenu ? "menu" : undefined,
+        "aria-expanded": hasSubmenu ? String(submenuExpanded) : undefined,
+      }}
       tabIndex={keyboardActive ? 0 : -1}
       onPointerEnter={() => setActiveCommand?.(command.id, { keyboardActive: false })}
       onFocus={() => setActiveCommand?.(command.id, { keyboardActive: true })}
-      {...activation}
+      activation={activation}
     >
       <span
         className={`mn-tiptap-format-toolbar-icon ${command.icon}`}
@@ -49,7 +54,7 @@ function FormatToolbarButton({
       <span className="mn-tiptap-format-toolbar-label">
         {command.label}
       </span>
-    </button>
+    </ToolbarButton>
   );
 }
 
@@ -65,22 +70,26 @@ function FormatToolbarSubmenuItem({
   const keyboardActive = activeChildCommandId === command.id;
 
   return (
-    <button
-      type="button"
-      className={`mn-tiptap-format-toolbar-submenu-item${command.active ? " active" : ""}`}
-      id={commandElementId(ownerId, commandIndex)}
+    <ToolbarButton
+      ownerId={ownerId}
+      index={commandIndex}
+      className="mn-tiptap-format-toolbar-submenu-item"
       title={command.title}
-      aria-label={command.ariaLabel}
+      ariaLabel={command.ariaLabel}
       role="menuitem"
-      data-command-id={command.id}
-      data-submenu-command-index={String(commandIndex)}
-      data-active={command.active ? "true" : "false"}
-      data-keyboard-active={keyboardActive ? "true" : "false"}
-      data-parent-command-id="turn-into"
+      active={command.active}
+      commandId={command.id}
+      commandIndex={undefined}
+      data={{
+        "submenu-command-index": commandIndex,
+        active: command.active ? "true" : "false",
+        "keyboard-active": keyboardActive ? "true" : "false",
+        "parent-command-id": "turn-into",
+      }}
       tabIndex={keyboardActive ? 0 : -1}
       onPointerEnter={() => setActiveChildCommand?.(command.id, { keyboardActive: false })}
       onFocus={() => setActiveChildCommand?.(command.id, { keyboardActive: true })}
-      {...activation}
+      activation={activation}
     >
       <span
         className={`mn-tiptap-format-toolbar-submenu-icon ${command.icon}`}
@@ -89,7 +98,7 @@ function FormatToolbarSubmenuItem({
       <span className="mn-tiptap-format-toolbar-submenu-label">
         {command.title}
       </span>
-    </button>
+    </ToolbarButton>
   );
 }
 
