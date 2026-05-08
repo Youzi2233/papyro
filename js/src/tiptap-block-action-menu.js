@@ -1,10 +1,21 @@
 import { createTiptapBlockActionController } from "./tiptap-block-actions.js";
 import {
   blockActionTargetLabel,
-  blockActionSubmenuDescription,
-  blockActionSubmenuLabel,
   blockHandleActionsLabel,
 } from "./tiptap-i18n.js";
+import {
+  blockActionHomeEndIndex,
+  blockActionShortcutCommandIdFromEvent,
+  blockActionSubmenuGroups,
+  blockActionSubmenuPanelWidth,
+  commandSubmenuId,
+  firstSubmenuChildIndex,
+  groupBlockActionCommands,
+  nextCommandIndexInSubmenu,
+  prepareBlockActionMenuCommands,
+  submenuCommandIndex,
+  submenuParentIndex,
+} from "./tiptap-react/commands/block-action-menu-model.js";
 import {
   commandElementId,
   bindPointerActivation,
@@ -23,165 +34,8 @@ import {
 const DEFAULT_WIDTH = 168;
 const DEFAULT_HEIGHT = 340;
 const DEFAULT_MARGIN = 10;
-const SUBMENU_WIDTH = 160;
 const SUBMENU_GAP = 6;
 const HOVER_INTENT_DELAY_MS = 90;
-
-const COMPACT_GROUPS = new Set(["Color", "Highlight", "Callout"]);
-const SUBMENU_ORDER = ["turn-into", "code-language"];
-
-function submenuOrder(submenu) {
-  const index = SUBMENU_ORDER.indexOf(submenu);
-  return index < 0 ? Number.MAX_SAFE_INTEGER : index;
-}
-
-function groupLayout(groupName) {
-  return COMPACT_GROUPS.has(groupName) ? "swatch" : "list";
-}
-
-function groupTone(commands) {
-  return commands.some((command) => command.tone === "danger") ? "danger" : "default";
-}
-
-function groupedCommands(commands) {
-  const groups = [];
-  const groupByName = new Map();
-  commands.forEach((command, index) => {
-    if (command.submenu) return;
-    const groupKey = command.groupKey || command.group || "Actions";
-    let group = groupByName.get(groupKey);
-    if (!group) {
-      group = {
-        key: groupKey,
-        name: command.group || groupKey,
-        commands: [],
-      };
-      groupByName.set(groupKey, group);
-      groups.push(group);
-    }
-    group.commands.push({ ...command, index });
-  });
-  return groups.map((group) => ({
-    ...group,
-    layout: groupLayout(group.key),
-    tone: groupTone(group.commands),
-  }));
-}
-
-function submenuGroups(commands) {
-  return (commands ?? [])
-    .map((command, index) => ({ command, index }))
-    .filter(({ command }) => command.submenu && Array.isArray(command.children))
-    .map(({ command, index }) => ({
-      id: command.submenu,
-      name: command.title,
-      description: command.description,
-      trigger: { ...command, index },
-      commands: command.children.map((child) => ({ ...child })),
-    }))
-    .sort((left, right) => submenuOrder(left.id) - submenuOrder(right.id));
-}
-
-function submenuCommandIndex(commands, submenu, commandId) {
-  return (commands ?? []).findIndex(
-    (command) => command.submenu === submenu && command.id === commandId,
-  );
-}
-
-function commandSubmenuId(command) {
-  if (!command) return "";
-  if (command.submenu && Array.isArray(command.children)) return command.submenu;
-  return command.submenu ?? "";
-}
-
-function firstSubmenuChildIndex(commands, submenu) {
-  return (commands ?? []).findIndex(
-    (command) => command.submenu === submenu && !Array.isArray(command.children),
-  );
-}
-
-function submenuParentIndex(commands, submenu) {
-  return (commands ?? []).findIndex(
-    (command) => command.submenu === submenu && Array.isArray(command.children),
-  );
-}
-
-function nextCommandIndexInSubmenu(commands, currentIndex, direction) {
-  const submenu = commandSubmenuId(commands?.[currentIndex]);
-  if (!submenu) return currentIndex;
-  const candidates = (commands ?? [])
-    .map((command, index) => ({ command, index }))
-    .filter(({ command }) => command.submenu === submenu && !Array.isArray(command.children) && command.id !== submenu);
-  if (!candidates.length) return currentIndex;
-  const currentChildIndex = candidates.findIndex(({ index }) => index === currentIndex);
-  const nextChildIndex =
-    currentChildIndex < 0
-      ? 0
-      : (currentChildIndex + direction + candidates.length) % candidates.length;
-  return candidates[nextChildIndex]?.index ?? currentIndex;
-}
-
-function prepareMenuCommands(commands) {
-  const childIds = new Set();
-  const childCommands = [];
-  const parentCommands = [];
-  const topLevelCommands = [];
-
-  (commands ?? []).forEach((command) => {
-    if (command.submenu && Array.isArray(command.children)) {
-      parentCommands.push(command);
-      command.children.forEach((child) => childIds.add(child.id));
-    }
-  });
-
-  (commands ?? []).forEach((command) => {
-    if (command.submenu && Array.isArray(command.children)) {
-      topLevelCommands.push(command);
-    } else if (command.submenu) {
-      childCommands.push(command);
-    } else if (!childIds.has(command.id)) {
-      topLevelCommands.push(command);
-    }
-  });
-
-  parentCommands.forEach((parent) => {
-    (parent.children ?? []).forEach((child) => {
-      if (!childCommands.some((command) => command.id === child.id && command.submenu === parent.submenu)) {
-        childCommands.push({ ...child, submenu: parent.submenu });
-      }
-    });
-  });
-
-  const ordered = [...topLevelCommands];
-  childCommands.forEach((command) => {
-    if (parentCommands.some((parent) => parent.submenu === command.submenu)) {
-      ordered.push(command);
-    }
-  });
-
-  return ordered.map((command, index) => {
-    if (command.submenu && Array.isArray(command.children)) {
-      return {
-        ...command,
-        index,
-        children: command.children.map((child) => ({ ...child })),
-      };
-    } else {
-      return { ...command, index };
-    }
-  });
-}
-
-function shortcutCommandFromEvent(event) {
-  const key = String(event?.key ?? "").toLowerCase();
-  const primaryModifier = event?.ctrlKey || event?.metaKey;
-  if (event?.altKey && !primaryModifier && key === "arrowup") return "move-block-up";
-  if (event?.altKey && !primaryModifier && key === "arrowdown") return "move-block-down";
-  if (primaryModifier && !event?.altKey && key === "c") return "copy-block";
-  if (primaryModifier && !event?.altKey && key === "d") return "duplicate-block";
-  if (key === "delete" || key === "backspace") return "delete";
-  return null;
-}
 
 function placeMenu(element, target, fallbackWindow, anchorRect = null) {
   const rect = usableAnchorRect(anchorRect)
@@ -279,7 +133,7 @@ class TiptapBlockActionMenuView {
     if (!this.#root || !this.#list || !this.#submenus || !state.open) return;
 
     this.#root.setAttribute("aria-label", blockHandleActionsLabel(state.language));
-    this.#root.dataset.hasSubmenus = submenuGroups(state.commands, state.language).length > 0 ? "true" : "false";
+    this.#root.dataset.hasSubmenus = blockActionSubmenuGroups(state.commands).length > 0 ? "true" : "false";
     if (this.#eyebrow) {
       this.#eyebrow.textContent = blockHandleActionsLabel(state.language);
     }
@@ -289,7 +143,7 @@ class TiptapBlockActionMenuView {
     this.#list.replaceChildren();
     this.#submenus.replaceChildren();
     let actionsSection = null;
-    groupedCommands(state.commands).forEach((group) => {
+    groupBlockActionCommands(state.commands).forEach((group) => {
       const section = createElement(
         this.#document,
         "section",
@@ -362,7 +216,7 @@ class TiptapBlockActionMenuView {
 
       this.#list.appendChild(section);
     });
-    const submenus = submenuGroups(state.commands, state.language);
+    const submenus = blockActionSubmenuGroups(state.commands);
     submenus.forEach((group) => {
       const section = createElement(
         this.#document,
@@ -520,7 +374,7 @@ class TiptapBlockActionMenuView {
 
     const rect = this.#root.getBoundingClientRect?.();
     const viewport = viewportSize(this.#root, this.#window);
-    const neededWidth = SUBMENU_WIDTH + SUBMENU_GAP + DEFAULT_MARGIN;
+    const neededWidth = blockActionSubmenuPanelWidth() + SUBMENU_GAP + DEFAULT_MARGIN;
     const shouldFlip =
       rect &&
       rect.right + neededWidth > viewport.width &&
@@ -649,7 +503,7 @@ export class TiptapBlockActionMenuController {
     const previousCommandId = preserveSelection
       ? this.#state.commands[this.#state.selectedIndex]?.id
       : null;
-    const commands = prepareMenuCommands(
+    const commands = prepareBlockActionMenuCommands(
       this.#commands.list({
         editor: this.#editor,
         entry: this.#entry,
@@ -748,7 +602,7 @@ export class TiptapBlockActionMenuController {
     if (!this.#state.open) return false;
     if (isComposingKeyboardEvent(event)) return false;
 
-    const shortcutCommandId = shortcutCommandFromEvent(event);
+    const shortcutCommandId = blockActionShortcutCommandIdFromEvent(event);
     if (
       shortcutCommandId &&
       this.#state.commands.some((command) => command.id === shortcutCommandId)
@@ -800,25 +654,13 @@ export class TiptapBlockActionMenuController {
     if (event.key === "Home" || event.key === "End") {
       if (this.#state.commands.length === 0) return false;
       event.preventDefault();
-      const selectedCommand = this.#state.commands[this.#state.selectedIndex];
-      const onSubmenuChild =
-        selectedCommand?.submenu &&
-        !Array.isArray(selectedCommand.children) &&
-        selectedCommand.id !== selectedCommand.submenu;
-      const submenu = onSubmenuChild
-        ? commandSubmenuId(selectedCommand)
-        : "";
-      if (submenu) {
-        const children = this.#state.commands
-          .map((command, index) => ({ command, index }))
-          .filter(({ command }) => command.submenu === submenu && !Array.isArray(command.children) && command.id !== submenu);
-        this.setSelection(event.key === "Home" ? children[0].index : children.at(-1).index);
-      } else {
-        const topLevel = this.#state.commands
-          .map((command, index) => ({ command, index }))
-          .filter(({ command }) => !command.submenu || Array.isArray(command.children));
-        this.setSelection(event.key === "Home" ? topLevel[0].index : topLevel.at(-1).index);
-      }
+      this.setSelection(
+        blockActionHomeEndIndex(
+          this.#state.commands,
+          this.#state.selectedIndex,
+          event.key,
+        ),
+      );
       return true;
     }
 
