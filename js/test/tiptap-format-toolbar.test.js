@@ -294,6 +294,21 @@ test("Tiptap format toolbar switches to compact density in narrow viewports", ()
   assert.equal(view.calls[1][2], "compact");
 });
 
+test("Tiptap format toolbar tolerates transient selection coordinate failures", () => {
+  const { editor } = createEditor();
+  const view = createViewSpy();
+  editor.view.coordsAtPos = () => {
+    throw new Error("selection remounted");
+  };
+  const controller = createTiptapFormatToolbarController({ view });
+
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+
+  assert.equal(controller.state.open, true);
+  assert.equal(controller.state.density, "regular");
+  assert.equal(view.calls[1][0], "update");
+});
+
 test("Tiptap format toolbar stays closed for collapsed selections", () => {
   const { editor } = createEditor({ selected: false });
   const view = createViewSpy();

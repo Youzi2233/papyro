@@ -410,6 +410,7 @@ Tasks:
   - Current coverage: link editing now uses a Papyro React/Dioxus-safe popover instead of a native prompt; it reads the current href through `editor.getAttributes("link").href`, restores the selected range, and applies/removes links through Tiptap's official `setLink` and `unsetLink` commands.
   - Current coverage: the `turn into` button now opens a shared submenu for paragraph, headings, lists, quote, callout, and code block transforms. The code-block transform lives inside this shared submenu so the floating toolbar and block action menu use the same command source.
 - [ ] Keep toolbar placement stable near viewport edges.
+  - Current coverage: the toolbar now tolerates transient `coordsAtPos` failures during ProseMirror remount/selection races, matching the React view's guarded positioning path instead of throwing during refresh.
 - [ ] Add keyboard access and focus return.
   - Current coverage: `Mod+K` opens the Papyro link editor from Hybrid mode, follows Tiptap's documented Link-extension guidance for custom link UI, and expands collapsed link selections with `extendMarkRange("link")` before editing.
   - Current coverage: `Alt+F10` opens the floating format toolbar from the editor selection; Arrow keys, Home/End, Enter/Space, and Escape now provide keyboard navigation, execution, close behavior, and focus return.

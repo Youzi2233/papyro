@@ -38,14 +38,18 @@ function selectionRect(editor, range) {
     return null;
   }
 
-  const from = view.coordsAtPos(range.from);
-  const to = view.coordsAtPos(range.to);
-  return {
-    left: Math.min(from.left, to.left),
-    right: Math.max(from.right ?? from.left, to.right ?? to.left),
-    top: Math.min(from.top, to.top),
-    bottom: Math.max(from.bottom ?? from.top, to.bottom ?? to.top),
-  };
+  try {
+    const from = view.coordsAtPos(range.from);
+    const to = view.coordsAtPos(range.to);
+    return {
+      left: Math.min(from.left, to.left),
+      right: Math.max(from.right ?? from.left, to.right ?? to.left),
+      top: Math.min(from.top, to.top),
+      bottom: Math.max(from.bottom ?? from.top, to.bottom ?? to.top),
+    };
+  } catch (_error) {
+    return null;
+  }
 }
 
 function shouldUseCompactToolbar(editor, range, fallbackWindow) {
