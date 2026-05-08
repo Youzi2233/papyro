@@ -161,6 +161,84 @@ function createStyleEditor() {
   return { calls, editor, paragraph };
 }
 
+function createMoveEditor() {
+  const calls = [];
+  const previous = { nodeSize: 4, type: { name: "heading" } };
+  const current = { nodeSize: 6, type: { name: "paragraph" } };
+  const next = { nodeSize: 8, type: { name: "blockquote" } };
+  const children = [previous, current, next];
+  const parent = {
+    childCount: children.length,
+    child(index) {
+      calls.push(["child", index]);
+      return children[index] ?? null;
+    },
+    canReplaceWith(from, to, type) {
+      calls.push(["canReplaceWith", from, to, type?.name ?? type]);
+      return true;
+    },
+  };
+  const tr = {
+    doc: {
+      resolve(pos) {
+        calls.push(["tr.resolve", pos]);
+        return {
+          parent,
+          index: () => 1,
+        };
+      },
+    },
+    delete(from, to) {
+      calls.push(["delete", from, to]);
+      return tr;
+    },
+    insert(pos, insertedNode) {
+      calls.push(["insert", pos, insertedNode === current ? "current" : "other"]);
+      return tr;
+    },
+    scrollIntoView() {
+      calls.push(["scrollIntoView"]);
+      return tr;
+    },
+  };
+  const editor = {
+    commands: {
+      focus: (pos) => {
+        calls.push(["focus", pos ?? null]);
+        return true;
+      },
+      setNodeSelection: (pos) => {
+        calls.push(["setNodeSelection", pos]);
+        return true;
+      },
+    },
+    state: {
+      tr,
+      doc: {
+        nodeAt(pos) {
+          calls.push(["nodeAt", pos]);
+          return pos === 10 ? current : null;
+        },
+        resolve(pos) {
+          calls.push(["doc.resolve", pos]);
+          return {
+            depth: 1,
+            parent,
+            index: () => 1,
+          };
+        },
+      },
+    },
+    view: {
+      dispatch(transaction) {
+        calls.push(["dispatch", transaction === tr]);
+      },
+    },
+  };
+
+  return { calls, editor, current };
+}
+
 test("Tiptap block actions expose stable command ids", () => {
   assert.deepEqual(
     PAPYRO_TIPTAP_BLOCK_ACTIONS.map((command) => command.id),
@@ -210,6 +288,8 @@ test("Tiptap block actions expose stable command ids", () => {
       "reset-formatting",
       "copy-block",
       "duplicate-block",
+      "move-block-up",
+      "move-block-down",
       "delete",
     ],
   );
@@ -345,6 +425,42 @@ test("Tiptap block actions expose menu metadata in priority order", () => {
     shortcut: "Ctrl C",
     tone: "default",
   });
+});
+
+test("Tiptap block actions move blocks with shared transaction semantics", () => {
+  const { calls, editor, current } = createMoveEditor();
+  const controller = createTiptapBlockActionController();
+  const commands = controller
+    .list({ editor, target: { pos: 10, node: current } })
+    .map((command) => command.id);
+
+  assert.equal(commands.includes("move-block-up"), true);
+  assert.equal(commands.includes("move-block-down"), true);
+  assert.equal(
+    controller.run("move-block-down", {
+      editor,
+      target: { pos: 10, node: current },
+    }).ok,
+    true,
+  );
+  assert.deepEqual(calls, [
+    ["doc.resolve", 10],
+    ["child", 0],
+    ["doc.resolve", 10],
+    ["child", 2],
+    ["focus", 10],
+    ["doc.resolve", 10],
+    ["child", 2],
+    ["delete", 10, 16],
+    ["tr.resolve", 18],
+    ["canReplaceWith", 1, 1, "paragraph"],
+    ["insert", 18, "current"],
+    ["scrollIntoView"],
+    ["dispatch", true],
+    ["setNodeSelection", 18],
+    ["focus", null],
+    ["focus", null],
+  ]);
 });
 
 test("Tiptap block actions reset formatting with editor commands and mark cleanup", () => {

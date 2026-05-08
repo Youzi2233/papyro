@@ -92,6 +92,8 @@ const BLOCK_ACTION_LABELS = Object.freeze({
   "reset-formatting": ["Reset formatting", "重置格式", "Clear marks and return to plain text", "清除标记并恢复为普通文本"],
   "copy-block": ["Copy block", "复制当前块", "Copy this block as Markdown", "以 Markdown 复制当前块"],
   "duplicate-block": ["Duplicate block", "重复当前块", "Copy this block below", "在下方复制当前块"],
+  "move-block-up": ["Move up", "上移当前块", "Move this block above the previous block", "将当前块移到上一个块之前"],
+  "move-block-down": ["Move down", "下移当前块", "Move this block below the next block", "将当前块移到下一个块之后"],
   delete: ["Delete block", "删除当前块", "Remove this block", "移除当前块"],
 });
 

@@ -9,6 +9,16 @@ import {
   mountFloatingRoot,
   setHidden,
 } from "./tiptap-ui-primitives.js";
+import {
+  createTiptapBlockMove,
+  moveTiptapBlock,
+  targetEndPos,
+} from "./tiptap-block-move.js";
+
+export {
+  createTiptapBlockMove,
+  moveTiptapBlock,
+} from "./tiptap-block-move.js";
 
 const BLOCK_SELECTOR = [
   "blockquote",
@@ -244,11 +254,6 @@ function refreshTargetFromPosition(target, editor) {
   };
 }
 
-function targetEndPos(target) {
-  const nodeSize = target?.node?.nodeSize ?? target?.block?.pmViewDesc?.node?.nodeSize ?? 0;
-  return Number.isFinite(target?.pos) ? target.pos + Math.max(1, nodeSize) : null;
-}
-
 function visibleBlockRange(target) {
   const from = target?.pos;
   if (!Number.isFinite(from)) return null;
@@ -357,69 +362,6 @@ export function blockDropPlacement(target, clientY) {
     pos,
     rect,
   };
-}
-
-export function createTiptapBlockMove(editor, source, drop) {
-  const state = editor?.state;
-  const doc = state?.doc;
-  const from = source?.pos;
-  const node = source?.node ?? (Number.isFinite(from) ? doc?.nodeAt?.(from) : null);
-  const nodeSize = node?.nodeSize ?? 0;
-  const to = Number.isFinite(from) ? from + Math.max(1, nodeSize) : null;
-  const dropPos = drop?.pos;
-
-  if (
-    !state?.tr ||
-    !doc ||
-    !node ||
-    !Number.isFinite(from) ||
-    !Number.isFinite(to) ||
-    !Number.isFinite(dropPos) ||
-    to <= from
-  ) {
-    return null;
-  }
-
-  if (dropPos >= from && dropPos <= to) {
-    return null;
-  }
-
-  const insertPos = dropPos > to ? dropPos - (to - from) : dropPos;
-  if (!Number.isFinite(insertPos) || insertPos < 0) {
-    return null;
-  }
-
-  try {
-    let tr = state.tr.delete(from, to);
-    const resolved = tr.doc?.resolve?.(insertPos);
-    if (
-      node.type &&
-      typeof resolved?.parent?.canReplaceWith === "function" &&
-      resolved.parent.canReplaceWith(resolved.index(), resolved.index(), node.type) === false
-    ) {
-      return null;
-    }
-
-    tr = tr.insert(insertPos, node);
-    tr = typeof tr.scrollIntoView === "function" ? tr.scrollIntoView() : tr;
-    return { tr, pos: insertPos };
-  } catch (_error) {
-    return null;
-  }
-}
-
-export function moveTiptapBlock(editor, source, drop) {
-  const move = createTiptapBlockMove(editor, source, drop);
-  if (!move) return false;
-
-  editor?.view?.dispatch?.(move.tr);
-  if (typeof editor?.commands?.setNodeSelection === "function") {
-    editor.commands.setNodeSelection(move.pos);
-  } else {
-    editor?.commands?.setTextSelection?.(move.pos);
-  }
-  editor?.commands?.focus?.();
-  return true;
 }
 
 class TiptapBlockHandleView {

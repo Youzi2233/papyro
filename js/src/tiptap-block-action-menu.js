@@ -175,6 +175,8 @@ function prepareMenuCommands(commands) {
 function shortcutCommandFromEvent(event) {
   const key = String(event?.key ?? "").toLowerCase();
   const primaryModifier = event?.ctrlKey || event?.metaKey;
+  if (event?.altKey && !primaryModifier && key === "arrowup") return "move-block-up";
+  if (event?.altKey && !primaryModifier && key === "arrowdown") return "move-block-down";
   if (primaryModifier && !event?.altKey && key === "c") return "copy-block";
   if (primaryModifier && !event?.altKey && key === "d") return "duplicate-block";
   if (key === "delete" || key === "backspace") return "delete";

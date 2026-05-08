@@ -16,6 +16,12 @@ import {
   localizeBlockAction,
   normalizeTiptapLanguage,
 } from "./tiptap-i18n.js";
+import {
+  blockSiblingDrop,
+  canMoveTiptapBlock,
+  moveTiptapBlock,
+  targetEndPos,
+} from "./tiptap-block-move.js";
 import { PAPYRO_TIPTAP_TURN_INTO_COMMANDS } from "./tiptap-turn-into-commands.js";
 
 function normalizeCommandId(value) {
@@ -125,11 +131,6 @@ function canRunEditorCommand(editor, commandName) {
   return typeof editor?.commands?.[commandName] === "function";
 }
 
-function targetEndPos(target) {
-  const nodeSize = target?.node?.nodeSize ?? target?.block?.pmViewDesc?.node?.nodeSize ?? 0;
-  return Number.isFinite(target?.pos) ? target.pos + Math.max(1, nodeSize) : null;
-}
-
 function deleteTarget(editor, target) {
   const from = target?.pos;
   const to = targetEndPos(target);
@@ -144,6 +145,11 @@ function duplicateTarget(editor, target) {
   const position = targetEndPos(target);
   if (!markdown || !Number.isFinite(position)) return false;
   return insertMarkdownAt(editor, `\n${markdown}\n`, position);
+}
+
+function moveTarget(editor, target, direction) {
+  const drop = blockSiblingDrop(editor, target, direction);
+  return drop ? moveTiptapBlock(editor, target, drop) : false;
 }
 
 function clearTargetFormatting(editor, target) {
@@ -408,6 +414,28 @@ export const PAPYRO_TIPTAP_BLOCK_ACTIONS = Object.freeze([
     shortcut: "Ctrl D",
     priority: 11,
     run: ({ editor, target }) => duplicateTarget(editor, target),
+  }),
+  createCommand({
+    id: "move-block-up",
+    title: "Move up",
+    description: "Move this block above the previous block",
+    group: "Actions",
+    icon: "move-up",
+    shortcut: "Alt Up",
+    priority: 11.2,
+    enabled: ({ editor, target }) => canMoveTiptapBlock(editor, target, "up"),
+    run: ({ editor, target }) => moveTarget(editor, target, "up"),
+  }),
+  createCommand({
+    id: "move-block-down",
+    title: "Move down",
+    description: "Move this block below the next block",
+    group: "Actions",
+    icon: "move-down",
+    shortcut: "Alt Down",
+    priority: 11.4,
+    enabled: ({ editor, target }) => canMoveTiptapBlock(editor, target, "down"),
+    run: ({ editor, target }) => moveTarget(editor, target, "down"),
   }),
   createCommand({
     id: "delete",

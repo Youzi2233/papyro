@@ -77,6 +77,55 @@ function createEditor() {
   return { calls, editor };
 }
 
+function createMoveEditor() {
+  const { calls, editor } = createEditor();
+  const previous = { nodeSize: 3, type: { name: "paragraph" } };
+  const current = { nodeSize: 6, type: { name: "paragraph" } };
+  const next = { nodeSize: 7, type: { name: "paragraph" } };
+  const children = [previous, current, next];
+  const parent = {
+    childCount: children.length,
+    child: (index) => {
+      calls.push(["child", index]);
+      return children[index] ?? null;
+    },
+    canReplaceWith: () => true,
+  };
+  const tr = {
+    doc: {
+      resolve(pos) {
+        calls.push(["tr.resolve", pos]);
+        return { parent, index: () => 1 };
+      },
+    },
+    delete(from, to) {
+      calls.push(["delete", from, to]);
+      return tr;
+    },
+    insert(pos, node) {
+      calls.push(["insert", pos, node === current ? "current" : "other"]);
+      return tr;
+    },
+    scrollIntoView() {
+      calls.push(["scrollIntoView"]);
+      return tr;
+    },
+  };
+  editor.commands.setNodeSelection = (pos) => {
+    calls.push(["setNodeSelection", pos]);
+    return true;
+  };
+  editor.state.tr = tr;
+  editor.state.doc.nodeAt = () => current;
+  editor.state.doc.resolve = () => ({ depth: 1, parent, index: () => 1 });
+  editor.view = {
+    dispatch(transaction) {
+      calls.push(["dispatch", transaction === tr]);
+    },
+  };
+  return { calls, editor, current };
+}
+
 function createViewSpy() {
   const calls = [];
   let containedTarget = null;
@@ -460,6 +509,40 @@ test("Tiptap block action menu runs advertised keyboard shortcuts", () => {
   assert.deepEqual(calls, [
     ["focus", 4],
     ["deleteRange", 4, 10],
+    ["focus", null],
+  ]);
+});
+
+test("Tiptap block action menu runs move keyboard shortcuts", () => {
+  const { calls, editor, current } = createMoveEditor();
+  const view = createViewSpy();
+  const controller = createTiptapBlockActionMenuController({ view });
+  let prevented = 0;
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  controller.open({ ...createTarget(), pos: 10, node: current });
+  calls.length = 0;
+
+  assert.equal(
+    controller.handleKeyDown({
+      key: "ArrowUp",
+      altKey: true,
+      preventDefault() {
+        prevented += 1;
+      },
+    }),
+    true,
+  );
+  assert.equal(prevented, 1);
+  assert.deepEqual(calls, [
+    ["focus", 10],
+    ["child", 0],
+    ["delete", 10, 16],
+    ["tr.resolve", 7],
+    ["insert", 7, "current"],
+    ["scrollIntoView"],
+    ["dispatch", true],
+    ["setNodeSelection", 7],
+    ["focus", null],
     ["focus", null],
   ]);
 });

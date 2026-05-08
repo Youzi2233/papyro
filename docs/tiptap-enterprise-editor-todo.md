@@ -236,6 +236,7 @@ Tasks:
   - Done for the compatibility handle path: table, code block, image node view, display math, and Mermaid descendants now resolve to the outer complex block.
   - Still required: the final React handle implementation based on official drag-handle/node-range APIs.
 - [ ] Add block actions: copy Markdown, duplicate, delete, reset formatting, text color, highlight, turn into, and move up/down.
+  - Current coverage: block action commands now include move up/down, backed by a shared ProseMirror transaction helper used by both the handle drag path and menu actions. Commands are hidden at sibling boundaries, keep selection on the moved block, expose localized labels, support `Alt+Up` / `Alt+Down`, and have focused tests for command metadata, keyboard shortcuts, and transaction behavior.
 
 Acceptance criteria:
 
