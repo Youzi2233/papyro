@@ -267,8 +267,9 @@ Tasks:
 - [ ] Remove visible handles by default. Show row/column handles only on intentional hover near the first row or first column.
 - [ ] Make the entire cell surface editable and focusable, not only a tiny center area.
   - Current coverage: blank cell surfaces and empty paragraph surfaces now use the table focus fallback, while filled inline content keeps native ProseMirror text selection and does not start table-range dragging.
-- [ ] Ensure cells have no visual gaps, so selection and resize borders look continuous.
-- [ ] On cell click, show a theme-colored active border around that cell.
+- [x] Ensure cells have no visual gaps, so selection and resize borders look continuous.
+  - Current coverage: Tiptap table cells use collapsed borders, border-box background painting, and a style smoke guard for the continuous cell surface.
+- [x] On cell click, show a theme-colored active border around that cell.
   - Current coverage: active and selected cells now use a quieter continuous theme border, the cell menu trigger is anchored to the true vertical cell center, and hover feedback stays secondary to selection.
 - [ ] On cell selection range, show a restrained overlay and a small action trigger on the range edge.
   - Current coverage: the table cell action trigger idles as a small edge dot and expands into a compact four-dot grip only on hover, focus, or open state.
