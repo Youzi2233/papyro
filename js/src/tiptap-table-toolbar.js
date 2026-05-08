@@ -83,6 +83,21 @@ function isDirectTableCellTarget(target, cell) {
   return (tagName === "td" || tagName === "th") && target === cell;
 }
 
+function isEditableTableCellSurfaceTarget(target, cell) {
+  if (isDirectTableCellTarget(target, cell)) return true;
+  if (!target || !cell || target?.closest?.("th,td") !== cell) return false;
+
+  const tagName = String(target?.tagName ?? "").toLowerCase();
+  if (tagName !== "p" && tagName !== "div") return false;
+
+  const interactive = target.closest?.(
+    "a,button,input,textarea,select,code,pre,img,svg,[contenteditable=\"false\"]",
+  );
+  if (interactive && interactive !== cell) return false;
+
+  return String(target.textContent ?? "").trim().length === 0;
+}
+
 function tableContextFromElement(editor, table) {
   if (!editor?.view || !table) return null;
   const grid = tableSelectionGrid(table, editor.view);
@@ -588,19 +603,22 @@ export class TiptapTableToolbarController {
     const selectable = typeof this.#editor?.commands?.setCellSelection === "function";
     if (!selectable) return false;
 
+    const blankClick = isEditableTableCellSurfaceTarget(event?.target, cell);
+    this.#previewActiveCellFromPointer(context, start, event);
+    if (!blankClick) return false;
+
     this.#cellDrag = {
       table,
       anchor: start,
       head: start,
       moved: false,
       selected: false,
-      blankClick: isDirectTableCellTarget(event?.target, cell),
+      blankClick,
       startX: Number(event?.clientX),
       startY: Number(event?.clientY),
       removeListeners: [],
     };
 
-    this.#previewActiveCellFromPointer(context, start, event);
     this.#bindCellDragListeners();
     return false;
   }

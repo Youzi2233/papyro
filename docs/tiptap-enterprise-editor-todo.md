@@ -262,6 +262,7 @@ Tasks:
 - [ ] Remove the top-left whole-table selector unless a clear product action requires it.
 - [ ] Remove visible handles by default. Show row/column handles only on intentional hover near the first row or first column.
 - [ ] Make the entire cell surface editable and focusable, not only a tiny center area.
+  - Current coverage: blank cell surfaces and empty paragraph surfaces now use the table focus fallback, while filled inline content keeps native ProseMirror text selection and does not start table-range dragging.
 - [ ] Ensure cells have no visual gaps, so selection and resize borders look continuous.
 - [ ] On cell click, show a theme-colored active border around that cell.
   - Current coverage: active and selected cells now use a quieter continuous theme border, the cell menu trigger is anchored to the true vertical cell center, and hover feedback stays secondary to selection.
