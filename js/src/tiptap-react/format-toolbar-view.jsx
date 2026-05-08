@@ -2,6 +2,7 @@ import React from "react";
 import { flushSync } from "react-dom";
 import { createRoot } from "react-dom/client";
 
+import { formatToolbarLabel } from "../tiptap-i18n.js";
 import { setHidden } from "../tiptap-ui-primitives.js";
 import { syncMenuActiveDescendant } from "../tiptap-ui-primitives.js";
 import { PapyroFormatToolbar } from "./components/format-toolbar.jsx";
@@ -86,7 +87,7 @@ export class TiptapReactFormatToolbarView {
     root.id = this.#ownerId;
     root.className = "mn-tiptap-format-toolbar hidden";
     root.role = "toolbar";
-    root.setAttribute("aria-label", "Text formatting");
+    root.setAttribute("aria-label", formatToolbarLabel("english"));
     (container?.ownerDocument?.body ?? this.#document.body)?.appendChild(root);
 
     this.#root = root;
@@ -100,6 +101,7 @@ export class TiptapReactFormatToolbarView {
     const density = state.density ?? "regular";
     this.#root.dataset.density = density;
     this.#root.dataset.keyboardActive = state.keyboardActive ? "true" : "false";
+    this.#root.setAttribute("aria-label", formatToolbarLabel(state.language));
     this.#root.onkeydown = (event) => state.handleKeyDown?.(event);
 
     flushSync(() => {

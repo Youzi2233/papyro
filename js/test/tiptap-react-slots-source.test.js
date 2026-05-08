@@ -287,6 +287,7 @@ test("React format toolbar is injected without changing the runtime command cont
   assert.match(formatToolbarSource, /"aria-controls":\s*submenuExpanded \? submenuOwnerId : undefined/u);
   assert.match(formatToolbarViewSource, /createRoot/u);
   assert.match(formatToolbarViewSource, /positionReactFloatingElement/u);
+  assert.match(formatToolbarViewSource, /formatToolbarLabel/u);
   assert.match(formatToolbarViewSource, /syncMenuActiveDescendant/u);
   assert.match(formatToolbarViewSource, /indexDataset:\s*state\.submenuOpen \? "submenuCommandIndex" : "commandIndex"/u);
   assert.equal(

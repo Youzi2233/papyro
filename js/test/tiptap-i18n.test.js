@@ -6,6 +6,7 @@ import {
   addRowBelowLabel,
   blockHandleActionsLabel,
   blockHandleInsertLabel,
+  formatToolbarLabel,
   insertTableLabel,
   localizeCalloutKindOption,
   localizeSlashCommand,
@@ -24,6 +25,11 @@ test("Tiptap i18n normalizes Chinese language values", () => {
   assert.equal(normalizeTiptapLanguage("Chinese"), "zh-CN");
   assert.equal(normalizeTiptapLanguage("zh_CN"), "zh-CN");
   assert.equal(normalizeTiptapLanguage("english"), "en");
+});
+
+test("Tiptap format toolbar label follows editor language", () => {
+  assert.equal(formatToolbarLabel("english"), "Text formatting");
+  assert.equal(formatToolbarLabel("Chinese"), "\u6587\u672c\u683c\u5f0f");
 });
 
 test("Tiptap slash commands expose readable Chinese labels", () => {

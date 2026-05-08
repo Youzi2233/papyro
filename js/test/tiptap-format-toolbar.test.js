@@ -248,6 +248,26 @@ function createDocument() {
   return { created, documentRef };
 }
 
+test("Tiptap format toolbar localizes the toolbar accessibility label", () => {
+  const { created, documentRef } = createDocument();
+  const { editor } = createEditor();
+  const controller = createTiptapFormatToolbarController({
+    dom: { document: documentRef },
+  });
+
+  controller.attach({
+    editor,
+    root: {},
+    entry: { viewMode: "hybrid", preferences: { language: "Chinese" } },
+  });
+
+  const root = created.find((element) =>
+    String(element.className).includes("mn-tiptap-format-toolbar"),
+  );
+  assert.equal(root["aria-label"], "\u6587\u672c\u683c\u5f0f");
+  assert.equal(controller.state.language, "Chinese");
+});
+
 test("Tiptap format toolbar opens for non-empty Hybrid selections", () => {
   const { editor } = createEditor({ active: ["bold"] });
   const view = createViewSpy();

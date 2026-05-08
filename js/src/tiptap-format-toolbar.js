@@ -1,5 +1,6 @@
 import { createTiptapFormatCommandController } from "./tiptap-format-commands.js";
 import { createPapyroTiptapFormatSnapshot } from "./tiptap-format-snapshot.js";
+import { formatToolbarLabel } from "./tiptap-i18n.js";
 import {
   commandElementId,
   createElement,
@@ -112,7 +113,7 @@ class TiptapFormatToolbarView {
     if (!root || !shell || !list || !submenu) return;
 
     root.role = "toolbar";
-    root.setAttribute("aria-label", "Text formatting");
+    root.setAttribute("aria-label", formatToolbarLabel("english"));
     shell.appendChild(list);
     shell.appendChild(submenu);
     root.appendChild(shell);
@@ -131,6 +132,7 @@ class TiptapFormatToolbarView {
     const density = state.density ?? "regular";
     this.#root.dataset.density = density;
     this.#root.dataset.keyboardActive = state.keyboardActive ? "true" : "false";
+    this.#root.setAttribute("aria-label", formatToolbarLabel(state.language));
     this.#root.onkeydown = (event) => state.handleKeyDown?.(event);
     this.#list.replaceChildren();
     state.commands.forEach((command, commandIndex) => {
@@ -321,6 +323,7 @@ export class TiptapFormatToolbarController {
     submenuOpen: null,
     activeChildCommandId: null,
     keyboardActive: false,
+    language: "english",
   };
 
   constructor({
@@ -394,6 +397,7 @@ export class TiptapFormatToolbarController {
       density: shouldUseCompactToolbar(editor, range, defaultWindow(editor?.view?.dom?.ownerDocument))
         ? "compact"
         : "regular",
+      language: this.#entry?.preferences?.language ?? "english",
       commands: this.#commands.states({
         editor,
         entry: this.#entry,
@@ -443,6 +447,7 @@ export class TiptapFormatToolbarController {
       submenuOpen: null,
       activeChildCommandId: null,
       keyboardActive: false,
+      language: this.#entry?.preferences?.language ?? "english",
     };
     this.#view.hide?.();
     this.#dismiss.close();

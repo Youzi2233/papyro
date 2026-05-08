@@ -436,6 +436,10 @@ export function markdownCommandsLabel(language) {
   return localizedText(language, "Markdown block commands", "Markdown 块命令");
 }
 
+export function formatToolbarLabel(language) {
+  return localizedText(language, "Text formatting", "\u6587\u672c\u683c\u5f0f");
+}
+
 export function insertBlockMenuTitleLabel(language) {
   return localizedText(language, "Insert block", "\u63d2\u5165\u5185\u5bb9\u5757");
 }
