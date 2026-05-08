@@ -320,6 +320,7 @@ test("React table chrome exposes explicit hidden state semantics", () => {
   assert.match(tableChromeSource, /tabIndex:\s*isVisible \? undefined : -1/u);
   assert.match(tableChromeSource, /\{\.\.\.chromeVisibilityProps\(chrome\.visible\)\}/u);
   assert.match(tableChromeSource, /\{\.\.\.chromeVisibilityProps\(triggerState\.visible\)\}/u);
+  assert.match(tableChromeSource, /\{\.\.\.chromeVisibilityProps\(handle\.visible\)\}/u);
   assert.match(tableChromeSource, /data-visible=\{chrome\.visible \? "true" : "false"\}/u);
 });
 

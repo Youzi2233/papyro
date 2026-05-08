@@ -192,9 +192,9 @@ function TableAxisHandle({ handle, label, onSelectAxis }) {
       title={label}
       aria-label={label}
       data-active={handle.active ? "true" : "false"}
-      data-visible={handle.visible ? "true" : "false"}
       data-axis={handle.axis}
       data-index={String(handle.index)}
+      {...chromeVisibilityProps(handle.visible)}
       style={fixedRectStyle(handle)}
       {...activation}
     />
