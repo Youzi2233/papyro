@@ -356,6 +356,7 @@ Tasks:
 - [ ] Add bold, italic, strike, inline code, link, text color, highlight, clear formatting, and turn into.
   - Current coverage: the headless inline-format command model now exposes Tiptap's official/free bold, italic, underline, strike, inline code, link, text color, highlight, and `unsetAllMarks` clear-formatting commands, with localized labels feeding both the React view and DOM fallback.
   - Current coverage: text color uses the existing `TextStyle` + official `Color` extension path through `setColor` and `unsetColor`, with compact swatch buttons for default, muted, accent, and danger text.
+  - Current coverage: highlight uses the official `Highlight.configure({ multicolor: true })` extension path with `toggleHighlight({ color })` and `unsetHighlight()`, exposed as compact yellow, blue, green, and clear swatches.
   - Current coverage: link editing now uses a Papyro React/Dioxus-safe popover instead of a native prompt; it reads the current href through `editor.getAttributes("link").href`, restores the selected range, and applies/removes links through Tiptap's official `setLink` and `unsetLink` commands.
 - [ ] Keep toolbar placement stable near viewport edges.
 - [ ] Add keyboard access and focus return.

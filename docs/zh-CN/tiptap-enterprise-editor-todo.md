@@ -356,6 +356,7 @@ node scripts/check-tiptap-release-smoke.js
 - [ ] 增加加粗、斜体、删除线、行内代码、链接、文字颜色、高亮、清除格式、turn into。
   - 当前覆盖：headless 行内格式命令模型现在已经暴露 Tiptap 官方免费版的加粗、斜体、下划线、删除线、行内代码、链接、文字颜色、高亮和 `unsetAllMarks` 清除格式命令，并把本地化标签同时供给 React view 和 DOM fallback。
   - 当前覆盖：文字颜色复用现有 `TextStyle` + 官方 `Color` 扩展路径，通过 `setColor` 和 `unsetColor` 执行；浮动格式栏提供默认、弱化、强调、危险四个紧凑色板按钮。
+  - 当前覆盖：高亮复用官方 `Highlight.configure({ multicolor: true })` 扩展路径，通过 `toggleHighlight({ color })` 和 `unsetHighlight()` 执行；浮动格式栏提供黄色、蓝色、绿色和清除四个紧凑色板按钮。
   - 当前覆盖：链接编辑已改用 Papyro React/Dioxus 安全的 popover，不再使用浏览器原生 prompt；它通过 `editor.getAttributes("link").href` 读取当前链接，恢复选区后用 Tiptap 官方 `setLink` 和 `unsetLink` 命令应用或移除链接。
 - [ ] 靠近视口边缘时定位稳定。
 - [ ] 支持键盘访问和焦点回到编辑器。

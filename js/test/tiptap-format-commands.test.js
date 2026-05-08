@@ -32,8 +32,12 @@ function createFakeEditor(activeIds = []) {
         calls.push(["toggleUnderline"]);
         return true;
       },
-      toggleHighlight: () => {
-        calls.push(["toggleHighlight"]);
+      toggleHighlight: (attrs) => {
+        calls.push(["toggleHighlight", attrs]);
+        return true;
+      },
+      unsetHighlight: () => {
+        calls.push(["unsetHighlight"]);
         return true;
       },
       setColor: (color) => {
@@ -49,8 +53,15 @@ function createFakeEditor(activeIds = []) {
         return true;
       },
     },
-    isActive: (name) => active.has(name),
-    getAttributes: (name) => (name === "textStyle" ? { color: active.get?.("color") ?? null } : {}),
+    isActive: (name, attrs) => {
+      if (!attrs) return active.has(name);
+      return active.has(`${name}:${attrs.color}`);
+    },
+    getAttributes: (name) => {
+      if (name === "textStyle") return { color: active.get?.("color") ?? null };
+      if (name === "highlight") return { color: active.get?.("highlightColor") ?? null };
+      return {};
+    },
   };
 
   return { calls, editor };
@@ -70,14 +81,23 @@ test("Tiptap format commands expose stable command ids", () => {
       "text-color-muted",
       "text-color-accent",
       "text-color-danger",
-      "highlight",
+      "highlight-clear",
+      "highlight-yellow",
+      "highlight-blue",
+      "highlight-green",
       "clear-formatting",
     ],
   );
 });
 
 test("Tiptap format commands report active marks", () => {
-  const { editor } = createFakeEditor(["bold", "underline", "code", "link", "highlight"]);
+  const { editor } = createFakeEditor([
+    "bold",
+    "underline",
+    "code",
+    "link",
+    "highlight:rgba(245, 158, 11, 0.2)",
+  ]);
   const controller = createTiptapFormatCommandController();
 
   assert.deepEqual(
@@ -93,7 +113,10 @@ test("Tiptap format commands report active marks", () => {
       ["text-color-muted", false],
       ["text-color-accent", false],
       ["text-color-danger", false],
-      ["highlight", true],
+      ["highlight-clear", false],
+      ["highlight-yellow", true],
+      ["highlight-blue", false],
+      ["highlight-green", false],
       ["clear-formatting", false],
     ],
   );
@@ -110,7 +133,10 @@ test("Tiptap format commands report active marks", () => {
       ["text-color-muted", 47],
       ["text-color-accent", 48],
       ["text-color-danger", 49],
-      ["highlight", 50],
+      ["highlight-clear", 50],
+      ["highlight-yellow", 51],
+      ["highlight-blue", 52],
+      ["highlight-green", 53],
       ["clear-formatting", 90],
     ],
   );
@@ -133,13 +159,16 @@ test("Tiptap format command controller runs underline, highlight, and clear form
   const controller = createTiptapFormatCommandController();
 
   assert.equal(controller.run("underline", { editor }).ok, true);
-  assert.equal(controller.run("highlight", { editor }).ok, true);
+  assert.equal(controller.run("highlight-yellow", { editor }).ok, true);
+  assert.equal(controller.run("highlight-clear", { editor }).ok, true);
   assert.equal(controller.run("clear-formatting", { editor }).ok, true);
 
   assert.deepEqual(calls, [
     ["toggleUnderline"],
     ["focus"],
-    ["toggleHighlight"],
+    ["toggleHighlight", { color: "rgba(245, 158, 11, 0.2)" }],
+    ["focus"],
+    ["unsetHighlight"],
     ["focus"],
     ["unsetAllMarks"],
     ["focus"],
@@ -207,7 +236,10 @@ test("Tiptap format command states localize labels and tooltips", () => {
       ["text-color-muted", "弱化文字", "弱化辅助文字"],
       ["text-color-accent", "强调文字", "应用强调文字颜色"],
       ["text-color-danger", "危险文字", "应用危险文字颜色"],
-      ["highlight", "高亮", "切换高亮"],
+      ["highlight-clear", "清除高亮", "移除高亮"],
+      ["highlight-yellow", "黄色高亮", "切换黄色高亮"],
+      ["highlight-blue", "蓝色高亮", "切换蓝色高亮"],
+      ["highlight-green", "绿色高亮", "切换绿色高亮"],
       ["clear-formatting", "清除格式", "清除所选文本格式"],
     ],
   );

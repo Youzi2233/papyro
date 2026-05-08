@@ -36,8 +36,12 @@ function createEditor({ selected = true, active = [], viewportWidth = 1000 } = {
         calls.push(["toggleUnderline"]);
         return true;
       },
-      toggleHighlight: () => {
-        calls.push(["toggleHighlight"]);
+      toggleHighlight: (attrs) => {
+        calls.push(["toggleHighlight", attrs]);
+        return true;
+      },
+      unsetHighlight: () => {
+        calls.push(["unsetHighlight"]);
         return true;
       },
       setColor: (color) => {
@@ -53,8 +57,15 @@ function createEditor({ selected = true, active = [], viewportWidth = 1000 } = {
         return true;
       },
     },
-    isActive: (name) => activeMarks.has(name),
-    getAttributes: (name) => (name === "textStyle" ? { color: null } : {}),
+    isActive: (name, attrs) => {
+      if (!attrs) return activeMarks.has(name);
+      return activeMarks.has(`${name}:${attrs.color}`);
+    },
+    getAttributes: (name) => {
+      if (name === "textStyle") return { color: null };
+      if (name === "highlight") return { color: null };
+      return {};
+    },
     view: {
       coordsAtPos: (pos) => ({
         left: pos * 10,
@@ -223,7 +234,10 @@ test("Tiptap format toolbar opens for non-empty Hybrid selections", () => {
       ["text-color-muted", false],
       ["text-color-accent", false],
       ["text-color-danger", false],
-      ["highlight", false],
+      ["highlight-clear", false],
+      ["highlight-yellow", false],
+      ["highlight-blue", false],
+      ["highlight-green", false],
       ["clear-formatting", false],
     ],
   );
@@ -305,7 +319,9 @@ test("Tiptap format toolbar contains the link editor overlay", () => {
 });
 
 test("Tiptap format toolbar exposes official mark commands and clear formatting", () => {
-  const { calls, editor } = createEditor({ active: ["underline", "highlight"] });
+  const { calls, editor } = createEditor({
+    active: ["underline", "highlight:rgba(59, 130, 246, 0.18)"],
+  });
   const view = createViewSpy();
   const controller = createTiptapFormatToolbarController({ view });
   controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
@@ -323,7 +339,10 @@ test("Tiptap format toolbar exposes official mark commands and clear formatting"
       ["text-color-muted", false],
       ["text-color-accent", false],
       ["text-color-danger", false],
-      ["highlight", true],
+      ["highlight-clear", false],
+      ["highlight-yellow", false],
+      ["highlight-blue", true],
+      ["highlight-green", false],
       ["clear-formatting", false],
     ],
   );
@@ -344,6 +363,24 @@ test("Tiptap format toolbar exposes official text color commands", () => {
   assert.equal(controller.run("text-color-danger"), true);
 
   assert.deepEqual(calls, [["setColor", "var(--mn-danger)"], ["focus"]]);
+});
+
+test("Tiptap format toolbar exposes official highlight color commands", () => {
+  const { calls, editor } = createEditor();
+  const view = createViewSpy();
+  const controller = createTiptapFormatToolbarController({ view });
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+
+  calls.length = 0;
+  assert.equal(controller.run("highlight-green"), true);
+  assert.equal(controller.run("highlight-clear"), true);
+
+  assert.deepEqual(calls, [
+    ["toggleHighlight", { color: "rgba(16, 185, 129, 0.18)" }],
+    ["focus"],
+    ["unsetHighlight"],
+    ["focus"],
+  ]);
 });
 
 test("Tiptap format toolbar buttons run commands from pointerdown", () => {

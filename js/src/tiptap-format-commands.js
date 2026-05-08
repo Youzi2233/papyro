@@ -1,5 +1,8 @@
 import { localizedText } from "./tiptap-i18n.js";
-import { PAPYRO_TEXT_COLOR_OPTIONS } from "./tiptap-text-style.js";
+import {
+  PAPYRO_HIGHLIGHT_OPTIONS,
+  PAPYRO_TEXT_COLOR_OPTIONS,
+} from "./tiptap-text-style.js";
 
 function normalizeCommandId(value) {
   return String(value ?? "").trim().toLowerCase();
@@ -30,6 +33,10 @@ function isCommandActive(editor, activeName, activeAttrs) {
 
 function textStyleColor(editor) {
   return editor?.getAttributes?.("textStyle")?.color ?? null;
+}
+
+function highlightColor(editor) {
+  return editor?.getAttributes?.("highlight")?.color ?? null;
 }
 
 function formatCommandLanguage(context = {}) {
@@ -76,8 +83,36 @@ const FORMAT_COMMAND_LABELS = Object.freeze({
   ],
 });
 
+const HIGHLIGHT_FORMAT_COMMAND_LABELS = Object.freeze({
+  "highlight-clear": [
+    "Clear highlight",
+    "\u6e05\u9664\u9ad8\u4eae",
+    "Remove highlight",
+    "\u79fb\u9664\u9ad8\u4eae",
+  ],
+  "highlight-yellow": [
+    "Yellow highlight",
+    "\u9ec4\u8272\u9ad8\u4eae",
+    "Toggle yellow highlight",
+    "\u5207\u6362\u9ec4\u8272\u9ad8\u4eae",
+  ],
+  "highlight-blue": [
+    "Blue highlight",
+    "\u84dd\u8272\u9ad8\u4eae",
+    "Toggle blue highlight",
+    "\u5207\u6362\u84dd\u8272\u9ad8\u4eae",
+  ],
+  "highlight-green": [
+    "Green highlight",
+    "\u7eff\u8272\u9ad8\u4eae",
+    "Toggle green highlight",
+    "\u5207\u6362\u7eff\u8272\u9ad8\u4eae",
+  ],
+});
+
 function localizeFormatCommand(command, language) {
-  const labels = FORMAT_COMMAND_LABELS[command.id];
+  const labels =
+    FORMAT_COMMAND_LABELS[command.id] ?? HIGHLIGHT_FORMAT_COMMAND_LABELS[command.id];
   if (!labels) return command;
 
   return {
@@ -197,14 +232,24 @@ export const PAPYRO_TIPTAP_FORMAT_COMMANDS = Object.freeze([
       priority: 46 + index,
     }),
   ),
-  createCommand({
-    id: "highlight",
-    label: "H",
-    title: "Highlight",
-    ariaLabel: "Toggle highlight",
-    commandName: "toggleHighlight",
-    priority: 50,
-  }),
+  ...PAPYRO_HIGHLIGHT_OPTIONS.map((option, index) =>
+    createCommand({
+      id: `highlight-${option.id}`,
+      label: "H",
+      title: option.title,
+      ariaLabel: option.description,
+      commandName: option.color ? "toggleHighlight" : "unsetHighlight",
+      commandArgs: option.color ? [{ color: option.color }] : [],
+      icon: `highlight ${option.id}`,
+      active:
+        option.color
+          ? ({ editor }) =>
+              isCommandActive(editor, "highlight", { color: option.color }) ||
+              highlightColor(editor) === option.color
+          : () => false,
+      priority: 50 + index,
+    }),
+  ),
   createCommand({
     id: "clear-formatting",
     label: "Tx",

@@ -1906,21 +1906,59 @@
     color: var(--mn-danger);
 }
 
-.mn-tiptap-format-toolbar-button[data-command-id="highlight"] .mn-tiptap-format-toolbar-label {
-    position: relative;
-    z-index: 0;
+.mn-tiptap-format-toolbar-button[data-command-id^="highlight-"] {
+    width: 30px;
+    min-width: 30px;
+    padding: 0;
 }
 
-.mn-tiptap-format-toolbar-button[data-command-id="highlight"] .mn-tiptap-format-toolbar-label::before {
+.mn-tiptap-format-toolbar-button[data-command-id^="highlight-"] .mn-tiptap-format-toolbar-label {
+    position: relative;
+    width: 16px;
+    height: 18px;
+    overflow: hidden;
+    color: transparent;
+}
+
+.mn-tiptap-format-toolbar-button[data-command-id^="highlight-"] .mn-tiptap-format-toolbar-label::before {
     content: "";
     position: absolute;
-    z-index: -1;
-    left: -2px;
-    right: -2px;
-    bottom: 2px;
-    height: 7px;
-    border-radius: 3px;
-    background: color-mix(in srgb, var(--mn-warning) 24%, transparent);
+    left: 1px;
+    right: 1px;
+    bottom: 3px;
+    height: 8px;
+    border-radius: 4px;
+    background: var(--mn-highlight-swatch, color-mix(in srgb, var(--mn-warning) 24%, transparent));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 10%, transparent);
+}
+
+.mn-tiptap-format-toolbar-button[data-command-id="highlight-clear"] .mn-tiptap-format-toolbar-label::before {
+    background: transparent;
+    border: 1px solid color-mix(in srgb, var(--mn-ink-3) 34%, transparent);
+}
+
+.mn-tiptap-format-toolbar-button[data-command-id="highlight-clear"] .mn-tiptap-format-toolbar-label::after {
+    content: "";
+    position: absolute;
+    left: 2px;
+    right: 2px;
+    bottom: 6px;
+    height: 1.5px;
+    border-radius: var(--mn-radius-round);
+    background: var(--mn-ink-3);
+    transform: rotate(-28deg);
+}
+
+.mn-tiptap-format-toolbar-button[data-command-id="highlight-yellow"] {
+    --mn-highlight-swatch: rgba(245, 158, 11, 0.26);
+}
+
+.mn-tiptap-format-toolbar-button[data-command-id="highlight-blue"] {
+    --mn-highlight-swatch: rgba(59, 130, 246, 0.22);
+}
+
+.mn-tiptap-format-toolbar-button[data-command-id="highlight-green"] {
+    --mn-highlight-swatch: rgba(16, 185, 129, 0.22);
 }
 
 .mn-tiptap-format-toolbar-button[data-command-id="clear-formatting"] {
