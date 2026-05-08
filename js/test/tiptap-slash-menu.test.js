@@ -827,6 +827,28 @@ test("Tiptap slash menu opens as a block insert menu without deleting a trigger"
   ]);
 });
 
+test("Tiptap slash menu ignores Shift Tab so focus navigation cannot insert content", () => {
+  const { calls, editor } = createEditor("/heading");
+  const controller = createTiptapSlashMenuController();
+  let prevented = false;
+  controller.attach({ editor, root: {} });
+
+  assert.equal(
+    controller.handleKeyDown({
+      key: "Tab",
+      shiftKey: true,
+      preventDefault() {
+        prevented = true;
+      },
+    }),
+    false,
+  );
+
+  assert.equal(controller.state.open, true);
+  assert.equal(prevented, false);
+  assert.deepEqual(calls, []);
+});
+
 test("Tiptap slash menu falls back to the block edge when inserted caret coords are at the window origin", () => {
   const { editor } = createEditor("plain");
   editor.view.coordsAtPos = () => ({ left: 0, right: 0, top: 0, bottom: 0 });

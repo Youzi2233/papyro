@@ -423,6 +423,30 @@ test("Tiptap block action menu runs the selected command", () => {
   assert.deepEqual(view.calls.at(-1), ["hide"]);
 });
 
+test("Tiptap block action menu ignores Shift Tab so focus navigation cannot run commands", () => {
+  const { calls, editor } = createEditor();
+  const controller = createTiptapBlockActionMenuController();
+  let prevented = false;
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  controller.open(createTarget());
+  controller.setSelection(1);
+
+  assert.equal(
+    controller.handleKeyDown({
+      key: "Tab",
+      shiftKey: true,
+      preventDefault() {
+        prevented = true;
+      },
+    }),
+    false,
+  );
+
+  assert.equal(controller.state.open, true);
+  assert.equal(prevented, false);
+  assert.deepEqual(calls, []);
+});
+
 test("Tiptap block action menu items support click fallback without double-run", () => {
   const { calls, editor } = createEditor();
   const documentRef = createDocument();

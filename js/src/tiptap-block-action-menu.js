@@ -664,7 +664,7 @@ export class TiptapBlockActionMenuController {
       return true;
     }
 
-    if (event.key === "Enter" || event.key === "Tab") {
+    if (event.key === "Enter" || (event.key === "Tab" && !event.shiftKey)) {
       if (this.#state.commands.length === 0) return false;
       event.preventDefault();
       return this.run();
