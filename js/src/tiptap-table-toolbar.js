@@ -692,7 +692,6 @@ export class TiptapTableToolbarController {
     const cellSurfaceClick = isEditableTableCellSurfaceTarget(event?.target, cell);
     this.#previewActiveCellFromPointer(context, start, event);
     if (!cellSurfaceClick) return false;
-    if (!shouldStartTableCellRangeDrag(event?.target, cell)) return false;
 
     this.#cellDrag = {
       table,
@@ -701,6 +700,7 @@ export class TiptapTableToolbarController {
       moved: false,
       selected: false,
       cellSurfaceClick,
+      rangeSelectable: shouldStartTableCellRangeDrag(event?.target, cell),
       startX: Number(event?.clientX),
       startY: Number(event?.clientY),
       removeListeners: [],
@@ -784,6 +784,18 @@ export class TiptapTableToolbarController {
     const drag = this.#cellDrag;
     if (!drag || !this.#editor) return false;
 
+    const x = Number(event?.clientX);
+    const y = Number(event?.clientY);
+    const distance =
+      Number.isFinite(x) &&
+      Number.isFinite(y) &&
+      Number.isFinite(drag.startX) &&
+      Number.isFinite(drag.startY)
+        ? Math.hypot(x - drag.startX, y - drag.startY)
+        : 0;
+    if (distance > 3) drag.moved = true;
+    if (!drag.rangeSelectable) return false;
+
     const context = activeTableContext(this.#editor);
     if (!context?.table || context.table !== drag.table) return false;
 
@@ -797,16 +809,6 @@ export class TiptapTableToolbarController {
           .find((item) => item.cell === head?.cell);
     if (!Number.isFinite(nextHead?.pos)) return false;
 
-    const x = Number(event?.clientX);
-    const y = Number(event?.clientY);
-    const distance =
-      Number.isFinite(x) &&
-      Number.isFinite(y) &&
-      Number.isFinite(drag.startX) &&
-      Number.isFinite(drag.startY)
-        ? Math.hypot(x - drag.startX, y - drag.startY)
-        : 0;
-    if (distance > 3) drag.moved = true;
     if (!drag.moved) return false;
     if (!drag.selected && nextHead.pos === drag.anchor?.pos) return false;
     if (drag.selected && nextHead.pos === drag.head?.pos) return false;
@@ -827,7 +829,7 @@ export class TiptapTableToolbarController {
     if (drag.selected) {
       event?.preventDefault?.();
       event?.stopPropagation?.();
-    } else if (drag.cellSurfaceClick) {
+    } else if (drag.cellSurfaceClick && !drag.moved) {
       this.#focusCellClick(drag, event);
     }
     return true;

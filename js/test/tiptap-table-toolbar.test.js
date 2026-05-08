@@ -2914,12 +2914,132 @@ test("Tiptap table toolbar previews inline text cell surfaces without stealing t
   assert.equal(trigger.style.left, "200px");
   assert.equal(trigger.style.top, "107px");
 
-  assert.equal(documentRef.listeners.has("pointermove"), false);
+  assert.equal(documentRef.listeners.has("pointermove"), true);
   assert.equal(documentRef.listeners.get("pointerup")?.length, 1);
   assert.deepEqual(calls, []);
   controller.refresh(editor);
   assert.equal(cells[0].classes.has("mn-tiptap-table-cell-selected"), true);
   assert.equal(trigger.hidden, false);
+  assert.equal(controller.state.selection.positions.size, 1);
+});
+
+test("Tiptap table toolbar focuses filled cell surfaces on short clicks", () => {
+  const { documentRef } = createDocument();
+  const { calls, cells, editor } = createTableHarness();
+  editor.view.posAtCoords = ({ left, top }) => {
+    calls.push(["posAtCoords", left, top]);
+    return { pos: 12 };
+  };
+  editor.commands.setTextSelection = (position) => {
+    calls.push(["setTextSelection", position]);
+    return true;
+  };
+  const paragraph = {
+    nodeType: 1,
+    tagName: "P",
+    parentElement: cells[0],
+    parentNode: cells[0],
+    textContent: "Alpha",
+    closest(selector) {
+      if (selector === "th,td") return cells[0];
+      if (selector.includes(".mn-tiptap-table") || selector.includes(", table")) {
+        return cells[0].closest(selector);
+      }
+      return null;
+    },
+    contains(target) {
+      return target === this;
+    },
+  };
+  const textNode = {
+    nodeType: 3,
+    parentElement: paragraph,
+    parentNode: paragraph,
+  };
+  const controller = createTiptapTableToolbarController({
+    dom: { document: documentRef },
+  });
+
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  editor.view.dom.listeners.get("pointerdown")({
+    target: textNode,
+    button: 0,
+    clientX: 146,
+    clientY: 104,
+  });
+
+  documentRef.listeners.get("pointerup")?.({
+    target: textNode,
+    clientX: 146,
+    clientY: 104,
+  });
+
+  assert.deepEqual(calls, [
+    ["posAtCoords", 146, 104],
+    ["setTextSelection", 12],
+    ["focus"],
+  ]);
+});
+
+test("Tiptap table toolbar leaves filled cell drag text selection native", () => {
+  const { documentRef } = createDocument();
+  const { calls, cells, editor } = createTableHarness();
+  editor.view.posAtCoords = ({ left, top }) => {
+    calls.push(["posAtCoords", left, top]);
+    return { pos: 12 };
+  };
+  editor.commands.setTextSelection = (position) => {
+    calls.push(["setTextSelection", position]);
+    return true;
+  };
+  const paragraph = {
+    nodeType: 1,
+    tagName: "P",
+    parentElement: cells[0],
+    parentNode: cells[0],
+    textContent: "Alpha",
+    closest(selector) {
+      if (selector === "th,td") return cells[0];
+      if (selector.includes(".mn-tiptap-table") || selector.includes(", table")) {
+        return cells[0].closest(selector);
+      }
+      return null;
+    },
+  };
+  const textNode = {
+    nodeType: 3,
+    parentElement: paragraph,
+    parentNode: paragraph,
+  };
+  const controller = createTiptapTableToolbarController({
+    dom: { document: documentRef },
+  });
+
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  editor.view.dom.listeners.get("pointerdown")({
+    target: textNode,
+    button: 0,
+    clientX: 146,
+    clientY: 104,
+  });
+  documentRef.listeners.get("pointermove")?.({
+    target: textNode,
+    clientX: 168,
+    clientY: 104,
+    preventDefault() {
+      calls.push(["preventDefault"]);
+    },
+    stopPropagation() {
+      calls.push(["stopPropagation"]);
+    },
+  });
+  documentRef.listeners.get("pointerup")?.({
+    target: textNode,
+    clientX: 168,
+    clientY: 104,
+  });
+
+  assert.deepEqual(calls, []);
   assert.equal(controller.state.selection.positions.size, 1);
 });
 

@@ -283,6 +283,7 @@ node scripts/check-tiptap-release-smoke.js
 - [ ] 整个单元格表面都能进入编辑和聚焦，不应该只有中间一小块能触发。
   - 当前覆盖：空白单元格表面和空段落表面会走表格聚焦 fallback；已有文字的行内内容继续交给 ProseMirror 原生文本选择，不会启动表格范围拖选。
   - 当前打磨：已有文字的行内区域现在只预览当前单元格 chrome，不再抢走 pointer-up/text selection；表格范围拖选只从空白单元格表面或空段落开始，降低编辑单元格文字时误触范围选择的概率。
+  - 当前打磨：已有文字的单元格短点击会在 pointer-up 时聚焦到点击位置，真实拖动仍保留原生文本选择；这样整格都有可编辑感，同时不会把文字拖选误判为表格范围选择。
 - [x] 单元格之间不能有视觉间隙，保证 selection 和 resize border 连续。
   - 当前覆盖：Tiptap 表格单元格使用 collapsed border、border-box 背景绘制，并由样式 smoke 守护连续单元格表面。
   - 当前打磨：表格网格绘制与编辑器背景隔离，选中单元格保持克制的活跃边框，选中/激活状态下仍保留 resize rail，但不额外增加常驻 chrome。

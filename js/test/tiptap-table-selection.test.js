@@ -243,8 +243,26 @@ test("Tiptap table inline text content previews the cell without stealing native
   assert.deepEqual(events, []);
   assert.deepEqual(calls, []);
   assert.deepEqual([...controller.state.selection.positions], [11]);
-  assert.equal(documentListeners.has("pointermove"), false);
-  assert.equal(documentListeners.get("pointerup")?.length, 1);
+  assert.equal(documentListeners.has("pointermove"), true);
+  assert.ok((documentListeners.get("pointerup")?.length ?? 0) >= 1);
+
+  documentListeners.get("pointermove").at(-1)({
+    target: inline,
+    clientX: 240,
+    clientY: 96,
+    preventDefault: pushEvent(events, "preventDefault:move"),
+    stopPropagation: pushEvent(events, "stopPropagation:move"),
+  });
+  documentListeners.get("pointerup").at(-1)({
+    target: inline,
+    clientX: 240,
+    clientY: 96,
+    preventDefault: pushEvent(events, "preventDefault:up"),
+    stopPropagation: pushEvent(events, "stopPropagation:up"),
+  });
+
+  assert.deepEqual(events, []);
+  assert.deepEqual(calls, []);
 });
 
 test("Tiptap table empty paragraph surface focuses like the whole cell", () => {
@@ -432,12 +450,30 @@ test("Tiptap table filled paragraph content preserves native text selection", ()
     stopPropagation: pushEvent(events, "stopPropagation:down"),
   });
 
-  assert.equal(documentListeners.has("pointermove"), false);
-  assert.equal(documentListeners.get("pointerup")?.length, 1);
+  assert.equal(documentListeners.has("pointermove"), true);
+  assert.ok((documentListeners.get("pointerup")?.length ?? 0) >= 1);
   assert.deepEqual(events, []);
   assert.deepEqual(calls, []);
   assert.equal(controller.state.cell, cells[0]);
   assert.deepEqual([...controller.state.selection.positions], [10]);
+
+  documentListeners.get("pointermove").at(-1)({
+    target: paragraph,
+    clientX: 144,
+    clientY: 94,
+    preventDefault: pushEvent(events, "preventDefault:move"),
+    stopPropagation: pushEvent(events, "stopPropagation:move"),
+  });
+  documentListeners.get("pointerup").at(-1)({
+    target: paragraph,
+    clientX: 144,
+    clientY: 94,
+    preventDefault: pushEvent(events, "preventDefault:up"),
+    stopPropagation: pushEvent(events, "stopPropagation:up"),
+  });
+
+  assert.deepEqual(events, []);
+  assert.deepEqual(calls, []);
 });
 
 test("Tiptap table empty paragraph content can start table selection drag", () => {

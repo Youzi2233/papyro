@@ -289,6 +289,7 @@ Tasks:
 - [ ] Make the entire cell surface editable and focusable, not only a tiny center area.
   - Current coverage: blank cell surfaces and empty paragraph surfaces now use the table focus fallback, while filled inline content keeps native ProseMirror text selection and does not start table-range dragging.
   - Current polish: filled inline text now only previews the active cell chrome and leaves pointer-up/text selection to ProseMirror. Cell-range dragging starts from blank cell surfaces or empty paragraphs, reducing accidental range selection while editing text inside a cell.
+  - Current polish: filled cell short-clicks now focus the clicked editor position on pointer-up, while real pointer drags stay native for text selection. This keeps the whole cell feeling editable without turning every text drag into a table range selection.
 - [x] Ensure cells have no visual gaps, so selection and resize borders look continuous.
   - Current coverage: Tiptap table cells use collapsed borders, border-box background painting, and a style smoke guard for the continuous cell surface.
   - Current polish: table grid painting is isolated from the editor background, selected cells keep a restrained active border, and selected/active cells keep resize rails available without adding always-visible chrome.
