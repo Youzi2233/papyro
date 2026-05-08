@@ -50,6 +50,10 @@ const hoverIntentHookSource = readFileSync(
   new URL("../src/tiptap-react/hooks/use-hover-intent-activation.js", import.meta.url),
   "utf8",
 );
+const pointerActivationHookSource = readFileSync(
+  new URL("../src/tiptap-react/hooks/use-pointer-activation.js", import.meta.url),
+  "utf8",
+);
 const blockActionMenuSource = readFileSync(
   new URL("../src/tiptap-react/components/block-action-menu.jsx", import.meta.url),
   "utf8",
@@ -249,6 +253,14 @@ test("React slash menu uses hover intent for secondary panels without slowing ke
   assert.match(hoverIntentHookSource, /DEFAULT_HOVER_INTENT_DELAY_MS\s*=\s*80/u);
   assert.match(hoverIntentHookSource, /globalThis\.setTimeout/u);
   assert.match(hoverIntentHookSource, /globalThis\.clearTimeout/u);
+});
+
+test("React pointer activation does not retry handled pointer activations", () => {
+  assert.match(pointerActivationHookSource, /const pointerActivated = useRef\(false\)/u);
+  assert.match(pointerActivationHookSource, /pointerActivated\.current = true;\s*run\(\);/u);
+  assert.match(pointerActivationHookSource, /if \(!pointerActivated\.current\) \{\s*run\(\);/u);
+  assert.doesNotMatch(pointerActivationHookSource, /run\(\) !== false/u);
+  assert.doesNotMatch(pointerActivationHookSource, /pointerHandled/u);
 });
 
 test("React floating chrome shares positioning utilities", () => {

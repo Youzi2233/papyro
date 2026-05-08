@@ -347,6 +347,27 @@ test("Tiptap UI primitives bind pointer activation with click fallback", () => {
   ]);
 });
 
+test("Tiptap UI primitives do not retry failed pointer activations on click", () => {
+  const listeners = new Map();
+  const calls = [];
+  const element = {
+    addEventListener(type, listener) {
+      listeners.set(type, listener);
+    },
+  };
+  const event = () => ({ preventDefault() {}, stopPropagation() {} });
+
+  bindPointerActivation(element, () => {
+    calls.push("run");
+    return false;
+  });
+  listeners.get("pointerdown")(event());
+  listeners.get("click")(event());
+  listeners.get("click")(event());
+
+  assert.deepEqual(calls, ["run", "run"]);
+});
+
 test("Tiptap floating dismiss treats pointer mouse and focus events consistently", () => {
   const listeners = new Map();
   const calls = [];

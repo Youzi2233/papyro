@@ -6,30 +6,31 @@ function preventMenuPointer(event) {
 }
 
 export function usePointerActivation(run) {
-  const pointerHandled = useRef(false);
+  const pointerActivated = useRef(false);
 
   return {
     onPointerDown(event) {
       preventMenuPointer(event);
-      pointerHandled.current = run() !== false;
+      pointerActivated.current = true;
+      run();
     },
     onClick(event) {
       preventMenuPointer(event);
-      if (!pointerHandled.current) {
+      if (!pointerActivated.current) {
         run();
       }
-      pointerHandled.current = false;
+      pointerActivated.current = false;
     },
     onMouseDown(event) {
       event?.preventDefault?.();
     },
     onAuxClick(event) {
       preventMenuPointer(event);
-      pointerHandled.current = false;
+      pointerActivated.current = false;
     },
     onContextMenu(event) {
       preventMenuPointer(event);
-      pointerHandled.current = false;
+      pointerActivated.current = false;
     },
   };
 }

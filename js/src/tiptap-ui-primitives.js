@@ -254,7 +254,7 @@ export function syncMenuActiveDescendant(
 export function bindPointerActivation(element, run) {
   if (!element || typeof run !== "function") return;
 
-  let pointerHandled = false;
+  let pointerActivated = false;
   const guard = (event) => {
     event?.preventDefault?.();
     event?.stopPropagation?.();
@@ -263,22 +263,23 @@ export function bindPointerActivation(element, run) {
 
   element.addEventListener("pointerdown", (event) => {
     guard(event);
-    pointerHandled = execute();
+    pointerActivated = true;
+    execute();
   });
   element.addEventListener("click", (event) => {
     guard(event);
-    if (!pointerHandled) {
+    if (!pointerActivated) {
       execute();
     }
-    pointerHandled = false;
+    pointerActivated = false;
   });
   element.addEventListener("auxclick", (event) => {
     guard(event);
-    pointerHandled = false;
+    pointerActivated = false;
   });
   element.addEventListener("contextmenu", (event) => {
     guard(event);
-    pointerHandled = false;
+    pointerActivated = false;
   });
   element.addEventListener("mousedown", (event) => {
     event.preventDefault();

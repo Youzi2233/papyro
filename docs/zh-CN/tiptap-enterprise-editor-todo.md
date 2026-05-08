@@ -502,6 +502,7 @@ node scripts/check-tiptap-release-smoke.js
 - [ ] 支持 Escape、Enter、Space、方向键、Home、End、Tab、Shift+Tab、Shift+F10 等相关键位。
   - 当前覆盖：编辑器级键盘路由现在按表格工具栏、块句柄、slash 菜单的顺序分发事件，确保表格上下文菜单和块操作菜单都能先于 slash 导航收到自己的键盘入口。表格菜单现在同时支持 `Shift+F10` 和键盘 Context Menu / Apps 键。
   - 当前覆盖：slash/insert 菜单和块操作菜单现在会忽略 `Shift+Tab`，避免用户反向切换焦点时误执行当前插入命令或块操作命令。
+  - 当前打磨：共享 pointer 激活现在会把 `pointerdown` 视为已处理激活，即使命令返回 `false`，后续浏览器 `click` fallback 也不会重复重试失败的菜单命令。
 - [ ] IME composition 期间保护菜单键盘处理，避免中文输入确认触发命令。
   - 当前覆盖：slash 菜单、块操作菜单、代码块菜单、浮动格式栏和表格工具栏都会在 composition / `keyCode 229` 事件期间让出键盘处理，避免中文输入确认误执行编辑器命令。
 - [ ] focus ring 可见并使用主题 token。
