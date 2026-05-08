@@ -660,3 +660,34 @@ export function nextEnabledTableCommandId(commands, currentId, direction) {
   const startIndex = currentIndex < 0 ? 0 : currentIndex;
   return ids[(startIndex + direction + ids.length) % ids.length];
 }
+
+export function normalizeTableMenuMode(mode) {
+  return mode === "keyboard" ? "keyboard" : "context";
+}
+
+export function createTableCommandMenuState(
+  commands,
+  { mode = "context", selectionKind = "cell", activeCommandId = null } = {},
+) {
+  const normalizedMode = normalizeTableMenuMode(mode);
+  const normalizedSelectionKind = selectionKind ?? "cell";
+  const visibleCommands = visibleTableCommands(
+    commands,
+    normalizedMode,
+    normalizedSelectionKind,
+  );
+  const enabledCommandIds = enabledTableCommandIds(visibleCommands);
+  const activeCommandStillValid = visibleCommands.some(
+    (command) => command.id === activeCommandId && !command.disabled,
+  );
+
+  return {
+    mode: normalizedMode,
+    selectionKind: normalizedSelectionKind,
+    commands: visibleCommands,
+    enabledCommandIds,
+    activeCommandId: activeCommandStillValid
+      ? activeCommandId
+      : enabledCommandIds[0] ?? null,
+  };
+}

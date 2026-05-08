@@ -22,7 +22,7 @@ import {
 import {
   TABLE_COMMANDS,
   canRunTableEditorCommand,
-  enabledTableCommandIds,
+  createTableCommandMenuState,
   firstEnabledTableCommandId,
   nextEnabledTableCommandId,
   normalizeTableCellAttributeValue,
@@ -362,11 +362,11 @@ export class TiptapTableToolbarController {
             normalizeTableCellAttributeValue(command.args[0], command.args[1]),
       }, language);
     });
-    const currentVisibleCommands = visibleTableCommands(
-      commands,
-      this.#state.menuOpen ? this.#state.mode : "context",
-      context.selection.kind,
-    );
+    const currentMenuState = createTableCommandMenuState(commands, {
+      mode: this.#state.menuOpen ? this.#state.mode : "context",
+      selectionKind: context.selection.kind,
+      activeCommandId: this.#state.activeCommandId,
+    });
     const currentHover = this.#state.hover;
     let nextHover = null;
     if (previousTable === context.table && currentHover) {
@@ -380,11 +380,7 @@ export class TiptapTableToolbarController {
         };
       }
     }
-    const activeCommandId = currentVisibleCommands.some(
-      (command) => command.id === this.#state.activeCommandId && !command.disabled,
-    )
-      ? this.#state.activeCommandId
-      : enabledTableCommandIds(currentVisibleCommands)[0] ?? null;
+    const activeCommandId = currentMenuState.activeCommandId;
     const selection = visualCellSelection
       ? {
           ...context.selection,
@@ -505,7 +501,11 @@ export class TiptapTableToolbarController {
         keyboardActive: true,
       };
       this.#render();
-      const firstId = enabledTableCommandIds(visibleTableCommands(this.#state.commands, "keyboard", this.#state.selection.kind))[0] ?? null;
+      const firstId = createTableCommandMenuState(this.#state.commands, {
+        mode: "keyboard",
+        selectionKind: this.#state.selection.kind,
+        activeCommandId: this.#state.activeCommandId,
+      }).activeCommandId;
       if (!firstId) return false;
       event?.preventDefault?.();
       event?.stopPropagation?.();
@@ -558,14 +558,20 @@ export class TiptapTableToolbarController {
       return this.#moveActiveCommand(-1, event);
     }
     if (key === "Home") {
-      const firstId = enabledTableCommandIds(visibleTableCommands(this.#state.commands, this.#state.mode, this.#state.selection.kind))[0] ?? null;
+      const firstId = createTableCommandMenuState(this.#state.commands, {
+        mode: this.#state.mode,
+        selectionKind: this.#state.selection.kind,
+      }).activeCommandId;
       if (!firstId) return false;
       event?.preventDefault?.();
       event?.stopPropagation?.();
       return this.setActiveCommand(firstId, { focus: true, keyboardActive: true });
     }
     if (key === "End") {
-      const ids = enabledTableCommandIds(visibleTableCommands(this.#state.commands, this.#state.mode, this.#state.selection.kind));
+      const ids = createTableCommandMenuState(this.#state.commands, {
+        mode: this.#state.mode,
+        selectionKind: this.#state.selection.kind,
+      }).enabledCommandIds;
       const lastId = ids.at(-1) ?? null;
       if (!lastId) return false;
       event?.preventDefault?.();
@@ -983,13 +989,14 @@ export class TiptapTableToolbarController {
     if (!this.#state.open) return false;
     const nextMode = mode === "keyboard" ? "keyboard" : "context";
     const nextOpen = open === null ? !(this.#state.menuOpen && this.#state.mode === nextMode) : !!open;
-    const scopedCommands = visibleTableCommands(this.#state.commands, nextMode, this.#state.selection.kind);
+    const scoped = createTableCommandMenuState(this.#state.commands, {
+      mode: nextMode,
+      selectionKind: this.#state.selection.kind,
+      activeCommandId: this.#state.activeCommandId,
+    });
+    const scopedCommands = scoped.commands;
     if (nextOpen && scopedCommands.length === 0) return false;
-    const activeCommandId = scopedCommands.some(
-      (command) => command.id === this.#state.activeCommandId && !command.disabled,
-    )
-      ? this.#state.activeCommandId
-      : enabledTableCommandIds(scopedCommands)[0] ?? null;
+    const activeCommandId = scoped.activeCommandId;
 
     this.#state = {
       ...this.#state,

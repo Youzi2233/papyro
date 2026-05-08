@@ -141,6 +141,7 @@ node scripts/check-workspace-deps.js
   - 当前覆盖：共享 primitive 模块已经导出目标 popover、命令菜单、命令项/分组、图标按钮、工具栏按钮、键盘提示和 visually-hidden 基础组件。slash 命令分组和命令项已经使用 `CommandSection`/`CommandItem`；块操作和表格上下文命令行复用同一套 primitive row/text/icon 路径；浮动格式栏也已改用共享 toolbar button 契约。表格几何、选区遮罩、resize 轨道和快捷新增轨道仍由迁移期 controller 管理。
 - [ ] 为 insert、block action、inline format、table、code block 定义 typed command model。
   - 当前覆盖：代码块语言、复制和软换行命令元数据已经进入纯 React command model，slash 侧边面板和 React 代码块 node view 复用同一套 label、token、active state 和 i18n 契约。代码块扩展现在支持注入 node-view renderer，并在 React 挂载生命周期尚未准备好时回退到迁移期 DOM node view。
+  - 当前覆盖：表格命令菜单状态已经有纯模型，统一处理 mode 归一化、作用域内可见命令、可执行命令 id 和 active command fallback。迁移期 controller 已改为消费这个模型，减少后续表格 chrome 继续迁入 React 前的重复命令选择逻辑。
 - [ ] 暴露稳定 runtime hooks：editor instance、language、view mode、preferences、command executor、active selection snapshot。
   - 当前覆盖：React runtime context 现在基于纯 runtime model 构建，已经暴露 preferences、command executor 和 active selection snapshot hooks，并把 cursor/range/table 选区归一化，供后续 React block-handle 和 table-chrome 组件复用。code-block 命令模型已经开始脱离迁移期 controller；table 命令模型仍需要继续上提。
   - 当前覆盖：React runtime selection 现在通过 `useSyncExternalStore` 订阅 Tiptap `transaction` 和 `selectionUpdate` 事件，并使用值稳定 snapshot，避免 editor transaction 后 React chrome 继续读取过期选区。

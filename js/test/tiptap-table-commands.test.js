@@ -4,9 +4,11 @@ import assert from "node:assert/strict";
 import {
   TABLE_COMMANDS,
   canRunTableEditorCommand,
+  createTableCommandMenuState,
   enabledTableCommandIds,
   firstEnabledTableCommandId,
   nextEnabledTableCommandId,
+  normalizeTableMenuMode,
   normalizeTableCellAttributeValue,
   runTableEditorCommand,
   tableCellAttributeValue,
@@ -198,6 +200,40 @@ test("Tiptap table commands expose layout groups and keyboard helpers", () => {
   assert.equal(nextEnabledTableCommandId(commands, "alpha", 1), "gamma");
   assert.equal(nextEnabledTableCommandId(commands, "gamma", 1), "alpha");
   assert.equal(nextEnabledTableCommandId(commands, "alpha", -1), "gamma");
+});
+
+test("Tiptap table command menu state centralizes scope and active command fallback", () => {
+  const commands = TABLE_COMMANDS.map((command) => ({
+    ...command,
+    disabled: command.id === "delete-table" || command.id === "move-row-up",
+  }));
+
+  assert.equal(normalizeTableMenuMode("floating"), "context");
+  assert.equal(normalizeTableMenuMode("keyboard"), "keyboard");
+
+  const rowContext = createTableCommandMenuState(commands, {
+    mode: "context",
+    selectionKind: "row",
+    activeCommandId: "move-row-up",
+  });
+  assert.equal(rowContext.mode, "context");
+  assert.equal(rowContext.selectionKind, "row");
+  assert.deepEqual(
+    rowContext.commands.slice(0, 4).map((command) => command.id),
+    ["move-row-up", "move-row-down", "sort-columns-asc", "sort-columns-desc"],
+  );
+  assert.equal(rowContext.activeCommandId, "move-row-down");
+  assert.equal(rowContext.enabledCommandIds.includes("move-row-up"), false);
+
+  const keyboard = createTableCommandMenuState(commands, {
+    mode: "keyboard",
+    selectionKind: "table",
+    activeCommandId: "delete-table",
+  });
+  assert.equal(keyboard.selectionKind, "table");
+  assert.equal(keyboard.commands[0].id, "add-column-before");
+  assert.equal(keyboard.activeCommandId, "add-column-before");
+  assert.equal(keyboard.enabledCommandIds.includes("delete-table"), false);
 });
 
 test("Tiptap table commands centralize editor capability and cell attribute helpers", () => {
