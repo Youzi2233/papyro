@@ -1,9 +1,11 @@
 import { createEditorRuntimeRegistry } from "./editor-registry.js";
 import { createEditorHostRuntime } from "./editor-host-runtime.js";
 import { installPapyroEditorRuntime } from "./editor-runtime-bootstrap.js";
+import { createPapyroTiptapExtensions } from "./tiptap-markdown.js";
 import {
   createTiptapReactBlockActionMenuView,
   createTiptapReactBlockHandleView,
+  createTiptapReactCodeBlockNodeViewRenderer,
   createTiptapReactFormatToolbarView,
   createTiptapReactLinkEditorView,
   createTiptapReactMountController,
@@ -14,8 +16,13 @@ import { createTiptapEditorRuntime } from "./tiptap-runtime.js";
 
 const editorRegistry = createEditorRuntimeRegistry();
 const hostRuntime = createEditorHostRuntime({ registry: editorRegistry });
+const createRuntimeExtensions = () =>
+  createPapyroTiptapExtensions({
+    codeBlockNodeViewRenderer: createTiptapReactCodeBlockNodeViewRenderer(),
+  });
 const tiptapRuntimeAdapter = createTiptapEditorRuntime({
   registry: editorRegistry,
+  extensionsFactory: createRuntimeExtensions,
   layout: {
     attachEditorScroll: hostRuntime.attachEditorScroll,
     detachEditorScroll: hostRuntime.detachEditorScroll,

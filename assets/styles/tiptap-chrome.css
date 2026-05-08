@@ -4,6 +4,10 @@
     padding-top: calc(var(--mn-markdown-code-block-pad-y) + 34px);
 }
 
+.mn-tiptap-code-block-inner {
+    display: contents;
+}
+
 .mn-tiptap-code-block::before {
     content: attr(data-code-language-label);
     position: absolute;
@@ -255,6 +259,14 @@
 
 .mn-tiptap-code-language-menu.hidden {
     display: none;
+}
+
+.mn-tiptap-code-language-menu-inline {
+    position: absolute;
+    top: 40px;
+    left: 12px;
+    z-index: 2;
+    max-height: min(286px, calc(100% - 48px));
 }
 
 .mn-tiptap-code-language-menu-header {

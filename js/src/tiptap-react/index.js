@@ -26,6 +26,9 @@ export {
   createCodeBlockLanguageCommands,
 } from "./commands/code-block-command-model.js";
 export {
+  createTiptapReactCodeBlockNodeViewRenderer,
+} from "./extensions/code-block-node-view.js";
+export {
   createTiptapLegacyMountController,
   createTiptapReactMountController,
 } from "./mount-controller.jsx";

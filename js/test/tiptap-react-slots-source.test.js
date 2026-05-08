@@ -22,6 +22,14 @@ const codeBlockCommandModelSource = readFileSync(
   new URL("../src/tiptap-react/commands/code-block-command-model.js", import.meta.url),
   "utf8",
 );
+const codeBlockNodeViewSource = readFileSync(
+  new URL("../src/tiptap-react/components/code-block-node-view.jsx", import.meta.url),
+  "utf8",
+);
+const codeBlockNodeViewExtensionSource = readFileSync(
+  new URL("../src/tiptap-react/extensions/code-block-node-view.js", import.meta.url),
+  "utf8",
+);
 const officialDragHandleBridgeSource = readFileSync(
   new URL("../src/tiptap-react/official-drag-handle-bridge.jsx", import.meta.url),
   "utf8",
@@ -111,6 +119,22 @@ test("React code block chrome exposes a typed command model", () => {
   assert.match(codeBlockCommandModelSource, /PAPYRO_CODE_LANGUAGE_OPTIONS/u);
   assert.match(commandMenuSource, /createCodeBlockLanguageCommands/u);
   assert.match(indexSource, /createCodeBlockLanguageCommands/u);
+});
+
+test("React code block node view follows Tiptap React node view lifecycle", () => {
+  assert.match(codeBlockNodeViewSource, /NodeViewWrapper/u);
+  assert.match(codeBlockNodeViewSource, /NodeViewContent/u);
+  assert.match(codeBlockNodeViewSource, /codeBlockDomAttributes/u);
+  assert.match(codeBlockNodeViewSource, /nodeViewRootElement/u);
+  assert.match(codeBlockNodeViewExtensionSource, /ReactNodeViewRenderer/u);
+  assert.match(codeBlockNodeViewExtensionSource, /fallbackNodeView/u);
+  assert.match(codeBlockNodeViewExtensionSource, /contentComponent/u);
+  assert.match(
+    codeBlockNodeViewExtensionSource,
+    /className:\s*"mn-tiptap-code-block mn-tiptap-react-code-block-node-view"/u,
+  );
+  assert.match(editorEntrySource, /codeBlockNodeViewRenderer:\s*createTiptapReactCodeBlockNodeViewRenderer\(\)/u);
+  assert.match(indexSource, /createTiptapReactCodeBlockNodeViewRenderer/u);
 });
 
 test("official drag handle bridge keeps Tiptap callbacks stable across renders", () => {

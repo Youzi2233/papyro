@@ -11,7 +11,9 @@ import { createPapyroTableExtensions } from "./tiptap-table.js";
 import { createPapyroTaskListExtensions } from "./tiptap-task-list.js";
 import { createPapyroTextStyleExtensions } from "./tiptap-text-style.js";
 
-export function createPapyroTiptapExtensions() {
+export function createPapyroTiptapExtensions({
+  codeBlockNodeViewRenderer = null,
+} = {}) {
   return [
     StarterKit.configure({
       heading: {
@@ -27,7 +29,9 @@ export function createPapyroTiptapExtensions() {
     NodeRange.configure({
       key: "Mod",
     }),
-    ...createPapyroCodeBlockExtensions(),
+    ...createPapyroCodeBlockExtensions({
+      nodeViewRenderer: codeBlockNodeViewRenderer,
+    }),
     ...createPapyroTaskListExtensions(),
     ...createPapyroTableExtensions(),
     ...createPapyroTextStyleExtensions(),

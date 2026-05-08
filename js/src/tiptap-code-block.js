@@ -209,6 +209,47 @@ function highlightedDisplayLanguage(language) {
   return normalized;
 }
 
+export function codeBlockHighlightedLanguage(language) {
+  return highlightedDisplayLanguage(lowlightLanguageName(language));
+}
+
+export function codeBlockDomAttributes({
+  language = "english",
+  node = null,
+  value = undefined,
+  detectedLanguage = undefined,
+  wrapped = undefined,
+} = {}) {
+  const codeLanguage = normalizeCodeBlockLanguage(value ?? node?.attrs?.language);
+  const detected =
+    detectedLanguage === undefined
+      ? codeLanguage
+        ? null
+        : inferCodeBlockLanguage(node?.textContent)
+      : normalizeCodeBlockLanguage(detectedLanguage);
+  const highlightedLanguage = codeBlockHighlightedLanguage(codeLanguage ?? detected);
+  const label = codeBlockLanguageDisplayLabel(language, codeLanguage, detected);
+  const attributes = {
+    "data-has-language-control": "true",
+    "data-code-language": codeBlockLanguageLabel(codeLanguage),
+    "data-code-language-label": label,
+    "data-code-language-mode": codeLanguage ? "explicit" : "auto",
+    "data-code-language-detected": detected ?? "",
+    "data-code-language-highlighted": highlightedLanguage ?? "",
+    "aria-label": localizedText(
+      language,
+      `Code block, ${label}`,
+      `浠ｇ爜鍧楋紝${label}`,
+    ),
+  };
+
+  if (wrapped !== undefined) {
+    attributes["data-code-wrap"] = wrapped ? "true" : "false";
+  }
+
+  return attributes;
+}
+
 function safePosition(getPos) {
   if (typeof getPos !== "function") return null;
   try {
@@ -787,69 +828,89 @@ export function createPapyroCodeBlockOptions() {
   };
 }
 
-export const PapyroCodeBlock = CodeBlockLowlight.extend({
-  addNodeView() {
-    return ({ editor, node, getPos, view }) =>
-      createPapyroCodeBlockNodeView({
-        editor,
-        node,
-        getPos,
-        view,
-        options: this.options,
-      });
-  },
+export function createPapyroCodeBlockExtension({ nodeViewRenderer = null } = {}) {
+  return CodeBlockLowlight.extend({
+    addNodeView() {
+      if (typeof nodeViewRenderer === "function") {
+        return nodeViewRenderer({
+          options: this.options,
+          fallbackNodeView: ({ editor, node, getPos, view }) =>
+            createPapyroCodeBlockNodeView({
+              editor,
+              node,
+              getPos,
+              view,
+              options: this.options,
+            }),
+        });
+      }
 
-  renderHTML({ node, HTMLAttributes }) {
-    const language = normalizeCodeBlockLanguage(node.attrs.language);
-    const detectedLanguage = language ? null : inferCodeBlockLanguage(node.textContent);
-    const highlightedLanguage = lowlightLanguageName(language ?? detectedLanguage);
-    const displayLanguage = highlightedDisplayLanguage(highlightedLanguage);
-    return [
-      "pre",
-      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
-        "data-code-language": codeBlockLanguageLabel(language),
-        "data-code-language-label": codeBlockLanguageDisplayLabel(
-          "english",
-          language,
-          detectedLanguage,
-        ),
-        "data-code-language-mode": language ? "explicit" : "auto",
-        "data-code-language-detected": detectedLanguage ?? "",
-        "data-code-language-highlighted": displayLanguage ?? "",
-      }),
-      [
-        "code",
-        {
-          class: [
-            displayLanguage ? this.options.languageClassPrefix + displayLanguage : null,
-            displayLanguage ? `hljs language-${displayLanguage}` : "hljs",
-          ]
-            .filter(Boolean)
-            .join(" "),
-        },
-        0,
-      ],
-    ];
-  },
+      return ({ editor, node, getPos, view }) =>
+        createPapyroCodeBlockNodeView({
+          editor,
+          node,
+          getPos,
+          view,
+          options: this.options,
+        });
+    },
 
-  addProseMirrorPlugins() {
-    return [
-      ...(this.parent?.() ?? []),
-      createPapyroCodeHighlightPlugin(this.name),
-    ];
-  },
+    renderHTML({ node, HTMLAttributes }) {
+      const language = normalizeCodeBlockLanguage(node.attrs.language);
+      const detectedLanguage = language ? null : inferCodeBlockLanguage(node.textContent);
+      const highlightedLanguage = lowlightLanguageName(language ?? detectedLanguage);
+      const displayLanguage = highlightedDisplayLanguage(highlightedLanguage);
+      return [
+        "pre",
+        mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
+          "data-code-language": codeBlockLanguageLabel(language),
+          "data-code-language-label": codeBlockLanguageDisplayLabel(
+            "english",
+            language,
+            detectedLanguage,
+          ),
+          "data-code-language-mode": language ? "explicit" : "auto",
+          "data-code-language-detected": detectedLanguage ?? "",
+          "data-code-language-highlighted": displayLanguage ?? "",
+        }),
+        [
+          "code",
+          {
+            class: [
+              displayLanguage ? this.options.languageClassPrefix + displayLanguage : null,
+              displayLanguage ? `hljs language-${displayLanguage}` : "hljs",
+            ]
+              .filter(Boolean)
+              .join(" "),
+          },
+          0,
+        ],
+      ];
+    },
 
-  addCommands() {
-    return {
-      ...this.parent?.(),
-      setCodeBlockLanguage:
-        (language, pos = null) =>
-        ({ editor }) =>
+    addProseMirrorPlugins() {
+      return [
+        ...(this.parent?.() ?? []),
+        createPapyroCodeHighlightPlugin(this.name),
+      ];
+    },
+
+    addCommands() {
+      return {
+        ...this.parent?.(),
+        setCodeBlockLanguage:
+          (language, pos = null) =>
+          ({ editor }) =>
           setCodeBlockLanguage(editor, language, pos),
-    };
-  },
-});
+      };
+    },
+  });
+}
 
-export function createPapyroCodeBlockExtensions() {
-  return [PapyroCodeBlock.configure(createPapyroCodeBlockOptions())];
+export const PapyroCodeBlock = createPapyroCodeBlockExtension();
+
+export function createPapyroCodeBlockExtensions(options = {}) {
+  return [
+    createPapyroCodeBlockExtension(options).configure(createPapyroCodeBlockOptions()),
+  ];
 }

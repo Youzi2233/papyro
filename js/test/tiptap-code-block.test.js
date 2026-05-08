@@ -138,6 +138,73 @@ test("Papyro code block extension uses lowlight and exposes language commands", 
   assert.equal(typeof extension.config.addNodeView, "function");
 });
 
+test("Papyro code block extension can inject a node view renderer with DOM fallback", () => {
+  const documentRef = createElementFactory();
+  const editorDom = documentRef.createElement("div");
+  const node = {
+    type: { name: "codeBlock" },
+    attrs: { language: "rust" },
+    textContent: "fn main() {}",
+  };
+  const editor = {
+    view: {
+      dom: editorDom,
+      dispatch() {},
+    },
+    state: {
+      doc: {
+        nodeAt(pos) {
+          return pos === 4 ? node : null;
+        },
+      },
+      tr: {
+        setNodeMarkup() {
+          return this;
+        },
+      },
+    },
+    commands: {
+      focus() {},
+    },
+  };
+  const calls = [];
+  const [extension] = createPapyroCodeBlockExtensions({
+    nodeViewRenderer({ options, fallbackNodeView }) {
+      calls.push(["factory", options.HTMLAttributes.class, typeof fallbackNodeView]);
+      return (props) => {
+        calls.push(["render", props.node.type.name]);
+        return fallbackNodeView(props);
+      };
+    },
+  });
+  const configuredOptions = {
+    ...createPapyroCodeBlockOptions(),
+    ...extension.options,
+  };
+  const addNodeView = extension.config.addNodeView.bind({
+    options: configuredOptions,
+  });
+
+  const renderer = addNodeView();
+  const view = renderer({
+    editor,
+    node,
+    getPos: () => 4,
+    view: {
+      dom: editorDom,
+      dispatch() {},
+    },
+  });
+
+  assert.deepEqual(calls, [
+    ["factory", "mn-tiptap-code-block", "function"],
+    ["render", "codeBlock"],
+  ]);
+  assert.equal(view.dom.className, "mn-tiptap-code-block");
+  assert.equal(view.dom.dataset.codeLanguage, "rust");
+  assert.equal(view.contentDOM.className, "language-rust hljs language-rust");
+});
+
 test("Papyro code block language options are stable and label empty fences", () => {
   assert.equal(codeBlockLanguageLabel(""), "auto");
   assert.equal(codeBlockLanguageLabel("Rust"), "rust");
