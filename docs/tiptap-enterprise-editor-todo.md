@@ -285,6 +285,7 @@ Tasks:
 - [ ] Add row and column action menus from slim edge handles.
   - Current coverage: row and column context menus now expose the same clear-content and clear-style actions as cell selections, so axis selections can reuse the official table clear/reset semantics without switching back to a cell menu.
   - Current polish: slim row/column handles freeze their own geometry before selecting the axis, so the context menu opens from the clicked handle instead of drifting after the table chrome re-renders.
+  - Current coverage: row and column context menus now expose move up/down and move left/right commands through Papyro wrappers around the public `prosemirror-tables` `moveTableRow` and `moveTableColumn` commands. Edge moves are disabled by command capability, moved axes remain selected, and the menu uses localized labels plus compact table-grid arrow icons.
 - [ ] Add resize affordance on column borders that still works while a cell is active.
   - Current coverage: selected table cells no longer reveal column resize handles by selection alone; resize chrome stays tied to hover or active resize intent.
   - Current polish: selected and active cells now keep a wider 16px resize hit zone with a restrained accent rail, so column resizing remains discoverable after cell selection without adding always-on table chrome.

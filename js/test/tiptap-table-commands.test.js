@@ -26,9 +26,13 @@ test("Tiptap table commands expose stable enterprise command metadata", () => {
       ["Columns", "add-column-before", "addColumnBefore"],
       ["Columns", "add-column-after", "addColumnAfter"],
       ["Columns", "delete-column", "deleteColumn"],
+      ["Arrange", "move-column-left", "moveSelectedTableColumn"],
+      ["Arrange", "move-column-right", "moveSelectedTableColumn"],
       ["Rows", "add-row-before", "addRowBefore"],
       ["Rows", "add-row-after", "addRowAfter"],
       ["Rows", "delete-row", "deleteRow"],
+      ["Arrange", "move-row-up", "moveSelectedTableRow"],
+      ["Arrange", "move-row-down", "moveSelectedTableRow"],
       ["Cells", "merge-cells", "mergeCells"],
       ["Cells", "split-cell", "splitCell"],
       ["Cells", "copy-cell-content", "copySelectedTableCells"],
@@ -100,6 +104,8 @@ test("Tiptap table command scope keeps cell menus focused", () => {
 
 test("Tiptap table command scope orders row column and table menus by intent", () => {
   assert.deepEqual(commandIds(visibleTableCommands(TABLE_COMMANDS, "context", "row")), [
+    "move-row-up",
+    "move-row-down",
     "add-row-after",
     "add-row-before",
     "copy-cell-content",
@@ -109,6 +115,8 @@ test("Tiptap table command scope orders row column and table menus by intent", (
     "delete-row",
   ]);
   assert.deepEqual(commandIds(visibleTableCommands(TABLE_COMMANDS, "context", "column")), [
+    "move-column-left",
+    "move-column-right",
     "add-column-after",
     "add-column-before",
     "copy-cell-content",

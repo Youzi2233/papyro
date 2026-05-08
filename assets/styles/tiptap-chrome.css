@@ -1542,11 +1542,15 @@
 
 .mn-tiptap-table-toolbar-button[data-icon="column-left"] .mn-tiptap-table-toolbar-button-visual::before,
 .mn-tiptap-table-toolbar-button[data-icon="column-right"] .mn-tiptap-table-toolbar-button-visual::before,
+.mn-tiptap-table-toolbar-button[data-icon="move-column-left"] .mn-tiptap-table-toolbar-button-visual::before,
+.mn-tiptap-table-toolbar-button[data-icon="move-column-right"] .mn-tiptap-table-toolbar-button-visual::before,
 .mn-tiptap-table-toolbar-button[data-icon="header-column"] .mn-tiptap-table-toolbar-button-visual::before,
 .mn-tiptap-table-toolbar-button[data-icon="header-row"] .mn-tiptap-table-toolbar-button-visual::before,
 .mn-tiptap-table-toolbar-button[data-icon="header-cell"] .mn-tiptap-table-toolbar-button-visual::before,
 .mn-tiptap-table-toolbar-button[data-icon="row-above"] .mn-tiptap-table-toolbar-button-visual::before,
-.mn-tiptap-table-toolbar-button[data-icon="row-below"] .mn-tiptap-table-toolbar-button-visual::before {
+.mn-tiptap-table-toolbar-button[data-icon="row-below"] .mn-tiptap-table-toolbar-button-visual::before,
+.mn-tiptap-table-toolbar-button[data-icon="move-row-up"] .mn-tiptap-table-toolbar-button-visual::before,
+.mn-tiptap-table-toolbar-button[data-icon="move-row-down"] .mn-tiptap-table-toolbar-button-visual::before {
     background: var(--mn-table-icon-grid), color-mix(in srgb, currentColor 8%, transparent);
 }
 
@@ -1567,6 +1571,21 @@
 .mn-tiptap-table-toolbar-button[data-icon="row-below"] .mn-tiptap-table-toolbar-button-visual::after { bottom: -1px; left: 50%; transform: translateX(-50%); }
 .mn-tiptap-table-toolbar-button[data-icon="column-left"] .mn-tiptap-table-toolbar-button-visual::after { top: 50%; left: -1px; transform: translateY(-50%); }
 .mn-tiptap-table-toolbar-button[data-icon="column-right"] .mn-tiptap-table-toolbar-button-visual::after { top: 50%; right: -1px; transform: translateY(-50%); }
+.mn-tiptap-table-toolbar-button[data-icon="move-row-up"] .mn-tiptap-table-toolbar-button-visual::after,
+.mn-tiptap-table-toolbar-button[data-icon="move-row-down"] .mn-tiptap-table-toolbar-button-visual::after,
+.mn-tiptap-table-toolbar-button[data-icon="move-column-left"] .mn-tiptap-table-toolbar-button-visual::after,
+.mn-tiptap-table-toolbar-button[data-icon="move-column-right"] .mn-tiptap-table-toolbar-button-visual::after {
+    content: "";
+    position: absolute;
+    width: 9px;
+    height: 9px;
+    border-top: 1.6px solid currentColor;
+    border-left: 1.6px solid currentColor;
+}
+.mn-tiptap-table-toolbar-button[data-icon="move-row-up"] .mn-tiptap-table-toolbar-button-visual::after { left: 50%; top: -1px; transform: translateX(-50%) rotate(45deg); }
+.mn-tiptap-table-toolbar-button[data-icon="move-row-down"] .mn-tiptap-table-toolbar-button-visual::after { left: 50%; bottom: -1px; transform: translateX(-50%) rotate(225deg); }
+.mn-tiptap-table-toolbar-button[data-icon="move-column-left"] .mn-tiptap-table-toolbar-button-visual::after { top: 50%; left: -1px; transform: translateY(-50%) rotate(-45deg); }
+.mn-tiptap-table-toolbar-button[data-icon="move-column-right"] .mn-tiptap-table-toolbar-button-visual::after { top: 50%; right: -1px; transform: translateY(-50%) rotate(135deg); }
 .mn-tiptap-table-toolbar-button[data-icon="header-row"] .mn-tiptap-table-toolbar-button-visual::before { background: var(--mn-table-icon-grid), linear-gradient(color-mix(in srgb, currentColor 28%, transparent), color-mix(in srgb, currentColor 28%, transparent)) 1px 1px / 14px 5px no-repeat, color-mix(in srgb, currentColor 7%, transparent); }
 .mn-tiptap-table-toolbar-button[data-icon="header-column"] .mn-tiptap-table-toolbar-button-visual::before { background: var(--mn-table-icon-grid), linear-gradient(color-mix(in srgb, currentColor 28%, transparent), color-mix(in srgb, currentColor 28%, transparent)) 1px 1px / 6px 12px no-repeat, color-mix(in srgb, currentColor 7%, transparent); }
 .mn-tiptap-table-toolbar-button[data-icon="header-cell"] .mn-tiptap-table-toolbar-button-visual::before { background: var(--mn-table-icon-grid), radial-gradient(circle at 4px 3px, color-mix(in srgb, currentColor 38%, transparent) 0 3px, transparent 3.2px), color-mix(in srgb, currentColor 7%, transparent); }

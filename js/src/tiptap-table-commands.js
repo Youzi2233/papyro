@@ -43,6 +43,24 @@ export const TABLE_COMMANDS = Object.freeze([
     tone: "danger",
   },
   {
+    id: "move-column-left",
+    group: "Arrange",
+    title: "Move column left",
+    label: "Left",
+    command: "moveSelectedTableColumn",
+    args: ["left"],
+    icon: "move-column-left",
+  },
+  {
+    id: "move-column-right",
+    group: "Arrange",
+    title: "Move column right",
+    label: "Right",
+    command: "moveSelectedTableColumn",
+    args: ["right"],
+    icon: "move-column-right",
+  },
+  {
     id: "add-row-before",
     group: "Rows",
     title: "Insert row above",
@@ -66,6 +84,24 @@ export const TABLE_COMMANDS = Object.freeze([
     command: "deleteRow",
     icon: "delete-row",
     tone: "danger",
+  },
+  {
+    id: "move-row-up",
+    group: "Arrange",
+    title: "Move row up",
+    label: "Up",
+    command: "moveSelectedTableRow",
+    args: ["up"],
+    icon: "move-row-up",
+  },
+  {
+    id: "move-row-down",
+    group: "Arrange",
+    title: "Move row down",
+    label: "Down",
+    command: "moveSelectedTableRow",
+    args: ["down"],
+    icon: "move-row-down",
   },
   {
     id: "merge-cells",
@@ -304,6 +340,8 @@ export const TABLE_MENU_COMMAND_SCOPE = Object.freeze({
     "cell-bg-green",
   ]),
   row: new Set([
+    "move-row-up",
+    "move-row-down",
     "add-row-before",
     "add-row-after",
     "copy-cell-content",
@@ -313,6 +351,8 @@ export const TABLE_MENU_COMMAND_SCOPE = Object.freeze({
     "toggle-header-row",
   ]),
   column: new Set([
+    "move-column-left",
+    "move-column-right",
     "add-column-before",
     "add-column-after",
     "copy-cell-content",
@@ -331,6 +371,8 @@ export const TABLE_MENU_COMMAND_SCOPE = Object.freeze({
 
 export const TABLE_COMMAND_CONTEXT_ORDER = Object.freeze({
   row: [
+    "move-row-up",
+    "move-row-down",
     "add-row-after",
     "add-row-before",
     "copy-cell-content",
@@ -340,6 +382,8 @@ export const TABLE_COMMAND_CONTEXT_ORDER = Object.freeze({
     "delete-row",
   ],
   column: [
+    "move-column-left",
+    "move-column-right",
     "add-column-after",
     "add-column-before",
     "copy-cell-content",
@@ -384,9 +428,13 @@ export const SELECTION_TABLE_COMMAND_IDS = new Set([
 export const KEYBOARD_TABLE_COMMAND_IDS = new Set([
   "add-column-before",
   "add-column-after",
+  "move-column-left",
+  "move-column-right",
   "delete-column",
   "add-row-before",
   "add-row-after",
+  "move-row-up",
+  "move-row-down",
   "delete-row",
   "merge-cells",
   "split-cell",

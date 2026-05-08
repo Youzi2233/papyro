@@ -527,9 +527,13 @@ test("Tiptap table toolbar exposes grouped enterprise table commands", () => {
       ["Columns", "add-column-before", "addColumnBefore"],
       ["Columns", "add-column-after", "addColumnAfter"],
       ["Columns", "delete-column", "deleteColumn"],
+      ["Arrange", "move-column-left", "moveSelectedTableColumn"],
+      ["Arrange", "move-column-right", "moveSelectedTableColumn"],
       ["Rows", "add-row-before", "addRowBefore"],
       ["Rows", "add-row-after", "addRowAfter"],
       ["Rows", "delete-row", "deleteRow"],
+      ["Arrange", "move-row-up", "moveSelectedTableRow"],
+      ["Arrange", "move-row-down", "moveSelectedTableRow"],
       ["Cells", "merge-cells", "mergeCells"],
       ["Cells", "split-cell", "splitCell"],
       ["Cells", "copy-cell-content", "copySelectedTableCells"],
@@ -2157,10 +2161,13 @@ test("Tiptap table toolbar scopes context commands to row and column selections"
   const { editor } = createTableHarness({
     addRowBefore: () => true,
     addRowAfter: () => true,
+    moveSelectedTableRow: () => true,
+    moveSelectedTableColumn: () => true,
     deleteRow: () => true,
     toggleHeaderRow: () => true,
     addColumnBefore: () => true,
     addColumnAfter: () => true,
+    moveSelectedTableColumn: () => true,
     deleteColumn: () => true,
     toggleHeaderColumn: () => true,
     copySelectedTableCells: () => true,
@@ -2185,13 +2192,13 @@ test("Tiptap table toolbar scopes context commands to row and column selections"
     controller.state.commands
       .filter((command) => !command.disabled)
       .map((command) => command.id)
-      .filter((id) => ["add-row-before", "add-row-after", "copy-cell-content", "clear-cell-content", "clear-cell-style", "delete-row", "toggle-header-row", "merge-cells"].includes(id)),
-    ["add-row-before", "add-row-after", "delete-row", "merge-cells", "copy-cell-content", "clear-cell-content", "clear-cell-style", "toggle-header-row"],
+      .filter((id) => ["move-row-up", "move-row-down", "add-row-before", "add-row-after", "copy-cell-content", "clear-cell-content", "clear-cell-style", "delete-row", "toggle-header-row", "merge-cells"].includes(id)),
+    ["add-row-before", "add-row-after", "delete-row", "move-row-up", "move-row-down", "merge-cells", "copy-cell-content", "clear-cell-content", "clear-cell-style", "toggle-header-row"],
   );
   assert.deepEqual(
     toolbarCommandIds(created)
-      .filter((id) => ["add-row-before", "add-row-after", "copy-cell-content", "clear-cell-content", "clear-cell-style", "delete-row", "toggle-header-row", "merge-cells"].includes(id)),
-    ["add-row-after", "add-row-before", "copy-cell-content", "clear-cell-content", "clear-cell-style", "toggle-header-row", "delete-row"],
+      .filter((id) => ["move-row-up", "move-row-down", "add-row-before", "add-row-after", "copy-cell-content", "clear-cell-content", "clear-cell-style", "delete-row", "toggle-header-row", "merge-cells"].includes(id)),
+    ["move-row-up", "move-row-down", "add-row-after", "add-row-before", "copy-cell-content", "clear-cell-content", "clear-cell-style", "toggle-header-row", "delete-row"],
   );
 
   controller.selectAxis("column", 0);
@@ -2199,8 +2206,8 @@ test("Tiptap table toolbar scopes context commands to row and column selections"
   assert.equal(controller.toggleMenu("context", { open: true }), true);
   assert.deepEqual(
     toolbarCommandIds(created)
-      .filter((id) => ["add-column-before", "add-column-after", "copy-cell-content", "clear-cell-content", "clear-cell-style", "delete-column", "toggle-header-column", "merge-cells"].includes(id)),
-    ["add-column-after", "add-column-before", "copy-cell-content", "clear-cell-content", "clear-cell-style", "toggle-header-column", "delete-column"],
+      .filter((id) => ["move-column-left", "move-column-right", "add-column-before", "add-column-after", "copy-cell-content", "clear-cell-content", "clear-cell-style", "delete-column", "toggle-header-column", "merge-cells"].includes(id)),
+    ["move-column-left", "move-column-right", "add-column-after", "add-column-before", "copy-cell-content", "clear-cell-content", "clear-cell-style", "toggle-header-column", "delete-column"],
   );
 });
 
@@ -2209,6 +2216,7 @@ test("Tiptap table toolbar separates destructive row actions from ordinary comma
   const { editor } = createTableHarness({
     addRowBefore: () => true,
     addRowAfter: () => true,
+    moveSelectedTableRow: () => true,
     copySelectedTableCells: () => true,
     clearSelectedTableCells: () => true,
     resetSelectedTableCellAttrs: () => true,
@@ -2230,6 +2238,7 @@ test("Tiptap table toolbar separates destructive row actions from ordinary comma
   const groups = tableToolbarList(created).children;
   const dangerGroup = groups.find((element) => element.dataset.layoutGroup === "danger");
   const rowGroup = groups.find((element) => element.dataset.group === "Rows");
+  const arrangeGroup = groups.find((element) => element.dataset.group === "Arrange");
   const cellGroup = groups.find((element) => element.dataset.group === "Cells");
   const headerGroup = groups.find((element) => element.dataset.group === "Headers");
 
@@ -2240,6 +2249,15 @@ test("Tiptap table toolbar separates destructive row actions from ordinary comma
       .filter((element) => element.dataset.commandId)
       .map((element) => [element.dataset.commandId, element.dataset.tone]),
     [["delete-row", "danger"]],
+  );
+  assert.deepEqual(
+    arrangeGroup.children
+      .filter((element) => element.dataset.commandId)
+      .map((element) => [element.dataset.commandId, element.textContent]),
+    [
+      ["move-row-up", "Move row up"],
+      ["move-row-down", "Move row down"],
+    ],
   );
   assert.deepEqual(
     rowGroup.children
@@ -2277,6 +2295,7 @@ test("Tiptap table context menu renders text commands as command rows", () => {
   const { editor } = createTableHarness({
     addRowBefore: () => true,
     addRowAfter: () => true,
+    moveSelectedTableRow: () => true,
     copySelectedTableCells: () => true,
     clearSelectedTableCells: () => true,
     resetSelectedTableCellAttrs: () => true,
@@ -2293,12 +2312,15 @@ test("Tiptap table context menu renders text commands as command rows", () => {
   rowHandle.onpointerdown({ preventDefault() {}, stopPropagation() {} });
 
   const insertBelow = toolbarCommandButton(created, "add-row-after");
+  const moveUp = toolbarCommandButton(created, "move-row-up");
   const copyContent = toolbarCommandButton(created, "copy-cell-content");
   const clearContent = toolbarCommandButton(created, "clear-cell-content");
   const clearStyle = toolbarCommandButton(created, "clear-cell-style");
   const headerRow = toolbarCommandButton(created, "toggle-header-row");
   const deleteRow = toolbarCommandButton(created, "delete-row");
 
+  assert.equal(moveUp.children[0].dataset.icon, "move-row-up");
+  assert.equal(moveUp.children[1].textContent, "Move row up");
   assert.equal(insertBelow.dataset.variant, "text");
   assert.equal(insertBelow.children.length, 2);
   assert.equal(
@@ -2363,10 +2385,12 @@ test("Tiptap table toolbar keeps cell and axis context menus focused", () => {
   const { editor } = createTableHarness({
     addRowBefore: () => true,
     addRowAfter: () => true,
+    moveSelectedTableRow: () => true,
     deleteRow: () => true,
     toggleHeaderRow: () => true,
     addColumnBefore: () => true,
     addColumnAfter: () => true,
+    moveSelectedTableColumn: () => true,
     deleteColumn: () => true,
     toggleHeaderColumn: () => true,
     mergeCells: () => true,
@@ -2402,12 +2426,25 @@ test("Tiptap table toolbar keeps cell and axis context menus focused", () => {
   controller.selectAxis("row", 0);
   controller.toggleMenu("context", { open: true });
   assert.deepEqual(toolbarCommandIds(created).filter((id) => id.includes("row")), [
+    "move-row-up",
+    "move-row-down",
     "add-row-after",
     "add-row-before",
     "toggle-header-row",
     "delete-row",
   ]);
   assert.equal(toolbarCommandIds(created).includes("cell-bg-yellow"), false);
+
+  controller.selectAxis("column", 0);
+  controller.toggleMenu("context", { open: true });
+  assert.deepEqual(toolbarCommandIds(created).filter((id) => id.includes("column")), [
+    "move-column-left",
+    "move-column-right",
+    "add-column-after",
+    "add-column-before",
+    "toggle-header-column",
+    "delete-column",
+  ]);
 
   controller.selectAxis("table", 0);
   controller.toggleMenu("context", { open: true });

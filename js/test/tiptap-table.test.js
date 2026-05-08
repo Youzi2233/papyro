@@ -9,6 +9,7 @@ import {
   PapyroTableCellBackground,
   PapyroTableCellContentActions,
   createPapyroTableExtensions,
+  moveSelectedTableAxis,
   resetSelectedTableCellAttrs,
   selectedTableCellsPlainText,
   setSelectedTableCellTextColor,
@@ -248,6 +249,78 @@ test("Papyro table content actions copy selected cell text without mutating the 
   }
 });
 
+test("Papyro table content actions move selected rows and columns through ProseMirror tables", () => {
+  const windowRef = new Window({ url: "http://localhost/" });
+  const previousGlobals = installDomGlobals(windowRef);
+  const root = windowRef.document.createElement("div");
+  windowRef.document.body.appendChild(root);
+  let editor = null;
+
+  try {
+    editor = new Editor({
+      element: root,
+      extensions: [StarterKit, ...createPapyroTableExtensions()],
+      content:
+        "<table><tbody><tr><td>A1</td><td>A2</td></tr><tr><td>B1</td><td>B2</td></tr><tr><td>C1</td><td>C2</td></tr></tbody></table>",
+      injectCSS: false,
+    });
+    const [, , secondRowFirstCell, secondRowSecondCell] = tableCellPositions(editor.state.doc);
+
+    editor.commands.setCellSelection({
+      anchorCell: secondRowFirstCell,
+      headCell: secondRowSecondCell,
+    });
+    assert.equal(editor.commands.moveSelectedTableRow("up"), true);
+    assert.deepEqual(
+      Array.from(editor.view.dom.querySelectorAll("td,th")).map((cell) => cell.textContent),
+      ["B1", "B2", "A1", "A2", "C1", "C2"],
+    );
+
+    const [, secondColumnTopCell, , , , secondColumnBottomCell] =
+      tableCellPositions(editor.state.doc);
+    editor.commands.setCellSelection({
+      anchorCell: secondColumnTopCell,
+      headCell: secondColumnBottomCell,
+    });
+    assert.equal(editor.commands.moveSelectedTableColumn("left"), true);
+    assert.deepEqual(
+      Array.from(editor.view.dom.querySelectorAll("td,th")).map((cell) => cell.textContent),
+      ["B2", "B1", "A2", "A1", "C2", "C1"],
+    );
+  } finally {
+    editor?.destroy?.();
+    restoreDomGlobals(previousGlobals);
+    windowRef.close?.();
+  }
+});
+
+test("Papyro table content actions reject edge moves", () => {
+  const windowRef = new Window({ url: "http://localhost/" });
+  const previousGlobals = installDomGlobals(windowRef);
+  const root = windowRef.document.createElement("div");
+  windowRef.document.body.appendChild(root);
+  let editor = null;
+
+  try {
+    editor = new Editor({
+      element: root,
+      extensions: [StarterKit, ...createPapyroTableExtensions()],
+      content:
+        "<table><tbody><tr><td>A1</td><td>A2</td></tr><tr><td>B1</td><td>B2</td></tr></tbody></table>",
+      injectCSS: false,
+    });
+    const [firstCell, secondCell] = tableCellPositions(editor.state.doc);
+
+    editor.commands.setCellSelection({ anchorCell: firstCell, headCell: secondCell });
+    assert.equal(editor.commands.moveSelectedTableRow("up"), false);
+    assert.equal(editor.commands.moveSelectedTableColumn("left"), false);
+  } finally {
+    editor?.destroy?.();
+    restoreDomGlobals(previousGlobals);
+    windowRef.close?.();
+  }
+});
+
 test("Papyro table content actions can reset selected cell attributes while clearing contents", () => {
   const windowRef = new Window({ url: "http://localhost/" });
   const previousGlobals = installDomGlobals(windowRef);
@@ -327,6 +400,8 @@ test("Papyro table content actions expose the expected command name", () => {
   assert.equal(typeof commands.resetSelectedTableCellAttrs, "function");
   assert.equal(typeof commands.setSelectedTableCellTextColor, "function");
   assert.equal(typeof commands.copySelectedTableCells, "function");
+  assert.equal(typeof commands.moveSelectedTableRow, "function");
+  assert.equal(typeof commands.moveSelectedTableColumn, "function");
 });
 
 test("Papyro table clipboard writer reports unavailable and successful writes", async () => {
@@ -344,4 +419,5 @@ test("Papyro table clipboard writer reports unavailable and successful writes", 
 test("Papyro table content actions reject non-cell selections when resetting attributes", () => {
   assert.equal(resetSelectedTableCellAttrs(null, null), false);
   assert.equal(setSelectedTableCellTextColor(null, null, null, "var(--mn-accent)"), false);
+  assert.equal(moveSelectedTableAxis(null, null, "row", "up"), false);
 });

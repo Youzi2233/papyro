@@ -1,6 +1,11 @@
 import { TableKit } from "@tiptap/extension-table";
 import { Extension } from "@tiptap/core";
-import { deleteCellSelection, selectedRect } from "@tiptap/pm/tables";
+import {
+  deleteCellSelection,
+  moveTableColumn,
+  moveTableRow,
+  selectedRect,
+} from "@tiptap/pm/tables";
 
 export const PAPYRO_TABLE_CELL_RESET_ATTRS = Object.freeze([
   "align",
@@ -69,6 +74,40 @@ function tableCellClipboardText(cell) {
     .trim();
 }
 
+function currentSelectedTableRect(state) {
+  try {
+    return selectedRect(state);
+  } catch (_error) {
+    return null;
+  }
+}
+
+export function moveSelectedTableAxis(state, dispatch, axis, direction) {
+  const rect = currentSelectedTableRect(state);
+  const normalizedDirection = String(direction ?? "").toLowerCase();
+  if (!["up", "down", "left", "right"].includes(normalizedDirection)) return false;
+  const delta = normalizedDirection === "up" || normalizedDirection === "left" ? -1 : 1;
+  if (!rect?.map) return false;
+
+  if (axis === "row") {
+    if (delta < 0 && rect.top <= 0) return false;
+    if (delta > 0 && rect.bottom >= rect.map.height) return false;
+    const from = delta < 0 ? rect.top : rect.bottom - 1;
+    const to = delta < 0 ? rect.top - 1 : rect.bottom;
+    return moveTableRow({ from, to, select: true })(state, dispatch);
+  }
+
+  if (axis === "column") {
+    if (delta < 0 && rect.left <= 0) return false;
+    if (delta > 0 && rect.right >= rect.map.width) return false;
+    const from = delta < 0 ? rect.left : rect.right - 1;
+    const to = delta < 0 ? rect.left - 1 : rect.right;
+    return moveTableColumn({ from, to, select: true })(state, dispatch);
+  }
+
+  return false;
+}
+
 function selectedTableCellTextRanges(selection) {
   if (typeof selection?.forEachCell !== "function") return [];
 
@@ -96,12 +135,7 @@ function selectedTableCellTextRanges(selection) {
 }
 
 export function selectedTableCellsPlainText(state) {
-  let rect = null;
-  try {
-    rect = selectedRect(state);
-  } catch (_error) {
-    return "";
-  }
+  const rect = currentSelectedTableRect(state);
 
   const table = rect?.table;
   const map = rect?.map;
@@ -257,6 +291,14 @@ export const PapyroTableCellContentActions = Extension.create({
           writeTableTextToClipboard(text, this.options.writeText).catch(() => {});
           return true;
         },
+      moveSelectedTableRow:
+        (direction) =>
+        ({ state, dispatch }) =>
+          moveSelectedTableAxis(state, dispatch, "row", direction),
+      moveSelectedTableColumn:
+        (direction) =>
+        ({ state, dispatch }) =>
+          moveSelectedTableAxis(state, dispatch, "column", direction),
     };
   },
 });

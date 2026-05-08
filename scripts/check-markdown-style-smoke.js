@@ -111,6 +111,7 @@ const TIPTAP_COMMAND_PANEL_REQUIREMENTS = [
   ["Tiptap table command panel", ".mn-tiptap-table-toolbar[data-mode=\"context\"]", "scrollbar-gutter: stable"],
   ["Tiptap table command rows", ".mn-tiptap-table-toolbar-button-label", "border-color: color-mix"],
   ["Tiptap table command icons", ".mn-tiptap-table-toolbar-button[data-icon=\"row-below\"]", "mn-tiptap-table-toolbar-button-visual::after"],
+  ["Tiptap table move row icon", ".mn-tiptap-table-toolbar-button[data-icon=\"move-row-up\"]", "data-icon=\"move-column-right\""],
   ["Tiptap table merge icon", ".mn-tiptap-table-toolbar-button[data-icon=\"merge\"]", ".mn-tiptap-table-toolbar-button[data-icon=\"split\"]"],
   ["Tiptap table copy cell icon", ".mn-tiptap-table-toolbar-button[data-icon=\"copy-cell\"]", "data-icon=\"copy-cell\""],
   ["Tiptap table text color commands", ".mn-tiptap-table-toolbar-button[data-variant=\"text-swatch\"]", "data-icon=\"text-color-accent\""],
