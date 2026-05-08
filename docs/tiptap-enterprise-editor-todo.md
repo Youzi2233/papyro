@@ -360,6 +360,7 @@ Tasks:
 - [ ] Keep toolbar placement stable near viewport edges.
 - [ ] Add keyboard access and focus return.
   - Current coverage: `Mod+K` opens the Papyro link editor from Hybrid mode, follows Tiptap's documented Link-extension guidance for custom link UI, and expands collapsed link selections with `extendMarkRange("link")` before editing.
+  - Current coverage: `Alt+F10` opens the floating format toolbar from the editor selection; Arrow keys, Home/End, Enter/Space, and Escape now provide keyboard navigation, execution, close behavior, and focus return.
 - [ ] Localize labels and tooltips.
   - Current coverage: current toolbar commands provide English and Simplified Chinese titles and accessible labels from the shared Tiptap i18n model.
 

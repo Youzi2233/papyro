@@ -1207,6 +1207,44 @@ test("Tiptap runtime opens the link editor from Mod K", () => {
   ]);
 });
 
+test("Tiptap runtime opens the format toolbar from Alt F10", () => {
+  const formatCalls = [];
+  const formatToolbarControllerFactory = () => ({
+    attach: ({ root }) => formatCalls.push(["attach", root.className]),
+    activateKeyboard: (event) => {
+      formatCalls.push(["activateKeyboard", event.key, event.altKey]);
+      event.preventDefault?.();
+      return true;
+    },
+    close: () => formatCalls.push(["close"]),
+    contains: () => false,
+    destroy: () => formatCalls.push(["destroy"]),
+    refresh: () => formatCalls.push(["refresh"]),
+  });
+  const { calls, registry, runtime } = createRuntimeHarness({ formatToolbarControllerFactory });
+  runtime.ensureEditor({
+    tabId: "tab-a",
+    containerId: "editor-root",
+    initialContent: "# Note",
+    viewMode: "hybrid",
+  });
+  calls.length = 0;
+
+  const event = {
+    key: "F10",
+    altKey: true,
+    preventDefault: () => calls.push(["preventDefault"]),
+  };
+  const handled = registry.get("tab-a").editor.options.editorProps.handleKeyDown(null, event);
+
+  assert.equal(handled, true);
+  assert.deepEqual(calls, [["preventDefault"]]);
+  assert.deepEqual(formatCalls, [
+    ["attach", "mn-tiptap-runtime"],
+    ["activateKeyboard", "F10", true],
+  ]);
+});
+
 test("Tiptap runtime sends image paste requests through the Rust protocol", async () => {
   const image = { file: { type: "image/png" }, mimeType: "image/png" };
   const clipboardCalls = [];

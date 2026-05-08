@@ -123,9 +123,13 @@ test("React table context menu is injected at the editor entry boundary", () => 
 test("React format toolbar is injected without changing the runtime command controller", () => {
   assert.match(formatToolbarSource, /export function PapyroFormatToolbar/u);
   assert.match(formatToolbarSource, /usePointerActivation/u);
+  assert.match(formatToolbarSource, /commandElementId/u);
+  assert.match(formatToolbarSource, /data-keyboard-active/u);
   assert.match(formatToolbarSource, /aria-pressed=\{String\(command\.active\)\}/u);
   assert.match(formatToolbarViewSource, /createRoot/u);
   assert.match(formatToolbarViewSource, /positionReactFloatingElement/u);
+  assert.match(formatToolbarViewSource, /syncMenuActiveDescendant/u);
+  assert.match(formatToolbarViewSource, /focusCommand/u);
   assert.match(formatToolbarViewSource, /role = "toolbar"/u);
   assert.doesNotMatch(formatToolbarViewSource, /createElement\(/u);
 });

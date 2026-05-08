@@ -1,5 +1,6 @@
 import { createTiptapFormatCommandController } from "./tiptap-format-commands.js";
 import {
+  commandElementId,
   createElement,
   createFloatingDismissController,
   defaultDocument,
@@ -7,12 +8,14 @@ import {
   mountFloatingRoot,
   positionFloatingElement,
   setHidden,
+  syncMenuActiveDescendant,
   viewportSize,
 } from "./tiptap-ui-primitives.js";
 
 const REGULAR_TOOLBAR_WIDTH = 410;
 const COMPACT_TOOLBAR_WIDTH = 352;
 const TOOLBAR_HEIGHT = 38;
+const FORMAT_TOOLBAR_OWNER_ID = "mn-tiptap-format-toolbar";
 
 function selectionContext(editor) {
   const state = editor?.state ?? editor?.view?.state;
@@ -112,8 +115,10 @@ class TiptapFormatToolbarView {
 
     const density = state.density ?? "regular";
     this.#root.dataset.density = density;
+    this.#root.dataset.keyboardActive = state.keyboardActive ? "true" : "false";
+    this.#root.onkeydown = (event) => state.handleKeyDown?.(event);
     this.#list.replaceChildren();
-    state.commands.forEach((command) => {
+    state.commands.forEach((command, commandIndex) => {
       const button = createElement(
         this.#document,
         "button",
@@ -129,11 +134,16 @@ class TiptapFormatToolbarView {
 
       button.type = "button";
       button.title = command.title;
+      button.id = commandElementId(FORMAT_TOOLBAR_OWNER_ID, commandIndex);
       button.setAttribute("aria-label", command.ariaLabel);
       button.setAttribute("aria-pressed", String(command.active));
       button.classList.toggle("active", command.active);
       button.dataset.commandId = command.id;
+      button.dataset.commandIndex = String(commandIndex);
       button.dataset.priority = String(command.priority ?? 100);
+      button.dataset.keyboardActive =
+        state.activeCommandId === command.id ? "true" : "false";
+      button.tabIndex = state.activeCommandId === command.id ? 0 : -1;
       text.textContent = command.label;
       button.append(icon, text);
       button.addEventListener("pointerdown", (event) => {
@@ -144,11 +154,39 @@ class TiptapFormatToolbarView {
       button.addEventListener("mousedown", (event) => {
         event.preventDefault();
       });
+      button.addEventListener("pointerenter", () =>
+        state.setActiveCommand?.(command.id, { keyboardActive: false }),
+      );
+      button.addEventListener("focus", () =>
+        state.setActiveCommand?.(command.id, { keyboardActive: true }),
+      );
       this.#list.appendChild(button);
     });
+    syncMenuActiveDescendant(
+      this.#root,
+      FORMAT_TOOLBAR_OWNER_ID,
+      state.commands,
+      Math.max(
+        0,
+        state.commands.findIndex((command) => command.id === state.activeCommandId),
+      ),
+      {
+        ariaSelected: false,
+        manageTabIndex: true,
+        scroll: state.keyboardActive,
+      },
+    );
 
     setHidden(this.#root, false);
     placeToolbar(this.#root, editor, state.range, this.#window, density);
+  }
+
+  focusCommand(commandId) {
+    const button = Array.from(this.#list?.children ?? []).find(
+      (element) => element.dataset?.commandId === commandId,
+    );
+    button?.focus?.();
+    return !!button;
   }
 
   hide() {
@@ -178,6 +216,8 @@ export class TiptapFormatToolbarController {
     range: null,
     density: "regular",
     commands: [],
+    activeCommandId: null,
+    keyboardActive: false,
   };
 
   constructor({
@@ -238,11 +278,18 @@ export class TiptapFormatToolbarController {
         ? "compact"
         : "regular",
       commands: this.#commands.states({ editor, entry: this.#entry }),
+      activeCommandId: this.#state.activeCommandId,
+      keyboardActive: this.#state.keyboardActive,
     };
+    if (!this.#state.activeCommandId) {
+      this.#state.activeCommandId = this.#state.commands[0]?.id ?? null;
+    }
     this.#view.update?.(
       {
         ...this.#state,
         run: (commandId) => this.run(commandId),
+        setActiveCommand: (commandId, options) => this.setActiveCommand(commandId, options),
+        handleKeyDown: (event) => this.handleKeyDown(event),
       },
       editor,
     );
@@ -269,6 +316,8 @@ export class TiptapFormatToolbarController {
       range: null,
       density: "regular",
       commands: [],
+      activeCommandId: null,
+      keyboardActive: false,
     };
     this.#view.hide?.();
     this.#dismiss.close();
@@ -293,6 +342,99 @@ export class TiptapFormatToolbarController {
       entry: this.#entry,
       range: this.#state.range,
     }) === true;
+  }
+
+  setActiveCommand(commandId, { focus = false, keyboardActive = true } = {}) {
+    const command = this.#state.commands.find((item) => item.id === commandId);
+    if (!command) return false;
+    this.#state = {
+      ...this.#state,
+      activeCommandId: command.id,
+      keyboardActive,
+    };
+    this.#view.update?.(
+      {
+        ...this.#state,
+        run: (nextCommandId) => this.run(nextCommandId),
+        setActiveCommand: (nextCommandId, options) =>
+          this.setActiveCommand(nextCommandId, options),
+        handleKeyDown: (event) => this.handleKeyDown(event),
+      },
+      this.#editor,
+    );
+    if (focus) {
+      this.#view.focusCommand?.(command.id);
+    }
+    return true;
+  }
+
+  #moveActiveCommand(direction, event) {
+    const commands = this.#state.commands;
+    if (!commands.length) return false;
+    const currentIndex = Math.max(
+      0,
+      commands.findIndex((command) => command.id === this.#state.activeCommandId),
+    );
+    const nextIndex = (currentIndex + direction + commands.length) % commands.length;
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+    return this.setActiveCommand(commands[nextIndex].id, {
+      focus: true,
+      keyboardActive: true,
+    });
+  }
+
+  handleKeyDown(event) {
+    if (!this.#state.open) return false;
+    const key = String(event?.key ?? "");
+
+    if (key === "Escape") {
+      event?.preventDefault?.();
+      event?.stopPropagation?.();
+      this.close();
+      this.#editor?.commands?.focus?.();
+      return true;
+    }
+
+    if (key === "ArrowRight" || key === "ArrowDown") {
+      return this.#moveActiveCommand(1, event);
+    }
+    if (key === "ArrowLeft" || key === "ArrowUp") {
+      return this.#moveActiveCommand(-1, event);
+    }
+    if (key === "Home") {
+      const firstId = this.#state.commands[0]?.id ?? null;
+      if (!firstId) return false;
+      event?.preventDefault?.();
+      event?.stopPropagation?.();
+      return this.setActiveCommand(firstId, { focus: true, keyboardActive: true });
+    }
+    if (key === "End") {
+      const lastId = this.#state.commands.at(-1)?.id ?? null;
+      if (!lastId) return false;
+      event?.preventDefault?.();
+      event?.stopPropagation?.();
+      return this.setActiveCommand(lastId, { focus: true, keyboardActive: true });
+    }
+    if (key === "Enter" || key === " ") {
+      const commandId = this.#state.activeCommandId;
+      if (!commandId) return false;
+      event?.preventDefault?.();
+      event?.stopPropagation?.();
+      return this.run(commandId);
+    }
+
+    return false;
+  }
+
+  activateKeyboard(event) {
+    this.refresh(this.#editor);
+    if (!this.#state.open) return false;
+    const firstId = this.#state.activeCommandId ?? this.#state.commands[0]?.id ?? null;
+    if (!firstId) return false;
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+    return this.setActiveCommand(firstId, { focus: true, keyboardActive: true });
   }
 }
 

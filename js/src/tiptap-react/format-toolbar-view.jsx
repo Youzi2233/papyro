@@ -3,6 +3,7 @@ import { flushSync } from "react-dom";
 import { createRoot } from "react-dom/client";
 
 import { setHidden } from "../tiptap-ui-primitives.js";
+import { syncMenuActiveDescendant } from "../tiptap-ui-primitives.js";
 import { PapyroFormatToolbar } from "./components/format-toolbar.jsx";
 import {
   positionReactFloatingElement,
@@ -13,6 +14,7 @@ const REGULAR_TOOLBAR_WIDTH = 410;
 const COMPACT_TOOLBAR_WIDTH = 352;
 const TOOLBAR_HEIGHT = 38;
 const TOOLBAR_MARGIN = 10;
+const FORMAT_TOOLBAR_OWNER_ID = "mn-tiptap-format-toolbar";
 
 function selectionRect(editor, range) {
   const view = editor?.view;
@@ -93,13 +95,36 @@ export class TiptapReactFormatToolbarView {
 
     const density = state.density ?? "regular";
     this.#root.dataset.density = density;
+    this.#root.dataset.keyboardActive = state.keyboardActive ? "true" : "false";
+    this.#root.onkeydown = (event) => state.handleKeyDown?.(event);
 
     flushSync(() => {
       this.#reactRoot.render(<PapyroFormatToolbar state={state} />);
     });
+    syncMenuActiveDescendant(
+      this.#root,
+      FORMAT_TOOLBAR_OWNER_ID,
+      state.commands,
+      Math.max(
+        0,
+        state.commands.findIndex((command) => command.id === state.activeCommandId),
+      ),
+      {
+        manageTabIndex: true,
+        scroll: state.keyboardActive,
+      },
+    );
 
     setHidden(this.#root, false);
     placeToolbar(this.#root, editor, { ...state, density }, this.#window);
+  }
+
+  focusCommand(commandId) {
+    const button = Array.from(this.#root?.querySelectorAll?.("[data-command-id]") ?? []).find(
+      (element) => element.dataset?.commandId === commandId,
+    );
+    button?.focus?.();
+    return !!button;
   }
 
   hide() {

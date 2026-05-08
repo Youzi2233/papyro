@@ -72,6 +72,11 @@ function isLinkShortcut(event) {
   return key === "k" && (event.ctrlKey || event.metaKey);
 }
 
+function isFormatToolbarShortcut(event) {
+  const key = String(event?.key ?? "").toLowerCase();
+  return key === "f10" && event?.altKey && !event?.ctrlKey && !event?.metaKey;
+}
+
 function requestSave(entry, tabId, event) {
   if (!entry) return false;
 
@@ -149,6 +154,9 @@ function defaultEditorOptions({
           return true;
         }
         if (isLinkShortcut(event) && requestLinkEditor(entry, event)) {
+          return true;
+        }
+        if (isFormatToolbarShortcut(event) && entry?.formatToolbar?.activateKeyboard?.(event)) {
           return true;
         }
         if (isComposingKeyboardEvent(event)) {

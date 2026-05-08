@@ -181,6 +181,9 @@ function createDocument() {
         contains(target) {
           return target === this;
         },
+        focus() {
+          documentRef.activeElement = this;
+        },
         remove() {
           this.removed = true;
         },
@@ -193,6 +196,7 @@ function createDocument() {
         this.child = child;
       },
     },
+    activeElement: null,
   };
   return { created, documentRef };
 }
@@ -366,6 +370,81 @@ test("Tiptap format toolbar buttons run commands from pointerdown", () => {
   assert.deepEqual(events, ["preventDefault", "stopPropagation"]);
   assert.deepEqual(calls, [["toggleBold"], ["focus"]]);
   assert.equal(clear.children.at(-1).textContent, "Tx");
+});
+
+test("Tiptap format toolbar supports keyboard activation and execution", () => {
+  const { created, documentRef } = createDocument();
+  const { calls, editor } = createEditor();
+  const controller = createTiptapFormatToolbarController({
+    dom: { document: documentRef },
+  });
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  calls.length = 0;
+  const events = [];
+  const keyboardEvent = (key) => ({
+    key,
+    preventDefault() {
+      events.push(["preventDefault", key]);
+    },
+    stopPropagation() {
+      events.push(["stopPropagation", key]);
+    },
+  });
+
+  assert.equal(controller.activateKeyboard(keyboardEvent("F10")), true);
+  assert.equal(controller.state.keyboardActive, true);
+  assert.equal(controller.state.activeCommandId, "bold");
+  const root = created.find((element) =>
+    String(element.className).includes("mn-tiptap-format-toolbar"),
+  );
+  const bold = created.find((element) => element.dataset.commandId === "bold");
+  assert.equal(root.dataset.keyboardActive, "true");
+  assert.equal(root["aria-activedescendant"], bold.id);
+  assert.equal(documentRef.activeElement?.dataset?.commandId, "bold");
+
+  assert.equal(controller.handleKeyDown(keyboardEvent("ArrowRight")), true);
+  assert.equal(controller.state.activeCommandId, "italic");
+  assert.equal(documentRef.activeElement?.dataset?.commandId, "italic");
+
+  assert.equal(controller.handleKeyDown(keyboardEvent("End")), true);
+  assert.equal(controller.state.activeCommandId, "clear-formatting");
+
+  assert.equal(controller.handleKeyDown(keyboardEvent("Enter")), true);
+  assert.deepEqual(calls, [["unsetAllMarks"], ["focus"]]);
+  assert.deepEqual(events, [
+    ["preventDefault", "F10"],
+    ["stopPropagation", "F10"],
+    ["preventDefault", "ArrowRight"],
+    ["stopPropagation", "ArrowRight"],
+    ["preventDefault", "End"],
+    ["stopPropagation", "End"],
+    ["preventDefault", "Enter"],
+    ["stopPropagation", "Enter"],
+  ]);
+});
+
+test("Tiptap format toolbar closes from keyboard Escape and returns focus", () => {
+  const { calls, editor } = createEditor();
+  const controller = createTiptapFormatToolbarController();
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  const events = [];
+
+  assert.equal(
+    controller.handleKeyDown({
+      key: "Escape",
+      preventDefault() {
+        events.push("preventDefault");
+      },
+      stopPropagation() {
+        events.push("stopPropagation");
+      },
+    }),
+    true,
+  );
+
+  assert.equal(controller.state.open, false);
+  assert.deepEqual(calls, [["focus"]]);
+  assert.deepEqual(events, ["preventDefault", "stopPropagation"]);
 });
 
 test("Tiptap format toolbar closes and destroys view state", () => {
