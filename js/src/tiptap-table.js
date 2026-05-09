@@ -1,6 +1,7 @@
 import {
   Table,
   TableKit,
+  TableView,
   renderTableToMarkdown,
 } from "@tiptap/extension-table";
 import { Extension } from "@tiptap/core";
@@ -715,6 +716,23 @@ export const PapyroTable = Table.extend({
       : renderTableToMarkdown(node, helpers),
 });
 
+class PapyroTableView extends TableView {
+  constructor(node, cellMinWidth, view) {
+    super(node, cellMinWidth, view);
+    this.#syncPapyroTableClass();
+  }
+
+  update(node) {
+    const updated = super.update(node);
+    if (updated) this.#syncPapyroTableClass();
+    return updated;
+  }
+
+  #syncPapyroTableClass() {
+    this.table?.classList?.add?.("mn-tiptap-table");
+  }
+}
+
 export function createPapyroTableExtensions({ writeText = null } = {}) {
   return [
     PapyroTable.configure({
@@ -726,6 +744,7 @@ export function createPapyroTableExtensions({ writeText = null } = {}) {
       cellMinWidth: 96,
       lastColumnResizable: true,
       allowTableNodeSelection: false,
+      View: PapyroTableView,
     }),
     TableKit.configure({
       table: false,

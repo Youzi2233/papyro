@@ -279,6 +279,15 @@ Manual smoke:
 
 Goal: table editing should feel close to the official Notion-like table experience, not like a debug overlay.
 
+Interaction contract:
+
+- Row and column handles are hover-owned chrome. Hovering any cell, including header cells, reveals the row handle beside that row and the column handle above that column. The handles stay visible while the pointer moves from the cell into the handle and disappear only after leaving the hovered row/column chrome.
+- Clicking a row or column handle selects that whole axis, paints only the outer border in the theme color, adds a subtle selection mist, and opens a scoped menu from the handle area. Internal shared borders must stay neutral.
+- Row, column, cell, and range menus should keep structure/content/destructive actions in the main list while alignment, text color, and cell background open as compact right-side style submenus on hover or keyboard focus.
+- Clicking a single cell creates a visual object selection only. It must not select all text or replace natural caret placement. Users can still click into text, type, and drag within the same cell to copy text.
+- Dragging from one cell into another creates a rectangular table-cell range. The range uses one outer theme border, one subtle mist, one action trigger on the head/right edge, and exposes merge, color, alignment, and clear-content actions.
+- Pressing Delete/Backspace with a visual single-cell selection or a cell range clears selected cell contents without deleting the table structure.
+
 Decision path:
 
 - Licensed path: integrate official `table-node` output and adapt it to Papyro tokens, Markdown persistence, and i18n.
@@ -292,23 +301,26 @@ Tasks:
   - Current coverage: row and column handles now stay hidden by default, but hovering a table cell reveals the matching row handle at the row edge and the matching column handle above that column. The handle dimensions track the row height or column width, so the affordance reads like the official axis chrome without covering editable cell text.
   - Current polish: row and column handles now sit flush against the table grid, keep their table-facing border transparent, and the hover state refreshes as the pointer crosses into the rail so the handle does not disappear before it can be clicked.
   - Current fix: table chrome now keeps tracking hover at the document level while the pointer is over the floating row or column handle, so crossing from the table cell into the external handle does not immediately dismiss the handle.
+  - Current fix: React and fallback chrome now add transparent row/column hit areas over the hovered axis, so moving from a header or body cell toward the floating top/left handle keeps the same hover axis instead of dropping the handle mid-flight.
   - Current polish: hovered rows and columns now apply explicit cell classes, giving the whole row or column a continuous theme edge instead of relying only on the floating overlay.
   - Current architecture: quick-add rails, cell action trigger, selection backdrop, complex-block insert rail, row/column axis handles, and context-menu anchoring now share a pure table chrome model in `js/src/tiptap-table-chrome-model.js`. The migration DOM view consumes that model, so the remaining React table overlay can reuse the same visibility and geometry contract instead of reimplementing hover rules.
   - Current architecture: non-menu table chrome now has a React renderer injected through `tableChromeRendererFactory`; when that renderer is available, the runtime no longer mounts the legacy quick-add, cell-action, insert-rail, axis-handle, or backdrop DOM nodes. The old DOM renderer remains only as a fallback/test path while future row/column/cell affordance work moves into reusable React components.
   - Current architecture: selected/active cell visual state now shares the same table chrome model. The real React chrome applies and clears the cell classes during its lifecycle, while the DOM view keeps this only as a fallback path, reducing the remaining legacy controller ownership of visible table state.
 - [ ] Make the entire cell surface editable and focusable, not only a tiny center area.
-  - Current coverage: every non-interactive cell surface, including filled inline text, now previews and then commits a single-cell object selection instead of falling through to native text selection.
-  - Current polish: cell-range dragging can start from filled text, blank cell surfaces, or empty paragraphs, so dragging across cells produces the expected rectangular table selection.
-  - Current polish: short clicks commit a single-cell `CellSelection` on pointer-up and suppress the follow-up native click, preventing ProseMirror or the browser from immediately replacing the object selection with a text caret.
-  - Current polish: double-clicking a cell is the explicit text-editing affordance; it resolves a ProseMirror text position from the pointer and focuses the cell content without breaking links, buttons, inputs, or other interactive inline controls.
+  - Correction required: short clicks must no longer commit a single-cell ProseMirror `CellSelection`. The single-cell state is a Papyro visual selection layered over normal ProseMirror text selection so caret placement and in-cell text dragging stay natural.
+  - Current target: cell-range dragging can still start from filled text, blank cell surfaces, or empty paragraphs, but the controller should promote to a real table range only after the pointer crosses into another cell.
+  - Current target: double-click is not the only editing affordance. A normal click must both show the selected-cell border and keep the text caret at the pointer location.
 - [x] Ensure cells have no visual gaps, so selection and resize borders look continuous.
-  - Current coverage: Tiptap table cells now match Preview's collapsed-border grid with `border-collapse: collapse`, `border-spacing: 0`, table margin reset, border-box background painting, and a style smoke guard for the continuous cell surface.
+  - Current coverage: Tiptap table cells now match Preview's zero-gap grid with `border-collapse: collapse`, `border-spacing: 0`, normal cell borders, table margin reset, border-box background painting, and a style smoke guard for the continuous cell surface.
+  - Current correction: selection and hover affordances are now drawn by the table chrome overlay instead of relying on every cell to draw its own partial theme border, avoiding broken border segments between adjacent cells.
   - Current polish: table grid painting is isolated from the editor background, selected cells keep a restrained active fill, and selected/active cells keep resize rails available without adding always-visible chrome.
   - Current polish: Hybrid table wrappers no longer add interior padding around the grid, so the rendered table surface starts at the actual zero-spacing table edge instead of showing a small editor-background gutter.
+  - Current fix: the resizable Tiptap table node now uses a Papyro `TableView` wrapper that reapplies `mn-tiptap-table` to the real runtime `<table>`, so zero-gap table CSS is not lost when ProseMirror owns the table view.
 - [x] On cell click, show a theme-colored active border around that cell.
-  - Current coverage: active and selected cells now use one shared selection overlay that draws the theme-colored object border around a single cell or the whole selected cell range; the cell menu trigger stays a separate right-edge action affordance.
-  - Current polish: a single selected ProseMirror table cell now receives the same object-selection overlay as multi-cell ranges, so selection is visible as a real border rather than only the edge action dot.
-  - Current polish: blank-cell and empty-paragraph short clicks are covered by visual-class tests, so the selected and active cell classes must be applied after the `setCellSelection` command refreshes.
+  - Current target: active and selected cells use one shared selection overlay that draws the theme-colored object border around a single visual cell or the whole selected cell range; the cell menu trigger stays a separate right-edge action affordance.
+  - Current target: a single clicked cell receives the same object-selection overlay without converting to ProseMirror `CellSelection`, so selection is visible as a real border while text editing remains natural.
+  - Current target: blank-cell and empty-paragraph short clicks are covered by visual-class tests, and range selection tests must prove `setCellSelection` runs only after drag crosses into another cell.
+  - Current fix: the initial pointerdown still preserves text-caret placement, but the follow-up browser click is suppressed after a visual cell selection so the object-selection border cannot be immediately overwritten by native cell/text selection behavior.
   - Current fix: DOM table cells are resolved back to their real ProseMirror `tableCell` / `tableHeader` node positions before calling `setCellSelection`; real mounted coverage now guards against the earlier false-positive fixture where `posAtDOM(cell, 0)` was incorrectly treated as already selectable.
 - [ ] On cell selection range, show a restrained overlay and a small action trigger on the range edge.
   - Current coverage: the table cell action trigger idles as a small edge dot and expands into a compact four-dot grip only on hover, focus, or open state.
@@ -323,6 +335,7 @@ Tasks:
   - Current polish: React-rendered table command rows now use the same title-plus-description accessible label contract as the fallback renderer, keeping screen-reader semantics consistent while table chrome continues moving to React.
   - Current polish: the real React table context menu now uses a dedicated Lucide icon map for table actions, while the migration DOM fallback keeps the CSS-drawn icons. This makes the runtime menu closer to the official UI component quality without coupling tests to generated SVG markup.
   - Current polish: table context menus now group commands by user intent: Structure for row/column/header/repair operations, Content for copy/merge/clear content, Style for alignment and color, and Danger for destructive actions. These sections are localized and shared by React plus fallback renderers, reducing the toolbox/debug feel while keeping the compact menu width.
+  - Current polish: Style commands now open as hover/focus right-side submenus for alignment, text color, and cell background. React runtime and DOM fallback use the same layout-group metadata, so color and alignment choices stay compact without hiding row/column structural actions.
   - Current coverage: selected cell content can now be cleared through a Papyro command backed by the official `@tiptap/pm/tables` `deleteCellSelection` utility, with context-menu metadata, i18n labels, and mounted-editor tests. The command also supports the official table-node `resetAttrs` semantics for clearing content while resetting alignment/background attrs, and a separate style-reset menu action keeps text intact.
   - Current coverage: selected cells now support default/muted/accent/danger text-color commands backed by the shared `TextStyle` mark path. The command operates on ProseMirror cell selections, clears color through the same menu, and is covered by mounted-editor tests plus context-menu metadata/i18n.
   - Current coverage: selected table cells can now be copied as plain TSV text through a table-scoped command backed by the official `selectedRect` grid semantics. The menu action is localized, has a dedicated copy icon, does not mutate the document, and is covered by mounted-editor tests.

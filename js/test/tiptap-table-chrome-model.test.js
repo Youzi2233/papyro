@@ -354,6 +354,22 @@ test("table chrome model exposes per-cell fill boxes with a single object outlin
     [200, 90, 80, 34],
   ]);
   assert.deepEqual(chrome.outline, rect(120, 90, 160, 34));
+
+  const single = createTableCellObjectSelectionChromeState(baseState({
+    fixture,
+    selection: {
+      kind: "cell",
+      positions: new Set([11]),
+      rows: [],
+      columns: [],
+    },
+  }));
+  assert.equal(single.visible, true);
+  assert.equal(single.selectedCount, 1);
+  assert.deepEqual(single.boxes.map((box) => [box.left, box.top, box.width, box.height]), [
+    [200, 90, 80, 34],
+  ]);
+  assert.deepEqual(single.outline, rect(200, 90, 80, 34));
 });
 
 test("table chrome model exposes semantic action scopes for axis selections", () => {
@@ -567,6 +583,24 @@ test("table chrome model positions selection backdrop and complex block insert r
   assert.equal(singleCellBackdrop.selectionKind, "cell");
   assert.equal(singleCellBackdrop.selectedCount, 1);
   assert.equal(singleCellBackdrop.rect.left, 200);
+
+  const rangeBackdrop = createTableSelectionBackdropChromeState(baseState({
+    selection: {
+      kind: "cells",
+      positions: new Set([10, 11]),
+      rows: [],
+      columns: [],
+    },
+    selectionRect: rect(120, 90, 160, 34),
+  }));
+  assert.equal(rangeBackdrop.visible, true);
+  assert.equal(rangeBackdrop.selectionKind, "cells");
+  assert.equal(rangeBackdrop.selectedCount, 2);
+  assert.deepEqual(rangeBackdrop.rect, rect(120, 90, 160, 34));
+  assert.deepEqual(rangeBackdrop.boxes.map((box) => [box.left, box.top, box.width, box.height]), [
+    [120, 90, 80, 34],
+    [200, 90, 80, 34],
+  ]);
 
   const block = { id: "code" };
   const insert = createComplexBlockInsertChromeState(baseState({

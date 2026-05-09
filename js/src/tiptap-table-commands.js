@@ -16,6 +16,12 @@ export const TABLE_CELL_MENU_COMMAND_IDS = new Set([
   "cell-bg-green",
 ]);
 
+export const TABLE_STYLE_LAYOUT_GROUPS = Object.freeze([
+  "align",
+  "text-color",
+  "cell-color",
+]);
+
 const TABLE_AXIS_STYLE_COMMAND_IDS = Object.freeze([
   "align-left",
   "align-center",

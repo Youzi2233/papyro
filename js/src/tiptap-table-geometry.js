@@ -1,7 +1,6 @@
 const COMPLEX_BLOCK_SELECTOR = ".mn-tiptap-table, table, .mn-tiptap-code-block, pre";
 const EDGE_HOT_ZONE_PX = 12;
 const COMPLEX_BLOCK_INSERT_HOT_ZONE_PX = 18;
-const TABLE_AXIS_INNER_HOT_ZONE_PX = 6;
 const TABLE_CELL_MENU_EDGE_HOT_ZONE_PX = 3;
 const TABLE_CELL_MENU_CENTER_HOT_ZONE_PX = 8;
 
@@ -208,6 +207,12 @@ export function tableSelectionState(selection, grid) {
     rows,
     columns,
     table: tableSelected,
+    anchorCell: Number.isFinite(selection?.$anchorCell?.pos)
+      ? selection.$anchorCell.pos
+      : [...positions][0],
+    headCell: Number.isFinite(selection?.$headCell?.pos)
+      ? selection.$headCell.pos
+      : [...positions].at(-1),
   };
 }
 
@@ -377,6 +382,10 @@ export function tableQuickAddGeometry(grid, tableRect, {
         }
       : null,
   };
+}
+
+export function tableSelectionOverlayRect(grid, selection, tableRect, rawSelection = null) {
+  return tableSelectionRect(grid, selection, tableRect, rawSelection);
 }
 
 export function tableAxisHandleGeometry(grid, tableRect, {
@@ -835,7 +844,6 @@ export function sameTableHover(left, right) {
     left?.block === right?.block &&
     left?.rowIndex === right?.rowIndex &&
     left?.columnIndex === right?.columnIndex &&
-    left?.cell === right?.cell &&
     left?.edge === right?.edge
   );
 }
@@ -951,33 +959,8 @@ export function tableHoverWithIntent({
 
   const wantsAddColumn = insideRightRail && hoverIsAtLastColumn(hover, grid);
   const wantsAddRow = insideBottomRail && hoverIsAtLastRow(hover, grid);
-  const wantsRowHandleFromCell =
-    hover.columnIndex === 0 &&
-    Number.isFinite(x) &&
-    Number.isFinite(y) &&
-    x >= cellRect.left &&
-    x < cellRect.left + Math.min(TABLE_AXIS_INNER_HOT_ZONE_PX, cellRect.width * 0.24) &&
-    y >= cellRect.top &&
-    y <= cellRect.bottom;
-  const wantsColumnHandleFromCell =
-    (hover.rowIndex === 0 || isTableHeaderCell(hover.cell)) &&
-    Number.isFinite(x) &&
-    Number.isFinite(y) &&
-    x >= cellRect.left &&
-    x <= cellRect.right &&
-    (isTableHeaderCell(hover.cell)
-      ? y >= cellRect.top && y <= cellRect.bottom
-      : y >= cellRect.top &&
-        y < cellRect.top + Math.min(TABLE_AXIS_INNER_HOT_ZONE_PX, cellRect.height * 0.24));
 
-  if (
-    wantsRowHandleFromCell &&
-    wantsColumnHandleFromCell &&
-    !insideBottomRail &&
-    !insideRightRail
-  ) {
-    hover.edge = "axis-corner";
-  } else if (wantsAddColumn && wantsAddRow) {
+  if (wantsAddColumn && wantsAddRow) {
     hover.edge = (cellRect.right - x) <= (cellRect.bottom - y) ? "add-column" : "add-row";
   } else if (wantsAddColumn) {
     hover.edge = "add-column";
@@ -989,15 +972,11 @@ export function tableHoverWithIntent({
     !insideBottomRail
   ) {
     hover.edge = "row-handle";
-  } else if (wantsRowHandleFromCell && !insideBottomRail) {
-    hover.edge = "row-handle";
   } else if (
     insideTopGutter &&
     hover.rowIndex === 0 &&
     !insideRightRail
   ) {
-    hover.edge = "column-handle";
-  } else if (wantsColumnHandleFromCell && !insideRightRail) {
     hover.edge = "column-handle";
   } else if (hoverIsNearCellMenuEdge(hover, x, y)) {
     hover.edge = "cell-menu";

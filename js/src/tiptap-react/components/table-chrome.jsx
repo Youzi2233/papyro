@@ -11,6 +11,7 @@ import {
 import {
   applyTableCellVisualState,
   clearTableCellVisualState,
+  createTableAxisHoverHitChromeState,
   createComplexBlockInsertChromeState,
   createTableAxisHoverChromeState,
   createTableAxisHandleChromeState,
@@ -114,10 +115,10 @@ function TableCellMenuTrigger({ state, onOpenCellMenu }) {
   const selectionKind = state?.selection?.kind ?? "cell";
   const label = tableContextTitleLabel(state?.language, selectionKind);
   const activation = usePointerActivation(() =>
-    onOpenCellMenu?.("context", {
-      anchorRect: trigger,
-      cell: state?.hover?.cell ?? state?.cell ?? null,
-    }) !== false,
+      onOpenCellMenu?.("context", {
+        anchorRect: trigger,
+        cell: triggerState.headCell ?? state?.hover?.cell ?? state?.cell ?? null,
+      }) !== false,
   );
 
   if (!trigger) return null;
@@ -237,6 +238,24 @@ function TableAxisHoverBackdrop({ chrome }) {
   );
 }
 
+function TableAxisHoverHitAreas({ chrome }) {
+  const items = [chrome?.row, chrome?.column].filter(Boolean);
+  return (
+    <>
+      {items.map((item) => (
+        <div
+          key={`hit-${item.axis}-${item.index}`}
+          className="mn-tiptap-table-axis-hover-hit"
+          aria-hidden="true"
+          data-axis={item.axis}
+          data-index={String(item.index)}
+          style={fixedRectStyle(item.rect)}
+        />
+      ))}
+    </>
+  );
+}
+
 function TableAxisHandle({ handle, label, onSelectAxis }) {
   const pointerActivated = useRef(false);
   const run = () => {
@@ -303,6 +322,7 @@ export function PapyroTableChrome({ state }) {
   const insert = createComplexBlockInsertChromeState(state);
   const backdrop = createTableSelectionBackdropChromeState(state);
   const axisHover = createTableAxisHoverChromeState(state);
+  const axisHoverHit = createTableAxisHoverHitChromeState(state);
   const axis = createTableAxisHandleChromeState(state, {
     handleSize: TABLE_AXIS_HANDLE_SIZE,
     rowHandleWidth: REACT_TABLE_ROW_HANDLE_WIDTH,
@@ -321,6 +341,7 @@ export function PapyroTableChrome({ state }) {
     <>
       <TableSelectionBackdrop chrome={backdrop} />
       <TableAxisHoverBackdrop chrome={axisHover} />
+      <TableAxisHoverHitAreas chrome={axisHoverHit} />
       <TableQuickAddButton
         chrome={quickAdd.row}
         label={addRowBelowLabel(language)}

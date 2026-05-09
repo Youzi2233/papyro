@@ -132,10 +132,7 @@ test("Tiptap table toolbar disables commands rejected by editor.can", () => {
   assert.equal(rowButton.disabled, true);
   assert.equal(rowButton.dataset.disabled, "true");
   rowButton.onpointerdown({ preventDefault() {}, stopPropagation() {} });
-  assert.deepEqual(calls, [
-    ["setCellSelection", 10, 10],
-    ["focus"],
-  ]);
+  assert.deepEqual(calls, []);
 });
 
 test("Tiptap table toolbar stays closed outside Hybrid mode", () => {
@@ -392,6 +389,9 @@ test("Tiptap table toolbar marks active cell background commands", () => {
   const yellow = created.find((element) => element.dataset.commandId === "cell-bg-yellow");
   const blue = created.find((element) => element.dataset.commandId === "cell-bg-blue");
   const colorGroup = created.find((element) => element.dataset.layoutGroup === "cell-color");
+  const colorPanel = colorGroup.children.find((element) =>
+    String(element.className).includes("mn-tiptap-table-toolbar-submenu-panel"),
+  );
   assert.equal(yellow.dataset.active, "true");
   assert.equal(blue.dataset.active, "false");
   assert.equal(yellow.dataset.variant, "swatch");
@@ -399,6 +399,19 @@ test("Tiptap table toolbar marks active cell background commands", () => {
   assert.equal(colorGroup.dataset.group, "Style");
   assert.equal(colorGroup.dataset.groupKey, "style:cell-color");
   assert.equal(colorGroup.dataset.menuSection, "style");
+  assert.equal(
+    colorGroup.children.some((element) =>
+      String(element.className).includes("mn-tiptap-table-toolbar-submenu-trigger"),
+    ),
+    true,
+  );
+  assert.equal(colorPanel?.role, "menu");
+  assert.deepEqual(
+    colorPanel.children
+      .filter((element) => element.dataset.commandId)
+      .map((element) => element.dataset.commandId),
+    ["cell-bg-clear", "cell-bg-yellow", "cell-bg-blue", "cell-bg-green"],
+  );
 });
 
 test("Tiptap table toolbar renders alignment commands as icon buttons", () => {
@@ -417,6 +430,12 @@ test("Tiptap table toolbar renders alignment commands as icon buttons", () => {
 
   const alignCenter = created.find((element) => element.dataset.commandId === "align-center");
   const alignGroup = created.find((element) => element.dataset.layoutGroup === "align");
+  const alignTrigger = alignGroup.children.find((element) =>
+    String(element.className).includes("mn-tiptap-table-toolbar-submenu-trigger"),
+  );
+  const alignPanel = alignGroup.children.find((element) =>
+    String(element.className).includes("mn-tiptap-table-toolbar-submenu-panel"),
+  );
   assert.equal(alignCenter.dataset.variant, "icon");
   assert.equal(alignCenter.dataset.icon, "align-center");
   assert.equal(alignCenter.children[0]?.dataset?.icon, "align-center");
@@ -424,6 +443,16 @@ test("Tiptap table toolbar renders alignment commands as icon buttons", () => {
   assert.equal(alignGroup.dataset.group, "Style");
   assert.equal(alignGroup.dataset.groupKey, "style:align");
   assert.equal(alignGroup.dataset.menuSection, "style");
+  assert.equal(alignTrigger?.role, "menuitem");
+  assert.equal(alignTrigger?.["aria-haspopup"], "menu");
+  assert.equal(alignTrigger?.children[1]?.children?.[0]?.textContent, "Alignment");
+  assert.equal(alignPanel?.role, "menu");
+  assert.deepEqual(
+    alignPanel.children
+      .filter((element) => element.dataset.commandId)
+      .map((element) => element.dataset.commandId),
+    ["align-left", "align-center", "align-right"],
+  );
 });
 
 test("Tiptap table toolbar keeps icon and swatch layouts stable in Chinese", () => {
@@ -446,12 +475,19 @@ test("Tiptap table toolbar keeps icon and swatch layouts stable in Chinese", () 
 
   const alignGroup = created.find((element) => element.dataset.layoutGroup === "align");
   const colorGroup = created.find((element) => element.dataset.layoutGroup === "cell-color");
+  const alignTrigger = alignGroup.children.find((element) =>
+    String(element.className).includes("mn-tiptap-table-toolbar-submenu-trigger"),
+  );
+  const colorTrigger = colorGroup.children.find((element) =>
+    String(element.className).includes("mn-tiptap-table-toolbar-submenu-trigger"),
+  );
   assert.notEqual(alignGroup.dataset.group, "Align");
   assert.notEqual(colorGroup.dataset.group, "Cell color");
   assert.equal(alignGroup.dataset.groupKey, "style:align");
   assert.equal(colorGroup.dataset.groupKey, "style:cell-color");
-  assert.equal(alignGroup.dataset.group, "样式");
   assert.equal(alignGroup.dataset.menuSection, "style");
+  assert.equal(alignTrigger?.children[1]?.children?.[0]?.textContent, "\u5bf9\u9f50");
+  assert.equal(colorTrigger?.children[1]?.children?.[0]?.textContent, "\u5355\u5143\u683c\u989c\u8272");
   assert.equal(created.find((element) => element.dataset.commandId === "align-center").dataset.variant, "icon");
   assert.equal(created.find((element) => element.dataset.commandId === "cell-bg-yellow").dataset.variant, "swatch");
 });
@@ -1164,7 +1200,6 @@ test("Tiptap table toolbar controls fall back to click events", () => {
     ["addColumnAfter"],
     ["focus"],
     ["setCellSelection", 10, 10],
-    ["focus"],
     ["setCellAttribute", "align", "center"],
     ["focus"],
   ]);
@@ -1269,13 +1304,25 @@ test("Tiptap table toolbar keeps complex command chrome hidden until requested",
 
   assert.equal(root.hidden, false);
   assert.equal(controller.state.menuOpen, true);
+  const commandIds = (element) =>
+    (element.children ?? [])
+      .flatMap((child) => [
+        ...(child.dataset.commandId ? [child.dataset.commandId] : []),
+        ...commandIds(child),
+      ]);
   assert.deepEqual(
     tableToolbarList(created).children
+      .filter((element) => !String(element.className).includes("mn-tiptap-table-toolbar-submenu-group"))
       .flatMap((element) => element.children ?? [])
       .filter((element) => element.dataset.commandId)
       .map((element) => element.dataset.commandId),
+    ["copy-cell-content"],
+  );
+  assert.deepEqual(
+    tableToolbarList(created).children
+      .filter((element) => String(element.className).includes("mn-tiptap-table-toolbar-submenu-group"))
+      .flatMap(commandIds),
     [
-      "copy-cell-content",
       "align-left",
       "align-center",
       "align-right",
@@ -1617,15 +1664,57 @@ test("Tiptap table axis handles reveal for the hovered row and column", () => {
 
   editor.view.dom.listeners.get("pointermove")({ target: cells[3], clientX: 124, clientY: 128 });
   assert.equal(visibleAxisHandles("row").length, 1);
-  assert.equal(visibleAxisHandles("column").length, 0);
+  assert.equal(visibleAxisHandles("column").length, 1);
 
   editor.view.dom.listeners.get("pointermove")({ target: cells[1], clientX: 204, clientY: 97 });
   assert.deepEqual(visibleAxisHandles("row").map((handle) => handle.dataset.index), ["0"]);
   assert.deepEqual(visibleAxisHandles("column").map((handle) => handle.dataset.index), ["1"]);
 
   editor.view.dom.listeners.get("pointermove")({ target: cells[1], clientX: 204, clientY: 95 });
-  assert.equal(visibleAxisHandles("row").length, 0);
+  assert.equal(visibleAxisHandles("row").length, 1);
   assert.equal(visibleAxisHandles("column").length, 1);
+});
+
+test("Tiptap table axis handles reveal when editor selection starts outside the table", () => {
+  const { created, documentRef } = createDocument();
+  const { cells, editor } = createTableHarness();
+  const outsideNode = {
+    nodeType: 1,
+    closest() {
+      return null;
+    },
+  };
+  editor.state.selection = { from: 1 };
+  editor.view.domAtPos = () => ({ node: outsideNode });
+  const controller = createTiptapTableToolbarController({
+    dom: { document: documentRef },
+  });
+
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  assert.equal(controller.state.open, false);
+
+  editor.view.dom.listeners.get("pointermove")({
+    target: cells[1],
+    clientX: 214,
+    clientY: 104,
+  });
+
+  assert.equal(controller.state.open, true);
+  assert.equal(controller.state.hover.cell, cells[1]);
+  assert.deepEqual([...controller.state.selection.positions], []);
+  assert.equal(latestAxisHandle(created, "row", 0)?.hidden, false);
+  assert.equal(latestAxisHandle(created, "column", 1)?.hidden, false);
+
+  const backdrop = created.find((element) =>
+    String(element.className).includes("mn-tiptap-table-axis-hover-backdrop") &&
+    element.dataset.axis === "column" &&
+    element.dataset.index === "1" &&
+    !element.removed,
+  );
+  assert.ok(backdrop, "expected a continuous column hover backdrop");
+  assert.equal(backdrop.hidden, false);
+  assert.equal(backdrop.style.left, "200px");
+  assert.equal(backdrop.style.height, "68px");
 });
 
 test("Tiptap table column handles reveal across header cell hover", () => {
@@ -1645,7 +1734,7 @@ test("Tiptap table column handles reveal across header cell hover", () => {
     clientY: 107,
   });
 
-  assert.equal(controller.state.hover.edge, "column-handle");
+  assert.equal(controller.state.hover.edge, "cell");
   assert.equal(latestAxisHandle(created, "column", 1).hidden, false);
 });
 
@@ -1668,7 +1757,7 @@ test("Tiptap table row and column handles stay outside editable cells while trac
   assert.equal(columnHandleFromCell.hidden, false);
 
   editor.view.dom.listeners.get("pointermove")({ target: cells[3], clientX: 124, clientY: 128 });
-  assert.equal(controller.state.hover.edge, "row-handle");
+  assert.equal(controller.state.hover.edge, "cell");
   const rowHandle = latestAxisHandle(created, "row", 1);
   const rowBackdrop = [...created].reverse().find((element) =>
     String(element.className).includes("mn-tiptap-table-axis-hover-backdrop") &&
@@ -1677,7 +1766,7 @@ test("Tiptap table row and column handles stay outside editable cells while trac
     !element.removed,
   );
   editor.view.dom.listeners.get("pointermove")({ target: cells[1], clientX: 204, clientY: 95 });
-  assert.equal(controller.state.hover.edge, "column-handle");
+  assert.equal(controller.state.hover.edge, "cell");
   const columnHandle = latestAxisHandle(created, "column", 1);
   const columnBackdrop = [...created].reverse().find((element) =>
     String(element.className).includes("mn-tiptap-table-axis-hover-backdrop") &&
@@ -1790,9 +1879,12 @@ test("Tiptap table row and column handles activate from gutter coordinates", () 
   );
 });
 
-test("Tiptap table row and column handles hide after row or column selection", () => {
+test("Tiptap table row and column handles stay hover-bound after axis selection", () => {
   const { created, documentRef } = createDocument();
-  const { editor, table } = createTableHarness();
+  const { editor, table } = createTableHarness({
+    addRowAfter: () => true,
+    addRowBefore: () => true,
+  });
   const controller = createTiptapTableToolbarController({
     dom: { document: documentRef },
   });
@@ -1809,7 +1901,7 @@ test("Tiptap table row and column handles hide after row or column selection", (
   rowHandle.onpointerdown({ preventDefault() {}, stopPropagation() {} });
 
   assert.equal(controller.state.selection.kind, "row");
-  assert.equal(controller.state.menuOpen, false);
+  assert.equal(controller.state.menuOpen, true);
   assert.equal(
     created
       .filter((element) =>
@@ -1818,7 +1910,7 @@ test("Tiptap table row and column handles hide after row or column selection", (
         !element.removed,
       )
       .some((element) => !element.hidden),
-    false,
+    true,
   );
 });
 
@@ -2382,7 +2474,7 @@ test("Tiptap table toolbar anchors right-click menus to the pointer", () => {
   assert.equal(root.style.top, "248px");
 });
 
-test("Tiptap table toolbar previews inline text cell surfaces as object selections", () => {
+test("Tiptap table toolbar previews inline text cell surfaces as visual selections", () => {
   const { created, documentRef } = createDocument();
   const { calls, cells, editor } = createTableHarness({
     mergeCells: () => true,
@@ -2440,7 +2532,7 @@ test("Tiptap table toolbar previews inline text cell surfaces as object selectio
         events.push("stopImmediatePropagation:down");
       },
     }),
-    false,
+    true,
   );
 
   assert.equal(controller.state.selection.kind, "cell");
@@ -2455,12 +2547,8 @@ test("Tiptap table toolbar previews inline text cell surfaces as object selectio
 
   assert.equal(documentRef.listeners.has("pointermove"), true);
   assert.equal(documentRef.listeners.get("pointerup")?.length, 1);
-  assert.deepEqual(events, [
-    "preventDefault:down",
-    "stopPropagation:down",
-    "stopImmediatePropagation:down",
-  ]);
-  assert.deepEqual(calls, []);
+  assert.deepEqual(events, ["stopPropagation:down", "stopImmediatePropagation:down"]);
+  assert.deepEqual(calls, [["posAtCoords", 146, 104], ["setTextSelection", 12], ["focus"]]);
   controller.refresh(editor);
   assert.equal(cells[0].classes.has("mn-tiptap-table-cell-selected"), true);
   assert.equal(trigger.hidden, false);
@@ -2519,7 +2607,8 @@ test("Tiptap table toolbar selects filled cell surfaces on short clicks", () => 
   });
 
   assert.deepEqual(calls, [
-    ["setCellSelection", 10, 10],
+    ["posAtCoords", 146, 104],
+    ["setTextSelection", 12],
     ["focus"],
   ]);
   assert.equal(controller.state.selection.kind, "cell");
@@ -2590,15 +2679,8 @@ test("Tiptap table toolbar treats mousedown as a cell object selection fallback"
     },
   });
 
-  assert.deepEqual(events, [
-    "preventDefault:down",
-    "stopPropagation:down",
-    "stopImmediatePropagation:down",
-    "preventDefault:up",
-    "stopPropagation:up",
-    "stopImmediatePropagation:up",
-  ]);
-  assert.deepEqual(calls, [["setCellSelection", 11, 11], ["focus"]]);
+  assert.deepEqual(events, ["stopPropagation:down", "stopImmediatePropagation:down"]);
+  assert.deepEqual(calls, []);
   assert.equal(controller.state.selection.kind, "cell");
   assert.deepEqual([...controller.state.selection.positions], [11]);
   assert.equal(cells[1].classes.has("mn-tiptap-table-cell-selected"), true);
@@ -2688,7 +2770,6 @@ test("Tiptap table toolbar drags filled cell text as a cell range", () => {
   });
 
   assert.deepEqual(events, [
-    "preventDefault:down",
     "stopPropagation:down",
     "stopImmediatePropagation:down",
     "preventDefault:move",
@@ -2698,7 +2779,7 @@ test("Tiptap table toolbar drags filled cell text as a cell range", () => {
     "stopPropagation:up",
     "stopImmediatePropagation:up",
   ]);
-  assert.deepEqual(calls, [["setCellSelection", 10, 11], ["focus"]]);
+  assert.deepEqual(calls, [["posAtCoords", 146, 104], ["setTextSelection", 12], ["focus"], ["setCellSelection", 10, 11], ["focus"]]);
   assert.equal(controller.state.selection.kind, "cells");
   assert.deepEqual([...controller.state.selection.positions], [10, 11]);
   assert.equal(cells[0].classes.has("mn-tiptap-table-cell-selected"), true);

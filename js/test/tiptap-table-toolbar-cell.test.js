@@ -143,7 +143,7 @@ test("Tiptap table toolbar reveals the cell trigger only after selecting a cell"
   assert.equal(controller.state.selection.kind, "cell");
 });
 
-test("Tiptap table toolbar suppresses native clicks after object selection", () => {
+test("Tiptap table toolbar suppresses follow-up clicks after visual cell selection", () => {
   const { cells, editor } = createTableHarness();
   const { documentRef } = createDocument();
   const controller = createTiptapTableToolbarController({
@@ -217,12 +217,8 @@ test("Tiptap table toolbar suppresses native clicks after object selection", () 
     true,
   );
   assert.deepEqual(events, [
-    "preventDefault:down",
     "stopPropagation:down",
     "stopImmediatePropagation:down",
-    "preventDefault:up",
-    "stopPropagation:up",
-    "stopImmediatePropagation:up",
     "preventDefault:click",
     "stopPropagation:click",
     "stopImmediatePropagation:click",

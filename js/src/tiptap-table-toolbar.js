@@ -17,6 +17,8 @@ import {
   tableCellDocumentPosition,
   tableHoverContext,
   tableHoverWithIntent,
+  tableSelectionMenuRect,
+  tableSelectionOverlayRect,
   tableSelectionGrid,
   tableSelectionState,
 } from "./tiptap-table-geometry.js";
@@ -129,8 +131,24 @@ function consumeTableObjectEvent(event) {
   event?.nativeEvent?.stopImmediatePropagation?.();
 }
 
+function stopTableObjectEvent(event) {
+  event?.stopPropagation?.();
+  event?.stopImmediatePropagation?.();
+  event?.nativeEvent?.stopImmediatePropagation?.();
+}
+
 function eventModifiersAllowTableObjectSelection(event) {
   return !event?.ctrlKey && !event?.metaKey && !event?.altKey;
+}
+
+function isTableCellContentClearKey(event) {
+  const key = String(event?.key ?? "");
+  return (
+    (key === "Delete" || key === "Backspace") &&
+    !event?.ctrlKey &&
+    !event?.metaKey &&
+    !event?.altKey
+  );
 }
 
 function tableCellTextSelectionPosition(editor, cell, event) {
@@ -172,12 +190,18 @@ function tableContextFromElement(editor, table) {
   const grid = tableSelectionGrid(table, editor.view);
   const rect = normalizedRect(table.getBoundingClientRect?.());
   if (!rect || grid.length === 0) return null;
+  const selection = tableSelectionState(editor.state?.selection, grid);
+  const selectionRect = tableSelectionOverlayRect(grid, selection, rect, editor.state?.selection);
+  const menuRect = tableSelectionMenuRect(grid, selection, rect, editor.state?.selection);
 
   return {
     table,
     rect,
     grid,
-    selection: tableSelectionState(editor.state?.selection, grid),
+    selection,
+    selectionRect,
+    menuRect,
+    cell: activeCellFromEditor(editor, grid),
   };
 }
 
@@ -373,6 +397,7 @@ export class TiptapTableToolbarController {
     target.addEventListener("pointerleave", onPointerLeave, true);
     target.addEventListener("dblclick", onDblClick, true);
     this.#document?.addEventListener?.("pointermove", onChromePointerMove, true);
+    this.#document?.addEventListener?.("pointerover", onChromePointerMove, true);
     this.#document?.addEventListener?.("pointerleave", onChromePointerLeave, true);
     this.#removeListeners = [
       () => target.removeEventListener?.("contextmenu", onContextMenu, true),
@@ -383,6 +408,7 @@ export class TiptapTableToolbarController {
       () => target.removeEventListener?.("pointerleave", onPointerLeave, true),
       () => target.removeEventListener?.("dblclick", onDblClick, true),
       () => this.#document?.removeEventListener?.("pointermove", onChromePointerMove, true),
+      () => this.#document?.removeEventListener?.("pointerover", onChromePointerMove, true),
       () => this.#document?.removeEventListener?.("pointerleave", onChromePointerLeave, true),
     ];
   }
@@ -631,6 +657,12 @@ export class TiptapTableToolbarController {
       return this.insertParagraphAfterTable();
     }
 
+    if (isTableCellContentClearKey(event) && this.#clearSelectedTableCellContents()) {
+      event?.preventDefault?.();
+      event?.stopPropagation?.();
+      return true;
+    }
+
     const targetInsideToolbar = this.contains(event?.target);
     if (!targetInsideToolbar && !this.#state.keyboardActive) return false;
 
@@ -679,6 +711,60 @@ export class TiptapTableToolbarController {
     }
 
     if (!this.#editor || this.#entry?.viewMode !== "hybrid") return false;
+
+    const table = closestTableElement(event?.target, this.#editor?.view?.dom);
+    if (table) {
+      const activeContext = activeTableContext(this.#editor);
+      const context =
+        this.#state.table === table && this.#state.grid?.length
+          ? this.#state
+          : activeContext?.table === table
+            ? activeContext
+            : tableContextFromElement(this.#editor, table);
+      if (!context?.rect) return false;
+
+      const hover = tableHoverWithIntent({
+        target: event?.target,
+        table,
+        grid: context.grid,
+        tableRect: context.rect,
+        clientX: event?.clientX,
+        clientY: event?.clientY,
+        rowHandleWidth: TABLE_ROW_HANDLE_WIDTH,
+        columnHandleHeight: TABLE_COLUMN_HANDLE_HEIGHT,
+        allowRailTarget:
+          event?.target === this.#editor?.view?.dom ||
+          event?.target === table ||
+          event?.target?.classList?.contains?.("tableWrapper"),
+      });
+      if (this.#state.open && this.#state.table === table) {
+        if (sameTableHover(hover, this.#state.hover)) return false;
+        this.#state = {
+          ...this.#state,
+          hover,
+        };
+      } else {
+        const language = entryLanguage(this.#entry);
+        this.#state = {
+          ...emptyTableToolbarState(language),
+          open: true,
+          table,
+          rect: context.rect,
+          cell: context.cell ?? null,
+          cellRect: context.cell?.getBoundingClientRect?.() ?? null,
+          selectionRect: context.selectionRect ?? null,
+          menuRect: context.menuRect ?? null,
+          grid: context.grid ?? [],
+          selection: context.selection ?? tableSelectionState(null, context.grid ?? []),
+          hover,
+          complexBlock: table,
+          complexRect: context.rect,
+        };
+        this.#dismiss.open();
+      }
+      this.#render();
+      return true;
+    }
 
     const complexHover = complexBlockHoverContext(event?.target, this.#editor?.view?.dom);
     if (complexHover && complexHover.block !== this.#state.table) {
@@ -745,8 +831,10 @@ export class TiptapTableToolbarController {
     if (this.contains(event?.target)) return false;
     if (event?.target?.closest?.(".column-resize-handle")) return false;
 
-    this.#startCellObjectInteraction(event);
-    return false;
+    const started = this.#startCellObjectInteraction(event);
+    if (!started) return false;
+    stopTableObjectEvent(event);
+    return true;
   }
 
   handleMouseDown(event) {
@@ -760,7 +848,10 @@ export class TiptapTableToolbarController {
       !event?.target?.closest?.(".column-resize-handle")
     ) {
       const started = this.#startCellObjectInteraction(event);
-      if (started) return started;
+      if (started) {
+        stopTableObjectEvent(event);
+        return true;
+      }
     }
 
     if (!this.#cellDrag) return false;
@@ -769,7 +860,11 @@ export class TiptapTableToolbarController {
     const cell = closestTableCellElement(target);
     if (cell && isInteractiveCellContent(target, cell)) return false;
 
-    consumeTableObjectEvent(event);
+    if (this.#cellDrag.selected) {
+      consumeTableObjectEvent(event);
+    } else {
+      stopTableObjectEvent(event);
+    }
     return true;
   }
 
@@ -791,13 +886,11 @@ export class TiptapTableToolbarController {
       .find((item) => item.cell === cell);
     if (!Number.isFinite(start?.pos)) return false;
 
-    const selectable = typeof this.#editor?.commands?.setCellSelection === "function";
-    if (!selectable) return false;
-
     if (isInteractiveCellContent(event?.target, cell)) return false;
 
     const cellSurfaceClick = isEditableTableCellSurfaceTarget(event?.target, cell);
     this.#previewActiveCellFromPointer(context, start, event);
+    this.#placeTextSelectionInCell(cell, event);
     if (!cellSurfaceClick) return false;
 
     if (!this.#cellDrag) {
@@ -809,7 +902,9 @@ export class TiptapTableToolbarController {
         selected: false,
         previewCleared: false,
         cellSurfaceClick,
-        rangeSelectable: shouldStartTableCellRangeDrag(event?.target, cell),
+        rangeSelectable:
+          typeof this.#editor?.commands?.setCellSelection === "function" &&
+          shouldStartTableCellRangeDrag(event?.target, cell),
         startX: Number(event?.clientX),
         startY: Number(event?.clientY),
         removeListeners: [],
@@ -817,7 +912,6 @@ export class TiptapTableToolbarController {
 
       this.#bindCellDragListeners();
     }
-    consumeTableObjectEvent(event);
     return true;
   }
 
@@ -853,6 +947,8 @@ export class TiptapTableToolbarController {
       selection: {
         ...tableSelectionState(null, context.grid ?? []),
         positions: new Set([start.pos]),
+        anchorCell: start.pos,
+        headCell: start.pos,
       },
       hover: hoverFromTableCell(start, event, context.table),
       complexBlock: context.table,
@@ -860,6 +956,27 @@ export class TiptapTableToolbarController {
     };
     this.#render();
     return true;
+  }
+
+  #placeTextSelectionInCell(cell, event) {
+    if (
+      !cell ||
+      typeof this.#editor?.commands?.setTextSelection !== "function"
+    ) {
+      return false;
+    }
+
+    const targetPos = tableCellTextSelectionPosition(this.#editor, cell, event);
+    if (!Number.isFinite(targetPos)) return false;
+
+    let selected = false;
+    try {
+      selected = this.#editor.commands.setTextSelection(targetPos) !== false;
+    } catch (_error) {
+      selected = false;
+    }
+    if (selected) this.#editor.commands?.focus?.();
+    return selected;
   }
 
   #selectCellRange(anchorPos, headPos) {
@@ -883,6 +1000,85 @@ export class TiptapTableToolbarController {
     if (!ok) return false;
     this.#visualCellSelection = null;
     this.#editor.commands?.focus?.();
+    this.refresh(this.#editor);
+    return true;
+  }
+
+  #setCellSelectionForCommand(anchorPos, headPos) {
+    if (
+      !Number.isFinite(anchorPos) ||
+      !Number.isFinite(headPos) ||
+      typeof this.#editor?.commands?.setCellSelection !== "function"
+    ) {
+      return false;
+    }
+
+    try {
+      return this.#editor.commands.setCellSelection({
+        anchorCell: anchorPos,
+        headCell: headPos,
+      }) !== false;
+    } catch (_error) {
+      return false;
+    }
+  }
+
+  #clearSelectedTableCellContents() {
+    if (
+      !this.#editor ||
+      typeof this.#editor.commands?.clearSelectedTableCells !== "function"
+    ) {
+      return false;
+    }
+
+    const context = activeTableContext(this.#editor);
+    let visual = this.#visualCellSelectionForContext(context);
+    if (!visual && (this.#state.selection?.positions?.size ?? 0) === 1) {
+      const pos = [...this.#state.selection.positions][0];
+      const match = (this.#state.grid ?? [])
+        .flatMap((row) => row.cells ?? [])
+        .find((cell) => cell.pos === pos);
+      if (match?.cell && this.#state.table) {
+        visual = {
+          table: this.#state.table,
+          pos,
+          cell: match.cell,
+          rect: normalizedRect(match.rect ?? match.cell.getBoundingClientRect?.()),
+        };
+      }
+    }
+    if (visual?.cell && Number.isFinite(visual.pos)) {
+      const selected = this.#setCellSelectionForCommand(visual.pos, visual.pos);
+      if (!selected) return false;
+
+      const cleared = this.#editor.commands.clearSelectedTableCells() !== false;
+      if (!cleared) return false;
+
+      const refreshedContext =
+        tableContextFromElement(this.#editor, visual.table) ??
+        activeTableContext(this.#editor) ??
+        context;
+      const match = (refreshedContext?.grid ?? [])
+        .flatMap((row) => row.cells ?? [])
+        .find((cell) => cell.pos === visual.pos);
+      if (match?.cell) {
+        this.#visualCellSelection = {
+          table: refreshedContext.table,
+          pos: match.pos,
+          cell: match.cell,
+          rect: normalizedRect(match.rect ?? match.cell.getBoundingClientRect?.()),
+        };
+        this.#placeTextSelectionInCell(match.cell, null);
+      }
+      this.refresh(this.#editor);
+      return true;
+    }
+
+    const selectedCount = this.#state.selection?.positions?.size ?? 0;
+    if (selectedCount === 0) return false;
+
+    const cleared = runTableEditorCommand(this.#editor, "clearSelectedTableCells");
+    if (!cleared) return false;
     this.refresh(this.#editor);
     return true;
   }
@@ -960,11 +1156,6 @@ export class TiptapTableToolbarController {
         : 0;
     if (distance > 3) drag.moved = true;
     if (!drag.rangeSelectable) {
-      if (drag.moved && !drag.previewCleared) {
-        drag.previewCleared = true;
-        this.#visualCellSelection = null;
-        this.refresh(this.#editor);
-      }
       return false;
     }
 
@@ -982,8 +1173,8 @@ export class TiptapTableToolbarController {
     if (!Number.isFinite(nextHead?.pos)) return false;
 
     if (!drag.moved) return false;
+    if (!drag.selected && nextHead.pos === drag.anchor?.pos) return false;
     consumeTableObjectEvent(event);
-    if (!drag.selected && nextHead.pos === drag.anchor?.pos) return true;
     if (drag.selected && nextHead.pos === drag.head?.pos) return true;
 
     drag.head = nextHead;
@@ -997,18 +1188,8 @@ export class TiptapTableToolbarController {
     drag.removeListeners?.forEach?.((remove) => remove());
     drag.removeListeners = [];
     this.#cellDrag = null;
-    let selected = false;
-    if (drag.selected) {
-      selected = true;
-    } else if (drag.cellSurfaceClick && !drag.moved) {
-      selected = this.#selectCellRange(drag.anchor.pos, drag.anchor.pos);
-    } else if (drag.cellSurfaceClick && drag.rangeSelectable) {
-      selected = this.#selectCellRange(drag.anchor.pos, drag.head?.pos ?? drag.anchor.pos);
-    }
-    if (selected) {
-      this.#markSuppressCellClick(drag, event);
-      consumeTableObjectEvent(event);
-    }
+    this.#markSuppressCellClick(drag, event);
+    if (drag.selected) consumeTableObjectEvent(event);
     return true;
   }
 
@@ -1039,10 +1220,37 @@ export class TiptapTableToolbarController {
   }
 
   handleChromePointerMove(event) {
-    if (!this.#state.open || !this.#state.table || !this.contains(event?.target)) {
+    if (!this.#state.open || !this.#state.table) {
       return false;
     }
-    return this.#refreshHoverFromActiveTableChrome(event);
+    const targetInsideChrome = this.contains(event?.target);
+    const targetInsideTable = this.#state.table?.contains?.(event?.target);
+    const targetIsBody = event?.target === this.#document?.body;
+    const targetIsRoot = event?.target === this.#editor?.view?.dom;
+    const targetInsideEditor = this.#editor?.view?.dom?.contains?.(event?.target);
+    if (targetInsideChrome) {
+      return this.#refreshHoverFromActiveTableChrome(event);
+    }
+    if (
+      targetInsideTable ||
+      targetIsBody ||
+      targetIsRoot ||
+      targetInsideEditor ||
+      event?.target == null
+    ) {
+      const hover = this.#hoverFromPointer(event);
+      if (hover) {
+        if (!sameTableHover(hover, this.#state.hover)) {
+          this.#state = {
+            ...this.#state,
+            hover,
+          };
+          this.#render();
+        }
+        return true;
+      }
+    }
+    return false;
   }
 
   handleChromePointerLeave(event) {
@@ -1079,18 +1287,8 @@ export class TiptapTableToolbarController {
       }
       return true;
     }
-    const hover = tableHoverWithIntent({
-      target: this.#state.table,
-      table: this.#state.table,
-      grid: this.#state.grid,
-      tableRect: this.#state.rect,
-      clientX: x,
-      clientY: y,
-      rowHandleWidth: TABLE_ROW_HANDLE_WIDTH,
-      columnHandleHeight: TABLE_COLUMN_HANDLE_HEIGHT,
-      allowRailTarget: true,
-    });
-    if (!hover || !["row-handle", "column-handle", "axis-corner"].includes(hover.edge)) {
+    const hover = this.#hoverFromPointer(event);
+    if (!hover) {
       return false;
     }
 
@@ -1100,6 +1298,25 @@ export class TiptapTableToolbarController {
     };
     this.#render();
     return true;
+  }
+
+  #hoverFromPointer(event) {
+    if (!this.#state.table || !this.#state.rect) return null;
+    const hover = tableHoverWithIntent({
+      target: this.#state.table,
+      table: this.#state.table,
+      grid: this.#state.grid,
+      tableRect: this.#state.rect,
+      clientX: event?.clientX,
+      clientY: event?.clientY,
+      rowHandleWidth: TABLE_ROW_HANDLE_WIDTH,
+      columnHandleHeight: TABLE_COLUMN_HANDLE_HEIGHT,
+      allowRailTarget: true,
+    });
+    if (!hover || ["add-row", "add-column", "cell-menu"].includes(hover.edge)) {
+      return null;
+    }
+    return hover;
   }
 
   #hoverFromAxisHandleTarget(target, event) {
@@ -1217,13 +1434,62 @@ export class TiptapTableToolbarController {
       this.refresh(this.#editor);
       return false;
     }
+    this.#ensureVisualCellSelectionForCommand();
     const keepToolbarFocus = this.#state.keyboardActive && this.#state.menuOpen;
     const ok = runTableEditorCommand(this.#editor, command.command, command.args);
+    const visualAfterCommand = this.#restoreVisualCellSelectionAfterCommand(ok);
     this.refresh(this.#editor);
+    if (visualAfterCommand) {
+      this.refresh(this.#editor);
+    }
     if (keepToolbarFocus && this.#state.open && this.#state.activeCommandId) {
       this.#view.focusCommand?.(this.#state.activeCommandId);
     }
     return ok;
+  }
+
+  #ensureVisualCellSelectionForCommand() {
+    const selectedCount = this.#state.selection?.positions?.size ?? 0;
+    if (selectedCount !== 1 || this.#state.selection?.kind !== "cell") return null;
+
+    const pos = [...this.#state.selection.positions][0];
+    if (!Number.isFinite(pos)) return null;
+    const match = (this.#state.grid ?? [])
+      .flatMap((row) => row.cells ?? [])
+      .find((cell) => cell.pos === pos);
+    if (!match?.cell || !this.#state.table) return null;
+
+    const visual = {
+      table: this.#state.table,
+      pos,
+      cell: match.cell,
+      rect: normalizedRect(match.rect ?? match.cell.getBoundingClientRect?.()),
+    };
+    this.#visualCellSelection = visual;
+    this.#setCellSelectionForCommand(pos, pos);
+    return visual;
+  }
+
+  #restoreVisualCellSelectionAfterCommand(commandOk) {
+    const visual = this.#visualCellSelection;
+    if (!commandOk || !visual?.table || !Number.isFinite(visual.pos)) return false;
+
+    const context =
+      tableContextFromElement(this.#editor, visual.table) ??
+      activeTableContext(this.#editor);
+    const match = (context?.grid ?? [])
+      .flatMap((row) => row.cells ?? [])
+      .find((cell) => cell.pos === visual.pos);
+    if (!match?.cell) return false;
+
+    this.#visualCellSelection = {
+      table: context.table,
+      pos: match.pos,
+      cell: match.cell,
+      rect: normalizedRect(match.rect ?? match.cell.getBoundingClientRect?.()),
+    };
+    this.#placeTextSelectionInCell(match.cell, null);
+    return true;
   }
 
   insertParagraphAfterBlock(block = null, { useInsertMenu = true, edge = "after" } = {}) {
@@ -1297,22 +1563,17 @@ export class TiptapTableToolbarController {
         : isPlainCellContext
           ? cellPosition(this.#state.grid, cell ?? this.#state.hover?.cell ?? this.#state.cell)
           : null;
-    if (
-      Number.isFinite(pos) &&
-      typeof this.#editor?.commands?.setCellSelection === "function"
-    ) {
-      this.#visualCellSelection = null;
-      let ok = false;
-      try {
-        ok = this.#editor.commands.setCellSelection({
-          anchorCell: pos,
-          headCell: pos,
-        }) !== false;
-      } catch (_error) {
-        ok = false;
-      }
-      if (ok) {
-        this.#editor.commands?.focus?.();
+    if (isPlainCellContext && Number.isFinite(pos)) {
+      const match = (this.#state.grid ?? [])
+        .flatMap((row) => row.cells ?? [])
+        .find((item) => item.pos === pos);
+      if (match?.cell && this.#state.table) {
+        this.#visualCellSelection = {
+          table: this.#state.table,
+          pos,
+          cell: match.cell,
+          rect: normalizedRect(match.rect ?? match.cell.getBoundingClientRect?.()),
+        };
         this.refresh(this.#editor);
       }
     }
@@ -1320,6 +1581,7 @@ export class TiptapTableToolbarController {
   }
 
   selectAxis(axis, index) {
+    const previousHover = this.#state.hover;
     this.#visualCellSelection = null;
     const ok = selectTableAxis(this.#editor, this.#state.grid, axis, index);
     this.refresh(this.#editor);
@@ -1330,7 +1592,7 @@ export class TiptapTableToolbarController {
       activeCommandId: firstEnabledTableCommandId(this.#state.commands, "context", this.#state.selection.kind),
       keyboardActive: false,
       menuAnchorRect: this.#state.menuAnchorRect,
-      hover: null,
+      hover: ok ? previousHover : null,
     };
     this.#render();
     return ok;

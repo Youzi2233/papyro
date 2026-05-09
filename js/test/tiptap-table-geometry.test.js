@@ -119,14 +119,14 @@ test("Tiptap table geometry classifies low-noise hover intent", () => {
     })?.edge;
 
   assert.equal(classify(4, 202, 128), "cell");
-  assert.equal(classify(0, 122, 92), "axis-corner");
-  assert.equal(classify(3, 122, 128), "row-handle");
+  assert.equal(classify(0, 122, 92), "cell");
+  assert.equal(classify(3, 122, 128), "cell");
   assert.equal(classify(3, 126, 128), "cell");
-  assert.equal(classify(3, 124, 128), "row-handle");
+  assert.equal(classify(3, 124, 128), "cell");
   assert.equal(classify(3, 108, 128), "row-handle");
-  assert.equal(classify(1, 204, 92), "column-handle");
+  assert.equal(classify(1, 204, 92), "cell");
   assert.equal(classify(1, 204, 97), "cell");
-  assert.equal(classify(1, 204, 95), "column-handle");
+  assert.equal(classify(1, 204, 95), "cell");
   assert.equal(classify(1, 204, 76), "column-handle");
   assert.equal(classify(5, 356, 140), "cell");
   assert.equal(classify(3, 160, 154), "cell");
@@ -160,7 +160,7 @@ test("Tiptap table geometry infers gutter handles from table coordinates", () =>
   assert.equal(classify(table, 373, 140), undefined);
 });
 
-test("Tiptap table geometry treats header cell hover as column handle intent", () => {
+test("Tiptap table geometry keeps header cell interiors editable while chrome reveals handles", () => {
   const { cells, grid, table, tableRect } = createHeaderTableGeometryHarness();
   const hover = tableHoverWithIntent({
     target: cells[1],
@@ -173,7 +173,7 @@ test("Tiptap table geometry treats header cell hover as column handle intent", (
     columnHandleHeight: 20,
   });
 
-  assert.equal(hover.edge, "column-handle");
+  assert.equal(hover.edge, "cell");
   assert.equal(hover.columnIndex, 1);
 });
 

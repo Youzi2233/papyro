@@ -310,6 +310,10 @@ test("React table context menu uses lucide icons in the real runtime", () => {
   assert.match(tableContextMenuSource, /TableCommandIcon/u);
   assert.match(tableContextMenuSource, /"icon-source":\s*"lucide"/u);
   assert.match(tableContextMenuSource, /data-menu-section/u);
+  assert.match(tableContextMenuSource, /TABLE_STYLE_LAYOUT_GROUPS/u);
+  assert.match(tableContextMenuSource, /mn-tiptap-table-toolbar-submenu-trigger/u);
+  assert.match(tableContextMenuSource, /mn-tiptap-table-toolbar-submenu-panel/u);
+  assert.match(tableContextMenuSource, /tableCommandLayoutGroupLabel/u);
   assert.match(tableCommandIconsSource, /from "lucide-react"/u);
   assert.match(tableCommandIconsSource, /export function TableCommandIcon/u);
   assert.match(tableCommandIconsSource, /TableCellsMerge/u);

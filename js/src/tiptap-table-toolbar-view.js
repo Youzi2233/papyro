@@ -7,6 +7,8 @@ import {
   tableContextEyebrowLabel,
   tableContextSubtitleLabel,
   tableContextTitleLabel,
+  tableCommandLayoutGroupDescription,
+  tableCommandLayoutGroupLabel,
   tableCommandMenuSectionLabel,
   tableToolsLabel,
 } from "./tiptap-i18n.js";
@@ -15,6 +17,7 @@ import {
   applyTableCellVisualState,
   clearTableCellVisualState,
   createComplexBlockInsertChromeState,
+  createTableAxisHoverHitChromeState,
   createTableAxisHoverChromeState,
   createTableAxisHandleChromeState,
   createTableCellMenuTriggerChromeState,
@@ -24,6 +27,7 @@ import {
 } from "./tiptap-table-chrome-model.js";
 import {
   createTableCommandMenuModel,
+  TABLE_STYLE_LAYOUT_GROUPS,
   tableCommandVariant,
   visibleTableCommands,
 } from "./tiptap-table-commands.js";
@@ -49,6 +53,7 @@ const TABLE_ADD_COLUMN_WIDTH = 14;
 const TABLE_CONTEXT_MENU_WIDTH = 176;
 const TABLE_KEYBOARD_MENU_WIDTH = 520;
 const TABLE_TOOLBAR_OWNER_ID = "mn-tiptap-table-toolbar";
+const TABLE_STYLE_LAYOUT_GROUP_SET = new Set(TABLE_STYLE_LAYOUT_GROUPS);
 const TABLE_CHROME_HIDDEN_OPTIONS = {
   visibilityAttributes: true,
   inertFocus: true,
@@ -94,6 +99,10 @@ function bindPointerCommand(button, command, run) {
   };
 
   bindPointerActivation(button, execute);
+}
+
+function commandAccessibleLabel(command) {
+  return command?.description ? `${command.title}. ${command.description}` : command?.title;
 }
 
 function axisHandleAnchorRect(button, handle) {
@@ -154,6 +163,7 @@ export class TiptapTableToolbarView {
   #selectionOutline = null;
   #selectionCells = [];
   #axisHoverBackdrops = [];
+  #axisHoverHitAreas = [];
   #chromeRoot = null;
   #reactChrome = null;
   #reactMenu = null;
@@ -339,6 +349,7 @@ export class TiptapTableToolbarView {
       this.#addColumnButton.setAttribute("aria-label", addColumnRightLabel(state.language));
     }
     if (this.#cellMenuButton) {
+      const triggerState = createTableCellMenuTriggerChromeState(state);
       const cellMenuLabel = tableContextTitleLabel(
         state.language,
         state.selection?.kind ?? "cell",
@@ -354,7 +365,7 @@ export class TiptapTableToolbarView {
       this.#cellMenuButton._mnRun = () =>
         state.openCellMenu?.("context", {
           anchorRect: this.#cellMenuButton?.getBoundingClientRect?.(),
-          cell: state.hover?.cell ?? state.cell ?? null,
+          cell: triggerState.headCell ?? state.hover?.cell ?? state.cell ?? null,
         }) !== false;
       if (!this.#cellMenuButton._mnBound) {
         bindPointerCommand(this.#cellMenuButton, null, () => this.#cellMenuButton?._mnRun?.());
@@ -395,6 +406,7 @@ export class TiptapTableToolbarView {
       this.#applyActiveCellState(state);
       this.#updateSelectionBackdrop(state);
       this.#updateAxisHoverBackdrop(state);
+      this.#updateAxisHoverHitAreas(state);
       this.#updateQuickAdd(state);
       this.#updateCellMenuTrigger(state);
       this.#updateComplexBlockInsert(state);
@@ -424,104 +436,176 @@ export class TiptapTableToolbarView {
       activeCommandId: state.activeCommandId,
       sectionLabel: (section) => tableCommandMenuSectionLabel(state.language, section),
     }).groups.forEach((group) => {
-      const layoutGroup = group.layoutGroup;
-      const groupKey = group.groupKey;
-      const groupElement = createElement(this.#document, "div", "mn-tiptap-table-toolbar-group");
-      if (!groupElement) return;
-      groupElement.dataset.groupKey = groupKey;
-      groupElement.dataset.group = group.group;
-      groupElement.dataset.layoutGroup = layoutGroup;
-      groupElement.dataset.menuSection = group.menuSection;
-      const label = group.showLabel
-        ? createElement(this.#document, "div", "mn-tiptap-table-toolbar-group-label")
-        : null;
-      if (label) {
-        label.textContent = group.group;
-        groupElement.appendChild(label);
-      }
-      commandGroups.push(groupElement);
-
-      group.commands.forEach((command) => {
-        const commandIndex = command.index;
-        const button = createElement(this.#document, "button", "mn-tiptap-table-toolbar-button");
-        if (!button) return;
-
-        button.type = "button";
-        button.id = commandElementId(TABLE_TOOLBAR_OWNER_ID, commandIndex);
-        button.role = state.mode === "context" ? "menuitem" : "button";
-        button.title = command.title;
-        button.setAttribute(
-          "aria-label",
-          command.description ? `${command.title}. ${command.description}` : command.title,
-        );
-        button.textContent = state.mode === "context" ? command.title : command.label;
-        button.dataset.commandId = command.id;
-        button.dataset.commandIndex = String(commandIndex);
-        button.dataset.group = command.group;
-        button.dataset.icon = command.icon ?? command.id;
-        button.dataset.variant = command.variant ?? tableCommandVariant(command);
-        button.dataset.tone = command.tone ?? "default";
-        button.dataset.active = command.active ? "true" : "false";
-        button.dataset.keyboardActive = state.activeCommandId === command.id ? "true" : "false";
-        button.dataset.disabled = command.disabled ? "true" : "false";
-        button.tabIndex = state.activeCommandId === command.id ? 0 : -1;
-        button.disabled = !!command.disabled;
-        button.setAttribute("aria-disabled", command.disabled ? "true" : "false");
-        button.addEventListener("pointerenter", () =>
-          state.setActiveCommand?.(command.id, { keyboardActive: false }),
-        );
-        button.addEventListener("focus", () =>
-          state.setActiveCommand?.(command.id, { keyboardActive: true }),
-        );
-        bindPointerCommand(button, command, () => state.run(command.id));
-        const visual = createElement(
-          this.#document,
-          "span",
-          "mn-tiptap-table-toolbar-button-visual",
-        );
-        if (visual) {
-          visual.setAttribute("aria-hidden", "true");
-          visual.dataset.icon = command.icon ?? command.id;
-          visual.dataset.variant = command.variant ?? tableCommandVariant(command);
-          if (
-            command.variant === "icon" ||
-            command.variant === "swatch" ||
-            command.variant === "text-swatch"
-          ) {
-            button.replaceChildren(visual);
-          } else if (state.mode === "context") {
-            const copy = createElement(
-              this.#document,
-              "span",
-              "mn-tiptap-table-toolbar-button-copy",
-            );
-            const label = createElement(
-              this.#document,
-              "span",
-              "mn-tiptap-table-toolbar-button-label",
-            );
-            const description = command.description
-              ? createElement(
-                  this.#document,
-                  "span",
-                  "mn-tiptap-table-toolbar-button-description",
-                )
-              : null;
-            if (copy && label) {
-              label.textContent = command.title;
-              copy.appendChild(label);
-              if (description) {
-                description.textContent = command.description;
-                copy.appendChild(description);
-              }
-              button.replaceChildren(visual, copy);
-            }
-          }
-        }
-        groupElement.appendChild(button);
-      });
+      const groupElement = this.#createLegacyCommandGroup(state, group);
+      if (groupElement) commandGroups.push(groupElement);
     });
     this.#list.append(...commandGroups);
+  }
+
+  #createLegacyCommandGroup(state, group) {
+    const groupElement = createElement(this.#document, "div", "mn-tiptap-table-toolbar-group");
+    if (!groupElement) return null;
+
+    groupElement.dataset.groupKey = group.groupKey;
+    groupElement.dataset.group = group.group;
+    groupElement.dataset.layoutGroup = group.layoutGroup;
+    groupElement.dataset.menuSection = group.menuSection;
+
+    const isStyleSubmenu =
+      state.mode === "context" &&
+      group.menuSection === "style" &&
+      TABLE_STYLE_LAYOUT_GROUP_SET.has(group.layoutGroup);
+    if (isStyleSubmenu) {
+      groupElement.classList?.add?.("mn-tiptap-table-toolbar-submenu-group");
+      this.#appendLegacySubmenuTrigger(state, groupElement, group);
+      const panel = createElement(
+        this.#document,
+        "div",
+        "mn-tiptap-table-toolbar-submenu-panel",
+      );
+      if (panel) {
+        panel.role = "menu";
+        panel.setAttribute(
+          "aria-label",
+          tableCommandLayoutGroupLabel(state.language, group.layoutGroup),
+        );
+        panel.dataset.layoutGroup = group.layoutGroup;
+        group.commands.forEach((command) => {
+          const button = this.#createLegacyCommandButton(state, command);
+          if (button) panel.appendChild(button);
+        });
+        groupElement.appendChild(panel);
+      }
+      return groupElement;
+    }
+
+    const label = group.showLabel
+      ? createElement(this.#document, "div", "mn-tiptap-table-toolbar-group-label")
+      : null;
+    if (label) {
+      label.textContent = group.group;
+      groupElement.appendChild(label);
+    }
+    group.commands.forEach((command) => {
+      const button = this.#createLegacyCommandButton(state, command);
+      if (button) groupElement.appendChild(button);
+    });
+    return groupElement;
+  }
+
+  #appendLegacySubmenuTrigger(state, groupElement, group) {
+    const trigger = createElement(
+      this.#document,
+      "div",
+      "mn-tiptap-table-toolbar-submenu-trigger",
+    );
+    if (!trigger) return;
+    const firstCommand = group.commands.find((command) => !command.disabled) ?? group.commands[0];
+    trigger.role = "menuitem";
+    trigger.tabIndex = 0;
+    trigger.setAttribute("aria-haspopup", "menu");
+    trigger.setAttribute("aria-expanded", "false");
+    trigger.dataset.layoutGroup = group.layoutGroup;
+    const visual = this.#createLegacyCommandVisual(firstCommand ?? { icon: group.layoutGroup });
+    const copy = this.#createLegacyCommandCopy({
+      title: tableCommandLayoutGroupLabel(state.language, group.layoutGroup),
+      description: tableCommandLayoutGroupDescription(state.language, group.layoutGroup),
+    });
+    const chevron = createElement(
+      this.#document,
+      "span",
+      "mn-tiptap-table-toolbar-submenu-chevron",
+    );
+    if (chevron) chevron.setAttribute("aria-hidden", "true");
+    trigger.append(...[visual, copy, chevron].filter(Boolean));
+    groupElement.appendChild(trigger);
+  }
+
+  #createLegacyCommandVisual(command) {
+    const visual = createElement(
+      this.#document,
+      "span",
+      "mn-tiptap-table-toolbar-button-visual",
+    );
+    if (!visual) return null;
+    visual.setAttribute("aria-hidden", "true");
+    visual.dataset.icon = command?.icon ?? command?.id;
+    visual.dataset.variant = command?.variant ?? tableCommandVariant(command);
+    return visual;
+  }
+
+  #createLegacyCommandCopy(command) {
+    const copy = createElement(
+      this.#document,
+      "span",
+      "mn-tiptap-table-toolbar-button-copy",
+    );
+    const label = createElement(
+      this.#document,
+      "span",
+      "mn-tiptap-table-toolbar-button-label",
+    );
+    const description = command?.description
+      ? createElement(
+          this.#document,
+          "span",
+          "mn-tiptap-table-toolbar-button-description",
+        )
+      : null;
+    if (!copy || !label) return null;
+    label.textContent = command?.title ?? "";
+    copy.appendChild(label);
+    if (description) {
+      description.textContent = command.description;
+      copy.appendChild(description);
+    }
+    return copy;
+  }
+
+  #createLegacyCommandButton(state, command) {
+    const commandIndex = command.index;
+    const button = createElement(this.#document, "button", "mn-tiptap-table-toolbar-button");
+    if (!button) return null;
+
+    button.type = "button";
+    button.id = commandElementId(TABLE_TOOLBAR_OWNER_ID, commandIndex);
+    button.role = state.mode === "context" ? "menuitem" : "button";
+    button.title = command.title;
+    button.setAttribute("aria-label", commandAccessibleLabel(command));
+    button.textContent = state.mode === "context" ? command.title : command.label;
+    button.dataset.commandId = command.id;
+    button.dataset.commandIndex = String(commandIndex);
+    button.dataset.group = command.group;
+    button.dataset.icon = command.icon ?? command.id;
+    button.dataset.variant = command.variant ?? tableCommandVariant(command);
+    button.dataset.tone = command.tone ?? "default";
+    button.dataset.active = command.active ? "true" : "false";
+    button.dataset.keyboardActive = state.activeCommandId === command.id ? "true" : "false";
+    button.dataset.disabled = command.disabled ? "true" : "false";
+    button.tabIndex = state.activeCommandId === command.id ? 0 : -1;
+    button.disabled = !!command.disabled;
+    button.setAttribute("aria-disabled", command.disabled ? "true" : "false");
+    button.addEventListener("pointerenter", () =>
+      state.setActiveCommand?.(command.id, { keyboardActive: false }),
+    );
+    button.addEventListener("focus", () =>
+      state.setActiveCommand?.(command.id, { keyboardActive: true }),
+    );
+    bindPointerCommand(button, command, () => state.run(command.id));
+    const visual = this.#createLegacyCommandVisual(command);
+    if (visual) {
+      if (
+        command.variant === "icon" ||
+        command.variant === "swatch" ||
+        command.variant === "text-swatch"
+      ) {
+        button.replaceChildren(visual);
+      } else if (state.mode === "context") {
+        const copy = this.#createLegacyCommandCopy(command);
+        if (copy) button.replaceChildren(visual, copy);
+      }
+    }
+    return button;
   }
 
   #updateQuickAdd(state) {
@@ -793,6 +877,28 @@ export class TiptapTableToolbarView {
     }
   }
 
+  #updateAxisHoverHitAreas(state) {
+    this.#clearAxisHoverHitAreas();
+    const hover = createTableAxisHoverHitChromeState(state);
+    for (const item of [hover.row, hover.column].filter(Boolean)) {
+      const hit = createElement(this.#document, "div", "mn-tiptap-table-axis-hover-hit");
+      if (!hit) continue;
+      hit.style.left = `${item.rect.left}px`;
+      hit.style.top = `${item.rect.top}px`;
+      hit.style.width = `${Math.max(0, item.rect.width)}px`;
+      hit.style.height = `${Math.max(0, item.rect.height)}px`;
+      hit.dataset.axis = item.axis;
+      hit.dataset.index = String(item.index);
+      mountFloatingRoot(hit, state.table, this.#document);
+      this.#axisHoverHitAreas.push(hit);
+    }
+  }
+
+  #clearAxisHoverHitAreas() {
+    this.#axisHoverHitAreas.forEach((hit) => hit.remove?.());
+    this.#axisHoverHitAreas = [];
+  }
+
   #clearAxisHoverBackdrops() {
     this.#axisHoverBackdrops.forEach((backdrop) => backdrop.remove?.());
     this.#axisHoverBackdrops = [];
@@ -812,6 +918,7 @@ export class TiptapTableToolbarView {
     setTableDecorationHidden(this.#selectionOutline, true);
     this.#clearSelectionCells();
     this.#clearAxisHoverBackdrops();
+    this.#clearAxisHoverHitAreas();
     this.#clearAxisHandles();
   }
 
@@ -856,6 +963,7 @@ export class TiptapTableToolbarView {
       this.#selectionOutline?.contains?.(target) ||
       this.#selectionCells.some((cell) => cell.contains?.(target)) ||
       this.#axisHoverBackdrops.some((backdrop) => backdrop.contains?.(target)) ||
+      this.#axisHoverHitAreas.some((hit) => hit.contains?.(target)) ||
       this.#reactChrome?.contains?.(target) ||
       this.#chromeRoot?.contains?.(target) ||
       this.#rowHandles.some((button) => button.contains?.(target)) ||
@@ -899,6 +1007,7 @@ export class TiptapTableToolbarView {
     this.#chromeRoot?.remove?.();
     this.#clearSelectionCells();
     this.#clearAxisHoverBackdrops();
+    this.#clearAxisHoverHitAreas();
     this.#clearAxisHandles();
     this.#root = null;
     this.#header = null;

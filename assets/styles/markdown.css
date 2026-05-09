@@ -411,6 +411,8 @@
     margin: 0 0 var(--mn-markdown-block-gap);
     padding: 0;
     border-radius: 0;
+    border-spacing: 0;
+    line-height: 0;
 }
 
 .mn-tiptap-table {
@@ -425,6 +427,7 @@
     table-layout: fixed;
     empty-cells: show;
     isolation: isolate;
+    line-height: normal;
 }
 
 .mn-tiptap-table-header,
@@ -433,9 +436,7 @@
     position: relative;
     min-width: 96px;
     padding: var(--mn-markdown-table-cell-pad);
-    border: 0;
-    border-right: var(--mn-markdown-table-border);
-    border-bottom: var(--mn-markdown-table-border);
+    border: var(--mn-markdown-table-border);
     background-clip: border-box;
     background-origin: border-box;
     background-color: var(--mn-surface);
@@ -463,14 +464,6 @@
 .mn-tiptap-table-cell:hover *,
 .mn-tiptap-table-header:hover * {
     cursor: text;
-}
-
-.mn-tiptap-table-row:first-child > :where(.mn-tiptap-table-cell, .mn-tiptap-table-header) {
-    border-top: var(--mn-markdown-table-border);
-}
-
-.mn-tiptap-table-row > :where(.mn-tiptap-table-cell, .mn-tiptap-table-header):first-child {
-    border-left: var(--mn-markdown-table-border);
 }
 
 .mn-tiptap-table-cell:hover,
@@ -520,14 +513,12 @@
 .mn-tiptap-table-header.mn-tiptap-table-cell-selected,
 .mn-tiptap-table-cell.mn-tiptap-table-cell-active,
 .mn-tiptap-table-header.mn-tiptap-table-cell-active {
-    z-index: 3;
+    z-index: auto;
     outline: 0;
-    box-shadow:
-        inset 0 0 0 999px color-mix(in srgb, var(--mn-accent) 5%, transparent);
+    box-shadow: none;
+    background-image: none;
 }
 
-.mn-tiptap-table-cell.selectedCell::after,
-.mn-tiptap-table-header.selectedCell::after,
 .mn-tiptap-table-cell.mn-tiptap-table-cell-selected::after,
 .mn-tiptap-table-header.mn-tiptap-table-cell-selected::after,
 .mn-tiptap-table-cell.mn-tiptap-table-cell-active::after,
@@ -555,29 +546,21 @@
     box-shadow: none;
 }
 
-.mn-tiptap-table-cell.selectedCell,
-.mn-tiptap-table-header.selectedCell,
 .mn-tiptap-table-cell.mn-tiptap-table-cell-selected-edge-top,
 .mn-tiptap-table-header.mn-tiptap-table-cell-selected-edge-top {
     --mn-table-selected-edge-top: 2px;
 }
 
-.mn-tiptap-table-cell.selectedCell,
-.mn-tiptap-table-header.selectedCell,
 .mn-tiptap-table-cell.mn-tiptap-table-cell-selected-edge-right,
 .mn-tiptap-table-header.mn-tiptap-table-cell-selected-edge-right {
     --mn-table-selected-edge-right: 2px;
 }
 
-.mn-tiptap-table-cell.selectedCell,
-.mn-tiptap-table-header.selectedCell,
 .mn-tiptap-table-cell.mn-tiptap-table-cell-selected-edge-bottom,
 .mn-tiptap-table-header.mn-tiptap-table-cell-selected-edge-bottom {
     --mn-table-selected-edge-bottom: 2px;
 }
 
-.mn-tiptap-table-cell.selectedCell,
-.mn-tiptap-table-header.selectedCell,
 .mn-tiptap-table-cell.mn-tiptap-table-cell-selected-edge-left,
 .mn-tiptap-table-header.mn-tiptap-table-cell-selected-edge-left {
     --mn-table-selected-edge-left: 2px;
@@ -588,8 +571,8 @@
     background-image:
         linear-gradient(
             180deg,
-            color-mix(in srgb, var(--mn-accent) 8%, transparent),
-            color-mix(in srgb, var(--mn-accent) 4%, transparent)
+            color-mix(in srgb, var(--mn-accent) 4%, transparent),
+            color-mix(in srgb, var(--mn-accent) 2%, transparent)
         );
 }
 
@@ -609,17 +592,12 @@
 
 .mn-tiptap-table-cell.mn-tiptap-table-cell-hovered-column,
 .mn-tiptap-table-header.mn-tiptap-table-cell-hovered-column {
-    border-right-color: color-mix(in srgb, var(--mn-accent) 72%, var(--mn-border));
-    box-shadow:
-        inset -2px 0 0 color-mix(in srgb, var(--mn-accent) 72%, transparent),
-        inset 0 0 0 999px color-mix(in srgb, var(--mn-accent) 3%, transparent);
+    box-shadow: none;
 }
 
 .mn-tiptap-table-cell.mn-tiptap-table-cell-hovered-row,
 .mn-tiptap-table-header.mn-tiptap-table-cell-hovered-row {
-    border-bottom-color: color-mix(in srgb, var(--mn-accent) 72%, var(--mn-border));
-    box-shadow:
-        inset 0 0 0 999px color-mix(in srgb, var(--mn-accent) 3%, transparent);
+    box-shadow: none;
 }
 
 .mn-tiptap-table-cell > *,

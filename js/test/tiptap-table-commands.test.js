@@ -13,6 +13,7 @@ import {
   normalizeTableMenuMode,
   normalizeTableCellAttributeValue,
   runTableEditorCommand,
+  TABLE_STYLE_LAYOUT_GROUPS,
   tableCellAttributeValue,
   tableCommandLayoutGroup,
   tableCommandMenuSection,
@@ -174,6 +175,7 @@ test("Tiptap table command scope orders row column and table menus by intent", (
 });
 
 test("Tiptap table commands expose layout groups and keyboard helpers", () => {
+  assert.deepEqual(TABLE_STYLE_LAYOUT_GROUPS, ["align", "text-color", "cell-color"]);
   assert.equal(tableCommandVariant({ group: "Align" }), "icon");
   assert.equal(tableCommandVariant({ group: "Cell color" }), "swatch");
   assert.equal(tableCommandVariant({ group: "Text color" }), "text-swatch");

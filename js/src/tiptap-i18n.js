@@ -658,6 +658,35 @@ export function tableCommandMenuSectionLabel(language, section) {
   return label ? localizedText(language, label[0], label[1]) : String(section ?? "");
 }
 
+export function tableCommandLayoutGroupLabel(language, layoutGroup) {
+  const labels = {
+    align: ["Alignment", "\u5bf9\u9f50"],
+    "text-color": ["Text color", "\u6587\u5b57\u989c\u8272"],
+    "cell-color": ["Cell color", "\u5355\u5143\u683c\u989c\u8272"],
+  };
+  const label = labels[layoutGroup];
+  return label ? localizedText(language, label[0], label[1]) : String(layoutGroup ?? "");
+}
+
+export function tableCommandLayoutGroupDescription(language, layoutGroup) {
+  const labels = {
+    align: [
+      "Choose horizontal alignment.",
+      "\u9009\u62e9\u6c34\u5e73\u5bf9\u9f50\u65b9\u5f0f\u3002",
+    ],
+    "text-color": [
+      "Choose the text color.",
+      "\u9009\u62e9\u6587\u5b57\u989c\u8272\u3002",
+    ],
+    "cell-color": [
+      "Choose the cell background.",
+      "\u9009\u62e9\u5355\u5143\u683c\u80cc\u666f\u8272\u3002",
+    ],
+  };
+  const label = labels[layoutGroup];
+  return label ? localizedText(language, label[0], label[1]) : "";
+}
+
 export function addRowBelowLabel(language) {
   return localizedText(language, "Add row below", "在下方添加行");
 }
