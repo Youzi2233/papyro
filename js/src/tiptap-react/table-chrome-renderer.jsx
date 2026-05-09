@@ -37,6 +37,10 @@ export class TiptapReactTableChromeRenderer {
       this.#reactRoot.render(<PapyroTableChrome state={state} />);
     });
     setHidden(this.#root, !state?.open);
+    if (this.#root.dataset) {
+      this.#root.dataset.open = state?.open ? "true" : "false";
+      this.#root.dataset.selectionKind = state?.selection?.kind ?? "cell";
+    }
     return true;
   }
 
@@ -47,6 +51,9 @@ export class TiptapReactTableChromeRenderer {
       });
     }
     setHidden(this.#root, true);
+    if (this.#root?.dataset) {
+      this.#root.dataset.open = "false";
+    }
   }
 
   contains(target) {

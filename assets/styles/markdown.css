@@ -538,27 +538,14 @@
     inset: -1px;
     z-index: 5;
     pointer-events: none;
-    background:
-        linear-gradient(
-            180deg,
-            color-mix(in srgb, var(--mn-accent) 5%, transparent),
-            color-mix(in srgb, var(--mn-accent) 2%, transparent)
-        );
-    box-shadow:
-        inset 0 0 0 999px color-mix(in srgb, var(--mn-accent) 2%, transparent);
+    background: transparent;
+    box-shadow: none;
 }
 
 .mn-tiptap-table-cell.mn-tiptap-table-cell-active::after,
 .mn-tiptap-table-header.mn-tiptap-table-cell-active::after {
-    background:
-        linear-gradient(
-            180deg,
-            color-mix(in srgb, var(--mn-accent) 5%, transparent),
-            color-mix(in srgb, var(--mn-accent) 2%, transparent)
-        );
-    box-shadow:
-        inset 0 0 0 999px color-mix(in srgb, var(--mn-accent) 2%, transparent),
-        inset 0 0 0 1px color-mix(in srgb, var(--mn-accent) 26%, transparent);
+    background: transparent;
+    box-shadow: none;
 }
 
 .mn-tiptap-table-cell.mn-tiptap-table-cell-selected,

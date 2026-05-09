@@ -104,6 +104,8 @@ const TIPTAP_REQUIREMENTS = [
   ["Tiptap table continuous cell paint", ".mn-tiptap-table-cell", "background-origin: border-box"],
   ["Tiptap table selection object border", ".mn-tiptap-table-selection-backdrop", "inset 0 0 0 2px var(--mn-accent)"],
   ["Tiptap table single cell object border", ".mn-tiptap-table-selection-backdrop[data-selection-kind=\"cell\"]", "inset 0 0 0 2.5px var(--mn-accent)"],
+  ["Tiptap table selected cell fill boxes", ".mn-tiptap-table-selection-cell", "position: fixed"],
+  ["Tiptap table continuous axis hover backdrop", ".mn-tiptap-table-axis-hover-backdrop", "position: fixed"],
   ["Tiptap table hovered column line", ".mn-tiptap-table-cell.mn-tiptap-table-cell-hovered-column", "inset -2px 0 0"],
   ["Tiptap table hovered row line", ".mn-tiptap-table-cell.mn-tiptap-table-cell-hovered-row", "inset 0 -2px 0"],
   ["Tiptap table selected cell resize hit zone", ".mn-tiptap-table-cell.mn-tiptap-table-cell-selected > .column-resize-handle", "width: 16px"],

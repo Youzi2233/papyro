@@ -31,6 +31,7 @@ export function createTableHarness(commandOverrides = {}) {
           },
         },
         closest(selector) {
+          if (selector === "th,td") return cell;
           return selector.includes(".mn-tiptap-table") || selector.includes(", table")
             ? table
             : null;

@@ -25,6 +25,10 @@ export function closestTableCellElement(target) {
   return element?.closest?.("th,td") ?? null;
 }
 
+function isTableHeaderCell(element) {
+  return String(element?.tagName ?? "").toLowerCase() === "th";
+}
+
 export function tableRows(table) {
   return Array.from(table?.querySelectorAll?.("tr") ?? []);
 }
@@ -956,13 +960,15 @@ export function tableHoverWithIntent({
     y >= cellRect.top &&
     y <= cellRect.bottom;
   const wantsColumnHandleFromCell =
-    hover.rowIndex === 0 &&
+    (hover.rowIndex === 0 || isTableHeaderCell(hover.cell)) &&
     Number.isFinite(x) &&
     Number.isFinite(y) &&
     x >= cellRect.left &&
     x <= cellRect.right &&
-    y >= cellRect.top &&
-    y < cellRect.top + Math.min(TABLE_AXIS_INNER_HOT_ZONE_PX, cellRect.height * 0.24);
+    (isTableHeaderCell(hover.cell)
+      ? y >= cellRect.top && y <= cellRect.bottom
+      : y >= cellRect.top &&
+        y < cellRect.top + Math.min(TABLE_AXIS_INNER_HOT_ZONE_PX, cellRect.height * 0.24));
 
   if (
     wantsRowHandleFromCell &&

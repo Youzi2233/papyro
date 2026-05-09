@@ -1628,6 +1628,27 @@ test("Tiptap table axis handles reveal for the hovered row and column", () => {
   assert.equal(visibleAxisHandles("column").length, 1);
 });
 
+test("Tiptap table column handles reveal across header cell hover", () => {
+  const { created, documentRef } = createDocument();
+  const { cells, editor } = createTableHarness();
+  cells.slice(0, 3).forEach((cell) => {
+    cell.tagName = "TH";
+  });
+  const controller = createTiptapTableToolbarController({
+    dom: { document: documentRef },
+  });
+
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  editor.view.dom.listeners.get("pointermove")({
+    target: cells[1],
+    clientX: 204,
+    clientY: 107,
+  });
+
+  assert.equal(controller.state.hover.edge, "column-handle");
+  assert.equal(latestAxisHandle(created, "column", 1).hidden, false);
+});
+
 test("Tiptap table row and column handles stay outside editable cells while tracking hovered cells", () => {
   const { created, documentRef } = createDocument();
   const { cells, editor } = createTableHarness();
@@ -1649,13 +1670,29 @@ test("Tiptap table row and column handles stay outside editable cells while trac
   editor.view.dom.listeners.get("pointermove")({ target: cells[3], clientX: 124, clientY: 128 });
   assert.equal(controller.state.hover.edge, "row-handle");
   const rowHandle = latestAxisHandle(created, "row", 1);
+  const rowBackdrop = [...created].reverse().find((element) =>
+    String(element.className).includes("mn-tiptap-table-axis-hover-backdrop") &&
+    element.dataset.axis === "row" &&
+    element.dataset.index === "1" &&
+    !element.removed,
+  );
   editor.view.dom.listeners.get("pointermove")({ target: cells[1], clientX: 204, clientY: 95 });
   assert.equal(controller.state.hover.edge, "column-handle");
   const columnHandle = latestAxisHandle(created, "column", 1);
+  const columnBackdrop = [...created].reverse().find((element) =>
+    String(element.className).includes("mn-tiptap-table-axis-hover-backdrop") &&
+    element.dataset.axis === "column" &&
+    element.dataset.index === "1" &&
+    !element.removed,
+  );
   assert.equal(rowHandle.style.left, "100px");
   assert.equal(rowHandle.style.width, "20px");
   assert.equal(columnHandle.style.top, "70px");
   assert.equal(columnHandle.style.height, "20px");
+  assert.equal(rowBackdrop.style.left, "120px");
+  assert.equal(rowBackdrop.style.width, "240px");
+  assert.equal(columnBackdrop.style.top, "90px");
+  assert.equal(columnBackdrop.style.height, "68px");
 });
 
 test("Tiptap table axis handles stay selectable while pointer crosses the overlay seam", () => {
@@ -2321,7 +2358,7 @@ test("Tiptap table toolbar anchors right-click menus to the pointer", () => {
   assert.equal(root.style.top, "248px");
 });
 
-test("Tiptap table toolbar previews inline text cell surfaces without stealing text selection", () => {
+test("Tiptap table toolbar previews inline text cell surfaces as object selections", () => {
   const { created, documentRef } = createDocument();
   const { calls, cells, editor } = createTableHarness({
     mergeCells: () => true,
@@ -2362,12 +2399,19 @@ test("Tiptap table toolbar previews inline text cell surfaces without stealing t
   });
 
   controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  const events = [];
   assert.equal(
     editor.view.dom.listeners.get("pointerdown")({
       target: textNode,
       button: 0,
       clientX: 146,
       clientY: 104,
+      preventDefault() {
+        events.push("preventDefault:down");
+      },
+      stopPropagation() {
+        events.push("stopPropagation:down");
+      },
     }),
     false,
   );
@@ -2384,6 +2428,7 @@ test("Tiptap table toolbar previews inline text cell surfaces without stealing t
 
   assert.equal(documentRef.listeners.has("pointermove"), true);
   assert.equal(documentRef.listeners.get("pointerup")?.length, 1);
+  assert.deepEqual(events, ["preventDefault:down", "stopPropagation:down"]);
   assert.deepEqual(calls, []);
   controller.refresh(editor);
   assert.equal(cells[0].classes.has("mn-tiptap-table-cell-selected"), true);
@@ -2452,8 +2497,8 @@ test("Tiptap table toolbar selects filled cell surfaces on short clicks", () => 
   assert.equal(cells[0].classes.has("mn-tiptap-table-cell-active"), true);
 });
 
-test("Tiptap table toolbar leaves filled cell drag text selection native", () => {
-  const { documentRef } = createDocument();
+test("Tiptap table toolbar drags filled cell text as a cell range", () => {
+  const { created, documentRef } = createDocument();
   const { calls, cells, editor } = createTableHarness();
   editor.view.posAtCoords = ({ left, top }) => {
     calls.push(["posAtCoords", left, top]);
@@ -2485,6 +2530,7 @@ test("Tiptap table toolbar leaves filled cell drag text selection native", () =>
   const controller = createTiptapTableToolbarController({
     dom: { document: documentRef },
   });
+  const events = [];
 
   controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
   editor.view.dom.listeners.get("pointerdown")({
@@ -2492,27 +2538,58 @@ test("Tiptap table toolbar leaves filled cell drag text selection native", () =>
     button: 0,
     clientX: 146,
     clientY: 104,
-  });
-  documentRef.listeners.get("pointermove")?.({
-    target: textNode,
-    clientX: 168,
-    clientY: 104,
     preventDefault() {
-      calls.push(["preventDefault"]);
+      events.push("preventDefault:down");
     },
     stopPropagation() {
-      calls.push(["stopPropagation"]);
+      events.push("stopPropagation:down");
     },
   });
-  documentRef.listeners.get("pointerup")?.({
-    target: textNode,
-    clientX: 168,
+  const dragMove = documentRef.listeners.get("pointermove");
+  const dragEnd = documentRef.listeners.get("pointerup");
+  dragMove?.({
+    target: cells[1],
+    clientX: 232,
     clientY: 104,
+    preventDefault() {
+      events.push("preventDefault:move");
+    },
+    stopPropagation() {
+      events.push("stopPropagation:move");
+    },
+  });
+  dragEnd?.({
+    target: cells[1],
+    clientX: 232,
+    clientY: 104,
+    preventDefault() {
+      events.push("preventDefault:up");
+    },
+    stopPropagation() {
+      events.push("stopPropagation:up");
+    },
   });
 
-  assert.deepEqual(calls, []);
-  assert.equal(controller.state.selection.positions.size, 0);
-  assert.equal(cells[0].classes.has("mn-tiptap-table-cell-selected"), false);
+  assert.deepEqual(events, [
+    "preventDefault:down",
+    "stopPropagation:down",
+    "preventDefault:move",
+    "stopPropagation:move",
+    "preventDefault:up",
+    "stopPropagation:up",
+  ]);
+  assert.deepEqual(calls, [["setCellSelection", 10, 11], ["focus"]]);
+  assert.equal(controller.state.selection.kind, "cells");
+  assert.deepEqual([...controller.state.selection.positions], [10, 11]);
+  assert.equal(cells[0].classes.has("mn-tiptap-table-cell-selected"), true);
+  assert.equal(cells[1].classes.has("mn-tiptap-table-cell-selected"), true);
+  assert.equal(
+    created.some((element) =>
+      String(element.className).includes("mn-tiptap-table-selection-cell") &&
+      !element.removed,
+    ),
+    true,
+  );
 });
 
 test("Tiptap table toolbar keeps native controls inside cells interactive", () => {

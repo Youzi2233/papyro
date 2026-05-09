@@ -339,7 +339,7 @@ function createHarness() {
   return { calls, cells, created, documentListeners, documentRef, editor, pushEvent, root, table };
 }
 
-test("Tiptap table inline text content previews the cell without stealing native selection", () => {
+test("Tiptap table inline text content previews the cell as an object selection", () => {
   const { calls, cells, documentListeners, editor, pushEvent, root, table } = createHarness();
   const inline = {
     nodeType: 1,
@@ -371,20 +371,22 @@ test("Tiptap table inline text content previews the cell without stealing native
     false,
   );
 
-  assert.deepEqual(events, []);
+  assert.deepEqual(events, ["preventDefault:down", "stopPropagation:down"]);
   assert.deepEqual(calls, []);
   assert.deepEqual([...controller.state.selection.positions], [11]);
   assert.equal(documentListeners.has("pointermove"), true);
   assert.ok((documentListeners.get("pointerup")?.length ?? 0) >= 1);
+  const dragMove = documentListeners.get("pointermove").at(-1);
+  const dragEnd = documentListeners.get("pointerup").at(-1);
 
-  documentListeners.get("pointermove").at(-1)({
+  dragMove({
     target: inline,
     clientX: 240,
     clientY: 96,
     preventDefault: pushEvent(events, "preventDefault:move"),
     stopPropagation: pushEvent(events, "stopPropagation:move"),
   });
-  documentListeners.get("pointerup").at(-1)({
+  dragEnd({
     target: inline,
     clientX: 240,
     clientY: 96,
@@ -392,8 +394,15 @@ test("Tiptap table inline text content previews the cell without stealing native
     stopPropagation: pushEvent(events, "stopPropagation:up"),
   });
 
-  assert.deepEqual(events, []);
-  assert.deepEqual(calls, []);
+  assert.deepEqual(events, [
+    "preventDefault:down",
+    "stopPropagation:down",
+    "preventDefault:move",
+    "stopPropagation:move",
+    "preventDefault:up",
+    "stopPropagation:up",
+  ]);
+  assert.deepEqual(calls, [["setCellSelection", 11, 11], ["focus"]]);
 });
 
 test("Tiptap table empty paragraph surface selects the whole cell", () => {
@@ -432,6 +441,8 @@ test("Tiptap table empty paragraph surface selects the whole cell", () => {
     false,
   );
 
+  assert.deepEqual(events, ["preventDefault:down", "stopPropagation:down"]);
+
   documentListeners.get("pointerup").at(-1)({
     target: paragraph,
     clientX: 220,
@@ -440,7 +451,12 @@ test("Tiptap table empty paragraph surface selects the whole cell", () => {
     stopPropagation: pushEvent(events, "stopPropagation:up"),
   });
 
-  assert.deepEqual(events, ["preventDefault:up", "stopPropagation:up"]);
+  assert.deepEqual(events, [
+    "preventDefault:down",
+    "stopPropagation:down",
+    "preventDefault:up",
+    "stopPropagation:up",
+  ]);
   assert.deepEqual(calls, [["setCellSelection", 11, 11], ["focus"]]);
   assert.equal(controller.state.cell, cells[1]);
   assert.equal(controller.state.cellRect?.left, 190);
@@ -473,6 +489,8 @@ test("Tiptap table blank cell clicks select the editable cell", () => {
     false,
   );
 
+  assert.deepEqual(events, ["preventDefault:down", "stopPropagation:down"]);
+
   documentListeners.get("pointerup").at(-1)({
     target: cells[1],
     clientX: 220,
@@ -481,7 +499,12 @@ test("Tiptap table blank cell clicks select the editable cell", () => {
     stopPropagation: pushEvent(events, "stopPropagation:up"),
   });
 
-  assert.deepEqual(events, ["preventDefault:up", "stopPropagation:up"]);
+  assert.deepEqual(events, [
+    "preventDefault:down",
+    "stopPropagation:down",
+    "preventDefault:up",
+    "stopPropagation:up",
+  ]);
   assert.deepEqual(calls, [["setCellSelection", 11, 11], ["focus"]]);
   assert.equal(controller.state.cell, cells[1]);
   assert.equal(controller.state.cellRect?.left, 190);
@@ -592,7 +615,7 @@ test("Tiptap table filled paragraph short clicks select the cell object", () => 
 
   assert.equal(documentListeners.has("pointermove"), true);
   assert.ok((documentListeners.get("pointerup")?.length ?? 0) >= 1);
-  assert.deepEqual(events, []);
+  assert.deepEqual(events, ["preventDefault:down", "stopPropagation:down"]);
   assert.deepEqual(calls, []);
   assert.equal(controller.state.cell, cells[0]);
   assert.deepEqual([...controller.state.selection.positions], [10]);
@@ -605,13 +628,18 @@ test("Tiptap table filled paragraph short clicks select the cell object", () => 
     stopPropagation: pushEvent(events, "stopPropagation:up"),
   });
 
-  assert.deepEqual(events, ["preventDefault:up", "stopPropagation:up"]);
+  assert.deepEqual(events, [
+    "preventDefault:down",
+    "stopPropagation:down",
+    "preventDefault:up",
+    "stopPropagation:up",
+  ]);
   assert.deepEqual(calls, [["setCellSelection", 10, 10], ["focus"]]);
   assert.equal(cells[0].classes.has("mn-tiptap-table-cell-selected"), true);
   assert.equal(cells[0].classes.has("mn-tiptap-table-cell-active"), true);
 });
 
-test("Tiptap table filled paragraph drag preserves native text selection", () => {
+test("Tiptap table filled paragraph drag extends cell object selection", () => {
   const { calls, cells, documentListeners, editor, pushEvent, root, table } = createHarness();
   const paragraph = {
     nodeType: 1,
@@ -639,24 +667,33 @@ test("Tiptap table filled paragraph drag preserves native text selection", () =>
     preventDefault: pushEvent(events, "preventDefault:down"),
     stopPropagation: pushEvent(events, "stopPropagation:down"),
   });
+  const dragMove = documentListeners.get("pointermove").at(-1);
+  const dragEnd = documentListeners.get("pointerup").at(-1);
 
-  documentListeners.get("pointermove").at(-1)({
+  dragMove({
     target: paragraph,
-    clientX: 144,
+    clientX: 220,
     clientY: 94,
     preventDefault: pushEvent(events, "preventDefault:move"),
     stopPropagation: pushEvent(events, "stopPropagation:move"),
   });
-  documentListeners.get("pointerup").at(-1)({
+  dragEnd({
     target: paragraph,
-    clientX: 144,
+    clientX: 220,
     clientY: 94,
     preventDefault: pushEvent(events, "preventDefault:up"),
     stopPropagation: pushEvent(events, "stopPropagation:up"),
   });
 
-  assert.deepEqual(events, []);
-  assert.deepEqual(calls, []);
+  assert.deepEqual(events, [
+    "preventDefault:down",
+    "stopPropagation:down",
+    "preventDefault:move",
+    "stopPropagation:move",
+    "preventDefault:up",
+    "stopPropagation:up",
+  ]);
+  assert.deepEqual(calls, [["setCellSelection", 10, 11], ["focus"]]);
 });
 
 test("Tiptap table empty paragraph content can start table selection drag", () => {
@@ -690,7 +727,7 @@ test("Tiptap table empty paragraph content can start table selection drag", () =
 
   assert.equal(documentListeners.has("pointermove"), true);
   assert.equal(documentListeners.get("pointerup")?.length, 2);
-  assert.deepEqual(events, []);
+  assert.deepEqual(events, ["preventDefault:down", "stopPropagation:down"]);
   assert.deepEqual(calls, []);
   assert.equal(controller.state.cell, cells[0]);
   assert.deepEqual([...controller.state.selection.positions], [10]);
@@ -742,6 +779,8 @@ test("Tiptap table cell drag extends the selected cell range", () => {
     ["setCellSelection", 10, 13],
   ]);
   assert.deepEqual(events, [
+    "preventDefault:down",
+    "stopPropagation:down",
     "preventDefault:move",
     "stopPropagation:move",
     "preventDefault:up",
@@ -751,4 +790,113 @@ test("Tiptap table cell drag extends the selected cell range", () => {
   assert.equal(controller.state.selection.kind, "table");
   assert.deepEqual([...controller.state.selection.positions], [10, 11, 12, 13]);
   assert.equal(documentListeners.get("pointermove")?.length ?? 0, basePointerMoveListeners);
+});
+
+test("Tiptap table object clicks suppress the follow-up native click", () => {
+  const { calls, cells, documentListeners, editor, pushEvent, root, table } = createHarness();
+  const paragraph = {
+    nodeType: 1,
+    tagName: "P",
+    parentElement: cells[0],
+    parentNode: cells[0],
+    textContent: "Revenue",
+    closest(selector) {
+      if (selector === "th,td") return cells[0];
+      if (selector === ".mn-tiptap-table, table" || selector === "table") return table;
+      return null;
+    },
+  };
+  const controller = createTiptapTableToolbarController({
+    dom: { document: root.ownerDocument },
+  });
+  const events = [];
+
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  root.listeners.get("pointerdown")({
+    target: paragraph,
+    button: 0,
+    clientX: 120,
+    clientY: 94,
+    timeStamp: 10,
+    preventDefault: pushEvent(events, "preventDefault:down"),
+    stopPropagation: pushEvent(events, "stopPropagation:down"),
+  });
+  documentListeners.get("pointerup").at(-1)({
+    target: paragraph,
+    clientX: 120,
+    clientY: 94,
+    timeStamp: 20,
+    preventDefault: pushEvent(events, "preventDefault:up"),
+    stopPropagation: pushEvent(events, "stopPropagation:up"),
+  });
+
+  assert.equal(
+    root.listeners.get("click")({
+      target: paragraph,
+      clientX: 120,
+      clientY: 94,
+      timeStamp: 30,
+      preventDefault: pushEvent(events, "preventDefault:click"),
+      stopPropagation: pushEvent(events, "stopPropagation:click"),
+    }),
+    true,
+  );
+  assert.deepEqual(events, [
+    "preventDefault:down",
+    "stopPropagation:down",
+    "preventDefault:up",
+    "stopPropagation:up",
+    "preventDefault:click",
+    "stopPropagation:click",
+  ]);
+  assert.deepEqual(calls, [["setCellSelection", 10, 10], ["focus"]]);
+  assert.deepEqual([...controller.state.selection.positions], [10]);
+});
+
+test("Tiptap table double click enters text editing inside the cell", () => {
+  const { calls, cells, editor, pushEvent, root, table } = createHarness();
+  const paragraph = {
+    nodeType: 1,
+    tagName: "P",
+    parentElement: cells[0],
+    parentNode: cells[0],
+    textContent: "Revenue",
+    closest(selector) {
+      if (selector === "th,td") return cells[0];
+      if (selector.includes(".mn-tiptap-table") || selector.includes(", table")) return table;
+      return null;
+    },
+  };
+  editor.view.posAtCoords = ({ left, top }) => {
+    calls.push(["posAtCoords", left, top]);
+    return { pos: 17 };
+  };
+  const controller = createTiptapTableToolbarController({
+    dom: { document: root.ownerDocument },
+  });
+  const events = [];
+
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  assert.equal(
+    root.listeners.get("dblclick")({
+      target: paragraph,
+      clientX: 124,
+      clientY: 94,
+      preventDefault: pushEvent(events, "preventDefault:dblclick"),
+      stopPropagation: pushEvent(events, "stopPropagation:dblclick"),
+    }),
+    true,
+  );
+
+  assert.deepEqual(events, ["preventDefault:dblclick", "stopPropagation:dblclick"]);
+  assert.deepEqual(calls.slice(0, 3), [
+    ["posAtCoords", 124, 94],
+    ["setTextSelection", 17],
+    ["focus"],
+  ]);
+  assert.equal(
+    calls.some((call) => call[0] === "setCellSelection"),
+    false,
+  );
+  assert.equal(controller.state.selection.positions.size, 0);
 });

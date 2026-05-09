@@ -12,6 +12,7 @@ import {
   applyTableCellVisualState,
   clearTableCellVisualState,
   createComplexBlockInsertChromeState,
+  createTableAxisHoverChromeState,
   createTableAxisHandleChromeState,
   createTableCellMenuTriggerChromeState,
   createTableQuickAddChromeState,
@@ -181,17 +182,47 @@ function TableSelectionBackdrop({ chrome }) {
   if (!chrome?.rect) return null;
 
   return (
-    <div
-      className={[
-        "mn-tiptap-table-selection-backdrop",
-        chrome.visible ? null : "hidden",
-      ].filter(Boolean).join(" ")}
-      aria-hidden="true"
-      data-visible={chrome.visible ? "true" : "false"}
-      data-selection-kind={chrome.selectionKind}
-      data-selected-count={String(chrome.selectedCount ?? 0)}
-      style={fixedRectStyle(chrome.rect)}
-    />
+    <>
+      <div
+        className={[
+          "mn-tiptap-table-selection-backdrop",
+          chrome.visible ? null : "hidden",
+        ].filter(Boolean).join(" ")}
+        aria-hidden="true"
+        data-visible={chrome.visible ? "true" : "false"}
+        data-selection-kind={chrome.selectionKind}
+        data-selected-count={String(chrome.selectedCount ?? 0)}
+        style={fixedRectStyle(chrome.rect)}
+      />
+      {(chrome.boxes ?? []).map((box, index) => (
+        <div
+          key={`selection-cell-${index}`}
+          className="mn-tiptap-table-selection-cell"
+          aria-hidden="true"
+          data-selection-kind={chrome.selectionKind}
+          data-selected-count={String(chrome.selectedCount ?? 0)}
+          style={fixedRectStyle(box)}
+        />
+      ))}
+    </>
+  );
+}
+
+function TableAxisHoverBackdrop({ chrome }) {
+  const items = [...(chrome?.rows ?? []), ...(chrome?.columns ?? [])];
+  return (
+    <>
+      {items.map((item) => (
+        <div
+          key={`${item.axis}-${item.index}`}
+          className="mn-tiptap-table-axis-hover-backdrop"
+          aria-hidden="true"
+          data-axis={item.axis}
+          data-index={String(item.index)}
+          style={fixedRectStyle(item.rect)}
+        />
+      ))}
+    </>
   );
 }
 
@@ -259,6 +290,7 @@ export function PapyroTableChrome({ state }) {
   });
   const insert = createComplexBlockInsertChromeState(state);
   const backdrop = createTableSelectionBackdropChromeState(state);
+  const axisHover = createTableAxisHoverChromeState(state);
   const axis = createTableAxisHandleChromeState(state, {
     handleSize: TABLE_AXIS_HANDLE_SIZE,
     rowHandleWidth: REACT_TABLE_ROW_HANDLE_WIDTH,
@@ -276,6 +308,7 @@ export function PapyroTableChrome({ state }) {
   return (
     <>
       <TableSelectionBackdrop chrome={backdrop} />
+      <TableAxisHoverBackdrop chrome={axisHover} />
       <TableQuickAddButton
         chrome={quickAdd.row}
         label={addRowBelowLabel(language)}

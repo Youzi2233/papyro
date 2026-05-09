@@ -97,14 +97,8 @@
     inset: -1px;
     border-radius: 2px;
     pointer-events: none;
-    background:
-        linear-gradient(
-            180deg,
-            color-mix(in srgb, var(--mn-accent) 5%, transparent),
-            color-mix(in srgb, var(--mn-accent) 2%, transparent)
-        );
-    box-shadow:
-        inset 0 0 0 999px color-mix(in srgb, var(--mn-accent) 2%, transparent);
+    background: transparent;
+    box-shadow: none;
 }
 
 .mn-tiptap-editor :where(.mn-tiptap-table-cell-active, .mn-tiptap-table-cell-selected, .selectedCell) {
@@ -131,9 +125,7 @@
 .mn-tiptap-table-header.mn-tiptap-table-cell-active::after,
 .mn-tiptap-table-cell.mn-tiptap-table-cell-selected::after,
 .mn-tiptap-table-header.mn-tiptap-table-cell-selected::after {
-    box-shadow:
-        inset 0 0 0 999px color-mix(in srgb, var(--mn-accent) 2%, transparent),
-        inset 0 0 0 1px color-mix(in srgb, var(--mn-accent) 26%, transparent);
+    box-shadow: none;
 }
 
 .mn-tiptap-editor :where(.mn-tiptap-table-cell-active, .mn-tiptap-table-cell-selected)::before,

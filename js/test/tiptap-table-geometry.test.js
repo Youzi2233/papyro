@@ -64,6 +64,46 @@ function createTableGeometryHarness() {
   };
 }
 
+function createHeaderTableGeometryHarness() {
+  const cells = [];
+  const table = {
+    contains(target) {
+      return target === table || cells.includes(target);
+    },
+  };
+  const grid = Array.from({ length: 2 }, (_, rowIndex) => ({
+    rowIndex,
+    rect: normalizedRect(rect(120, 90 + rowIndex * 34, 240, 34)),
+    cells: Array.from({ length: 3 }, (_, columnIndex) => {
+      const cell = {
+        tagName: rowIndex === 0 ? "TH" : "TD",
+        closest(selector) {
+          if (selector === "th,td") return cell;
+          if (selector.includes("table")) return table;
+          return null;
+        },
+        getBoundingClientRect() {
+          return rect(120 + columnIndex * 80, 90 + rowIndex * 34, 80, 34);
+        },
+      };
+      cells.push(cell);
+      return {
+        cell,
+        rowIndex,
+        columnIndex,
+        pos: 10 + rowIndex * 3 + columnIndex,
+        rect: normalizedRect(cell.getBoundingClientRect()),
+      };
+    }),
+  }));
+  return {
+    cells,
+    grid,
+    table,
+    tableRect: normalizedRect(rect(120, 90, 240, 68)),
+  };
+}
+
 test("Tiptap table geometry classifies low-noise hover intent", () => {
   const { cells, grid, table, tableRect } = createTableGeometryHarness();
   const classify = (cellIndex, clientX, clientY) =>
@@ -118,6 +158,23 @@ test("Tiptap table geometry infers gutter handles from table coordinates", () =>
   assert.equal(classify(table, 366, 140), "add-column");
   assert.equal(classify(table, 160, 171), undefined);
   assert.equal(classify(table, 373, 140), undefined);
+});
+
+test("Tiptap table geometry treats header cell hover as column handle intent", () => {
+  const { cells, grid, table, tableRect } = createHeaderTableGeometryHarness();
+  const hover = tableHoverWithIntent({
+    target: cells[1],
+    table,
+    grid,
+    tableRect,
+    clientX: 204,
+    clientY: 107,
+    rowHandleWidth: 20,
+    columnHandleHeight: 20,
+  });
+
+  assert.equal(hover.edge, "column-handle");
+  assert.equal(hover.columnIndex, 1);
 });
 
 test("Tiptap table geometry limits gutter handles to their visible rails", () => {

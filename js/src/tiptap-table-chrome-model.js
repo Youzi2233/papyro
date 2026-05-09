@@ -46,12 +46,30 @@ function selectedCellRect(state) {
   return normalizedRect(selected?.rect ?? selected?.cell?.getBoundingClientRect?.());
 }
 
+function selectedCells(state) {
+  const positions = state?.selection?.positions ?? new Set();
+  return tableGridCells(state).filter((cell) => positions.has(cell.pos));
+}
+
 function selectedCellElement(state) {
   return selectedCellEntry(state)?.cell ?? null;
 }
 
 function tableGridCells(state) {
   return (state?.grid ?? []).flatMap((row) => row.cells ?? []);
+}
+
+function unionCellRects(cells = []) {
+  const rects = cells
+    .map((cell) => normalizedRect(cell?.rect ?? cell?.cell?.getBoundingClientRect?.()))
+    .filter(Boolean);
+  if (rects.length === 0) return null;
+
+  const left = Math.min(...rects.map((rect) => rect.left));
+  const top = Math.min(...rects.map((rect) => rect.top));
+  const right = Math.max(...rects.map((rect) => rect.right));
+  const bottom = Math.max(...rects.map((rect) => rect.bottom));
+  return normalizedRect({ left, top, right, bottom });
 }
 
 export function clearTableCellVisualState(table) {
@@ -218,6 +236,96 @@ export function createTableCellMenuTriggerChromeState(state) {
   };
 }
 
+export function createTableCellObjectSelectionChromeState(state) {
+  const selectionKind = state?.selection?.kind ?? "cell";
+  const selectedCount = state?.selection?.positions?.size ?? 0;
+  if (selectedCount === 0 || !["cell", "cells"].includes(selectionKind)) {
+    return {
+      visible: false,
+      boxes: [],
+      outline: null,
+      selectionKind,
+      selectedCount,
+    };
+  }
+
+  const cells = selectedCells(state);
+  const rects = cells
+    .map((cell) => normalizedRect(cell.rect ?? cell.cell?.getBoundingClientRect?.()))
+    .filter(Boolean);
+  const selectionRect = normalizedRect(state?.selectionRect);
+  const left = rects.length > 0 ? Math.min(...rects.map((rect) => rect.left)) : selectionRect?.left;
+  const top = rects.length > 0 ? Math.min(...rects.map((rect) => rect.top)) : selectionRect?.top;
+  const right = rects.length > 0 ? Math.max(...rects.map((rect) => rect.right)) : selectionRect?.right;
+  const bottom = rects.length > 0 ? Math.max(...rects.map((rect) => rect.bottom)) : selectionRect?.bottom;
+  const outline = normalizedRect({ left, top, right, bottom });
+
+  return {
+    visible: Boolean(outline),
+    boxes: rects,
+    outline,
+    selectionKind,
+    selectedCount,
+  };
+}
+
+export function createTableAxisObjectSelectionChromeState(state) {
+  const selectionKind = state?.selection?.kind ?? "cell";
+  const selectedCount = state?.selection?.positions?.size ?? 0;
+  if (!["row", "column", "table"].includes(selectionKind) || selectedCount === 0) {
+    return {
+      visible: false,
+      outline: null,
+      selectionKind,
+      selectedCount,
+    };
+  }
+
+  return {
+    visible: Boolean(normalizedRect(state?.selectionRect)),
+    outline: normalizedRect(state?.selectionRect),
+    selectionKind,
+    selectedCount,
+  };
+}
+
+export function createTableAxisHoverChromeState(state) {
+  const hoverEdge = state?.hover?.edge;
+  if (!state?.hover?.cell || state?.menuOpen) {
+    return { rows: [], columns: [] };
+  }
+
+  const rowIndex = Number.isInteger(state?.hover?.rowIndex) ? state.hover.rowIndex : null;
+  const columnIndex = Number.isInteger(state?.hover?.columnIndex)
+    ? state.hover.columnIndex
+    : null;
+  const cells = tableGridCells(state);
+  const rows =
+    (hoverEdge === "row-handle" || hoverEdge === "axis-corner") &&
+    Number.isInteger(rowIndex)
+      ? [
+          {
+            axis: "row",
+            index: rowIndex,
+            rect: unionCellRects(cells.filter((cell) => cell.rowIndex === rowIndex)),
+          },
+        ].filter((item) => item.rect)
+      : [];
+  const columns =
+    (hoverEdge === "column-handle" || hoverEdge === "axis-corner") &&
+    Number.isInteger(columnIndex)
+      ? [
+          {
+            axis: "column",
+            index: columnIndex,
+            rect: unionCellRects(cells.filter((cell) => cell.columnIndex === columnIndex)),
+          },
+        ].filter((item) => item.rect)
+      : [];
+
+  return { rows, columns };
+}
+
 export function createComplexBlockInsertChromeState(state) {
   const blockRect = normalizedRect(state?.complexRect ?? state?.rect);
   const block = state?.complexBlock ?? state?.table;
@@ -252,7 +360,9 @@ export function createComplexBlockInsertChromeState(state) {
 }
 
 export function createTableSelectionBackdropChromeState(state) {
-  const rect = normalizedRect(state?.selectionRect);
+  const cellChrome = createTableCellObjectSelectionChromeState(state);
+  const axisChrome = createTableAxisObjectSelectionChromeState(state);
+  const rect = cellChrome.outline ?? axisChrome.outline ?? normalizedRect(state?.selectionRect);
   const selectedCount = state?.selection?.positions?.size ?? 0;
   const visible = Boolean(
     rect &&
@@ -261,6 +371,7 @@ export function createTableSelectionBackdropChromeState(state) {
   return {
     visible,
     rect,
+    boxes: cellChrome.boxes ?? [],
     selectionKind: state?.selection?.kind ?? "cell",
     selectedCount,
   };
@@ -296,7 +407,7 @@ export function createTableAxisHandleChromeState(state, {
   const hoverEdge = state?.hover?.edge;
   const axisHoverAllowed = Boolean(
     state?.hover?.cell &&
-      state?.selection?.kind === "cell" &&
+      ["cell", "cells"].includes(state?.selection?.kind ?? "cell") &&
       !["add-row", "add-column", "cell-menu"].includes(hoverEdge),
   );
   const hoverRowIndex =

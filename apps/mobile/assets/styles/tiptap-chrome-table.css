@@ -854,12 +854,7 @@
     z-index: 160;
     pointer-events: none;
     border-radius: 2px;
-    background:
-        linear-gradient(
-            180deg,
-            color-mix(in srgb, var(--mn-accent) 5%, transparent),
-            color-mix(in srgb, var(--mn-accent) 2%, transparent)
-        );
+    background: transparent;
     box-shadow:
         inset 0 0 0 2px var(--mn-accent),
         0 0 0 1px color-mix(in srgb, var(--mn-accent) 28%, transparent);
@@ -873,6 +868,37 @@
 
 .mn-tiptap-table-selection-backdrop.hidden {
     display: none;
+}
+
+.mn-tiptap-table-selection-cell {
+    position: fixed;
+    z-index: 159;
+    pointer-events: none;
+    background:
+        linear-gradient(
+            180deg,
+            color-mix(in srgb, var(--mn-accent) 8%, transparent),
+            color-mix(in srgb, var(--mn-accent) 4%, transparent)
+        );
+}
+
+.mn-tiptap-table-axis-hover-backdrop {
+    position: fixed;
+    z-index: 158;
+    pointer-events: none;
+    background: color-mix(in srgb, var(--mn-accent) 3.5%, transparent);
+}
+
+.mn-tiptap-table-axis-hover-backdrop[data-axis="column"] {
+    box-shadow:
+        inset -2px 0 0 color-mix(in srgb, var(--mn-accent) 72%, transparent),
+        inset 2px 0 0 color-mix(in srgb, var(--mn-accent) 28%, transparent);
+}
+
+.mn-tiptap-table-axis-hover-backdrop[data-axis="row"] {
+    box-shadow:
+        inset 0 -2px 0 color-mix(in srgb, var(--mn-accent) 72%, transparent),
+        inset 0 2px 0 color-mix(in srgb, var(--mn-accent) 28%, transparent);
 }
 
 .mn-tiptap-table-axis-handle:hover,

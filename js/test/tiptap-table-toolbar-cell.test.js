@@ -143,6 +143,139 @@ test("Tiptap table toolbar reveals the cell trigger only after selecting a cell"
   assert.equal(controller.state.selection.kind, "cell");
 });
 
+test("Tiptap table toolbar suppresses native clicks after object selection", () => {
+  const { cells, editor } = createTableHarness();
+  const { documentRef } = createDocument();
+  const controller = createTiptapTableToolbarController({
+    dom: { document: documentRef },
+  });
+  const paragraph = {
+    nodeType: 1,
+    tagName: "P",
+    parentElement: cells[0],
+    parentNode: cells[0],
+    textContent: "Alpha",
+    closest(selector) {
+      if (selector === "th,td") return cells[0];
+      if (selector.includes(".mn-tiptap-table") || selector.includes(", table")) {
+        return cells[0].closest(selector);
+      }
+      return null;
+    },
+  };
+  const events = [];
+
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  editor.view.dom.listeners.get("pointerdown")({
+    target: paragraph,
+    button: 0,
+    clientX: 146,
+    clientY: 104,
+    timeStamp: 10,
+    preventDefault() {
+      events.push("preventDefault:down");
+    },
+    stopPropagation() {
+      events.push("stopPropagation:down");
+    },
+  });
+  documentRef.listeners.get("pointerup")?.({
+    target: paragraph,
+    clientX: 146,
+    clientY: 104,
+    timeStamp: 20,
+    preventDefault() {
+      events.push("preventDefault:up");
+    },
+    stopPropagation() {
+      events.push("stopPropagation:up");
+    },
+  });
+
+  assert.equal(
+    editor.view.dom.listeners.get("click")({
+      target: paragraph,
+      clientX: 146,
+      clientY: 104,
+      timeStamp: 30,
+      preventDefault() {
+        events.push("preventDefault:click");
+      },
+      stopPropagation() {
+        events.push("stopPropagation:click");
+      },
+    }),
+    true,
+  );
+  assert.deepEqual(events, [
+    "preventDefault:down",
+    "stopPropagation:down",
+    "preventDefault:up",
+    "stopPropagation:up",
+    "preventDefault:click",
+    "stopPropagation:click",
+  ]);
+  assert.deepEqual([...controller.state.selection.positions], [10]);
+});
+
+test("Tiptap table toolbar uses double click as the cell text editing affordance", () => {
+  const { cells, calls, editor, table } = createTableHarness();
+  const { documentRef } = createDocument();
+  const controller = createTiptapTableToolbarController({
+    dom: { document: documentRef },
+  });
+  const paragraph = {
+    nodeType: 1,
+    tagName: "P",
+    parentElement: cells[1],
+    parentNode: cells[1],
+    textContent: "Beta",
+    closest(selector) {
+      if (selector === "th,td") return cells[1];
+      if (selector.includes(".mn-tiptap-table") || selector.includes(", table")) {
+        return table;
+      }
+      return null;
+    },
+  };
+  editor.view.posAtCoords = ({ left, top }) => {
+    calls.push(["posAtCoords", left, top]);
+    return { pos: 42 };
+  };
+  editor.commands.setTextSelection = (position) => {
+    calls.push(["setTextSelection", position]);
+    editor.state.selection = { from: position };
+    editor.view.domAtPos = () => ({ node: cells[1] });
+    return true;
+  };
+  const events = [];
+
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  assert.equal(
+    editor.view.dom.listeners.get("dblclick")({
+      target: paragraph,
+      clientX: 214,
+      clientY: 104,
+      preventDefault() {
+        events.push("preventDefault:dblclick");
+      },
+      stopPropagation() {
+        events.push("stopPropagation:dblclick");
+      },
+    }),
+    true,
+  );
+
+  assert.deepEqual(events, ["preventDefault:dblclick", "stopPropagation:dblclick"]);
+  assert.deepEqual(calls.slice(-3), [
+    ["posAtCoords", 214, 104],
+    ["setTextSelection", 42],
+    ["focus"],
+  ]);
+  assert.equal(controller.state.selection.positions.size, 0);
+  assert.equal(cells[1].classes.has("mn-tiptap-table-cell-active"), true);
+});
+
 test("Tiptap table toolbar anchors a selected cell trigger from the grid selection", () => {
   const { created, documentRef } = createDocument();
   const { calls, cells, editor } = createTableHarness({ setCellAttribute: () => true });

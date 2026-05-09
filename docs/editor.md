@@ -130,7 +130,7 @@ Hybrid table widgets support direct cell editing, Tab/Shift+Tab cell navigation,
 
 Hybrid and Preview share the same document rhythm. The editor, source pane, fallback editor, and Preview scroller keep at least 24px of padding, and Hybrid unordered/ordered lists use the same indent and list-item spacing tokens as Preview.
 
-Clicking the blank or whole-cell surface commits a single-cell table selection and shows the active theme border. Clicking text or interactive inline content inside the cell stays on the native text-editing path, and dragging across cells is the explicit range-selection gesture.
+Single-clicking any non-interactive table cell surface, including existing text, commits a persistent single-cell object selection and shows the active theme border. Dragging across cells selects a rectangular cell range. Double-clicking a cell enters text editing at the pointer position, while links, buttons, inputs, and other interactive inline controls keep their native click behavior.
 
 Selecting a single table cell should show a visible theme border around that cell. Hovering a table cell reveals row and column axis handles flush outside the grid; those handles span the hovered row height or column width, stay reachable while the pointer crosses from the table into the rail, select the whole axis on click, and open the scoped table menu only after the ProseMirror row or column selection succeeds.
 

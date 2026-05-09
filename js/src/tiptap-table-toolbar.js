@@ -119,8 +119,41 @@ function isEmptyParagraphSurfaceTarget(target, cell) {
 }
 
 function shouldStartTableCellRangeDrag(target, cell) {
-  if (isInteractiveCellContent(target, cell)) return false;
-  return isDirectTableCellTarget(target, cell) || isEmptyParagraphSurfaceTarget(target, cell);
+  return isEditableTableCellSurfaceTarget(target, cell);
+}
+
+function tableCellTextSelectionPosition(editor, cell, event) {
+  const view = editor?.view;
+  let targetPos = null;
+  const x = Number(event?.clientX);
+  const y = Number(event?.clientY);
+  if (
+    Number.isFinite(x) &&
+    Number.isFinite(y) &&
+    typeof view?.posAtCoords === "function"
+  ) {
+    try {
+      const result = view.posAtCoords({ left: x, top: y });
+      if (Number.isFinite(result?.pos)) {
+        targetPos = result.pos;
+      }
+    } catch (_error) {
+      // Fall back to the start of the resolved table cell below.
+    }
+  }
+
+  if (!Number.isFinite(targetPos)) {
+    try {
+      const cellPos = tableCellDocumentPosition(view, cell);
+      if (Number.isFinite(cellPos)) {
+        targetPos = cellPos + 2;
+      }
+    } catch (_error) {
+      // Keep native behavior if ProseMirror cannot resolve the cell.
+    }
+  }
+
+  return Number.isFinite(targetPos) ? targetPos : null;
 }
 
 function tableContextFromElement(editor, table) {
@@ -194,6 +227,7 @@ export class TiptapTableToolbarController {
   #visualCellSelection = null;
   #removeListeners = [];
   #cellDrag = null;
+  #suppressCellClick = null;
   #state = {
     ...emptyTableToolbarState(),
   };
@@ -302,6 +336,8 @@ export class TiptapTableToolbarController {
     const onContextMenu = (event) => this.handleContextMenu(event);
     const onPointerMove = (event) => this.handlePointerMove(event);
     const onPointerDown = (event) => this.handlePointerDown(event);
+    const onMouseDown = (event) => this.handleMouseDown(event);
+    const onClick = (event) => this.handleClick(event);
     const onPointerLeave = (event) => this.handlePointerLeave(event);
     const onChromePointerMove = (event) => this.handleChromePointerMove(event);
     const onChromePointerLeave = (event) => this.handleChromePointerLeave(event);
@@ -309,6 +345,8 @@ export class TiptapTableToolbarController {
     target.addEventListener("contextmenu", onContextMenu, true);
     target.addEventListener("pointermove", onPointerMove, true);
     target.addEventListener("pointerdown", onPointerDown, true);
+    target.addEventListener("mousedown", onMouseDown, true);
+    target.addEventListener("click", onClick, true);
     target.addEventListener("pointerleave", onPointerLeave, true);
     target.addEventListener("dblclick", onDblClick, true);
     this.#document?.addEventListener?.("pointermove", onChromePointerMove, true);
@@ -317,6 +355,8 @@ export class TiptapTableToolbarController {
       () => target.removeEventListener?.("contextmenu", onContextMenu, true),
       () => target.removeEventListener?.("pointermove", onPointerMove, true),
       () => target.removeEventListener?.("pointerdown", onPointerDown, true),
+      () => target.removeEventListener?.("mousedown", onMouseDown, true),
+      () => target.removeEventListener?.("click", onClick, true),
       () => target.removeEventListener?.("pointerleave", onPointerLeave, true),
       () => target.removeEventListener?.("dblclick", onDblClick, true),
       () => this.#document?.removeEventListener?.("pointermove", onChromePointerMove, true),
@@ -723,7 +763,29 @@ export class TiptapTableToolbarController {
     };
 
     this.#bindCellDragListeners();
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
     return false;
+  }
+
+  handleMouseDown(event) {
+    if (!this.#cellDrag) return false;
+    const target = event?.target;
+    if (!this.#cellDrag.table?.contains?.(target)) return false;
+    const cell = closestTableCellElement(target);
+    if (cell && isInteractiveCellContent(target, cell)) return false;
+
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+    return true;
+  }
+
+  handleClick(event) {
+    if (!this.#shouldSuppressCellClick(event)) return false;
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+    this.#suppressCellClick = null;
+    return true;
   }
 
   #previewActiveCellFromPointer(context, start, event) {
@@ -785,6 +847,47 @@ export class TiptapTableToolbarController {
     return true;
   }
 
+  #markSuppressCellClick(drag, event) {
+    if (!drag?.table) return;
+    const timeStamp = Number(event?.timeStamp);
+    this.#suppressCellClick = {
+      table: drag.table,
+      clientX: Number(event?.clientX),
+      clientY: Number(event?.clientY),
+      timeStamp: Number.isFinite(timeStamp) ? timeStamp : Date.now(),
+    };
+  }
+
+  #shouldSuppressCellClick(event) {
+    const suppression = this.#suppressCellClick;
+    if (!suppression || !this.#editor?.view?.dom) return false;
+
+    const eventTime = Number(event?.timeStamp);
+    const now = Number.isFinite(eventTime) ? eventTime : Date.now();
+    if (Number.isFinite(suppression.timeStamp) && now - suppression.timeStamp > 1200) {
+      this.#suppressCellClick = null;
+      return false;
+    }
+
+    const x = Number(event?.clientX);
+    const y = Number(event?.clientY);
+    if (
+      Number.isFinite(x) &&
+      Number.isFinite(y) &&
+      Number.isFinite(suppression.clientX) &&
+      Number.isFinite(suppression.clientY) &&
+      Math.hypot(x - suppression.clientX, y - suppression.clientY) > 8
+    ) {
+      return false;
+    }
+
+    const table = closestTableElement(event?.target, this.#editor.view.dom);
+    if (table !== suppression.table) return false;
+    const cell = closestTableCellElement(event?.target);
+    if (cell && isInteractiveCellContent(event?.target, cell)) return false;
+    return Boolean(cell && table?.contains?.(cell));
+  }
+
   #bindCellDragListeners() {
     const drag = this.#cellDrag;
     const documentRef = this.#document ?? this.#editor?.view?.dom?.ownerDocument;
@@ -839,13 +942,13 @@ export class TiptapTableToolbarController {
     if (!Number.isFinite(nextHead?.pos)) return false;
 
     if (!drag.moved) return false;
-    if (!drag.selected && nextHead.pos === drag.anchor?.pos) return false;
-    if (drag.selected && nextHead.pos === drag.head?.pos) return false;
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+    if (!drag.selected && nextHead.pos === drag.anchor?.pos) return true;
+    if (drag.selected && nextHead.pos === drag.head?.pos) return true;
 
     drag.head = nextHead;
     drag.selected = true;
-    event?.preventDefault?.();
-    event?.stopPropagation?.();
     return this.#selectCellRange(drag.anchor.pos, nextHead.pos);
   }
 
@@ -855,60 +958,19 @@ export class TiptapTableToolbarController {
     drag.removeListeners?.forEach?.((remove) => remove());
     drag.removeListeners = [];
     this.#cellDrag = null;
+    let selected = false;
     if (drag.selected) {
+      selected = true;
+    } else if (drag.cellSurfaceClick && !drag.moved) {
+      selected = this.#selectCellRange(drag.anchor.pos, drag.anchor.pos);
+    } else if (drag.cellSurfaceClick && drag.rangeSelectable) {
+      selected = this.#selectCellRange(drag.anchor.pos, drag.head?.pos ?? drag.anchor.pos);
+    }
+    if (selected) {
+      this.#markSuppressCellClick(drag, event);
       event?.preventDefault?.();
       event?.stopPropagation?.();
-    } else if (drag.cellSurfaceClick && !drag.moved) {
-      const selected = this.#selectCellRange(drag.anchor.pos, drag.anchor.pos);
-      if (selected) {
-        event?.preventDefault?.();
-        event?.stopPropagation?.();
-      }
     }
-    return true;
-  }
-
-  #focusCellClick(drag, event) {
-    if (!drag?.anchor?.cell || !this.#editor) return false;
-    const view = this.#editor.view;
-    let targetPos = null;
-    const x = Number(event?.clientX);
-    const y = Number(event?.clientY);
-    if (
-      Number.isFinite(x) &&
-      Number.isFinite(y) &&
-      typeof view?.posAtCoords === "function"
-    ) {
-      try {
-        const result = view.posAtCoords({ left: x, top: y });
-        if (Number.isFinite(result?.pos)) {
-          targetPos = result.pos;
-        }
-      } catch (_error) {
-        // Fall back to the cell start below.
-      }
-    }
-
-    if (!Number.isFinite(targetPos) && typeof view?.posAtDOM === "function") {
-      try {
-        const cellStart = view.posAtDOM(drag.anchor.cell, 0);
-        if (Number.isFinite(cellStart)) {
-          targetPos = cellStart + 1;
-        }
-      } catch (_error) {
-        // Keep native behavior if ProseMirror cannot resolve the cell.
-      }
-    }
-
-    if (Number.isFinite(targetPos) && typeof this.#editor.commands?.setTextSelection === "function") {
-      this.#editor.commands.setTextSelection(targetPos);
-    }
-    this.#editor.commands?.focus?.();
-    this.#previewActiveCellFromPointer(
-      tableContextFromElement(this.#editor, drag.table),
-      drag.anchor,
-      event,
-    );
     return true;
   }
 
@@ -1031,6 +1093,34 @@ export class TiptapTableToolbarController {
 
   handleDoubleClick(event) {
     if (!this.#editor || this.#entry?.viewMode !== "hybrid") return false;
+    const table = closestTableElement(event?.target, this.#editor?.view?.dom);
+    const cell = closestTableCellElement(event?.target);
+    if (
+      table &&
+      cell &&
+      table.contains?.(cell) &&
+      !event?.target?.closest?.(".column-resize-handle") &&
+      !isInteractiveCellContent(event?.target, cell)
+    ) {
+      const targetPos = tableCellTextSelectionPosition(this.#editor, cell, event);
+      if (
+        Number.isFinite(targetPos) &&
+        typeof this.#editor.commands?.setTextSelection === "function"
+      ) {
+        event?.preventDefault?.();
+        event?.stopPropagation?.();
+        this.#suppressCellClick = null;
+        this.#visualCellSelection = null;
+        this.#cellDrag?.removeListeners?.forEach?.((remove) => remove());
+        this.#cellDrag = null;
+        const selected = this.#editor.commands.setTextSelection(targetPos) !== false;
+        if (!selected) return false;
+        this.#editor.commands?.focus?.();
+        this.refresh(this.#editor);
+        return true;
+      }
+    }
+
     const block = closestComplexBlockElement(event?.target, this.#editor?.view?.dom);
     if (!block) return false;
 
