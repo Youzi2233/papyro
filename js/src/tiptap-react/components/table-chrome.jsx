@@ -3,7 +3,7 @@ import React from "react";
 import {
   addColumnRightLabel,
   addRowBelowLabel,
-  insertBlockAfterLabel,
+  insertBlockAtEdgeLabel,
   selectTableColumnLabel,
   selectTableRowLabel,
   tableCellActionsLabel,
@@ -242,7 +242,7 @@ export function PapyroTableChrome({ state }) {
       />
       <TableComplexBlockInsert
         chrome={insert}
-        label={insertBlockAfterLabel(language)}
+        label={insertBlockAtEdgeLabel(language, insert.edge)}
         onInsert={state?.insertParagraphAfterBlock}
       />
       {axis.rows.map((handle) => (

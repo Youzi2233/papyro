@@ -1,7 +1,7 @@
 import {
   addColumnRightLabel,
   addRowBelowLabel,
-  insertBlockAfterLabel,
+  insertBlockAtEdgeLabel,
   selectTableColumnLabel,
   selectTableRowLabel,
   tableContextEyebrowLabel,
@@ -575,8 +575,9 @@ export class TiptapTableToolbarView {
       return;
     }
 
-    this.#blockInsertButton.title = insertBlockAfterLabel(state.language);
-    this.#blockInsertButton.setAttribute("aria-label", insertBlockAfterLabel(state.language));
+    const label = insertBlockAtEdgeLabel(state.language, insertState.edge);
+    this.#blockInsertButton.title = label;
+    this.#blockInsertButton.setAttribute("aria-label", label);
     this.#blockInsertButton.style.left = `${insertState.rect.left}px`;
     this.#blockInsertButton.style.top = `${insertState.rect.top}px`;
     this.#blockInsertButton.style.width = `${insertState.rect.width}px`;

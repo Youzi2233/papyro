@@ -657,6 +657,16 @@ export function insertBlockAfterLabel(language) {
   return localizedText(language, "Insert block after", "在下方插入内容块");
 }
 
+export function insertBlockBeforeLabel(language) {
+  return localizedText(language, "Insert block before", "在上方插入内容块");
+}
+
+export function insertBlockAtEdgeLabel(language, edge = "after") {
+  return edge === "before"
+    ? insertBlockBeforeLabel(language)
+    : insertBlockAfterLabel(language);
+}
+
 export function selectTableRowLabel(language, index) {
   const row = Number(index) + 1;
   return localizedText(language, `Select row ${row}`, `选择第 ${row} 行`);

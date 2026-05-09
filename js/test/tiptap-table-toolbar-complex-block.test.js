@@ -108,6 +108,8 @@ test("Tiptap table toolbar inserts before complex blocks from the top rail", () 
   assert.equal(insertRail.hidden, false);
   assert.equal(insertRail.style.top, "120px");
   assert.equal(insertRail.dataset.insertEdge, "before");
+  assert.equal(insertRail.title, "Insert block before");
+  assert.equal(insertRail["aria-label"], "Insert block before");
 
   insertRail.onpointerdown({ preventDefault() {}, stopPropagation() {} });
 

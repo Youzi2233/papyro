@@ -7,6 +7,9 @@ import {
   blockHandleActionsLabel,
   blockHandleInsertLabel,
   formatToolbarLabel,
+  insertBlockAfterLabel,
+  insertBlockAtEdgeLabel,
+  insertBlockBeforeLabel,
   insertTableLabel,
   loadingEditorLabel,
   localizeCalloutKindOption,
@@ -88,6 +91,10 @@ test("Tiptap floating chrome exposes readable Chinese labels", () => {
   assert.equal(tableSelectionActionsLabel("Chinese"), "选区操作");
   assert.equal(addRowBelowLabel("Chinese"), "在下方添加行");
   assert.equal(addColumnRightLabel("Chinese"), "在右侧添加列");
+  assert.equal(insertBlockAfterLabel("Chinese"), "在下方插入内容块");
+  assert.equal(insertBlockBeforeLabel("Chinese"), "在上方插入内容块");
+  assert.equal(insertBlockAtEdgeLabel("Chinese", "before"), "在上方插入内容块");
+  assert.equal(insertBlockAtEdgeLabel("Chinese", "after"), "在下方插入内容块");
   assert.equal(tableSizeLabel("Chinese", 2, 3), "表格 2 x 3");
   assert.equal(insertTableLabel("Chinese", 2, 3), "插入 2 行 3 列表格");
   assert.equal(selectTableRowLabel("Chinese", 1), "选择第 2 行");
