@@ -231,6 +231,7 @@ node scripts/check-editor-markdown-gate.js
   - 当前覆盖：官方原生 drag start/end 现在会回流到 Papyro controller 生命周期。原生拖拽会关闭块操作/插入浮层、先选中语义 block、向 React chrome 发布 `officialDragging` 状态，并在拖拽结束时清理选中底色，同时不替换官方 drop handler。
 - [ ] 用 React 渲染句柄，明确分成拖拽/操作句柄和插入 `+` 两个控件。
   - 当前覆盖：桌面端/移动端 bundle 入口保留 React block-handle view 作为迁移 fallback，官方 `DragHandle` React bridge 现在会在官方 drag-handle 元素内部直接渲染同一套 Papyro `+` 和操作控件。Hybrid 模式下可见句柄的 hover 跟踪和定位由官方插件负责，旧 floating view 只保留菜单锚点、drop indicator 和 fallback 职责。
+  - 当前打磨：官方 hover tracking 接管可见控件时，旧 floating handle 会重新隐藏，但 hover bridge 仍能覆盖正文到官方句柄之间的沟槽，并继续为 fallback 菜单提供锚点。
   - 当前打磨：`+` 和操作句柄的间距、点击热区和静态/激活样式已进一步细化，避免两个 icon 簇在一起导致职责模糊。
   - 当前打磨：官方原生拖拽状态现在会进入共享 React 句柄视觉状态，官方 drag path 运行时 cursor 和 active affordance 保持一致。
   - 仍需继续：把拖拽重排执行完全迁移到官方 drag/drop 路径，并继续收缩兼容 controller。
@@ -285,19 +286,21 @@ node scripts/check-tiptap-release-smoke.js
   - 当前覆盖：表格 overlay 不再渲染整表角落句柄；geometry 返回 `table: null`，只保留行/列 slim handle 作为轴向操作入口。
 - [ ] 默认隐藏可视句柄。只有在第一行或第一列附近有明确 hover 意图时展示行/列句柄。
   - 当前覆盖：行/列句柄默认保持隐藏；hover 表格单元格时，会在该行边缘显示对应行句柄，并在该列上方显示对应列句柄。句柄尺寸跟随行高或列宽，因此更接近官方轴向 chrome，同时不会遮住可编辑单元格文本。
+  - 当前打磨：行/列句柄现在贴齐表格网格，朝向表格的一侧边框保持透明；鼠标从表格跨入顶部/左侧轨道时会刷新为对应轴向 hover，因此句柄不会在可点击前消失。
   - 当前架构：选中/活跃单元格的视觉状态现在也进入共享表格 chrome 模型。真实运行时由 React chrome 在生命周期内应用和清理单元格 class，DOM view 只保留 fallback 路径，继续减少旧 controller 对可见表格状态的持有。
 - [ ] 整个单元格表面都能进入编辑和聚焦，不应该只有中间一小块能触发。
-  - 当前覆盖：空白单元格表面和空段落表面会走表格聚焦 fallback；已有文字的行内内容继续交给 ProseMirror 原生文本选择，不会启动表格范围拖选。
+  - 当前覆盖：空白单元格表面和空段落表面会提交单个单元格选区；已有文字的行内内容继续交给 ProseMirror 原生文本选择，不会启动表格范围拖选。
   - 当前打磨：已有文字的行内区域现在只预览当前单元格 chrome，不再抢走 pointer-up/text selection；表格范围拖选只从空白单元格表面或空段落开始，降低编辑单元格文字时误触范围选择的概率。
-  - 当前打磨：已有文字的单元格短点击会在 pointer-up 时聚焦到点击位置，真实拖动仍保留原生文本选择；这样整格都有可编辑感，同时不会把文字拖选误判为表格范围选择。
+  - 当前打磨：整格表面短点击现在会在 pointer-up 时提交单个单元格 `CellSelection`，真实拖动仍保留原生文本选择；这样点击会用活跃边框明确选中单元格，而不是只把焦点移到不可见的光标位置。
   - 当前打磨：填充单元格里的文本拖动一旦变成明确拖选，会清掉临时单元格预览态，让原生文本选区成为唯一可见的选择状态。
 - [x] 单元格之间不能有视觉间隙，保证 selection 和 resize border 连续。
-  - 当前覆盖：Tiptap 表格单元格使用 collapsed border、border-box 背景绘制，并由样式 smoke 守护连续单元格表面。
+  - 当前覆盖：Tiptap 表格单元格使用 `border-collapse: separate`、`border-spacing: 0`、单侧网格边框、表格 margin 归零和 border-box 背景绘制，并由样式 smoke 守护连续单元格表面。
   - 当前打磨：表格网格绘制与编辑器背景隔离，选中单元格保持克制的活跃边框，选中/激活状态下仍保留 resize rail，但不额外增加常驻 chrome。
-  - 当前打磨：Hybrid 表格 wrapper 不再给表格网格增加内部 padding，因此渲染表格从真实 collapsed-border 边缘开始，不再露出一圈编辑器背景缝隙。
+  - 当前打磨：Hybrid 表格 wrapper 不再给表格网格增加内部 padding，因此渲染表格从真实零间距边缘开始，不再露出一圈编辑器背景缝隙。
 - [x] 点击单元格后，用主题色边框高亮当前单元格。
   - 当前覆盖：活跃和选中单元格使用更克制、连续的主题色边框；单元格菜单触发点按真实单元格垂直居中锚定，hover 只作为次级反馈。
   - 当前打磨：单个 ProseMirror 表格单元格被选中时也会获得 active-cell class 和 outline，因此选中反馈会表现为真实边框，而不是只剩边缘操作小点。
+  - 当前打磨：空白单元格和空段落短点击已纳入视觉 class 测试，`setCellSelection` 后必须刷新出 selected/active class。
 - [ ] 多单元格框选后显示克制遮罩，并在选区边缘显示小操作触发点。
   - 当前覆盖：表格单元格操作触发器默认是边缘小点，只在 hover、focus 或打开状态展开为紧凑四点 grip。
   - 当前打磨：单个单元格的操作触发点现在优先按 ProseMirror 单元格选区在表格网格中的真实位置锚定，而不是沿用过期的 active cell 矩形。打开触发点时也复用这个已选位置，避免用户选中另一个单元格后菜单又跳回之前活跃的单元格。
@@ -321,6 +324,7 @@ node scripts/check-tiptap-release-smoke.js
   - 当前打磨：gutter hover 意图现在复用可见细句柄本身的几何区域，句柄和表格之间的空隙不再表现成不可见的行/列选择器。
   - 当前打磨：第一个单元格左上角现在是明确的双轴意图区，用户可以同时露出第一行和第一列句柄，但普通单元格 hover 仍然不会变得吵。
   - 当前打磨：行/列句柄菜单现在只会在底层表格轴向选区成功后打开，避免 ProseMirror 拒绝选中时仍弹出误导性的菜单。
+  - 当前打磨：React 渲染的轴向句柄现在使用独立 pointer activation guard，成功的 pointer-down 选区不会被随后到来的 click 事件重复执行，避免菜单被意外切换或重新锚定。
   - 当前覆盖：行/列上下文菜单现在通过 Papyro 薄封装接入公开的 `prosemirror-tables` `moveTableRow` 和 `moveTableColumn` 命令，提供上移/下移、左移/右移结构操作；边界移动会被 capability 禁用，移动后继续保持对应轴选中，并补齐本地化标签与紧凑表格箭头图标。
   - 当前覆盖：行/列上下文菜单现在也暴露对齐、文字颜色和背景颜色命令，整行/整列样式复用与单元格范围一致的 ProseMirror `CellSelection` 和 Tiptap 表格属性语义。
   - 当前覆盖：行/列上下文菜单现在暴露重复行/列动作，作为官方 `table-node` duplicate 能力在免费/开源路径下的 Papyro 等价实现。常规无合并单元格表格会保留被选中行/列的内容；遇到 merged-cell 结构时会禁用，避免静默破坏表格结构。

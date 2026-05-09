@@ -1,4 +1,4 @@
-import React, { useLayoutEffect } from "react";
+import React, { useLayoutEffect, useRef } from "react";
 
 import {
   addColumnRightLabel,
@@ -194,7 +194,8 @@ function TableSelectionBackdrop({ chrome }) {
 }
 
 function TableAxisHandle({ handle, label, onSelectAxis }) {
-  const activation = usePointerActivation(() => {
+  const pointerActivated = useRef(false);
+  const run = () => {
     const anchorRect = {
       left: handle.left,
       top: handle.top,
@@ -206,7 +207,11 @@ function TableAxisHandle({ handle, label, onSelectAxis }) {
     const selected = onSelectAxis?.(handle.axis, handle.index) === true;
     if (!selected) return false;
     return onSelectAxis?.("menu", handle.index, anchorRect) !== false;
-  });
+  };
+  const guard = (event) => {
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+  };
 
   return (
     <button
@@ -219,7 +224,27 @@ function TableAxisHandle({ handle, label, onSelectAxis }) {
       data-index={String(handle.index)}
       {...chromeVisibilityProps(handle.visible)}
       style={fixedRectStyle(handle)}
-      {...activation}
+      onPointerDown={(event) => {
+        guard(event);
+        pointerActivated.current = true;
+        run();
+      }}
+      onClick={(event) => {
+        guard(event);
+        if (!pointerActivated.current) {
+          run();
+        }
+        pointerActivated.current = false;
+      }}
+      onMouseDown={(event) => event?.preventDefault?.()}
+      onAuxClick={(event) => {
+        guard(event);
+        pointerActivated.current = false;
+      }}
+      onContextMenu={(event) => {
+        guard(event);
+        pointerActivated.current = false;
+      }}
     />
   );
 }

@@ -137,9 +137,9 @@ test("Tiptap table geometry limits gutter handles to their visible rails", () =>
     })?.edge;
 
   assert.equal(classify(108, 128), "row-handle");
-  assert.equal(classify(119, 128), undefined);
+  assert.equal(classify(99, 128), undefined);
   assert.equal(classify(204, 76), "column-handle");
-  assert.equal(classify(204, 89), undefined);
+  assert.equal(classify(204, 91), undefined);
 });
 
 test("Tiptap table geometry reserves the outer bottom rail for adding rows", () => {
@@ -354,8 +354,8 @@ test("Tiptap table geometry positions row column handles and scoped cell menus",
     handle.width,
     handle.height,
   ]), [
-    [0, 100, 90, 18, 34],
-    [1, 100, 124, 18, 34],
+    [0, 102, 90, 18, 34],
+    [1, 102, 124, 18, 34],
   ]);
   assert.deepEqual(axis.columns.map((handle) => [
     handle.index,
@@ -364,9 +364,9 @@ test("Tiptap table geometry positions row column handles and scoped cell menus",
     handle.width,
     handle.height,
   ]), [
-    [0, 120, 70, 80, 18],
-    [1, 200, 70, 80, 18],
-    [2, 280, 70, 80, 18],
+    [0, 120, 72, 80, 18],
+    [1, 200, 72, 80, 18],
+    [2, 280, 72, 80, 18],
   ]);
 
   assert.deepEqual(

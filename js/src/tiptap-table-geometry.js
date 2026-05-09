@@ -346,7 +346,7 @@ export function tableAxisHandleGeometry(grid, tableRect, {
   handleSize = 12,
   rowHandleWidth = 18,
   columnHandleHeight = 18,
-  gap = 2,
+  gap = 0,
 } = {}) {
   const rect = normalizedRect(tableRect);
   if (!rect) return { table: null, rows: [], columns: [] };

@@ -842,7 +842,11 @@ export class TiptapTableToolbarController {
       event?.preventDefault?.();
       event?.stopPropagation?.();
     } else if (drag.cellSurfaceClick && !drag.moved) {
-      this.#focusCellClick(drag, event);
+      const selected = this.#selectCellRange(drag.anchor.pos, drag.anchor.pos);
+      if (selected) {
+        event?.preventDefault?.();
+        event?.stopPropagation?.();
+      }
     }
     return true;
   }
@@ -893,6 +897,9 @@ export class TiptapTableToolbarController {
 
   handlePointerLeave(event) {
     if (!this.#state.open || !this.#state.hover) return false;
+    if (this.#refreshHoverFromActiveTableChrome(event)) {
+      return false;
+    }
     if (
       this.contains(event?.relatedTarget) ||
       this.#state.table?.contains?.(event?.relatedTarget) ||
@@ -910,6 +917,34 @@ export class TiptapTableToolbarController {
     }
 
     this.#state = emptyTableToolbarState(entryLanguage(this.#entry));
+    this.#render();
+    return true;
+  }
+
+  #refreshHoverFromActiveTableChrome(event) {
+    if (!this.#state.table || !this.#state.rect) return false;
+    const x = Number(event?.clientX);
+    const y = Number(event?.clientY);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return false;
+    const hover = tableHoverWithIntent({
+      target: this.#state.table,
+      table: this.#state.table,
+      grid: this.#state.grid,
+      tableRect: this.#state.rect,
+      clientX: x,
+      clientY: y,
+      rowHandleWidth: TABLE_ROW_HANDLE_WIDTH,
+      columnHandleHeight: TABLE_COLUMN_HANDLE_HEIGHT,
+      allowRailTarget: true,
+    });
+    if (!hover || !["row-handle", "column-handle", "axis-corner"].includes(hover.edge)) {
+      return false;
+    }
+
+    this.#state = {
+      ...this.#state,
+      hover,
+    };
     this.#render();
     return true;
   }

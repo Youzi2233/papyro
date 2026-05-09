@@ -416,7 +416,8 @@
 .mn-tiptap-table {
     box-sizing: border-box;
     width: 100%;
-    border-collapse: collapse;
+    margin: 0;
+    border-collapse: separate;
     border-spacing: 0;
     background: var(--mn-surface);
     font-family: var(--mn-font-ui);
@@ -432,8 +433,11 @@
     position: relative;
     min-width: 96px;
     padding: var(--mn-markdown-table-cell-pad);
-    border: var(--mn-markdown-table-border);
+    border: 0;
+    border-right: var(--mn-markdown-table-border);
+    border-bottom: var(--mn-markdown-table-border);
     background-clip: border-box;
+    background-origin: border-box;
     background-color: var(--mn-surface);
     cursor: text;
     vertical-align: top;
@@ -459,6 +463,14 @@
 .mn-tiptap-table-cell:hover *,
 .mn-tiptap-table-header:hover * {
     cursor: text;
+}
+
+.mn-tiptap-table-row:first-child > :where(.mn-tiptap-table-cell, .mn-tiptap-table-header) {
+    border-top: var(--mn-markdown-table-border);
+}
+
+.mn-tiptap-table-row > :where(.mn-tiptap-table-cell, .mn-tiptap-table-header):first-child {
+    border-left: var(--mn-markdown-table-border);
 }
 
 .mn-tiptap-table-cell:hover,
@@ -509,7 +521,7 @@
 .mn-tiptap-table-cell.mn-tiptap-table-cell-active,
 .mn-tiptap-table-header.mn-tiptap-table-cell-active {
     z-index: 3;
-    outline: 2px solid color-mix(in srgb, var(--mn-accent) 76%, transparent);
+    outline: 2px solid var(--mn-accent);
     outline-offset: -2px;
 }
 
@@ -521,8 +533,8 @@
 .mn-tiptap-table-header.mn-tiptap-table-cell-active::after {
     content: "";
     position: absolute;
-    inset: 0;
-    z-index: 1;
+    inset: -1px;
+    z-index: 5;
     pointer-events: none;
     background:
         linear-gradient(
@@ -531,9 +543,9 @@
             color-mix(in srgb, var(--mn-accent) 4%, transparent)
         );
     box-shadow:
-        inset 0 0 0 1.5px color-mix(in srgb, var(--mn-accent) 96%, transparent),
+        inset 0 0 0 2px var(--mn-accent),
         inset 0 0 0 999px color-mix(in srgb, var(--mn-accent) 3%, transparent),
-        0 0 0 1px color-mix(in srgb, var(--mn-accent) 18%, transparent);
+        0 0 0 1px color-mix(in srgb, var(--mn-accent) 28%, transparent);
 }
 
 .mn-tiptap-table-cell.mn-tiptap-table-cell-active::after,
@@ -545,10 +557,10 @@
             color-mix(in srgb, var(--mn-accent) 2%, transparent)
         );
     box-shadow:
-        inset 0 0 0 1.5px color-mix(in srgb, var(--mn-accent) 92%, transparent),
-        inset 0 0 0 2.5px color-mix(in srgb, var(--mn-editor-bg) 74%, transparent),
+        inset 0 0 0 2px var(--mn-accent),
+        inset 0 0 0 3px color-mix(in srgb, var(--mn-editor-bg) 76%, transparent),
         inset 0 0 0 999px color-mix(in srgb, var(--mn-accent) 2%, transparent),
-        0 0 0 1px color-mix(in srgb, var(--mn-accent) 14%, transparent);
+        0 0 0 1px color-mix(in srgb, var(--mn-accent) 24%, transparent);
 }
 
 .mn-tiptap-table-cell.mn-tiptap-table-cell-selected,

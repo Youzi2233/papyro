@@ -57,6 +57,7 @@ const CONTROL_GAP = 8;
 const BRIDGE_PADDING = 24;
 const SELECTED_CLASS = "mn-tiptap-block-selected";
 const DRAGGING_CLASS = "mn-tiptap-block-dragging";
+const OFFICIAL_DRAG_HANDLE_SELECTOR = ".mn-tiptap-official-drag-handle-bridge";
 const DRAG_THRESHOLD_PX = 10;
 const TABLE_STRUCTURE_NODE_TYPES = new Set(["tableRow", "tableCell", "tableHeader"]);
 const PARAGRAPH_SLASH_NODE = Object.freeze({
@@ -372,6 +373,30 @@ function pointerAnchorRect(event, fallbackRect = null) {
     };
   }
   return fallbackRect;
+}
+
+function isOfficialDragHandleTarget(target) {
+  const element = elementFromTarget(target);
+  return Boolean(element?.closest?.(OFFICIAL_DRAG_HANDLE_SELECTOR));
+}
+
+function pointerInsideOfficialHandleBridge(event, target) {
+  const rect = target?.block?.getBoundingClientRect?.();
+  const x = Number(event?.clientX);
+  const y = Number(event?.clientY);
+  if (!rect || !Number.isFinite(x) || !Number.isFinite(y)) return false;
+
+  const controlsWidth = DEFAULT_HANDLE_SIZE * 2 + CONTROL_GAP;
+  const bridgeWidth = controlsWidth + HORIZONTAL_GAP + BRIDGE_PADDING;
+  const left = Math.max(0, Number(rect.left) - bridgeWidth - 4);
+  const right = Number(rect.left) + 6;
+  const top = Number(rect.top) - 10;
+  const bottom = Number(rect.bottom ?? Number(rect.top) + Number(rect.height ?? 0)) + 10;
+  return [left, right, top, bottom].every(Number.isFinite) &&
+    x >= left &&
+    x <= right &&
+    y >= top &&
+    y <= bottom;
 }
 
 export function insertSlashParagraphAfterBlock(editor, target) {
@@ -804,6 +829,15 @@ export class TiptapBlockHandleController {
 
     const onMouseMove = (event) => this.handlePointerMove(event);
     const onMouseLeave = (event) => {
+      if (
+        this.#officialTrackingActive &&
+        this.#state.open &&
+        (isOfficialDragHandleTarget(event?.relatedTarget) ||
+          pointerInsideOfficialHandleBridge(event, this.#state.target))
+      ) {
+        this.#updateView();
+        return;
+      }
       if (this.contains(event?.relatedTarget)) return;
       if (this.#hasOpenFloatingMenu()) {
         this.#updateView();

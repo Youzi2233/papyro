@@ -94,34 +94,28 @@ export class TiptapReactBlockHandleView {
     this.#onDragStart = state.startDrag ?? null;
 
     this.#officialMode = state.officialTracking === true;
-    if (this.#officialMode) {
-      this.#insertButton = null;
-      this.#actionButton = null;
-      this.#reactRoot.render(null);
-    } else {
-      flushSync(() => {
-        this.#reactRoot.render(
-          <PapyroBlockHandle
-            state={{
-              ...state,
-              onInsertPointerDown: (event) => this.#handleInsertPointerDown(event),
-              onInsertClick: (event) => this.#handleInsertClick(event),
-              onInsertContextMenu: (event) => this.#handleInsertContextMenu(event),
-              onActionPointerDown: (event) => this.#handleActionPointerDown(event),
-              onActionPointerUp: (event) => this.#handleActionPointerUp(event),
-              onActionClick: (event) => this.#handleActionClick(event),
-              onActionContextMenu: (event) => this.#handleActionContextMenu(event),
-              onAuxClick: stopEvent,
-            }}
-          />,
-        );
-      });
+    flushSync(() => {
+      this.#reactRoot.render(
+        <PapyroBlockHandle
+          state={{
+            ...state,
+            onInsertPointerDown: (event) => this.#handleInsertPointerDown(event),
+            onInsertClick: (event) => this.#handleInsertClick(event),
+            onInsertContextMenu: (event) => this.#handleInsertContextMenu(event),
+            onActionPointerDown: (event) => this.#handleActionPointerDown(event),
+            onActionPointerUp: (event) => this.#handleActionPointerUp(event),
+            onActionClick: (event) => this.#handleActionClick(event),
+            onActionContextMenu: (event) => this.#handleActionContextMenu(event),
+            onAuxClick: stopEvent,
+          }}
+        />,
+      );
+    });
 
-      this.#insertButton = this.#root.querySelector?.(".mn-tiptap-block-handle-insert") ?? null;
-      this.#actionButton = this.#root.querySelector?.(".mn-tiptap-block-handle-action") ?? null;
-    }
+    this.#insertButton = this.#root.querySelector?.(".mn-tiptap-block-handle-insert") ?? null;
+    this.#actionButton = this.#root.querySelector?.(".mn-tiptap-block-handle-action") ?? null;
     this.#position(state);
-    setHidden(this.#root, this.#officialMode);
+    setHidden(this.#root, state.floatingViewHidden === true && !state.menuOpen && !state.insertOpen);
   }
 
   updateDrag(state) {
@@ -197,14 +191,6 @@ export class TiptapReactBlockHandleView {
   #position(state) {
     const rect = state.target.block.getBoundingClientRect?.();
     if (!rect) return;
-
-    if (this.#officialMode) {
-      this.#root.dataset.blockKind = state.target.kind;
-      this.#root.dataset.dragging = state.dragging ? "true" : "false";
-      this.#root.dataset.menuOpen = state.menuOpen ? "true" : "false";
-      this.#root.dataset.insertOpen = state.insertOpen ? "true" : "false";
-      return;
-    }
 
     const viewportWidth =
       state.target.block.ownerDocument?.documentElement?.clientWidth ??

@@ -7,6 +7,7 @@ function createHarness() {
   const calls = [];
   const listeners = new Map();
   const documentListeners = new Map();
+  const created = [];
   const containsTarget = (owner, target) => {
     let current = target;
     while (current) {
@@ -92,8 +93,107 @@ function createHarness() {
     }),
   );
   const documentRef = {
-    body: { appendChild() {} },
+    body: {
+      children: [],
+      appendChild(child) {
+        this.children.push(child);
+        child.parentElement = this;
+      },
+    },
     documentElement: { clientWidth: 1000, clientHeight: 800 },
+    createElement(tagName) {
+      const element = {
+        nodeType: 1,
+        tagName: String(tagName).toUpperCase(),
+        children: [],
+        dataset: {},
+        hidden: false,
+        className: "",
+        parentElement: null,
+        style: {
+          setProperty(name, value) {
+            this[name] = value;
+          },
+        },
+        classList: {
+          add(name) {
+            const classes = new Set(String(element.className).split(/\s+/).filter(Boolean));
+            classes.add(name);
+            element.className = [...classes].join(" ");
+          },
+          remove(name) {
+            element.className = String(element.className)
+              .split(/\s+/)
+              .filter((item) => item && item !== name)
+              .join(" ");
+          },
+          toggle(name, enabled) {
+            element.hidden = enabled && name === "hidden";
+            enabled ? this.add(name) : this.remove(name);
+          },
+          contains(name) {
+            return String(element.className).split(/\s+/).includes(name);
+          },
+        },
+        appendChild(child) {
+          this.children.push(child);
+          child.parentElement = this;
+        },
+        append(...children) {
+          children.forEach((child) => this.appendChild(child));
+        },
+        replaceChildren(...children) {
+          this.children = [];
+          this.append(...children);
+        },
+        setAttribute(name, value) {
+          this[name] = value;
+        },
+        getAttribute(name) {
+          return this[name] ?? null;
+        },
+        removeAttribute(name) {
+          delete this[name];
+        },
+        addEventListener(name, handler) {
+          this[`on${name}`] = handler;
+        },
+        removeEventListener(name, handler) {
+          if (this[`on${name}`] === handler) {
+            delete this[`on${name}`];
+          }
+        },
+        contains(target) {
+          return containsTarget(this, target);
+        },
+        querySelector(selector) {
+          const matches = (node) => {
+            if (selector.startsWith(".")) {
+              return node.classList?.contains?.(selector.slice(1));
+            }
+            if (selector.startsWith("[data-command-id=")) {
+              const id = selector.match(/"([^"]+)"/u)?.[1];
+              return node.dataset?.commandId === id;
+            }
+            return false;
+          };
+          const visit = (node) => {
+            if (matches(node)) return node;
+            for (const child of node.children ?? []) {
+              const found = visit(child);
+              if (found) return found;
+            }
+            return null;
+          };
+          return visit(this);
+        },
+        remove() {
+          this.removed = true;
+        },
+      };
+      created.push(element);
+      return element;
+    },
     addEventListener(type, listener) {
       if (!documentListeners.has(type)) documentListeners.set(type, []);
       documentListeners.get(type).push(listener);
@@ -197,15 +297,19 @@ function createHarness() {
           $anchorCell: { pos: selection.anchorCell },
           $headCell: { pos: selection.headCell },
           forEachCell(callback) {
-            selectedPositions.forEach((pos) => callback({}, pos));
+            selectedPositions.forEach((pos) => {
+              const item = positioned.find((cell) => cell.pos === pos);
+              callback(item?.cell ?? {}, pos);
+            });
           },
         };
+        editor.view.domAtPos = () => ({ node: anchor?.cell ?? cells[0] });
         return true;
       },
     },
   };
 
-  return { calls, cells, documentListeners, documentRef, editor, pushEvent, root, table };
+  return { calls, cells, created, documentListeners, documentRef, editor, pushEvent, root, table };
 }
 
 test("Tiptap table inline text content previews the cell without stealing native selection", () => {
@@ -265,7 +369,7 @@ test("Tiptap table inline text content previews the cell without stealing native
   assert.deepEqual(calls, []);
 });
 
-test("Tiptap table empty paragraph surface focuses like the whole cell", () => {
+test("Tiptap table empty paragraph surface selects the whole cell", () => {
   const { calls, cells, documentListeners, editor, pushEvent, root, table } = createHarness();
   const paragraph = {
     nodeType: 1,
@@ -309,13 +413,16 @@ test("Tiptap table empty paragraph surface focuses like the whole cell", () => {
     stopPropagation: pushEvent(events, "stopPropagation:up"),
   });
 
-  assert.deepEqual(events, []);
-  assert.deepEqual(calls, [["posAtCoords", 220, 96], ["setTextSelection", 12], ["focus"]]);
+  assert.deepEqual(events, ["preventDefault:up", "stopPropagation:up"]);
+  assert.deepEqual(calls, [["setCellSelection", 11, 11], ["focus"]]);
   assert.equal(controller.state.cell, cells[1]);
   assert.equal(controller.state.cellRect?.left, 190);
+  assert.deepEqual([...controller.state.selection.positions], [11]);
+  assert.equal(cells[1].classes.has("mn-tiptap-table-cell-selected"), true);
+  assert.equal(cells[1].classes.has("mn-tiptap-table-cell-active"), true);
 });
 
-test("Tiptap table blank cell clicks focus the editable cell", () => {
+test("Tiptap table blank cell clicks select the editable cell", () => {
   const { calls, cells, documentListeners, editor, pushEvent, root } = createHarness();
   editor.view.posAtCoords = ({ left, top }) => {
     calls.push(["posAtCoords", left, top]);
@@ -347,10 +454,13 @@ test("Tiptap table blank cell clicks focus the editable cell", () => {
     stopPropagation: pushEvent(events, "stopPropagation:up"),
   });
 
-  assert.deepEqual(events, []);
-  assert.deepEqual(calls, [["posAtCoords", 220, 96], ["setTextSelection", 12], ["focus"]]);
+  assert.deepEqual(events, ["preventDefault:up", "stopPropagation:up"]);
+  assert.deepEqual(calls, [["setCellSelection", 11, 11], ["focus"]]);
   assert.equal(controller.state.cell, cells[1]);
   assert.equal(controller.state.cellRect?.left, 190);
+  assert.deepEqual([...controller.state.selection.positions], [11]);
+  assert.equal(cells[1].classes.has("mn-tiptap-table-cell-selected"), true);
+  assert.equal(cells[1].classes.has("mn-tiptap-table-cell-active"), true);
 });
 
 test("Tiptap table cell clicks preview the active cell immediately", () => {
@@ -379,7 +489,10 @@ test("Tiptap table cell clicks preview the active cell immediately", () => {
     clientX: 230,
     clientY: 134,
   });
-  assert.deepEqual(calls, [["setTextSelection", 14], ["focus"]]);
+  assert.deepEqual(calls, [["setCellSelection", 13, 13], ["focus"]]);
+  assert.deepEqual([...controller.state.selection.positions], [13]);
+  assert.equal(cells[3].classes.has("mn-tiptap-table-cell-selected"), true);
+  assert.equal(cells[3].classes.has("mn-tiptap-table-cell-active"), true);
 });
 
 test("Tiptap table interactive inline content clicks stay native", () => {

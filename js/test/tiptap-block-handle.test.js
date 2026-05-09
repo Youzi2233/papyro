@@ -715,6 +715,28 @@ test("Tiptap block handle exposes bridge actions through the official view state
   ]);
 });
 
+test("Tiptap block handle keeps official bridge reachable across the gutter", () => {
+  const { block, editor } = createEditor();
+  editor.view.nodeDOM = (pos) => (pos === 7 ? block : null);
+  const view = createViewSpy();
+  const controller = createTiptapBlockHandleController({ view });
+  controller.attach({ editor, root: editor.view.dom, entry: { viewMode: "hybrid" } });
+  controller.handleOfficialNodeChange({
+    node: { nodeSize: 6, type: { name: "paragraph" } },
+    pos: 7,
+  });
+
+  editor.view.dom.listeners.get("mouseleave")({
+    target: editor.view.dom,
+    clientX: 92,
+    clientY: 52,
+    relatedTarget: null,
+  });
+
+  assert.equal(controller.state.open, true);
+  assert.deepEqual(view.calls.at(-1), ["update", "paragraph", 7]);
+});
+
 test("Tiptap block handle keeps open menus anchored during official hover changes", () => {
   const { block, editor, root } = createEditor();
   const nextBlock = createElement({ tagName: "H2", parent: root });
