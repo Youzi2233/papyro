@@ -30,6 +30,11 @@ const STEPS = [
     command: process.execPath,
     args: ["scripts/check-tiptap-runtime-smoke.js"],
   },
+  {
+    name: "Desktop resource smoke",
+    command: process.execPath,
+    args: ["scripts/check-desktop-resource-smoke.js"],
+  },
 ];
 
 const BUNDLE_COPIES = [

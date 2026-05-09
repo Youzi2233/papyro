@@ -97,6 +97,9 @@ jobs:
       - name: UI accessibility check self-test
         run: node scripts/check-ui-a11y.js --self-test
 
+      - name: Desktop resource smoke
+        run: node scripts/check-desktop-resource-smoke.js
+
       - name: Performance fixture generator self-test
         run: node scripts/generate-perf-fixtures.js --self-test
 

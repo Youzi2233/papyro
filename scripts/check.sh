@@ -40,6 +40,9 @@ node scripts/check-ui-contrast.js
 echo "=== UI contrast check self-test ==="
 node scripts/check-ui-contrast.js --self-test
 
+echo "=== desktop resource smoke check ==="
+node scripts/check-desktop-resource-smoke.js
+
 echo "=== Markdown style smoke check ==="
 node scripts/check-markdown-style-smoke.js
 

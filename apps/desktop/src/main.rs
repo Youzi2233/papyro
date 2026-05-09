@@ -7,9 +7,9 @@ use std::fs;
 use std::io;
 use std::path::Path;
 
-const FAVICON: Asset = asset!("/assets/favicon.ico");
-const BRAND_LOGO_SRC: Asset = asset!("/assets/logo.png");
-const EDITOR_JS_SRC: Asset = asset!("/assets/editor.js");
+const FAVICON_SRC: &str = "/assets/favicon.ico";
+const BRAND_LOGO_SRC: &str = "/assets/logo.png";
+const EDITOR_JS_SRC: &str = "/assets/editor.js";
 const MAIN_CSS: &str = concat!(
     include_str!("../assets/styles/modal.css"),
     "\n",
@@ -51,7 +51,7 @@ fn main() {
         );
     }
 
-    let mut chrome = papyro_app::desktop::desktop_startup_chrome(FAVICON, MAIN_CSS);
+    let mut chrome = papyro_app::desktop::desktop_startup_chrome(FAVICON_SRC, MAIN_CSS);
     chrome
         .custom_head
         .push_str(desktop_interpreter_patch_head());
@@ -61,7 +61,7 @@ fn main() {
     // chrome.custom_head.push_str(desktop_tab_close_patch_head());
     chrome
         .custom_head
-        .push_str(&editor_runtime_head(&EDITOR_JS_SRC.to_string()));
+        .push_str(&editor_runtime_head(EDITOR_JS_SRC));
 
     let window = WindowBuilder::new()
         .with_title("Papyro")
@@ -378,11 +378,30 @@ mod tests {
 
     #[test]
     fn editor_runtime_head_loads_external_script() {
-        let head = editor_runtime_head("/assets/editor.js");
+        let head = editor_runtime_head(EDITOR_JS_SRC);
 
         assert_eq!(head.matches("</script>").count(), 2);
         assert!(head.contains(r#"src="/assets/editor.js""#));
         assert!(head.contains(r#"data-papyro-editor-runtime="external""#));
+    }
+
+    #[test]
+    fn desktop_runtime_assets_use_webview_relative_urls() {
+        for asset_url in [FAVICON_SRC, BRAND_LOGO_SRC, EDITOR_JS_SRC] {
+            assert!(asset_url.starts_with("/assets/"));
+            assert!(!asset_url.contains('\\'));
+            assert!(!asset_url.contains(':'));
+        }
+    }
+
+    #[test]
+    fn editor_runtime_head_does_not_expose_local_asset_paths() {
+        let head = editor_runtime_head(EDITOR_JS_SRC);
+
+        assert!(head.contains(r#"window.__PAPYRO_EDITOR_SCRIPT_SRC__ = "/assets/editor.js";"#));
+        assert!(!head.contains("apps/desktop/assets"));
+        assert!(!head.contains("E:"));
+        assert!(!head.contains('\\'));
     }
 
     #[test]

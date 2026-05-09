@@ -42,6 +42,7 @@ Invoke-Step "UI primitive usage check" { node scripts/check-ui-primitives.js }
 Invoke-Step "UI primitive usage check self-test" { node scripts/check-ui-primitives.js --self-test }
 Invoke-Step "UI contrast check" { node scripts/check-ui-contrast.js }
 Invoke-Step "UI contrast check self-test" { node scripts/check-ui-contrast.js --self-test }
+Invoke-Step "desktop resource smoke check" { node scripts/check-desktop-resource-smoke.js }
 Invoke-Step "Markdown style smoke check" { node scripts/check-markdown-style-smoke.js }
 Invoke-Step "Markdown style smoke check self-test" { node scripts/check-markdown-style-smoke.js --self-test }
 Invoke-Step "Tiptap release smoke fixture check" { node scripts/check-tiptap-release-smoke.js }
