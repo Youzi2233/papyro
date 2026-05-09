@@ -302,6 +302,7 @@ node scripts/check-tiptap-release-smoke.js
 - [ ] 增加单元格菜单：合并、拆分、对齐、文字颜色、背景颜色、清除格式、复制、删除内容。
   - 当前覆盖：真实运行时的表格上下文菜单从 editor 入口注入，并由 React 组件渲染。headless 命令模型和 fake-DOM fallback 会保留到其余表格 chrome 完成迁移。
   - 当前打磨：React 渲染的表格命令行现在与 fallback renderer 使用同一套“标题 + 描述”的可访问标签契约，在表格 chrome 继续迁入 React 时保持屏幕阅读器语义一致。
+  - 当前打磨：真实 React 表格上下文菜单现在使用专用 Lucide 图标映射渲染表格操作，迁移期 DOM fallback 继续保留 CSS 绘制图标；运行时菜单更接近官方 UI 组件质感，同时测试不耦合具体 SVG 标记。
   - 当前覆盖：选中单元格内容现在可以通过 Papyro 命令清空，底层复用官方 `@tiptap/pm/tables` 的 `deleteCellSelection` utility，并已补齐菜单元数据、国际化标签和真实 editor 挂载测试。该命令也支持官方 table-node 的 `resetAttrs` 语义，可在清空内容时同步重置对齐/背景属性；同时提供单独的清除样式菜单项，保留文本内容。
   - 当前覆盖：选中单元格现在支持默认、弱化、强调、危险四种文字颜色命令，底层复用共享 `TextStyle` mark 路径。该命令作用于 ProseMirror 单元格选区，也支持从同一菜单清除颜色，并已补齐真实 editor 挂载测试、菜单元数据和国际化标签。
   - 当前覆盖：选中的表格单元格现在可以通过表格作用域命令复制为纯文本 TSV，底层使用官方 `selectedRect` 网格语义，不修改文档内容，并已补齐菜单文案、复制图标和真实 editor 挂载测试。

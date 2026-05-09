@@ -62,6 +62,10 @@ const tableContextMenuSource = readFileSync(
   new URL("../src/tiptap-react/components/table-context-menu.jsx", import.meta.url),
   "utf8",
 );
+const tableCommandIconsSource = readFileSync(
+  new URL("../src/tiptap-react/components/table-command-icons.jsx", import.meta.url),
+  "utf8",
+);
 const tableChromeSource = readFileSync(
   new URL("../src/tiptap-react/components/table-chrome.jsx", import.meta.url),
   "utf8",
@@ -299,6 +303,16 @@ test("React table context menu keeps fallback command accessibility semantics", 
     /"aria-label":\s*tableCommandAccessibleLabel\(command\)/u,
   );
   assert.doesNotMatch(tableContextMenuSource, /"aria-label":\s*command\.title/u);
+});
+
+test("React table context menu uses lucide icons in the real runtime", () => {
+  assert.match(tableContextMenuSource, /TableCommandIcon/u);
+  assert.match(tableContextMenuSource, /"icon-source":\s*"lucide"/u);
+  assert.match(tableCommandIconsSource, /from "lucide-react"/u);
+  assert.match(tableCommandIconsSource, /export function TableCommandIcon/u);
+  assert.match(tableCommandIconsSource, /TableCellsMerge/u);
+  assert.match(tableCommandIconsSource, /TableCellsSplit/u);
+  assert.match(tableCommandIconsSource, /PaintBucket/u);
 });
 
 test("React table chrome owns the non-menu table overlay rendering path", () => {

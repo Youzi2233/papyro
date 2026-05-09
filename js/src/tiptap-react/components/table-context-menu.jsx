@@ -12,6 +12,7 @@ import {
 } from "../../tiptap-table-commands.js";
 import { usePointerActivation } from "../hooks/use-pointer-activation.js";
 import { CommandIconFrame, CommandRow, CommandText } from "./primitives.jsx";
+import { TableCommandIcon } from "./table-command-icons.jsx";
 
 function TableCommandVisual({ command }) {
   const icon = command.icon ?? command.id;
@@ -22,10 +23,13 @@ function TableCommandVisual({ command }) {
       icon=""
       dataIcon={icon}
       data={{
+        "icon-source": "lucide",
         variant,
         tone: command.tone ?? "default",
       }}
-    />
+    >
+      <TableCommandIcon icon={icon} />
+    </CommandIconFrame>
   );
 }
 

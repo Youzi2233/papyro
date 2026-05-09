@@ -230,11 +230,22 @@
     border-radius: 3px;
 }
 
+.mn-tiptap-table-command-icon-svg {
+    display: block;
+    width: 14.5px;
+    height: 14.5px;
+}
+
 .mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-button-visual::before {
     width: 15px;
     height: 13px;
     border-radius: 3px;
     opacity: .92;
+}
+
+.mn-tiptap-table-toolbar-button-visual[data-icon-source="lucide"]::before,
+.mn-tiptap-table-toolbar-button-visual[data-icon-source="lucide"]::after {
+    content: none !important;
 }
 
 .mn-tiptap-table-toolbar-button[data-icon="column-left"] .mn-tiptap-table-toolbar-button-visual::before,
