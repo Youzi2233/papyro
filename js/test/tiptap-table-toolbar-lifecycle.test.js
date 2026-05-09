@@ -115,7 +115,7 @@ test("Tiptap table toolbar keeps editor blur stable for table chrome and WebView
 
 test("Tiptap table toolbar does not mount legacy chrome when React chrome is available", () => {
   const { created, documentRef } = createDocument();
-  const { editor } = createTableHarness({
+  const { cells, editor } = createTableHarness({
     addRowAfter: () => true,
     addColumnAfter: () => true,
     mergeCells: () => true,
@@ -145,6 +145,13 @@ test("Tiptap table toolbar does not mount legacy chrome when React chrome is ava
 
   controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
 
+  assert.equal(
+    cells.some((cell) =>
+      cell.classes.has("mn-tiptap-table-cell-selected") ||
+      cell.classes.has("mn-tiptap-table-cell-active"),
+    ),
+    false,
+  );
   assert.equal(
     documentRef.body.children.some((element) =>
       String(element.className).includes("mn-tiptap-table-chrome-root"),

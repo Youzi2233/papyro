@@ -2,6 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  applyTableCellVisualState,
+  clearTableCellVisualState,
   createComplexBlockInsertChromeState,
   createTableAxisHandleChromeState,
   createTableCellMenuTriggerChromeState,
@@ -24,11 +26,27 @@ function rect(left, top, width, height) {
 
 function createGrid() {
   const cells = [];
+  const cellElements = [];
   const grid = Array.from({ length: 2 }, (_, rowIndex) => ({
     rowIndex,
     rect: rect(120, 90 + rowIndex * 34, 240, 34),
     cells: Array.from({ length: 3 }, (_, columnIndex) => {
       const cell = {
+        classes: new Set(),
+        classList: {
+          add(name) {
+            cell.classes.add(name);
+          },
+          remove(name) {
+            cell.classes.delete(name);
+          },
+          toggle(name, enabled) {
+            enabled ? cell.classes.add(name) : cell.classes.delete(name);
+          },
+          contains(name) {
+            return cell.classes.has(name);
+          },
+        },
         getBoundingClientRect: () =>
           rect(120 + columnIndex * 80, 90 + rowIndex * 34, 80, 34),
       };
@@ -40,11 +58,28 @@ function createGrid() {
         rect: cell.getBoundingClientRect(),
       };
       cells.push(item);
+      cellElements.push(cell);
       return item;
     }),
   }));
 
-  return { cells, grid, tableRect: rect(120, 90, 240, 68) };
+  const table = {
+    querySelectorAll(selector) {
+      if (selector === ".mn-tiptap-table-cell-selected") {
+        return cellElements.filter((cell) =>
+          cell.classes.has("mn-tiptap-table-cell-selected"),
+        );
+      }
+      if (selector === ".mn-tiptap-table-cell-active") {
+        return cellElements.filter((cell) =>
+          cell.classes.has("mn-tiptap-table-cell-active"),
+        );
+      }
+      return [];
+    },
+  };
+
+  return { cells, cellElements, grid, table, tableRect: rect(120, 90, 240, 68) };
 }
 
 function baseState(overrides = {}) {
@@ -54,7 +89,7 @@ function baseState(overrides = {}) {
   return {
     rect: tableRect,
     grid,
-    table: { id: "table" },
+    table: fixture.table ?? { id: "table" },
     cell: cells[0].cell,
     cellRect: cells[0].rect,
     selection: {
@@ -78,6 +113,49 @@ test("table chrome model chooses menu anchors by selection kind", () => {
   assert.equal(tableMenuAnchorRect(baseState({ menuAnchorRect: rect(1, 2, 3, 4) })).left, 1);
   assert.equal(tableMenuAnchorRect(baseState({ mode: "keyboard" })).left, 120);
   assert.equal(tableMenuAnchorRect(baseState({ selection: { kind: "row" }, menuRect: rect(9, 9, 1, 1) })).left, 9);
+});
+
+test("table chrome model applies and clears cell visual state", () => {
+  const fixture = createGrid();
+  const { cellElements, cells, table } = fixture;
+
+  assert.equal(
+    applyTableCellVisualState(baseState({ fixture })),
+    true,
+  );
+  assert.equal(cellElements[0].classes.has("mn-tiptap-table-cell-active"), true);
+  assert.equal(
+    cellElements.some((cell) => cell.classes.has("mn-tiptap-table-cell-selected")),
+    false,
+  );
+
+  applyTableCellVisualState(baseState({
+    fixture,
+    cell: cells[0].cell,
+    selection: {
+      kind: "cells",
+      positions: new Set([10, 11]),
+      rows: [],
+      columns: [],
+    },
+  }));
+  assert.deepEqual(
+    cellElements.map((cell) => cell.classes.has("mn-tiptap-table-cell-selected")),
+    [true, true, false, false, false, false],
+  );
+  assert.equal(
+    cellElements.some((cell) => cell.classes.has("mn-tiptap-table-cell-active")),
+    false,
+  );
+
+  clearTableCellVisualState(table);
+  assert.equal(
+    cellElements.some((cell) =>
+      cell.classes.has("mn-tiptap-table-cell-selected") ||
+      cell.classes.has("mn-tiptap-table-cell-active"),
+    ),
+    false,
+  );
 });
 
 test("table chrome model exposes quick-add rails only on intentional table edges", () => {

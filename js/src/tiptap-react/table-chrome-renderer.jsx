@@ -41,6 +41,11 @@ export class TiptapReactTableChromeRenderer {
   }
 
   hide() {
+    if (this.#reactRoot) {
+      flushSync(() => {
+        this.#reactRoot.render(<PapyroTableChrome state={null} />);
+      });
+    }
     setHidden(this.#root, true);
   }
 

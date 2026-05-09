@@ -14,6 +14,8 @@ import {
 } from "./tiptap-i18n.js";
 import { normalizedRect } from "./tiptap-table-geometry.js";
 import {
+  applyTableCellVisualState,
+  clearTableCellVisualState,
   createComplexBlockInsertChromeState,
   createTableAxisHandleChromeState,
   createTableCellMenuTriggerChromeState,
@@ -302,12 +304,7 @@ export class TiptapTableToolbarView {
     this.#root.dataset.open = state.menuOpen ? "true" : "false";
     this.#root.dataset.selectionKind = state.selection?.kind ?? "cell";
     if (this.#lastTable && this.#lastTable !== state.table) {
-      this.#lastTable
-        .querySelectorAll?.(".mn-tiptap-table-cell-selected")
-        ?.forEach?.((cell) => cell.classList?.remove?.("mn-tiptap-table-cell-selected"));
-      this.#lastTable
-        .querySelectorAll?.(".mn-tiptap-table-cell-active")
-        ?.forEach?.((cell) => cell.classList?.remove?.("mn-tiptap-table-cell-active"));
+      clearTableCellVisualState(this.#lastTable);
       this.#lastActiveCell = null;
     }
     this.#lastTable = state.table ?? null;
@@ -379,12 +376,12 @@ export class TiptapTableToolbarView {
       },
     );
     this.#root.onkeydown = (event) => state.handleKeyDown?.(event);
-    this.#applySelectionState(state);
-    this.#applyActiveCellState(state);
     if (this.#reactChrome) {
       this.#hideLegacyChrome();
       this.#reactChrome.render(state);
     } else {
+      this.#applySelectionState(state);
+      this.#applyActiveCellState(state);
       this.#updateSelectionBackdrop(state);
       this.#updateQuickAdd(state);
       this.#updateCellMenuTrigger(state);
@@ -756,39 +753,15 @@ export class TiptapTableToolbarView {
   }
 
   #applySelectionState(state) {
-    state.table
-      ?.querySelectorAll?.(".mn-tiptap-table-cell-selected")
-      ?.forEach?.((cell) => cell.classList?.remove?.("mn-tiptap-table-cell-selected"));
-
-    const selectedPositions = state.selection?.positions ?? new Set();
-    (state.grid ?? []).forEach((row) => {
-      row.cells.forEach((cell) => {
-        cell.cell?.classList?.toggle?.(
-          "mn-tiptap-table-cell-selected",
-          selectedPositions.has(cell.pos),
-        );
-      });
-    });
+    applyTableCellVisualState(state);
   }
 
   #applyActiveCellState(state) {
-    if (this.#lastActiveCell && this.#lastActiveCell !== state.cell) {
-      this.#lastActiveCell.classList?.remove?.("mn-tiptap-table-cell-active");
-    }
-
-    const showActive =
+    this.#lastActiveCell =
       state.selection?.kind === "cell" &&
-      (state.selection?.positions?.size ?? 0) === 0 &&
-      state.cell;
-
-    if (showActive) {
-      state.cell.classList?.add?.("mn-tiptap-table-cell-active");
-      this.#lastActiveCell = state.cell;
-      return;
-    }
-
-    this.#lastActiveCell?.classList?.remove?.("mn-tiptap-table-cell-active");
-    this.#lastActiveCell = null;
+      (state.selection?.positions?.size ?? 0) === 0
+        ? state.cell ?? null
+        : null;
   }
 
   hide() {
@@ -800,12 +773,7 @@ export class TiptapTableToolbarView {
     setTableDecorationHidden(this.#selectionBackdrop, true);
     this.#reactChrome?.hide?.();
     setTableDecorationHidden(this.#chromeRoot, true);
-    this.#lastTable
-      ?.querySelectorAll?.(".mn-tiptap-table-cell-selected")
-      ?.forEach?.((cell) => cell.classList?.remove?.("mn-tiptap-table-cell-selected"));
-    this.#lastTable
-      ?.querySelectorAll?.(".mn-tiptap-table-cell-active")
-      ?.forEach?.((cell) => cell.classList?.remove?.("mn-tiptap-table-cell-active"));
+    clearTableCellVisualState(this.#lastTable);
     this.#clearAxisHandles();
     this.#lastTable = null;
     this.#lastActiveCell = null;

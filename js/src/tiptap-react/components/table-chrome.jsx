@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useLayoutEffect } from "react";
 
 import {
   addColumnRightLabel,
@@ -10,6 +10,8 @@ import {
   tableSelectionActionsLabel,
 } from "../../tiptap-i18n.js";
 import {
+  applyTableCellVisualState,
+  clearTableCellVisualState,
   createComplexBlockInsertChromeState,
   createTableAxisHandleChromeState,
   createTableCellMenuTriggerChromeState,
@@ -23,6 +25,17 @@ export const REACT_TABLE_ROW_HANDLE_WIDTH = 20;
 export const REACT_TABLE_COLUMN_HANDLE_HEIGHT = 20;
 const TABLE_ADD_ROW_HEIGHT = 14;
 const TABLE_ADD_COLUMN_WIDTH = 14;
+
+function useTableCellVisualState(state) {
+  useLayoutEffect(() => {
+    const table = state?.table ?? null;
+    if (!table) return undefined;
+
+    applyTableCellVisualState(state);
+
+    return () => clearTableCellVisualState(table);
+  }, [state]);
+}
 
 function px(value) {
   const number = Number(value);
@@ -215,6 +228,7 @@ function TableAxisHandle({ handle, label, onSelectAxis }) {
 }
 
 export function PapyroTableChrome({ state }) {
+  useTableCellVisualState(state);
   const quickAdd = createTableQuickAddChromeState(state, {
     rowHeight: TABLE_ADD_ROW_HEIGHT,
     columnWidth: TABLE_ADD_COLUMN_WIDTH,

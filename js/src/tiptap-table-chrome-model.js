@@ -7,6 +7,9 @@ import {
   tableQuickAddGeometry,
 } from "./tiptap-table-geometry.js";
 
+export const TABLE_SELECTED_CELL_CLASS = "mn-tiptap-table-cell-selected";
+export const TABLE_ACTIVE_CELL_CLASS = "mn-tiptap-table-cell-active";
+
 export function tableMenuAnchorRect(state) {
   if (state?.menuAnchorRect) return state.menuAnchorRect;
   if (state?.mode === "keyboard") return state?.rect ?? null;
@@ -39,6 +42,44 @@ function selectedCellEntry(state) {
 function selectedCellRect(state) {
   const selected = selectedCellEntry(state);
   return normalizedRect(selected?.rect ?? selected?.cell?.getBoundingClientRect?.());
+}
+
+function tableGridCells(state) {
+  return (state?.grid ?? []).flatMap((row) => row.cells ?? []);
+}
+
+export function clearTableCellVisualState(table) {
+  table
+    ?.querySelectorAll?.(`.${TABLE_SELECTED_CELL_CLASS}`)
+    ?.forEach?.((cell) => cell.classList?.remove?.(TABLE_SELECTED_CELL_CLASS));
+  table
+    ?.querySelectorAll?.(`.${TABLE_ACTIVE_CELL_CLASS}`)
+    ?.forEach?.((cell) => cell.classList?.remove?.(TABLE_ACTIVE_CELL_CLASS));
+}
+
+export function applyTableCellVisualState(state) {
+  const table = state?.table ?? null;
+  if (!table) return false;
+
+  clearTableCellVisualState(table);
+
+  const selectedPositions = state?.selection?.positions ?? new Set();
+  tableGridCells(state).forEach((cell) => {
+    cell.cell?.classList?.toggle?.(
+      TABLE_SELECTED_CELL_CLASS,
+      selectedPositions.has(cell.pos),
+    );
+  });
+
+  const showActive =
+    state?.selection?.kind === "cell" &&
+    selectedPositions.size === 0 &&
+    state?.cell;
+  if (showActive) {
+    state.cell.classList?.add?.(TABLE_ACTIVE_CELL_CLASS);
+  }
+
+  return true;
 }
 
 export function createTableQuickAddChromeState(state, {
