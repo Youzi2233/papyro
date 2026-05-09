@@ -135,6 +135,8 @@ const TIPTAP_COMMAND_PANEL_REQUIREMENTS = [
   ["Tiptap table copy cell icon", ".mn-tiptap-table-toolbar-button[data-icon=\"copy-cell\"]", "data-icon=\"copy-cell\""],
   ["Tiptap table text color commands", ".mn-tiptap-table-toolbar-button[data-variant=\"text-swatch\"]", "data-icon=\"text-color-accent\""],
   ["Tiptap table cell menu grip", ".mn-tiptap-table-cell-menu-trigger::after", "radial-gradient"],
+  ["Tiptap table cell menu quiet hit box", ".mn-tiptap-table-cell-menu-trigger", "width: 8px"],
+  ["Tiptap table cell menu expands on intent", ".mn-tiptap-table-cell-menu-trigger:hover", "width: 20px"],
   ["Tiptap complex insert breakpoint", ".mn-tiptap-complex-block-insert::before", "calc(50% - 28px)"],
   ["Tiptap complex insert button", ".mn-tiptap-complex-block-insert::after", "--mn-editor-bg"],
   ["Tiptap code language badge", ".mn-tiptap-code-language-button::before", "data-language-badge"],

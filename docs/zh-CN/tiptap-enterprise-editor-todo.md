@@ -303,6 +303,7 @@ node scripts/check-tiptap-release-smoke.js
   - 当前架构：真实运行时注入 React 表格 chrome 时，不再挂载旧的快捷新增、单元格操作触发点、复杂块插入轨道、行列句柄或选区遮罩 DOM；旧 DOM chrome 只保留为 fallback 和测试路径，避免两套 overlay 同时抢状态。
   - 当前打磨：迁移期 DOM fallback 现在也对表格快捷新增轨道、单元格触发点、行列句柄、复杂块插入轨道和装饰遮罩使用同一套隐藏态契约，保证 React 与 fallback chrome 在继续迁移期间语义一致。
   - 当前打磨：表格操作触发点现在区分单元格、范围、行、列和整表的语义作用域，并复用上下文菜单标题的本地化文案；React chrome 和 fallback chrome 不再把行/列/整表选区展示成泛化的单元格操作。
+  - 当前打磨：已选单元格的操作触发点默认收敛为更小的边缘圆点，只有 hover、focus 或菜单打开时才展开为完整四点 grip，减少它与官方列宽拖拽 handle 的竞争。
 - [ ] 增加单元格菜单：合并、拆分、对齐、文字颜色、背景颜色、清除格式、复制、删除内容。
   - 当前覆盖：真实运行时的表格上下文菜单从 editor 入口注入，并由 React 组件渲染。headless 命令模型和 fake-DOM fallback 会保留到其余表格 chrome 完成迁移。
   - 当前打磨：React 渲染的表格命令行现在与 fallback renderer 使用同一套“标题 + 描述”的可访问标签契约，在表格 chrome 继续迁入 React 时保持屏幕阅读器语义一致。
