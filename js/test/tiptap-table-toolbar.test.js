@@ -396,8 +396,9 @@ test("Tiptap table toolbar marks active cell background commands", () => {
   assert.equal(blue.dataset.active, "false");
   assert.equal(yellow.dataset.variant, "swatch");
   assert.equal(yellow.children[0]?.dataset?.icon, "color-yellow");
-  assert.equal(colorGroup.dataset.group, "Cell color");
-  assert.equal(colorGroup.dataset.groupKey, "Cell color");
+  assert.equal(colorGroup.dataset.group, "Style");
+  assert.equal(colorGroup.dataset.groupKey, "style:cell-color");
+  assert.equal(colorGroup.dataset.menuSection, "style");
 });
 
 test("Tiptap table toolbar renders alignment commands as icon buttons", () => {
@@ -420,8 +421,9 @@ test("Tiptap table toolbar renders alignment commands as icon buttons", () => {
   assert.equal(alignCenter.dataset.icon, "align-center");
   assert.equal(alignCenter.children[0]?.dataset?.icon, "align-center");
   assert.equal(alignCenter.children.length, 1);
-  assert.equal(alignGroup.dataset.group, "Align");
-  assert.equal(alignGroup.dataset.groupKey, "Align");
+  assert.equal(alignGroup.dataset.group, "Style");
+  assert.equal(alignGroup.dataset.groupKey, "style:align");
+  assert.equal(alignGroup.dataset.menuSection, "style");
 });
 
 test("Tiptap table toolbar keeps icon and swatch layouts stable in Chinese", () => {
@@ -446,8 +448,10 @@ test("Tiptap table toolbar keeps icon and swatch layouts stable in Chinese", () 
   const colorGroup = created.find((element) => element.dataset.layoutGroup === "cell-color");
   assert.notEqual(alignGroup.dataset.group, "Align");
   assert.notEqual(colorGroup.dataset.group, "Cell color");
-  assert.equal(alignGroup.dataset.groupKey, "Align");
-  assert.equal(colorGroup.dataset.groupKey, "Cell color");
+  assert.equal(alignGroup.dataset.groupKey, "style:align");
+  assert.equal(colorGroup.dataset.groupKey, "style:cell-color");
+  assert.equal(alignGroup.dataset.group, "样式");
+  assert.equal(alignGroup.dataset.menuSection, "style");
   assert.equal(created.find((element) => element.dataset.commandId === "align-center").dataset.variant, "icon");
   assert.equal(created.find((element) => element.dataset.commandId === "cell-bg-yellow").dataset.variant, "swatch");
 });
@@ -1805,7 +1809,7 @@ test("Tiptap table toolbar scopes context commands to row and column selections"
   assert.deepEqual(
     toolbarCommandIds(created)
       .filter((id) => ["move-row-up", "move-row-down", "sort-columns-asc", "sort-columns-desc", "add-row-before", "add-row-after", "duplicate-row", "copy-cell-content", "clear-cell-content", "clear-cell-style", "delete-row", "toggle-header-row", "merge-cells"].includes(id)),
-    ["move-row-up", "move-row-down", "sort-columns-asc", "sort-columns-desc", "add-row-after", "add-row-before", "duplicate-row", "copy-cell-content", "clear-cell-content", "clear-cell-style", "toggle-header-row", "delete-row"],
+    ["move-row-up", "move-row-down", "add-row-after", "add-row-before", "duplicate-row", "toggle-header-row", "sort-columns-asc", "sort-columns-desc", "copy-cell-content", "clear-cell-content", "clear-cell-style", "delete-row"],
   );
 
   controller.selectAxis("column", 0);
@@ -1814,7 +1818,7 @@ test("Tiptap table toolbar scopes context commands to row and column selections"
   assert.deepEqual(
     toolbarCommandIds(created)
       .filter((id) => ["move-column-left", "move-column-right", "sort-rows-asc", "sort-rows-desc", "add-column-before", "add-column-after", "duplicate-column", "copy-cell-content", "clear-cell-content", "clear-cell-style", "delete-column", "toggle-header-column", "merge-cells"].includes(id)),
-    ["move-column-left", "move-column-right", "sort-rows-asc", "sort-rows-desc", "add-column-after", "add-column-before", "duplicate-column", "copy-cell-content", "clear-cell-content", "clear-cell-style", "toggle-header-column", "delete-column"],
+    ["move-column-left", "move-column-right", "add-column-after", "add-column-before", "duplicate-column", "toggle-header-column", "sort-rows-asc", "sort-rows-desc", "copy-cell-content", "clear-cell-content", "clear-cell-style", "delete-column"],
   );
 });
 
@@ -1843,13 +1847,13 @@ test("Tiptap table toolbar separates destructive row actions from ordinary comma
 
   const groups = tableToolbarList(created).children;
   const dangerGroup = groups.find((element) => element.dataset.layoutGroup === "danger");
-  const rowGroup = groups.find((element) => element.dataset.group === "Rows");
-  const arrangeGroup = groups.find((element) => element.dataset.group === "Arrange");
-  const cellGroup = groups.find((element) => element.dataset.group === "Cells");
-  const headerGroup = groups.find((element) => element.dataset.group === "Headers");
+  const structureGroup = groups.find((element) => element.dataset.groupKey === "structure:actions");
+  const sortGroup = groups.find((element) => element.dataset.groupKey === "structure:sort");
+  const contentGroup = groups.find((element) => element.dataset.groupKey === "content:actions");
+  const styleGroup = groups.find((element) => element.dataset.groupKey === "style:actions");
 
-  assert.equal(dangerGroup.dataset.groupKey, "danger");
-  assert.equal(dangerGroup.children.some((child) => String(child.className).includes("group-label")), false);
+  assert.equal(dangerGroup.dataset.groupKey, "danger:danger");
+  assert.equal(dangerGroup.children.some((child) => String(child.className).includes("group-label")), true);
   assert.deepEqual(
     dangerGroup.children
       .filter((element) => element.dataset.commandId)
@@ -1857,41 +1861,41 @@ test("Tiptap table toolbar separates destructive row actions from ordinary comma
     [["delete-row", "danger"]],
   );
   assert.deepEqual(
-    arrangeGroup.children
+    structureGroup.children
       .filter((element) => element.dataset.commandId)
       .map((element) => [element.dataset.commandId, element.textContent]),
     [
       ["move-row-up", "Move row up"],
       ["move-row-down", "Move row down"],
+      ["add-row-after", "Insert row below"],
+      ["add-row-before", "Insert row above"],
+      ["duplicate-row", "Duplicate current row"],
+      ["toggle-header-row", "Toggle header row"],
+    ],
+  );
+  assert.deepEqual(
+    sortGroup.children
+      .filter((element) => element.dataset.commandId)
+      .map((element) => [element.dataset.commandId, element.textContent]),
+    [
       ["sort-columns-asc", "Sort columns A to Z"],
       ["sort-columns-desc", "Sort columns Z to A"],
     ],
   );
   assert.deepEqual(
-    rowGroup.children
-      .filter((element) => element.dataset.commandId)
-      .map((element) => [element.dataset.commandId, element.textContent]),
-    [
-      ["add-row-after", "Insert row below"],
-      ["add-row-before", "Insert row above"],
-      ["duplicate-row", "Duplicate current row"],
-    ],
-  );
-  assert.deepEqual(
-    cellGroup.children
+    contentGroup.children
       .filter((element) => element.dataset.commandId)
       .map((element) => [element.dataset.commandId, element.textContent]),
     [
       ["copy-cell-content", "Copy cell content"],
       ["clear-cell-content", "Clear cell content"],
-      ["clear-cell-style", "Clear cell style"],
     ],
   );
   assert.deepEqual(
-    headerGroup.children
+    styleGroup.children
       .filter((element) => element.dataset.commandId)
       .map((element) => [element.dataset.commandId, element.textContent]),
-    [["toggle-header-row", "Toggle header row"]],
+    [["clear-cell-style", "Clear cell style"]],
   );
   const { eyebrow, title, subtitle } = tableToolbarHeader(created);
   assert.equal(eyebrow.textContent, "Table");
@@ -2069,12 +2073,12 @@ test("Tiptap table toolbar keeps cell and axis context menus focused", () => {
   assert.deepEqual(rowCommandIds.filter((id) => id.includes("row") || id.startsWith("sort-columns")), [
     "move-row-up",
     "move-row-down",
-    "sort-columns-asc",
-    "sort-columns-desc",
     "add-row-after",
     "add-row-before",
     "duplicate-row",
     "toggle-header-row",
+    "sort-columns-asc",
+    "sort-columns-desc",
     "delete-row",
   ]);
   assert.deepEqual(
@@ -2104,12 +2108,12 @@ test("Tiptap table toolbar keeps cell and axis context menus focused", () => {
   assert.deepEqual(columnCommandIds.filter((id) => id.includes("column") || id.startsWith("sort-rows")), [
     "move-column-left",
     "move-column-right",
-    "sort-rows-asc",
-    "sort-rows-desc",
     "add-column-after",
     "add-column-before",
     "duplicate-column",
     "toggle-header-column",
+    "sort-rows-asc",
+    "sort-rows-desc",
     "delete-column",
   ]);
   assert.deepEqual(

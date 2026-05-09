@@ -235,6 +235,7 @@ test("React command chrome uses shared menu primitives", () => {
   assert.match(blockActionMenuSource, /<CommandText/u);
   assert.match(tableContextMenuSource, /from "\.\/primitives\.jsx"/u);
   assert.match(tableContextMenuSource, /<CommandRow/u);
+  assert.match(tableContextMenuSource, /createTableCommandMenuModel/u);
 });
 
 test("React slash table picker uses an anchored secondary panel", () => {
@@ -308,6 +309,7 @@ test("React table context menu keeps fallback command accessibility semantics", 
 test("React table context menu uses lucide icons in the real runtime", () => {
   assert.match(tableContextMenuSource, /TableCommandIcon/u);
   assert.match(tableContextMenuSource, /"icon-source":\s*"lucide"/u);
+  assert.match(tableContextMenuSource, /data-menu-section/u);
   assert.match(tableCommandIconsSource, /from "lucide-react"/u);
   assert.match(tableCommandIconsSource, /export function TableCommandIcon/u);
   assert.match(tableCommandIconsSource, /TableCellsMerge/u);

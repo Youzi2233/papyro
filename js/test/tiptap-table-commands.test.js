@@ -5,6 +5,7 @@ import {
   TABLE_COMMANDS,
   canRunTableEditorCommand,
   createTableCommandMenuState,
+  createTableCommandMenuModel,
   enabledTableCommandIds,
   firstEnabledTableCommandId,
   groupTableCommandMenuCommands,
@@ -14,6 +15,8 @@ import {
   runTableEditorCommand,
   tableCellAttributeValue,
   tableCommandLayoutGroup,
+  tableCommandMenuSection,
+  tableCommandMenuSectionLabel,
   tableCommandVariant,
   visibleTableCommands,
 } from "../src/tiptap-table-commands.js";
@@ -115,11 +118,12 @@ test("Tiptap table command scope orders row column and table menus by intent", (
   assert.deepEqual(commandIds(visibleTableCommands(TABLE_COMMANDS, "context", "row")), [
     "move-row-up",
     "move-row-down",
-    "sort-columns-asc",
-    "sort-columns-desc",
     "add-row-after",
     "add-row-before",
     "duplicate-row",
+    "toggle-header-row",
+    "sort-columns-asc",
+    "sort-columns-desc",
     "copy-cell-content",
     "clear-cell-content",
     "clear-cell-style",
@@ -134,17 +138,17 @@ test("Tiptap table command scope orders row column and table menus by intent", (
     "cell-bg-yellow",
     "cell-bg-blue",
     "cell-bg-green",
-    "toggle-header-row",
     "delete-row",
   ]);
   assert.deepEqual(commandIds(visibleTableCommands(TABLE_COMMANDS, "context", "column")), [
     "move-column-left",
     "move-column-right",
-    "sort-rows-asc",
-    "sort-rows-desc",
     "add-column-after",
     "add-column-before",
     "duplicate-column",
+    "toggle-header-column",
+    "sort-rows-asc",
+    "sort-rows-desc",
     "copy-cell-content",
     "clear-cell-content",
     "clear-cell-style",
@@ -159,7 +163,6 @@ test("Tiptap table command scope orders row column and table menus by intent", (
     "cell-bg-yellow",
     "cell-bg-blue",
     "cell-bg-green",
-    "toggle-header-column",
     "delete-column",
   ]);
   assert.deepEqual(commandIds(visibleTableCommands(TABLE_COMMANDS, "context", "table")), [
@@ -221,7 +224,7 @@ test("Tiptap table command menu state centralizes scope and active command fallb
   assert.equal(rowContext.selectionKind, "row");
   assert.deepEqual(
     rowContext.commands.slice(0, 4).map((command) => command.id),
-    ["move-row-up", "move-row-down", "sort-columns-asc", "sort-columns-desc"],
+    ["move-row-up", "move-row-down", "add-row-after", "add-row-before"],
   );
   assert.equal(rowContext.activeCommandId, "move-row-down");
   assert.equal(rowContext.enabledCommandIds.includes("move-row-up"), false);
@@ -239,6 +242,7 @@ test("Tiptap table command menu state centralizes scope and active command fallb
 
 test("Tiptap table command menu grouping is shared by React and fallback renderers", () => {
   const commands = [
+    { id: "add-row-after", group: "Rows", variant: "text" },
     { id: "align-left", group: "Align", variant: "icon" },
     { id: "align-right", group: "Align", variant: "icon", index: 8 },
     { id: "cell-bg-blue", group: "Cell color", variant: "swatch" },
@@ -254,23 +258,126 @@ test("Tiptap table command menu grouping is shared by React and fallback rendere
     })),
     [
       {
-        groupKey: "Align",
-        group: "Align",
+        groupKey: "structure:actions",
+        group: "Structure",
+        layoutGroup: "actions",
+        commands: [["add-row-after", 0]],
+      },
+      {
+        groupKey: "style:align",
+        group: "Style",
         layoutGroup: "align",
-        commands: [["align-left", 0], ["align-right", 8]],
+        commands: [["align-left", 1], ["align-right", 8]],
       },
       {
-        groupKey: "Cell color",
-        group: "Cell color",
+        groupKey: "style:cell-color",
+        group: "Style",
         layoutGroup: "cell-color",
-        commands: [["cell-bg-blue", 2]],
+        commands: [["cell-bg-blue", 3]],
       },
       {
-        groupKey: "danger",
-        group: "Rows",
+        groupKey: "danger:danger",
+        group: "Danger",
         layoutGroup: "danger",
-        commands: [["delete-row", 3]],
+        commands: [["delete-row", 4]],
       },
+    ],
+  );
+});
+
+test("Tiptap table command menu model exposes object-oriented sections", () => {
+  assert.equal(tableCommandMenuSection({ id: "add-column-after" }), "structure");
+  assert.equal(tableCommandMenuSection({ id: "copy-cell-content" }), "content");
+  assert.equal(tableCommandMenuSection({ id: "cell-bg-blue" }), "style");
+  assert.equal(tableCommandMenuSection({ id: "delete-table", tone: "danger" }), "danger");
+  assert.equal(tableCommandMenuSectionLabel("structure"), "Structure");
+
+  const model = createTableCommandMenuModel(TABLE_COMMANDS, {
+    mode: "context",
+    selectionKind: "row",
+  });
+
+  assert.deepEqual(
+    model.groups.map((group) => [
+      group.groupKey,
+      group.group,
+      group.menuSection,
+      group.layoutGroup,
+      group.showLabel,
+      group.commands.map((command) => command.id),
+    ]),
+    [
+      [
+        "structure:actions",
+        "Structure",
+        "structure",
+        "actions",
+        true,
+        [
+          "move-row-up",
+          "move-row-down",
+          "add-row-after",
+          "add-row-before",
+          "duplicate-row",
+          "toggle-header-row",
+        ],
+      ],
+      [
+        "structure:sort",
+        "Structure",
+        "structure",
+        "sort",
+        false,
+        ["sort-columns-asc", "sort-columns-desc"],
+      ],
+      [
+        "content:actions",
+        "Content",
+        "content",
+        "actions",
+        true,
+        ["copy-cell-content", "clear-cell-content"],
+      ],
+      [
+        "style:actions",
+        "Style",
+        "style",
+        "actions",
+        true,
+        ["clear-cell-style"],
+      ],
+      [
+        "style:align",
+        "Style",
+        "style",
+        "align",
+        false,
+        ["align-left", "align-center", "align-right"],
+      ],
+      [
+        "style:text-color",
+        "Style",
+        "style",
+        "text-color",
+        false,
+        ["cell-text-clear", "cell-text-muted", "cell-text-accent", "cell-text-danger"],
+      ],
+      [
+        "style:cell-color",
+        "Style",
+        "style",
+        "cell-color",
+        false,
+        ["cell-bg-clear", "cell-bg-yellow", "cell-bg-blue", "cell-bg-green"],
+      ],
+      [
+        "danger:danger",
+        "Danger",
+        "danger",
+        "danger",
+        true,
+        ["delete-row"],
+      ],
     ],
   );
 });

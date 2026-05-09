@@ -447,31 +447,31 @@ export const TABLE_COMMAND_CONTEXT_ORDER = Object.freeze({
   row: [
     "move-row-up",
     "move-row-down",
-    "sort-columns-asc",
-    "sort-columns-desc",
     "add-row-after",
     "add-row-before",
     "duplicate-row",
+    "toggle-header-row",
+    "sort-columns-asc",
+    "sort-columns-desc",
     "copy-cell-content",
     "clear-cell-content",
     "clear-cell-style",
     ...TABLE_AXIS_STYLE_COMMAND_IDS,
-    "toggle-header-row",
     "delete-row",
   ],
   column: [
     "move-column-left",
     "move-column-right",
-    "sort-rows-asc",
-    "sort-rows-desc",
     "add-column-after",
     "add-column-before",
     "duplicate-column",
+    "toggle-header-column",
+    "sort-rows-asc",
+    "sort-rows-desc",
     "copy-cell-content",
     "clear-cell-content",
     "clear-cell-style",
     ...TABLE_AXIS_STYLE_COMMAND_IDS,
-    "toggle-header-column",
     "delete-column",
   ],
   table: [
@@ -628,6 +628,70 @@ export function tableCommandLayoutGroup(command) {
   return "actions";
 }
 
+const TABLE_COMMAND_MENU_SECTION_BY_ID = Object.freeze({
+  "move-row-up": "structure",
+  "move-row-down": "structure",
+  "move-column-left": "structure",
+  "move-column-right": "structure",
+  "sort-rows-asc": "structure",
+  "sort-rows-desc": "structure",
+  "sort-columns-asc": "structure",
+  "sort-columns-desc": "structure",
+  "add-row-after": "structure",
+  "add-row-before": "structure",
+  "add-column-after": "structure",
+  "add-column-before": "structure",
+  "duplicate-row": "structure",
+  "duplicate-column": "structure",
+  "toggle-header-row": "structure",
+  "toggle-header-column": "structure",
+  "toggle-header-cell": "structure",
+  "fix-table": "structure",
+  "merge-cells": "content",
+  "split-cell": "content",
+  "copy-cell-content": "content",
+  "clear-cell-content": "content",
+  "clear-cell-style": "style",
+  "align-left": "style",
+  "align-center": "style",
+  "align-right": "style",
+  "cell-text-clear": "style",
+  "cell-text-muted": "style",
+  "cell-text-accent": "style",
+  "cell-text-danger": "style",
+  "cell-bg-clear": "style",
+  "cell-bg-yellow": "style",
+  "cell-bg-blue": "style",
+  "cell-bg-green": "style",
+  "delete-row": "danger",
+  "delete-column": "danger",
+  "delete-table": "danger",
+});
+
+const TABLE_COMMAND_MENU_SECTION_LABELS = Object.freeze({
+  structure: "Structure",
+  content: "Content",
+  style: "Style",
+  danger: "Danger",
+});
+
+const TABLE_COMMAND_MENU_SECTION_ORDER = Object.freeze([
+  "structure",
+  "content",
+  "style",
+  "danger",
+]);
+
+export function tableCommandMenuSection(command) {
+  if (command?.menuSection) return command.menuSection;
+  if (command?.tone === "danger") return "danger";
+  return TABLE_COMMAND_MENU_SECTION_BY_ID[command?.id] ?? "content";
+}
+
+export function tableCommandMenuSectionLabel(section) {
+  return TABLE_COMMAND_MENU_SECTION_LABELS[section] ?? section;
+}
+
 export function visibleTableCommands(commands, mode = "context", selectionKind = "cell") {
   const allowed = mode === "keyboard"
     ? KEYBOARD_TABLE_COMMAND_IDS
@@ -701,13 +765,17 @@ export function groupTableCommandMenuCommands(commands = []) {
       index: Number.isInteger(command?.index) ? command.index : commandIndex,
     };
     const layoutGroup = command?.layoutGroup ?? tableCommandLayoutGroup(command);
-    const groupKey = layoutGroup === "danger" ? "danger" : command?.groupKey ?? command?.group;
+    const menuSection = tableCommandMenuSection(command);
+    const groupKey = `${menuSection}:${layoutGroup}`;
     const previous = groups.at(-1);
+    const sectionSeen = groups.some((group) => group.menuSection === menuSection);
     if (previous?.groupKey !== groupKey) {
       groups.push({
         groupKey,
-        group: command?.group,
+        group: tableCommandMenuSectionLabel(menuSection),
         layoutGroup,
+        menuSection,
+        showLabel: !sectionSeen,
         commands: [],
       });
     }
@@ -715,4 +783,35 @@ export function groupTableCommandMenuCommands(commands = []) {
   });
 
   return groups;
+}
+
+export function createTableCommandMenuModel(
+  commands,
+  {
+    mode = "context",
+    selectionKind = "cell",
+    activeCommandId = null,
+    sectionLabel = tableCommandMenuSectionLabel,
+  } = {},
+) {
+  const state = createTableCommandMenuState(commands, {
+    mode,
+    selectionKind,
+    activeCommandId,
+  });
+  const rawGroups = groupTableCommandMenuCommands(state.commands);
+  const order = new Map(TABLE_COMMAND_MENU_SECTION_ORDER.map((section, index) => [section, index]));
+  const groups = rawGroups
+    .map((group) => ({
+      ...group,
+      group: sectionLabel(group.menuSection),
+      order: order.get(group.menuSection) ?? Number.MAX_SAFE_INTEGER,
+      layoutGroups: [...new Set(group.commands.map((command) => command.layoutGroup ?? tableCommandLayoutGroup(command)))],
+    }))
+    .sort((left, right) => left.order - right.order);
+
+  return {
+    ...state,
+    groups,
+  };
 }

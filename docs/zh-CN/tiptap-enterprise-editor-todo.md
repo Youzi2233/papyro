@@ -144,6 +144,7 @@ node scripts/check-workspace-deps.js
   - 当前覆盖：块操作菜单的命令准备、子菜单分组、Home/End 行为、子菜单方向键导航和快捷键映射已经进入共享 React 菜单模型。迁移期 DOM fallback 也消费这套模型，降低块操作表面继续迁入 React 时的行为分叉。
   - 当前覆盖：表格命令菜单状态已经有纯模型，统一处理 mode 归一化、作用域内可见命令、可执行命令 id 和 active command fallback。迁移期 controller 已改为消费这个模型，减少后续表格 chrome 继续迁入 React 前的重复命令选择逻辑。
   - 当前覆盖：表格命令分组也已经集中在同一个模型中，并由 React context menu 和 DOM fallback renderer 共同使用，后续调整布局时不会让两条渲染路径的分组/排序行为分叉。
+  - 当前打磨：表格命令菜单现在增加了面向对象的菜单模型，按“结构、内容、样式、危险”组织命令。真实 React 菜单和迁移期 fallback 共用同一份 section 元数据，让行、列、单元格、范围和整表菜单更像用户能理解的文档操作，而不是底层工具箱。
 - [ ] 暴露稳定 runtime hooks：editor instance、language、view mode、preferences、command executor、active selection snapshot。
   - 当前覆盖：React runtime context 现在基于纯 runtime model 构建，已经暴露 preferences、command executor 和 active selection snapshot hooks，并把 cursor/range/table 选区归一化，供后续 React block-handle 和 table-chrome 组件复用。code-block 命令模型已经开始脱离迁移期 controller；table 命令模型仍需要继续上提。
   - 当前覆盖：React runtime selection 现在通过 `useSyncExternalStore` 订阅 Tiptap `transaction` 和 `selectionUpdate` 事件，并使用值稳定 snapshot，避免 editor transaction 后 React chrome 继续读取过期选区。
@@ -303,6 +304,7 @@ node scripts/check-tiptap-release-smoke.js
   - 当前覆盖：真实运行时的表格上下文菜单从 editor 入口注入，并由 React 组件渲染。headless 命令模型和 fake-DOM fallback 会保留到其余表格 chrome 完成迁移。
   - 当前打磨：React 渲染的表格命令行现在与 fallback renderer 使用同一套“标题 + 描述”的可访问标签契约，在表格 chrome 继续迁入 React 时保持屏幕阅读器语义一致。
   - 当前打磨：真实 React 表格上下文菜单现在使用专用 Lucide 图标映射渲染表格操作，迁移期 DOM fallback 继续保留 CSS 绘制图标；运行时菜单更接近官方 UI 组件质感，同时测试不耦合具体 SVG 标记。
+  - 当前打磨：表格上下文菜单现在按用户意图分区：结构承载行/列/表头/修复操作，内容承载复制/合并/清空内容，样式承载对齐和颜色，危险承载删除类操作。这些分区已经接入中英文文案，并由 React 与 fallback 渲染器共享，减少调试工具箱感，同时保持紧凑菜单宽度。
   - 当前覆盖：选中单元格内容现在可以通过 Papyro 命令清空，底层复用官方 `@tiptap/pm/tables` 的 `deleteCellSelection` utility，并已补齐菜单元数据、国际化标签和真实 editor 挂载测试。该命令也支持官方 table-node 的 `resetAttrs` 语义，可在清空内容时同步重置对齐/背景属性；同时提供单独的清除样式菜单项，保留文本内容。
   - 当前覆盖：选中单元格现在支持默认、弱化、强调、危险四种文字颜色命令，底层复用共享 `TextStyle` mark 路径。该命令作用于 ProseMirror 单元格选区，也支持从同一菜单清除颜色，并已补齐真实 editor 挂载测试、菜单元数据和国际化标签。
   - 当前覆盖：选中的表格单元格现在可以通过表格作用域命令复制为纯文本 TSV，底层使用官方 `selectedRect` 网格语义，不修改文档内容，并已补齐菜单文案、复制图标和真实 editor 挂载测试。

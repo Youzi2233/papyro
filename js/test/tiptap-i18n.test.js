@@ -24,6 +24,7 @@ import {
   sourceMarkdownParseErrorLabel,
   sourcePaneLabel,
   tableCellActionsLabel,
+  tableCommandMenuSectionLabel,
   tableSelectionActionsLabel,
   tableSizeLabel,
   tableToolsLabel,
@@ -89,6 +90,10 @@ test("Tiptap floating chrome exposes readable Chinese labels", () => {
   assert.equal(tableToolsLabel("Chinese"), "表格工具");
   assert.equal(tableCellActionsLabel("Chinese"), "单元格操作");
   assert.equal(tableSelectionActionsLabel("Chinese"), "选区操作");
+  assert.equal(tableCommandMenuSectionLabel("Chinese", "structure"), "结构");
+  assert.equal(tableCommandMenuSectionLabel("Chinese", "content"), "内容");
+  assert.equal(tableCommandMenuSectionLabel("Chinese", "style"), "样式");
+  assert.equal(tableCommandMenuSectionLabel("Chinese", "danger"), "危险");
   assert.equal(addRowBelowLabel("Chinese"), "在下方添加行");
   assert.equal(addColumnRightLabel("Chinese"), "在右侧添加列");
   assert.equal(insertBlockAfterLabel("Chinese"), "在下方插入内容块");

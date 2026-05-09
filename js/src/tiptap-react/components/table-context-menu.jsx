@@ -4,10 +4,11 @@ import {
   tableContextEyebrowLabel,
   tableContextSubtitleLabel,
   tableContextTitleLabel,
+  tableCommandMenuSectionLabel,
   tableToolsLabel,
 } from "../../tiptap-i18n.js";
 import {
-  groupTableCommandMenuCommands,
+  createTableCommandMenuModel,
   tableCommandVariant,
 } from "../../tiptap-table-commands.js";
 import { usePointerActivation } from "../hooks/use-pointer-activation.js";
@@ -114,9 +115,18 @@ export function PapyroTableContextMenu({
   commands = [],
   language = "english",
 }) {
-  const groups = useMemo(() => groupTableCommandMenuCommands(commands), [commands]);
   const mode = state?.mode === "keyboard" ? "keyboard" : "context";
   const selectionKind = state?.selection?.kind ?? "cell";
+  const model = useMemo(
+    () =>
+      createTableCommandMenuModel(commands, {
+        mode,
+        selectionKind,
+        activeCommandId: state?.activeCommandId,
+        sectionLabel: (section) => tableCommandMenuSectionLabel(language, section),
+      }),
+    [commands, mode, selectionKind, state?.activeCommandId, language],
+  );
 
   return (
     <>
@@ -136,19 +146,20 @@ export function PapyroTableContextMenu({
         </div>
       </div>
       <div className="mn-tiptap-table-toolbar-list">
-        {groups.map((group) => (
+        {model.groups.map((group) => (
           <div
             key={group.groupKey}
             className="mn-tiptap-table-toolbar-group"
             data-group-key={group.groupKey}
             data-group={group.group}
             data-layout-group={group.layoutGroup}
+            data-menu-section={group.menuSection}
           >
-            {group.layoutGroup === "danger" ? null : (
+            {group.showLabel ? (
               <div className="mn-tiptap-table-toolbar-group-label">
                 {group.group}
               </div>
-            )}
+            ) : null}
             {group.commands.map((command) => (
               <TableCommandButton
                 key={command.id}

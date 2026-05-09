@@ -7,6 +7,7 @@ import {
   tableContextEyebrowLabel,
   tableContextSubtitleLabel,
   tableContextTitleLabel,
+  tableCommandMenuSectionLabel,
   tableCellActionsLabel,
   tableSelectionActionsLabel,
   tableToolsLabel,
@@ -21,7 +22,7 @@ import {
   tableMenuAnchorRect,
 } from "./tiptap-table-chrome-model.js";
 import {
-  groupTableCommandMenuCommands,
+  createTableCommandMenuModel,
   tableCommandVariant,
   visibleTableCommands,
 } from "./tiptap-table-commands.js";
@@ -398,7 +399,12 @@ export class TiptapTableToolbarView {
   #renderLegacyMenu(state, menuCommands) {
     if (!this.#list) return;
     const commandGroups = [];
-    groupTableCommandMenuCommands(menuCommands).forEach((group) => {
+    createTableCommandMenuModel(menuCommands, {
+      mode: state.mode,
+      selectionKind: state.selection?.kind,
+      activeCommandId: state.activeCommandId,
+      sectionLabel: (section) => tableCommandMenuSectionLabel(state.language, section),
+    }).groups.forEach((group) => {
       const layoutGroup = group.layoutGroup;
       const groupKey = group.groupKey;
       const groupElement = createElement(this.#document, "div", "mn-tiptap-table-toolbar-group");
@@ -406,10 +412,10 @@ export class TiptapTableToolbarView {
       groupElement.dataset.groupKey = groupKey;
       groupElement.dataset.group = group.group;
       groupElement.dataset.layoutGroup = layoutGroup;
-      const label =
-        layoutGroup === "danger"
-          ? null
-          : createElement(this.#document, "div", "mn-tiptap-table-toolbar-group-label");
+      groupElement.dataset.menuSection = group.menuSection;
+      const label = group.showLabel
+        ? createElement(this.#document, "div", "mn-tiptap-table-toolbar-group-label")
+        : null;
       if (label) {
         label.textContent = group.group;
         groupElement.appendChild(label);

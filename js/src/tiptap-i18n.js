@@ -39,6 +39,8 @@ const GROUP_LABELS = Object.freeze({
   Recent: "最近使用",
   Rows: "行",
   Selection: "选择",
+  Structure: "结构",
+  Style: "样式",
   Table: "表格",
   Text: "文本",
   "Text color": "文字颜色",
@@ -643,6 +645,17 @@ export function tableContextSubtitleLabel(language, selection = {}) {
     return localizedText(language, "1 cell selected", "已选择 1 个单元格");
   }
   return localizedText(language, "Current cell", "当前单元格");
+}
+
+export function tableCommandMenuSectionLabel(language, section) {
+  const labels = {
+    structure: ["Structure", "结构"],
+    content: ["Content", "内容"],
+    style: ["Style", "样式"],
+    danger: ["Danger", "危险"],
+  };
+  const label = labels[section];
+  return label ? localizedText(language, label[0], label[1]) : String(section ?? "");
 }
 
 export function addRowBelowLabel(language) {
