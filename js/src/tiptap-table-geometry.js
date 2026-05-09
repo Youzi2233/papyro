@@ -397,6 +397,11 @@ function rectContainsPoint(rect, x, y) {
   );
 }
 
+function handleAtPoint(handles, x, y) {
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+  return (handles ?? []).find((handle) => rectContainsPoint(handle, x, y)) ?? null;
+}
+
 export function activeCellFromEditor(editor, grid = []) {
   const selection = editor?.state?.selection;
   const positions = selectionCellPositions(selection);
@@ -787,17 +792,14 @@ export function tableHoverWithIntent({
   const normalizedTableRect = normalizedRect(tableRect);
   const x = Number(clientX);
   const y = Number(clientY);
-
-  const insideLeftGutter =
-    normalizedTableRect &&
-    Number.isFinite(x) &&
-    x >= normalizedTableRect.left - rowHandleWidth - 6 &&
-    x <= normalizedTableRect.left - 1;
-  const insideTopGutter =
-    normalizedTableRect &&
-    Number.isFinite(y) &&
-    y >= normalizedTableRect.top - columnHandleHeight - 6 &&
-    y <= normalizedTableRect.top - 1;
+  const axisHandles = tableAxisHandleGeometry(grid, normalizedTableRect, {
+    rowHandleWidth,
+    columnHandleHeight,
+  });
+  const rowGutterHandle = handleAtPoint(axisHandles.rows, x, y);
+  const columnGutterHandle = handleAtPoint(axisHandles.columns, x, y);
+  const insideLeftGutter = Boolean(rowGutterHandle);
+  const insideTopGutter = Boolean(columnGutterHandle);
   const quickAdd = tableQuickAddGeometry(grid, normalizedTableRect);
   const insideBottomRail = rectContainsPoint(quickAdd.row, x, y);
   const insideRightRail = rectContainsPoint(quickAdd.column, x, y);

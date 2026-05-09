@@ -118,6 +118,28 @@ test("Tiptap table geometry infers gutter handles from table coordinates", () =>
   assert.equal(classify(table, 373, 140), undefined);
 });
 
+test("Tiptap table geometry limits gutter handles to their visible rails", () => {
+  const { grid, table, tableRect } = createTableGeometryHarness();
+  const editorSurface = { tagName: "DIV" };
+  const classify = (clientX, clientY) =>
+    tableHoverWithIntent({
+      target: editorSurface,
+      table,
+      grid,
+      tableRect,
+      clientX,
+      clientY,
+      rowHandleWidth: 20,
+      columnHandleHeight: 20,
+      allowRailTarget: true,
+    })?.edge;
+
+  assert.equal(classify(108, 128), "row-handle");
+  assert.equal(classify(119, 128), undefined);
+  assert.equal(classify(204, 76), "column-handle");
+  assert.equal(classify(204, 89), undefined);
+});
+
 test("Tiptap table geometry reserves the outer bottom rail for adding rows", () => {
   const { grid, table, tableRect } = createTableGeometryHarness();
 

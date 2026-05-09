@@ -314,6 +314,7 @@ Tasks:
   - Current coverage: row and column context menus now expose the same clear-content and clear-style actions as cell selections, so axis selections can reuse the official table clear/reset semantics without switching back to a cell menu.
   - Current polish: slim row/column handles freeze their own geometry before selecting the axis, so the context menu opens from the clicked handle instead of drifting after the table chrome re-renders.
   - Current polish: row/column handles now require an explicit edge or gutter hover intent. Ordinary hover inside first-row or first-column cell content keeps the table clean and editable.
+  - Current polish: gutter hover intent now uses the same geometry as the visible slim handles, so the gap between a handle and the table no longer behaves like an invisible row/column selector.
   - Current polish: the first cell's top-left corner is now a deliberate dual-axis intent zone, so users can reveal both the first-row and first-column handles without making ordinary cell hover noisy.
   - Current polish: row/column handle menus now open only after the underlying table axis selection succeeds, avoiding a misleading menu when ProseMirror rejects the selection.
   - Current coverage: row and column context menus now expose move up/down and move left/right commands through Papyro wrappers around the public `prosemirror-tables` `moveTableRow` and `moveTableColumn` commands. Edge moves are disabled by command capability, moved axes remain selected, and the menu uses localized labels plus compact table-grid arrow icons.
