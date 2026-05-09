@@ -1682,6 +1682,29 @@ test("Tiptap table axis handles stay selectable while pointer crosses the overla
   assert.equal(latestAxisHandle(created, "column", 1).hidden, false);
 });
 
+test("Tiptap table chrome keeps axis hover while pointer is over the floating handle", () => {
+  const { created, documentRef } = createDocument();
+  const { cells, editor } = createTableHarness();
+  const controller = createTiptapTableToolbarController({
+    dom: { document: documentRef },
+  });
+
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+
+  editor.view.dom.listeners.get("pointermove")({ target: cells[1], clientX: 204, clientY: 95 });
+  const columnHandle = latestAxisHandle(created, "column", 1);
+  assert.equal(columnHandle.hidden, false);
+
+  documentRef.listeners.get("pointermove")({
+    target: columnHandle,
+    clientX: 204,
+    clientY: 72,
+  });
+
+  assert.equal(controller.state.hover.edge, "column-handle");
+  assert.equal(latestAxisHandle(created, "column", 1).hidden, false);
+});
+
 test("Tiptap table row and column handles activate from gutter coordinates", () => {
   const { created, documentRef } = createDocument();
   const { editor, table } = createTableHarness();

@@ -521,8 +521,13 @@
 .mn-tiptap-table-cell.mn-tiptap-table-cell-active,
 .mn-tiptap-table-header.mn-tiptap-table-cell-active {
     z-index: 3;
-    outline: 2px solid var(--mn-accent);
+    outline: 2.5px solid var(--mn-accent);
     outline-offset: -2px;
+    border-color: color-mix(in srgb, var(--mn-accent) 62%, var(--mn-border));
+    box-shadow:
+        inset 0 0 0 2px var(--mn-accent),
+        inset 0 0 0 999px color-mix(in srgb, var(--mn-accent) 6%, transparent),
+        0 0 0 1px color-mix(in srgb, var(--mn-accent) 32%, transparent);
 }
 
 .mn-tiptap-table-cell.selectedCell::after,
@@ -568,9 +573,39 @@
     background-image:
         linear-gradient(
             180deg,
-            color-mix(in srgb, var(--mn-accent) 5%, transparent),
+            color-mix(in srgb, var(--mn-accent) 8%, transparent),
+            color-mix(in srgb, var(--mn-accent) 4%, transparent)
+        );
+}
+
+.mn-tiptap-table-cell.mn-tiptap-table-cell-hovered-row,
+.mn-tiptap-table-header.mn-tiptap-table-cell-hovered-row,
+.mn-tiptap-table-cell.mn-tiptap-table-cell-hovered-column,
+.mn-tiptap-table-header.mn-tiptap-table-cell-hovered-column {
+    background-image:
+        linear-gradient(
+            180deg,
+            color-mix(in srgb, var(--mn-accent) 4%, transparent),
             color-mix(in srgb, var(--mn-accent) 2%, transparent)
         );
+    box-shadow:
+        inset 0 0 0 1px color-mix(in srgb, var(--mn-accent) 34%, transparent);
+}
+
+.mn-tiptap-table-cell.mn-tiptap-table-cell-hovered-column,
+.mn-tiptap-table-header.mn-tiptap-table-cell-hovered-column {
+    border-right-color: color-mix(in srgb, var(--mn-accent) 72%, var(--mn-border));
+    box-shadow:
+        inset -2px 0 0 color-mix(in srgb, var(--mn-accent) 72%, transparent),
+        inset 0 0 0 999px color-mix(in srgb, var(--mn-accent) 3%, transparent);
+}
+
+.mn-tiptap-table-cell.mn-tiptap-table-cell-hovered-row,
+.mn-tiptap-table-header.mn-tiptap-table-cell-hovered-row {
+    border-bottom-color: color-mix(in srgb, var(--mn-accent) 72%, var(--mn-border));
+    box-shadow:
+        inset 0 -2px 0 color-mix(in srgb, var(--mn-accent) 72%, transparent),
+        inset 0 0 0 999px color-mix(in srgb, var(--mn-accent) 3%, transparent);
 }
 
 .mn-tiptap-table-cell > *,
@@ -612,9 +647,9 @@
 .mn-tiptap-editor .column-resize-handle::before {
     content: "";
     position: absolute;
-    top: 0;
+    top: -1px;
     right: 5px;
-    bottom: 0;
+    bottom: -1px;
     width: 1.5px;
     border-radius: var(--mn-radius-round);
     background: color-mix(in srgb, var(--mn-accent) 78%, transparent);

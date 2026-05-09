@@ -33,6 +33,11 @@ export function tableCells(row) {
   return Array.from(row?.querySelectorAll?.("th,td") ?? []);
 }
 
+function isTableCellNode(node) {
+  const typeName = node?.type?.name;
+  return typeName === "tableCell" || typeName === "tableHeader";
+}
+
 export function normalizedRect(rect) {
   if (!rect) return null;
   const left = Number(rect.left);
@@ -71,7 +76,7 @@ export function tableSelectionGrid(table, view) {
       cells: tableCells(row)
         .map((cell, columnIndex) => {
           try {
-            const pos = view.posAtDOM(cell, 0);
+            const pos = tableCellDocumentPosition(view, cell);
             return Number.isFinite(pos)
               ? {
                   cell,
@@ -89,6 +94,34 @@ export function tableSelectionGrid(table, view) {
       rect: normalizedRect(row.getBoundingClientRect?.()),
     }))
     .filter((row) => row.cells.length > 0);
+}
+
+export function tableCellDocumentPosition(view, cell) {
+  if (!cell || typeof view?.posAtDOM !== "function") return null;
+
+  const rawPos = view.posAtDOM(cell, 0);
+  if (!Number.isFinite(rawPos)) return null;
+
+  const doc = view.state?.doc;
+  if (isTableCellNode(doc?.nodeAt?.(rawPos))) {
+    return rawPos;
+  }
+
+  if (typeof doc?.resolve === "function") {
+    try {
+      const resolved = doc.resolve(rawPos);
+      for (let depth = resolved.depth; depth > 0; depth -= 1) {
+        if (isTableCellNode(resolved.node(depth))) {
+          return resolved.before(depth);
+        }
+      }
+    } catch (_error) {
+      // Fall back to ProseMirror's DOM view metadata below.
+    }
+  }
+
+  const viewDescPos = Number(cell.pmViewDesc?.posBefore);
+  return Number.isFinite(viewDescPos) ? viewDescPos : rawPos;
 }
 
 export function firstRowCells(grid) {

@@ -109,6 +109,29 @@
         0 0 0 1px color-mix(in srgb, var(--mn-accent) 28%, transparent);
 }
 
+.mn-tiptap-editor :where(.mn-tiptap-table-cell-active, .mn-tiptap-table-cell-selected, .selectedCell) {
+    outline: 2.5px solid var(--mn-accent);
+    outline-offset: -2px;
+    box-shadow:
+        inset 0 0 0 2px var(--mn-accent),
+        inset 0 0 0 999px color-mix(in srgb, var(--mn-accent) 6%, transparent),
+        0 0 0 1px color-mix(in srgb, var(--mn-accent) 32%, transparent);
+}
+
+.mn-tiptap-editor :where(.mn-tiptap-table-cell-hovered-column) {
+    border-right-color: color-mix(in srgb, var(--mn-accent) 72%, var(--mn-border));
+    box-shadow:
+        inset -2px 0 0 color-mix(in srgb, var(--mn-accent) 72%, transparent),
+        inset 0 0 0 999px color-mix(in srgb, var(--mn-accent) 3%, transparent);
+}
+
+.mn-tiptap-editor :where(.mn-tiptap-table-cell-hovered-row) {
+    border-bottom-color: color-mix(in srgb, var(--mn-accent) 72%, var(--mn-border));
+    box-shadow:
+        inset 0 -2px 0 color-mix(in srgb, var(--mn-accent) 72%, transparent),
+        inset 0 0 0 999px color-mix(in srgb, var(--mn-accent) 3%, transparent);
+}
+
 .mn-tiptap-table-cell.mn-tiptap-table-cell-active::after,
 .mn-tiptap-table-header.mn-tiptap-table-cell-active::after,
 .mn-tiptap-table-cell.mn-tiptap-table-cell-selected::after,

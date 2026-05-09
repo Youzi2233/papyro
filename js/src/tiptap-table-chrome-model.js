@@ -9,6 +9,8 @@ import {
 
 export const TABLE_SELECTED_CELL_CLASS = "mn-tiptap-table-cell-selected";
 export const TABLE_ACTIVE_CELL_CLASS = "mn-tiptap-table-cell-active";
+export const TABLE_HOVERED_ROW_CELL_CLASS = "mn-tiptap-table-cell-hovered-row";
+export const TABLE_HOVERED_COLUMN_CELL_CLASS = "mn-tiptap-table-cell-hovered-column";
 
 export function tableMenuAnchorRect(state) {
   if (state?.menuAnchorRect) return state.menuAnchorRect;
@@ -59,6 +61,12 @@ export function clearTableCellVisualState(table) {
   table
     ?.querySelectorAll?.(`.${TABLE_ACTIVE_CELL_CLASS}`)
     ?.forEach?.((cell) => cell.classList?.remove?.(TABLE_ACTIVE_CELL_CLASS));
+  table
+    ?.querySelectorAll?.(`.${TABLE_HOVERED_ROW_CELL_CLASS}`)
+    ?.forEach?.((cell) => cell.classList?.remove?.(TABLE_HOVERED_ROW_CELL_CLASS));
+  table
+    ?.querySelectorAll?.(`.${TABLE_HOVERED_COLUMN_CELL_CLASS}`)
+    ?.forEach?.((cell) => cell.classList?.remove?.(TABLE_HOVERED_COLUMN_CELL_CLASS));
 }
 
 export function applyTableCellVisualState(state) {
@@ -83,6 +91,26 @@ export function applyTableCellVisualState(state) {
   if (activeCell) {
     activeCell.classList?.add?.(TABLE_ACTIVE_CELL_CLASS);
   }
+
+  const hoverEdge = state?.hover?.edge;
+  const hoverRowIndex = Number.isInteger(state?.hover?.rowIndex)
+    ? state.hover.rowIndex
+    : null;
+  const hoverColumnIndex = Number.isInteger(state?.hover?.columnIndex)
+    ? state.hover.columnIndex
+    : null;
+  tableGridCells(state).forEach((cell) => {
+    cell.cell?.classList?.toggle?.(
+      TABLE_HOVERED_ROW_CELL_CLASS,
+      hoverRowIndex === cell.rowIndex &&
+        (hoverEdge === "row-handle" || hoverEdge === "axis-corner"),
+    );
+    cell.cell?.classList?.toggle?.(
+      TABLE_HOVERED_COLUMN_CELL_CLASS,
+      hoverColumnIndex === cell.columnIndex &&
+        (hoverEdge === "column-handle" || hoverEdge === "axis-corner" || hoverEdge === "cell-menu"),
+    );
+  });
 
   return true;
 }

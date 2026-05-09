@@ -20,6 +20,11 @@ import {
   sortSelectedTableRows,
   writeTableTextToClipboard,
 } from "../src/tiptap-table.js";
+import {
+  tableSelectionGrid,
+  tableSelectionState,
+} from "../src/tiptap-table-geometry.js";
+import { applyTableCellVisualState } from "../src/tiptap-table-chrome-model.js";
 import { createPapyroTextStyleExtensions } from "../src/tiptap-text-style.js";
 
 function installDomGlobals(windowRef) {
@@ -83,6 +88,48 @@ test("Papyro table extensions expose the TableKit boundary", () => {
   assert.equal(extensions[0].options.lastColumnResizable, true);
   assert.equal(extensions[0].options.allowTableNodeSelection, false);
   assert.equal(extensions[1].options.table, false);
+});
+
+test("Papyro table chrome resolves DOM cells to selectable ProseMirror cell positions", () => {
+  const windowRef = new Window();
+  const previous = installDomGlobals(windowRef);
+  try {
+    windowRef.document.body.innerHTML = "<div id=\"root\"></div>";
+    const editor = new Editor({
+      element: windowRef.document.querySelector("#root"),
+      extensions: [
+        StarterKit.configure({ history: false }),
+        ...createPapyroTableExtensions(),
+      ],
+      content:
+        "<table><tbody><tr><th>H1</th><th>H2</th></tr><tr><td>A</td><td>B</td></tr></tbody></table>",
+    });
+    const table = editor.view.dom.querySelector("table");
+    const cells = Array.from(table.querySelectorAll("th,td"));
+    const docCellPositions = tableCellPositions(editor.state.doc);
+    const domCellPositions = cells.map((cell) => editor.view.posAtDOM(cell, 0));
+    const grid = tableSelectionGrid(table, editor.view);
+
+    assert.deepEqual(
+      grid.flatMap((row) => row.cells.map((cell) => cell.pos)),
+      docCellPositions,
+    );
+    assert.notDeepEqual(domCellPositions, docCellPositions);
+
+    editor.commands.setCellSelection({
+      anchorCell: grid[0].cells[1].pos,
+      headCell: grid[0].cells[1].pos,
+    });
+    const selection = tableSelectionState(editor.state.selection, grid);
+    applyTableCellVisualState({ table, grid, selection, cell: cells[1] });
+
+    assert.equal(selection.kind, "cell");
+    assert.deepEqual([...selection.positions], [grid[0].cells[1].pos]);
+    assert.equal(cells[1].classList.contains("mn-tiptap-table-cell-selected"), true);
+    assert.equal(cells[1].classList.contains("mn-tiptap-table-cell-active"), true);
+  } finally {
+    restoreDomGlobals(previous);
+  }
 });
 
 test("Papyro table Markdown renderer keeps pipe tables when Markdown is lossless", () => {

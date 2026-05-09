@@ -123,14 +123,39 @@ export function createTableHarness(commandOverrides = {}) {
       selection: {
         from: 4,
       },
+      doc: {
+        resolve(pos) {
+          const cellIndex = pos - 100;
+          const cellPos = cellIndex + 10;
+          return {
+            depth: 2,
+            node(depth) {
+              return depth === 1
+                ? { type: { name: "tableCell" } }
+                : { type: { name: "paragraph" } };
+            },
+            before(depth) {
+              return depth === 1 ? cellPos : pos;
+            },
+          };
+        },
+        nodeAt(pos) {
+          return pos >= 10 && pos < 16 && Number.isInteger(pos) && pos - 10 < cells.length
+            ? { type: { name: "tableCell" } }
+            : { type: { name: "paragraph" } };
+        },
+      },
     },
     view: {
       dom: root,
+      get state() {
+        return editor.state;
+      },
       domAtPos() {
         return { node: cell };
       },
       posAtDOM(target) {
-        return cells.indexOf(target) + 10;
+        return cells.indexOf(target) + 100;
       },
     },
     commands: {

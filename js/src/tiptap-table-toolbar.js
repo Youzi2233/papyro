@@ -14,6 +14,7 @@ import {
   pointerAnchorRect,
   sameTableHover,
   tableCellAtPoint,
+  tableCellDocumentPosition,
   tableHoverContext,
   tableHoverWithIntent,
   tableSelectionGrid,
@@ -172,11 +173,15 @@ export function selectTableAxis(editor, grid, axis, index) {
   }
 
   if (positions.length === 0) return false;
-  const ok =
-    editor.commands.setCellSelection({
+  let ok = false;
+  try {
+    ok = editor.commands.setCellSelection({
       anchorCell: positions[0],
       headCell: positions[positions.length - 1],
     }) !== false;
+  } catch (_error) {
+    ok = false;
+  }
   if (ok) editor.commands?.focus?.();
   return ok;
 }
@@ -299,18 +304,24 @@ export class TiptapTableToolbarController {
     const onPointerMove = (event) => this.handlePointerMove(event);
     const onPointerDown = (event) => this.handlePointerDown(event);
     const onPointerLeave = (event) => this.handlePointerLeave(event);
+    const onChromePointerMove = (event) => this.handleChromePointerMove(event);
+    const onChromePointerLeave = (event) => this.handleChromePointerLeave(event);
     const onDblClick = (event) => this.handleDoubleClick(event);
     target.addEventListener("contextmenu", onContextMenu, true);
     target.addEventListener("pointermove", onPointerMove, true);
     target.addEventListener("pointerdown", onPointerDown, true);
     target.addEventListener("pointerleave", onPointerLeave, true);
     target.addEventListener("dblclick", onDblClick, true);
+    this.#document?.addEventListener?.("pointermove", onChromePointerMove, true);
+    this.#document?.addEventListener?.("pointerleave", onChromePointerLeave, true);
     this.#removeListeners = [
       () => target.removeEventListener?.("contextmenu", onContextMenu, true),
       () => target.removeEventListener?.("pointermove", onPointerMove, true),
       () => target.removeEventListener?.("pointerdown", onPointerDown, true),
       () => target.removeEventListener?.("pointerleave", onPointerLeave, true),
       () => target.removeEventListener?.("dblclick", onDblClick, true),
+      () => this.#document?.removeEventListener?.("pointermove", onChromePointerMove, true),
+      () => this.#document?.removeEventListener?.("pointerleave", onChromePointerLeave, true),
     ];
   }
 
@@ -756,11 +767,15 @@ export class TiptapTableToolbarController {
       return false;
     }
 
-    const ok =
-      this.#editor.commands.setCellSelection({
+    let ok = false;
+    try {
+      ok = this.#editor.commands.setCellSelection({
         anchorCell: anchorPos,
         headCell: headPos,
       }) !== false;
+    } catch (_error) {
+      ok = false;
+    }
     if (!ok) return false;
     this.#visualCellSelection = null;
     this.#editor.commands?.focus?.();
@@ -921,6 +936,31 @@ export class TiptapTableToolbarController {
     return true;
   }
 
+  handleChromePointerMove(event) {
+    if (!this.#state.open || !this.#state.table || !this.contains(event?.target)) {
+      return false;
+    }
+    return this.#refreshHoverFromActiveTableChrome(event);
+  }
+
+  handleChromePointerLeave(event) {
+    if (!this.#state.open || !this.#state.table || !this.contains(event?.target)) {
+      return false;
+    }
+    if (this.contains(event?.relatedTarget) || this.#state.table?.contains?.(event?.relatedTarget)) {
+      return false;
+    }
+    if (this.#refreshHoverFromActiveTableChrome(event)) {
+      return false;
+    }
+    this.#state = {
+      ...this.#state,
+      hover: null,
+    };
+    this.#render();
+    return true;
+  }
+
   #refreshHoverFromActiveTableChrome(event) {
     if (!this.#state.table || !this.#state.rect) return false;
     const x = Number(event?.clientX);
@@ -962,15 +1002,19 @@ export class TiptapTableToolbarController {
     const cell = closestTableCellElement(target);
     if (cell && table.contains?.(cell) && typeof this.#editor?.view?.posAtDOM === "function") {
       try {
-        const pos = this.#editor.view.posAtDOM(cell, 0);
+        const pos = tableCellDocumentPosition(this.#editor.view, cell);
         if (
           Number.isFinite(pos) &&
           typeof this.#editor.commands?.setCellSelection === "function"
         ) {
-          this.#editor.commands.setCellSelection({
-            anchorCell: pos,
-            headCell: pos,
-          });
+          try {
+            this.#editor.commands.setCellSelection({
+              anchorCell: pos,
+              headCell: pos,
+            });
+          } catch (_error) {
+            // Keep the existing table context when ProseMirror rejects a stale cell.
+          }
         }
       } catch (_error) {
         // Fall through to refreshing the existing table selection.
@@ -1090,11 +1134,15 @@ export class TiptapTableToolbarController {
       typeof this.#editor?.commands?.setCellSelection === "function"
     ) {
       this.#visualCellSelection = null;
-      const ok =
-        this.#editor.commands.setCellSelection({
+      let ok = false;
+      try {
+        ok = this.#editor.commands.setCellSelection({
           anchorCell: pos,
           headCell: pos,
         }) !== false;
+      } catch (_error) {
+        ok = false;
+      }
       if (ok) {
         this.#editor.commands?.focus?.();
         this.refresh(this.#editor);

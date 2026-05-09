@@ -255,12 +255,39 @@ function createHarness() {
     row.parentElement = table;
   });
   const editor = {
-    state: { selection: { from: 4 } },
+    state: {
+      selection: { from: 4 },
+      doc: {
+        resolve(pos) {
+          const cellIndex = pos - 100;
+          const cellPos = cellIndex + 10;
+          return {
+            depth: 2,
+            node(depth) {
+              return depth === 1
+                ? { type: { name: "tableCell" } }
+                : { type: { name: "paragraph" } };
+            },
+            before(depth) {
+              return depth === 1 ? cellPos : pos;
+            },
+          };
+        },
+        nodeAt(pos) {
+          return pos >= 10 && pos < 14 && Number.isInteger(pos)
+            ? { type: { name: "tableCell" } }
+            : { type: { name: "paragraph" } };
+        },
+      },
+    },
     view: {
       dom: root,
+      get state() {
+        return editor.state;
+      },
       domAtPos: () => ({ node: cells[0] }),
       posAtDOM(target) {
-        return cells.indexOf(target) + 10;
+        return cells.indexOf(target) + 100;
       },
     },
     commands: {
@@ -634,6 +661,7 @@ test("Tiptap table cell drag extends the selected cell range", () => {
   const events = [];
 
   controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  const basePointerMoveListeners = documentListeners.get("pointermove")?.length ?? 0;
   assert.equal(
     root.listeners.get("pointerdown")({
       target: cells[0],
@@ -679,5 +707,5 @@ test("Tiptap table cell drag extends the selected cell range", () => {
   controller.refresh(editor);
   assert.equal(controller.state.selection.kind, "table");
   assert.deepEqual([...controller.state.selection.positions], [10, 11, 12, 13]);
-  assert.equal(documentListeners.has("pointermove"), false);
+  assert.equal(documentListeners.get("pointermove")?.length ?? 0, basePointerMoveListeners);
 });

@@ -841,6 +841,7 @@
     color: color-mix(in srgb, var(--mn-ink-3) 66%, transparent);
     box-shadow: none;
     padding: 0;
+    pointer-events: auto;
     transition:
         background-color var(--mn-transition-fast),
         border-color var(--mn-transition-fast),
