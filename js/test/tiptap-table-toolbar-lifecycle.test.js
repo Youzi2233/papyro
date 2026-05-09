@@ -6,6 +6,7 @@ import {
   selectTableAxis,
 } from "../src/tiptap-table-toolbar.js";
 import {
+  createDocument,
   createDismissDocument,
   createTableHarness,
   createViewSpy,
@@ -110,6 +111,72 @@ test("Tiptap table toolbar keeps editor blur stable for table chrome and WebView
 
   controller.close();
   assert.equal(controller.shouldKeepOpenOnEditorBlur(toolbarTarget), false);
+});
+
+test("Tiptap table toolbar does not mount legacy chrome when React chrome is available", () => {
+  const { created, documentRef } = createDocument();
+  const { editor } = createTableHarness({
+    addRowAfter: () => true,
+    addColumnAfter: () => true,
+    mergeCells: () => true,
+  });
+  const chromeCalls = [];
+  const controller = createTiptapTableToolbarController({
+    dom: { document: documentRef },
+    chromeRendererFactory({ root }) {
+      chromeCalls.push(["mount", root.className]);
+      return {
+        render(state) {
+          chromeCalls.push(["render", state.open, state.selection?.kind]);
+          return true;
+        },
+        hide() {
+          chromeCalls.push(["hide"]);
+        },
+        contains(target) {
+          return target?.id === "react-chrome";
+        },
+        destroy() {
+          chromeCalls.push(["destroy"]);
+        },
+      };
+    },
+  });
+
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+
+  assert.equal(
+    documentRef.body.children.some((element) =>
+      String(element.className).includes("mn-tiptap-table-chrome-root"),
+    ),
+    true,
+  );
+  assert.deepEqual(
+    documentRef.body.children
+      .map((element) => String(element.className))
+      .filter((className) =>
+        className.includes("mn-tiptap-table-quick-add") ||
+        className.includes("mn-tiptap-table-cell-menu-trigger") ||
+        className.includes("mn-tiptap-complex-block-insert") ||
+        className.includes("mn-tiptap-table-selection-backdrop"),
+      ),
+    [],
+  );
+  assert.equal(
+    created.some((element) =>
+      String(element.className).includes("mn-tiptap-table-quick-add"),
+    ),
+    true,
+  );
+  assert.deepEqual(chromeCalls.slice(0, 2), [
+    ["mount", "mn-tiptap-table-chrome-root hidden"],
+    ["render", true, "cell"],
+  ]);
+
+  controller.close();
+  controller.destroy();
+
+  assert.deepEqual(chromeCalls.slice(-2), [["hide"], ["destroy"]]);
 });
 
 test("Tiptap table toolbar keeps focus races inside the editor from dismissing menus", () => {

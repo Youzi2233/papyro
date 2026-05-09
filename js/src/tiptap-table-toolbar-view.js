@@ -241,43 +241,49 @@ export class TiptapTableToolbarView {
             ownerId: `${TABLE_TOOLBAR_OWNER_ID}-chrome`,
           })
         : null;
-    addRowButton.type = "button";
-    addColumnButton.type = "button";
-    cellMenuButton.type = "button";
-    cellMenuButton.setAttribute("aria-hidden", "false");
-    cellMenuButton.setAttribute("aria-haspopup", "menu");
-    blockInsertButton.type = "button";
+    if (!reactChrome) {
+      addRowButton.type = "button";
+      addColumnButton.type = "button";
+      cellMenuButton.type = "button";
+      cellMenuButton.setAttribute("aria-hidden", "false");
+      cellMenuButton.setAttribute("aria-haspopup", "menu");
+      blockInsertButton.type = "button";
+    }
     if (!reactMenu) {
       header.append(eyebrow, title, subtitle);
       root.append(header, list);
     }
     mountFloatingRoot(root, container, this.#document);
-    mountFloatingRoot(addRowButton, container, this.#document);
-    mountFloatingRoot(addColumnButton, container, this.#document);
-    mountFloatingRoot(cellMenuButton, container, this.#document);
-    mountFloatingRoot(blockInsertButton, container, this.#document);
-    mountFloatingRoot(selectionBackdrop, container, this.#document);
     mountFloatingRoot(chromeRoot, container, this.#document);
+    if (!reactChrome) {
+      mountFloatingRoot(addRowButton, container, this.#document);
+      mountFloatingRoot(addColumnButton, container, this.#document);
+      mountFloatingRoot(cellMenuButton, container, this.#document);
+      mountFloatingRoot(blockInsertButton, container, this.#document);
+      mountFloatingRoot(selectionBackdrop, container, this.#document);
+    }
     this.#root = root;
     this.#header = header;
     this.#eyebrow = eyebrow;
     this.#title = title;
     this.#subtitle = subtitle;
     this.#list = list;
-    this.#addRowButton = addRowButton;
-    this.#addColumnButton = addColumnButton;
-    this.#cellMenuButton = cellMenuButton;
-    this.#blockInsertButton = blockInsertButton;
-    this.#selectionBackdrop = selectionBackdrop;
+    this.#addRowButton = reactChrome ? null : addRowButton;
+    this.#addColumnButton = reactChrome ? null : addColumnButton;
+    this.#cellMenuButton = reactChrome ? null : cellMenuButton;
+    this.#blockInsertButton = reactChrome ? null : blockInsertButton;
+    this.#selectionBackdrop = reactChrome ? null : selectionBackdrop;
     this.#chromeRoot = chromeRoot;
     this.#reactChrome = reactChrome;
     this.#reactMenu = reactMenu;
     setHidden(root, true);
-    setTableChromeHidden(addRowButton, true);
-    setTableChromeHidden(addColumnButton, true);
-    setTableChromeHidden(cellMenuButton, true);
-    setTableChromeHidden(blockInsertButton, true);
-    setTableDecorationHidden(selectionBackdrop, true);
+    if (!reactChrome) {
+      setTableChromeHidden(addRowButton, true);
+      setTableChromeHidden(addColumnButton, true);
+      setTableChromeHidden(cellMenuButton, true);
+      setTableChromeHidden(blockInsertButton, true);
+      setTableDecorationHidden(selectionBackdrop, true);
+    }
     setTableDecorationHidden(chromeRoot, true);
   }
 
@@ -316,10 +322,14 @@ export class TiptapTableToolbarView {
           ? tableContextSubtitleLabel(state.language, state.selection)
           : "";
     }
-    this.#addRowButton.title = addRowBelowLabel(state.language);
-    this.#addRowButton.setAttribute("aria-label", addRowBelowLabel(state.language));
-    this.#addColumnButton.title = addColumnRightLabel(state.language);
-    this.#addColumnButton.setAttribute("aria-label", addColumnRightLabel(state.language));
+    if (this.#addRowButton) {
+      this.#addRowButton.title = addRowBelowLabel(state.language);
+      this.#addRowButton.setAttribute("aria-label", addRowBelowLabel(state.language));
+    }
+    if (this.#addColumnButton) {
+      this.#addColumnButton.title = addColumnRightLabel(state.language);
+      this.#addColumnButton.setAttribute("aria-label", addColumnRightLabel(state.language));
+    }
     if (this.#cellMenuButton) {
       const cellMenuLabel =
         state.selection?.kind === "cells"
