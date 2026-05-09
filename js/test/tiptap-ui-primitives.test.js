@@ -374,6 +374,9 @@ test("Tiptap UI primitives bind pointer activation with click fallback", () => {
     stopPropagation() {
       calls.push("stopPropagation");
     },
+    stopImmediatePropagation() {
+      calls.push("stopImmediatePropagation");
+    },
   });
 
   bindPointerActivation(element, () => {
@@ -387,12 +390,15 @@ test("Tiptap UI primitives bind pointer activation with click fallback", () => {
   assert.deepEqual(calls, [
     "preventDefault",
     "stopPropagation",
+    "stopImmediatePropagation",
     "run",
     "preventDefault",
     "stopPropagation",
+    "stopImmediatePropagation",
     "run",
     "preventDefault",
     "stopPropagation",
+    "stopImmediatePropagation",
   ]);
 });
 

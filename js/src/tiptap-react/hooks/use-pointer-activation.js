@@ -3,6 +3,7 @@ import { useRef } from "react";
 function preventMenuPointer(event) {
   event?.preventDefault?.();
   event?.stopPropagation?.();
+  event?.nativeEvent?.stopImmediatePropagation?.();
 }
 
 export function usePointerActivation(run) {
@@ -22,7 +23,7 @@ export function usePointerActivation(run) {
       pointerActivated.current = false;
     },
     onMouseDown(event) {
-      event?.preventDefault?.();
+      preventMenuPointer(event);
     },
     onAuxClick(event) {
       preventMenuPointer(event);

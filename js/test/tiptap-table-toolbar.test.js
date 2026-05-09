@@ -1742,6 +1742,30 @@ test("Tiptap table chrome keeps axis hover while pointer is over the floating ha
   assert.equal(latestAxisHandle(created, "column", 1).hidden, false);
 });
 
+test("Tiptap table chrome infers axis hover directly from handle targets", () => {
+  const { created, documentRef } = createDocument();
+  const { cells, editor } = createTableHarness();
+  const controller = createTiptapTableToolbarController({
+    dom: { document: documentRef },
+  });
+
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+
+  editor.view.dom.listeners.get("pointermove")({ target: cells[1], clientX: 204, clientY: 107 });
+  const columnHandle = latestAxisHandle(created, "column", 1);
+  assert.equal(columnHandle.hidden, false);
+
+  documentRef.listeners.get("pointermove")({
+    target: columnHandle,
+    clientX: 238,
+    clientY: 78,
+  });
+
+  assert.equal(controller.state.hover.edge, "column-handle");
+  assert.equal(controller.state.hover.columnIndex, 1);
+  assert.equal(latestAxisHandle(created, "column", 1).hidden, false);
+});
+
 test("Tiptap table row and column handles activate from gutter coordinates", () => {
   const { created, documentRef } = createDocument();
   const { editor, table } = createTableHarness();
@@ -2412,6 +2436,9 @@ test("Tiptap table toolbar previews inline text cell surfaces as object selectio
       stopPropagation() {
         events.push("stopPropagation:down");
       },
+      stopImmediatePropagation() {
+        events.push("stopImmediatePropagation:down");
+      },
     }),
     false,
   );
@@ -2428,7 +2455,11 @@ test("Tiptap table toolbar previews inline text cell surfaces as object selectio
 
   assert.equal(documentRef.listeners.has("pointermove"), true);
   assert.equal(documentRef.listeners.get("pointerup")?.length, 1);
-  assert.deepEqual(events, ["preventDefault:down", "stopPropagation:down"]);
+  assert.deepEqual(events, [
+    "preventDefault:down",
+    "stopPropagation:down",
+    "stopImmediatePropagation:down",
+  ]);
   assert.deepEqual(calls, []);
   controller.refresh(editor);
   assert.equal(cells[0].classes.has("mn-tiptap-table-cell-selected"), true);
@@ -2494,7 +2525,84 @@ test("Tiptap table toolbar selects filled cell surfaces on short clicks", () => 
   assert.equal(controller.state.selection.kind, "cell");
   assert.deepEqual([...controller.state.selection.positions], [10]);
   assert.equal(cells[0].classes.has("mn-tiptap-table-cell-selected"), true);
-  assert.equal(cells[0].classes.has("mn-tiptap-table-cell-active"), true);
+  assert.equal(cells[0].classes.has("mn-tiptap-table-cell-active"), false);
+});
+
+test("Tiptap table toolbar treats mousedown as a cell object selection fallback", () => {
+  const { documentRef } = createDocument();
+  const { calls, cells, editor } = createTableHarness();
+  const paragraph = {
+    nodeType: 1,
+    tagName: "P",
+    parentElement: cells[1],
+    parentNode: cells[1],
+    textContent: "Beta",
+    closest(selector) {
+      if (selector === "th,td") return cells[1];
+      if (selector.includes(".mn-tiptap-table") || selector.includes(", table")) {
+        return cells[1].closest(selector);
+      }
+      return null;
+    },
+  };
+  const textNode = {
+    nodeType: 3,
+    parentElement: paragraph,
+    parentNode: paragraph,
+  };
+  const controller = createTiptapTableToolbarController({
+    dom: { document: documentRef },
+  });
+  const events = [];
+
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  assert.equal(
+    editor.view.dom.listeners.get("mousedown")({
+      target: textNode,
+      button: 0,
+      clientX: 214,
+      clientY: 104,
+      preventDefault() {
+        events.push("preventDefault:down");
+      },
+      stopPropagation() {
+        events.push("stopPropagation:down");
+      },
+      stopImmediatePropagation() {
+        events.push("stopImmediatePropagation:down");
+      },
+    }),
+    true,
+  );
+
+  documentRef.listeners.get("pointerup")?.({
+    target: textNode,
+    clientX: 214,
+    clientY: 104,
+    preventDefault() {
+      events.push("preventDefault:up");
+    },
+    stopPropagation() {
+      events.push("stopPropagation:up");
+    },
+    stopImmediatePropagation() {
+      events.push("stopImmediatePropagation:up");
+    },
+  });
+
+  assert.deepEqual(events, [
+    "preventDefault:down",
+    "stopPropagation:down",
+    "stopImmediatePropagation:down",
+    "preventDefault:up",
+    "stopPropagation:up",
+    "stopImmediatePropagation:up",
+  ]);
+  assert.deepEqual(calls, [["setCellSelection", 11, 11], ["focus"]]);
+  assert.equal(controller.state.selection.kind, "cell");
+  assert.deepEqual([...controller.state.selection.positions], [11]);
+  assert.equal(cells[1].classes.has("mn-tiptap-table-cell-selected"), true);
+  assert.equal(cells[1].classes.has("mn-tiptap-table-cell-active"), false);
 });
 
 test("Tiptap table toolbar drags filled cell text as a cell range", () => {
@@ -2544,6 +2652,9 @@ test("Tiptap table toolbar drags filled cell text as a cell range", () => {
     stopPropagation() {
       events.push("stopPropagation:down");
     },
+    stopImmediatePropagation() {
+      events.push("stopImmediatePropagation:down");
+    },
   });
   const dragMove = documentRef.listeners.get("pointermove");
   const dragEnd = documentRef.listeners.get("pointerup");
@@ -2557,6 +2668,9 @@ test("Tiptap table toolbar drags filled cell text as a cell range", () => {
     stopPropagation() {
       events.push("stopPropagation:move");
     },
+    stopImmediatePropagation() {
+      events.push("stopImmediatePropagation:move");
+    },
   });
   dragEnd?.({
     target: cells[1],
@@ -2568,15 +2682,21 @@ test("Tiptap table toolbar drags filled cell text as a cell range", () => {
     stopPropagation() {
       events.push("stopPropagation:up");
     },
+    stopImmediatePropagation() {
+      events.push("stopImmediatePropagation:up");
+    },
   });
 
   assert.deepEqual(events, [
     "preventDefault:down",
     "stopPropagation:down",
+    "stopImmediatePropagation:down",
     "preventDefault:move",
     "stopPropagation:move",
+    "stopImmediatePropagation:move",
     "preventDefault:up",
     "stopPropagation:up",
+    "stopImmediatePropagation:up",
   ]);
   assert.deepEqual(calls, [["setCellSelection", 10, 11], ["focus"]]);
   assert.equal(controller.state.selection.kind, "cells");

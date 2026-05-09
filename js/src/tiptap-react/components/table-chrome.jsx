@@ -204,6 +204,17 @@ function TableSelectionBackdrop({ chrome }) {
           style={fixedRectStyle(box)}
         />
       ))}
+      <div
+        className={[
+          "mn-tiptap-table-selection-outline",
+          chrome.visible ? null : "hidden",
+        ].filter(Boolean).join(" ")}
+        aria-hidden="true"
+        data-visible={chrome.visible ? "true" : "false"}
+        data-selection-kind={chrome.selectionKind}
+        data-selected-count={String(chrome.selectedCount ?? 0)}
+        style={fixedRectStyle(chrome.rect)}
+      />
     </>
   );
 }
@@ -244,6 +255,7 @@ function TableAxisHandle({ handle, label, onSelectAxis }) {
   const guard = (event) => {
     event?.preventDefault?.();
     event?.stopPropagation?.();
+    event?.nativeEvent?.stopImmediatePropagation?.();
   };
 
   return (
@@ -269,7 +281,7 @@ function TableAxisHandle({ handle, label, onSelectAxis }) {
         }
         pointerActivated.current = false;
       }}
-      onMouseDown={(event) => event?.preventDefault?.()}
+      onMouseDown={(event) => guard(event)}
       onAuxClick={(event) => {
         guard(event);
         pointerActivated.current = false;

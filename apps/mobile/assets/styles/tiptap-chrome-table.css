@@ -849,24 +849,56 @@
         color var(--mn-transition-fast);
 }
 
+.mn-tiptap-table-chrome-root.hidden {
+    display: none;
+}
+
+.mn-tiptap-table-chrome-root {
+    position: fixed;
+    inset: 0;
+    z-index: 158;
+    pointer-events: none;
+}
+
+.mn-tiptap-table-chrome-root :where(button, .mn-tiptap-table-selection-backdrop, .mn-tiptap-table-selection-outline, .mn-tiptap-table-selection-cell, .mn-tiptap-table-axis-hover-backdrop) {
+    pointer-events: auto;
+}
+
 .mn-tiptap-table-selection-backdrop {
     position: fixed;
     z-index: 160;
     pointer-events: none;
     border-radius: 2px;
     background: transparent;
-    box-shadow:
-        inset 0 0 0 2px var(--mn-accent),
-        0 0 0 1px color-mix(in srgb, var(--mn-accent) 28%, transparent);
+    box-shadow: none;
 }
 
 .mn-tiptap-table-selection-backdrop[data-selection-kind="cell"] {
-    box-shadow:
-        inset 0 0 0 2.5px var(--mn-accent),
-        0 0 0 1px color-mix(in srgb, var(--mn-accent) 30%, transparent);
+    box-shadow: none;
 }
 
 .mn-tiptap-table-selection-backdrop.hidden {
+    display: none;
+}
+
+.mn-tiptap-table-selection-outline {
+    position: fixed;
+    z-index: 166;
+    box-sizing: border-box;
+    border: 2px solid var(--mn-accent);
+    border-radius: 2px;
+    pointer-events: none;
+    background: transparent;
+    box-shadow:
+        0 0 0 1px color-mix(in srgb, var(--mn-accent) 30%, transparent),
+        0 2px 8px color-mix(in srgb, var(--mn-accent) 10%, transparent);
+}
+
+.mn-tiptap-table-selection-outline[data-selection-kind="cell"] {
+    border-width: 2.5px;
+}
+
+.mn-tiptap-table-selection-outline.hidden {
     display: none;
 }
 

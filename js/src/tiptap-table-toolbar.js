@@ -122,6 +122,17 @@ function shouldStartTableCellRangeDrag(target, cell) {
   return isEditableTableCellSurfaceTarget(target, cell);
 }
 
+function consumeTableObjectEvent(event) {
+  event?.preventDefault?.();
+  event?.stopPropagation?.();
+  event?.stopImmediatePropagation?.();
+  event?.nativeEvent?.stopImmediatePropagation?.();
+}
+
+function eventModifiersAllowTableObjectSelection(event) {
+  return !event?.ctrlKey && !event?.metaKey && !event?.altKey;
+}
+
 function tableCellTextSelectionPosition(editor, cell, event) {
   const view = editor?.view;
   let targetPos = null;
@@ -184,6 +195,18 @@ function hoverFromTableCell(cell, event, table) {
     clientX: Number.isFinite(Number(event?.clientX)) ? Number(event.clientX) : null,
     clientY: Number.isFinite(Number(event?.clientY)) ? Number(event.clientY) : null,
   };
+}
+
+function closestClassElement(target, className) {
+  let element = elementFromTarget(target);
+  while (element) {
+    const classes = String(element.className ?? "").split(/\s+/u);
+    if (classes.includes(className) || element.classList?.contains?.(className)) {
+      return element;
+    }
+    element = element.parentElement ?? element.parentNode ?? null;
+  }
+  return null;
 }
 
 export function selectTableAxis(editor, grid, axis, index) {
@@ -718,10 +741,39 @@ export class TiptapTableToolbarController {
   handlePointerDown(event) {
     if (!this.#editor || this.#entry?.viewMode !== "hybrid") return false;
     if (event?.button != null && event.button !== 0) return false;
-    if (event?.ctrlKey || event?.metaKey || event?.altKey) return false;
+    if (!eventModifiersAllowTableObjectSelection(event)) return false;
     if (this.contains(event?.target)) return false;
     if (event?.target?.closest?.(".column-resize-handle")) return false;
 
+    this.#startCellObjectInteraction(event);
+    return false;
+  }
+
+  handleMouseDown(event) {
+    if (
+      !this.#cellDrag &&
+      this.#editor &&
+      this.#entry?.viewMode === "hybrid" &&
+      (event?.button == null || event.button === 0) &&
+      eventModifiersAllowTableObjectSelection(event) &&
+      !this.contains(event?.target) &&
+      !event?.target?.closest?.(".column-resize-handle")
+    ) {
+      const started = this.#startCellObjectInteraction(event);
+      if (started) return started;
+    }
+
+    if (!this.#cellDrag) return false;
+    const target = event?.target;
+    if (!this.#cellDrag.table?.contains?.(target)) return false;
+    const cell = closestTableCellElement(target);
+    if (cell && isInteractiveCellContent(target, cell)) return false;
+
+    consumeTableObjectEvent(event);
+    return true;
+  }
+
+  #startCellObjectInteraction(event) {
     const table = closestTableElement(event?.target, this.#editor?.view?.dom);
     if (!table) return false;
     const cell = closestTableCellElement(event?.target);
@@ -748,42 +800,30 @@ export class TiptapTableToolbarController {
     this.#previewActiveCellFromPointer(context, start, event);
     if (!cellSurfaceClick) return false;
 
-    this.#cellDrag = {
-      table,
-      anchor: start,
-      head: start,
-      moved: false,
-      selected: false,
-      previewCleared: false,
-      cellSurfaceClick,
-      rangeSelectable: shouldStartTableCellRangeDrag(event?.target, cell),
-      startX: Number(event?.clientX),
-      startY: Number(event?.clientY),
-      removeListeners: [],
-    };
+    if (!this.#cellDrag) {
+      this.#cellDrag = {
+        table,
+        anchor: start,
+        head: start,
+        moved: false,
+        selected: false,
+        previewCleared: false,
+        cellSurfaceClick,
+        rangeSelectable: shouldStartTableCellRangeDrag(event?.target, cell),
+        startX: Number(event?.clientX),
+        startY: Number(event?.clientY),
+        removeListeners: [],
+      };
 
-    this.#bindCellDragListeners();
-    event?.preventDefault?.();
-    event?.stopPropagation?.();
-    return false;
-  }
-
-  handleMouseDown(event) {
-    if (!this.#cellDrag) return false;
-    const target = event?.target;
-    if (!this.#cellDrag.table?.contains?.(target)) return false;
-    const cell = closestTableCellElement(target);
-    if (cell && isInteractiveCellContent(target, cell)) return false;
-
-    event?.preventDefault?.();
-    event?.stopPropagation?.();
+      this.#bindCellDragListeners();
+    }
+    consumeTableObjectEvent(event);
     return true;
   }
 
   handleClick(event) {
     if (!this.#shouldSuppressCellClick(event)) return false;
-    event?.preventDefault?.();
-    event?.stopPropagation?.();
+    consumeTableObjectEvent(event);
     this.#suppressCellClick = null;
     return true;
   }
@@ -942,8 +982,7 @@ export class TiptapTableToolbarController {
     if (!Number.isFinite(nextHead?.pos)) return false;
 
     if (!drag.moved) return false;
-    event?.preventDefault?.();
-    event?.stopPropagation?.();
+    consumeTableObjectEvent(event);
     if (!drag.selected && nextHead.pos === drag.anchor?.pos) return true;
     if (drag.selected && nextHead.pos === drag.head?.pos) return true;
 
@@ -968,8 +1007,7 @@ export class TiptapTableToolbarController {
     }
     if (selected) {
       this.#markSuppressCellClick(drag, event);
-      event?.preventDefault?.();
-      event?.stopPropagation?.();
+      consumeTableObjectEvent(event);
     }
     return true;
   }
@@ -1030,6 +1068,17 @@ export class TiptapTableToolbarController {
     const x = Number(event?.clientX);
     const y = Number(event?.clientY);
     if (!Number.isFinite(x) || !Number.isFinite(y)) return false;
+    const handleHover = this.#hoverFromAxisHandleTarget(event?.target, event);
+    if (handleHover) {
+      if (!sameTableHover(handleHover, this.#state.hover)) {
+        this.#state = {
+          ...this.#state,
+          hover: handleHover,
+        };
+        this.#render();
+      }
+      return true;
+    }
     const hover = tableHoverWithIntent({
       target: this.#state.table,
       table: this.#state.table,
@@ -1051,6 +1100,34 @@ export class TiptapTableToolbarController {
     };
     this.#render();
     return true;
+  }
+
+  #hoverFromAxisHandleTarget(target, event) {
+    const handle = closestClassElement(target, "mn-tiptap-table-axis-handle");
+    const axis = handle?.dataset?.axis;
+    const index = Number(handle?.dataset?.index);
+    if (!handle || !["row", "column"].includes(axis) || !Number.isInteger(index)) {
+      return null;
+    }
+
+    const cells = (this.#state.grid ?? []).flatMap((row) => row.cells ?? []);
+    const match =
+      axis === "row"
+        ? (this.#state.grid?.[index]?.cells ?? [])[0] ?? null
+        : cells.find((cell) => cell.columnIndex === index) ?? null;
+    if (!match?.cell) return null;
+
+    return {
+      table: true,
+      rowIndex: axis === "row" ? index : match.rowIndex,
+      columnIndex: axis === "column" ? index : match.columnIndex,
+      cell: match.cell,
+      cellRect: normalizedRect(match.rect ?? match.cell.getBoundingClientRect?.()),
+      edge: axis === "row" ? "row-handle" : "column-handle",
+      block: this.#state.table,
+      clientX: Number.isFinite(Number(event?.clientX)) ? Number(event.clientX) : null,
+      clientY: Number.isFinite(Number(event?.clientY)) ? Number(event.clientY) : null,
+    };
   }
 
   handleContextMenu(event) {
@@ -1107,8 +1184,7 @@ export class TiptapTableToolbarController {
         Number.isFinite(targetPos) &&
         typeof this.#editor.commands?.setTextSelection === "function"
       ) {
-        event?.preventDefault?.();
-        event?.stopPropagation?.();
+        consumeTableObjectEvent(event);
         this.#suppressCellClick = null;
         this.#visualCellSelection = null;
         this.#cellDrag?.removeListeners?.forEach?.((remove) => remove());

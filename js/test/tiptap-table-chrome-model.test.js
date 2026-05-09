@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   applyTableCellVisualState,
   clearTableCellVisualState,
+  TABLE_SELECTED_CELL_EDGE_CLASSES,
   createComplexBlockInsertChromeState,
   createTableAxisHoverChromeState,
   createTableAxisHandleChromeState,
@@ -76,6 +77,10 @@ function createGrid() {
         return cellElements.filter((cell) =>
           cell.classes.has("mn-tiptap-table-cell-active"),
         );
+      }
+      if (Object.values(TABLE_SELECTED_CELL_EDGE_CLASSES).some((className) => selector === `.${className}`)) {
+        const className = selector.slice(1);
+        return cellElements.filter((cell) => cell.classes.has(className));
       }
       if (selector === ".mn-tiptap-table-cell-hovered-row") {
         return cellElements.filter((cell) =>
@@ -158,7 +163,7 @@ test("table chrome model applies and clears cell visual state", () => {
     ]),
     [
       [false, false],
-      [true, true],
+      [true, false],
       [false, false],
       [false, false],
       [false, false],
@@ -180,6 +185,21 @@ test("table chrome model applies and clears cell visual state", () => {
     cellElements.map((cell) => cell.classes.has("mn-tiptap-table-cell-selected")),
     [true, true, false, false, false, false],
   );
+  assert.deepEqual(
+    cellElements.map((cell) =>
+      Object.entries(TABLE_SELECTED_CELL_EDGE_CLASSES)
+        .filter(([, className]) => cell.classes.has(className))
+        .map(([edge]) => edge),
+    ),
+    [
+      ["top", "bottom", "left"],
+      ["top", "right", "bottom"],
+      [],
+      [],
+      [],
+      [],
+    ],
+  );
   assert.equal(
     cellElements.some((cell) => cell.classes.has("mn-tiptap-table-cell-active")),
     false,
@@ -189,7 +209,10 @@ test("table chrome model applies and clears cell visual state", () => {
   assert.equal(
     cellElements.some((cell) =>
       cell.classes.has("mn-tiptap-table-cell-selected") ||
-      cell.classes.has("mn-tiptap-table-cell-active"),
+      cell.classes.has("mn-tiptap-table-cell-active") ||
+      Object.values(TABLE_SELECTED_CELL_EDGE_CLASSES).some((className) =>
+        cell.classes.has(className),
+      ),
     ),
     false,
   );

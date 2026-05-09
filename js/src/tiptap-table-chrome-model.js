@@ -11,6 +11,12 @@ export const TABLE_SELECTED_CELL_CLASS = "mn-tiptap-table-cell-selected";
 export const TABLE_ACTIVE_CELL_CLASS = "mn-tiptap-table-cell-active";
 export const TABLE_HOVERED_ROW_CELL_CLASS = "mn-tiptap-table-cell-hovered-row";
 export const TABLE_HOVERED_COLUMN_CELL_CLASS = "mn-tiptap-table-cell-hovered-column";
+export const TABLE_SELECTED_CELL_EDGE_CLASSES = Object.freeze({
+  top: "mn-tiptap-table-cell-selected-edge-top",
+  right: "mn-tiptap-table-cell-selected-edge-right",
+  bottom: "mn-tiptap-table-cell-selected-edge-bottom",
+  left: "mn-tiptap-table-cell-selected-edge-left",
+});
 
 export function tableMenuAnchorRect(state) {
   if (state?.menuAnchorRect) return state.menuAnchorRect;
@@ -51,12 +57,30 @@ function selectedCells(state) {
   return tableGridCells(state).filter((cell) => positions.has(cell.pos));
 }
 
-function selectedCellElement(state) {
-  return selectedCellEntry(state)?.cell ?? null;
-}
-
 function tableGridCells(state) {
   return (state?.grid ?? []).flatMap((row) => row.cells ?? []);
+}
+
+function hasSelectedNeighbor(cells, positions, cell, rowDelta, columnDelta) {
+  return cells.some(
+    (candidate) =>
+      candidate.rowIndex === cell.rowIndex + rowDelta &&
+      candidate.columnIndex === cell.columnIndex + columnDelta &&
+      positions.has(candidate.pos),
+  );
+}
+
+function selectedCellEdgeClassNames(cells, positions, cell) {
+  return [
+    ["top", -1, 0],
+    ["right", 0, 1],
+    ["bottom", 1, 0],
+    ["left", 0, -1],
+  ]
+    .filter(([, rowDelta, columnDelta]) =>
+      !hasSelectedNeighbor(cells, positions, cell, rowDelta, columnDelta),
+    )
+    .map(([edge]) => TABLE_SELECTED_CELL_EDGE_CLASSES[edge]);
 }
 
 function unionCellRects(cells = []) {
@@ -76,6 +100,11 @@ export function clearTableCellVisualState(table) {
   table
     ?.querySelectorAll?.(`.${TABLE_SELECTED_CELL_CLASS}`)
     ?.forEach?.((cell) => cell.classList?.remove?.(TABLE_SELECTED_CELL_CLASS));
+  Object.values(TABLE_SELECTED_CELL_EDGE_CLASSES).forEach((className) => {
+    table
+      ?.querySelectorAll?.(`.${className}`)
+      ?.forEach?.((cell) => cell.classList?.remove?.(className));
+  });
   table
     ?.querySelectorAll?.(`.${TABLE_ACTIVE_CELL_CLASS}`)
     ?.forEach?.((cell) => cell.classList?.remove?.(TABLE_ACTIVE_CELL_CLASS));
@@ -94,17 +123,25 @@ export function applyTableCellVisualState(state) {
   clearTableCellVisualState(table);
 
   const selectedPositions = state?.selection?.positions ?? new Set();
-  tableGridCells(state).forEach((cell) => {
+  const cells = tableGridCells(state);
+  cells.forEach((cell) => {
     cell.cell?.classList?.toggle?.(
       TABLE_SELECTED_CELL_CLASS,
       selectedPositions.has(cell.pos),
     );
+    Object.values(TABLE_SELECTED_CELL_EDGE_CLASSES).forEach((className) => {
+      cell.cell?.classList?.remove?.(className);
+    });
+    if (selectedPositions.has(cell.pos)) {
+      selectedCellEdgeClassNames(cells, selectedPositions, cell).forEach((className) => {
+        cell.cell?.classList?.add?.(className);
+      });
+    }
   });
 
   const activeCell =
-    state?.selection?.kind === "cell"
-      ? selectedCellElement(state) ??
-        (selectedPositions.size === 0 ? state?.cell ?? null : null)
+    state?.selection?.kind === "cell" && selectedPositions.size === 0
+      ? state?.cell ?? null
       : null;
   if (activeCell) {
     activeCell.classList?.add?.(TABLE_ACTIVE_CELL_CLASS);
@@ -117,7 +154,7 @@ export function applyTableCellVisualState(state) {
   const hoverColumnIndex = Number.isInteger(state?.hover?.columnIndex)
     ? state.hover.columnIndex
     : null;
-  tableGridCells(state).forEach((cell) => {
+  cells.forEach((cell) => {
     cell.cell?.classList?.toggle?.(
       TABLE_HOVERED_ROW_CELL_CLASS,
       hoverRowIndex === cell.rowIndex &&

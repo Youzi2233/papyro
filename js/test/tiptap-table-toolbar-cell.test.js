@@ -178,6 +178,9 @@ test("Tiptap table toolbar suppresses native clicks after object selection", () 
     stopPropagation() {
       events.push("stopPropagation:down");
     },
+    stopImmediatePropagation() {
+      events.push("stopImmediatePropagation:down");
+    },
   });
   documentRef.listeners.get("pointerup")?.({
     target: paragraph,
@@ -189,6 +192,9 @@ test("Tiptap table toolbar suppresses native clicks after object selection", () 
     },
     stopPropagation() {
       events.push("stopPropagation:up");
+    },
+    stopImmediatePropagation() {
+      events.push("stopImmediatePropagation:up");
     },
   });
 
@@ -204,16 +210,22 @@ test("Tiptap table toolbar suppresses native clicks after object selection", () 
       stopPropagation() {
         events.push("stopPropagation:click");
       },
+      stopImmediatePropagation() {
+        events.push("stopImmediatePropagation:click");
+      },
     }),
     true,
   );
   assert.deepEqual(events, [
     "preventDefault:down",
     "stopPropagation:down",
+    "stopImmediatePropagation:down",
     "preventDefault:up",
     "stopPropagation:up",
+    "stopImmediatePropagation:up",
     "preventDefault:click",
     "stopPropagation:click",
+    "stopImmediatePropagation:click",
   ]);
   assert.deepEqual([...controller.state.selection.positions], [10]);
 });
@@ -262,11 +274,18 @@ test("Tiptap table toolbar uses double click as the cell text editing affordance
       stopPropagation() {
         events.push("stopPropagation:dblclick");
       },
+      stopImmediatePropagation() {
+        events.push("stopImmediatePropagation:dblclick");
+      },
     }),
     true,
   );
 
-  assert.deepEqual(events, ["preventDefault:dblclick", "stopPropagation:dblclick"]);
+  assert.deepEqual(events, [
+    "preventDefault:dblclick",
+    "stopPropagation:dblclick",
+    "stopImmediatePropagation:dblclick",
+  ]);
   assert.deepEqual(calls.slice(-3), [
     ["posAtCoords", 214, 104],
     ["setTextSelection", 42],

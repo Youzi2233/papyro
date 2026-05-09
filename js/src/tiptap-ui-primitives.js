@@ -335,6 +335,7 @@ export function bindPointerActivation(element, run) {
   const guard = (event) => {
     event?.preventDefault?.();
     event?.stopPropagation?.();
+    event?.stopImmediatePropagation?.();
   };
   const execute = () => run() !== false;
 
@@ -359,6 +360,6 @@ export function bindPointerActivation(element, run) {
     pointerActivated = false;
   });
   element.addEventListener("mousedown", (event) => {
-    event.preventDefault();
+    guard(event);
   });
 }

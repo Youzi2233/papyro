@@ -61,7 +61,8 @@
 
 .mn-tiptap-editor .mn-tiptap-table {
     border-collapse: collapse;
-    border-spacing: 0;
+    border-spacing: 0 !important;
+    table-layout: fixed;
     background-clip: border-box;
     empty-cells: show;
 }
@@ -96,6 +97,14 @@
     z-index: 5;
     inset: -1px;
     border-radius: 2px;
+    box-sizing: border-box;
+    border-style: solid;
+    border-color: var(--mn-accent);
+    border-width:
+        var(--mn-table-selected-edge-top, 0)
+        var(--mn-table-selected-edge-right, 0)
+        var(--mn-table-selected-edge-bottom, 0)
+        var(--mn-table-selected-edge-left, 0);
     pointer-events: none;
     background: transparent;
     box-shadow: none;
@@ -117,7 +126,6 @@
 .mn-tiptap-editor :where(.mn-tiptap-table-cell-hovered-row) {
     border-bottom-color: color-mix(in srgb, var(--mn-accent) 72%, var(--mn-border));
     box-shadow:
-        inset 0 -2px 0 color-mix(in srgb, var(--mn-accent) 72%, transparent),
         inset 0 0 0 999px color-mix(in srgb, var(--mn-accent) 3%, transparent);
 }
 
@@ -125,7 +133,44 @@
 .mn-tiptap-table-header.mn-tiptap-table-cell-active::after,
 .mn-tiptap-table-cell.mn-tiptap-table-cell-selected::after,
 .mn-tiptap-table-header.mn-tiptap-table-cell-selected::after {
-    box-shadow: none;
+    box-shadow:
+        none;
+}
+
+.mn-tiptap-editor :where(
+    .mn-tiptap-table-cell.mn-tiptap-table-cell-active,
+    .mn-tiptap-table-header.mn-tiptap-table-cell-active,
+    .mn-tiptap-table-cell.mn-tiptap-table-cell-selected-edge-top,
+    .mn-tiptap-table-header.mn-tiptap-table-cell-selected-edge-top
+) {
+    --mn-table-selected-edge-top: 2px;
+}
+
+.mn-tiptap-editor :where(
+    .mn-tiptap-table-cell.mn-tiptap-table-cell-active,
+    .mn-tiptap-table-header.mn-tiptap-table-cell-active,
+    .mn-tiptap-table-cell.mn-tiptap-table-cell-selected-edge-right,
+    .mn-tiptap-table-header.mn-tiptap-table-cell-selected-edge-right
+) {
+    --mn-table-selected-edge-right: 2px;
+}
+
+.mn-tiptap-editor :where(
+    .mn-tiptap-table-cell.mn-tiptap-table-cell-active,
+    .mn-tiptap-table-header.mn-tiptap-table-cell-active,
+    .mn-tiptap-table-cell.mn-tiptap-table-cell-selected-edge-bottom,
+    .mn-tiptap-table-header.mn-tiptap-table-cell-selected-edge-bottom
+) {
+    --mn-table-selected-edge-bottom: 2px;
+}
+
+.mn-tiptap-editor :where(
+    .mn-tiptap-table-cell.mn-tiptap-table-cell-active,
+    .mn-tiptap-table-header.mn-tiptap-table-cell-active,
+    .mn-tiptap-table-cell.mn-tiptap-table-cell-selected-edge-left,
+    .mn-tiptap-table-header.mn-tiptap-table-cell-selected-edge-left
+) {
+    --mn-table-selected-edge-left: 2px;
 }
 
 .mn-tiptap-editor :where(.mn-tiptap-table-cell-active, .mn-tiptap-table-cell-selected)::before,

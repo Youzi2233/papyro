@@ -126,7 +126,7 @@ test("Papyro table chrome resolves DOM cells to selectable ProseMirror cell posi
     assert.equal(selection.kind, "cell");
     assert.deepEqual([...selection.positions], [grid[0].cells[1].pos]);
     assert.equal(cells[1].classList.contains("mn-tiptap-table-cell-selected"), true);
-    assert.equal(cells[1].classList.contains("mn-tiptap-table-cell-active"), true);
+    assert.equal(cells[1].classList.contains("mn-tiptap-table-cell-active"), false);
   } finally {
     restoreDomGlobals(previous);
   }

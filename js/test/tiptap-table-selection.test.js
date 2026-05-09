@@ -367,11 +367,16 @@ test("Tiptap table inline text content previews the cell as an object selection"
       clientY: 96,
       preventDefault: pushEvent(events, "preventDefault:down"),
       stopPropagation: pushEvent(events, "stopPropagation:down"),
+      stopImmediatePropagation: pushEvent(events, "stopImmediatePropagation:down"),
     }),
     false,
   );
 
-  assert.deepEqual(events, ["preventDefault:down", "stopPropagation:down"]);
+  assert.deepEqual(events, [
+    "preventDefault:down",
+    "stopPropagation:down",
+    "stopImmediatePropagation:down",
+  ]);
   assert.deepEqual(calls, []);
   assert.deepEqual([...controller.state.selection.positions], [11]);
   assert.equal(documentListeners.has("pointermove"), true);
@@ -385,6 +390,7 @@ test("Tiptap table inline text content previews the cell as an object selection"
     clientY: 96,
     preventDefault: pushEvent(events, "preventDefault:move"),
     stopPropagation: pushEvent(events, "stopPropagation:move"),
+    stopImmediatePropagation: pushEvent(events, "stopImmediatePropagation:move"),
   });
   dragEnd({
     target: inline,
@@ -392,15 +398,19 @@ test("Tiptap table inline text content previews the cell as an object selection"
     clientY: 96,
     preventDefault: pushEvent(events, "preventDefault:up"),
     stopPropagation: pushEvent(events, "stopPropagation:up"),
+    stopImmediatePropagation: pushEvent(events, "stopImmediatePropagation:up"),
   });
 
   assert.deepEqual(events, [
     "preventDefault:down",
     "stopPropagation:down",
+    "stopImmediatePropagation:down",
     "preventDefault:move",
     "stopPropagation:move",
+    "stopImmediatePropagation:move",
     "preventDefault:up",
     "stopPropagation:up",
+    "stopImmediatePropagation:up",
   ]);
   assert.deepEqual(calls, [["setCellSelection", 11, 11], ["focus"]]);
 });
@@ -437,11 +447,16 @@ test("Tiptap table empty paragraph surface selects the whole cell", () => {
       clientY: 96,
       preventDefault: pushEvent(events, "preventDefault:down"),
       stopPropagation: pushEvent(events, "stopPropagation:down"),
+      stopImmediatePropagation: pushEvent(events, "stopImmediatePropagation:down"),
     }),
     false,
   );
 
-  assert.deepEqual(events, ["preventDefault:down", "stopPropagation:down"]);
+  assert.deepEqual(events, [
+    "preventDefault:down",
+    "stopPropagation:down",
+    "stopImmediatePropagation:down",
+  ]);
 
   documentListeners.get("pointerup").at(-1)({
     target: paragraph,
@@ -449,20 +464,23 @@ test("Tiptap table empty paragraph surface selects the whole cell", () => {
     clientY: 96,
     preventDefault: pushEvent(events, "preventDefault:up"),
     stopPropagation: pushEvent(events, "stopPropagation:up"),
+    stopImmediatePropagation: pushEvent(events, "stopImmediatePropagation:up"),
   });
 
   assert.deepEqual(events, [
     "preventDefault:down",
     "stopPropagation:down",
+    "stopImmediatePropagation:down",
     "preventDefault:up",
     "stopPropagation:up",
+    "stopImmediatePropagation:up",
   ]);
   assert.deepEqual(calls, [["setCellSelection", 11, 11], ["focus"]]);
   assert.equal(controller.state.cell, cells[1]);
   assert.equal(controller.state.cellRect?.left, 190);
   assert.deepEqual([...controller.state.selection.positions], [11]);
   assert.equal(cells[1].classes.has("mn-tiptap-table-cell-selected"), true);
-  assert.equal(cells[1].classes.has("mn-tiptap-table-cell-active"), true);
+  assert.equal(cells[1].classes.has("mn-tiptap-table-cell-active"), false);
 });
 
 test("Tiptap table blank cell clicks select the editable cell", () => {
@@ -485,11 +503,16 @@ test("Tiptap table blank cell clicks select the editable cell", () => {
       clientY: 96,
       preventDefault: pushEvent(events, "preventDefault:down"),
       stopPropagation: pushEvent(events, "stopPropagation:down"),
+      stopImmediatePropagation: pushEvent(events, "stopImmediatePropagation:down"),
     }),
     false,
   );
 
-  assert.deepEqual(events, ["preventDefault:down", "stopPropagation:down"]);
+  assert.deepEqual(events, [
+    "preventDefault:down",
+    "stopPropagation:down",
+    "stopImmediatePropagation:down",
+  ]);
 
   documentListeners.get("pointerup").at(-1)({
     target: cells[1],
@@ -497,20 +520,23 @@ test("Tiptap table blank cell clicks select the editable cell", () => {
     clientY: 96,
     preventDefault: pushEvent(events, "preventDefault:up"),
     stopPropagation: pushEvent(events, "stopPropagation:up"),
+    stopImmediatePropagation: pushEvent(events, "stopImmediatePropagation:up"),
   });
 
   assert.deepEqual(events, [
     "preventDefault:down",
     "stopPropagation:down",
+    "stopImmediatePropagation:down",
     "preventDefault:up",
     "stopPropagation:up",
+    "stopImmediatePropagation:up",
   ]);
   assert.deepEqual(calls, [["setCellSelection", 11, 11], ["focus"]]);
   assert.equal(controller.state.cell, cells[1]);
   assert.equal(controller.state.cellRect?.left, 190);
   assert.deepEqual([...controller.state.selection.positions], [11]);
   assert.equal(cells[1].classes.has("mn-tiptap-table-cell-selected"), true);
-  assert.equal(cells[1].classes.has("mn-tiptap-table-cell-active"), true);
+  assert.equal(cells[1].classes.has("mn-tiptap-table-cell-active"), false);
 });
 
 test("Tiptap table cell clicks preview the active cell immediately", () => {
@@ -542,7 +568,7 @@ test("Tiptap table cell clicks preview the active cell immediately", () => {
   assert.deepEqual(calls, [["setCellSelection", 13, 13], ["focus"]]);
   assert.deepEqual([...controller.state.selection.positions], [13]);
   assert.equal(cells[3].classes.has("mn-tiptap-table-cell-selected"), true);
-  assert.equal(cells[3].classes.has("mn-tiptap-table-cell-active"), true);
+  assert.equal(cells[3].classes.has("mn-tiptap-table-cell-active"), false);
 });
 
 test("Tiptap table interactive inline content clicks stay native", () => {
@@ -611,11 +637,16 @@ test("Tiptap table filled paragraph short clicks select the cell object", () => 
     clientY: 94,
     preventDefault: pushEvent(events, "preventDefault:down"),
     stopPropagation: pushEvent(events, "stopPropagation:down"),
+    stopImmediatePropagation: pushEvent(events, "stopImmediatePropagation:down"),
   });
 
   assert.equal(documentListeners.has("pointermove"), true);
   assert.ok((documentListeners.get("pointerup")?.length ?? 0) >= 1);
-  assert.deepEqual(events, ["preventDefault:down", "stopPropagation:down"]);
+  assert.deepEqual(events, [
+    "preventDefault:down",
+    "stopPropagation:down",
+    "stopImmediatePropagation:down",
+  ]);
   assert.deepEqual(calls, []);
   assert.equal(controller.state.cell, cells[0]);
   assert.deepEqual([...controller.state.selection.positions], [10]);
@@ -626,17 +657,20 @@ test("Tiptap table filled paragraph short clicks select the cell object", () => 
     clientY: 94,
     preventDefault: pushEvent(events, "preventDefault:up"),
     stopPropagation: pushEvent(events, "stopPropagation:up"),
+    stopImmediatePropagation: pushEvent(events, "stopImmediatePropagation:up"),
   });
 
   assert.deepEqual(events, [
     "preventDefault:down",
     "stopPropagation:down",
+    "stopImmediatePropagation:down",
     "preventDefault:up",
     "stopPropagation:up",
+    "stopImmediatePropagation:up",
   ]);
   assert.deepEqual(calls, [["setCellSelection", 10, 10], ["focus"]]);
   assert.equal(cells[0].classes.has("mn-tiptap-table-cell-selected"), true);
-  assert.equal(cells[0].classes.has("mn-tiptap-table-cell-active"), true);
+  assert.equal(cells[0].classes.has("mn-tiptap-table-cell-active"), false);
 });
 
 test("Tiptap table filled paragraph drag extends cell object selection", () => {
@@ -820,6 +854,7 @@ test("Tiptap table object clicks suppress the follow-up native click", () => {
     timeStamp: 10,
     preventDefault: pushEvent(events, "preventDefault:down"),
     stopPropagation: pushEvent(events, "stopPropagation:down"),
+    stopImmediatePropagation: pushEvent(events, "stopImmediatePropagation:down"),
   });
   documentListeners.get("pointerup").at(-1)({
     target: paragraph,
@@ -828,6 +863,7 @@ test("Tiptap table object clicks suppress the follow-up native click", () => {
     timeStamp: 20,
     preventDefault: pushEvent(events, "preventDefault:up"),
     stopPropagation: pushEvent(events, "stopPropagation:up"),
+    stopImmediatePropagation: pushEvent(events, "stopImmediatePropagation:up"),
   });
 
   assert.equal(
@@ -838,16 +874,20 @@ test("Tiptap table object clicks suppress the follow-up native click", () => {
       timeStamp: 30,
       preventDefault: pushEvent(events, "preventDefault:click"),
       stopPropagation: pushEvent(events, "stopPropagation:click"),
+      stopImmediatePropagation: pushEvent(events, "stopImmediatePropagation:click"),
     }),
     true,
   );
   assert.deepEqual(events, [
     "preventDefault:down",
     "stopPropagation:down",
+    "stopImmediatePropagation:down",
     "preventDefault:up",
     "stopPropagation:up",
+    "stopImmediatePropagation:up",
     "preventDefault:click",
     "stopPropagation:click",
+    "stopImmediatePropagation:click",
   ]);
   assert.deepEqual(calls, [["setCellSelection", 10, 10], ["focus"]]);
   assert.deepEqual([...controller.state.selection.positions], [10]);
@@ -884,11 +924,16 @@ test("Tiptap table double click enters text editing inside the cell", () => {
       clientY: 94,
       preventDefault: pushEvent(events, "preventDefault:dblclick"),
       stopPropagation: pushEvent(events, "stopPropagation:dblclick"),
+      stopImmediatePropagation: pushEvent(events, "stopImmediatePropagation:dblclick"),
     }),
     true,
   );
 
-  assert.deepEqual(events, ["preventDefault:dblclick", "stopPropagation:dblclick"]);
+  assert.deepEqual(events, [
+    "preventDefault:dblclick",
+    "stopPropagation:dblclick",
+    "stopImmediatePropagation:dblclick",
+  ]);
   assert.deepEqual(calls.slice(0, 3), [
     ["posAtCoords", 124, 94],
     ["setTextSelection", 17],
