@@ -1039,9 +1039,17 @@ export class TiptapTableToolbarController {
     const isPlainCellContext =
       this.#state.selection?.kind === "cell" &&
       (this.#state.selection?.positions?.size ?? 0) <= 1;
-    const pos = isPlainCellContext
-      ? cellPosition(this.#state.grid, cell ?? this.#state.hover?.cell ?? this.#state.cell)
-      : null;
+    const selectedPositions = this.#state.selection?.positions;
+    const selectedCellPos =
+      isPlainCellContext && selectedPositions?.size === 1
+        ? [...selectedPositions][0]
+        : null;
+    const pos =
+      isPlainCellContext && Number.isFinite(selectedCellPos)
+        ? selectedCellPos
+        : isPlainCellContext
+          ? cellPosition(this.#state.grid, cell ?? this.#state.hover?.cell ?? this.#state.cell)
+          : null;
     if (
       Number.isFinite(pos) &&
       typeof this.#editor?.commands?.setCellSelection === "function"

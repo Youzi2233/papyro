@@ -439,6 +439,18 @@
     cursor: text;
 }
 
+.mn-tiptap-table-cell:hover,
+.mn-tiptap-table-header:hover,
+.mn-tiptap-table-cell:focus-within,
+.mn-tiptap-table-header:focus-within {
+    cursor: text;
+}
+
+.mn-tiptap-table-cell :where(p, ul, ol, blockquote, pre),
+.mn-tiptap-table-header :where(p, ul, ol, blockquote, pre) {
+    cursor: text;
+}
+
 .mn-tiptap-table-cell::before,
 .mn-tiptap-table-header::before {
     content: "";
@@ -584,12 +596,20 @@
 
 .mn-tiptap-table-cell:hover > .column-resize-handle,
 .mn-tiptap-table-header:hover > .column-resize-handle,
+.mn-tiptap-table-cell.mn-tiptap-table-cell-selected > .column-resize-handle:hover,
+.mn-tiptap-table-header.mn-tiptap-table-cell-selected > .column-resize-handle:hover,
+.mn-tiptap-table-cell.mn-tiptap-table-cell-active > .column-resize-handle:hover,
+.mn-tiptap-table-header.mn-tiptap-table-cell-active > .column-resize-handle:hover,
 .mn-tiptap-editor.resize-cursor .column-resize-handle {
     opacity: .7;
 }
 
 .mn-tiptap-table-cell:hover > .column-resize-handle::before,
 .mn-tiptap-table-header:hover > .column-resize-handle::before,
+.mn-tiptap-table-cell.mn-tiptap-table-cell-selected > .column-resize-handle:hover::before,
+.mn-tiptap-table-header.mn-tiptap-table-cell-selected > .column-resize-handle:hover::before,
+.mn-tiptap-table-cell.mn-tiptap-table-cell-active > .column-resize-handle:hover::before,
+.mn-tiptap-table-header.mn-tiptap-table-cell-active > .column-resize-handle:hover::before,
 .mn-tiptap-editor.resize-cursor .column-resize-handle::before {
     opacity: .64;
 }

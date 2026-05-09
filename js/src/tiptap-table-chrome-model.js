@@ -23,6 +23,24 @@ function commandById(commands, id) {
   return (commands ?? []).find((command) => command.id === id) ?? null;
 }
 
+function cellEntryByPosition(grid, position) {
+  if (!Number.isFinite(position)) return null;
+  return (grid ?? [])
+    .flatMap((row) => row.cells ?? [])
+    .find((cell) => cell.pos === position) ?? null;
+}
+
+function selectedCellEntry(state) {
+  const positions = state?.selection?.positions;
+  if ((positions?.size ?? 0) !== 1) return null;
+  return cellEntryByPosition(state?.grid, [...positions][0]);
+}
+
+function selectedCellRect(state) {
+  const selected = selectedCellEntry(state);
+  return normalizedRect(selected?.rect ?? selected?.cell?.getBoundingClientRect?.());
+}
+
 export function createTableQuickAddChromeState(state, {
   rowHeight = 14,
   columnWidth = 14,
@@ -75,6 +93,7 @@ export function createTableCellMenuTriggerChromeState(state) {
   const selectionKind = state?.selection?.kind ?? "cell";
   const selectedCount = state?.selection?.positions?.size ?? 0;
   const edgeIntent = state?.hover?.edge === "cell-menu";
+  const selectedRect = selectedCellRect(state);
   const menuOpen = Boolean(
     state?.menuOpen &&
       (selectionKind !== "cell" ||
@@ -82,7 +101,9 @@ export function createTableCellMenuTriggerChromeState(state) {
           (state?.cell === state?.hover?.cell || selectedCount > 0))),
   );
   const singleSelectedCell =
-    selectionKind === "cell" && selectedCount === 1 && (state?.cellRect || state?.cell);
+    selectionKind === "cell" &&
+    selectedCount === 1 &&
+    (selectedRect || state?.cellRect || state?.cell);
   const hoveredEdgeCell =
     selectionKind === "cell" &&
     selectedCount === 0 &&
@@ -98,7 +119,7 @@ export function createTableCellMenuTriggerChromeState(state) {
   const rect =
     (selectedCount > 1 ? normalizedRect(selectionRect) : null) ??
     (singleSelectedCell && selectionKind === "cell"
-      ? normalizedRect(state?.cellRect ?? state?.cell?.getBoundingClientRect?.())
+      ? selectedRect ?? normalizedRect(state?.cellRect ?? state?.cell?.getBoundingClientRect?.())
       : null) ??
     (hoveredEdgeCell
       ? normalizedRect(state?.hover?.cellRect ?? state?.hover?.cell?.getBoundingClientRect?.())

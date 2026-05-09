@@ -148,6 +148,37 @@ test("Tiptap table toolbar reveals the cell trigger after selecting a cell", () 
   assert.equal(controller.state.selection.kind, "cell");
 });
 
+test("Tiptap table toolbar anchors a selected cell trigger from the grid selection", () => {
+  const { created, documentRef } = createDocument();
+  const { calls, cells, editor } = createTableHarness({ setCellAttribute: () => true });
+  const controller = createTiptapTableToolbarController({
+    dom: { document: documentRef },
+  });
+
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  const trigger = created.find((element) =>
+    String(element.className).includes("mn-tiptap-table-cell-menu-trigger"),
+  );
+
+  editor.commands.setCellSelection({ anchorCell: 11, headCell: 11 });
+  editor.view.domAtPos = () => ({ node: cells[0] });
+  controller.refresh(editor);
+
+  assert.equal(trigger.hidden, false);
+  assert.equal(trigger.style.left, "280px");
+  assert.equal(trigger.style.top, "107px");
+  assert.equal(cells[1].classes.has("mn-tiptap-table-cell-selected"), true);
+  assert.equal(cells[0].classes.has("mn-tiptap-table-cell-selected"), false);
+
+  trigger.onpointerdown({ preventDefault() {}, stopPropagation() {} });
+
+  assert.deepEqual(calls.filter((call) => call[0] === "setCellSelection").at(-1), [
+    "setCellSelection",
+    11,
+    11,
+  ]);
+});
+
 test("Tiptap table toolbar keeps the cell trigger quiet outside the vertical center zone", () => {
   const { created, documentRef } = createDocument();
   const { cells, editor } = createTableHarness({ setCellAttribute: () => true });

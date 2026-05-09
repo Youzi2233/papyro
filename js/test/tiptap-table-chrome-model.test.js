@@ -149,6 +149,21 @@ test("table chrome model keeps the cell action trigger quiet until selected or e
   assert.equal(selected.visible, true);
   assert.equal(selected.trigger.placement, "quiet-edge");
 
+  const selectedFromGrid = createTableCellMenuTriggerChromeState(baseState({
+    fixture,
+    cell: cells[0].cell,
+    cellRect: cells[0].rect,
+    selection: {
+      kind: "cell",
+      positions: new Set([11]),
+      rows: [],
+      columns: [],
+    },
+  }));
+  assert.equal(selectedFromGrid.visible, true);
+  assert.equal(selectedFromGrid.trigger.left, 280);
+  assert.equal(selectedFromGrid.trigger.top, 107);
+
   const range = createTableCellMenuTriggerChromeState(baseState({
     fixture,
     selection: {

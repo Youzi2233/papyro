@@ -303,6 +303,7 @@ Tasks:
 - [ ] On cell selection range, show a restrained overlay and a small action trigger on the range edge.
   - Current coverage: the table cell action trigger idles as a small edge dot and expands into a compact four-dot grip only on hover, focus, or open state.
   - Current polish: the single-cell trigger now has a tested right-edge center intent zone. Ordinary cell hover stays clean, selected cells get a restrained border and right-edge rail, and only deliberate edge hover or an active selection reveals the action point.
+  - Current polish: single-cell action triggers now anchor from the actual ProseMirror cell-selection position in the table grid, not a stale active-cell rectangle. Opening the trigger reuses that selected position, so the menu no longer jumps back to a previously active cell after the user selects a different cell.
   - Current polish: React-rendered table chrome now exposes a shared `data-visible` contract and removes hidden controls from the accessibility/focus tree, so quick-add rails, cell triggers, insert rails, and row/column axis handles do not leave inactive focus targets behind.
   - Current polish: the migration DOM fallback now uses the same hidden-state contract for table quick-add rails, cell triggers, axis handles, complex-block insert rails, and decorative overlays, keeping React and fallback chrome aligned during the rest of the migration.
 - [ ] Add cell action menu: merge, split, alignment, text color, background color, clear formatting, copy, delete contents.
@@ -325,6 +326,7 @@ Tasks:
   - Current coverage: selected table cells no longer reveal column resize handles by selection alone; resize chrome stays tied to hover or active resize intent.
   - Current polish: selected and active cells now keep a wider 16px resize hit zone with a restrained accent rail, so column resizing remains discoverable after cell selection without adding always-on table chrome.
   - Current polish: selected and active cells keep the resize hit zone invisible until the pointer is actually on the column edge, matching the official clean-default table pattern more closely.
+  - Current polish: table cells and common inner block content now keep a full-surface text cursor while preserving the official column-resize handle hit area on selected or active cells, so editing affordance and resize affordance do not cancel each other.
 - [ ] Add quick row and column insertion rails: slim full-width/full-height rails with centered `+`, close enough to the table to be discoverable.
   - Current coverage: quick-add rails are now flush with the real table grid edge, use compact 12px hit chrome, and keep light/dark contrast without reading like debug overlays.
   - Current polish: quick-add rails keep the same slim visual rail but now use a larger 18px pointer hit area and treat the table's real bottom/right edge as part of the affordance, so users do not need to hunt for an off-by-one outside gap.
