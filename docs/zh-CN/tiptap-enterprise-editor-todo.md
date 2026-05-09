@@ -322,6 +322,7 @@ node scripts/check-tiptap-release-smoke.js
 - [ ] 增加快捷新增行/列轨道：贴近表格边缘的细长轨道，宽/高跟随整表，中间是 `+`。
   - 当前覆盖：快捷新增轨道已贴着真实表格网格边缘，使用 12px 的紧凑 chrome，在亮色/暗色主题下保持对比度，但不再像调试 overlay。
   - 当前打磨：快捷新增轨道意图热区收紧到 12px，可见轨道收敛为 14px，减少在表格与相邻块之间移动时误露出新增行/列控件；表格 hover 比较也会忽略同一语义目标内的普通鼠标抖动，避免 overlay 重复重绘。
+  - 当前打磨：快捷新增 chrome 现在在共享模型中区分可见的细轨道和稍大的命中区，React chrome 与迁移期 DOM fallback 共用同一套 visual-rect CSS 契约。
 - [ ] 表格控件不能出现在相邻代码块或其它非表格内容下面。
   - 当前覆盖：快捷新增行/列轨道现在要求 target 属于表格自身，或是明确的 editor rail 目标；相邻代码块和其它复杂块不能再借用表格坐标误显示表格新增 chrome。
 - [x] 为对齐、表头、合并单元格 fallback、单元格背景 metadata 补 Markdown round-trip fixtures。

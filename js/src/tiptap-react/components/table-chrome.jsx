@@ -41,6 +41,18 @@ function fixedRectStyle(rect) {
 function tableQuickAddStyle(chrome) {
   const style = fixedRectStyle(chrome);
   style["--mn-table-quick-add-rail"] = px(chrome?.rail);
+  if (chrome?.visual) {
+    style["--mn-table-quick-add-visual-left"] = px(chrome.visual.left - chrome.left);
+    style["--mn-table-quick-add-visual-top"] = px(chrome.visual.top - chrome.top);
+    style["--mn-table-quick-add-visual-width"] = px(chrome.visual.width);
+    style["--mn-table-quick-add-visual-height"] = px(chrome.visual.height);
+    style["--mn-table-quick-add-visual-center-x"] = px(
+      chrome.visual.left - chrome.left + chrome.visual.width / 2,
+    );
+    style["--mn-table-quick-add-visual-center-y"] = px(
+      chrome.visual.top - chrome.top + chrome.visual.height / 2,
+    );
+  }
   return style;
 }
 

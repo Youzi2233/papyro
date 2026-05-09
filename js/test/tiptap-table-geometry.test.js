@@ -311,6 +311,35 @@ test("Tiptap table geometry positions quick add rails on real grid edges", () =>
       rail: 68,
     },
   });
+
+  assert.deepEqual(tableQuickAddGeometry(grid, tableRect, { hitSlop: 3 }), {
+    row: {
+      left: 120,
+      top: 155,
+      width: 240,
+      height: 18,
+      rail: 240,
+      visual: {
+        left: 120,
+        top: 158,
+        width: 240,
+        height: 12,
+      },
+    },
+    column: {
+      left: 357,
+      top: 90,
+      width: 18,
+      height: 68,
+      rail: 68,
+      visual: {
+        left: 360,
+        top: 90,
+        width: 12,
+        height: 68,
+      },
+    },
+  });
 });
 
 test("Tiptap table geometry positions row column handles and scoped cell menus", () => {

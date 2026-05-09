@@ -521,8 +521,60 @@ export class TiptapTableToolbarView {
     this.#addColumnButton.style.height = `${quickAdd.column.height}px`;
     this.#addRowButton.dataset.edge = quickAdd.row.edge;
     this.#addRowButton.style.setProperty("--mn-table-quick-add-rail", `${quickAdd.row.rail}px`);
+    if (quickAdd.row.visual) {
+      this.#addRowButton.style.setProperty(
+        "--mn-table-quick-add-visual-left",
+        `${quickAdd.row.visual.left - quickAdd.row.left}px`,
+      );
+      this.#addRowButton.style.setProperty(
+        "--mn-table-quick-add-visual-top",
+        `${quickAdd.row.visual.top - quickAdd.row.top}px`,
+      );
+      this.#addRowButton.style.setProperty(
+        "--mn-table-quick-add-visual-width",
+        `${quickAdd.row.visual.width}px`,
+      );
+      this.#addRowButton.style.setProperty(
+        "--mn-table-quick-add-visual-height",
+        `${quickAdd.row.visual.height}px`,
+      );
+      this.#addRowButton.style.setProperty(
+        "--mn-table-quick-add-visual-center-x",
+        `${quickAdd.row.visual.left - quickAdd.row.left + quickAdd.row.visual.width / 2}px`,
+      );
+      this.#addRowButton.style.setProperty(
+        "--mn-table-quick-add-visual-center-y",
+        `${quickAdd.row.visual.top - quickAdd.row.top + quickAdd.row.visual.height / 2}px`,
+      );
+    }
     this.#addColumnButton.dataset.edge = quickAdd.column.edge;
     this.#addColumnButton.style.setProperty("--mn-table-quick-add-rail", `${quickAdd.column.rail}px`);
+    if (quickAdd.column.visual) {
+      this.#addColumnButton.style.setProperty(
+        "--mn-table-quick-add-visual-left",
+        `${quickAdd.column.visual.left - quickAdd.column.left}px`,
+      );
+      this.#addColumnButton.style.setProperty(
+        "--mn-table-quick-add-visual-top",
+        `${quickAdd.column.visual.top - quickAdd.column.top}px`,
+      );
+      this.#addColumnButton.style.setProperty(
+        "--mn-table-quick-add-visual-width",
+        `${quickAdd.column.visual.width}px`,
+      );
+      this.#addColumnButton.style.setProperty(
+        "--mn-table-quick-add-visual-height",
+        `${quickAdd.column.visual.height}px`,
+      );
+      this.#addColumnButton.style.setProperty(
+        "--mn-table-quick-add-visual-center-x",
+        `${quickAdd.column.visual.left - quickAdd.column.left + quickAdd.column.visual.width / 2}px`,
+      );
+      this.#addColumnButton.style.setProperty(
+        "--mn-table-quick-add-visual-center-y",
+        `${quickAdd.column.visual.top - quickAdd.column.top + quickAdd.column.visual.height / 2}px`,
+      );
+    }
 
     this.#addRowButton._mnCommand = quickAdd.row.command;
     this.#addColumnButton._mnCommand = quickAdd.column.command;

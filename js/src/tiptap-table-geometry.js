@@ -290,6 +290,7 @@ export function tableQuickAddGeometry(grid, tableRect, {
   columnWidth = 12,
   minimumRailSize = 42,
   gap = 0,
+  hitSlop = 0,
 } = {}) {
   const rect = normalizedRect(tableRect);
   if (!rect) return { row: null, column: null };
@@ -298,24 +299,44 @@ export function tableQuickAddGeometry(grid, tableRect, {
   const columnRect = lastTableColumnRect(grid, rect);
   const rowWidth = Math.max(minimumRailSize, rowRect?.width ?? rect.width);
   const columnHeight = Math.max(minimumRailSize, columnRect?.height ?? rect.height);
+  const slop = Math.max(0, Number(hitSlop) || 0);
+
+  const rowVisual = rowRect
+    ? {
+        left: rowRect.left,
+        top: rowRect.bottom + gap,
+        width: rowWidth,
+        height: rowHeight,
+      }
+    : null;
+  const columnVisual = columnRect
+    ? {
+        left: columnRect.right + gap,
+        top: columnRect.top,
+        width: columnWidth,
+        height: columnHeight,
+      }
+    : null;
 
   return {
-    row: rowRect
+    row: rowVisual
       ? {
-        left: rowRect.left,
-          top: rowRect.bottom + gap,
-          width: rowWidth,
-          height: rowHeight,
+          left: rowVisual.left,
+          top: rowVisual.top - slop,
+          width: rowVisual.width,
+          height: rowVisual.height + slop * 2,
           rail: rowWidth,
+          ...(slop > 0 ? { visual: rowVisual } : {}),
         }
       : null,
-    column: columnRect
+    column: columnVisual
       ? {
-          left: columnRect.right + gap,
-          top: columnRect.top,
-          width: columnWidth,
-          height: columnHeight,
+          left: columnVisual.left - slop,
+          top: columnVisual.top,
+          width: columnVisual.width + slop * 2,
+          height: columnVisual.height,
           rail: columnHeight,
+          ...(slop > 0 ? { visual: columnVisual } : {}),
         }
       : null,
   };

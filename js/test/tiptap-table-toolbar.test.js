@@ -495,11 +495,19 @@ test("Tiptap table toolbar quick add buttons run row and column insertion", () =
   assert.equal(rowButton.textContent ?? "", "");
   assert.equal(columnButton.textContent ?? "", "");
   assert.equal(rowButton.style.left, "120px");
-  assert.equal(rowButton.style.top, "158px");
+  assert.equal(rowButton.style.top, "155px");
+  assert.equal(rowButton.style.height, "20px");
   assert.equal(rowButton.style.properties.get("--mn-table-quick-add-rail"), "240px");
-  assert.equal(columnButton.style.left, "360px");
+  assert.equal(rowButton.style.properties.get("--mn-table-quick-add-visual-top"), "3px");
+  assert.equal(rowButton.style.properties.get("--mn-table-quick-add-visual-height"), "14px");
+  assert.equal(rowButton.style.properties.get("--mn-table-quick-add-visual-center-y"), "10px");
+  assert.equal(columnButton.style.left, "357px");
+  assert.equal(columnButton.style.width, "20px");
   assert.equal(columnButton.style.top, "90px");
   assert.equal(columnButton.style.properties.get("--mn-table-quick-add-rail"), "68px");
+  assert.equal(columnButton.style.properties.get("--mn-table-quick-add-visual-left"), "3px");
+  assert.equal(columnButton.style.properties.get("--mn-table-quick-add-visual-width"), "14px");
+  assert.equal(columnButton.style.properties.get("--mn-table-quick-add-visual-center-x"), "10px");
 
   rowButton.onpointerdown({ preventDefault() {}, stopPropagation() {} });
   columnButton.onpointerdown({ preventDefault() {}, stopPropagation() {} });
@@ -990,13 +998,15 @@ test("Tiptap table toolbar anchors quick add buttons to the table grid edges", (
   );
 
   assert.equal(rowButton.style.left, "120px");
-  assert.equal(rowButton.style.top, "158px");
+  assert.equal(rowButton.style.top, "155px");
   assert.equal(rowButton.dataset.edge, "row");
   assert.equal(rowButton.style.properties.get("--mn-table-quick-add-rail"), "240px");
-  assert.equal(columnButton.style.left, "360px");
+  assert.equal(rowButton.style.properties.get("--mn-table-quick-add-visual-top"), "3px");
+  assert.equal(columnButton.style.left, "357px");
   assert.equal(columnButton.style.top, "90px");
   assert.equal(columnButton.dataset.edge, "column");
   assert.equal(columnButton.style.properties.get("--mn-table-quick-add-rail"), "68px");
+  assert.equal(columnButton.style.properties.get("--mn-table-quick-add-visual-left"), "3px");
 });
 
 test("Tiptap table quick add rails appear only on the hovered table edge", () => {

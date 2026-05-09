@@ -44,6 +44,7 @@ function selectedCellRect(state) {
 export function createTableQuickAddChromeState(state, {
   rowHeight = 14,
   columnWidth = 14,
+  hitSlop = 3,
 } = {}) {
   const rect = normalizedRect(state?.rect);
   if (!rect) return { row: null, column: null };
@@ -51,6 +52,7 @@ export function createTableQuickAddChromeState(state, {
   const geometry = tableQuickAddGeometry(state?.grid, rect, {
     rowHeight,
     columnWidth,
+    hitSlop,
   });
   const addRow = commandById(state?.commands, "add-row-after");
   const addColumn = commandById(state?.commands, "add-column-after");

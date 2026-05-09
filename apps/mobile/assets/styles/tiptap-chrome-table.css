@@ -674,10 +674,12 @@
 }
 
 .mn-tiptap-table-add-row[data-edge="row"]::before {
-    width: 100%;
+    left: var(--mn-table-quick-add-visual-left, 50%);
+    top: var(--mn-table-quick-add-visual-center-y, 50%);
+    width: var(--mn-table-quick-add-visual-width, 100%);
     height: 6px;
     border-radius: var(--mn-radius-round);
-    transform: translate(-50%, -50%);
+    transform: translateY(-50%);
 }
 
 .mn-tiptap-table-add-column {
@@ -686,10 +688,12 @@
 }
 
 .mn-tiptap-table-add-column[data-edge="column"]::before {
+    left: var(--mn-table-quick-add-visual-center-x, 50%);
+    top: var(--mn-table-quick-add-visual-top, 50%);
     width: 6px;
-    height: 100%;
+    height: var(--mn-table-quick-add-visual-height, 100%);
     border-radius: var(--mn-radius-round);
-    transform: translate(-50%, -50%);
+    transform: translateX(-50%);
 }
 
 .mn-tiptap-table-add-row[data-edge="row"]::after,

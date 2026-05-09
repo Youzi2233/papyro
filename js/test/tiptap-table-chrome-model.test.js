@@ -116,6 +116,23 @@ test("table chrome model exposes quick-add rails only on intentional table edges
   assert.equal(createTableQuickAddChromeState(columnState).row.visible, false);
   assert.equal(createTableQuickAddChromeState(columnState).column.visible, true);
   assert.equal(createTableQuickAddChromeState(idleState).row.visible, false);
+
+  assert.deepEqual(createTableQuickAddChromeState(rowState).row.visual, {
+    left: 120,
+    top: 158,
+    width: 240,
+    height: 14,
+  });
+  assert.equal(createTableQuickAddChromeState(rowState).row.top, 155);
+  assert.equal(createTableQuickAddChromeState(rowState).row.height, 20);
+  assert.deepEqual(createTableQuickAddChromeState(columnState).column.visual, {
+    left: 360,
+    top: 90,
+    width: 14,
+    height: 68,
+  });
+  assert.equal(createTableQuickAddChromeState(columnState).column.left, 357);
+  assert.equal(createTableQuickAddChromeState(columnState).column.width, 20);
 });
 
 test("table chrome model keeps the cell action trigger quiet until selected or edge-hovered", () => {
