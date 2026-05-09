@@ -6,8 +6,7 @@ import {
   insertBlockAtEdgeLabel,
   selectTableColumnLabel,
   selectTableRowLabel,
-  tableCellActionsLabel,
-  tableSelectionActionsLabel,
+  tableContextTitleLabel,
 } from "../../tiptap-i18n.js";
 import {
   applyTableCellVisualState,
@@ -112,10 +111,7 @@ function TableCellMenuTrigger({ state, onOpenCellMenu }) {
   const triggerState = createTableCellMenuTriggerChromeState(state);
   const trigger = triggerState.trigger;
   const selectionKind = state?.selection?.kind ?? "cell";
-  const label =
-    selectionKind === "cells"
-      ? tableSelectionActionsLabel(state?.language)
-      : tableCellActionsLabel(state?.language);
+  const label = tableContextTitleLabel(state?.language, selectionKind);
   const activation = usePointerActivation(() =>
     onOpenCellMenu?.("context", {
       anchorRect: trigger,
@@ -139,6 +135,7 @@ function TableCellMenuTrigger({ state, onOpenCellMenu }) {
       data-open={state?.menuOpen ? "true" : "false"}
       data-placement={trigger.placement}
       data-edge-intent={triggerState.edgeIntent ? "true" : "false"}
+      data-action-scope={triggerState.actionScope}
       data-selection-kind={selectionKind}
       data-selected-count={String(triggerState.selectedCount)}
       {...chromeVisibilityProps(triggerState.visible)}

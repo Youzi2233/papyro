@@ -228,6 +228,7 @@ test("table chrome model keeps the cell action trigger quiet until selected or e
     },
   }));
   assert.equal(edge.visible, true);
+  assert.equal(edge.actionScope, "cell");
   assert.equal(edge.edgeIntent, true);
   assert.equal(edge.trigger.left, 200);
   assert.equal(edge.trigger.placement, "edge");
@@ -270,8 +271,61 @@ test("table chrome model keeps the cell action trigger quiet until selected or e
     menuRect: rect(200, 90, 80, 34),
   }));
   assert.equal(range.visible, true);
+  assert.equal(range.actionScope, "cells");
   assert.equal(range.trigger.placement, "center");
   assert.equal(range.trigger.left, 280);
+});
+
+test("table chrome model exposes semantic action scopes for axis selections", () => {
+  const fixture = createGrid();
+  const row = createTableCellMenuTriggerChromeState(baseState({
+    fixture,
+    selection: {
+      kind: "row",
+      positions: new Set([10, 11, 12]),
+      rows: [0],
+      columns: [],
+    },
+    selectionRect: rect(120, 90, 240, 34),
+    menuRect: rect(120, 90, 240, 34),
+  }));
+  assert.equal(row.visible, true);
+  assert.equal(row.actionScope, "row");
+  assert.equal(row.trigger.placement, "quiet-edge");
+  assert.equal(row.trigger.left, 360);
+  assert.equal(row.trigger.top, 107);
+
+  const column = createTableCellMenuTriggerChromeState(baseState({
+    fixture,
+    selection: {
+      kind: "column",
+      positions: new Set([10, 13]),
+      rows: [],
+      columns: [0],
+    },
+    selectionRect: rect(120, 90, 80, 68),
+    menuRect: rect(120, 90, 80, 68),
+  }));
+  assert.equal(column.visible, true);
+  assert.equal(column.actionScope, "column");
+  assert.equal(column.trigger.left, 200);
+  assert.equal(column.trigger.top, 124);
+
+  const table = createTableCellMenuTriggerChromeState(baseState({
+    fixture,
+    selection: {
+      kind: "table",
+      positions: new Set([10, 11, 12, 13, 14, 15]),
+      rows: [0, 1],
+      columns: [0, 1, 2],
+    },
+    selectionRect: rect(120, 90, 240, 68),
+    menuRect: rect(120, 90, 240, 68),
+  }));
+  assert.equal(table.visible, true);
+  assert.equal(table.actionScope, "table");
+  assert.equal(table.trigger.left, 360);
+  assert.equal(table.trigger.top, 124);
 });
 
 test("table chrome model limits axis handles to the hovered first row or column cell", () => {

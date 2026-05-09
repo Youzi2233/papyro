@@ -8,8 +8,6 @@ import {
   tableContextSubtitleLabel,
   tableContextTitleLabel,
   tableCommandMenuSectionLabel,
-  tableCellActionsLabel,
-  tableSelectionActionsLabel,
   tableToolsLabel,
 } from "./tiptap-i18n.js";
 import { normalizedRect } from "./tiptap-table-geometry.js";
@@ -328,10 +326,10 @@ export class TiptapTableToolbarView {
       this.#addColumnButton.setAttribute("aria-label", addColumnRightLabel(state.language));
     }
     if (this.#cellMenuButton) {
-      const cellMenuLabel =
-        state.selection?.kind === "cells"
-          ? tableSelectionActionsLabel(state.language)
-          : tableCellActionsLabel(state.language);
+      const cellMenuLabel = tableContextTitleLabel(
+        state.language,
+        state.selection?.kind ?? "cell",
+      );
       this.#cellMenuButton.title = cellMenuLabel;
       this.#cellMenuButton.setAttribute("aria-label", cellMenuLabel);
       this.#cellMenuButton.dataset.open = state.menuOpen ? "true" : "false";
@@ -629,6 +627,7 @@ export class TiptapTableToolbarView {
     this.#cellMenuButton.style.top = `${trigger.top}px`;
     this.#cellMenuButton.dataset.placement = trigger.placement;
     this.#cellMenuButton.dataset.edgeIntent = triggerState.edgeIntent ? "true" : "false";
+    this.#cellMenuButton.dataset.actionScope = triggerState.actionScope;
     setTableChromeHidden(this.#cellMenuButton, !triggerState.visible);
   }
 

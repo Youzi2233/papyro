@@ -134,6 +134,9 @@ export function createTableQuickAddChromeState(state, {
 
 export function createTableCellMenuTriggerChromeState(state) {
   const selectionKind = state?.selection?.kind ?? "cell";
+  const actionScope = ["cell", "cells", "row", "column", "table"].includes(selectionKind)
+    ? selectionKind
+    : "cell";
   const selectedCount = state?.selection?.positions?.size ?? 0;
   const edgeIntent = state?.hover?.edge === "cell-menu";
   const selectedRect = selectedCellRect(state);
@@ -186,6 +189,7 @@ export function createTableCellMenuTriggerChromeState(state) {
     edgeIntent,
     menuOpen,
     selectionKind,
+    actionScope,
     selectedCount,
   };
 }

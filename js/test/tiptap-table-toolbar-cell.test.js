@@ -137,6 +137,7 @@ test("Tiptap table toolbar reveals the cell trigger after selecting a cell", () 
   assert.equal(trigger.style.left, "200px");
   assert.equal(trigger.style.top, "107px");
   assert.equal(trigger.dataset.edgeIntent, "true");
+  assert.equal(trigger.dataset.actionScope, "cell");
   assert.equal(trigger.dataset.placement, "edge");
 
   editor.commands.setCellSelection({ anchorCell: 10, headCell: 10 });
@@ -274,6 +275,7 @@ test("Tiptap table toolbar anchors multi-cell actions to the head cell", () => {
   assert.equal(trigger.style.left, "280px");
   assert.equal(trigger.style.top, "107px");
   assert.equal(trigger.dataset.selectionKind, "cells");
+  assert.equal(trigger.dataset.actionScope, "cells");
   assert.equal(trigger.dataset.placement, "center");
   assert.equal(trigger.dataset.selectedCount, "2");
   trigger.getBoundingClientRect = () => ({
