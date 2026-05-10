@@ -613,6 +613,7 @@ Tasks:
 - [ ] Delete obsolete DOM controllers after React replacements land.
 - [ ] Delete unused CSS and old `.cm-*` leftovers.
 - [ ] Keep JS files under line budgets or split them before they become unreviewable.
+  - Current coverage: `js/test/tiptap-table-toolbar.test.js` was split so cell-surface, right-click, short-click, and drag-range tests live in `js/test/tiptap-table-toolbar-surface.test.js`; `node scripts/report-file-lines.js` now passes again with the largest table toolbar test below the 2500-line budget.
 - [ ] Add performance traces for editor open, tab switch, mode switch, command menu open, table edit, and save.
 - [ ] Rebuild generated bundles and desktop/mobile copies.
 - [ ] Run full automated checks.

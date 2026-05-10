@@ -606,6 +606,7 @@ node scripts/check-ui-contrast.js
 - [ ] React 替换完成后删除过时 DOM controller。
 - [ ] 删除未使用 CSS 和旧 `.cm-*` 残留。
 - [ ] JS 文件保持在行数预算内，超过前先拆分。
+  - 当前覆盖：`js/test/tiptap-table-toolbar.test.js` 已拆分，单元格表面、右键、短点击和拖拽范围选择测试现在放在 `js/test/tiptap-table-toolbar-surface.test.js`；`node scripts/report-file-lines.js` 已重新通过，最大的表格 toolbar 测试低于 2500 行预算。
 - [ ] 为 editor open、tab switch、mode switch、command menu open、table edit、save 增加性能 trace。
 - [ ] 重新构建生成 bundle 和桌面/mobile 副本。
 - [ ] 跑完整自动化检查。
