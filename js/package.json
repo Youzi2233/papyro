@@ -8,8 +8,11 @@
     "watch": "node build.js --watch"
   },
   "dependencies": {
+    "@floating-ui/react": "^0.27.19",
+    "@radix-ui/react-popover": "^1.1.15",
     "@tiptap/core": "3.22.5",
     "@tiptap/extension-code-block-lowlight": "3.22.5",
+    "@tiptap/extension-color": "3.22.5",
     "@tiptap/extension-drag-handle": "3.22.5",
     "@tiptap/extension-drag-handle-react": "3.22.5",
     "@tiptap/extension-highlight": "3.22.5",
@@ -28,10 +31,16 @@
     "lucide-react": "^1.14.0",
     "mermaid": "^11.14.0",
     "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "react-dom": "18.3.1",
+    "react-hotkeys-hook": "^5.3.2"
   },
   "devDependencies": {
+    "@ariakit/react": "^0.4.26",
+    "@base-ui/react": "^1.4.1",
+    "class-variance-authority": "^0.7.1",
     "esbuild": "^0.24.2",
-    "happy-dom": "^20.9.0"
+    "happy-dom": "^20.9.0",
+    "sass": "^1.99.0",
+    "sass-embedded": "^1.99.0"
   }
 }

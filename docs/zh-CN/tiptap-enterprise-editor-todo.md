@@ -116,8 +116,11 @@ Tiptap 编辑器达到可上线标准时，必须同时满足：
 
 任务：
 
-- [ ] 决定 Papyro 是否购买/使用 Tiptap Start/Pro 生产路径。
-- [ ] 如果使用授权路径，把 Tiptap CLI 生成的官方 UI 源码放入明确隔离的 third-party 区域。
+- [x] 决定 Papyro 是否购买/使用 Tiptap Start/Pro 生产路径。
+  - 当前决策：table-node 工作使用已接受的 Tiptap Pro/Start 授权路径生成 UI 源码。生产使用资格继续取决于有效 plan 和已接受条款。
+- [x] 如果使用授权路径，把 Tiptap CLI 生成的官方 UI 源码放入明确隔离的 third-party 区域。
+  - 当前覆盖：Tiptap UI 项目初始化在 `js` 子包，官方组件源码安装在 `js/src/components/`，并通过 `js/jsconfig.json` 支持 `@` alias。CLI 命令要带 `--cwd js`；从 `E:\papyro` 根目录运行会报 `Directory not found`，因为根目录不是已初始化的 UI 组件项目。
+  - 当前守卫：`.npmrc` 和 `js/.npmrc` 保存本机 registry 凭据，已被 git ignore，不能提交。
 - [ ] 如果不使用授权路径，记录哪些官方交互要本地复刻，哪些延后。
 - [ ] 如果复制公开 Tiptap UI 仓库中的 MIT 源码，补充 attribution 和升级说明。
 - [ ] 固定交互标尺：Notion-like block handle、slash insert、table node、floating toolbar、responsive toolbar。
@@ -293,10 +296,16 @@ node scripts/check-tiptap-release-smoke.js
 决策路径：
 
 - 授权路径：集成官方 `table-node` 输出，并适配 Papyro token、Markdown 持久化和 i18n。
+  - 当前覆盖：本里程碑现在走授权路径。官方 `table-node` 源码通过 `PapyroOfficialTableNodeLayer` 挂载；Papyro 继续保留 `TableKit` 边界，负责 Markdown 持久化和本地表格命令。
 - 未授权路径：基于 `@tiptap/extension-table`、ProseMirror table utilities 和 Papyro React overlay 重建同类交互原则。
 
 任务：
 
+- [x] 把官方 table-node chrome 接入 React island。
+  - 当前覆盖：`js/src/tiptap-react/slots.jsx` 会把官方 table-node overlay 和官方 drag-handle bridge 一起渲染。
+  - 当前覆盖：`js/src/tiptap-table.js` 注册官方 `tableHandleExtension`，让官方行/列句柄状态进入 React。
+  - 当前覆盖：editor 入口关闭旧的非菜单 `tableChromeRendererFactory`，避免重复的 hover 句柄、选区 overlay 和单元格操作触发点互相抢状态。
+  - 当前覆盖：官方 SCSS import 会被打进 `editor.js`，桌面端和移动端通过现有 editor runtime 脚本获得 table-node 样式。
 - [x] 删除左上角选择整张表格入口，除非有明确产品动作需要它。
   - 当前覆盖：表格 overlay 不再渲染整表角落句柄；geometry 返回 `table: null`，只保留行/列 slim handle 作为轴向操作入口。
 - [ ] 默认隐藏可视句柄。只有在第一行或第一列附近有明确 hover 意图时展示行/列句柄。

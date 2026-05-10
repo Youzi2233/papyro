@@ -80,7 +80,13 @@ test("Papyro table extensions expose the TableKit boundary", () => {
 
   assert.deepEqual(
     extensions.map((extension) => extension.name),
-    ["table", "tableKit", "papyroTableCellBackground", "papyroTableCellContentActions"],
+    [
+      "table",
+      "tableKit",
+      "tableHandleExtension",
+      "papyroTableCellBackground",
+      "papyroTableCellContentActions",
+    ],
   );
   assert.equal(extensions[0].options.resizable, true);
   assert.equal(extensions[0].options.handleWidth, 6);
@@ -88,6 +94,7 @@ test("Papyro table extensions expose the TableKit boundary", () => {
   assert.equal(extensions[0].options.lastColumnResizable, true);
   assert.equal(extensions[0].options.allowTableNodeSelection, false);
   assert.equal(extensions[1].options.table, false);
+  assert.equal(extensions[2].name, "tableHandleExtension");
 });
 
 test("Papyro table chrome resolves DOM cells to selectable ProseMirror cell positions", () => {

@@ -14,6 +14,7 @@ import {
   moveTableRow,
   selectedRect,
 } from "@tiptap/pm/tables";
+import { TableHandleExtension } from "./components/tiptap-node/table-node/extensions/table-handle/index.js";
 
 export const PAPYRO_TABLE_CELL_RESET_ATTRS = Object.freeze([
   "align",
@@ -764,6 +765,7 @@ export function createPapyroTableExtensions({ writeText = null } = {}) {
         },
       },
     }),
+    TableHandleExtension,
     PapyroTableCellBackground,
     PapyroTableCellContentActions.configure({ writeText }),
   ];

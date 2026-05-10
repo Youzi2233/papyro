@@ -1,6 +1,16 @@
 import React from "react";
 
 import { PapyroOfficialDragHandleBridge } from "./official-drag-handle-bridge.jsx";
+import { PapyroOfficialTableNodeLayer } from "./official-table-node-layer.jsx";
+
+function PapyroOverlayLayer(runtime) {
+  return (
+    <>
+      <PapyroOfficialDragHandleBridge {...runtime} />
+      <PapyroOfficialTableNodeLayer {...runtime} />
+    </>
+  );
+}
 
 export function renderIslandSlot(SlotComponent, runtime) {
   if (!SlotComponent) return null;
@@ -16,7 +26,7 @@ export function createPapyroTiptapReactComponents(components = {}) {
     BeforeContent: null,
     EditorContent: null,
     AfterContent: null,
-    OverlayLayer: PapyroOfficialDragHandleBridge,
+    OverlayLayer: PapyroOverlayLayer,
     ...components,
   };
 }

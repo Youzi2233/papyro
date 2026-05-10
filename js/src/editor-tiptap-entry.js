@@ -37,7 +37,7 @@ const tiptapRuntimeAdapter = createTiptapEditorRuntime({
   linkEditorViewFactory: createTiptapReactLinkEditorView,
   mountControllerFactory: createTiptapReactMountController,
   slashMenuViewFactory: createTiptapReactSlashMenuView,
-  tableChromeRendererFactory: createTiptapReactTableChromeRenderer,
+  tableChromeRendererFactory: null,
   tableMenuRendererFactory: createTiptapReactTableContextMenuRenderer,
   navigation: hostRuntime.navigation,
 });

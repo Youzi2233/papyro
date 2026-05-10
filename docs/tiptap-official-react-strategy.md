@@ -54,10 +54,30 @@ Use this table before copying or adapting any Tiptap UI code:
 | `@tiptap/*` core packages | Open-source package dependencies | Use directly when all package versions stay aligned. |
 | Public `ueberdosis/tiptap-ui-components` repository | MIT-licensed components and simple editor template | Copy-own-adapt into Papyro React components when useful, preserving license attribution if source is copied. |
 | Official Notion-like editor template | Requires Tiptap Start plan for production | Use as UX benchmark only unless licensed source is generated for this project. |
-| `table-node`, `drag-context-menu`, `slash-dropdown-menu` docs components | Marked non-free / non-open in official docs | Do not copy source without an active license path. Re-create behavior with Papyro code or integrate licensed CLI output. |
+| `table-node`, `drag-context-menu`, `slash-dropdown-menu` docs components | Marked non-free / non-open in official docs | Use only through accepted Pro/Start terms and generated CLI output. Re-create behavior locally when no license is active. |
 | Tiptap Cloud collaboration, AI, comments, conversion | Cloud or paid features depending on capability | Keep out of the local-first editor unless the product explicitly adopts those services. |
 
-If licensed Tiptap CLI output is later added, commit it as third-party source with a clear attribution note and keep local customizations isolated.
+Licensed Tiptap CLI output is now used for the table-node chrome path. The generated source lives in the CLI-managed component tree under `js/src/components/`, while local compatibility shims stay small and explicit. The registry token files (`.npmrc` and `js/.npmrc`) are local-only credentials and must never be committed.
+
+Run Tiptap UI CLI commands from the JS package, not from the repository root:
+
+```powershell
+npx @tiptap/cli@latest info --cwd js
+npx @tiptap/cli@latest add --cwd js table-node
+```
+
+Running the component installer from `E:\papyro` reports "Directory not found" because the initialized UI component project is `E:\papyro\js`.
+
+## Licensed Table Node Integration
+
+The current table migration uses licensed official `table-node` output instead of continuing ad hoc table chrome patches:
+
+- Official component source is installed under `js/src/components/tiptap-node`, `js/src/components/tiptap-ui`, `js/src/components/tiptap-ui-primitive`, `js/src/components/tiptap-icons`, `js/src/hooks`, `js/src/lib`, and `js/src/styles`.
+- `js/src/tiptap-react/official-table-node-layer.jsx` mounts the official table handle, selection overlay, cell menu, and row/column extension buttons through the existing React island overlay slot.
+- `js/src/components/tiptap-node/table-node/extensions/table-node-extension.js` re-exports Papyro's `TableKit` boundary so Markdown persistence, table attributes, and local table commands stay owned by Papyro.
+- `js/src/tiptap-table.js` registers the official `tableHandleExtension` alongside the Papyro table extensions.
+- `js/src/editor-tiptap-entry.js` disables the legacy non-menu table chrome renderer so old DOM handles and the official table-node overlay do not compete for hover and selection state.
+- `js/build.js` inlines imported SCSS into `editor.js`, which keeps desktop and mobile runtime styling self-contained instead of depending on an unreferenced `assets/editor.css`.
 
 ## Architecture Rules
 

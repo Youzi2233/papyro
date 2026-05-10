@@ -116,8 +116,11 @@ Goal: stop guessing whether to rebuild or integrate official UI.
 
 Tasks:
 
-- [ ] Decide whether Papyro will buy/use the Tiptap Start/Pro path for production.
-- [ ] If licensed, generate official UI source with Tiptap CLI into a clearly isolated third-party area.
+- [x] Decide whether Papyro will buy/use the Tiptap Start/Pro path for production.
+  - Current decision: the table-node work uses the accepted Tiptap Pro/Start license path for generated UI source. Keep production eligibility tied to the active plan and accepted terms.
+- [x] If licensed, generate official UI source with Tiptap CLI into a clearly isolated third-party area.
+  - Current coverage: the Tiptap UI project is initialized under `js`, and official component source is installed under `js/src/components/` with `@` alias support from `js/jsconfig.json`. Run CLI commands with `--cwd js`; running from `E:\papyro` reports "Directory not found" because the root is not the initialized UI component project.
+  - Current guardrail: `.npmrc` and `js/.npmrc` hold local registry credentials, are ignored by git, and must not be committed.
 - [ ] If unlicensed, record which official interactions will be rebuilt locally and which are deferred.
 - [ ] Add attribution and upgrade notes for any copied MIT source from public Tiptap UI repositories.
 - [ ] Freeze the interaction benchmark: Notion-like block handle, slash insert, table node, floating toolbar, and responsive toolbar.
@@ -297,10 +300,16 @@ Interaction contract:
 Decision path:
 
 - Licensed path: integrate official `table-node` output and adapt it to Papyro tokens, Markdown persistence, and i18n.
+  - Current coverage: this milestone now follows the licensed path. Official `table-node` source is mounted through `PapyroOfficialTableNodeLayer`, while Papyro keeps the `TableKit` boundary for Markdown persistence and local table commands.
 - Unlicensed path: rebuild the same interaction principles with `@tiptap/extension-table`, ProseMirror table utilities, and Papyro React overlays.
 
 Tasks:
 
+- [x] Integrate official table-node chrome into the React island.
+  - Current coverage: `js/src/tiptap-react/slots.jsx` renders the official table-node overlay next to the official drag-handle bridge.
+  - Current coverage: `js/src/tiptap-table.js` registers the official `tableHandleExtension` so official row/column handle state reaches React.
+  - Current coverage: the legacy non-menu `tableChromeRendererFactory` is disabled at the editor entry boundary to prevent duplicate hover handles, selection overlays, and cell action triggers.
+  - Current coverage: official SCSS imports are bundled into `editor.js`, so desktop and mobile hosts receive the table-node styles through the existing editor runtime script.
 - [x] Remove the top-left whole-table selector unless a clear product action requires it.
   - Current coverage: the table overlay no longer renders a whole-table corner handle; geometry now returns `table: null`, leaving row/column handles as the only axis affordances.
 - [ ] Remove visible handles by default. Show row/column handles only on intentional table hover, with a full-span affordance for the hovered row or column.

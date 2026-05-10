@@ -115,12 +115,19 @@ const primitivesSource = readFileSync(
   "utf8",
 );
 
-test("React island slots register the official drag handle bridge by default", () => {
+test("React island slots register official editor overlay layers by default", () => {
   assert.match(
     slotsSource,
     /import\s+\{\s*PapyroOfficialDragHandleBridge\s*\}\s+from\s+"\.\/official-drag-handle-bridge\.jsx";/u,
   );
-  assert.match(slotsSource, /OverlayLayer:\s*PapyroOfficialDragHandleBridge/u);
+  assert.match(
+    slotsSource,
+    /import\s+\{\s*PapyroOfficialTableNodeLayer\s*\}\s+from\s+"\.\/official-table-node-layer\.jsx";/u,
+  );
+  assert.match(slotsSource, /function PapyroOverlayLayer/u);
+  assert.match(slotsSource, /<PapyroOfficialDragHandleBridge \{\.\.\.runtime\} \/>/u);
+  assert.match(slotsSource, /<PapyroOfficialTableNodeLayer \{\.\.\.runtime\} \/>/u);
+  assert.match(slotsSource, /OverlayLayer:\s*PapyroOverlayLayer/u);
 });
 
 test("React index exports the official drag handle bridge", () => {
@@ -277,13 +284,14 @@ test("React floating chrome shares positioning utilities", () => {
   assert.doesNotMatch(blockActionMenuViewSource, /positionFloatingElement/u);
 });
 
-test("React table context menu is injected at the editor entry boundary", () => {
+test("React table context menu and official table-node layer are injected at the editor boundary", () => {
   assert.match(indexSource, /createTiptapReactTableContextMenuRenderer/u);
   assert.match(indexSource, /createTiptapReactTableChromeRenderer/u);
   assert.match(indexSource, /createTiptapReactFormatToolbarView/u);
   assert.match(editorEntrySource, /tableMenuRendererFactory:\s*createTiptapReactTableContextMenuRenderer/u);
-  assert.match(editorEntrySource, /tableChromeRendererFactory:\s*createTiptapReactTableChromeRenderer/u);
+  assert.match(editorEntrySource, /tableChromeRendererFactory:\s*null/u);
   assert.match(editorEntrySource, /formatToolbarViewFactory:\s*createTiptapReactFormatToolbarView/u);
+  assert.match(slotsSource, /PapyroOfficialTableNodeLayer/u);
   assert.match(tableToolbarViewSource, /menuRendererFactory/u);
   assert.match(tableToolbarViewSource, /chromeRendererFactory/u);
   assert.doesNotMatch(tableToolbarViewSource, /tiptap-react\/index\.js/u);

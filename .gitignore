@@ -10,3 +10,7 @@ js/node_modules/
 
 # Local reference repositories for implementation research
 .reference/
+
+
+# Authentication tokens
+.npmrc
