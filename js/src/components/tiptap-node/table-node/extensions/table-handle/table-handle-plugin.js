@@ -33,7 +33,6 @@ export const tableHandlePluginKey = new PluginKey("tableHandlePlugin")
 class TableHandleView {
   state = undefined;
   menuFrozen = false;
-  mouseState = "up";
 
   constructor(
     editor,
@@ -53,8 +52,6 @@ class TableHandleView {
   }
 
   viewMousedownHandler = (event) => {
-    this.mouseState = "down"
-
     const { state, view } = this.editor
     if (!(state.selection instanceof CellSelection) || this.editor.isFocused)
       return
@@ -66,8 +63,6 @@ class TableHandleView {
     if (!posInfo) return
 
     const $pos = state.doc.resolve(posInfo.pos)
-    const { nodes } = state.schema
-    let paraDepth = -1
     let inTableCell = false
 
     for (let d = $pos.depth; d >= 0; d--) {
@@ -78,17 +73,17 @@ class TableHandleView {
       ) {
         inTableCell = true
       }
-      if (paraDepth === -1 && node.type === nodes.paragraph) {
-        paraDepth = d
-      }
-      if (inTableCell && paraDepth !== -1) break
+      if (inTableCell) break
     }
 
-    if (!inTableCell || paraDepth === -1) return
+    if (!inTableCell) return
 
-    const from = $pos.start(paraDepth)
-    const to = $pos.end(paraDepth)
-    const nextSel = TextSelection.create(state.doc, from, to)
+    let nextSel
+    try {
+      nextSel = TextSelection.create(state.doc, posInfo.pos, posInfo.pos)
+    } catch (_error) {
+      nextSel = TextSelection.near($pos, 1)
+    }
     if (state.selection.eq(nextSel)) return
 
     view.dispatch(state.tr.setSelection(nextSel))
@@ -96,12 +91,11 @@ class TableHandleView {
   };
 
   mouseUpHandler = (event) => {
-    this.mouseState = "up"
     this.mouseMoveHandler(event)
   };
 
   mouseMoveHandler = (event) => {
-    if (this.menuFrozen || this.mouseState === "selecting") return
+    if (this.menuFrozen) return
 
     const target = event.target
     if (!isHTMLElement(target) || !this.editorView.dom.contains(target)) return
@@ -126,17 +120,6 @@ class TableHandleView {
 
   _handleMouseMoveNow(event) {
     const around = domCellAround(event.target)
-
-    // Hide handles while selecting inside a cell
-    if (
-      around?.type === "cell" &&
-      this.mouseState === "down" &&
-      !this.state?.draggingState
-    ) {
-      this.mouseState = "selecting"
-      this.hideHandles()
-      return
-    }
 
     if (!around || !this.editor.isEditable) {
       this.hideHandles()
@@ -324,8 +307,6 @@ class TableHandleView {
   }
 
   dropHandler = () => {
-    this.mouseState = "up"
-
     const st = this.state
     if (!st?.draggingState) return false
 

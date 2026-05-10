@@ -331,6 +331,7 @@ node scripts/check-tiptap-release-smoke.js
   - 当前打磨：行/列句柄现在贴齐表格网格，朝向表格的一侧边框保持透明；鼠标从表格跨入顶部/左侧轨道时会刷新为对应轴向 hover，因此句柄不会在可点击前消失。
   - 当前修复：表格 chrome 现在会在 document 级别继续跟踪浮动行/列句柄上的 hover，因此鼠标从单元格跨到外部句柄时，句柄不会立刻消失。
   - 当前修复：React 和 fallback chrome 现在都会在 hover 轴向上添加透明行/列命中区，所以鼠标从表头或正文单元格移向顶部/左侧浮动句柄时，会保持同一个轴向 hover，不再半路丢失句柄。
+  - 当前修复：官方 `tableHandleExtension` 不再因为鼠标按在单元格内就隐藏行/列句柄。句柄可见性现在只跟 hover 绑定，不再和单元格选中或拖选状态耦合。
   - 当前打磨：hover 单元格只显示行/列句柄；整行/整列的雾蒙层和主题外轮廓只保留给点击轴向句柄后的真实选中态。
   - 当前架构：官方 table-node 负责可见的行/列句柄、选区 overlay、单元格 handle 菜单和扩展按钮。Papyro 迁移期 table toolbar 退到后台，只作为命令桥和视觉状态同步器。
   - 当前架构：注入的 table chrome bridge 会同步选中/活跃单元格 class 以维持 Papyro 样式，但它的 root 始终隐藏，不渲染快捷新增、单元格操作触发点、插入轨道、行列句柄或遮罩 DOM；旧 DOM renderer 只保留 fallback 和测试路径。
@@ -339,6 +340,7 @@ node scripts/check-tiptap-release-smoke.js
   - 当前目标：表格范围拖选仍然可以从已有文字、空白单元格表面或空段落开始，但 controller 只在指针跨入另一个单元格后才升级为真实表格范围。
   - 当前目标：双击不是唯一文字编辑入口。普通点击必须同时显示单元格选中边框，并把文本光标保留在鼠标位置。
   - 当前覆盖：新增 source-level 和纯模型测试，守住“普通单元格内文本光标”和“对象式单元格选中”的边界，避免后续 overlay 改动再次回到“点击单元格像在选文字/只剩一个点”的歧义状态。
+  - 当前修复：已有表格范围选区通过官方 handle 插件回到编辑状态时，现在会在鼠标位置恢复折叠光标，不再把单元格内整段文字选中。
 - [x] 单元格之间不能有视觉间隙，保证 selection 和 resize border 连续。
   - 当前覆盖：Tiptap 表格单元格现在与 Preview 一样是零间距网格：使用 `border-collapse: collapse`、`border-spacing: 0`、常规单元格边框、表格 margin 归零和 border-box 背景绘制，并由样式 smoke 守护连续单元格表面。
   - 当前纠偏：选中和 hover affordance 现在由表格 chrome overlay 绘制，不再依赖每个单元格各自绘制一段主题色边框，避免相邻单元格之间出现断点。
