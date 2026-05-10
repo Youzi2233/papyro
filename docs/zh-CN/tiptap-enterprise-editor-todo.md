@@ -323,6 +323,7 @@ node scripts/check-tiptap-release-smoke.js
   - 当前覆盖：`PapyroTableView` 现在会在每个 `.tableWrapper` 内补齐官方 table-node 句柄和选区 overlay 需要的 `.table-controls` 与 `.table-selection-overlay-container` portal 目标。
   - 当前覆盖：editor 入口注入 `createTiptapReactTableChromeRenderer` 作为视觉状态 bridge，而不是传 `null` 触发迁移期 DOM fallback，避免重复的 hover 句柄、选区 overlay 和单元格操作触发点互相抢状态。
   - 当前覆盖：官方 SCSS import 会被打进 `editor.js`，桌面端和移动端通过现有 editor runtime 脚本获得 table-node 样式。
+  - 当前修复：官方 selection overlay 现在通过 Papyro 的小型 overlay-mode 模型判断显示状态。普通文本光标位于表格单元格内时，不再自动显示对象选中 chrome；overlay 只跟随真实 ProseMirror `CellSelection` 或明确的 Papyro 视觉单元格选中。
 - [x] 删除左上角选择整张表格入口，除非有明确产品动作需要它。
   - 当前覆盖：表格 overlay 不再渲染整表角落句柄；geometry 返回 `table: null`，只保留行/列 slim handle 作为轴向操作入口。
 - [ ] 默认隐藏可视句柄。只有在第一行或第一列附近有明确 hover 意图时展示行/列句柄。
@@ -337,6 +338,7 @@ node scripts/check-tiptap-release-smoke.js
   - 纠偏要求：短点击不能再提交单个单元格 ProseMirror `CellSelection`。单个单元格选中必须是 Papyro 视觉状态，叠加在正常 ProseMirror 文本选区之上，让光标定位和单元格内文本拖选保持自然。
   - 当前目标：表格范围拖选仍然可以从已有文字、空白单元格表面或空段落开始，但 controller 只在指针跨入另一个单元格后才升级为真实表格范围。
   - 当前目标：双击不是唯一文字编辑入口。普通点击必须同时显示单元格选中边框，并把文本光标保留在鼠标位置。
+  - 当前覆盖：新增 source-level 和纯模型测试，守住“普通单元格内文本光标”和“对象式单元格选中”的边界，避免后续 overlay 改动再次回到“点击单元格像在选文字/只剩一个点”的歧义状态。
 - [x] 单元格之间不能有视觉间隙，保证 selection 和 resize border 连续。
   - 当前覆盖：Tiptap 表格单元格现在与 Preview 一样是零间距网格：使用 `border-collapse: collapse`、`border-spacing: 0`、常规单元格边框、表格 margin 归零和 border-box 背景绘制，并由样式 smoke 守护连续单元格表面。
   - 当前纠偏：选中和 hover affordance 现在由表格 chrome overlay 绘制，不再依赖每个单元格各自绘制一段主题色边框，避免相邻单元格之间出现断点。

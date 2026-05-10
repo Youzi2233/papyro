@@ -327,6 +327,7 @@ Tasks:
   - Current coverage: `PapyroTableView` now adds the `.table-controls` and `.table-selection-overlay-container` portal targets that the official table-node handle and selection overlay expect inside each `.tableWrapper`.
   - Current coverage: the editor entry injects `createTiptapReactTableChromeRenderer` as a visual-state bridge instead of passing `null`, preventing the migration DOM fallback from mounting duplicate hover handles, selection overlays, and cell action triggers.
   - Current coverage: official SCSS imports are bundled into `editor.js`, so desktop and mobile hosts receive the table-node styles through the existing editor runtime script.
+  - Current fix: the official selection overlay now uses a small Papyro overlay-mode model. A normal text caret inside a table cell no longer shows object-selection chrome by itself; the overlay follows either a real ProseMirror `CellSelection` or an explicit Papyro visual cell selection.
 - [x] Remove the top-left whole-table selector unless a clear product action requires it.
   - Current coverage: the table overlay no longer renders a whole-table corner handle; geometry now returns `table: null`, leaving row/column handles as the only axis affordances.
 - [ ] Remove visible handles by default. Show row/column handles only on intentional table hover, with a full-span affordance for the hovered row or column.
@@ -341,6 +342,7 @@ Tasks:
   - Correction required: short clicks must no longer commit a single-cell ProseMirror `CellSelection`. The single-cell state is a Papyro visual selection layered over normal ProseMirror text selection so caret placement and in-cell text dragging stay natural.
   - Current target: cell-range dragging can still start from filled text, blank cell surfaces, or empty paragraphs, but the controller should promote to a real table range only after the pointer crosses into another cell.
   - Current target: double-click is not the only editing affordance. A normal click must both show the selected-cell border and keep the text caret at the pointer location.
+  - Current coverage: source-level and pure-model tests now guard the boundary between ordinary caret-in-cell editing and object-style cell selection, so future overlay changes cannot reintroduce the "clicking a cell selects text / shows only a dot" ambiguity.
 - [x] Ensure cells have no visual gaps, so selection and resize borders look continuous.
   - Current coverage: Tiptap table cells now match Preview's zero-gap grid with `border-collapse: collapse`, `border-spacing: 0`, normal cell borders, table margin reset, border-box background painting, and a style smoke guard for the continuous cell surface.
   - Current correction: selection and hover affordances are now drawn by the table chrome overlay instead of relying on every cell to draw its own partial theme border, avoiding broken border segments between adjacent cells.

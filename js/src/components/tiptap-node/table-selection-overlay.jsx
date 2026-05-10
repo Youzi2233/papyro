@@ -8,6 +8,11 @@ import { useResizeOverlay } from "@/components/tiptap-node/table-node/ui/table-s
 
 // --- Lib ---
 import { domCellAround, getTable, rectEq } from "@/components/tiptap-node/table-node/lib/tiptap-table-utils";
+import {
+  findPapyroSelectedTableCell,
+  tableSelectionOverlayMode,
+  TABLE_SELECTION_OVERLAY_MODE,
+} from "@/components/tiptap-node/table-selection-overlay-model.js";
 
 // if an element’s edge is within 5px of the selection edge,
 // it is treated as aligned.
@@ -60,8 +65,8 @@ const getSelectionBoundingRect = (view, selection) => {
   );
 }
 
-const getSingleCellBoundingRect = (view, cellPos) => {
-  const cellDom = view.nodeDOM(cellPos)
+const getVisualSelectedCellBoundingRect = (tableDom) => {
+  const cellDom = findPapyroSelectedTableCell(tableDom)
   if (!cellDom) return null
 
   const rect = cellDom.getBoundingClientRect()
@@ -226,8 +231,15 @@ export const TableSelectionOverlay = ({
     if (!editor) return
 
     const { selection } = editor.state
+    const table = getTable(editor)
+    const currentTableDom = table ? editor.view.nodeDOM(table.pos) : null
+    const overlayMode = tableSelectionOverlayMode({
+      selection,
+      CellSelectionClass: CellSelection,
+      tableDom: currentTableDom,
+    })
 
-    if (selection instanceof CellSelection) {
+    if (overlayMode === TABLE_SELECTION_OVERLAY_MODE.CELL_SELECTION) {
       const rect = getSelectionBoundingRect(editor.view, selection)
 
       if (!rect) {
@@ -241,12 +253,8 @@ export const TableSelectionOverlay = ({
       return
     }
 
-    // single cell handling
-    const { $anchor } = selection
-    const cell = cellAround($anchor)
-
-    if (cell) {
-      const rect = getSingleCellBoundingRect(editor.view, cell.pos)
+    if (overlayMode === TABLE_SELECTION_OVERLAY_MODE.VISUAL_CELL_SELECTION) {
+      const rect = getVisualSelectedCellBoundingRect(currentTableDom)
 
       if (rect) {
         setSelectionRect((prev) => (rectEq(prev, rect) ? prev : rect))
