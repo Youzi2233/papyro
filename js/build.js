@@ -34,6 +34,7 @@ const ctx = await esbuild.context({
   bundle: true,
   format: "iife",
   outfile: outFile,
+  jsx: "automatic",
   minify: !watch,
   sourcemap: watch ? "inline" : false,
   loader: {
