@@ -773,9 +773,48 @@ test("Tiptap table cell drag extends the selected cell range", () => {
     "stopPropagation:up",
   ]);
   controller.refresh(editor);
-  assert.equal(controller.state.selection.kind, "table");
+  assert.equal(controller.state.selection.kind, "cells");
   assert.deepEqual([...controller.state.selection.positions], [10, 11, 12, 13]);
   assert.equal(documentListeners.get("pointermove")?.length ?? 0, basePointerMoveListeners);
+});
+
+test("Tiptap table visual cell selection survives caret refreshes", () => {
+  const { cells, documentListeners, editor, root, table } = createHarness();
+  const paragraph = {
+    nodeType: 1,
+    tagName: "P",
+    parentElement: cells[1],
+    parentNode: cells[1],
+    textContent: "Revenue",
+    closest(selector) {
+      if (selector === "th,td") return cells[1];
+      if (selector === ".mn-tiptap-table, table" || selector === "table") return table;
+      return null;
+    },
+  };
+  const controller = createTiptapTableToolbarController({
+    dom: { document: root.ownerDocument },
+  });
+
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  root.listeners.get("pointerdown")({
+    target: paragraph,
+    button: 0,
+    clientX: 220,
+    clientY: 94,
+  });
+  latestDragListeners(documentListeners).end({
+    target: paragraph,
+    clientX: 220,
+    clientY: 94,
+  });
+
+  editor.state.selection = { from: 12 };
+  editor.view.domAtPos = () => ({ node: cells[1] });
+  controller.refresh(editor);
+
+  assertSingleCellVisualSelection(controller, cells[1], 11);
+  assert.equal(cells[0].classes.has("mn-tiptap-table-cell-selected"), false);
 });
 
 test("Tiptap table visual cell clicks suppress the follow-up native click", () => {
@@ -839,6 +878,44 @@ test("Tiptap table visual cell clicks suppress the follow-up native click", () =
   ]);
   assert.deepEqual(calls.filter((call) => call[0] === "setCellSelection"), []);
   assert.deepEqual([...controller.state.selection.positions], [10]);
+});
+
+test("Tiptap table mousedown fallback ends cleanly on mouseup", () => {
+  const { cells, documentListeners, editor, root, table } = createHarness();
+  const paragraph = {
+    nodeType: 1,
+    tagName: "P",
+    parentElement: cells[0],
+    parentNode: cells[0],
+    textContent: "Revenue",
+    closest(selector) {
+      if (selector === "th,td") return cells[0];
+      if (selector === ".mn-tiptap-table, table" || selector === "table") return table;
+      return null;
+    },
+  };
+  const controller = createTiptapTableToolbarController({
+    dom: { document: root.ownerDocument },
+  });
+
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+  root.listeners.get("mousedown")({
+    target: paragraph,
+    button: 0,
+    clientX: 120,
+    clientY: 94,
+  });
+
+  assert.ok((documentListeners.get("mouseup")?.length ?? 0) >= 1);
+  documentListeners.get("mouseup")?.at(-1)?.({
+    target: paragraph,
+    clientX: 120,
+    clientY: 94,
+  });
+
+  assert.deepEqual([...controller.state.selection.positions], [10]);
+  assert.equal(documentListeners.get("pointermove")?.length ?? 0, 1);
+  assert.equal(documentListeners.get("mouseup")?.length ?? 0, 0);
 });
 
 test("Tiptap table Delete clears a visual cell selection without stealing text selection", () => {

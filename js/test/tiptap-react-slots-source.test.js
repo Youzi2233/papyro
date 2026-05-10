@@ -327,6 +327,7 @@ test("React table chrome owns the non-menu table overlay rendering path", () => 
   assert.match(tableChromeSource, /createTableQuickAddChromeState/u);
   assert.match(tableChromeSource, /createTableCellMenuTriggerChromeState/u);
   assert.match(tableChromeSource, /createTableAxisHandleChromeState/u);
+  assert.match(tableChromeSource, /mn-tiptap-table-axis-hover-bridge/u);
   assert.match(tableChromeSource, /createTableSelectionBackdropChromeState/u);
   assert.match(tableChromeSource, /createComplexBlockInsertChromeState/u);
   assert.match(tableChromeSource, /--mn-table-quick-add-visual-left/u);

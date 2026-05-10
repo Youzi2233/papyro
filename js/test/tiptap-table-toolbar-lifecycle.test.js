@@ -158,6 +158,11 @@ test("Tiptap table toolbar does not mount legacy chrome when React chrome is ava
     ),
     true,
   );
+  const chromeRoot = documentRef.body.children.find((element) =>
+    String(element.className).includes("mn-tiptap-table-chrome-root"),
+  );
+  assert.equal(chromeRoot.hidden, false);
+  assert.equal(chromeRoot.dataset.visible, "true");
   assert.deepEqual(
     documentRef.body.children
       .map((element) => String(element.className))

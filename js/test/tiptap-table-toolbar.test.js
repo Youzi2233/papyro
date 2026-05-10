@@ -1726,17 +1726,13 @@ test("Tiptap table axis handles reveal when editor selection starts outside the 
   assert.deepEqual([...controller.state.selection.positions], []);
   assert.equal(latestAxisHandle(created, "row", 0)?.hidden, false);
   assert.equal(latestAxisHandle(created, "column", 1)?.hidden, false);
-
-  const backdrop = created.find((element) =>
-    String(element.className).includes("mn-tiptap-table-axis-hover-backdrop") &&
-    element.dataset.axis === "column" &&
-    element.dataset.index === "1" &&
-    !element.removed,
+  assert.equal(
+    created.some((element) =>
+      String(element.className).includes("mn-tiptap-table-axis-hover-backdrop") &&
+      !element.removed,
+    ),
+    false,
   );
-  assert.ok(backdrop, "expected a continuous column hover backdrop");
-  assert.equal(backdrop.hidden, false);
-  assert.equal(backdrop.style.left, "200px");
-  assert.equal(backdrop.style.height, "68px");
 });
 
 test("Tiptap table column handles reveal across header cell hover", () => {
@@ -1781,29 +1777,20 @@ test("Tiptap table row and column handles stay outside editable cells while trac
   editor.view.dom.listeners.get("pointermove")({ target: cells[3], clientX: 124, clientY: 128 });
   assert.equal(controller.state.hover.edge, "cell");
   const rowHandle = latestAxisHandle(created, "row", 1);
-  const rowBackdrop = [...created].reverse().find((element) =>
-    String(element.className).includes("mn-tiptap-table-axis-hover-backdrop") &&
-    element.dataset.axis === "row" &&
-    element.dataset.index === "1" &&
-    !element.removed,
-  );
   editor.view.dom.listeners.get("pointermove")({ target: cells[1], clientX: 204, clientY: 95 });
   assert.equal(controller.state.hover.edge, "cell");
   const columnHandle = latestAxisHandle(created, "column", 1);
-  const columnBackdrop = [...created].reverse().find((element) =>
-    String(element.className).includes("mn-tiptap-table-axis-hover-backdrop") &&
-    element.dataset.axis === "column" &&
-    element.dataset.index === "1" &&
-    !element.removed,
-  );
   assert.equal(rowHandle.style.left, "100px");
   assert.equal(rowHandle.style.width, "20px");
   assert.equal(columnHandle.style.top, "70px");
   assert.equal(columnHandle.style.height, "20px");
-  assert.equal(rowBackdrop.style.left, "120px");
-  assert.equal(rowBackdrop.style.width, "240px");
-  assert.equal(columnBackdrop.style.top, "90px");
-  assert.equal(columnBackdrop.style.height, "68px");
+  assert.equal(
+    created.some((element) =>
+      String(element.className).includes("mn-tiptap-table-axis-hover-backdrop") &&
+      !element.removed,
+    ),
+    false,
+  );
 });
 
 test("Tiptap table axis handles stay selectable while pointer crosses the overlay seam", () => {
@@ -1853,6 +1840,30 @@ test("Tiptap table chrome keeps axis hover while pointer is over the floating ha
   assert.equal(latestAxisHandle(created, "column", 1).hidden, false);
 });
 
+test("Tiptap table floating axis handles refresh hover from their own events", () => {
+  const { created, documentRef } = createDocument();
+  const { cells, editor } = createTableHarness();
+  const controller = createTiptapTableToolbarController({
+    dom: { document: documentRef },
+  });
+
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+
+  editor.view.dom.listeners.get("pointermove")({ target: cells[1], clientX: 204, clientY: 95 });
+  const columnHandle = latestAxisHandle(created, "column", 1);
+  assert.equal(columnHandle.hidden, false);
+
+  columnHandle.onpointerenter?.({
+    target: columnHandle,
+    clientX: 204,
+    clientY: 72,
+  });
+
+  assert.equal(controller.state.hover.edge, "column-handle");
+  assert.equal(controller.state.hover.columnIndex, 1);
+  assert.equal(latestAxisHandle(created, "column", 1).hidden, false);
+});
+
 test("Tiptap table chrome infers axis hover directly from handle targets", () => {
   const { created, documentRef } = createDocument();
   const { cells, editor } = createTableHarness();
@@ -1870,6 +1881,35 @@ test("Tiptap table chrome infers axis hover directly from handle targets", () =>
     target: columnHandle,
     clientX: 238,
     clientY: 78,
+  });
+
+  assert.equal(controller.state.hover.edge, "column-handle");
+  assert.equal(controller.state.hover.columnIndex, 1);
+  assert.equal(latestAxisHandle(created, "column", 1).hidden, false);
+});
+
+test("Tiptap table chrome infers axis hover from hover bridge targets", () => {
+  const { created, documentRef } = createDocument();
+  const { cells, editor } = createTableHarness();
+  const controller = createTiptapTableToolbarController({
+    dom: { document: documentRef },
+  });
+
+  controller.attach({ editor, root: {}, entry: { viewMode: "hybrid" } });
+
+  editor.view.dom.listeners.get("pointermove")({ target: cells[1], clientX: 204, clientY: 107 });
+  const bridge = [...created].reverse().find((element) =>
+    String(element.className).includes("mn-tiptap-table-axis-hover-bridge") &&
+    element.dataset.axis === "column" &&
+    element.dataset.index === "1" &&
+    !element.removed,
+  );
+  assert.ok(bridge, "expected column hover bridge");
+
+  documentRef.listeners.get("pointermove")({
+    target: bridge,
+    clientX: 204,
+    clientY: 84,
   });
 
   assert.equal(controller.state.hover.edge, "column-handle");

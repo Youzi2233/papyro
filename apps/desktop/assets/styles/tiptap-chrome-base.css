@@ -61,6 +61,7 @@
     line-height: 0;
 }
 
+.mn-tiptap-editor table,
 .mn-tiptap-editor .mn-tiptap-table {
     border-collapse: collapse;
     border-spacing: 0 !important;
@@ -70,7 +71,7 @@
     line-height: normal;
 }
 
-.mn-tiptap-editor :where(.mn-tiptap-table-cell, .mn-tiptap-table-header) {
+.mn-tiptap-editor :where(th, td, .mn-tiptap-table-cell, .mn-tiptap-table-header) {
     position: relative;
     box-sizing: border-box;
     background-clip: border-box;
@@ -102,16 +103,15 @@
     box-shadow: none;
 }
 
-.mn-tiptap-editor :where(.mn-tiptap-table-cell-active, .mn-tiptap-table-cell-selected, .selectedCell) {
+.mn-tiptap-editor :where(.mn-tiptap-table-cell-active, .mn-tiptap-table-cell-selected) {
     outline: 0;
     box-shadow: none;
 }
 
-.mn-tiptap-editor :where(.mn-tiptap-table-cell-hovered-column) {
-    box-shadow: none;
-}
-
-.mn-tiptap-editor :where(.mn-tiptap-table-cell-hovered-row) {
+.mn-tiptap-editor :where(.selectedCell:not(.mn-tiptap-table-cell-selected)),
+.mn-tiptap-editor :where(td.selectedCell, th.selectedCell):not(.mn-tiptap-table-cell-selected) {
+    background-image: none;
+    outline: 0;
     box-shadow: none;
 }
 

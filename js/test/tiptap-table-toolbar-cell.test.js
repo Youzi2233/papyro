@@ -46,7 +46,7 @@ test("Tiptap table toolbar reflects selected rows columns and cells in chrome", 
   assert.equal(columnHandles.length, 0);
   assert.deepEqual(
     cells.map((cell) => cell.classes.has("mn-tiptap-table-cell-selected")),
-    [true, true, true, false, false, false],
+    [false, false, false, false, false, false],
   );
 
   controller.close();

@@ -12,7 +12,6 @@ import {
   applyTableCellVisualState,
   clearTableCellVisualState,
   createComplexBlockInsertChromeState,
-  createTableAxisHoverChromeState,
   createTableAxisHandleChromeState,
   createTableCellMenuTriggerChromeState,
   createTableQuickAddChromeState,
@@ -23,6 +22,7 @@ import { usePointerActivation } from "../hooks/use-pointer-activation.js";
 const TABLE_AXIS_HANDLE_SIZE = 12;
 export const REACT_TABLE_ROW_HANDLE_WIDTH = 20;
 export const REACT_TABLE_COLUMN_HANDLE_HEIGHT = 20;
+const TABLE_AXIS_HANDLE_BRIDGE = 12;
 const TABLE_ADD_ROW_HEIGHT = 14;
 const TABLE_ADD_COLUMN_WIDTH = 14;
 
@@ -219,25 +219,7 @@ function TableSelectionBackdrop({ chrome }) {
   );
 }
 
-function TableAxisHoverBackdrop({ chrome }) {
-  const items = [...(chrome?.rows ?? []), ...(chrome?.columns ?? [])];
-  return (
-    <>
-      {items.map((item) => (
-        <div
-          key={`${item.axis}-${item.index}`}
-          className="mn-tiptap-table-axis-hover-backdrop"
-          aria-hidden="true"
-          data-axis={item.axis}
-          data-index={String(item.index)}
-          style={fixedRectStyle(item.rect)}
-        />
-      ))}
-    </>
-  );
-}
-
-function TableAxisHandle({ handle, label, onSelectAxis }) {
+function TableAxisHandle({ handle, label, onSelectAxis, onHoverAxis }) {
   const pointerActivated = useRef(false);
   const run = () => {
     const anchorRect = {
@@ -257,6 +239,9 @@ function TableAxisHandle({ handle, label, onSelectAxis }) {
     event?.stopPropagation?.();
     event?.nativeEvent?.stopImmediatePropagation?.();
   };
+  const refreshHover = (event) => {
+    onHoverAxis?.(handle.axis, handle.index, event);
+  };
 
   return (
     <button
@@ -269,6 +254,9 @@ function TableAxisHandle({ handle, label, onSelectAxis }) {
       data-index={String(handle.index)}
       {...chromeVisibilityProps(handle.visible)}
       style={fixedRectStyle(handle)}
+      onPointerEnter={refreshHover}
+      onPointerMove={refreshHover}
+      onMouseEnter={refreshHover}
       onPointerDown={(event) => {
         guard(event);
         pointerActivated.current = true;
@@ -294,6 +282,26 @@ function TableAxisHandle({ handle, label, onSelectAxis }) {
   );
 }
 
+function TableAxisHoverBridge({ handle, onHoverAxis }) {
+  if (!handle?.bridge || !handle.visible) return null;
+  const refreshHover = (event) => {
+    onHoverAxis?.(handle.axis, handle.index, event);
+  };
+
+  return (
+    <div
+      className="mn-tiptap-table-axis-hover-bridge"
+      aria-hidden="true"
+      data-axis={handle.axis}
+      data-index={String(handle.index)}
+      style={fixedRectStyle(handle.bridge)}
+      onPointerEnter={refreshHover}
+      onPointerMove={refreshHover}
+      onMouseEnter={refreshHover}
+    />
+  );
+}
+
 export function PapyroTableChrome({ state }) {
   useTableCellVisualState(state);
   const quickAdd = createTableQuickAddChromeState(state, {
@@ -302,11 +310,11 @@ export function PapyroTableChrome({ state }) {
   });
   const insert = createComplexBlockInsertChromeState(state);
   const backdrop = createTableSelectionBackdropChromeState(state);
-  const axisHover = createTableAxisHoverChromeState(state);
   const axis = createTableAxisHandleChromeState(state, {
     handleSize: TABLE_AXIS_HANDLE_SIZE,
     rowHandleWidth: REACT_TABLE_ROW_HANDLE_WIDTH,
     columnHandleHeight: REACT_TABLE_COLUMN_HANDLE_HEIGHT,
+    bridgeSize: TABLE_AXIS_HANDLE_BRIDGE,
   });
   const language = state?.language;
   const run = (commandId) => state?.run?.(commandId);
@@ -316,11 +324,12 @@ export function PapyroTableChrome({ state }) {
     }
     return state?.selectAxis?.(axisKind, index);
   };
+  const hoverAxis = (axisKind, index, event) =>
+    state?.hoverAxis?.(axisKind, index, event);
 
   return (
     <>
       <TableSelectionBackdrop chrome={backdrop} />
-      <TableAxisHoverBackdrop chrome={axisHover} />
       <TableQuickAddButton
         chrome={quickAdd.row}
         label={addRowBelowLabel(language)}
@@ -341,11 +350,26 @@ export function PapyroTableChrome({ state }) {
         onInsert={state?.insertParagraphAfterBlock}
       />
       {axis.rows.map((handle) => (
+        <TableAxisHoverBridge
+          key={`row-bridge-${handle.index}`}
+          handle={handle}
+          onHoverAxis={hoverAxis}
+        />
+      ))}
+      {axis.columns.map((handle) => (
+        <TableAxisHoverBridge
+          key={`column-bridge-${handle.index}`}
+          handle={handle}
+          onHoverAxis={hoverAxis}
+        />
+      ))}
+      {axis.rows.map((handle) => (
         <TableAxisHandle
           key={`row-${handle.index}`}
           handle={handle}
           label={selectTableRowLabel(language, handle.index)}
           onSelectAxis={selectAxis}
+          onHoverAxis={hoverAxis}
         />
       ))}
       {axis.columns.map((handle) => (
@@ -354,6 +378,7 @@ export function PapyroTableChrome({ state }) {
           handle={handle}
           label={selectTableColumnLabel(language, handle.index)}
           onSelectAxis={selectAxis}
+          onHoverAxis={hoverAxis}
         />
       ))}
     </>

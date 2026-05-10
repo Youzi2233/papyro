@@ -17,7 +17,6 @@ import {
   applyTableCellVisualState,
   clearTableCellVisualState,
   createComplexBlockInsertChromeState,
-  createTableAxisHoverChromeState,
   createTableAxisHandleChromeState,
   createTableCellMenuTriggerChromeState,
   createTableQuickAddChromeState,
@@ -47,6 +46,7 @@ import {
 const TABLE_AXIS_HANDLE_SIZE = 12;
 export const TABLE_ROW_HANDLE_WIDTH = 20;
 export const TABLE_COLUMN_HANDLE_HEIGHT = 20;
+const TABLE_AXIS_HANDLE_BRIDGE = 12;
 const TABLE_ADD_ROW_HEIGHT = 14;
 const TABLE_ADD_COLUMN_WIDTH = 14;
 const TABLE_CONTEXT_MENU_WIDTH = 176;
@@ -161,7 +161,7 @@ export class TiptapTableToolbarView {
   #selectionBackdrop = null;
   #selectionOutline = null;
   #selectionCells = [];
-  #axisHoverBackdrops = [];
+  #axisHoverBridges = [];
   #chromeRoot = null;
   #reactChrome = null;
   #reactMenu = null;
@@ -398,12 +398,12 @@ export class TiptapTableToolbarView {
     this.#root.onkeydown = (event) => state.handleKeyDown?.(event);
     if (this.#reactChrome) {
       this.#hideLegacyChrome();
+      setTableDecorationHidden(this.#chromeRoot, false);
       this.#reactChrome.render(state);
     } else {
       this.#applySelectionState(state);
       this.#applyActiveCellState(state);
       this.#updateSelectionBackdrop(state);
-      this.#updateAxisHoverBackdrop(state);
       this.#updateQuickAdd(state);
       this.#updateCellMenuTrigger(state);
       this.#updateComplexBlockInsert(state);
@@ -792,9 +792,11 @@ export class TiptapTableToolbarView {
       handleSize: TABLE_AXIS_HANDLE_SIZE,
       rowHandleWidth: TABLE_ROW_HANDLE_WIDTH,
       columnHandleHeight: TABLE_COLUMN_HANDLE_HEIGHT,
+      bridgeSize: TABLE_AXIS_HANDLE_BRIDGE,
     });
     for (const handle of axisChrome.rows) {
       const index = handle.index;
+      this.#mountAxisHoverBridge(handle, state);
       const button = createElement(this.#document, "button", "mn-tiptap-table-axis-handle row");
       if (!button) return;
       button.type = "button";
@@ -807,6 +809,10 @@ export class TiptapTableToolbarView {
       button.style.height = `${handle.height}px`;
       button.dataset.axis = "row";
       button.dataset.index = String(index);
+      const refreshHover = (event) => state.hoverAxis?.("row", index, event);
+      button.addEventListener("pointerenter", refreshHover);
+      button.addEventListener("pointermove", refreshHover);
+      button.addEventListener("mouseenter", refreshHover);
       bindPointerCommand(button, null, () => {
         const anchorRect = axisHandleAnchorRect(button, handle);
         const selected = state.selectAxis("row", index) === true;
@@ -823,6 +829,7 @@ export class TiptapTableToolbarView {
 
     for (const handle of axisChrome.columns) {
       const index = handle.index;
+      this.#mountAxisHoverBridge(handle, state);
       const button = createElement(this.#document, "button", "mn-tiptap-table-axis-handle column");
       if (!button) return;
       button.type = "button";
@@ -835,6 +842,10 @@ export class TiptapTableToolbarView {
       button.style.height = `${handle.height}px`;
       button.dataset.axis = "column";
       button.dataset.index = String(index);
+      const refreshHover = (event) => state.hoverAxis?.("column", index, event);
+      button.addEventListener("pointerenter", refreshHover);
+      button.addEventListener("pointermove", refreshHover);
+      button.addEventListener("mouseenter", refreshHover);
       bindPointerCommand(button, null, () => {
         const anchorRect = axisHandleAnchorRect(button, handle);
         const selected = state.selectAxis("column", index) === true;
@@ -853,30 +864,31 @@ export class TiptapTableToolbarView {
   #clearAxisHandles() {
     this.#rowHandles.forEach((button) => button.remove?.());
     this.#columnHandles.forEach((button) => button.remove?.());
+    this.#axisHoverBridges.forEach((bridge) => bridge.remove?.());
     this.#rowHandles = [];
     this.#columnHandles = [];
+    this.#axisHoverBridges = [];
   }
 
-  #updateAxisHoverBackdrop(state) {
-    this.#clearAxisHoverBackdrops();
-    const hover = createTableAxisHoverChromeState(state);
-    for (const item of [...(hover.rows ?? []), ...(hover.columns ?? [])]) {
-      const backdrop = createElement(this.#document, "div", "mn-tiptap-table-axis-hover-backdrop");
-      if (!backdrop) continue;
-      backdrop.style.left = `${item.rect.left}px`;
-      backdrop.style.top = `${item.rect.top}px`;
-      backdrop.style.width = `${Math.max(0, item.rect.width)}px`;
-      backdrop.style.height = `${Math.max(0, item.rect.height)}px`;
-      backdrop.dataset.axis = item.axis;
-      backdrop.dataset.index = String(item.index);
-      mountFloatingRoot(backdrop, state.table, this.#document);
-      this.#axisHoverBackdrops.push(backdrop);
-    }
-  }
+  #mountAxisHoverBridge(handle, state) {
+    const bridge = handle?.bridge;
+    if (!bridge) return;
+    const element = createElement(this.#document, "div", "mn-tiptap-table-axis-hover-bridge");
+    if (!element) return;
 
-  #clearAxisHoverBackdrops() {
-    this.#axisHoverBackdrops.forEach((backdrop) => backdrop.remove?.());
-    this.#axisHoverBackdrops = [];
+    element.dataset.axis = handle.axis;
+    element.dataset.index = String(handle.index);
+    element.style.left = `${bridge.left}px`;
+    element.style.top = `${bridge.top}px`;
+    element.style.width = `${bridge.width}px`;
+    element.style.height = `${bridge.height}px`;
+    element.setAttribute("aria-hidden", "true");
+    const refreshHover = (event) => state.hoverAxis?.(handle.axis, handle.index, event);
+    element.addEventListener("pointerenter", refreshHover);
+    element.addEventListener("pointermove", refreshHover);
+    element.addEventListener("mouseenter", refreshHover);
+    mountFloatingRoot(element, state.table, this.#document);
+    this.#axisHoverBridges.push(element);
   }
 
   #clearSelectionCells() {
@@ -892,7 +904,6 @@ export class TiptapTableToolbarView {
     setTableDecorationHidden(this.#selectionBackdrop, true);
     setTableDecorationHidden(this.#selectionOutline, true);
     this.#clearSelectionCells();
-    this.#clearAxisHoverBackdrops();
     this.#clearAxisHandles();
   }
 
@@ -920,7 +931,6 @@ export class TiptapTableToolbarView {
     setTableDecorationHidden(this.#chromeRoot, true);
     clearTableCellVisualState(this.#lastTable);
     this.#clearSelectionCells();
-    this.#clearAxisHoverBackdrops();
     this.#clearAxisHandles();
     this.#lastTable = null;
     this.#lastActiveCell = null;
@@ -936,7 +946,7 @@ export class TiptapTableToolbarView {
       this.#selectionBackdrop?.contains?.(target) ||
       this.#selectionOutline?.contains?.(target) ||
       this.#selectionCells.some((cell) => cell.contains?.(target)) ||
-      this.#axisHoverBackdrops.some((backdrop) => backdrop.contains?.(target)) ||
+      this.#axisHoverBridges.some((bridge) => bridge.contains?.(target)) ||
       this.#reactChrome?.contains?.(target) ||
       this.#chromeRoot?.contains?.(target) ||
       this.#rowHandles.some((button) => button.contains?.(target)) ||
@@ -979,7 +989,6 @@ export class TiptapTableToolbarView {
     this.#selectionOutline?.remove?.();
     this.#chromeRoot?.remove?.();
     this.#clearSelectionCells();
-    this.#clearAxisHoverBackdrops();
     this.#clearAxisHandles();
     this.#root = null;
     this.#header = null;
@@ -994,7 +1003,6 @@ export class TiptapTableToolbarView {
     this.#selectionBackdrop = null;
     this.#selectionOutline = null;
     this.#selectionCells = [];
-    this.#axisHoverBackdrops = [];
     this.#chromeRoot = null;
     this.#reactChrome = null;
     this.#reactMenu = null;

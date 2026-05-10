@@ -6,7 +6,6 @@ import {
   clearTableCellVisualState,
   TABLE_SELECTED_CELL_EDGE_CLASSES,
   createComplexBlockInsertChromeState,
-  createTableAxisHoverChromeState,
   createTableAxisHandleChromeState,
   createTableCellObjectSelectionChromeState,
   createTableCellMenuTriggerChromeState,
@@ -81,16 +80,6 @@ function createGrid() {
       if (Object.values(TABLE_SELECTED_CELL_EDGE_CLASSES).some((className) => selector === `.${className}`)) {
         const className = selector.slice(1);
         return cellElements.filter((cell) => cell.classes.has(className));
-      }
-      if (selector === ".mn-tiptap-table-cell-hovered-row") {
-        return cellElements.filter((cell) =>
-          cell.classes.has("mn-tiptap-table-cell-hovered-row"),
-        );
-      }
-      if (selector === ".mn-tiptap-table-cell-hovered-column") {
-        return cellElements.filter((cell) =>
-          cell.classes.has("mn-tiptap-table-cell-hovered-column"),
-        );
       }
       return [];
     },
@@ -438,6 +427,14 @@ test("table chrome model reveals row and column handles from the hovered cell", 
   }));
   assert.deepEqual(rowIdle.rows.map((handle) => handle.index), [1]);
   assert.deepEqual(rowIdle.columns.map((handle) => handle.index), [0]);
+  assert.deepEqual(
+    rowIdle.rows.map((handle) => [handle.bridge.left, handle.bridge.top, handle.bridge.width, handle.bridge.height]),
+    [[100, 124, 30, 34]],
+  );
+  assert.deepEqual(
+    rowIdle.columns.map((handle) => [handle.bridge.left, handle.bridge.top, handle.bridge.width, handle.bridge.height]),
+    [[120, 70, 80, 30]],
+  );
 
   const row = createTableAxisHandleChromeState(baseState({
     fixture,
@@ -506,53 +503,77 @@ test("table chrome model reveals row and column handles from the hovered cell", 
   assert.equal(hoveredTableCellIsSelected(selectedHoverState), true);
   assert.deepEqual(selectedHover.rows.map((handle) => handle.index), [1]);
   assert.deepEqual(selectedHover.columns, []);
-});
 
-test("table chrome model exposes continuous axis hover backdrops", () => {
-  const fixture = createGrid();
-  const { cells } = fixture;
-
-  const column = createTableAxisHoverChromeState(baseState({
+  const activeRow = createTableAxisHandleChromeState(baseState({
     fixture,
+    selection: {
+      kind: "row",
+      positions: new Set([10, 11, 12]),
+      rows: [0],
+      columns: [],
+    },
     hover: {
-      edge: "column-handle",
+      edge: "cell",
       rowIndex: 0,
       columnIndex: 1,
       cell: cells[1].cell,
     },
   }));
-  assert.deepEqual(
-    column.columns.map((item) => [
-      item.index,
-      item.rect.left,
-      item.rect.top,
-      item.rect.width,
-      item.rect.height,
-    ]),
-    [[1, 200, 90, 80, 68]],
-  );
-  assert.deepEqual(column.rows, []);
+  assert.equal(activeRow.rows[0].active, true);
+  assert.equal(activeRow.columns[0].active, false);
 
-  const row = createTableAxisHoverChromeState(baseState({
+  applyTableCellVisualState(baseState({
+    fixture,
+    selection: {
+      kind: "row",
+      positions: new Set([10, 11, 12]),
+      rows: [0],
+      columns: [],
+    },
+  }));
+  assert.equal(
+    fixture.cellElements.some((cell) => cell.classes.has("mn-tiptap-table-cell-selected")),
+    false,
+  );
+});
+
+test("table chrome model keeps ordinary cell hover visual-free", () => {
+  const fixture = createGrid();
+  const { cells } = fixture;
+
+  applyTableCellVisualState(baseState({
     fixture,
     hover: {
-      edge: "row-handle",
+      edge: "cell",
+      rowIndex: 0,
+      columnIndex: 1,
+      cell: cells[1].cell,
+    },
+  }));
+
+  assert.equal(
+    fixture.cellElements.some((cell) =>
+      cell.classes.has("mn-tiptap-table-cell-hovered-row") ||
+      cell.classes.has("mn-tiptap-table-cell-hovered-column"),
+    ),
+    false,
+  );
+  assert.equal(
+    fixture.cellElements.some((cell) => cell.classes.has("mn-tiptap-table-cell-selected")),
+    false,
+  );
+
+  const handles = createTableAxisHandleChromeState(baseState({
+    fixture,
+    hover: {
+      edge: "cell",
       rowIndex: 1,
       columnIndex: 0,
       cell: cells[3].cell,
     },
   }));
-  assert.deepEqual(
-    row.rows.map((item) => [
-      item.index,
-      item.rect.left,
-      item.rect.top,
-      item.rect.width,
-      item.rect.height,
-    ]),
-    [[1, 120, 124, 240, 34]],
-  );
-  assert.deepEqual(row.columns, []);
+  assert.deepEqual(handles.rows.map((handle) => handle.index), [1]);
+  assert.deepEqual(handles.columns.map((handle) => handle.index), [0]);
 });
 
 test("table chrome model positions selection backdrop and complex block insert rail", () => {
