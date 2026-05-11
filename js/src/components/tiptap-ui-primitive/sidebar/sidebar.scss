@@ -1,0 +1,389 @@
+:root {
+  /* Background colors */
+  --tt-sidebar-bg: var(--tt-gray-light-50);
+  --tt-sidebar-bg-subdued: var(--white);
+  --tt-sidebar-bg-emphasized: var(--tt-gray-light-100);
+
+  /* Border colors */
+  --tt-sidebar-border-color: var(--tt-gray-light-a-100);
+  --tt-sidebar-border-color-subdued: var(--tt-gray-light-a-100);
+  --tt-sidebar-border-color-emphasized: rgba(56, 56, 56, 0.03);
+  --tt-sidebar-header-border-color: var(--tt-gray-light-a-200);
+
+  /* Other properties */
+  --tt-sidebar-shadow: var(--tt-shadow-elevated-md);
+  --tt-sidebar-resize-handle-color: var(--tt-gray-light-300);
+  --tt-sidebar-resize-handle-hover-color: var(--tt-brand-color-500);
+  --tt-sidebar-transition-duration: 0.3s;
+  --tt-sidebar-transition-timing: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dark {
+  --tt-sidebar-bg: var(--tt-gray-dark-50);
+  --tt-sidebar-bg-subdued: var(--black);
+  --tt-sidebar-bg-emphasized: var(--tt-gray-dark-100);
+
+  --tt-sidebar-border-color: var(--tt-gray-dark-a-100);
+  --tt-sidebar-border-color-subdued: var(--tt-gray-dark-a-100);
+  --tt-sidebar-border-color-emphasized: var(--tt-gray-dark-a-50);
+  --tt-sidebar-header-border-color: var(--tt-gray-dark-a-200);
+
+  --tt-sidebar-resize-handle-color: var(--tt-gray-dark-300);
+}
+
+/* -----------------------------------------------------------------------------
+   Main Sidebar Container
+   ----------------------------------------------------------------------------- */
+
+.tiptap-sidebar {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--tt-sidebar-bg);
+  transition:
+    transform var(--tt-sidebar-transition-duration)
+      var(--tt-sidebar-transition-timing),
+    width var(--tt-sidebar-transition-duration)
+      var(--tt-sidebar-transition-timing),
+    opacity var(--tt-sidebar-transition-duration)
+      var(--tt-sidebar-transition-timing);
+}
+
+/* Resizing state - disable transitions */
+.tiptap-sidebar[data-resizing="true"],
+.tiptap-sidebar[data-resizing="true"] * {
+  transition: none;
+}
+
+/* -----------------------------------------------------------------------------
+   Side Positioning
+   ----------------------------------------------------------------------------- */
+
+.tiptap-sidebar[data-side="left"] {
+  left: 0;
+  border-right: 1px solid;
+}
+
+.tiptap-sidebar[data-side="right"] {
+  right: 0;
+  border-left: 1px solid;
+}
+
+/* Resize handle positioning */
+[data-side="left"] .tiptap-sidebar-resize-handle {
+  right: 0;
+}
+
+[data-side="right"] .tiptap-sidebar-resize-handle {
+  left: 0;
+}
+
+/* -----------------------------------------------------------------------------
+   Open/Closed State
+   ----------------------------------------------------------------------------- */
+
+.tiptap-sidebar[data-open="true"] {
+  transform: translateX(0);
+}
+
+.tiptap-sidebar[data-open="false"][data-side="left"] {
+  transform: translateX(-100%);
+}
+
+.tiptap-sidebar[data-open="false"][data-side="right"] {
+  transform: translateX(100%);
+}
+
+/* -----------------------------------------------------------------------------
+   Mode Variants (Push vs Overlay)
+   ----------------------------------------------------------------------------- */
+
+.tiptap-sidebar[data-mode="push"] {
+  position: relative;
+}
+
+.tiptap-sidebar[data-mode="overlay"][data-open="true"] {
+  box-shadow: var(--tt-sidebar-shadow);
+}
+
+.tiptap-sidebar[data-mode="push"][data-open="false"] {
+  width: 0 !important;
+  min-width: 0;
+  overflow: hidden;
+  border: none;
+  transform: none;
+}
+
+.tiptap-sidebar[data-mode="push"][data-style="elevated"][data-open="true"] {
+  margin: 0.75rem; // 12px
+  border-radius: var(--tt-radius-xl);
+}
+
+.tiptap-sidebar[data-mode="overlay"][data-style="elevated"][data-open="true"] {
+  margin: 0.5rem; // 8px
+}
+
+@media (max-width: 640px) {
+  .tiptap-sidebar[data-mode="push"][data-style="elevated"],
+  .tiptap-sidebar[data-mode="overlay"][data-style="elevated"] {
+    margin: 0.25rem; // 4px
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   Style Variants (Plain vs Elevated)
+   ----------------------------------------------------------------------------- */
+
+.tiptap-sidebar[data-style="elevated"][data-open="true"] {
+  box-shadow: var(--tt-sidebar-shadow);
+  border-radius: var(--tt-radius-xl);
+  overflow: hidden;
+}
+
+/* -----------------------------------------------------------------------------
+   Appearance Variants
+   ----------------------------------------------------------------------------- */
+
+.tiptap-sidebar[data-appearance="default"] {
+  background: var(--tt-sidebar-bg);
+  border-color: var(--tt-sidebar-border-color);
+}
+
+.tiptap-sidebar[data-appearance="subdued"] {
+  background: var(--tt-sidebar-bg-subdued);
+  border-color: var(--tt-sidebar-border-color-subdued);
+}
+
+.tiptap-sidebar[data-appearance="emphasized"] {
+  background: var(--tt-sidebar-bg-emphasized);
+  border-color: var(--tt-sidebar-border-color-emphasized);
+}
+
+/* -----------------------------------------------------------------------------
+   Size Variants (Fullsize)
+   ----------------------------------------------------------------------------- */
+
+.tiptap-sidebar[data-fullsize="true"] {
+  width: auto !important;
+  max-width: none !important;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+.tiptap-sidebar[data-mode="push"][data-fullsize="true"] {
+  position: fixed;
+}
+
+/* -----------------------------------------------------------------------------
+   Sidebar Sections
+   ----------------------------------------------------------------------------- */
+
+.tiptap-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  flex-shrink: 0;
+}
+
+// add border to tiptap sidebar header if the data style is not elevated
+.tiptap-sidebar[data-style="plain"] .tiptap-sidebar-header {
+  border-bottom: 1px solid var(--tt-sidebar-border-color);
+}
+
+.tiptap-sidebar-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  flex-shrink: 0;
+}
+
+.tiptap-sidebar-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Custom scrollbar */
+.tiptap-sidebar-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.tiptap-sidebar-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tiptap-sidebar-content::-webkit-scrollbar-thumb {
+  background: var(--tt-sidebar-border-color);
+  border-radius: 3px;
+}
+
+.tiptap-sidebar-content::-webkit-scrollbar-thumb:hover {
+  background: var(--tt-sidebar-resize-handle-color);
+}
+
+/* -----------------------------------------------------------------------------
+   Resize Handle
+   ----------------------------------------------------------------------------- */
+
+.tiptap-sidebar-resize-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background-color: transparent;
+  cursor: col-resize;
+  user-select: none;
+  touch-action: none;
+  transition: background-color 0.15s ease;
+  z-index: 50;
+}
+
+/* Wider hit area for easier grabbing */
+.tiptap-sidebar-resize-handle::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -5px;
+  right: -5px;
+}
+
+/* Hover and active states */
+.tiptap-sidebar-resize-handle:hover,
+.tiptap-sidebar-resize-handle[data-resizing="true"] {
+  background-color: var(--tt-sidebar-resize-handle-hover-color);
+  width: 3px;
+}
+
+.tiptap-sidebar-resize-handle[data-resizing="true"],
+[data-resizing="true"] .tiptap-sidebar-resize-handle {
+  transition: none !important;
+}
+
+.tiptap-sidebar-resize-handle:focus-visible {
+  outline: 3px solid var(--tt-brand-color-300);
+  outline-offset: 3px;
+}
+
+/* -----------------------------------------------------------------------------
+   Overlay Backdrop
+   ----------------------------------------------------------------------------- */
+
+.tiptap-sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 39;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--tt-sidebar-transition-duration)
+    var(--tt-sidebar-transition-timing);
+}
+
+.tiptap-sidebar-backdrop[data-visible="true"] {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* -----------------------------------------------------------------------------
+   Layout Wrapper (Push Mode)
+   ----------------------------------------------------------------------------- */
+
+.tiptap-layout-with-sidebar {
+  display: flex;
+  min-height: 100svh;
+}
+
+.tiptap-layout-with-sidebar .tiptap-sidebar[data-mode="push"] {
+  flex-shrink: 0;
+}
+
+.tiptap-layout-with-sidebar .tiptap-main-content {
+  flex: 1;
+  min-width: 0;
+  transition: margin var(--tt-sidebar-transition-duration)
+    var(--tt-sidebar-transition-timing);
+}
+
+.tiptap-layout-with-sidebar:has(
+    .tiptap-sidebar[data-mode="push"][data-side="left"][data-open="true"]
+  )
+  .tiptap-main-content {
+  margin-left: 0;
+}
+
+.tiptap-layout-with-sidebar:has(
+    .tiptap-sidebar[data-mode="push"][data-side="right"][data-open="true"]
+  )
+  .tiptap-main-content {
+  margin-right: 0;
+}
+
+/* -----------------------------------------------------------------------------
+   Breakpoint Behavior
+   ----------------------------------------------------------------------------- */
+
+@media (max-width: 768px) {
+  .tiptap-sidebar {
+    position: fixed;
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   Print & Accessibility
+   ----------------------------------------------------------------------------- */
+
+@media print {
+  .tiptap-sidebar {
+    display: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tiptap-sidebar,
+  .tiptap-sidebar-backdrop,
+  .tiptap-main-content {
+    transition: none !important;
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   Breakpoint Behavior
+   ----------------------------------------------------------------------------- */
+
+@media (max-width: 640px) {
+  .tiptap-sidebar[data-breakpoint="sm"] {
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .tiptap-sidebar[data-breakpoint="md"] {
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 1024px) {
+  .tiptap-sidebar[data-breakpoint="lg"] {
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 1280px) {
+  .tiptap-sidebar[data-breakpoint="xl"] {
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 1536px) {
+  .tiptap-sidebar[data-breakpoint="2xl"] {
+    width: 100% !important;
+  }
+}
