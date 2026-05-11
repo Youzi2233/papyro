@@ -37,10 +37,13 @@
   "devDependencies": {
     "@ariakit/react": "^0.4.26",
     "@base-ui/react": "^1.4.1",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
     "class-variance-authority": "^0.7.1",
     "esbuild": "^0.24.2",
     "happy-dom": "^20.9.0",
     "sass": "^1.99.0",
-    "sass-embedded": "^1.99.0"
+    "sass-embedded": "^1.99.0",
+    "typescript": "^6.0.3"
   }
 }

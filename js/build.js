@@ -38,7 +38,10 @@ const ctx = await esbuild.context({
   minify: !watch,
   sourcemap: watch ? "inline" : false,
   loader: {
+    ".js": "jsx",
     ".jsx": "jsx",
+    ".ts": "ts",
+    ".tsx": "tsx",
     ".scss": "css",
   },
   alias: {
