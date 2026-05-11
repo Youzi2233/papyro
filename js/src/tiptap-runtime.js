@@ -22,7 +22,7 @@ import { createTiptapPreferencesController } from "./tiptap-preferences-controll
 import { createTiptapSourcePaneController } from "./tiptap-source-pane.js";
 import { createTiptapSlashCommandController } from "./tiptap-slash-commands.js";
 import { createTiptapSlashMenuController } from "./tiptap-slash-menu.js";
-import { createTiptapTableToolbarController } from "./tiptap-table-toolbar.js";
+import { createTiptapTableCommandBridge } from "./tiptap-table-command-bridge.js";
 import { isComposingKeyboardEvent } from "./tiptap-ui-primitives.js";
 import {
   createPapyroMarkdownManager,
@@ -146,7 +146,7 @@ function defaultEditorOptions({
     editable: viewMode === "hybrid",
     editorProps: {
       attributes: {
-        class: "mn-tiptap-editor",
+        class: "mn-tiptap-editor tiptap",
       },
       handleKeyDown: (_view, event) => {
         const entry = registry.get(tabId);
@@ -276,7 +276,7 @@ export function createTiptapEditorRuntime({
   slashCommandControllerFactory = createTiptapSlashCommandController,
   slashMenuControllerFactory = createTiptapSlashMenuController,
   slashMenuViewFactory = null,
-  tableToolbarControllerFactory = createTiptapTableToolbarController,
+  tableToolbarControllerFactory = createTiptapTableCommandBridge,
   tableMenuRendererFactory = null,
   tableChromeRendererFactory = null,
   mountControllerFactory = createLegacyMountController,

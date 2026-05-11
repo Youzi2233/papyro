@@ -106,8 +106,16 @@ const tableToolbarViewSource = readFileSync(
   new URL("../src/tiptap-table-toolbar-view.js", import.meta.url),
   "utf8",
 );
+const tableCommandBridgeSource = readFileSync(
+  new URL("../src/tiptap-table-command-bridge.js", import.meta.url),
+  "utf8",
+);
 const editorEntrySource = readFileSync(
   new URL("../src/editor-tiptap-entry.js", import.meta.url),
+  "utf8",
+);
+const tiptapRuntimeSource = readFileSync(
+  new URL("../src/tiptap-runtime.js", import.meta.url),
   "utf8",
 );
 const primitivesSource = readFileSync(
@@ -300,15 +308,26 @@ test("React floating chrome shares positioning utilities", () => {
   assert.doesNotMatch(blockActionMenuViewSource, /positionFloatingElement/u);
 });
 
-test("React table context menu and official table-node layer are injected at the editor boundary", () => {
-  assert.match(indexSource, /createTiptapReactTableContextMenuRenderer/u);
-  assert.match(indexSource, /createTiptapReactTableChromeRenderer/u);
+test("official table-node layer owns visible table chrome at the editor boundary", () => {
   assert.match(indexSource, /createTiptapReactFormatToolbarView/u);
-  assert.match(editorEntrySource, /tableMenuRendererFactory:\s*createTiptapReactTableContextMenuRenderer/u);
-  assert.match(editorEntrySource, /tableChromeRendererFactory:\s*createTiptapReactTableChromeRenderer/u);
+  assert.match(editorEntrySource, /createTiptapTableCommandBridge/u);
+  assert.match(editorEntrySource, /tableToolbarControllerFactory:\s*createTiptapTableCommandBridge/u);
+  assert.match(tiptapRuntimeSource, /from "\.\/tiptap-table-command-bridge\.js"/u);
+  assert.match(tiptapRuntimeSource, /tableToolbarControllerFactory\s*=\s*createTiptapTableCommandBridge/u);
+  assert.doesNotMatch(tiptapRuntimeSource, /from "\.\/tiptap-table-toolbar\.js"/u);
+  assert.doesNotMatch(editorEntrySource, /createTiptapReactTableContextMenuRenderer/u);
+  assert.doesNotMatch(editorEntrySource, /createTiptapReactTableChromeRenderer/u);
+  assert.doesNotMatch(editorEntrySource, /tableMenuRendererFactory/u);
+  assert.doesNotMatch(editorEntrySource, /tableChromeRendererFactory/u);
   assert.doesNotMatch(editorEntrySource, /tableChromeRendererFactory:\s*null/u);
   assert.match(editorEntrySource, /formatToolbarViewFactory:\s*createTiptapReactFormatToolbarView/u);
   assert.match(slotsSource, /PapyroOfficialTableNodeLayer/u);
+  assert.match(tableCommandBridgeSource, /export function createTiptapTableCommandBridge/u);
+  assert.match(tableCommandBridgeSource, /TABLE_COMMANDS/u);
+  assert.doesNotMatch(tableCommandBridgeSource, /addEventListener/u);
+  assert.doesNotMatch(tableCommandBridgeSource, /createElement/u);
+  assert.doesNotMatch(tableCommandBridgeSource, /querySelector/u);
+  assert.doesNotMatch(tableCommandBridgeSource, /pointerdown|pointerenter|mousedown|contextmenu/u);
   assert.match(tableToolbarViewSource, /menuRendererFactory/u);
   assert.match(tableToolbarViewSource, /chromeRendererFactory/u);
   assert.doesNotMatch(tableToolbarViewSource, /tiptap-react\/index\.js/u);

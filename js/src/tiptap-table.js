@@ -721,14 +721,12 @@ class PapyroTableView extends TableView {
   constructor(node, cellMinWidth, view) {
     super(node, cellMinWidth, view);
     this.#mountOfficialTableContainers();
-    this.#syncPapyroTableClass();
   }
 
   update(node) {
     const updated = super.update(node);
     if (updated) {
       this.#mountOfficialTableContainers();
-      this.#syncPapyroTableClass();
     }
     return updated;
   }
@@ -746,18 +744,11 @@ class PapyroTableView extends TableView {
       this.dom.appendChild(overlay);
     }
   }
-
-  #syncPapyroTableClass() {
-    this.table?.classList?.add?.("mn-tiptap-table");
-  }
 }
 
 export function createPapyroTableExtensions({ writeText = null } = {}) {
   return [
     PapyroTable.configure({
-      HTMLAttributes: {
-        class: "mn-tiptap-table",
-      },
       resizable: true,
       handleWidth: 6,
       cellMinWidth: 96,
@@ -767,21 +758,6 @@ export function createPapyroTableExtensions({ writeText = null } = {}) {
     }),
     TableKit.configure({
       table: false,
-      tableRow: {
-        HTMLAttributes: {
-          class: "mn-tiptap-table-row",
-        },
-      },
-      tableHeader: {
-        HTMLAttributes: {
-          class: "mn-tiptap-table-header",
-        },
-      },
-      tableCell: {
-        HTMLAttributes: {
-          class: "mn-tiptap-table-cell",
-        },
-      },
     }),
     TableHandleExtension,
     PapyroTableCellBackground,

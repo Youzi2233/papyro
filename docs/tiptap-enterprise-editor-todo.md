@@ -76,6 +76,7 @@ Integration rule:
 
 - Each official component surface gets its own commit, source-level guard, runtime smoke, and Markdown persistence check.
 - Official source may be generated into a temporary or isolated path first, then merged into Papyro-owned React modules after reviewing imports, styling tokens, i18n, WebView focus behavior, and local-file semantics.
+- Current table-node audit source: the generated official `table-node` component was first installed into `.reference/tiptap-table-node-sample`, then the real table handle, selection overlay, extend buttons, styles, and menu paths were copied/adapted into `js/src/components/tiptap-node/table-node/`. Source-level tests now guard that these paths are not shims re-exporting the old Papyro table chrome.
 - No AI, collaboration, mention, or emoji dependency should enter `js/package.json` unless that surface is explicitly enabled in the product plan.
 
 ## Default Free/Open-Source Path
@@ -196,7 +197,7 @@ Tasks:
 - [x] Guard optional React chrome with error boundaries so a failed overlay cannot blank the document.
   - Current coverage: `BeforeContent`, `AfterContent`, and `OverlayLayer` are isolated by `PapyroTiptapChromeErrorBoundary`. The editor content itself stays outside those boundaries, so table/handle/menu failures report a runtime error and hide only the broken chrome.
 - [ ] Keep the existing DOM controllers disabled behind a runtime flag while React replacements are tested.
-  - Current coverage: the runtime now injects a table chrome bridge instead of passing `tableChromeRendererFactory: null`. That bridge keeps Papyro visual cell-selection classes in sync and keeps the old quick-add rails, cell trigger, axis handles, and backdrop DOM hidden, so official `table-node` is the only visible table chrome owner in the real runtime.
+  - Current coverage: the real editor entry and the runtime default now use `createTiptapTableCommandBridge`, a no-DOM command bridge. The legacy table toolbar/chrome controller remains as an explicit fallback and test harness, but it is not injected by the production entry or the default runtime path.
 
 Acceptance criteria:
 
@@ -347,7 +348,7 @@ Tasks:
   - Current coverage: `js/src/tiptap-react/slots.jsx` renders the official table-node overlay next to the official drag-handle bridge.
   - Current coverage: `js/src/tiptap-table.js` registers the official `tableHandleExtension` so official row/column handle state reaches React.
   - Current coverage: `PapyroTableView` now adds the `.table-controls` and `.table-selection-overlay-container` portal targets that the official table-node handle and selection overlay expect inside each `.tableWrapper`.
-  - Current coverage: the editor entry injects `createTiptapReactTableChromeRenderer` as a visual-state bridge instead of passing `null`, preventing the migration DOM fallback from mounting duplicate hover handles, selection overlays, and cell action triggers.
+  - Current coverage: the editor entry injects `createTiptapTableCommandBridge` through `tableToolbarControllerFactory`, so visible table hover handles, selection overlay, cell menu trigger, and extend buttons are owned by the generated official `table-node` React layer instead of the legacy table toolbar DOM controller.
   - Current coverage: official SCSS imports are bundled into `editor.js`, so desktop and mobile hosts receive the table-node styles through the existing editor runtime script.
   - Current fix: the official selection overlay now uses a small Papyro overlay-mode model. A normal text caret inside a table cell no longer shows object-selection chrome by itself; the overlay follows either a real ProseMirror `CellSelection` or an explicit Papyro visual cell selection.
 - [x] Remove the top-left whole-table selector unless a clear product action requires it.
@@ -359,8 +360,7 @@ Tasks:
   - Current fix: React and fallback chrome now add transparent row/column hit areas over the hovered axis, so moving from a header or body cell toward the floating top/left handle keeps the same hover axis instead of dropping the handle mid-flight.
   - Current fix: the official `tableHandleExtension` no longer hides row/column handles when the pointer is held down inside a cell. Handle visibility now remains hover-driven instead of being coupled to cell selection or drag-selection state.
   - Current polish: hovering a cell reveals only the row and column handles. Full row or column mist and theme outlines are reserved for actual row/column selection after the axis handle is clicked.
-  - Current architecture: official table-node owns visible row/column handles, selection overlay, cell handle menu, and extend buttons. Papyro's migration table toolbar now stays in the background as a command bridge and visual-state synchronizer.
-  - Current architecture: the injected table chrome bridge keeps selected/active cell classes in sync for Papyro styling, but keeps its root hidden and does not render quick-add, cell-action, insert-rail, axis-handle, or backdrop DOM. The old DOM renderer remains only as a fallback/test path.
+  - Current architecture: official table-node owns visible row/column handles, selection overlay, cell handle menu, and extend buttons. Papyro's migration table toolbar is no longer the default runtime path; a no-DOM command bridge keeps the host command contract available while the legacy DOM renderer remains only as an explicit fallback/test path.
 - [ ] Make the entire cell surface editable and focusable, not only a tiny center area.
   - Correction required: short clicks must no longer commit a single-cell ProseMirror `CellSelection`. The single-cell state is a Papyro visual selection layered over normal ProseMirror text selection so caret placement and in-cell text dragging stay natural.
   - Current target: cell-range dragging can still start from filled text, blank cell surfaces, or empty paragraphs, but the controller should promote to a real table range only after the pointer crosses into another cell.
@@ -384,8 +384,8 @@ Tasks:
   - Current coverage: the table cell action trigger idles as a small edge dot and expands into a compact four-dot grip only on hover, focus, or open state.
   - Current polish: the single-cell trigger now has a tested right-edge center intent zone. Ordinary cell hover stays clean, selected cells get a restrained border and right-edge rail, and only deliberate edge hover or an active selection reveals the action point.
   - Current polish: single-cell action triggers now anchor from the actual ProseMirror cell-selection position in the table grid, not a stale active-cell rectangle. Opening the trigger reuses that selected position, so the menu no longer jumps back to a previously active cell after the user selects a different cell.
-  - Current polish: the official table-node layer now provides the visible cell handle menu trigger. Papyro's hidden bridge keeps the old chrome root out of the accessibility/focus tree so legacy quick-add rails, cell triggers, insert rails, and row/column axis handles do not leave inactive focus targets behind.
-  - Current polish: the migration DOM fallback still uses the same hidden-state contract for table quick-add rails, cell triggers, axis handles, complex-block insert rails, and decorative overlays, keeping fallback behavior testable while real runtime visibility belongs to official table-node.
+  - Current polish: the official table-node layer now provides the visible cell handle menu trigger. The real runtime does not mount the old quick-add rails, cell triggers, insert rails, or row/column axis handles, so there are no inactive legacy focus targets competing with the official layer.
+  - Current polish: the migration DOM fallback still keeps its hidden-state contract for table quick-add rails, cell triggers, axis handles, complex-block insert rails, and decorative overlays, making fallback behavior testable without reintroducing it into the production entry.
   - Current correction: the right-edge table cell action trigger is now scoped only to single-cell and cell-range selections. Row and column menus open from their slim axis handles, and table-level actions no longer masquerade as generic cell actions.
   - Current fix: the official selection overlay now classifies its scope as cell, range, row, column, or whole table. Cell menus and corner range-resize handles render only for cell/range scope, so row, column, and table selections no longer expose misleading cell chrome.
   - Current polish: the selected-cell action trigger now idles as a smaller dot hit box and only expands to the full four-dot grip on hover, focus, or open state. This keeps the resize border cleaner and reduces competition with the official column-resize handle.

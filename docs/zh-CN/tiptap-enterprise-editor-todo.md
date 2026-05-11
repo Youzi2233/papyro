@@ -76,6 +76,7 @@ git -C .reference\tiptap-docs pull --ff-only
 
 - 每个官方组件表面独立提交，独立增加 source-level guard、runtime smoke 和 Markdown 持久化检查。
 - 官方源码可以先生成到临时或隔离目录，审查 imports、样式 token、i18n、WebView 焦点行为和本地文件语义后，再合并进 Papyro React 模块。
+- 当前 table-node 审计来源：官方 `table-node` 组件先生成到 `.reference/tiptap-table-node-sample`，再把真实 table handle、selection overlay、extend buttons、样式和菜单路径复制/适配进 `js/src/components/tiptap-node/table-node/`。source-level 测试现在会守住这些路径不能再退回成旧 Papyro table chrome 的 re-export shim。
 - 除非产品计划明确启用，否则 AI、协作、mention、emoji 相关依赖不要进入 `js/package.json`。
 
 ## 默认免费/开源路线
@@ -195,7 +196,7 @@ node scripts/check-workspace-deps.js
 - [x] 为可选 React chrome 增加错误边界，避免浮层异常把文档正文一起白屏。
   - 当前覆盖：`BeforeContent`、`AfterContent` 和 `OverlayLayer` 都由 `PapyroTiptapChromeErrorBoundary` 隔离。编辑器正文不在这些边界内，因此表格、句柄或菜单异常时，只会上报 runtime error 并隐藏损坏 chrome，不会移除正文编辑面。
 - [ ] 在 React 替换完成前，把旧 DOM controller 放在 runtime flag 后面，避免双系统同时抢 UI。
-  - 当前覆盖：真实运行时现在注入 table chrome bridge，而不是传入 `tableChromeRendererFactory: null`。这个 bridge 只同步 Papyro 视觉单元格选中 class，并保持旧快捷新增轨道、单元格触发点、行列句柄和遮罩 DOM 隐藏，因此官方 `table-node` 是真实运行时唯一可见的表格 chrome owner。
+  - 当前覆盖：真实 editor 入口和 runtime 默认值现在都使用 `createTiptapTableCommandBridge`，这是无 DOM 的命令桥。旧表格 toolbar/chrome controller 仍保留为显式 fallback 和测试工具，但不再由生产入口或默认 runtime 路径注入。
 
 验收标准：
 
@@ -343,7 +344,7 @@ node scripts/check-tiptap-release-smoke.js
   - 当前覆盖：`js/src/tiptap-react/slots.jsx` 会把官方 table-node overlay 和官方 drag-handle bridge 一起渲染。
   - 当前覆盖：`js/src/tiptap-table.js` 注册官方 `tableHandleExtension`，让官方行/列句柄状态进入 React。
   - 当前覆盖：`PapyroTableView` 现在会在每个 `.tableWrapper` 内补齐官方 table-node 句柄和选区 overlay 需要的 `.table-controls` 与 `.table-selection-overlay-container` portal 目标。
-  - 当前覆盖：editor 入口注入 `createTiptapReactTableChromeRenderer` 作为视觉状态 bridge，而不是传 `null` 触发迁移期 DOM fallback，避免重复的 hover 句柄、选区 overlay 和单元格操作触发点互相抢状态。
+  - 当前覆盖：editor 入口通过 `tableToolbarControllerFactory` 注入 `createTiptapTableCommandBridge`，因此可见的表格 hover 句柄、选区 overlay、单元格菜单触发点和扩展按钮都由生成出来的官方 `table-node` React 层负责，不再由旧 table toolbar DOM controller 接管。
   - 当前覆盖：官方 SCSS import 会被打进 `editor.js`，桌面端和移动端通过现有 editor runtime 脚本获得 table-node 样式。
   - 当前修复：官方 selection overlay 现在通过 Papyro 的小型 overlay-mode 模型判断显示状态。普通文本光标位于表格单元格内时，不再自动显示对象选中 chrome；overlay 只跟随真实 ProseMirror `CellSelection` 或明确的 Papyro 视觉单元格选中。
 - [x] 删除左上角选择整张表格入口，除非有明确产品动作需要它。
@@ -355,8 +356,7 @@ node scripts/check-tiptap-release-smoke.js
   - 当前修复：React 和 fallback chrome 现在都会在 hover 轴向上添加透明行/列命中区，所以鼠标从表头或正文单元格移向顶部/左侧浮动句柄时，会保持同一个轴向 hover，不再半路丢失句柄。
   - 当前修复：官方 `tableHandleExtension` 不再因为鼠标按在单元格内就隐藏行/列句柄。句柄可见性现在只跟 hover 绑定，不再和单元格选中或拖选状态耦合。
   - 当前打磨：hover 单元格只显示行/列句柄；整行/整列的雾蒙层和主题外轮廓只保留给点击轴向句柄后的真实选中态。
-  - 当前架构：官方 table-node 负责可见的行/列句柄、选区 overlay、单元格 handle 菜单和扩展按钮。Papyro 迁移期 table toolbar 退到后台，只作为命令桥和视觉状态同步器。
-  - 当前架构：注入的 table chrome bridge 会同步选中/活跃单元格 class 以维持 Papyro 样式，但它的 root 始终隐藏，不渲染快捷新增、单元格操作触发点、插入轨道、行列句柄或遮罩 DOM；旧 DOM renderer 只保留 fallback 和测试路径。
+  - 当前架构：官方 table-node 负责可见的行/列句柄、选区 overlay、单元格 handle 菜单和扩展按钮。Papyro 迁移期 table toolbar 不再是默认运行时路径；无 DOM 命令桥只保留宿主命令契约，旧 DOM renderer 仅作为显式 fallback 和测试路径。
 - [ ] 整个单元格表面都能进入编辑和聚焦，不应该只有中间一小块能触发。
   - 纠偏要求：短点击不能再提交单个单元格 ProseMirror `CellSelection`。单个单元格选中必须是 Papyro 视觉状态，叠加在正常 ProseMirror 文本选区之上，让光标定位和单元格内文本拖选保持自然。
   - 当前目标：表格范围拖选仍然可以从已有文字、空白单元格表面或空段落开始，但 controller 只在指针跨入另一个单元格后才升级为真实表格范围。
@@ -379,9 +379,8 @@ node scripts/check-tiptap-release-smoke.js
 - [ ] 多单元格框选后显示克制遮罩，并在选区边缘显示小操作触发点。
   - 当前覆盖：表格单元格操作触发器默认是边缘小点，只在 hover、focus 或打开状态展开为紧凑四点 grip。
   - 当前打磨：单个单元格的操作触发点现在优先按 ProseMirror 单元格选区在表格网格中的真实位置锚定，而不是沿用过期的 active cell 矩形。打开触发点时也复用这个已选位置，避免用户选中另一个单元格后菜单又跳回之前活跃的单元格。
-  - 当前打磨：官方 table-node 层现在提供可见的单元格 handle 菜单触发点。Papyro 隐藏 bridge 会把旧 chrome root 从可访问树和焦点顺序中移除，避免旧快捷新增轨道、单元格触发点、插入轨道和行列句柄在隐藏态留下不可见焦点目标。
-  - 当前架构：真实运行时注入 table chrome bridge 时，不再挂载旧的快捷新增、单元格操作触发点、复杂块插入轨道、行列句柄或选区遮罩 DOM；旧 DOM chrome 只保留为 fallback 和测试路径，避免两套 overlay 同时抢状态。
-  - 当前打磨：迁移期 DOM fallback 现在也对表格快捷新增轨道、单元格触发点、行列句柄、复杂块插入轨道和装饰遮罩使用同一套隐藏态契约，保证 React 与 fallback chrome 在继续迁移期间语义一致。
+  - 当前打磨：官方 table-node 层现在提供可见的单元格 handle 菜单触发点。真实运行时不再挂载旧快捷新增轨道、单元格触发点、插入轨道或行列句柄，因此不会留下与官方层竞争的旧焦点目标。
+  - 当前打磨：迁移期 DOM fallback 仍对表格快捷新增轨道、单元格触发点、行列句柄、复杂块插入轨道和装饰遮罩保留同一套隐藏态契约，方便测试 fallback 行为，但不再把它带回生产入口。
   - 当前纠偏：表格右侧单元格操作触发点现在只服务单个单元格和单元格范围选区；行/列菜单从细轴向句柄打开，整表动作也不再伪装成泛化的单元格操作。
   - 当前修复：官方 selection overlay 现在会把选区作用域区分为单元格、单元格范围、行、列和整表。单元格菜单和角点范围 resize 句柄只在单元格/范围作用域渲染，行、列和整表选中不再误露出单元格 chrome。
   - 当前打磨：已选单元格的操作触发点默认收敛为更小的边缘圆点，只有 hover、focus 或菜单打开时才展开为完整四点 grip，减少它与官方列宽拖拽 handle 的竞争。

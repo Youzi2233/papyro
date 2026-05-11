@@ -27,7 +27,7 @@ export function checkTiptapRuntimeSmoke(markdown) {
       injectCSS: false,
       editorProps: {
         attributes: {
-          class: "mn-tiptap-editor",
+          class: "mn-tiptap-editor tiptap",
         },
       },
     });
@@ -91,6 +91,10 @@ function checkMountedEditor(failures, editor) {
 
   if (!editor.view.dom?.classList?.contains("ProseMirror")) {
     failures.push("editor view DOM is missing ProseMirror root class");
+  }
+
+  if (!editor.view.dom?.classList?.contains("tiptap")) {
+    failures.push("editor view DOM is missing the official Tiptap root class");
   }
 
   if (editor.isDestroyed) {

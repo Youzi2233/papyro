@@ -292,6 +292,7 @@ test("Tiptap runtime creates an editor instance and registry entry", () => {
   assert.equal(editor.root.dataset.tabId, "tab-a");
   assert.equal(editor.root.dataset.viewMode, "hybrid");
   assert.equal(editor.root.dataset.language, "english");
+  assert.equal(editor.options.editorProps.attributes.class, "mn-tiptap-editor tiptap");
   assert.equal(registry.get("tab-a").instanceId, "host-a");
   assert.equal(registry.get("tab-a").markdownSync.markdown, "# Note");
   assert.deepEqual(calls, [

@@ -24,7 +24,8 @@
   margin-block: var(--tt-table-margin-block);
 }
 
-.tiptap [data-content-type="table"] .tableWrapper {
+.tiptap [data-content-type="table"] .tableWrapper,
+.mn-tiptap-editor.tiptap .tableWrapper[data-content-type="table"] {
   padding-block-start: var(--tt-table-pad-block-start);
   padding-inline-start: var(--tt-table-pad-inline-start);
   padding-inline-end: var(--tt-table-pad-inline-end);
@@ -52,6 +53,33 @@
   background-color: var(--tt-gray-light-a-100);
   font-weight: 700;
   text-align: left;
+}
+
+.mn-tiptap-editor.tiptap .tableWrapper[data-content-type="table"] {
+  margin-block: var(--tt-table-margin-block);
+}
+
+.mn-tiptap-editor.tiptap .tableWrapper[data-content-type="table"] table,
+.mn-tiptap-editor.tiptap .tableWrapper[data-content-type="table"] .mn-tiptap-table {
+  width: auto !important;
+  border-collapse: collapse;
+  border-spacing: 0 !important;
+  table-layout: fixed;
+}
+
+.mn-tiptap-editor.tiptap .tableWrapper[data-content-type="table"] th,
+.mn-tiptap-editor.tiptap .tableWrapper[data-content-type="table"] td {
+  border: 1px solid var(--tt-table-border-color);
+  padding: var(--tt-table-cell-padding);
+}
+
+.mn-tiptap-editor.tiptap
+  .tableWrapper[data-content-type="table"]
+  :where(.mn-tiptap-table-cell-active, .mn-tiptap-table-cell-selected)::after,
+.mn-tiptap-editor.tiptap
+  .tableWrapper[data-content-type="table"]
+  :where(td.selectedCell, th.selectedCell):not(.mn-tiptap-table-cell-selected)::after {
+  display: none;
 }
 
 .mn-tiptap-editor .tableWrapper {

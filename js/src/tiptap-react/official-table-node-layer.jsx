@@ -1,14 +1,14 @@
 import React, { useCallback, useState } from "react";
 
-import { TableExtendRowColumnButtons } from "../components/tiptap-node/table-extend-row-column-button.jsx";
-import { TableHandle } from "../components/tiptap-node/table-handle.jsx";
+import { TableExtendRowColumnButtons } from "../components/tiptap-node/table-node/ui/table-extend-row-column-button";
+import { TableHandle } from "../components/tiptap-node/table-node/ui/table-handle/table-handle.jsx";
 import { TableCellHandleMenu } from "../components/tiptap-node/table-node/ui/table-cell-handle-menu/index.jsx";
-import { TableSelectionOverlay } from "../components/tiptap-node/table-selection-overlay.jsx";
-import "../components/tiptap-node/prosemirror-table.scss";
-import "../components/tiptap-node/table-extend-row-column-button.scss";
+import { TableSelectionOverlay } from "../components/tiptap-node/table-node/ui/table-selection-overlay";
+import "../components/tiptap-node/table-node/styles/prosemirror-table.scss";
+import "../components/tiptap-node/table-node/styles/table-node.scss";
+import "../components/tiptap-node/table-node/ui/table-extend-row-column-button/table-extend-row-column-button.scss";
 import "../components/tiptap-node/table-node/ui/table-cell-handle-menu/table-cell-handle-menu.scss";
 import "../components/tiptap-node/table-node/ui/table-handle-menu/table-handle-menu.scss";
-import "../components/tiptap-node/table-node.scss";
 import "../styles/_variables.scss";
 import "../styles/_keyframe-animations.scss";
 
