@@ -66,8 +66,8 @@ git -C .reference\tiptap-docs pull --ff-only
 
 接入队列：
 
-- 已接入：授权 `table-node` 可见表格 chrome、官方 table handle extension 边界、`@tiptap/extension-drag-handle-react`、`@tiptap/extension-node-range`、官方 color/highlight 扩展路径、React island slot 模型、`slash-dropdown-menu` 以及 `suggestion-menu`。
-- 下一批适合本地 Markdown 体验的官方候选：`slash-command-trigger-button`、`floating-element`、`drag-context-menu`、`turn-into-dropdown`、`move-node-button`、`delete-node-button`、`duplicate-button`、`reset-all-formatting-button`、`link-popover`、`heading-dropdown-menu`、`list-dropdown-menu`、`mark-button`、`text-align-button`、`undo-redo-button`、`image-node-pro`、`image-align-button` 和 `image-upload-button`。
+- 已接入：授权 `table-node` 可见表格 chrome、官方 table handle extension 边界、`@tiptap/extension-drag-handle-react`、`@tiptap/extension-node-range`、官方 color/highlight 扩展路径、React island slot 模型、`slash-dropdown-menu`、`suggestion-menu`、`drag-context-menu`、`slash-command-trigger-button`、`turn-into-dropdown`、`duplicate-button`、`delete-node-button` 以及 `reset-all-formatting-button`。
+- 下一批适合本地 Markdown 体验的官方候选：`floating-element`、`move-node-button`、`link-popover`、`heading-dropdown-menu`、`list-dropdown-menu`、`mark-button`、`text-align-button`、`undo-redo-button`、`image-node-pro`、`image-align-button` 和 `image-upload-button`。
 - 优先对照或复用的免费/开放组件：`blockquote-button`、`code-block-button`、`heading-button`、`list-button`、`image-upload-button`、`link-popover`、`mark-button`、`text-align-button`、`undo-redo-button`、`blockquote-node`、`code-block-node`、`heading-node`、`horizontal-rule-node`、`image-node`、`list-node` 和 `paragraph-node`。
 - 本地 Markdown 工具默认暂缓：`ai-menu`、`ai-ask-button`、`improve-dropdown`、Cloud collaboration utilities、comments/tracked-changes UI、mention/emoji 菜单，以及任何需要在线服务或账号态运行时的组件。
 - 后续可选表面：`table-of-contents-node`、`copy-anchor-link-button` 和文档身份类能力。它们进入持久化 Markdown 前，需要先定义稳定的本地 ID 策略。
