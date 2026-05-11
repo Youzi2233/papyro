@@ -57,6 +57,27 @@ Rules:
 - Treat Notion-like editor, `table-node`, `drag-context-menu`, and `slash-dropdown-menu` as licensed/non-open UI unless licensed source is explicitly added.
 - Use official open packages directly. Re-create product interactions locally only when no licensed source is available.
 
+## Official Component Adoption Audit
+
+The current direction is official-first, but not "blindly install every template into the runtime." The Tiptap UI CLI installs editable source, shared primitives, hooks, icons, and dependencies together. A broad install was tested after accepting the Pro terms, and it confirmed two constraints that must guide the next work:
+
+- Official UI components now expect the latest Tiptap package set. Papyro's JS editor dependencies have been aligned to `@tiptap/*` `3.23.1` as the prerequisite for further CLI-generated components.
+- Broad CLI installs can prompt to overwrite existing Papyro primitives such as button/menu styles. Do not run a large `add` command directly into `js/src/components/` during feature work. Generate one surface at a time, review the diff, and keep cloud/AI/collaboration examples out of the default local editor runtime.
+
+Adoption queue:
+
+- Already integrated: licensed `table-node` visible table chrome, official table handle extension boundary, `@tiptap/extension-drag-handle-react`, `@tiptap/extension-node-range`, official color/highlight package paths, and the React island slot model.
+- Next official candidates for local Markdown UX: `slash-dropdown-menu`, `slash-command-trigger-button`, `suggestion-menu`, `floating-element`, `drag-context-menu`, `turn-into-dropdown`, `move-node-button`, `delete-node-button`, `duplicate-button`, `reset-all-formatting-button`, `link-popover`, `heading-dropdown-menu`, `list-dropdown-menu`, `mark-button`, `text-align-button`, `undo-redo-button`, `image-node-pro`, `image-align-button`, and `image-upload-button`.
+- Free/open components to compare or reuse first: `blockquote-button`, `code-block-button`, `heading-button`, `list-button`, `image-upload-button`, `link-popover`, `mark-button`, `text-align-button`, `undo-redo-button`, `blockquote-node`, `code-block-node`, `heading-node`, `horizontal-rule-node`, `image-node`, `list-node`, and `paragraph-node`.
+- Defer by default for a local Markdown tool: `ai-menu`, `ai-ask-button`, `improve-dropdown`, Cloud collaboration utilities, comments/tracked-changes UI, mention and emoji menus, and any component that requires online services or account-backed runtime state.
+- Optional later surfaces: `table-of-contents-node`, `copy-anchor-link-button`, and document identity features. These need a stable local ID policy before they enter persisted Markdown.
+
+Integration rule:
+
+- Each official component surface gets its own commit, source-level guard, runtime smoke, and Markdown persistence check.
+- Official source may be generated into a temporary or isolated path first, then merged into Papyro-owned React modules after reviewing imports, styling tokens, i18n, WebView focus behavior, and local-file semantics.
+- No AI, collaboration, mention, or emoji dependency should enter `js/package.json` unless that surface is explicitly enabled in the product plan.
+
 ## Default Free/Open-Source Path
 
 Unless the project explicitly adds licensed Tiptap Start/Pro output, Papyro should follow a free official-first path:

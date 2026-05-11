@@ -43,7 +43,7 @@ Before this decision, the local official sources were refreshed and reviewed:
 - `.reference/tiptap-docs/src/content/ui-components/node-components/table-node.mdx`
 - `.reference/tiptap-ui-components/README.md`
 
-The current installed Tiptap packages in `js/package.json` are pinned to the same `3.22.5` version, which matches Tiptap's package-version consistency rule.
+The current installed Tiptap packages in `js/package.json` are pinned to the same `3.23.1` version, which matches Tiptap's package-version consistency rule and the current Tiptap UI CLI component output.
 
 ## License Boundary
 
@@ -67,6 +67,8 @@ npx @tiptap/cli@latest add --cwd js table-node
 ```
 
 Running the component installer from `E:\papyro` reports "Directory not found" because the initialized UI component project is `E:\papyro\js`.
+
+For new official UI surfaces, do not run a broad component install straight into the live component tree. The CLI can prompt to overwrite existing Papyro primitives and may add AI, collaboration, mention, or emoji helpers that are not part of the local-first runtime. Generate one surface at a time, review the diff, and merge only the files that match the product scope.
 
 ## Licensed Table Node Integration
 

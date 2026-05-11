@@ -57,6 +57,27 @@ git -C .reference\tiptap-docs pull --ff-only
 - Notion-like editor、`table-node`、`drag-context-menu`、`slash-dropdown-menu` 在未授权前按 licensed/non-open UI 处理。
 - 官方开源 package 可以直接用。没有授权源码时，只能在 Papyro 内按相同产品原则重新实现交互。
 
+## 官方组件接入审计
+
+当前方向是官方优先，但不是把整个模板不加筛选地塞进运行时。Tiptap UI CLI 安装的是可编辑源码，同时会带入 shared primitives、hooks、icons 和依赖。接受 Pro 条款后已经做过一次大范围安装试验，结论是后续必须遵守两条约束：
+
+- 官方 UI 组件现在要求较新的 Tiptap 依赖集合。Papyro 的 JS 编辑器依赖已经统一到 `@tiptap/*` `3.23.1`，这是继续接入 CLI 生成组件的前置条件。
+- 大范围 CLI 安装会提示覆盖 Papyro 已有 primitive，例如 button/menu 样式。后续不要在功能开发时直接把一大串组件安装进 `js/src/components/`。要按单个交互面生成、审查 diff，并且默认不把 Cloud、AI、协作示例带入本地编辑器运行时。
+
+接入队列：
+
+- 已接入：授权 `table-node` 可见表格 chrome、官方 table handle extension 边界、`@tiptap/extension-drag-handle-react`、`@tiptap/extension-node-range`、官方 color/highlight 扩展路径，以及 React island slot 模型。
+- 下一批适合本地 Markdown 体验的官方候选：`slash-dropdown-menu`、`slash-command-trigger-button`、`suggestion-menu`、`floating-element`、`drag-context-menu`、`turn-into-dropdown`、`move-node-button`、`delete-node-button`、`duplicate-button`、`reset-all-formatting-button`、`link-popover`、`heading-dropdown-menu`、`list-dropdown-menu`、`mark-button`、`text-align-button`、`undo-redo-button`、`image-node-pro`、`image-align-button` 和 `image-upload-button`。
+- 优先对照或复用的免费/开放组件：`blockquote-button`、`code-block-button`、`heading-button`、`list-button`、`image-upload-button`、`link-popover`、`mark-button`、`text-align-button`、`undo-redo-button`、`blockquote-node`、`code-block-node`、`heading-node`、`horizontal-rule-node`、`image-node`、`list-node` 和 `paragraph-node`。
+- 本地 Markdown 工具默认暂缓：`ai-menu`、`ai-ask-button`、`improve-dropdown`、Cloud collaboration utilities、comments/tracked-changes UI、mention/emoji 菜单，以及任何需要在线服务或账号态运行时的组件。
+- 后续可选表面：`table-of-contents-node`、`copy-anchor-link-button` 和文档身份类能力。它们进入持久化 Markdown 前，需要先定义稳定的本地 ID 策略。
+
+接入规则：
+
+- 每个官方组件表面独立提交，独立增加 source-level guard、runtime smoke 和 Markdown 持久化检查。
+- 官方源码可以先生成到临时或隔离目录，审查 imports、样式 token、i18n、WebView 焦点行为和本地文件语义后，再合并进 Papyro React 模块。
+- 除非产品计划明确启用，否则 AI、协作、mention、emoji 相关依赖不要进入 `js/package.json`。
+
 ## 默认免费/开源路线
 
 除非项目明确加入授权后的 Tiptap Start/Pro 输出，否则 Papyro 默认走官方免费能力优先的路线：
