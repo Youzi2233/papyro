@@ -94,14 +94,14 @@ Official recommended path: use the Tiptap CLI to install the complete Notion-lik
 > Use the CLI to generate a complete Vite reference project under `.reference/` as the authoritative source baseline.
 
 #### 0.1 Generate Official Template Reference Project
-- [ ] Login to Tiptap Pro account: `npx @tiptap/cli@latest login`
-- [ ] Initialize complete template under `.reference/`:
+- [x] Login to Tiptap Pro account: `npx @tiptap/cli@latest login`
+- [x] Initialize complete template under `.reference/`:
   ```bash
   cd .reference
   npx @tiptap/cli@latest init notion-like-editor --framework vite
   ```
-- [ ] Add generated project directory to `.gitignore`
-- [ ] Review generated file structure, confirm all components, extensions, hooks, and styles are present
+- [x] Add generated project directory to `.gitignore`
+- [x] Review generated file structure, confirm all components, extensions, hooks, and styles are present
 
 #### 0.2 TypeScript Base Configuration
 - [x] Add `typescript`, `@types/react`, `@types/react-dom` to `js/package.json` devDependencies
@@ -110,11 +110,11 @@ Official recommended path: use the Tiptap CLI to install the complete Notion-lik
 - [x] Verify esbuild can bundle mixed JS/TS files correctly
 
 #### 0.3 Restructure Directories per Official Template
-- [ ] Create corresponding directories under `js/src/` matching the generated template structure
-- [ ] Copy official template component source (TSX) directly into the project
-- [ ] Trim unneeded components (AI, collaboration, Emoji, Mention related)
-- [ ] Keep existing `tiptap-node/table-node/` (already aligned with official)
-- [ ] Import necessary global styles and CSS variables per official style configuration
+- [x] Create corresponding directories under `js/src/` matching the generated template structure
+- [x] Copy official template component source (TSX) directly into the project
+- [x] Trim unneeded components (AI, collaboration, Emoji, Mention related)
+- [x] Keep existing `tiptap-node/table-node/` (already aligned with official)
+- [x] Import necessary global styles and CSS variables per official style configuration
 
 ---
 

@@ -94,14 +94,14 @@ js/src/
 > 用 CLI 在 `.reference/` 下生成一个完整的 Vite 参考项目，作为权威源码基准。
 
 #### 0.1 生成官方模板参考项目
-- [ ] 登录 Tiptap Pro 账号：`npx @tiptap/cli@latest login`
-- [ ] 在 `.reference/` 下初始化完整模板：
+- [x] 登录 Tiptap Pro 账号：`npx @tiptap/cli@latest login`
+- [x] 在 `.reference/` 下初始化完整模板：
   ```bash
   cd .reference
   npx @tiptap/cli@latest init notion-like-editor --framework vite
   ```
-- [ ] 将生成的项目目录加入 `.gitignore`
-- [ ] 审查生成的完整文件结构，确认包含所有组件、扩展、hooks、样式
+- [x] 将生成的项目目录加入 `.gitignore`
+- [x] 审查生成的完整文件结构，确认包含所有组件、扩展、hooks、样式
 
 #### 0.2 TypeScript 基础配置
 - [x] 添加 `typescript`、`@types/react`、`@types/react-dom` 到 `js/package.json` devDependencies
@@ -110,11 +110,11 @@ js/src/
 - [x] 验证 esbuild 能正常打包混合 JS/TS 文件
 
 #### 0.3 按官方模板重组目录结构
-- [ ] 对照生成的模板目录结构，在 `js/src/` 下创建对应目录
-- [ ] 将官方模板中的组件源码（TSX）直接复制到项目中
-- [ ] 裁剪不需要的组件（AI、协作、Emoji、Mention 相关）
-- [ ] 保留现有 `tiptap-node/table-node/`（已对齐官方）
-- [ ] 对照官方样式配置，引入必要的全局样式和 CSS 变量
+- [x] 对照生成的模板目录结构，在 `js/src/` 下创建对应目录
+- [x] 将官方模板中的组件源码（TSX）直接复制到项目中
+- [x] 裁剪不需要的组件（AI、协作、Emoji、Mention 相关）
+- [x] 保留现有 `tiptap-node/table-node/`（已对齐官方）
+- [x] 对照官方样式配置，引入必要的全局样式和 CSS 变量
 
 ---
 
