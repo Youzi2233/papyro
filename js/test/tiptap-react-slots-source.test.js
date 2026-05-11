@@ -126,21 +126,21 @@ const primitivesSource = readFileSync(
 test("React island slots register official editor overlay layers by default", () => {
   assert.match(
     slotsSource,
-    /import\s+\{\s*PapyroOfficialDragHandleBridge\s*\}\s+from\s+"\.\/official-drag-handle-bridge\.jsx";/u,
+    /import\s+\{\s*DragContextMenu\s*\}\s+from\s+"@\/components\/tiptap-ui\/drag-context-menu";/u,
   );
   assert.match(
     slotsSource,
     /import\s+\{\s*PapyroOfficialTableNodeLayer\s*\}\s+from\s+"\.\/official-table-node-layer\.jsx";/u,
   );
   assert.match(slotsSource, /function PapyroOverlayLayer/u);
-  assert.match(slotsSource, /<PapyroOfficialDragHandleBridge \{\.\.\.runtime\} \/>/u);
+  assert.match(slotsSource, /<DragContextMenu \/>/u);
   assert.match(slotsSource, /<PapyroOfficialTableNodeLayer \{\.\.\.runtime\} \/>/u);
   assert.match(slotsSource, /OverlayLayer:\s*PapyroOverlayLayer/u);
 });
 
-test("React index exports the official drag handle bridge", () => {
-  assert.match(indexSource, /PapyroOfficialDragHandleBridge/u);
-  assert.match(indexSource, /official-drag-handle-bridge\.jsx/u);
+test("React index exports the official drag context menu", () => {
+  assert.match(indexSource, /DragContextMenu/u);
+  assert.match(indexSource, /drag-context-menu/u);
 });
 
 test("React island loading state uses shared i18n labels", () => {

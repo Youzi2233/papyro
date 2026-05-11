@@ -70,8 +70,8 @@ export {
   TiptapReactLinkEditorView,
 } from "./link-editor-view.jsx";
 export {
-  PapyroOfficialDragHandleBridge,
-} from "./official-drag-handle-bridge.jsx";
+  DragContextMenu,
+} from "../components/tiptap-ui/drag-context-menu/drag-context-menu.tsx";
 export {
   anchorRectFromEditorRange,
   positionReactFloatingElement,
