@@ -399,7 +399,8 @@ JS 目录负责浏览器编辑器 runtime。
 | --- | --- |
 | `js/src/editor-entry.ts` | bundle 入口，把 Tiptap adapter 注册到 `window.papyroEditor` 后面。 |
 | `js/src/editor-runtime-defaults.ts` | 生产环境 Tiptap runtime 装配，包括 React island、node view 和 table adapter。 |
-| `js/src/editor-runtime.ts` | Tiptap 生命周期、Rust 消息处理和 Markdown 同步编排。 |
+| `js/src/editor-runtime.ts` | Tiptap Editor 创建、Markdown 同步初始化、生命周期接线和 React 树挂载。 |
+| `js/src/editor-runtime-protocol.ts` | Rust 命令桥接，处理视图模式、内容、偏好、命令、聚焦和销毁消息。 |
 | `js/src/editor-runtime-contract.ts` | `window.papyroEditor` 使用的稳定 host facade 和 adapter contract。 |
 | `js/src/tiptap-react/` | React island provider、slots、mount controller 和后续编辑器 UI 组件。 |
 | `js/src/tiptap-*.js` | 聚焦的 Tiptap controller、command、Markdown handler 和 UI helper。 |

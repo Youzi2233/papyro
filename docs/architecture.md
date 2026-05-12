@@ -346,7 +346,8 @@ The JS directory owns browser editor runtime code.
 | --- | --- |
 | `js/src/editor-entry.ts` | bundle entry, registers the Tiptap adapter behind `window.papyroEditor` |
 | `js/src/editor-runtime-defaults.ts` | production Tiptap runtime assembly, including React island, node view, and table adapters |
-| `js/src/editor-runtime.ts` | Tiptap lifecycle, Rust message handling, Markdown sync orchestration |
+| `js/src/editor-runtime.ts` | Tiptap editor creation, Markdown sync setup, lifecycle wiring, and React tree mounting |
+| `js/src/editor-runtime-protocol.ts` | Rust command bridge for view mode, content, preferences, commands, focus, and destroy messages |
 | `js/src/editor-runtime-contract.ts` | stable host facade and adapter contract for `window.papyroEditor` |
 | `js/src/tiptap-react/` | React island provider, slots, mount controller, and future editor UI components |
 | `js/src/tiptap-*.js` | focused Tiptap controllers, commands, Markdown handlers, and UI helpers |

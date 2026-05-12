@@ -70,6 +70,10 @@ const editorRuntimeSource = readFileSync(
   new URL("../src/editor-runtime.ts", import.meta.url),
   "utf8",
 );
+const editorRuntimeProtocolSource = readFileSync(
+  new URL("../src/editor-runtime-protocol.ts", import.meta.url),
+  "utf8",
+);
 const primitivesSource = readFileSync(
   new URL("../src/tiptap-react/components/primitives.jsx", import.meta.url),
   "utf8",
@@ -192,6 +196,19 @@ test("editor entry delegates production runtime assembly to defaults", () => {
   assert.doesNotMatch(editorEntrySource, /extensionsFactory/u);
   assert.doesNotMatch(editorEntrySource, /mountControllerFactory/u);
   assert.doesNotMatch(editorEntrySource, /tableCommandControllerFactory/u);
+});
+
+test("editor runtime delegates Rust protocol handling to a focused bridge", () => {
+  assert.match(editorRuntimeSource, /createTiptapRuntimeProtocolBridge/u);
+  assert.match(editorRuntimeSource, /attachChannel:\s*protocolBridge\.attachChannel/u);
+  assert.match(editorRuntimeSource, /handleRustMessage:\s*protocolBridge\.handleRustMessage/u);
+  assert.doesNotMatch(editorRuntimeSource, /message\.type === "set_view_mode"/u);
+  assert.doesNotMatch(editorRuntimeSource, /message\.type === "set_content"/u);
+  assert.match(editorRuntimeProtocolSource, /export function createTiptapRuntimeProtocolBridge/u);
+  assert.match(editorRuntimeProtocolSource, /attachChannel\(tabId, dioxus\)/u);
+  assert.match(editorRuntimeProtocolSource, /handleRustMessage\(tabId, message\)/u);
+  assert.match(editorRuntimeProtocolSource, /message\.type === "set_view_mode"/u);
+  assert.match(editorRuntimeProtocolSource, /message\.type === "set_content"/u);
 });
 
 test("official drag handle bridge keeps Tiptap callbacks stable across renders", () => {
