@@ -16,6 +16,7 @@ import {
   localizeBlockAction,
   normalizeTiptapLanguage,
 } from "./tiptap-i18n.js";
+import { serializeTiptapMarkdown } from "./tiptap-markdown.js";
 import {
   blockSiblingDrop,
   canMoveTiptapBlock,
@@ -89,7 +90,7 @@ function readTargetMarkdown(editor, target) {
     try {
       const node = target?.node ?? (typeof doc.nodeAt === "function" ? doc.nodeAt(from) : null);
       const json = nodeToJson(node);
-      const markdown = json ? editor.storage.markdown.manager.serialize(json) : "";
+      const markdown = json ? serializeTiptapMarkdown(json, editor.storage.markdown.manager) : "";
       if (typeof markdown === "string" && markdown.trim()) return markdown.trim();
     } catch (_error) {
       // Fall back to plain text when Markdown serialization is unavailable for a custom node.

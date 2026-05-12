@@ -186,9 +186,9 @@ js/src/
 
 #### 1.9 扩展层
 - [x] 复制官方 `selection-extension`
-- [ ] 复制官方 `trailing-node-extension`
+- [x] 复制官方 `trailing-node-extension`
 - [x] 复制官方 `mathematics-extension`（对接现有 KaTeX）
-- [ ] 复制官方 `unique-id-extension`
+- [x] 复制官方 `unique-id-extension`
 
 ---
 

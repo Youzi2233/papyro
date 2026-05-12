@@ -186,9 +186,9 @@ Copy the following primitive components from the template (they are dependencies
 
 #### 1.9 Extension Layer
 - [x] Copy official `selection-extension`
-- [ ] Copy official `trailing-node-extension`
+- [x] Copy official `trailing-node-extension`
 - [x] Copy official `mathematics-extension` (connect to existing KaTeX)
-- [ ] Copy official `unique-id-extension`
+- [x] Copy official `unique-id-extension`
 
 ---
 

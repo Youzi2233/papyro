@@ -60,11 +60,19 @@ export class MarkdownSyncController {
   }
 
   setFromEditor(editor) {
-    if (!editor || typeof editor.getMarkdown !== "function") {
-      throw new TypeError("MarkdownSyncController requires editor.getMarkdown()");
+    if (!editor) {
+      throw new TypeError("MarkdownSyncController requires a Tiptap editor");
     }
 
-    const markdown = editor.getMarkdown();
+    let markdown = null;
+    if (typeof editor.getJSON === "function") {
+      markdown = serializeTiptapMarkdown(editor.getJSON(), this.#manager);
+    } else if (typeof editor.getMarkdown === "function") {
+      markdown = editor.getMarkdown();
+    } else {
+      throw new TypeError("MarkdownSyncController requires editor.getJSON() or editor.getMarkdown()");
+    }
+
     this.#markdown = markdown ?? "";
     this.#lastError = null;
     return this.#markdown;

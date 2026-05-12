@@ -5,6 +5,8 @@ import { Window } from "happy-dom";
 import {
   createPapyroMarkdownManager,
   createPapyroTiptapExtensions,
+  preparePapyroMarkdownDoc,
+  serializeTiptapMarkdown,
 } from "./tiptap-markdown.js";
 
 export function checkTiptapRuntimeSmoke(markdown) {
@@ -155,9 +157,9 @@ function checkCodeBlockChrome(failures, dom) {
 }
 
 function checkRoundTrip(failures, editor, markdownManager) {
-  const serialized = markdownManager.serialize(editor.getJSON());
+  const serialized = serializeTiptapMarkdown(editor.getJSON(), markdownManager);
   const reparsed = markdownManager.parse(serialized);
-  const editorJson = editor.getJSON();
+  const editorJson = preparePapyroMarkdownDoc(editor.getJSON());
 
   if (stableStringify(reparsed) !== stableStringify(editorJson)) {
     failures.push("mounted editor JSON changed after Markdown round-trip");

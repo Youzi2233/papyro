@@ -1,11 +1,15 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { Editor } from "@tiptap/core";
+import { Markdown } from "@tiptap/markdown";
 import { Window } from "happy-dom";
 
 import {
+  PAPYRO_UNIQUE_ID_NODE_TYPES,
   createPapyroMarkdownManager,
   createPapyroTiptapExtensions,
+  preparePapyroMarkdownDoc,
   parseTiptapMarkdown,
   roundTripTiptapMarkdown,
   serializeTiptapMarkdown,
@@ -265,6 +269,20 @@ function collectCallouts(node, callouts = []) {
   return callouts;
 }
 
+function collectNodeAttrs(node, type, attrs = []) {
+  if (!node || typeof node !== "object") return attrs;
+
+  if (node.type === type) {
+    attrs.push(node.attrs ?? {});
+  }
+
+  for (const child of node.content ?? []) {
+    collectNodeAttrs(child, type, attrs);
+  }
+
+  return attrs;
+}
+
 test("Tiptap Markdown manager parses the baseline Markdown blocks", () => {
   const doc = parseTiptapMarkdown(markdownFixture);
   const nodeTypes = collectNodeTypes(doc);
@@ -341,17 +359,70 @@ test("Tiptap Markdown manager parses the baseline Markdown blocks", () => {
   ]);
 });
 
-test("Tiptap extension chain includes official node range after StarterKit", () => {
+test("Tiptap extension chain includes official runtime helpers after StarterKit", () => {
   const extensions = createPapyroTiptapExtensions();
   const names = extensions.map((extension) => extension.name);
 
   assert.equal(names[0], "starterKit");
   assert.equal(names[1], "nodeRange");
+  assert.equal(names[2], "trailingNode");
+  assert.equal(names[3], "uniqueID");
   assert.ok(names.includes("codeBlock"));
   assert.ok(names.includes("tableKit"));
 
+  const starterKit = extensions.find((extension) => extension.name === "starterKit");
+  assert.equal(starterKit.options?.trailingNode, false);
+
   const nodeRange = extensions.find((extension) => extension.name === "nodeRange");
   assert.equal(nodeRange.options?.key, "Mod");
+
+  const trailingNode = extensions.find((extension) => extension.name === "trailingNode");
+  assert.equal(trailingNode.options?.node, "paragraph");
+  assert.deepEqual(trailingNode.options?.notAfter, ["paragraph"]);
+
+  const uniqueID = extensions.find((extension) => extension.name === "uniqueID");
+  assert.deepEqual(uniqueID.options?.types, [...PAPYRO_UNIQUE_ID_NODE_TYPES]);
+});
+
+test("Tiptap runtime helpers keep node IDs out of persisted Markdown", async () => {
+  const windowRef = new Window({ url: "http://localhost/" });
+  const previousGlobals = installDomGlobals(windowRef);
+  const root = windowRef.document.createElement("div");
+  windowRef.document.body.appendChild(root);
+  const extensions = createPapyroTiptapExtensions();
+  const manager = createPapyroMarkdownManager({ extensions });
+  let editor = null;
+
+  try {
+    editor = new Editor({
+      element: root,
+      extensions: [...extensions, Markdown],
+      content: "# Stable IDs\n\nBody",
+      contentType: "markdown",
+      injectCSS: false,
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const json = editor.getJSON();
+    const headingAttrs = collectNodeAttrs(json, "heading");
+    const paragraphAttrs = collectNodeAttrs(json, "paragraph");
+    assert.equal(typeof headingAttrs[0]?.id, "string");
+    assert.equal(typeof paragraphAttrs[0]?.id, "string");
+
+    const serialized = serializeTiptapMarkdown(json, manager);
+    assert.equal(serialized, "# Stable IDs\n\nBody");
+    assert.doesNotMatch(serialized, /data-id|[0-9a-f]{8}-[0-9a-f]{4}/i);
+
+    const normalized = preparePapyroMarkdownDoc(json);
+    assert.equal(normalized.content.at(-1).type, "paragraph");
+    assert.equal(normalized.content.at(-1).content?.[0]?.text, "Body");
+    assert.equal(normalized.content.some((node) => node.attrs?.id), false);
+  } finally {
+    editor?.destroy?.();
+    restoreDomGlobals(previousGlobals);
+    windowRef.close?.();
+  }
 });
 
 test("Tiptap release smoke fixture preserves editor-critical block semantics", () => {

@@ -34,6 +34,36 @@ test("MarkdownSyncController can update from Tiptap editor markdown", () => {
   assert.equal(controller.lastError, null);
 });
 
+test("MarkdownSyncController serializes editor JSON before getMarkdown fallback", () => {
+  const controller = createMarkdownSyncController({ initialMarkdown: "# Old" });
+  const markdown = controller.setFromEditor({
+    getJSON: () => ({
+      type: "doc",
+      content: [
+        {
+          type: "heading",
+          attrs: {
+            id: "runtime-heading",
+            level: 1,
+          },
+          content: [{ type: "text", text: "New" }],
+        },
+        {
+          type: "paragraph",
+          attrs: {
+            id: "runtime-trailing",
+          },
+        },
+      ],
+    }),
+    getMarkdown: () => "# New\n\n",
+  });
+
+  assert.equal(markdown, "# New");
+  assert.equal(controller.markdown, "# New");
+  assert.equal(controller.lastError, null);
+});
+
 test("MarkdownSyncController serializes a Tiptap document into canonical Markdown", () => {
   const controller = createMarkdownSyncController();
   const doc = parseTiptapMarkdown("A paragraph with **bold**.");
@@ -66,8 +96,8 @@ test("MarkdownSyncController reports parse errors without losing previous Markdo
   assert.equal(controller.lastError.message, "cannot parse # Broken");
 });
 
-test("MarkdownSyncController requires editor.getMarkdown for editor-origin updates", () => {
+test("MarkdownSyncController requires editor.getJSON or getMarkdown for editor-origin updates", () => {
   const controller = createMarkdownSyncController();
 
-  assert.throws(() => controller.setFromEditor({}), /requires editor\.getMarkdown/);
+  assert.throws(() => controller.setFromEditor({}), /requires editor\.getJSON\(\) or editor\.getMarkdown\(\)/);
 });
