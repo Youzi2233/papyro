@@ -62,6 +62,10 @@ const editorEntrySource = readFileSync(
   new URL("../src/editor-entry.ts", import.meta.url),
   "utf8",
 );
+const editorRuntimeDefaultsSource = readFileSync(
+  new URL("../src/editor-runtime-defaults.ts", import.meta.url),
+  "utf8",
+);
 const editorRuntimeSource = readFileSync(
   new URL("../src/editor-runtime.ts", import.meta.url),
   "utf8",
@@ -169,8 +173,22 @@ test("React code block node view follows Tiptap React node view lifecycle", () =
     codeBlockNodeViewExtensionSource,
     /className:\s*"mn-tiptap-code-block mn-tiptap-react-code-block-node-view"/u,
   );
-  assert.match(editorEntrySource, /codeBlockNodeViewRenderer:\s*createTiptapReactCodeBlockNodeViewRenderer\(\)/u);
+  assert.match(
+    editorRuntimeDefaultsSource,
+    /codeBlockNodeViewRenderer:\s*createTiptapReactCodeBlockNodeViewRenderer\(\)/u,
+  );
+  assert.doesNotMatch(editorEntrySource, /codeBlockNodeViewRenderer/u);
   assert.match(indexSource, /createTiptapReactCodeBlockNodeViewRenderer/u);
+});
+
+test("editor entry delegates production runtime assembly to defaults", () => {
+  assert.match(editorEntrySource, /createPapyroTiptapRuntimeAdapter\(\)/u);
+  assert.match(editorEntrySource, /installPapyroEditorRuntime\(window/u);
+  assert.doesNotMatch(editorEntrySource, /createTiptapReact/u);
+  assert.doesNotMatch(editorEntrySource, /createPapyroTiptapExtensions/u);
+  assert.doesNotMatch(editorEntrySource, /extensionsFactory/u);
+  assert.doesNotMatch(editorEntrySource, /mountControllerFactory/u);
+  assert.doesNotMatch(editorEntrySource, /tableCommandControllerFactory/u);
 });
 
 test("official drag handle bridge keeps Tiptap callbacks stable across renders", () => {
@@ -223,8 +241,11 @@ test("React floating chrome shares positioning utilities", () => {
 
 test("official table-node layer owns visible table chrome at the editor boundary", () => {
   assert.doesNotMatch(indexSource, /createTiptapReactFormatToolbarView/u);
-  assert.match(editorEntrySource, /createTiptapTableCommandController/u);
-  assert.match(editorEntrySource, /tableCommandControllerFactory:\s*createTiptapTableCommandController/u);
+  assert.match(editorRuntimeDefaultsSource, /createTiptapTableCommandController/u);
+  assert.match(
+    editorRuntimeDefaultsSource,
+    /tableCommandControllerFactory\s*=\s*createTiptapTableCommandController/u,
+  );
   assert.doesNotMatch(editorRuntimeSource, /from "\.\/tiptap-table-command-controller\.js"/u);
   assert.doesNotMatch(editorRuntimeSource, /tableToolbarControllerFactory/u);
   assert.doesNotMatch(editorRuntimeSource, /tableToolbar/u);
@@ -233,6 +254,7 @@ test("official table-node layer owns visible table chrome at the editor boundary
   assert.doesNotMatch(editorEntrySource, /createTiptapReactTableChromeRenderer/u);
   assert.doesNotMatch(indexSource, /createTiptapReactTableContextMenuRenderer/u);
   assert.doesNotMatch(indexSource, /createTiptapReactTableChromeRenderer/u);
+  assert.doesNotMatch(editorEntrySource, /createTiptapTableCommandController/u);
   assert.doesNotMatch(editorEntrySource, /tableMenuRendererFactory/u);
   assert.doesNotMatch(editorEntrySource, /tableChromeRendererFactory/u);
   assert.doesNotMatch(editorEntrySource, /tableChromeRendererFactory:\s*null/u);

@@ -239,8 +239,8 @@ js/src/
 
 #### 3.2 简化 editor-entry
 - [x] 将 `editor-tiptap-entry.js` 重写为 `editor-entry.ts`
-- [ ] 移除所有视图工厂注册（不再需要 DI 注入 React 视图）
-- [ ] 入口只做：创建 runtime → 安装到 `window.papyroEditor`
+- [x] 移除所有视图工厂注册（不再需要 DI 注入 React 视图）
+- [x] 入口只做：创建 runtime → 安装到 `window.papyroEditor`
 
 #### 3.3 React 岛重构
 - [x] 保留 `island.jsx` → 迁移为 `island.tsx`

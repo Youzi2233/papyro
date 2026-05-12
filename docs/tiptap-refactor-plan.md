@@ -239,8 +239,8 @@ The current `tiptap-runtime.js` creates many controllers via dependency injectio
 
 #### 3.2 Simplify editor-entry
 - [x] Rewrite `editor-tiptap-entry.js` as `editor-entry.ts`
-- [ ] Remove all view factory registrations (DI injection of React views no longer needed)
-- [ ] Entry only does: create runtime → install on `window.papyroEditor`
+- [x] Remove all view factory registrations (DI injection of React views no longer needed)
+- [x] Entry only does: create runtime → install on `window.papyroEditor`
 
 #### 3.3 React Island Refactoring
 - [x] Keep `island.jsx` → migrate to `island.tsx`

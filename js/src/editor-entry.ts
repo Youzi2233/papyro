@@ -1,34 +1,7 @@
-import { createEditorRuntimeRegistry } from "./editor-registry.js";
-import { createEditorHostRuntime } from "./editor-host-runtime.js";
 import { installPapyroEditorRuntime } from "./editor-runtime-bootstrap.js";
-import { createPapyroTiptapExtensions } from "./tiptap-markdown.js";
-import {
-  createTiptapReactCodeBlockNodeViewRenderer,
-  createTiptapReactMountController,
-} from "./tiptap-react/index.js";
-import { createTiptapTableCommandController } from "./tiptap-table-command-controller.js";
-import { createTiptapEditorRuntime } from "./editor-runtime.ts";
+import { createPapyroTiptapRuntimeAdapter } from "./editor-runtime-defaults.ts";
 
-const editorRegistry = createEditorRuntimeRegistry();
-const hostRuntime = createEditorHostRuntime({ registry: editorRegistry });
-const createRuntimeExtensions = () =>
-  createPapyroTiptapExtensions({
-    codeBlockNodeViewRenderer: createTiptapReactCodeBlockNodeViewRenderer(),
-  });
-const tiptapRuntimeAdapter = createTiptapEditorRuntime({
-  registry: editorRegistry,
-  extensionsFactory: createRuntimeExtensions,
-  layout: {
-    attachEditorScroll: hostRuntime.attachEditorScroll,
-    detachEditorScroll: hostRuntime.detachEditorScroll,
-    attachLayoutObserver: hostRuntime.attachLayoutObserver,
-    detachLayoutObserver: hostRuntime.detachLayoutObserver,
-    restoreEditorScrollSnapshot: hostRuntime.restoreEditorScrollSnapshot,
-  },
-  mountControllerFactory: createTiptapReactMountController,
-  tableCommandControllerFactory: createTiptapTableCommandController,
-  navigation: hostRuntime.navigation,
-});
+const tiptapRuntimeAdapter = createPapyroTiptapRuntimeAdapter();
 
 installPapyroEditorRuntime(window, {
   adapters: {
