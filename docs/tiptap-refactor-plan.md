@@ -306,7 +306,7 @@ Migrate by module priority, one module at a time:
 
 These features are unique to Papyro, not in the official template, and need to be preserved and adapted to the new architecture:
 
-- [ ] Markdown source mode (Source/Hybrid/Preview tri-mode switching)
+- [x] Markdown source mode (Source/Hybrid/Preview tri-mode switching)
 - [ ] Rust protocol bridge (`window.papyroEditor` facade)
 - [ ] Local image paste (file saving handled by Rust side)
 - [ ] Mermaid diagram rendering

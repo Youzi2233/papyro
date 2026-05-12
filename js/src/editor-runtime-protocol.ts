@@ -1,3 +1,5 @@
+import { normalizeTiptapViewMode } from "./tiptap-mode-controller.js";
+
 export function syncRuntimeLanguage(entry) {
   if (!entry?.dom) return;
   entry.dom.dataset.language = entry.preferences?.language ?? "english";
@@ -56,14 +58,22 @@ export function createTiptapRuntimeProtocolBridge({
 
       if (message.type === "set_view_mode") {
         const previousMode = entry.viewMode;
+        const nextMode = normalizeTiptapViewMode(message.mode);
+        if (
+          previousMode === nextMode &&
+          entry.dom?.dataset?.viewMode === nextMode
+        ) {
+          return "mode_unchanged";
+        }
         entry.modeSnapshots.capture(entry, previousMode);
-        entry.modeController.apply(entry, message.mode);
+        entry.modeController.apply(entry, nextMode);
         entry.sourcePane.applyMode(entry);
         entry.modeSnapshots.restore(entry, entry.viewMode);
         restoreEditorScrollSnapshot(entry);
         attachEditorScroll(tabId, entry);
         syncOutline(tabId, entry.viewMode);
         entry.reactMount?.refresh?.(entry);
+        return "mode_updated";
       } else if (message.type === "set_content") {
         const result = entry.markdownSync.setMarkdown(message.content ?? "");
         if (result.ok) {

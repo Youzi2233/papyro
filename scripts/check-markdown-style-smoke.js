@@ -188,7 +188,9 @@ const TIPTAP_CODE_HIGHLIGHT_REQUIREMENTS = [
 
 const PAPYRO_FEATURE_REQUIREMENTS = [
   ["Papyro source pane", ".mn-tiptap-source-pane", "--mn-document-code-font"],
+  ["Papyro Hybrid mode shows editor", ".mn-tiptap-runtime[data-view-mode=\"hybrid\"] .mn-tiptap-editor", "display: block"],
   ["Papyro source mode hides editor", ".mn-tiptap-runtime[data-view-mode=\"source\"] .mn-tiptap-editor", "display: none"],
+  ["Papyro Preview mode hides Tiptap runtime", ".mn-tiptap-runtime[data-view-mode=\"preview\"]", "display: none"],
   ["Papyro source pane selection", ".mn-tiptap-source-pane::selection", "--mn-hybrid-selection"],
   ["Papyro KaTeX inline math", ".mn-tiptap-inline-math", "--mn-markdown-inline-math-font"],
   ["Papyro KaTeX source editor", ".mn-tiptap-math-source", "--mn-markdown-mono-font"],

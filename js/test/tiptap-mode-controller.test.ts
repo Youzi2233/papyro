@@ -2,9 +2,13 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  TIPTAP_VIEW_MODE_CONTRACT,
   createTiptapModeController,
   normalizeTiptapViewMode,
   tiptapModeAllowsRichTextEditing,
+  tiptapModeUsesRustPreview,
+  tiptapModeUsesSourcePane,
+  tiptapViewModeContract,
 } from "../src/tiptap-mode-controller.js";
 
 test("Tiptap mode controller normalizes supported modes", () => {
@@ -18,6 +22,32 @@ test("Tiptap rich text editing is enabled only in Hybrid", () => {
   assert.equal(tiptapModeAllowsRichTextEditing("hybrid"), true);
   assert.equal(tiptapModeAllowsRichTextEditing("source"), false);
   assert.equal(tiptapModeAllowsRichTextEditing("preview"), false);
+});
+
+test("Tiptap mode contract preserves Source Hybrid Preview surfaces", () => {
+  assert.deepEqual(Object.keys(TIPTAP_VIEW_MODE_CONTRACT), ["source", "hybrid", "preview"]);
+  assert.deepEqual(tiptapViewModeContract("source"), {
+    mode: "source",
+    richTextEditable: false,
+    sourcePaneVisible: true,
+    rustPreviewVisible: false,
+  });
+  assert.deepEqual(tiptapViewModeContract("hybrid"), {
+    mode: "hybrid",
+    richTextEditable: true,
+    sourcePaneVisible: false,
+    rustPreviewVisible: false,
+  });
+  assert.deepEqual(tiptapViewModeContract("preview"), {
+    mode: "preview",
+    richTextEditable: false,
+    sourcePaneVisible: false,
+    rustPreviewVisible: true,
+  });
+  assert.equal(tiptapModeUsesSourcePane("source"), true);
+  assert.equal(tiptapModeUsesSourcePane("hybrid"), false);
+  assert.equal(tiptapModeUsesRustPreview("preview"), true);
+  assert.equal(tiptapModeUsesRustPreview("source"), false);
 });
 
 test("Tiptap mode controller applies mode to entry, DOM, and editor", () => {

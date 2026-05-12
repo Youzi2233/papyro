@@ -2,7 +2,10 @@ import {
   sourceMarkdownParseErrorLabel,
   sourcePaneLabel,
 } from "./tiptap-i18n.js";
-import { normalizeTiptapViewMode } from "./tiptap-mode-controller.js";
+import {
+  normalizeTiptapViewMode,
+  tiptapModeUsesSourcePane,
+} from "./tiptap-mode-controller.js";
 
 function defaultDocument() {
   return typeof document === "undefined" ? null : document;
@@ -160,7 +163,7 @@ export class TiptapSourcePaneController {
 
   applyMode(entry = this.#entry, mode = entry?.viewMode) {
     if (!this.#textarea) return false;
-    const active = normalizeTiptapViewMode(mode) === "source";
+    const active = tiptapModeUsesSourcePane(mode);
     this.#textarea.hidden = !active;
     if (active) {
       const previousSelection = {

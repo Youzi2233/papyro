@@ -476,6 +476,40 @@ test("Tiptap runtime preserves set_view_mode protocol state", () => {
   ]);
 });
 
+test("Tiptap runtime ignores duplicate set_view_mode commands", () => {
+  const refreshes = [];
+  const layoutCalls = [];
+  const { calls, registry, runtime } = createRuntimeHarness({
+    mountEditorTree: () => ({
+      refresh: (entry) => refreshes.push(entry.viewMode),
+      destroy: () => {},
+    }),
+    layout: {
+      attachEditorScroll: (tabId, entry) => layoutCalls.push(["attachEditorScroll", tabId, entry.viewMode]),
+      restoreEditorScrollSnapshot: (entry) => layoutCalls.push(["restoreEditorScrollSnapshot", entry.viewMode]),
+    },
+  });
+  runtime.ensureEditor({
+    tabId: "tab-a",
+    containerId: "editor-root",
+    initialContent: "# Note",
+    viewMode: "source",
+  });
+  calls.length = 0;
+
+  assert.equal(
+    runtime.handleRustMessage("tab-a", { type: "set_view_mode", mode: "Source" }),
+    "mode_unchanged",
+  );
+
+  assert.equal(registry.get("tab-a").viewMode, "source");
+  assert.equal(registry.get("tab-a").dom.dataset.viewMode, "source");
+  assert.equal(registry.get("tab-a").sourcePane.textarea.hidden, false);
+  assert.deepEqual(calls, []);
+  assert.deepEqual(refreshes, []);
+  assert.deepEqual(layoutCalls, []);
+});
+
 test("Tiptap runtime mode contract keeps rich editing Hybrid-only", () => {
   const { calls, registry, runtime } = createRuntimeHarness();
 
@@ -507,6 +541,56 @@ test("Tiptap runtime mode contract keeps rich editing Hybrid-only", () => {
     ["syncOutline", "tab-a", "source"],
     ["setEditable", true],
     ["syncOutline", "tab-a", "hybrid"],
+  ]);
+});
+
+test("Tiptap runtime enforces Source Hybrid Preview surface contract", () => {
+  const { calls, registry, runtime } = createRuntimeHarness();
+
+  runtime.ensureEditor({
+    tabId: "tab-a",
+    containerId: "editor-root",
+    initialContent: "# Note",
+    viewMode: "hybrid",
+  });
+  const entry = registry.get("tab-a");
+  calls.length = 0;
+
+  assert.equal(entry.viewMode, "hybrid");
+  assert.equal(entry.dom.dataset.viewMode, "hybrid");
+  assert.equal(entry.sourcePane.textarea.hidden, true);
+
+  assert.equal(
+    runtime.handleRustMessage("tab-a", { type: "set_view_mode", mode: "source" }),
+    "mode_updated",
+  );
+  assert.equal(entry.viewMode, "source");
+  assert.equal(entry.dom.dataset.viewMode, "source");
+  assert.equal(entry.sourcePane.textarea.hidden, false);
+  assert.equal(entry.editor.editable, false);
+
+  assert.equal(
+    runtime.handleRustMessage("tab-a", { type: "set_view_mode", mode: "preview" }),
+    "mode_updated",
+  );
+  assert.equal(entry.viewMode, "preview");
+  assert.equal(entry.dom.dataset.viewMode, "preview");
+  assert.equal(entry.sourcePane.textarea.hidden, true);
+  assert.equal(entry.editor.editable, false);
+
+  assert.equal(
+    runtime.handleRustMessage("tab-a", { type: "set_view_mode", mode: "hybrid" }),
+    "mode_updated",
+  );
+  assert.equal(entry.viewMode, "hybrid");
+  assert.equal(entry.dom.dataset.viewMode, "hybrid");
+  assert.equal(entry.sourcePane.textarea.hidden, true);
+  assert.equal(entry.editor.editable, true);
+
+  assert.deepEqual(calls.filter((call) => call[0] === "setEditable"), [
+    ["setEditable", false],
+    ["setEditable", false],
+    ["setEditable", true],
   ]);
 });
 

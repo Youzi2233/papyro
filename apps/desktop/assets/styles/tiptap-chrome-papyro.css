@@ -33,7 +33,15 @@
     display: none;
 }
 
+.mn-tiptap-runtime[data-view-mode="hybrid"] .mn-tiptap-editor {
+    display: block;
+}
+
 .mn-tiptap-runtime[data-view-mode="source"] .mn-tiptap-editor {
+    display: none;
+}
+
+.mn-tiptap-runtime[data-view-mode="preview"] {
     display: none;
 }
 
