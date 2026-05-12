@@ -3,20 +3,18 @@ import { CellSelection } from "@tiptap/pm/tables"
 import type { JSONContent, Editor } from "@tiptap/react"
 import { isTextSelection, isNodeSelection, posToDOMRect } from "@tiptap/react"
 
-// TipTap Collaboration
-export const TIPTAP_COLLAB_DOC_PREFIX =
-  import.meta.env.VITE_TIPTAP_COLLAB_DOC_PREFIX || ""
-export const TIPTAP_COLLAB_APP_ID =
-  import.meta.env.VITE_TIPTAP_COLLAB_APP_ID || ""
-export const TIPTAP_COLLAB_TOKEN =
-  import.meta.env.VITE_TIPTAP_COLLAB_TOKEN || ""
+// TipTap Collaboration (not used in Papyro local-first mode)
+const env = (typeof import.meta !== "undefined" && import.meta.env) || {}
+export const TIPTAP_COLLAB_DOC_PREFIX = env.VITE_TIPTAP_COLLAB_DOC_PREFIX || ""
+export const TIPTAP_COLLAB_APP_ID = env.VITE_TIPTAP_COLLAB_APP_ID || ""
+export const TIPTAP_COLLAB_TOKEN = env.VITE_TIPTAP_COLLAB_TOKEN || ""
 
-// TipTap AI
-export const TIPTAP_AI_APP_ID = import.meta.env.VITE_TIPTAP_AI_APP_ID || ""
-export const TIPTAP_AI_TOKEN = import.meta.env.VITE_TIPTAP_AI_TOKEN || ""
+// TipTap AI (not used in Papyro local-first mode)
+export const TIPTAP_AI_APP_ID = env.VITE_TIPTAP_AI_APP_ID || ""
+export const TIPTAP_AI_TOKEN = env.VITE_TIPTAP_AI_TOKEN || ""
 
 export const USE_JWT_TOKEN_API_ENDPOINT =
-  import.meta.env.VITE_USE_JWT_TOKEN_API_ENDPOINT || ""
+  env.VITE_USE_JWT_TOKEN_API_ENDPOINT || ""
 
 const NODE_TYPE_LABELS: Record<string, string> = {
   paragraph: "Text",

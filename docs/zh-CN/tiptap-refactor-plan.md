@@ -123,39 +123,39 @@ js/src/
 从 CLI 生成的模板中复制官方组件源码到项目，逐个接入并验证。每个组件独立一个提交。
 
 #### 1.1 样式基础设施
-- [ ] 从模板中复制官方样式配置（CSS 变量、design tokens）
-- [ ] 对照模板的 `styles/` 目录，建立 Papyro 的全局样式基础
-- [ ] 确保暗色/亮色主题 CSS 变量就位
+- [x] 从模板中复制官方样式配置（CSS 变量、design tokens）
+- [x] 对照模板的 `styles/` 目录，建立 Papyro 的全局样式基础
+- [x] 确保暗色/亮色主题 CSS 变量就位
 
 #### 1.2 UI 原语层（Primitives）
 从模板中复制以下原语组件（它们是所有上层组件的依赖）：
-- [ ] `button` + `button-group`
-- [ ] `dropdown-menu`
-- [ ] `popover`
-- [ ] `toolbar`（含 `ToolbarGroup`、`ToolbarSeparator`）
-- [ ] `separator`
-- [ ] `spacer`
-- [ ] `tooltip`
+- [x] `button` + `button-group`
+- [x] `dropdown-menu`
+- [x] `popover`
+- [x] `toolbar`（含 `ToolbarGroup`、`ToolbarSeparator`）
+- [x] `separator`
+- [x] `spacer`
+- [x] `tooltip`
 
 #### 1.3 Hooks 和工具库
-- [ ] `use-mobile`
-- [ ] `use-window-size`
-- [ ] `use-ui-editor-state`
-- [ ] `tiptap-utils`（裁剪掉 AI/协作相关工具函数）
+- [x] `use-mobile`
+- [x] `use-window-size`
+- [x] `use-ui-editor-state`
+- [x] `tiptap-utils`（裁剪掉 AI/协作相关工具函数）
 
 #### 1.4 Slash 命令菜单（最高优先级）
-- [ ] 复制官方 `slash-dropdown-menu` 组件
-- [ ] 复制依赖的 `suggestion-menu` 工具组件
-- [ ] 配置 Papyro 支持的 block 类型（heading、list、code、blockquote、hr、image、table、math、mermaid）
-- [ ] 连接 Rust 端的 `run_slash_command` 协议
-- [ ] 验证 `/` 触发、搜索过滤、键盘导航正常
+- [x] 复制官方 `slash-dropdown-menu` 组件
+- [x] 复制依赖的 `suggestion-menu` 工具组件
+- [x] 配置 Papyro 支持的 block 类型（heading、list、code、blockquote、hr、image、table、math、mermaid）
+- [x] 连接 Rust 端的 `run_slash_command` 协议
+- [x] 验证 `/` 触发、搜索过滤、键盘导航正常
 
 #### 1.5 拖拽手柄 + 块操作菜单
-- [ ] 复制官方 `drag-context-menu` 组件
-- [ ] 复制依赖的 `floating-element` 工具组件
-- [ ] 配置上下文菜单项：转换块类型、颜色/高亮、复制/删除、重置格式
-- [ ] 确保 `withSlashCommandTrigger` 与 1.4 的 slash 菜单联动
-- [ ] 验证拖拽排序在 Markdown 序列化后正确
+- [x] 复制官方 `drag-context-menu` 组件
+- [x] 复制依赖的 `floating-element` 工具组件
+- [x] 配置上下文菜单项：转换块类型、颜色/高亮、复制/删除、重置格式
+- [x] 确保 `withSlashCommandTrigger` 与 1.4 的 slash 菜单联动
+- [x] 验证拖拽排序在 Markdown 序列化后正确
 
 #### 1.6 浮动格式工具栏（Bubble Menu）
 - [ ] 使用官方 `<Tiptap.BubbleMenu>` 作为容器

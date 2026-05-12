@@ -4,7 +4,6 @@ import { installPapyroEditorRuntime } from "./editor-runtime-bootstrap.js";
 import { createPapyroTiptapExtensions } from "./tiptap-markdown.js";
 import {
   createTiptapReactCodeBlockNodeViewRenderer,
-  createTiptapReactFormatToolbarView,
   createTiptapReactLinkEditorView,
   createTiptapReactMountController,
 } from "./tiptap-react/index.js";
@@ -27,7 +26,14 @@ const tiptapRuntimeAdapter = createTiptapEditorRuntime({
     detachLayoutObserver: hostRuntime.detachLayoutObserver,
     restoreEditorScrollSnapshot: hostRuntime.restoreEditorScrollSnapshot,
   },
-  formatToolbarViewFactory: createTiptapReactFormatToolbarView,
+  formatToolbarControllerFactory: () => ({
+    attach() {},
+    refresh() {},
+    close() {},
+    contains() { return false; },
+    destroy() {},
+  }),
+  formatToolbarViewFactory: null,
   linkEditorViewFactory: createTiptapReactLinkEditorView,
   mountControllerFactory: createTiptapReactMountController,
   slashMenuViewFactory: null,

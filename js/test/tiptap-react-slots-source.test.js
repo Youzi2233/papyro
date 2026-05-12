@@ -320,7 +320,8 @@ test("official table-node layer owns visible table chrome at the editor boundary
   assert.doesNotMatch(editorEntrySource, /tableMenuRendererFactory/u);
   assert.doesNotMatch(editorEntrySource, /tableChromeRendererFactory/u);
   assert.doesNotMatch(editorEntrySource, /tableChromeRendererFactory:\s*null/u);
-  assert.match(editorEntrySource, /formatToolbarViewFactory:\s*createTiptapReactFormatToolbarView/u);
+  assert.doesNotMatch(editorEntrySource, /formatToolbarViewFactory:\s*createTiptapReactFormatToolbarView/u);
+  assert.match(slotsSource, /PapyroToolbarFloating/u);
   assert.match(slotsSource, /PapyroOfficialTableNodeLayer/u);
   assert.match(tableCommandBridgeSource, /export function createTiptapTableCommandBridge/u);
   assert.match(tableCommandBridgeSource, /TABLE_COMMANDS/u);

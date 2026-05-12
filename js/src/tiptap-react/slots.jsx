@@ -3,6 +3,7 @@ import React from "react";
 import { PapyroOfficialTableNodeLayer } from "./official-table-node-layer.jsx";
 import { DragContextMenu } from "@/components/tiptap-ui/drag-context-menu";
 import { SlashDropdownMenu } from "@/components/tiptap-ui/slash-dropdown-menu/slash-dropdown-menu.tsx";
+import { PapyroToolbarFloating } from "@/components/tiptap-templates/notion/notion-like/papyro-toolbar-floating.tsx";
 
 function PapyroOverlayLayer(runtime) {
   return (
@@ -10,6 +11,7 @@ function PapyroOverlayLayer(runtime) {
       <DragContextMenu />
       <PapyroOfficialTableNodeLayer {...runtime} />
       <SlashDropdownMenu />
+      <PapyroToolbarFloating />
     </>
   );
 }

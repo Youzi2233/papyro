@@ -123,39 +123,39 @@ Official recommended path: use the Tiptap CLI to install the complete Notion-lik
 Copy official component source from the CLI-generated template into the project, integrate and verify one by one. Each component gets its own commit.
 
 #### 1.1 Style Infrastructure
-- [ ] Copy official style configuration from template (CSS variables, design tokens)
-- [ ] Establish Papyro's global style foundation per template's `styles/` directory
-- [ ] Ensure dark/light theme CSS variables are in place
+- [x] Copy official style configuration from template (CSS variables, design tokens)
+- [x] Establish Papyro's global style foundation per template's `styles/` directory
+- [x] Ensure dark/light theme CSS variables are in place
 
 #### 1.2 UI Primitives Layer
 Copy the following primitive components from the template (they are dependencies of all higher-level components):
-- [ ] `button` + `button-group`
-- [ ] `dropdown-menu`
-- [ ] `popover`
-- [ ] `toolbar` (including `ToolbarGroup`, `ToolbarSeparator`)
-- [ ] `separator`
-- [ ] `spacer`
-- [ ] `tooltip`
+- [x] `button` + `button-group`
+- [x] `dropdown-menu`
+- [x] `popover`
+- [x] `toolbar` (including `ToolbarGroup`, `ToolbarSeparator`)
+- [x] `separator`
+- [x] `spacer`
+- [x] `tooltip`
 
 #### 1.3 Hooks and Utility Libraries
-- [ ] `use-mobile`
-- [ ] `use-window-size`
-- [ ] `use-ui-editor-state`
-- [ ] `tiptap-utils` (trim AI/collaboration utility functions)
+- [x] `use-mobile`
+- [x] `use-window-size`
+- [x] `use-ui-editor-state`
+- [x] `tiptap-utils` (trim AI/collaboration utility functions)
 
 #### 1.4 Slash Command Menu (Highest Priority)
-- [ ] Copy official `slash-dropdown-menu` component
-- [ ] Copy dependent `suggestion-menu` utility component
-- [ ] Configure Papyro-supported block types (heading, list, code, blockquote, hr, image, table, math, mermaid)
-- [ ] Connect to Rust-side `run_slash_command` protocol
-- [ ] Verify `/` trigger, search filtering, keyboard navigation work correctly
+- [x] Copy official `slash-dropdown-menu` component
+- [x] Copy dependent `suggestion-menu` utility component
+- [x] Configure Papyro-supported block types (heading, list, code, blockquote, hr, image, table, math, mermaid)
+- [x] Connect to Rust-side `run_slash_command` protocol
+- [x] Verify `/` trigger, search filtering, keyboard navigation work correctly
 
 #### 1.5 Drag Handle + Block Action Menu
-- [ ] Copy official `drag-context-menu` component
-- [ ] Copy dependent `floating-element` utility component
-- [ ] Configure context menu items: transform block type, color/highlight, copy/delete, reset formatting
-- [ ] Ensure `withSlashCommandTrigger` links with 1.4's slash menu
-- [ ] Verify drag reordering serializes correctly to Markdown
+- [x] Copy official `drag-context-menu` component
+- [x] Copy dependent `floating-element` utility component
+- [x] Configure context menu items: transform block type, color/highlight, copy/delete, reset formatting
+- [x] Ensure `withSlashCommandTrigger` links with 1.4's slash menu
+- [x] Verify drag reordering serializes correctly to Markdown
 
 #### 1.6 Floating Format Toolbar (Bubble Menu)
 - [ ] Use official `<Tiptap.BubbleMenu>` as container
