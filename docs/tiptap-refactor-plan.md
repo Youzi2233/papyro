@@ -199,28 +199,28 @@ After Phase 1's official components are confirmed working, progressively remove 
 #### 2.1 Remove Old DOM Controllers
 The current `tiptap-runtime.js` creates many controllers via dependency injection, now replaced by official React components:
 
-- [ ] Remove `block-handle-controller` (replaced by: official `drag-context-menu`)
-- [ ] Remove `block-action-menu-controller` (replaced by: built into official `drag-context-menu`)
-- [ ] Remove `format-toolbar-controller` (replaced by: official `BubbleMenu` + toolbar components)
-- [ ] Remove `slash-menu-controller` (replaced by: official `slash-dropdown-menu`)
-- [ ] Remove `link-editor-controller` (replaced by: official `link-popover`)
+- [x] Remove `block-handle-controller` (replaced by: official `drag-context-menu`)
+- [x] Remove `block-action-menu-controller` (replaced by: built into official `drag-context-menu`)
+- [x] Remove `format-toolbar-controller` (replaced by: official `BubbleMenu` + toolbar components)
+- [x] Remove `slash-menu-controller` (replaced by: official `slash-dropdown-menu`)
+- [x] Remove `link-editor-controller` (replaced by: official `link-popover`)
 - [ ] Remove `table-toolbar-controller` (replaced by: official `table-node` built-in menus)
 
 #### 2.2 Remove Custom React Views (Replaced by Official Components)
-- [ ] Remove `tiptap-react/slash-menu-view.jsx`
-- [ ] Remove `tiptap-react/block-action-menu-view.jsx`
-- [ ] Remove `tiptap-react/block-handle-view.jsx`
-- [ ] Remove `tiptap-react/format-toolbar-view.jsx`
-- [ ] Remove `tiptap-react/link-editor-view.jsx`
-- [ ] Remove `tiptap-react/components/block-action-menu.jsx`
-- [ ] Remove `tiptap-react/components/block-handle.jsx`
-- [ ] Remove `tiptap-react/components/format-toolbar.jsx`
-- [ ] Remove `tiptap-react/components/link-editor.jsx`
-- [ ] Remove `tiptap-react/commands/block-action-menu-model.js` (functionality merged into drag-context-menu)
+- [x] Remove `tiptap-react/slash-menu-view.jsx`
+- [x] Remove `tiptap-react/block-action-menu-view.jsx`
+- [x] Remove `tiptap-react/block-handle-view.jsx`
+- [x] Remove `tiptap-react/format-toolbar-view.jsx`
+- [x] Remove `tiptap-react/link-editor-view.jsx`
+- [x] Remove `tiptap-react/components/block-action-menu.jsx`
+- [x] Remove `tiptap-react/components/block-handle.jsx`
+- [x] Remove `tiptap-react/components/format-toolbar.jsx`
+- [x] Remove `tiptap-react/components/link-editor.jsx`
+- [x] Remove `tiptap-react/commands/block-action-menu-model.js` (functionality merged into drag-context-menu)
 
 #### 2.3 Remove Custom Style Files
-- [ ] Audit all `.scss` files, remove styles that duplicate official components
-- [ ] Keep only Papyro-specific styles (Mermaid, KaTeX, etc.)
+- [x] Audit all `.scss` files, remove styles that duplicate official components
+- [x] Keep only Papyro-specific styles (Mermaid, KaTeX, etc.)
 
 #### 2.4 Remove Outdated Documentation
 - [x] Remove `docs/tiptap-enterprise-editor-todo.md` (replaced by this document)

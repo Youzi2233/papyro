@@ -204,7 +204,7 @@ js/src/
 - [x] 删除 `format-toolbar-controller`（替代：官方 `BubbleMenu` + toolbar 组件）
 - [x] 删除 `slash-menu-controller`（替代：官方 `slash-dropdown-menu`）
 - [x] 删除 `link-editor-controller`（替代：官方 `link-popover`）
-- [x] 删除 `table-toolbar-controller`（替代：官方 `table-node` 内置菜单）
+- [ ] 删除 `table-toolbar-controller`（替代：官方 `table-node` 内置菜单）
 
 #### 2.2 删除自定义 React 视图（被官方组件替代）
 - [x] 删除 `tiptap-react/slash-menu-view.jsx`
