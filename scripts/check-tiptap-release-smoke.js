@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 import { readFileSync } from "node:fs";
 import { Window } from "../js/node_modules/happy-dom/lib/index.js";
+import { importBundledModule } from "../js/test/helpers/load-esbuild-module.js";
 
-import {
+const {
   parseTiptapMarkdown,
   roundTripTiptapMarkdown,
   serializeTiptapMarkdown,
-} from "../js/src/tiptap-markdown.js";
+} = await importBundledModule(new URL("../js/src/tiptap-markdown.js", import.meta.url));
 
 const DEFAULT_FIXTURE = "js/test/fixtures/tiptap-release-smoke.md";
 

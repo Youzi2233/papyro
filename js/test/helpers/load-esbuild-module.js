@@ -1,12 +1,15 @@
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import * as esbuild from "esbuild";
+
+const helperDirectory = dirname(fileURLToPath(import.meta.url));
+const packageRoot = join(helperDirectory, "..", "..");
 
 export async function importBundledModule(entryPoint, {
   loader = {},
   jsx = "automatic",
+  packages = "external",
 } = {}) {
   const entryPath = entryPoint instanceof URL ? fileURLToPath(entryPoint) : entryPoint;
   const result = await esbuild.build({
@@ -14,6 +17,7 @@ export async function importBundledModule(entryPoint, {
     bundle: true,
     format: "esm",
     platform: "node",
+    packages,
     write: false,
     jsx,
     loader: {
@@ -30,7 +34,7 @@ export async function importBundledModule(entryPoint, {
     throw new Error(`Unable to bundle test module: ${entryPath}`);
   }
 
-  const directory = await mkdtemp(join(tmpdir(), "papyro-esbuild-module-"));
+  const directory = await mkdtemp(join(packageRoot, ".tmp-esbuild-module-"));
   const modulePath = join(directory, "module.mjs");
   await writeFile(modulePath, source, "utf8");
 

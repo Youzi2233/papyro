@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const overlaySource = readFileSync(
-  new URL("../src/components/tiptap-node/table-node/ui/table-selection-overlay/table-selection-overlay.jsx", import.meta.url),
+  new URL("../src/components/tiptap-node/table-node/ui/table-selection-overlay/table-selection-overlay.tsx", import.meta.url),
   "utf8",
 );
 

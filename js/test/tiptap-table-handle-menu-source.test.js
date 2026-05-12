@@ -3,11 +3,11 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const officialCellMenuSource = readFileSync(
-  new URL("../src/components/tiptap-node/table-node/ui/table-cell-handle-menu/index.jsx", import.meta.url),
+  new URL("../src/components/tiptap-node/table-node/ui/table-cell-handle-menu/index.tsx", import.meta.url),
   "utf8",
 );
 const officialAxisMenuSource = readFileSync(
-  new URL("../src/components/tiptap-node/table-node/ui/table-handle-menu/index.jsx", import.meta.url),
+  new URL("../src/components/tiptap-node/table-node/ui/table-handle-menu/index.tsx", import.meta.url),
   "utf8",
 );
 const officialLayerSource = readFileSync(
@@ -15,27 +15,27 @@ const officialLayerSource = readFileSync(
   "utf8",
 );
 const officialTableHandleIndexSource = readFileSync(
-  new URL("../src/components/tiptap-node/table-node/ui/table-handle/index.jsx", import.meta.url),
+  new URL("../src/components/tiptap-node/table-node/ui/table-handle/index.tsx", import.meta.url),
   "utf8",
 );
 const officialTableHandleSource = readFileSync(
-  new URL("../src/components/tiptap-node/table-node/ui/table-handle/table-handle.jsx", import.meta.url),
+  new URL("../src/components/tiptap-node/table-node/ui/table-handle/table-handle.tsx", import.meta.url),
   "utf8",
 );
 const officialSelectionOverlayIndexSource = readFileSync(
-  new URL("../src/components/tiptap-node/table-node/ui/table-selection-overlay/index.jsx", import.meta.url),
+  new URL("../src/components/tiptap-node/table-node/ui/table-selection-overlay/index.tsx", import.meta.url),
   "utf8",
 );
 const officialSelectionOverlaySource = readFileSync(
-  new URL("../src/components/tiptap-node/table-node/ui/table-selection-overlay/table-selection-overlay.jsx", import.meta.url),
+  new URL("../src/components/tiptap-node/table-node/ui/table-selection-overlay/table-selection-overlay.tsx", import.meta.url),
   "utf8",
 );
 const officialExtendButtonsIndexSource = readFileSync(
-  new URL("../src/components/tiptap-node/table-node/ui/table-extend-row-column-button/index.jsx", import.meta.url),
+  new URL("../src/components/tiptap-node/table-node/ui/table-extend-row-column-button/index.tsx", import.meta.url),
   "utf8",
 );
 const officialExtendButtonsSource = readFileSync(
-  new URL("../src/components/tiptap-node/table-node/ui/table-extend-row-column-button/table-extend-row-column-button.jsx", import.meta.url),
+  new URL("../src/components/tiptap-node/table-node/ui/table-extend-row-column-button/table-extend-row-column-button.tsx", import.meta.url),
   "utf8",
 );
 
@@ -66,7 +66,7 @@ test("official paid table-node row and column menus remain the visible runtime s
 test("Papyro table layer mounts official table-node menu paths", () => {
   assert.match(
     officialLayerSource,
-    /from "\.\.\/components\/tiptap-node\/table-node\/ui\/table-handle\/table-handle\.jsx"/u,
+    /from "\.\.\/components\/tiptap-node\/table-node\/ui\/table-handle\/table-handle"/u,
   );
   assert.match(
     officialLayerSource,
@@ -78,7 +78,7 @@ test("Papyro table layer mounts official table-node menu paths", () => {
   );
   assert.match(
     officialLayerSource,
-    /from "\.\.\/components\/tiptap-node\/table-node\/ui\/table-cell-handle-menu\/index\.jsx"/u,
+    /from "\.\.\/components\/tiptap-node\/table-node\/ui\/table-cell-handle-menu"/u,
   );
   assert.doesNotMatch(
     officialLayerSource,

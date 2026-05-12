@@ -1,8 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { importBundledModule } from "./helpers/load-esbuild-module.js";
 
-import { createMarkdownSyncController } from "../src/markdown-sync-controller.js";
-import { parseTiptapMarkdown } from "../src/tiptap-markdown.js";
+const { createMarkdownSyncController } = await importBundledModule(
+  new URL("../src/markdown-sync-controller.js", import.meta.url),
+);
+const { parseTiptapMarkdown } = await importBundledModule(
+  new URL("../src/tiptap-markdown.js", import.meta.url),
+);
 
 test("MarkdownSyncController keeps canonical Markdown after set", () => {
   const controller = createMarkdownSyncController();

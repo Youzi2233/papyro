@@ -9,7 +9,7 @@ import {
   deleteCellSelection,
   selectedRect,
 } from "@tiptap/pm/tables";
-import { TableHandleExtension } from "./components/tiptap-node/table-node/extensions/table-handle/index.js";
+import { TableHandleExtension } from "./components/tiptap-node/table-node/extensions/table-handle/index.ts";
 
 export const PAPYRO_TABLE_CELL_RESET_ATTRS = Object.freeze([
   "align",

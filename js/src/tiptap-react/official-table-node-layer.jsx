@@ -1,8 +1,8 @@
 import React, { useCallback, useState } from "react";
 
 import { TableExtendRowColumnButtons } from "../components/tiptap-node/table-node/ui/table-extend-row-column-button";
-import { TableHandle } from "../components/tiptap-node/table-node/ui/table-handle/table-handle.jsx";
-import { TableCellHandleMenu } from "../components/tiptap-node/table-node/ui/table-cell-handle-menu/index.jsx";
+import { TableHandle } from "../components/tiptap-node/table-node/ui/table-handle/table-handle";
+import { TableCellHandleMenu } from "../components/tiptap-node/table-node/ui/table-cell-handle-menu";
 import { TableSelectionOverlay } from "../components/tiptap-node/table-node/ui/table-selection-overlay";
 import "../components/tiptap-node/table-node/styles/prosemirror-table.scss";
 import "../components/tiptap-node/table-node/styles/table-node.scss";

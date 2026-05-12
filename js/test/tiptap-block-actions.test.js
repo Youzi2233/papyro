@@ -1,10 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { importBundledModule } from "./helpers/load-esbuild-module.js";
 
-import {
+const {
   createTiptapBlockActionController,
   PAPYRO_TIPTAP_BLOCK_ACTIONS,
-} from "../src/tiptap-block-actions.js";
+} = await importBundledModule(
+  new URL("../src/tiptap-block-actions.js", import.meta.url),
+);
 
 function createEditor() {
   const calls = [];

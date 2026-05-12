@@ -283,7 +283,7 @@ js/src/
 #### 5.2 组件模块
 - [x] 所有 `tiptap-ui/` 下的组件（官方源码本身就是 TSX）
 - [x] 所有 `tiptap-ui-primitive/` 下的原语
-- [ ] 所有 `tiptap-node/` 下的节点组件
+- [x] 所有 `tiptap-node/` 下的节点组件
 - [x] `hooks/` 下的所有 hooks
 
 #### 5.3 工具和测试

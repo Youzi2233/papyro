@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 
 const tableHandlePluginSource = readFileSync(
   new URL(
-    "../src/components/tiptap-node/table-node/extensions/table-handle/table-handle-plugin.js",
+    "../src/components/tiptap-node/table-node/extensions/table-handle/table-handle-plugin.ts",
     import.meta.url,
   ),
   "utf8",

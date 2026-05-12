@@ -1,15 +1,20 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { importBundledModule } from "./helpers/load-esbuild-module.js";
 
-import {
+const {
   applyMarkToBlockText,
   blockTextRanges,
   createPapyroTextStyleExtensions,
-} from "../src/tiptap-text-style.js";
-import {
+} = await importBundledModule(
+  new URL("../src/tiptap-text-style.js", import.meta.url),
+);
+const {
   roundTripTiptapMarkdown,
   serializeTiptapMarkdown,
-} from "../src/tiptap-markdown.js";
+} = await importBundledModule(
+  new URL("../src/tiptap-markdown.js", import.meta.url),
+);
 
 function collectMarks(node, marks = []) {
   if (!node || typeof node !== "object") return marks;

@@ -8,35 +8,35 @@ const officialLayerSource = readFileSync(
 );
 const tableHandleSource = readFileSync(
   new URL(
-    "../src/components/tiptap-node/table-node/ui/table-handle/table-handle.jsx",
+    "../src/components/tiptap-node/table-node/ui/table-handle/table-handle.tsx",
     import.meta.url,
   ),
   "utf8",
 );
 const tableSelectionOverlaySource = readFileSync(
   new URL(
-    "../src/components/tiptap-node/table-node/ui/table-selection-overlay/table-selection-overlay.jsx",
+    "../src/components/tiptap-node/table-node/ui/table-selection-overlay/table-selection-overlay.tsx",
     import.meta.url,
   ),
   "utf8",
 );
 const tableExtendButtonsSource = readFileSync(
   new URL(
-    "../src/components/tiptap-node/table-node/ui/table-extend-row-column-button/table-extend-row-column-button.jsx",
+    "../src/components/tiptap-node/table-node/ui/table-extend-row-column-button/table-extend-row-column-button.tsx",
     import.meta.url,
   ),
   "utf8",
 );
 const tableHandleMenuSource = readFileSync(
   new URL(
-    "../src/components/tiptap-node/table-node/ui/table-handle-menu/index.jsx",
+    "../src/components/tiptap-node/table-node/ui/table-handle-menu/index.tsx",
     import.meta.url,
   ),
   "utf8",
 );
 const tableCellHandleMenuSource = readFileSync(
   new URL(
-    "../src/components/tiptap-node/table-node/ui/table-cell-handle-menu/index.jsx",
+    "../src/components/tiptap-node/table-node/ui/table-cell-handle-menu/index.tsx",
     import.meta.url,
   ),
   "utf8",

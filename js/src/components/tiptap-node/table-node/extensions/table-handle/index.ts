@@ -2,13 +2,13 @@ import { Extension } from "@tiptap/core"
 import {
   TableHandlePlugin,
   tableHandlePluginKey,
-} from "./table-handle-plugin.js"
+} from "./table-handle-plugin"
 
 export {
   colDragStart,
   rowDragStart,
   dragEnd,
-} from "./table-handle-plugin.js"
+} from "./table-handle-plugin"
 
 export const TableHandleExtension = Extension.create({
   name: "tableHandleExtension",

@@ -18,9 +18,9 @@ import {
   isTableNode,
   safeClosest,
   selectCellsByCoords,
-} from "../../lib/tiptap-table-utils.js"
+} from "../../lib/tiptap-table-utils"
 import { isValidPosition } from "../../../../../lib/tiptap-utils.js"
-import { createTableDragImage } from "./helpers/create-image.js"
+import { createTableDragImage } from "./helpers/create-image"
 
 function hideElements(selector, rootEl) {
   rootEl.querySelectorAll(selector).forEach((el) => {

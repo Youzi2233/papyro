@@ -4,8 +4,9 @@ import { readFileSync } from "node:fs";
 import { Editor } from "@tiptap/core";
 import { Markdown } from "@tiptap/markdown";
 import { Window } from "happy-dom";
+import { importBundledModule } from "./helpers/load-esbuild-module.js";
 
-import {
+const {
   PAPYRO_UNIQUE_ID_NODE_TYPES,
   createPapyroMarkdownManager,
   createPapyroTiptapExtensions,
@@ -13,7 +14,9 @@ import {
   parseTiptapMarkdown,
   roundTripTiptapMarkdown,
   serializeTiptapMarkdown,
-} from "../src/tiptap-markdown.js";
+} = await importBundledModule(
+  new URL("../src/tiptap-markdown.js", import.meta.url),
+);
 
 const markdownFixture = `# Papyro Guide
 

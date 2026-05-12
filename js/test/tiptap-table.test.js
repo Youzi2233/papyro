@@ -3,8 +3,9 @@ import assert from "node:assert/strict";
 import { Editor } from "@tiptap/core";
 import { StarterKit } from "@tiptap/starter-kit";
 import { Window } from "happy-dom";
+import { importBundledModule } from "./helpers/load-esbuild-module.js";
 
-import {
+const {
   PapyroTable,
   PAPYRO_TABLE_CELL_RESET_ATTRS,
   PapyroTableCellBackground,
@@ -14,8 +15,12 @@ import {
   selectedTableCellsPlainText,
   setSelectedTableCellTextColor,
   writeTableTextToClipboard,
-} from "../src/tiptap-table.js";
-import { createPapyroTextStyleExtensions } from "../src/tiptap-text-style.js";
+} = await importBundledModule(
+  new URL("../src/tiptap-table.js", import.meta.url),
+);
+const { createPapyroTextStyleExtensions } = await importBundledModule(
+  new URL("../src/tiptap-text-style.js", import.meta.url),
+);
 
 function installDomGlobals(windowRef) {
   const previous = new Map();
