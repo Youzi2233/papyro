@@ -281,8 +281,8 @@ js/src/
 - [x] `tiptap-react/mount-controller.jsx` → `.tsx`
 
 #### 5.2 组件模块
-- [ ] 所有 `tiptap-ui/` 下的组件（官方源码本身就是 TSX）
-- [ ] 所有 `tiptap-ui-primitive/` 下的原语
+- [x] 所有 `tiptap-ui/` 下的组件（官方源码本身就是 TSX）
+- [x] 所有 `tiptap-ui-primitive/` 下的原语
 - [ ] 所有 `tiptap-node/` 下的节点组件
 - [ ] `hooks/` 下的所有 hooks
 

@@ -281,8 +281,8 @@ Migrate by module priority, one module at a time:
 - [x] `tiptap-react/mount-controller.jsx` → `.tsx`
 
 #### 5.2 Component Modules
-- [ ] All components under `tiptap-ui/` (official source is already TSX)
-- [ ] All primitives under `tiptap-ui-primitive/`
+- [x] All components under `tiptap-ui/` (official source is already TSX)
+- [x] All primitives under `tiptap-ui-primitive/`
 - [ ] All node components under `tiptap-node/`
 - [ ] All hooks under `hooks/`
 
