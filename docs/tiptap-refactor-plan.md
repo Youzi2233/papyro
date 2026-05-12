@@ -185,9 +185,9 @@ Copy the following primitive components from the template (they are dependencies
 - [x] Copy official `image-node` (adapt for local image paste protocol)
 
 #### 1.9 Extension Layer
-- [ ] Copy official `selection-extension`
+- [x] Copy official `selection-extension`
 - [ ] Copy official `trailing-node-extension`
-- [ ] Copy official `mathematics-extension` (connect to existing KaTeX)
+- [x] Copy official `mathematics-extension` (connect to existing KaTeX)
 - [ ] Copy official `unique-id-extension`
 
 ---

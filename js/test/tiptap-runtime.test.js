@@ -33,37 +33,16 @@ function createRuntimeHarness({
   formatCommandControllerFactory,
   historyCommandControllerFactory,
   blockHintsControllerFactory,
-  blockHandleControllerFactory,
-  blockHandleViewFactory,
-  formatToolbarControllerFactory,
   pasteControllerFactory,
   preferencesControllerFactory,
-  linkEditorControllerFactory,
-  linkEditorViewFactory,
   sourcePaneControllerFactory,
-  slashMenuControllerFactory,
   tableToolbarControllerFactory,
-  formatToolbarViewFactory,
   mountControllerFactory,
   layout,
   document: documentOverride,
 } = {}) {
   const calls = [];
   const registry = createEditorRuntimeRegistry();
-
-  const createBlockHandle =
-    blockHandleControllerFactory ??
-    (() => ({
-      attach: ({ root }) => calls.push(["blockHandleAttach", root.className]),
-      close: () => calls.push(["blockHandleClose"]),
-      destroy: () => calls.push(["blockHandleDestroy"]),
-      handleKeyDown: (event) => {
-        calls.push(["blockHandleKeyDown", event.key]);
-        return event.key === "ContextMenu";
-      },
-      refresh: () => calls.push(["blockHandleRefresh"]),
-      shouldKeepOpenOnEditorBlur: () => false,
-    }));
 
   const createBlockHintsController =
     blockHintsControllerFactory ??
@@ -85,25 +64,6 @@ function createRuntimeHarness({
       },
     }));
 
-  const createFormatToolbar =
-    formatToolbarControllerFactory ??
-    (() => ({
-      attach: ({ root }) => calls.push(["formatToolbarAttach", root.className]),
-      close: () => calls.push(["formatToolbarClose"]),
-      destroy: () => calls.push(["formatToolbarDestroy"]),
-      refresh: () => calls.push(["formatToolbarRefresh"]),
-    }));
-
-  const createLinkEditor =
-    linkEditorControllerFactory ??
-    (() => ({
-      attach: () => {},
-      close: () => {},
-      contains: () => false,
-      destroy: () => {},
-      openFromEditor: () => true,
-    }));
-
   const createPasteController =
     pasteControllerFactory ??
     (() => ({
@@ -113,20 +73,6 @@ function createRuntimeHarness({
         calls.push(["pasteControllerPaste", event.type]);
         return event.type === "paste";
       },
-    }));
-
-  const createSlashMenu =
-    slashMenuControllerFactory ??
-    (() => ({
-      attach: ({ root }) => calls.push(["slashMenuAttach", root.className]),
-      close: () => calls.push(["slashMenuClose"]),
-      destroy: () => calls.push(["slashMenuDestroy"]),
-      handleKeyDown: (event) => {
-        calls.push(["slashMenuKeyDown", event.key]);
-        return event.key === "ArrowDown";
-      },
-      refresh: () => calls.push(["slashMenuRefresh"]),
-      shouldKeepOpenOnEditorBlur: () => false,
     }));
 
   const createTableToolbar =
@@ -249,18 +195,11 @@ function createRuntimeHarness({
     markdownManagerFactory,
     ...(clipboard ? { clipboard } : {}),
     blockHintsControllerFactory: createBlockHintsController,
-    blockHandleControllerFactory: createBlockHandle,
-    ...(blockHandleViewFactory ? { blockHandleViewFactory } : {}),
     ...(formatCommandControllerFactory ? { formatCommandControllerFactory } : {}),
-    formatToolbarControllerFactory: createFormatToolbar,
-    ...(formatToolbarViewFactory ? { formatToolbarViewFactory } : {}),
     ...(historyCommandControllerFactory ? { historyCommandControllerFactory } : {}),
-    linkEditorControllerFactory: createLinkEditor,
-    ...(linkEditorViewFactory ? { linkEditorViewFactory } : {}),
     pasteControllerFactory: createPasteController,
     ...(preferencesControllerFactory ? { preferencesControllerFactory } : {}),
     ...(sourcePaneControllerFactory ? { sourcePaneControllerFactory } : {}),
-    slashMenuControllerFactory: createSlashMenu,
     tableToolbarControllerFactory: createTableToolbar,
     ...(mountControllerFactory ? { mountControllerFactory } : {}),
     ...(layout ? { layout } : {}),
@@ -300,113 +239,11 @@ test("Tiptap runtime creates an editor instance and registry entry", () => {
     ["mount", "mn-tiptap-runtime", "tab-a"],
     ["setEditable", true],
     ["blockHintsAttach"],
-    ["blockHandleAttach", "mn-tiptap-runtime"],
-    ["formatToolbarAttach", "mn-tiptap-runtime"],
     ["pasteControllerAttach", "mn-tiptap-runtime"],
-    ["slashMenuAttach", "mn-tiptap-runtime"],
     ["tableToolbarAttach", "mn-tiptap-runtime"],
   ]);
 });
 
-test("Tiptap runtime injects a custom block handle view", () => {
-  const { calls, runtime } = createRuntimeHarness({
-    blockHandleControllerFactory: ({ view }) => ({
-      attach: ({ root }) => calls.push(["blockHandleAttach", root.className]),
-      close: () => calls.push(["blockHandleClose"]),
-      destroy: () => calls.push(["blockHandleDestroy"]),
-      refresh: () => calls.push(["blockHandleRefresh"]),
-      shouldKeepOpenOnEditorBlur: () => false,
-      view,
-    }),
-    blockHandleViewFactory: ({ document }) => {
-      calls.push(["blockHandleViewFactory", Boolean(document)]);
-      return { kind: "react-block-handle-view" };
-    },
-  });
-
-  runtime.ensureEditor({
-    tabId: "tab-a",
-    containerId: "editor-root",
-    initialContent: "# Note",
-  });
-
-  assert.ok(
-    calls.some(
-      (call) => call[0] === "blockHandleViewFactory" && call[1] === true,
-    ),
-  );
-  assert.ok(
-    calls.some(
-      (call) => call[0] === "blockHandleAttach" && call[1] === "mn-tiptap-runtime",
-    ),
-  );
-});
-
-test("Tiptap runtime injects a custom format toolbar view", () => {
-  const { calls, runtime } = createRuntimeHarness({
-    formatToolbarControllerFactory: ({ view }) => ({
-      attach: ({ root }) => calls.push(["formatToolbarAttach", root.className]),
-      close: () => calls.push(["formatToolbarClose"]),
-      destroy: () => calls.push(["formatToolbarDestroy"]),
-      refresh: () => calls.push(["formatToolbarRefresh"]),
-      view,
-    }),
-    formatToolbarViewFactory: ({ document }) => {
-      calls.push(["formatToolbarViewFactory", Boolean(document)]);
-      return { kind: "react-format-toolbar-view" };
-    },
-  });
-
-  runtime.ensureEditor({
-    tabId: "tab-a",
-    containerId: "editor-root",
-    initialContent: "# Note",
-  });
-
-  assert.ok(
-    calls.some(
-      (call) => call[0] === "formatToolbarViewFactory" && call[1] === true,
-    ),
-  );
-  assert.ok(
-    calls.some(
-      (call) => call[0] === "formatToolbarAttach" && call[1] === "mn-tiptap-runtime",
-    ),
-  );
-});
-
-test("Tiptap runtime injects a custom link editor view", () => {
-  const { calls, runtime } = createRuntimeHarness({
-    linkEditorControllerFactory: ({ view }) => ({
-      attach: ({ root }) => calls.push(["linkEditorAttach", root.className]),
-      close: () => calls.push(["linkEditorClose"]),
-      contains: () => false,
-      destroy: () => calls.push(["linkEditorDestroy"]),
-      view,
-    }),
-    linkEditorViewFactory: ({ document }) => {
-      calls.push(["linkEditorViewFactory", Boolean(document)]);
-      return { kind: "react-link-editor-view" };
-    },
-  });
-
-  runtime.ensureEditor({
-    tabId: "tab-a",
-    containerId: "editor-root",
-    initialContent: "# Note",
-  });
-
-  assert.ok(
-    calls.some(
-      (call) => call[0] === "linkEditorViewFactory" && call[1] === true,
-    ),
-  );
-  assert.ok(
-    calls.some(
-      (call) => call[0] === "linkEditorAttach" && call[1] === "mn-tiptap-runtime",
-    ),
-  );
-});
 
 test("Tiptap runtime attaches editor chrome and syncs outline on selection changes", () => {
   const calls = [];
@@ -479,14 +316,9 @@ test("Tiptap runtime reattaches existing editors without rebuilding", () => {
     ["mount", "mn-tiptap-runtime", "tab-a"],
     ["setEditable", true],
     ["blockHintsAttach"],
-    ["blockHandleAttach", "mn-tiptap-runtime"],
-    ["formatToolbarAttach", "mn-tiptap-runtime"],
     ["pasteControllerAttach", "mn-tiptap-runtime"],
-    ["slashMenuAttach", "mn-tiptap-runtime"],
     ["tableToolbarAttach", "mn-tiptap-runtime"],
     ["setEditable", false],
-    ["blockHandleRefresh"],
-    ["formatToolbarRefresh"],
     ["tableToolbarRefresh"],
   ]);
 });
@@ -636,17 +468,11 @@ test("Tiptap runtime handles baseline Rust messages", () => {
   assert.deepEqual(calls, [
     ["syncOutline", "tab-a", "hybrid"],
     ["setEditable", false],
-    ["blockHandleRefresh"],
-    ["formatToolbarRefresh"],
     ["tableToolbarRefresh"],
     ["syncOutline", "tab-a", "source"],
     ["setContent", "## Updated", "markdown"],
     ["insertContent", "\n- item", "markdown"],
-    ["blockHandleRefresh"],
-    ["slashMenuRefresh"],
-    ["formatToolbarRefresh"],
     ["tableToolbarRefresh"],
-    ["slashMenuRefresh"],
     ["tableToolbarRefresh"],
     ["blockHintsApply", 7],
     ["toggleHeading", 2],
@@ -685,8 +511,6 @@ test("Tiptap runtime preserves set_view_mode protocol state", () => {
   assert.equal(entry.dom.dataset.viewMode, "preview");
   assert.deepEqual(calls, [
     ["setEditable", false],
-    ["blockHandleRefresh"],
-    ["formatToolbarRefresh"],
     ["tableToolbarRefresh"],
     ["syncOutline", "tab-a", "preview"],
   ]);
@@ -718,10 +542,7 @@ test("Tiptap runtime mode contract keeps rich editing Hybrid-only", () => {
     ["mount", "mn-tiptap-runtime", "tab-a"],
     ["setEditable", false],
     ["blockHintsAttach"],
-    ["blockHandleAttach", "mn-tiptap-runtime"],
-    ["formatToolbarAttach", "mn-tiptap-runtime"],
     ["pasteControllerAttach", "mn-tiptap-runtime"],
-    ["slashMenuAttach", "mn-tiptap-runtime"],
     ["tableToolbarAttach", "mn-tiptap-runtime"],
   ]);
   assert.deepEqual(sourcePaneCalls, [["attach", "preview"]]);
@@ -734,13 +555,9 @@ test("Tiptap runtime mode contract keeps rich editing Hybrid-only", () => {
 
   assert.deepEqual(calls, [
     ["setEditable", false],
-    ["blockHandleRefresh"],
-    ["formatToolbarRefresh"],
     ["tableToolbarRefresh"],
     ["syncOutline", "tab-a", "source"],
     ["setEditable", true],
-    ["blockHandleRefresh"],
-    ["formatToolbarRefresh"],
     ["tableToolbarRefresh"],
     ["syncOutline", "tab-a", "hybrid"],
   ]);
@@ -859,9 +676,6 @@ test("Tiptap runtime preserves insert_markdown protocol updates", () => {
   assert.equal(registry.get("tab-a").editor.markdown, "# Note\n- item");
   assert.deepEqual(calls, [
     ["insertContent", "\n- item", "markdown"],
-    ["blockHandleRefresh"],
-    ["slashMenuRefresh"],
-    ["formatToolbarRefresh"],
     ["tableToolbarRefresh"],
   ]);
   assert.deepEqual(messages, [
@@ -1084,10 +898,7 @@ test("Tiptap runtime destroys and unregisters editor entries", () => {
 
   assert.equal(registry.has("tab-a"), false);
   assert.deepEqual(calls, [
-    ["blockHandleDestroy"],
-    ["formatToolbarDestroy"],
     ["pasteControllerDestroy"],
-    ["slashMenuDestroy"],
     ["tableToolbarDestroy"],
     ["destroy"],
   ]);
@@ -1176,79 +987,6 @@ test("Tiptap runtime sends save requests from editor shortcuts", () => {
   assert.deepEqual(messages, [{ type: "save_requested", tab_id: "tab-a" }]);
 });
 
-test("Tiptap runtime opens the link editor from Mod K", () => {
-  const linkCalls = [];
-  const linkEditorControllerFactory = () => ({
-    attach: ({ root }) => linkCalls.push(["attach", root.className]),
-    close: () => linkCalls.push(["close"]),
-    contains: () => false,
-    destroy: () => linkCalls.push(["destroy"]),
-    openFromEditor: ({ editor, entry, source }) => {
-      linkCalls.push(["openFromEditor", editor.markdown, entry.viewMode, source]);
-      return true;
-    },
-  });
-  const { calls, registry, runtime } = createRuntimeHarness({ linkEditorControllerFactory });
-  runtime.ensureEditor({
-    tabId: "tab-a",
-    containerId: "editor-root",
-    initialContent: "# Note",
-    viewMode: "hybrid",
-  });
-  calls.length = 0;
-
-  const event = {
-    key: "k",
-    ctrlKey: true,
-    preventDefault: () => calls.push(["preventDefault"]),
-  };
-  const handled = registry.get("tab-a").editor.options.editorProps.handleKeyDown(null, event);
-
-  assert.equal(handled, true);
-  assert.deepEqual(calls, [["preventDefault"]]);
-  assert.deepEqual(linkCalls, [
-    ["attach", "mn-tiptap-runtime"],
-    ["openFromEditor", "# Note", "hybrid", "keyboard"],
-  ]);
-});
-
-test("Tiptap runtime opens the format toolbar from Alt F10", () => {
-  const formatCalls = [];
-  const formatToolbarControllerFactory = () => ({
-    attach: ({ root }) => formatCalls.push(["attach", root.className]),
-    activateKeyboard: (event) => {
-      formatCalls.push(["activateKeyboard", event.key, event.altKey]);
-      event.preventDefault?.();
-      return true;
-    },
-    close: () => formatCalls.push(["close"]),
-    contains: () => false,
-    destroy: () => formatCalls.push(["destroy"]),
-    refresh: () => formatCalls.push(["refresh"]),
-  });
-  const { calls, registry, runtime } = createRuntimeHarness({ formatToolbarControllerFactory });
-  runtime.ensureEditor({
-    tabId: "tab-a",
-    containerId: "editor-root",
-    initialContent: "# Note",
-    viewMode: "hybrid",
-  });
-  calls.length = 0;
-
-  const event = {
-    key: "F10",
-    altKey: true,
-    preventDefault: () => calls.push(["preventDefault"]),
-  };
-  const handled = registry.get("tab-a").editor.options.editorProps.handleKeyDown(null, event);
-
-  assert.equal(handled, true);
-  assert.deepEqual(calls, [["preventDefault"]]);
-  assert.deepEqual(formatCalls, [
-    ["attach", "mn-tiptap-runtime"],
-    ["activateKeyboard", "F10", true],
-  ]);
-});
 
 test("Tiptap runtime sends image paste requests through the Rust protocol", async () => {
   const image = { file: { type: "image/png" }, mimeType: "image/png" };
@@ -1376,7 +1114,7 @@ test("Tiptap runtime sends image drop requests and moves the selection", async (
   ]);
 });
 
-test("Tiptap runtime wires slash menu keyboard handling through editor props", () => {
+test("Tiptap runtime wires table toolbar keyboard handling through editor props", () => {
   const { calls, registry, runtime } = createRuntimeHarness();
   runtime.ensureEditor({
     tabId: "tab-a",
@@ -1388,15 +1126,13 @@ test("Tiptap runtime wires slash menu keyboard handling through editor props", (
   const editor = registry.get("tab-a").editor;
   const handled = editor.options.editorProps.handleKeyDown(null, { key: "ArrowDown" });
 
-  assert.equal(handled, true);
+  assert.equal(handled, false);
   assert.deepEqual(calls, [
     ["tableToolbarKeyDown", "ArrowDown"],
-    ["blockHandleKeyDown", "ArrowDown"],
-    ["slashMenuKeyDown", "ArrowDown"],
   ]);
 });
 
-test("Tiptap runtime lets table toolbar keyboard handling win before slash menu", () => {
+test("Tiptap runtime lets table toolbar keyboard handling consume matching keys", () => {
   const { calls, registry, runtime } = createRuntimeHarness();
   runtime.ensureEditor({
     tabId: "tab-a",
@@ -1415,28 +1151,7 @@ test("Tiptap runtime lets table toolbar keyboard handling win before slash menu"
   assert.deepEqual(calls, [["tableToolbarKeyDown", "F10"]]);
 });
 
-test("Tiptap runtime wires block handle keyboard handling before slash menu", () => {
-  const { calls, registry, runtime } = createRuntimeHarness();
-  runtime.ensureEditor({
-    tabId: "tab-a",
-    containerId: "editor-root",
-    initialContent: "# Note",
-  });
-  calls.length = 0;
-
-  const editor = registry.get("tab-a").editor;
-  const handled = editor.options.editorProps.handleKeyDown(null, {
-    key: "ContextMenu",
-  });
-
-  assert.equal(handled, true);
-  assert.deepEqual(calls, [
-    ["tableToolbarKeyDown", "ContextMenu"],
-    ["blockHandleKeyDown", "ContextMenu"],
-  ]);
-});
-
-test("Tiptap runtime does not consume slash menu keys during IME composition", () => {
+test("Tiptap runtime does not consume keys during IME composition", () => {
   const { calls, registry, runtime } = createRuntimeHarness();
   runtime.ensureEditor({
     tabId: "tab-a",
@@ -1463,122 +1178,6 @@ test("Tiptap runtime keeps facade navigation methods available", () => {
   assert.equal(runtime.scrollEditorToLine(), "editor-line");
   assert.equal(runtime.scrollPreviewToHeading(), "preview-heading");
   assert.equal(runtime.renderPreviewMermaid(), "mermaid");
-});
-
-test("Tiptap runtime keeps block insert menus stable when editor blur is internal", () => {
-  const container = createContainer();
-  const activeElement = { id: "block-floating-menu" };
-  const documentRef = {
-    getElementById: (containerId) => (containerId === "editor-root" ? container : null),
-    get activeElement() {
-      return activeElement;
-    },
-  };
-  const { calls, registry, runtime } = createRuntimeHarness({
-    container,
-    document: documentRef,
-    blockHandleControllerFactory: () => ({
-      attach: ({ root }) => calls.push(["blockHandleAttach", root.className]),
-      close: () => calls.push(["blockHandleClose"]),
-      destroy: () => calls.push(["blockHandleDestroy"]),
-      refresh: () => calls.push(["blockHandleRefresh"]),
-      shouldKeepOpenOnEditorBlur: (target) => {
-        calls.push(["blockHandleBlurGuard", target.id]);
-        return true;
-      },
-    }),
-  });
-  runtime.ensureEditor({
-    tabId: "tab-a",
-    containerId: "editor-root",
-    initialContent: "# Note",
-  });
-  calls.length = 0;
-
-  registry.get("tab-a").editor.emit("blur");
-
-  assert.deepEqual(calls, [
-    ["blockHandleBlurGuard", "block-floating-menu"],
-    ["formatToolbarClose"],
-    ["tableToolbarClose"],
-  ]);
-});
-
-test("Tiptap runtime keeps slash insert menus stable when editor blur is internal", () => {
-  const container = createContainer();
-  const activeElement = { id: "slash-menu" };
-  const documentRef = {
-    getElementById: (containerId) => (containerId === "editor-root" ? container : null),
-    get activeElement() {
-      return activeElement;
-    },
-  };
-  const { calls, registry, runtime } = createRuntimeHarness({
-    container,
-    document: documentRef,
-    slashMenuControllerFactory: () => ({
-      attach: ({ root }) => calls.push(["slashMenuAttach", root.className]),
-      close: () => calls.push(["slashMenuClose"]),
-      destroy: () => calls.push(["slashMenuDestroy"]),
-      handleKeyDown: (event) => {
-        calls.push(["slashMenuKeyDown", event.key]);
-        return false;
-      },
-      refresh: () => calls.push(["slashMenuRefresh"]),
-      contains: (target) => target === activeElement,
-      shouldKeepOpenOnEditorBlur: (target) => {
-        calls.push(["slashMenuBlurGuard", target.id]);
-        return true;
-      },
-    }),
-  });
-  runtime.ensureEditor({
-    tabId: "tab-a",
-    containerId: "editor-root",
-    initialContent: "# Note",
-  });
-  calls.length = 0;
-
-  registry.get("tab-a").editor.emit("blur");
-
-  assert.deepEqual(calls, [
-    ["slashMenuBlurGuard", "slash-menu"],
-    ["blockHandleClose"],
-    ["formatToolbarClose"],
-    ["tableToolbarClose"],
-  ]);
-});
-
-test("Tiptap runtime refreshes block insert menus without closing them on selection updates", () => {
-  const { calls, registry, runtime } = createRuntimeHarness({
-    slashMenuControllerFactory: () => ({
-      attach: ({ root }) => calls.push(["slashMenuAttach", root.className]),
-      close: () => calls.push(["slashMenuClose"]),
-      destroy: () => calls.push(["slashMenuDestroy"]),
-      handleKeyDown: () => false,
-      refresh: () => calls.push(["slashMenuRefresh"]),
-      shouldKeepOpenOnEditorBlur: () => true,
-      get state() {
-        return { open: true, cleanupRangeOnClose: true };
-      },
-    }),
-  });
-  runtime.ensureEditor({
-    tabId: "tab-a",
-    containerId: "editor-root",
-    initialContent: "# Note",
-  });
-  calls.length = 0;
-
-  registry.get("tab-a").editor.emit("selectionUpdate", { editor: registry.get("tab-a").editor });
-
-  assert.deepEqual(calls, [
-    ["blockHandleRefresh"],
-    ["slashMenuRefresh"],
-    ["formatToolbarRefresh"],
-    ["tableToolbarRefresh"],
-    ["syncOutline", "tab-a", "hybrid"],
-  ]);
 });
 
 test("Tiptap runtime keeps table context menus stable when editor blur is internal", () => {
@@ -1617,8 +1216,5 @@ test("Tiptap runtime keeps table context menus stable when editor blur is intern
 
   assert.deepEqual(calls, [
     ["tableToolbarBlurGuard", "table-menu"],
-    ["blockHandleClose"],
-    ["slashMenuClose"],
-    ["formatToolbarClose"],
   ]);
 });

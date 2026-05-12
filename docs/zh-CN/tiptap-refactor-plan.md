@@ -185,9 +185,9 @@ js/src/
 - [x] 复制官方 `image-node`（适配本地图片粘贴协议）
 
 #### 1.9 扩展层
-- [ ] 复制官方 `selection-extension`
+- [x] 复制官方 `selection-extension`
 - [ ] 复制官方 `trailing-node-extension`
-- [ ] 复制官方 `mathematics-extension`（对接现有 KaTeX）
+- [x] 复制官方 `mathematics-extension`（对接现有 KaTeX）
 - [ ] 复制官方 `unique-id-extension`
 
 ---
@@ -199,28 +199,28 @@ js/src/
 #### 2.1 删除旧 DOM 控制器
 当前 `tiptap-runtime.js` 中通过依赖注入创建了大量控制器，这些已被官方 React 组件替代：
 
-- [ ] 删除 `block-handle-controller`（替代：官方 `drag-context-menu`）
-- [ ] 删除 `block-action-menu-controller`（替代：官方 `drag-context-menu` 内置）
-- [ ] 删除 `format-toolbar-controller`（替代：官方 `BubbleMenu` + toolbar 组件）
-- [ ] 删除 `slash-menu-controller`（替代：官方 `slash-dropdown-menu`）
-- [ ] 删除 `link-editor-controller`（替代：官方 `link-popover`）
-- [ ] 删除 `table-toolbar-controller`（替代：官方 `table-node` 内置菜单）
+- [x] 删除 `block-handle-controller`（替代：官方 `drag-context-menu`）
+- [x] 删除 `block-action-menu-controller`（替代：官方 `drag-context-menu` 内置）
+- [x] 删除 `format-toolbar-controller`（替代：官方 `BubbleMenu` + toolbar 组件）
+- [x] 删除 `slash-menu-controller`（替代：官方 `slash-dropdown-menu`）
+- [x] 删除 `link-editor-controller`（替代：官方 `link-popover`）
+- [x] 删除 `table-toolbar-controller`（替代：官方 `table-node` 内置菜单）
 
 #### 2.2 删除自定义 React 视图（被官方组件替代）
-- [ ] 删除 `tiptap-react/slash-menu-view.jsx`
-- [ ] 删除 `tiptap-react/block-action-menu-view.jsx`
-- [ ] 删除 `tiptap-react/block-handle-view.jsx`
-- [ ] 删除 `tiptap-react/format-toolbar-view.jsx`
-- [ ] 删除 `tiptap-react/link-editor-view.jsx`
-- [ ] 删除 `tiptap-react/components/block-action-menu.jsx`
-- [ ] 删除 `tiptap-react/components/block-handle.jsx`
-- [ ] 删除 `tiptap-react/components/format-toolbar.jsx`
-- [ ] 删除 `tiptap-react/components/link-editor.jsx`
-- [ ] 删除 `tiptap-react/commands/block-action-menu-model.js`（功能合入 drag-context-menu）
+- [x] 删除 `tiptap-react/slash-menu-view.jsx`
+- [x] 删除 `tiptap-react/block-action-menu-view.jsx`
+- [x] 删除 `tiptap-react/block-handle-view.jsx`
+- [x] 删除 `tiptap-react/format-toolbar-view.jsx`
+- [x] 删除 `tiptap-react/link-editor-view.jsx`
+- [x] 删除 `tiptap-react/components/block-action-menu.jsx`
+- [x] 删除 `tiptap-react/components/block-handle.jsx`
+- [x] 删除 `tiptap-react/components/format-toolbar.jsx`
+- [x] 删除 `tiptap-react/components/link-editor.jsx`
+- [x] 删除 `tiptap-react/commands/block-action-menu-model.js`（功能合入 drag-context-menu）
 
 #### 2.3 删除自定义样式文件
-- [ ] 审计所有 `.scss` 文件，删除与官方组件重复的自定义样式
-- [ ] 保留仅与 Papyro 特有功能相关的样式（Mermaid、KaTeX 等）
+- [x] 审计所有 `.scss` 文件，删除与官方组件重复的自定义样式
+- [x] 保留仅与 Papyro 特有功能相关的样式（Mermaid、KaTeX 等）
 
 #### 2.4 删除过时文档
 - [x] 删除 `docs/tiptap-enterprise-editor-todo.md`（被本文档替代）

@@ -50,10 +50,6 @@ export {
   TiptapReactTableContextMenuRenderer,
 } from "./table-context-menu-renderer.jsx";
 export {
-  createTiptapReactLinkEditorView,
-  TiptapReactLinkEditorView,
-} from "./link-editor-view.jsx";
-export {
   DragContextMenu,
 } from "../components/tiptap-ui/drag-context-menu/drag-context-menu.tsx";
 export {

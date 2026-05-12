@@ -7,22 +7,15 @@ import {
 } from "./editor-clipboard.js";
 import { createTiptapRuntimeAdapter } from "./editor-runtime.js";
 import { createMarkdownSyncController } from "./markdown-sync-controller.js";
-import { createTiptapBlockActionController } from "./tiptap-block-actions.js";
-import { createTiptapBlockActionMenuController } from "./tiptap-block-action-menu.js";
 import { createTiptapBlockHintsController } from "./tiptap-block-hints-controller.js";
-import { createTiptapBlockHandleController } from "./tiptap-block-handle.js";
 import { createTiptapFormatCommandController } from "./tiptap-format-commands.js";
-import { createTiptapFormatToolbarController } from "./tiptap-format-toolbar.js";
 import { createTiptapHistoryCommandController } from "./tiptap-history-commands.js";
-import { createTiptapLinkEditorController } from "./tiptap-link-editor.js";
 import { createTiptapModeController } from "./tiptap-mode-controller.js";
 import { createTiptapModeSnapshotController } from "./tiptap-mode-snapshots.js";
 import { createTiptapPasteController } from "./tiptap-paste-controller.js";
 import { createTiptapPreferencesController } from "./tiptap-preferences-controller.js";
 import { createTiptapSourcePaneController } from "./tiptap-source-pane.js";
 import { createTiptapSlashCommandController } from "./tiptap-slash-commands.js";
-import { createTiptapSlashMenuController } from "./tiptap-slash-menu.js";
-import { createTiptapTableCommandBridge } from "./tiptap-table-command-bridge.js";
 import { isComposingKeyboardEvent } from "./tiptap-ui-primitives.js";
 import {
   createPapyroMarkdownManager,
@@ -66,16 +59,6 @@ function isSaveShortcut(event) {
   return key === "s" && (event.ctrlKey || event.metaKey);
 }
 
-function isLinkShortcut(event) {
-  if (!event || event.altKey) return false;
-  const key = String(event.key ?? "").toLowerCase();
-  return key === "k" && (event.ctrlKey || event.metaKey);
-}
-
-function isFormatToolbarShortcut(event) {
-  const key = String(event?.key ?? "").toLowerCase();
-  return key === "f10" && event?.altKey && !event?.ctrlKey && !event?.metaKey;
-}
 
 function requestSave(entry, tabId, event) {
   if (!entry) return false;
@@ -88,17 +71,6 @@ function requestSave(entry, tabId, event) {
   return true;
 }
 
-function requestLinkEditor(entry, event) {
-  if (!entry || entry.viewMode !== "hybrid") return false;
-
-  event?.preventDefault?.();
-  entry.linkEditor?.openFromEditor?.({
-    editor: entry.editor,
-    entry,
-    source: "keyboard",
-  });
-  return true;
-}
 
 function syncRuntimeLanguage(entry) {
   if (!entry?.dom) return;
@@ -153,19 +125,12 @@ function defaultEditorOptions({
         if (isSaveShortcut(event) && requestSave(entry, tabId, event)) {
           return true;
         }
-        if (isLinkShortcut(event) && requestLinkEditor(entry, event)) {
-          return true;
-        }
-        if (isFormatToolbarShortcut(event) && entry?.formatToolbar?.activateKeyboard?.(event)) {
-          return true;
-        }
         if (isComposingKeyboardEvent(event)) {
           return false;
         }
 
         if (entry?.tableToolbar?.handleKeyDown?.(event)) return true;
-        if (entry?.blockHandle?.handleKeyDown?.(event)) return true;
-        return entry?.slashMenu?.handleKeyDown(event) ?? false;
+        return false;
       },
       handlePaste: (view, event, slice) => {
         const entry = registry.get(tabId);
@@ -206,17 +171,12 @@ function createEntry({
   modeSnapshots,
   markdownSync,
   blockHintsController,
-  blockHandle,
-  blockActions,
   formatCommands,
-  formatToolbar,
   historyCommands,
-  linkEditor,
   pasteController,
   preferencesController,
   sourcePane,
   slashCommands,
-  slashMenu,
   tableToolbar,
   reactMount,
 }) {
@@ -232,18 +192,13 @@ function createEntry({
     markdownSync,
     blockHints: blockHintsController.hints,
     blockHintsController,
-    blockHandle,
-    blockActions,
     formatCommands,
-    formatToolbar,
     historyCommands,
-    linkEditor,
     pasteController,
     preferences: preferencesController.preferences,
     preferencesController,
     sourcePane,
     slashCommands,
-    slashMenu,
     tableToolbar,
     reactMount,
   };
@@ -258,25 +213,22 @@ export function createTiptapEditorRuntime({
   markdownSyncFactory = createMarkdownSyncController,
   modeControllerFactory = createTiptapModeController,
   modeSnapshotControllerFactory = createTiptapModeSnapshotController,
-  blockActionControllerFactory = createTiptapBlockActionController,
-  blockActionMenuControllerFactory = createTiptapBlockActionMenuController,
-  blockActionMenuViewFactory = null,
   blockHintsControllerFactory = createTiptapBlockHintsController,
-  blockHandleControllerFactory = createTiptapBlockHandleController,
-  blockHandleViewFactory = null,
   formatCommandControllerFactory = createTiptapFormatCommandController,
-  formatToolbarControllerFactory = createTiptapFormatToolbarController,
-  formatToolbarViewFactory = null,
   historyCommandControllerFactory = createTiptapHistoryCommandController,
-  linkEditorControllerFactory = createTiptapLinkEditorController,
-  linkEditorViewFactory = null,
   pasteControllerFactory = createTiptapPasteController,
   preferencesControllerFactory = createTiptapPreferencesController,
   sourcePaneControllerFactory = createTiptapSourcePaneController,
   slashCommandControllerFactory = createTiptapSlashCommandController,
-  slashMenuControllerFactory = createTiptapSlashMenuController,
-  slashMenuViewFactory = null,
-  tableToolbarControllerFactory = createTiptapTableCommandBridge,
+  tableToolbarControllerFactory = () => ({
+    attach() {},
+    refresh() {},
+    handleKeyDown() { return false; },
+    shouldKeepOpenOnEditorBlur() { return false; },
+    contains() { return false; },
+    close() {},
+    destroy() {},
+  }),
   tableMenuRendererFactory = null,
   tableChromeRendererFactory = null,
   mountControllerFactory = createLegacyMountController,
@@ -302,37 +254,17 @@ export function createTiptapEditorRuntime({
     modeSnapshotControllerFactory,
     "modeSnapshotControllerFactory",
   );
-  const createBlockActionController = requireFunction(
-    blockActionControllerFactory,
-    "blockActionControllerFactory",
-  );
-  const createBlockActionMenuController = requireFunction(
-    blockActionMenuControllerFactory,
-    "blockActionMenuControllerFactory",
-  );
   const createBlockHintsController = requireFunction(
     blockHintsControllerFactory,
     "blockHintsControllerFactory",
-  );
-  const createBlockHandleController = requireFunction(
-    blockHandleControllerFactory,
-    "blockHandleControllerFactory",
   );
   const createFormatCommandController = requireFunction(
     formatCommandControllerFactory,
     "formatCommandControllerFactory",
   );
-  const createFormatToolbarController = requireFunction(
-    formatToolbarControllerFactory,
-    "formatToolbarControllerFactory",
-  );
   const createHistoryCommandController = requireFunction(
     historyCommandControllerFactory,
     "historyCommandControllerFactory",
-  );
-  const createLinkEditorController = requireFunction(
-    linkEditorControllerFactory,
-    "linkEditorControllerFactory",
   );
   const createPasteController = requireFunction(
     pasteControllerFactory,
@@ -349,10 +281,6 @@ export function createTiptapEditorRuntime({
   const createSlashCommandController = requireFunction(
     slashCommandControllerFactory,
     "slashCommandControllerFactory",
-  );
-  const createSlashMenuController = requireFunction(
-    slashMenuControllerFactory,
-    "slashMenuControllerFactory",
   );
   const createTableToolbarController = requireFunction(
     tableToolbarControllerFactory,
@@ -417,8 +345,6 @@ export function createTiptapEditorRuntime({
       existing.modeController.apply(existing, viewMode ?? existing.viewMode);
       existing.sourcePane.applyMode(existing);
       existing.reactMount?.refresh?.(existing);
-      existing.blockHandle.refresh();
-      existing.formatToolbar.refresh(existing.editor);
       existing.tableToolbar.refresh(existing.editor);
       return existing.editor;
     }
@@ -439,39 +365,8 @@ export function createTiptapEditorRuntime({
     const modeController = createModeController(viewMode);
     const modeSnapshots = createModeSnapshots();
     const blockHintsController = createBlockHintsController();
-    const blockActions = createBlockActionController();
-    const blockActionMenu = createBlockActionMenuController({
-      commandController: blockActions,
-      view:
-        typeof blockActionMenuViewFactory === "function"
-          ? blockActionMenuViewFactory({ document: documentRef })
-          : null,
-      dom: {
-        document: documentRef,
-      },
-    });
     const formatCommands = createFormatCommandController();
     const historyCommands = createHistoryCommandController();
-    const linkEditor = createLinkEditorController({
-      view:
-        typeof linkEditorViewFactory === "function"
-          ? linkEditorViewFactory({ document: documentRef })
-          : null,
-      dom: {
-        document: documentRef,
-      },
-    });
-    const formatToolbar = createFormatToolbarController({
-      commandController: formatCommands,
-      linkEditor,
-      view:
-        typeof formatToolbarViewFactory === "function"
-          ? formatToolbarViewFactory({ document: documentRef })
-          : null,
-      dom: {
-        document: documentRef,
-      },
-    });
     const pasteController = createPasteController();
     const preferencesController = createPreferencesController();
     const sourcePane = createSourcePane({
@@ -479,34 +374,12 @@ export function createTiptapEditorRuntime({
       onSelectionChange: (entry) => syncOutline(tabId, entry?.viewMode),
     });
     const slashCommands = createSlashCommandController();
-    const slashMenu = createSlashMenuController({
-      commandController: slashCommands,
-      view:
-        typeof slashMenuViewFactory === "function"
-          ? slashMenuViewFactory({ document: documentRef })
-          : null,
-      dom: {
-        document: documentRef,
-      },
-    });
     const tableToolbar = createTableToolbarController({
-      insertMenu: slashMenu,
       dom: {
         document: documentRef,
       },
       menuRendererFactory: tableMenuRendererFactory,
       chromeRendererFactory: tableChromeRendererFactory,
-    });
-    const blockHandle = createBlockHandleController({
-      menu: blockActionMenu,
-      insertMenu: slashMenu,
-      view:
-        typeof blockHandleViewFactory === "function"
-          ? blockHandleViewFactory({ document: documentRef })
-          : null,
-      dom: {
-        document: documentRef,
-      },
     });
     const editor = new TiptapEditor(
       defaultEditorOptions({
@@ -535,17 +408,11 @@ export function createTiptapEditorRuntime({
           content: markdown,
         });
         entry.sourcePane.setMarkdown(markdown);
-        entry.blockHandle.refresh();
-        entry.slashMenu.refresh(targetEditor);
-        entry.formatToolbar.refresh(targetEditor);
         entry.tableToolbar.refresh(targetEditor);
       });
       editor.on("selectionUpdate", ({ editor: updatedEditor } = {}) => {
         const targetEditor = updatedEditor ?? editor;
         const entry = runtimeRegistry.get(tabId);
-        entry?.blockHandle?.refresh();
-        entry?.slashMenu?.refresh(targetEditor);
-        entry?.formatToolbar?.refresh(targetEditor);
         entry?.tableToolbar?.refresh(targetEditor);
         entry?.modeSnapshots?.capture(entry, entry?.viewMode);
         syncOutline(tabId, entry?.viewMode);
@@ -553,21 +420,8 @@ export function createTiptapEditorRuntime({
       editor.on("blur", () => {
         const entry = runtimeRegistry.get(tabId);
         const activeElement = documentRef?.activeElement;
-        const keepBlockHandleOpen =
-          entry?.blockHandle?.shouldKeepOpenOnEditorBlur?.(activeElement) === true;
-        const keepSlashMenuOpen =
-          entry?.slashMenu?.shouldKeepOpenOnEditorBlur?.(activeElement) === true;
         const keepTableToolbarOpen =
           entry?.tableToolbar?.shouldKeepOpenOnEditorBlur?.(activeElement) === true;
-        if (!keepBlockHandleOpen) {
-          entry?.blockHandle?.close();
-        }
-        if (!keepBlockHandleOpen && !keepSlashMenuOpen && !entry?.slashMenu?.contains?.(activeElement)) {
-          entry?.slashMenu?.close();
-        }
-        if (!entry?.formatToolbar?.contains?.(activeElement)) {
-          entry?.formatToolbar?.close();
-        }
         if (!keepTableToolbarOpen && !entry?.tableToolbar?.contains?.(activeElement)) {
           entry?.tableToolbar?.close();
         }
@@ -581,17 +435,12 @@ export function createTiptapEditorRuntime({
       modeSnapshots,
       markdownSync,
       blockHintsController,
-      blockHandle,
-      blockActions,
       formatCommands,
-      formatToolbar,
       historyCommands,
-      linkEditor,
       pasteController,
       preferencesController,
       sourcePane,
       slashCommands,
-      slashMenu,
       tableToolbar,
       reactMount: null,
     });
@@ -603,11 +452,7 @@ export function createTiptapEditorRuntime({
     syncRuntimeLanguage(entry);
     sourcePane.attach({ editor, root, entry });
     modeSnapshots.capture(entry, entry.viewMode);
-    blockHandle.attach({ editor, root, entry });
-    linkEditor.attach({ editor, root, entry });
-    formatToolbar.attach({ editor, root, entry });
     pasteController.attach({ editor, root, entry });
-    slashMenu.attach({ editor, root, entry });
     tableToolbar.attach({ editor, root, entry });
     runtimeRegistry.set(tabId, entry);
 
@@ -643,8 +488,6 @@ export function createTiptapEditorRuntime({
         entry.modeSnapshots.restore(entry, entry.viewMode);
         restoreEditorScrollSnapshot(entry);
         attachEditorScroll(tabId, entry);
-        entry.blockHandle.refresh();
-        entry.formatToolbar.refresh(entry.editor);
         entry.tableToolbar.refresh(entry.editor);
         syncOutline(tabId, entry.viewMode);
         entry.reactMount?.refresh?.(entry);
@@ -742,14 +585,10 @@ export function createTiptapEditorRuntime({
           released = runtimeRegistry.get(tabId);
           runtimeRegistry.delete(tabId);
         }
-        released?.blockHandle?.destroy?.();
-        released?.formatToolbar?.destroy?.();
-        released?.linkEditor?.destroy?.();
         released?.pasteController?.destroy?.();
         detachEditorScroll(released);
         detachLayoutObserver(released);
         released?.sourcePane?.destroy?.();
-        released?.slashMenu?.destroy?.();
         released?.tableToolbar?.destroy?.();
         released?.reactMount?.destroy?.();
         released?.editor?.destroy?.();

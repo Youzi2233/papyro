@@ -38,10 +38,6 @@ const officialDragHandleBridgeSource = readFileSync(
   new URL("../src/tiptap-react/official-drag-handle-bridge.jsx", import.meta.url),
   "utf8",
 );
-const commandMenuSource = readFileSync(
-  new URL("../src/tiptap-react/components/command-menu.jsx", import.meta.url),
-  "utf8",
-);
 const hoverIntentHookSource = readFileSync(
   new URL("../src/tiptap-react/hooks/use-hover-intent-activation.js", import.meta.url),
   "utf8",
@@ -64,14 +60,6 @@ const tableChromeSource = readFileSync(
 );
 const tableChromeRendererSource = readFileSync(
   new URL("../src/tiptap-react/table-chrome-renderer.jsx", import.meta.url),
-  "utf8",
-);
-const linkEditorSource = readFileSync(
-  new URL("../src/tiptap-react/components/link-editor.jsx", import.meta.url),
-  "utf8",
-);
-const linkEditorViewSource = readFileSync(
-  new URL("../src/tiptap-react/link-editor-view.jsx", import.meta.url),
   "utf8",
 );
 const floatingUtilsSource = readFileSync(
@@ -176,7 +164,6 @@ test("React code block chrome exposes a typed command model", () => {
   assert.match(codeBlockCommandModelSource, /export function activeCodeBlockLanguageCommandIndex/u);
   assert.match(codeBlockCommandModelSource, /export function nextCodeBlockLanguageCommandIndex/u);
   assert.match(codeBlockCommandModelSource, /PAPYRO_CODE_LANGUAGE_OPTIONS/u);
-  assert.match(commandMenuSource, /createCodeBlockLanguageCommands/u);
   assert.match(codeBlockNodeViewSource, /createCodeBlockLanguageChrome/u);
   assert.match(codeBlockNodeViewSource, /aria-activedescendant/u);
   assert.match(codeBlockNodeViewSource, /nextCodeBlockLanguageCommandIndex/u);
@@ -229,32 +216,12 @@ test("React command chrome uses shared menu primitives", () => {
   assert.match(primitivesSource, /export function ToolbarButton/u);
   assert.match(primitivesSource, /export function Kbd/u);
   assert.match(primitivesSource, /export function VisuallyHidden/u);
-  assert.match(commandMenuSource, /from "\.\/primitives\.jsx"/u);
-  assert.match(commandMenuSource, /CommandItem as PrimitiveCommandItem/u);
-  assert.match(commandMenuSource, /<PrimitiveCommandItem/u);
-  assert.match(commandMenuSource, /<CommandSection/u);
   assert.match(tableContextMenuSource, /from "\.\/primitives\.jsx"/u);
   assert.match(tableContextMenuSource, /<CommandRow/u);
   assert.match(tableContextMenuSource, /createTableCommandMenuModel/u);
 });
 
-test("React slash table picker uses an anchored secondary panel", () => {
-  assert.match(commandMenuSource, /mn-tiptap-slash-menu-item-shell/u);
-  assert.match(commandMenuSource, /commandMenuSidePanel\(command\)/u);
-  assert.match(commandMenuSource, /sidePanel === "table"/u);
-  assert.match(commandMenuSource, /data-layout/u);
-  assert.match(commandMenuSource, /data-keyboard-focus/u);
-  assert.match(commandMenuSource, /data-selected/u);
-  assert.match(commandMenuSource, /aria-current/u);
-  assert.match(commandMenuSource, /setTableSize/u);
-  assert.doesNotMatch(commandMenuSource, /inlinePanel\s*=\s*command\?\.id === "table"/u);
-});
-
 test("React slash menu uses hover intent for secondary panels without slowing keyboard focus", () => {
-  assert.match(commandMenuSource, /useHoverIntentActivation/u);
-  assert.match(commandMenuSource, /hoverIntent\.schedule\(index,\s*options\)/u);
-  assert.match(commandMenuSource, /focusActivate=\{hoverIntent\.runNow\}/u);
-  assert.match(commandMenuSource, /hoverIntent\.cancel\(\)/u);
   assert.match(hoverIntentHookSource, /DEFAULT_HOVER_INTENT_DELAY_MS\s*=\s*80/u);
   assert.match(hoverIntentHookSource, /globalThis\.setTimeout/u);
   assert.match(hoverIntentHookSource, /globalThis\.clearTimeout/u);
@@ -277,8 +244,8 @@ test("official table-node layer owns visible table chrome at the editor boundary
   assert.doesNotMatch(indexSource, /createTiptapReactFormatToolbarView/u);
   assert.match(editorEntrySource, /createTiptapTableCommandBridge/u);
   assert.match(editorEntrySource, /tableToolbarControllerFactory:\s*createTiptapTableCommandBridge/u);
-  assert.match(tiptapRuntimeSource, /from "\.\/tiptap-table-command-bridge\.js"/u);
-  assert.match(tiptapRuntimeSource, /tableToolbarControllerFactory\s*=\s*createTiptapTableCommandBridge/u);
+  assert.doesNotMatch(tiptapRuntimeSource, /from "\.\/tiptap-table-command-bridge\.js"/u);
+  assert.doesNotMatch(tiptapRuntimeSource, /tableToolbarControllerFactory\s*=\s*createTiptapTableCommandBridge/u);
   assert.doesNotMatch(tiptapRuntimeSource, /from "\.\/tiptap-table-toolbar\.js"/u);
   assert.doesNotMatch(editorEntrySource, /createTiptapReactTableContextMenuRenderer/u);
   assert.doesNotMatch(editorEntrySource, /createTiptapReactTableChromeRenderer/u);
@@ -360,13 +327,3 @@ test("React table axis handles open menus only after selection succeeds", () => 
   assert.doesNotMatch(tableChromeSource, /onSelectAxis\?\.\(handle\.axis, handle\.index\);\s*return onSelectAxis/u);
 });
 
-test("React link editor popover is injected at the editor entry boundary", () => {
-  assert.match(indexSource, /createTiptapReactLinkEditorView/u);
-  assert.match(editorEntrySource, /linkEditorViewFactory:\s*createTiptapReactLinkEditorView/u);
-  assert.match(linkEditorSource, /export function PapyroLinkEditor/u);
-  assert.match(linkEditorSource, /inputMode="url"/u);
-  assert.match(linkEditorViewSource, /createRoot/u);
-  assert.match(linkEditorViewSource, /positionReactFloatingElement/u);
-  assert.match(linkEditorViewSource, /role = "dialog"/u);
-  assert.doesNotMatch(linkEditorViewSource, /createElement\(/u);
-});
