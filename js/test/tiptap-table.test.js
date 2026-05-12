@@ -20,11 +20,6 @@ import {
   sortSelectedTableRows,
   writeTableTextToClipboard,
 } from "../src/tiptap-table.js";
-import {
-  tableSelectionGrid,
-  tableSelectionState,
-} from "../src/tiptap-table-geometry.js";
-import { applyTableCellVisualState } from "../src/tiptap-table-chrome-model.js";
 import { createPapyroTextStyleExtensions } from "../src/tiptap-text-style.js";
 
 function installDomGlobals(windowRef) {
@@ -97,12 +92,13 @@ test("Papyro table extensions expose the TableKit boundary", () => {
   assert.equal(extensions[2].name, "tableHandleExtension");
 });
 
-test("Papyro table chrome resolves DOM cells to selectable ProseMirror cell positions", () => {
+test("Papyro table view exposes official table-node portal containers only", () => {
   const windowRef = new Window();
   const previous = installDomGlobals(windowRef);
+  let editor = null;
   try {
     windowRef.document.body.innerHTML = "<div id=\"root\"></div>";
-    const editor = new Editor({
+    editor = new Editor({
       element: windowRef.document.querySelector("#root"),
       extensions: [
         StarterKit.configure({ history: false }),
@@ -115,8 +111,6 @@ test("Papyro table chrome resolves DOM cells to selectable ProseMirror cell posi
     const wrapper = table.closest(".tableWrapper");
     const cells = Array.from(table.querySelectorAll("th,td"));
     const docCellPositions = tableCellPositions(editor.state.doc);
-    const domCellPositions = cells.map((cell) => editor.view.posAtDOM(cell, 0));
-    const grid = tableSelectionGrid(table, editor.view);
 
     assert.equal(wrapper.dataset.contentType, "table");
     const tableControls = wrapper.querySelector(":scope > .table-controls");
@@ -127,24 +121,22 @@ test("Papyro table chrome resolves DOM cells to selectable ProseMirror cell posi
     assert.ok(selectionOverlayContainer);
     assert.equal(tableControls.hasAttribute("aria-hidden"), false);
     assert.equal(selectionOverlayContainer.hasAttribute("aria-hidden"), false);
-    assert.deepEqual(
-      grid.flatMap((row) => row.cells.map((cell) => cell.pos)),
-      docCellPositions,
-    );
-    assert.notDeepEqual(domCellPositions, docCellPositions);
+    assert.equal(tableControls.childElementCount, 0);
+    assert.equal(selectionOverlayContainer.childElementCount, 0);
+    assert.equal(docCellPositions.length, cells.length);
+    assert.equal(wrapper.querySelector(".mn-tiptap-table-toolbar"), null);
+    assert.equal(wrapper.querySelector(".mn-tiptap-table-context-menu"), null);
+    assert.equal(wrapper.querySelector(".mn-tiptap-table-cell-selected"), null);
 
     editor.commands.setCellSelection({
-      anchorCell: grid[0].cells[1].pos,
-      headCell: grid[0].cells[1].pos,
+      anchorCell: docCellPositions[1],
+      headCell: docCellPositions[1],
     });
-    const selection = tableSelectionState(editor.state.selection, grid);
-    applyTableCellVisualState({ table, grid, selection, cell: cells[1] });
 
-    assert.equal(selection.kind, "cell");
-    assert.deepEqual([...selection.positions], [grid[0].cells[1].pos]);
-    assert.equal(cells[1].classList.contains("mn-tiptap-table-cell-selected"), true);
-    assert.equal(cells[1].classList.contains("mn-tiptap-table-cell-active"), false);
+    assert.equal(typeof editor.state.selection.forEachCell, "function");
+    assert.equal(wrapper.querySelector(".mn-tiptap-table-cell-selected"), null);
   } finally {
+    editor?.destroy?.();
     restoreDomGlobals(previous);
   }
 });

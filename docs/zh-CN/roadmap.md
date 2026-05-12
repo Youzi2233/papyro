@@ -315,7 +315,7 @@ flowchart LR
 - [x] 块句柄选区改用 ProseMirror textblock 内容范围，同时保留语义块高亮，让普通文本与行内代码混排时不再只选中普通文字片段。
 - [x] 表格当前单元格操作触发点收窄到右边框垂直中心热区，只有用户明确靠近该触发点时才优先于首行列选择，减少一激活单元格就四处冒控件的噪音。
 - [x] 默认代码块拆出 comment、keyword、string、number、title、attribute、type、operator 等独立 highlight.js token 颜色，浅色模式不再退化成整块蓝色代码。
-- [x] 拆分 `js/src/tiptap-table-toolbar.js`：已把表格 geometry、选区、hover 热区和复杂块插入定位抽到 `js/src/tiptap-table-geometry.js`，后续表格 view 渲染和命令裁剪继续按模块边界演进，避免重新形成巨型运行时文件。
+- [x] 用官方 `table-node` portal 容器接管旧表格 hover geometry 和 chrome model，Papyro runtime 不再维护自定义行列 handle 布局数学。
 - [x] 给块操作菜单增加显式分组布局元数据和独立危险操作区，让本地化分组名、色块式样式组和删除等破坏性动作不再依赖脆弱的 CSS 结构探测。
 - [x] 块操作柄 controller 显式追踪当前语义高亮块，用户切换块或关闭菜单时会清掉旧高亮，避免残留选中反馈误导当前作用范围。
 - [x] 重新微调块操作柄和 `+` 插入入口的 8px 双控件节奏：视觉上不再贴得太紧，同时保留足够宽的 hover bridge，鼠标穿过沟槽时菜单不会误收起。
@@ -323,7 +323,7 @@ flowchart LR
 - [x] 提升表格列宽拖拽的可发现性：右边缘 hover 和 resize-cursor 状态会稍微更明确，但阅读态和选中单元格时仍保持低噪声。
 - [x] 代码块语言菜单接入共享 active-descendant 契约：Arrow/Home/End 移动当前语言，Enter/Space 应用，Escape 关闭并恢复焦点，鼠标 hover 也同步同一套 active 状态。
 - [x] 把表格命令定义、作用域排序、布局变体和键盘 helper 拆到 `js/src/tiptap-table-commands.js` 并补直接测试，让表格 UX 后续迭代不再继续把 `tiptap-table-toolbar.js` 推回巨型运行时文件。
-- [x] 把表格快捷新增轨道、行列 handle、单元格触发点和 hover 意图几何计算继续沉到 `js/src/tiptap-table-geometry.js` 并补直接测试，让 Notion-like 表格 chrome 后续精修不再把布局数学藏在 toolbar view 里。
+- [x] 删除旧表格快捷新增轨道、行列 handle、单元格触发点和 hover 意图几何模型，保留官方 `table-node` 交互挂载点与 Markdown 序列化测试。
 - [x] 把表格单元格操作 chrome 调成更克制的边缘小点到四点 grip，同时降低行列 handle 的表面噪音，让表格控件更像有意图的文档产品控件，而不是开发者覆盖层。
 - [x] 把表格 chrome 渲染拆到 `js/src/tiptap-table-toolbar-view.js`，让 `tiptap-table-toolbar.js` 只负责状态、命令和选区协调，避免表格迭代再次堆成巨型控制器。
 - [x] 重新打磨块句柄、slash/`+` 面板、块操作面板、代码语言控件、表格边缘轨道、单元格操作小点和列宽拖拽 handle 的密度与 hover 态，让整体更接近企业级文档产品的低噪声交互。
