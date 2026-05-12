@@ -27,6 +27,7 @@ pub(crate) async fn save_pasted_image_asset(
     if bytes.is_empty() {
         return Err("pasted image data is empty".to_string());
     }
+    validate_image_bytes(&bytes, mime_type)?;
 
     let assets_dir = workspace_assets_dir(workspace);
     tokio::fs::create_dir_all(&assets_dir)
@@ -66,6 +67,22 @@ fn image_extension(mime_type: &str) -> Result<&'static str, String> {
         "image/gif" => Ok("gif"),
         "image/webp" => Ok("webp"),
         other => Err(format!("unsupported pasted image type: {other}")),
+    }
+}
+
+fn validate_image_bytes(bytes: &[u8], mime_type: &str) -> Result<(), String> {
+    let expected = match image_extension(mime_type)? {
+        "png" => bytes.starts_with(b"\x89PNG\r\n\x1A\n"),
+        "jpg" => bytes.starts_with(&[0xFF, 0xD8, 0xFF]),
+        "gif" => bytes.starts_with(b"GIF87a") || bytes.starts_with(b"GIF89a"),
+        "webp" => bytes.len() >= 12 && bytes.starts_with(b"RIFF") && bytes[8..12] == *b"WEBP",
+        _ => false,
+    };
+
+    if expected {
+        Ok(())
+    } else {
+        Err("pasted image data does not match the declared image type".to_string())
     }
 }
 
@@ -160,11 +177,14 @@ mod tests {
         let workspace = workspace(root);
         let note_path = root.join("note.md");
 
-        let saved = save_pasted_image_asset(&workspace, &note_path, "image/png", "YWJj")
+        let saved = save_pasted_image_asset(&workspace, &note_path, "image/png", "iVBORw0KGgo=")
             .await
             .expect("saved image");
 
-        assert_eq!(tokio::fs::read(&saved.path).await.unwrap(), b"abc");
+        assert_eq!(
+            tokio::fs::read(&saved.path).await.unwrap(),
+            b"\x89PNG\r\n\x1A\n"
+        );
         assert!(saved.path.starts_with(root.join("assets")));
         assert!(saved.markdown.starts_with("![image](assets/pasted-image-"));
         assert!(saved.markdown.ends_with(".png)"));
@@ -217,5 +237,20 @@ mod tests {
             .expect_err("unsupported");
 
         assert!(error.contains("unsupported pasted image type"));
+    }
+
+    #[tokio::test]
+    async fn save_pasted_image_asset_rejects_mismatched_image_data() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let root = temp.path();
+        let workspace = workspace(root);
+        let note_path = root.join("note.md");
+
+        let error = save_pasted_image_asset(&workspace, &note_path, "image/png", "YWJj")
+            .await
+            .expect_err("mismatched image");
+
+        assert!(error.contains("does not match the declared image type"));
+        assert!(!root.join("assets").exists());
     }
 }

@@ -640,6 +640,14 @@ Rust 发送命令的位置通常在：
 | `SaveRequested` | JS 捕获保存快捷键。 |
 | `PasteImageRequested` | 用户粘贴或拖入图片。 |
 
+本地图片粘贴/拖入遵循 Tiptap 官方的文件处理职责划分：editor runtime
+只拦截受支持的图片文件，不在 JS 侧持久化文件，也不把 base64 图片写入
+Markdown 文档。JS 将文件读取为 base64，并发送
+`PasteImageRequested { tab_id, mime_type, data }`；Rust 校验 MIME 和图片文件头，
+在当前 workspace 的 `assets/` 目录下写入唯一文件名，然后排队发送
+`EditorCommand::InsertMarkdown`，插入相对路径 `![image](...)`。如果 Rust
+通信通道尚未附加，粘贴/拖入会交还给 Tiptap/ProseMirror 处理。
+
 最常见的是 `ContentChanged`：
 
 ```mermaid

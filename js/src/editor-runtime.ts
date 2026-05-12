@@ -98,6 +98,10 @@ function sendTiptapImageRequest(entry, tabId, image, sendImageRequest) {
   });
 }
 
+function hasEditorImageChannel(entry) {
+  return typeof entry?.dioxus?.send === "function";
+}
+
 function defaultEditorOptions({
   initialContent,
   extensions,
@@ -132,7 +136,7 @@ function defaultEditorOptions({
       handlePaste: (view, event, slice) => {
         const entry = registry.get(tabId);
         const image = transferImage(event?.clipboardData);
-        if (image && entry?.dioxus) {
+        if (image && hasEditorImageChannel(entry)) {
           event?.preventDefault?.();
           sendTiptapImageRequest(entry, tabId, image, sendImageRequest).catch((error) => {
             console.warn("Failed to send pasted image", error);
@@ -145,7 +149,7 @@ function defaultEditorOptions({
       handleDrop: (view, event) => {
         const entry = registry.get(tabId);
         const image = transferImage(event?.dataTransfer);
-        if (!image || !entry?.dioxus) {
+        if (!image || !hasEditorImageChannel(entry)) {
           return false;
         }
 

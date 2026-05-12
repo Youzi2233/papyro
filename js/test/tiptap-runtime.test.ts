@@ -1008,6 +1008,115 @@ test("Tiptap runtime sends image paste requests through the Rust protocol", asyn
   ]);
 });
 
+test("Tiptap runtime leaves image paste alone without a Rust channel", () => {
+  const image = { file: { type: "image/png" }, mimeType: "image/png" };
+  const clipboardCalls = [];
+  const { calls, registry, runtime } = createRuntimeHarness({
+    clipboard: {
+      imageFileFromTransfer: (transfer) => {
+        clipboardCalls.push(["imageFileFromTransfer", transfer.kind]);
+        return image;
+      },
+      sendEditorImageRequest: async () => {
+        clipboardCalls.push(["sendEditorImageRequest"]);
+        return true;
+      },
+    },
+  });
+  runtime.ensureEditor({
+    tabId: "tab-a",
+    containerId: "editor-root",
+    initialContent: "# Note",
+  });
+  calls.length = 0;
+
+  const event = {
+    clipboardData: { kind: "clipboard" },
+    preventDefault: () => calls.push(["preventDefault"]),
+  };
+  const handled = registry.get("tab-a").editor.options.editorProps.handlePaste(null, event, null);
+
+  assert.equal(handled, false);
+  assert.deepEqual(calls, []);
+  assert.deepEqual(clipboardCalls, [["imageFileFromTransfer", "clipboard"]]);
+});
+
+test("Tiptap runtime leaves image paste alone without a sendable Rust channel", () => {
+  const image = { file: { type: "image/png" }, mimeType: "image/png" };
+  const clipboardCalls = [];
+  const { calls, registry, runtime } = createRuntimeHarness({
+    clipboard: {
+      imageFileFromTransfer: (transfer) => {
+        clipboardCalls.push(["imageFileFromTransfer", transfer.kind]);
+        return image;
+      },
+      sendEditorImageRequest: async () => {
+        clipboardCalls.push(["sendEditorImageRequest"]);
+        return true;
+      },
+    },
+  });
+  runtime.ensureEditor({
+    tabId: "tab-a",
+    containerId: "editor-root",
+    initialContent: "# Note",
+  });
+  registry.get("tab-a").dioxus = {};
+  calls.length = 0;
+
+  const event = {
+    clipboardData: { kind: "clipboard" },
+    preventDefault: () => calls.push(["preventDefault"]),
+  };
+  const handled = registry.get("tab-a").editor.options.editorProps.handlePaste(null, event, null);
+
+  assert.equal(handled, false);
+  assert.deepEqual(calls, []);
+  assert.deepEqual(clipboardCalls, [["imageFileFromTransfer", "clipboard"]]);
+});
+
+test("Tiptap runtime consumes image paste read failures without crashing", async () => {
+  const image = { file: { type: "image/png" }, mimeType: "image/png" };
+  const clipboardCalls = [];
+  const warnMessages = [];
+  const previousWarn = console.warn;
+  console.warn = (...args) => warnMessages.push(args);
+  try {
+    const { calls, registry, runtime } = createRuntimeHarness({
+      clipboard: {
+        imageFileFromTransfer: () => image,
+        sendEditorImageRequest: async () => {
+          clipboardCalls.push(["sendEditorImageRequest"]);
+          throw new Error("read failed");
+        },
+      },
+    });
+    runtime.ensureEditor({
+      tabId: "tab-a",
+      containerId: "editor-root",
+      initialContent: "# Note",
+    });
+    runtime.attachChannel("tab-a", { send: () => {} });
+    calls.length = 0;
+
+    const event = {
+      clipboardData: { kind: "clipboard" },
+      preventDefault: () => calls.push(["preventDefault"]),
+    };
+    const handled = registry.get("tab-a").editor.options.editorProps.handlePaste(null, event, null);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    assert.equal(handled, true);
+    assert.deepEqual(calls, [["preventDefault"]]);
+    assert.deepEqual(clipboardCalls, [["sendEditorImageRequest"]]);
+    assert.equal(warnMessages.length, 1);
+    assert.match(String(warnMessages[0][0]), /Failed to send pasted image/u);
+  } finally {
+    console.warn = previousWarn;
+  }
+});
+
 test("Tiptap runtime sends image drop requests and moves the selection", async () => {
   const image = { file: { type: "" }, mimeType: "image/jpeg" };
   const clipboardCalls = [];

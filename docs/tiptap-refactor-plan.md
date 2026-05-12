@@ -308,7 +308,7 @@ These features are unique to Papyro, not in the official template, and need to b
 
 - [x] Markdown source mode (Source/Hybrid/Preview tri-mode switching)
 - [x] Rust protocol bridge (`window.papyroEditor` facade)
-- [ ] Local image paste (file saving handled by Rust side)
+- [x] Local image paste (file saving handled by Rust side)
 - [ ] Mermaid diagram rendering
 - [ ] KaTeX math formula rendering
 - [ ] Outline/TOC generation (consumed by Rust side)

@@ -574,6 +574,15 @@ Commands are usually sent from:
 | `SaveRequested` | JS captured a save shortcut |
 | `PasteImageRequested` | user pasted or dropped an image |
 
+Local image paste and drop follows the official Tiptap file-handling split:
+the editor runtime intercepts supported image files, but it does not persist
+them or enable base64 image documents. JS reads the file as base64 and sends
+`PasteImageRequested { tab_id, mime_type, data }`; Rust validates the MIME and
+image signature, writes a unique file under the workspace `assets/` directory,
+then queues `EditorCommand::InsertMarkdown` with a relative
+`![image](...)` link. If no Rust channel is attached, the paste/drop is left to
+Tiptap/ProseMirror instead of being consumed.
+
 Most input follows this path:
 
 ```mermaid
