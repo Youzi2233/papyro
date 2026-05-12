@@ -158,8 +158,8 @@ js/src/
 - [x] 验证拖拽排序在 Markdown 序列化后正确
 
 #### 1.6 浮动格式工具栏（Bubble Menu）
-- [ ] 使用官方 `<Tiptap.BubbleMenu>` 作为容器
-- [ ] 复制并接入以下官方工具栏组件：
+- [x] 使用官方 `<Tiptap.BubbleMenu>` 作为容器
+- [x] 复制并接入以下官方工具栏组件：
   - `mark-button`（bold、italic、underline、strike、code）
   - `heading-dropdown-menu`
   - `list-dropdown-menu`
@@ -168,21 +168,21 @@ js/src/
   - `link-popover`
   - `turn-into-dropdown`
   - `undo-redo-button`
-- [ ] 使用官方 `toolbar` 原语组织布局
+- [x] 使用官方 `toolbar` 原语组织布局
 
 #### 1.7 链接编辑
-- [ ] 复制官方 `link-popover` 组件
-- [ ] 复制官方 `link-extension` 扩展
-- [ ] 确保链接在 Markdown 中正确序列化
+- [x] 复制官方 `link-popover` 组件
+- [x] 复制官方 `link-extension` 扩展
+- [x] 确保链接在 Markdown 中正确序列化
 
 #### 1.8 Node 组件
-- [ ] 复制官方 `paragraph-node`
-- [ ] 复制官方 `heading-node`
-- [ ] 复制官方 `code-block-node`（保留 lowlight 集成）
-- [ ] 复制官方 `list-node`
-- [ ] 复制官方 `blockquote-node`
-- [ ] 复制官方 `horizontal-rule-node`
-- [ ] 复制官方 `image-node`（适配本地图片粘贴协议）
+- [x] 复制官方 `paragraph-node`
+- [x] 复制官方 `heading-node`
+- [x] 复制官方 `code-block-node`（保留 lowlight 集成）
+- [x] 复制官方 `list-node`
+- [x] 复制官方 `blockquote-node`
+- [x] 复制官方 `horizontal-rule-node`
+- [x] 复制官方 `image-node`（适配本地图片粘贴协议）
 
 #### 1.9 扩展层
 - [ ] 复制官方 `selection-extension`

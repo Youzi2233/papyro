@@ -158,8 +158,8 @@ Copy the following primitive components from the template (they are dependencies
 - [x] Verify drag reordering serializes correctly to Markdown
 
 #### 1.6 Floating Format Toolbar (Bubble Menu)
-- [ ] Use official `<Tiptap.BubbleMenu>` as container
-- [ ] Copy and integrate the following official toolbar components:
+- [x] Use official `<Tiptap.BubbleMenu>` as container
+- [x] Copy and integrate the following official toolbar components:
   - `mark-button` (bold, italic, underline, strike, code)
   - `heading-dropdown-menu`
   - `list-dropdown-menu`
@@ -168,21 +168,21 @@ Copy the following primitive components from the template (they are dependencies
   - `link-popover`
   - `turn-into-dropdown`
   - `undo-redo-button`
-- [ ] Use official `toolbar` primitive for layout
+- [x] Use official `toolbar` primitive for layout
 
 #### 1.7 Link Editing
-- [ ] Copy official `link-popover` component
-- [ ] Copy official `link-extension` extension
-- [ ] Ensure links serialize correctly in Markdown
+- [x] Copy official `link-popover` component
+- [x] Copy official `link-extension` extension
+- [x] Ensure links serialize correctly in Markdown
 
 #### 1.8 Node Components
-- [ ] Copy official `paragraph-node`
-- [ ] Copy official `heading-node`
-- [ ] Copy official `code-block-node` (keep lowlight integration)
-- [ ] Copy official `list-node`
-- [ ] Copy official `blockquote-node`
-- [ ] Copy official `horizontal-rule-node`
-- [ ] Copy official `image-node` (adapt for local image paste protocol)
+- [x] Copy official `paragraph-node`
+- [x] Copy official `heading-node`
+- [x] Copy official `code-block-node` (keep lowlight integration)
+- [x] Copy official `list-node`
+- [x] Copy official `blockquote-node`
+- [x] Copy official `horizontal-rule-node`
+- [x] Copy official `image-node` (adapt for local image paste protocol)
 
 #### 1.9 Extension Layer
 - [ ] Copy official `selection-extension`
