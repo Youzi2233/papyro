@@ -1,35 +1,6 @@
-/* Papyro Tiptap table compatibility for the official table-node UI. */
+/* Papyro table host bridge for the official Tiptap table-node UI.
+   Component-owned selectors live in the official SCSS imported by editor.js. */
 
-:root {
-    --tt-table-border-color: var(--mn-border);
-    --tt-table-selected-bg: color-mix(in srgb, var(--mn-accent) 16%, transparent);
-    --tt-table-selected-stroke: var(--mn-accent);
-    --tt-table-column-resize-handle-bg: var(--mn-accent);
-    --tt-table-cell-padding: var(--mn-markdown-table-cell-pad);
-    --tt-table-margin-block: var(--mn-markdown-block-gap);
-    --tt-table-pad-block-start: 0;
-    --tt-table-pad-block-end: 0;
-    --tt-table-pad-inline-start: 0;
-    --tt-table-pad-inline-end: 0;
-    --tt-table-handle-bg-color: var(--mn-surface-raised);
-    --tt-table-extend-icon-color: var(--mn-ink-3);
-}
-
-[data-theme="github_dark"],
-.dark {
-    --tt-table-border-color: var(--mn-border);
-    --tt-table-selected-bg: color-mix(in srgb, var(--mn-accent) 18%, transparent);
-    --tt-table-selected-stroke: var(--mn-accent);
-    --tt-table-column-resize-handle-bg: var(--mn-accent);
-    --tt-table-handle-bg-color: var(--mn-surface-raised);
-    --tt-table-extend-icon-color: var(--mn-ink-3);
-}
-
-.mn-tiptap-editor.tiptap [data-content-type="table"] {
-    margin-block: var(--tt-table-margin-block);
-}
-
-.mn-tiptap-editor.tiptap .tableWrapper[data-content-type="table"],
 .mn-tiptap-editor .tableWrapper {
     position: relative;
     overflow-x: auto;
@@ -39,8 +10,6 @@
     line-height: 0;
 }
 
-.mn-tiptap-editor.tiptap .tableWrapper[data-content-type="table"] table,
-.mn-tiptap-editor.tiptap .tableWrapper[data-content-type="table"] .mn-tiptap-table,
 .mn-tiptap-editor table,
 .mn-tiptap-editor .mn-tiptap-table {
     width: auto !important;
@@ -53,8 +22,6 @@
     line-height: normal;
 }
 
-.mn-tiptap-editor.tiptap .tableWrapper[data-content-type="table"] th,
-.mn-tiptap-editor.tiptap .tableWrapper[data-content-type="table"] td,
 .mn-tiptap-editor :where(th, td, .mn-tiptap-table-cell, .mn-tiptap-table-header) {
     position: relative;
     box-sizing: border-box;
@@ -74,54 +41,15 @@
     pointer-events: none;
 }
 
-.ProseMirror .tableWrapper {
-    overflow-x: auto;
-    border-spacing: 0;
+.tiptap-table-handle-menu,
+.tiptap-table-extend-row-column-button {
+    pointer-events: auto;
 }
 
-.ProseMirror table {
-    border-collapse: collapse;
-    border-spacing: 0;
-    table-layout: fixed;
-    width: 100%;
-    overflow: hidden;
-}
-
-.ProseMirror td,
-.ProseMirror th {
-    position: relative;
-    box-sizing: border-box;
-    vertical-align: top;
-}
-
-.ProseMirror td:not([data-colwidth]):not(.column-resize-dragging),
-.ProseMirror th:not([data-colwidth]):not(.column-resize-dragging) {
-    min-width: var(--default-cell-min-width, 96px);
-}
-
-.ProseMirror .column-resize-handle {
-    position: absolute;
-    top: 0;
-    right: -2px;
-    bottom: 0;
-    z-index: 20;
-    width: 4px;
-    background-color: var(--tt-table-column-resize-handle-bg);
-    pointer-events: none;
-}
-
-.ProseMirror.resize-cursor {
-    cursor: ew-resize;
-    cursor: col-resize;
-}
-
-.ProseMirror .selectedCell:after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: 2;
-    background: rgba(200, 200, 255, 0.4);
-    pointer-events: none;
+.tiptap-menu-content,
+.tiptap-dropdown-menu-content,
+.tiptap-dropdown-menu-sub-content {
+    z-index: 200;
 }
 
 .mn-tiptap-table-cell:hover:not(.mn-tiptap-table-cell-selected),
@@ -157,188 +85,4 @@
 .mn-tiptap-table-header:hover > .column-resize-handle::before,
 .mn-tiptap-editor.resize-cursor .column-resize-handle::before {
     opacity: .64;
-}
-
-.tiptap-table-handle-menu {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: none;
-    border-radius: var(--tt-radius-lg, 8px);
-    background-color: var(--tt-table-handle-bg-color);
-    cursor: grab;
-    pointer-events: auto;
-}
-
-.tiptap-table-handle-menu .tiptap-button-icon {
-    width: 1rem;
-    height: 1rem;
-    flex-shrink: 0;
-}
-
-.tiptap-table-handle-menu.menu-opened,
-.tiptap-table-handle-menu.is-dragging {
-    background-color: var(--tt-brand-color-500, var(--mn-accent));
-}
-
-.tiptap-table-handle-menu.menu-opened .tiptap-button-icon,
-.tiptap-table-handle-menu.is-dragging .tiptap-button-icon {
-    color: var(--white, #fff);
-}
-
-.tiptap-table-handle-menu.is-dragging {
-    cursor: grabbing;
-}
-
-.tiptap-table-handle-menu.row {
-    width: 0.75rem;
-    height: var(--table-handle-ref-height);
-}
-
-.tiptap-table-handle-menu.column {
-    height: 0.75rem;
-    width: var(--table-handle-ref-width);
-}
-
-.tiptap-table-handle-menu.column .tiptap-button-icon {
-    transform: rotate(90deg);
-}
-
-.expandable-menu-button {
-    --button-size: 16px;
-    --button-offset: -8px;
-    --dot-size-small: 8px;
-    --dot-size-large: 16px;
-    --dot-offset-small: 3px;
-    --dot-offset-large: 0;
-    --border-radius-full: 9999px;
-    --transition-duration: 0.05s;
-    --transition-timing: ease;
-    --icon-scale-small: 0.9;
-    --icon-scale-large: 1;
-
-    position: absolute;
-    top: 50%;
-    right: var(--button-offset);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: var(--button-size);
-    height: var(--button-size);
-    border-radius: var(--border-radius-full);
-    background: transparent;
-    cursor: pointer;
-    pointer-events: auto;
-    transform: translateY(-50%);
-}
-
-.expandable-menu-button::before {
-    content: "";
-    position: absolute;
-    top: 50%;
-    right: var(--dot-offset-small);
-    width: var(--dot-size-small);
-    height: var(--dot-size-small);
-    border-radius: var(--border-radius-full);
-    background: var(--tt-brand-color-600, var(--mn-accent));
-    transform: translateY(-50%);
-    transition:
-        width var(--transition-duration) var(--transition-timing),
-        height var(--transition-duration) var(--transition-timing),
-        right var(--transition-duration) var(--transition-timing),
-        background var(--transition-duration) var(--transition-timing);
-}
-
-.expandable-menu-button svg {
-    position: relative;
-    z-index: 1;
-    width: var(--button-size);
-    height: var(--button-size);
-    color: var(--white, #fff);
-    opacity: 0;
-    flex-shrink: 0;
-    pointer-events: none;
-    transform: scale(var(--icon-scale-small));
-    transition:
-        opacity var(--transition-duration) var(--transition-timing),
-        transform var(--transition-duration) var(--transition-timing);
-}
-
-@media (hover: none) and (pointer: coarse) {
-    .expandable-menu-button::before {
-        width: var(--dot-size-large);
-        height: var(--dot-size-large);
-        right: var(--dot-offset-large);
-    }
-
-    .expandable-menu-button svg {
-        opacity: 1;
-        transform: scale(var(--icon-scale-large));
-    }
-}
-
-@media (hover: hover) {
-    .expandable-menu-button:hover::before,
-    .expandable-menu-button:focus-visible::before,
-    .expandable-menu-button.menu-opened::before {
-        width: var(--dot-size-large);
-        height: var(--dot-size-large);
-        right: var(--dot-offset-large);
-    }
-
-    .expandable-menu-button:hover svg,
-    .expandable-menu-button:focus-visible svg,
-    .expandable-menu-button.menu-opened svg {
-        opacity: 1;
-        transform: scale(var(--icon-scale-large));
-    }
-}
-
-.expandable-menu-button:focus-visible {
-    outline: 2px solid var(--tt-brand-color-600, var(--mn-accent));
-    outline-offset: 2px;
-}
-
-.expandable-menu-button:disabled {
-    cursor: not-allowed;
-    opacity: var(--mn-primitive-disabled-opacity, 0.5);
-}
-
-.expandable-menu-button:disabled::before {
-    background: var(--tt-disabled-color, var(--mn-ink-3));
-}
-
-.tiptap-table-extend-row-column-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: none;
-    border-radius: var(--tt-radius-lg, 8px);
-    background-color: var(--tt-table-handle-bg-color);
-    pointer-events: auto;
-}
-
-.tiptap-table-extend-row-column-button .tiptap-button-icon {
-    width: 1rem;
-    height: 1rem;
-    flex-shrink: 0;
-    color: var(--tt-table-extend-icon-color);
-}
-
-.tiptap-table-extend-row-column-button.tiptap-table-row-end-add-remove {
-    width: 100%;
-    height: 0.75rem;
-    cursor: row-resize;
-}
-
-.tiptap-table-extend-row-column-button.tiptap-table-column-end-add-remove {
-    width: 0.75rem;
-    cursor: col-resize;
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .expandable-menu-button::before,
-    .expandable-menu-button svg {
-        transition: none;
-    }
 }

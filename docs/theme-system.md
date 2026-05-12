@@ -38,7 +38,7 @@ flowchart TD
 - `assets/styles/modal.css` and `apps/desktop/assets/styles/modal.css` hold modal-specific styles.
 - `assets/styles/markdown.css`, `apps/desktop/assets/styles/markdown.css`, and `apps/mobile/assets/styles/markdown.css` hold the document surface, outline, Preview, and rendered Markdown rhythm.
 - `assets/styles/tiptap-chrome.css`, `apps/desktop/assets/styles/tiptap-chrome.css`, and `apps/mobile/assets/styles/tiptap-chrome.css` are the Tiptap chrome entry stylesheets.
-- Tiptap chrome implementation styles are split by responsibility into `tiptap-chrome-code.css`, `tiptap-chrome-base.css`, `tiptap-chrome-command.css`, `tiptap-chrome-table.css`, and `tiptap-chrome-block.css`. Keep the shared, desktop, and mobile copies synchronized.
+- Tiptap chrome implementation styles are split by responsibility into `tiptap-chrome-code.css`, `tiptap-chrome-base.css`, `tiptap-chrome-command.css`, `tiptap-chrome-table.css`, and `tiptap-chrome-block.css`. Keep the shared, desktop, and mobile copies synchronized. These files hold Papyro host adapters and fallbacks; official component-owned SCSS remains imported from `js/src/components/tiptap-*` into `assets/editor.js`.
 - Tiptap node views consume the same tokens through CSS classes in the markdown and Tiptap chrome styles plus focused `js/src/tiptap-*.js` modules.
 - Official Tiptap UI components keep their upstream `--tt-*` variables. Papyro maps those variables to the semantic `--mn-*` contract in `assets/main.css`, `apps/*/assets/main.css`, and `js/src/styles/_variables.scss`.
 

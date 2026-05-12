@@ -14,16 +14,19 @@ const DEFAULT_CSS_GROUPS = [
   [
     "assets/main.css",
     "assets/styles/markdown.css",
+    "assets/editor.js",
     ...TIPTAP_STYLE_MODULES.map((file) => `assets/styles/${file}`),
   ],
   [
     "apps/desktop/assets/main.css",
     "apps/desktop/assets/styles/markdown.css",
+    "apps/desktop/assets/editor.js",
     ...TIPTAP_STYLE_MODULES.map((file) => `apps/desktop/assets/styles/${file}`),
   ],
   [
     "apps/mobile/assets/main.css",
     "apps/mobile/assets/styles/markdown.css",
+    "apps/mobile/assets/editor.js",
     ...TIPTAP_STYLE_MODULES.map((file) => `apps/mobile/assets/styles/${file}`),
   ],
 ];
@@ -229,7 +232,9 @@ function printUsage() {
   node scripts/check-markdown-style-smoke.js --self-test
 
 Checks that Markdown visual tokens are present and shared by Preview and
-Tiptap Hybrid styling paths.`);
+Tiptap Hybrid styling paths. The default groups include editor.js so the smoke
+test covers official SCSS injected by the generated Tiptap runtime bundle
+instead of forcing duplicate static chrome CSS.`);
 }
 
 function readCssGroup(paths) {
@@ -238,6 +243,7 @@ function readCssGroup(paths) {
 
 function checkCssText(source) {
   const failures = [];
+  const compactSource = compactCssText(source);
   const tokens = parseCustomProperties(source);
   for (const token of REQUIRED_MARKDOWN_TOKENS) {
     if (!tokens.has(token)) {
@@ -248,43 +254,54 @@ function checkCssText(source) {
     if (!tokens.has(token)) {
       failures.push(`missing Tiptap bridge token ${token}`);
     }
-    if (!source.includes(`${token}:`) || !source.includes(declaration)) {
+    if (
+      !includesCssFragment(source, compactSource, `${token}:`) ||
+      !includesCssFragment(source, compactSource, declaration)
+    ) {
       failures.push(`Tiptap bridge token ${token} is not mapped to ${declaration}`);
     }
   }
   for (const [label, selector, token] of PREVIEW_REQUIREMENTS) {
-    if (!source.includes(selector)) {
+    if (!includesCssFragment(source, compactSource, selector)) {
       failures.push(`${label} missing selector ${selector}`);
     }
-    if (!source.includes(token)) {
+    if (!includesCssFragment(source, compactSource, token)) {
       failures.push(`${label} missing token ${token}`);
     }
   }
   for (const [label, selector, token] of TIPTAP_REQUIREMENTS) {
-    if (!source.includes(selector)) {
+    if (!includesCssFragment(source, compactSource, selector)) {
       failures.push(`${label} missing selector ${selector}`);
     }
-    if (!source.includes(token)) {
+    if (!includesCssFragment(source, compactSource, token)) {
       failures.push(`${label} missing token ${token}`);
     }
   }
   for (const [label, selector, declaration] of TIPTAP_COMMAND_PANEL_REQUIREMENTS) {
-    if (!source.includes(selector)) {
+    if (!includesCssFragment(source, compactSource, selector)) {
       failures.push(`${label} missing selector ${selector}`);
     }
-    if (!source.includes(declaration)) {
+    if (!includesCssFragment(source, compactSource, declaration)) {
       failures.push(`${label} missing declaration ${declaration}`);
     }
   }
   for (const [label, selector, token] of TIPTAP_CODE_HIGHLIGHT_REQUIREMENTS) {
-    if (!source.includes(selector)) {
+    if (!includesCssFragment(source, compactSource, selector)) {
       failures.push(`Tiptap code highlight ${label} missing selector ${selector}`);
     }
-    if (!source.includes(token)) {
+    if (!includesCssFragment(source, compactSource, token)) {
       failures.push(`Tiptap code highlight ${label} missing token ${token}`);
     }
   }
   return failures;
+}
+
+function includesCssFragment(source, compactSource, fragment) {
+  return source.includes(fragment) || compactSource.includes(compactCssText(fragment));
+}
+
+function compactCssText(source) {
+  return source.replace(/\s+/g, "");
 }
 
 function parseCustomProperties(source) {

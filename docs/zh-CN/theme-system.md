@@ -39,6 +39,7 @@ flowchart TD
 - `assets/styles/markdown.css`、`apps/desktop/assets/styles/markdown.css` 和 `apps/mobile/assets/styles/markdown.css` 放文档 surface、大纲、Preview 与渲染后 Markdown 的排版节奏样式。
 - `assets/styles/tiptap-chrome.css`、`apps/desktop/assets/styles/tiptap-chrome.css` 和 `apps/mobile/assets/styles/tiptap-chrome.css` 放 Tiptap runtime 控件样式，包括命令面板、块句柄、表格 chrome 与代码语言菜单。
 - `tiptap-chrome.css` ? Tiptap chrome ???????????? `tiptap-chrome-code.css`?`tiptap-chrome-base.css`?`tiptap-chrome-command.css`?`tiptap-chrome-table.css` ? `tiptap-chrome-block.css`??????????????????
+- 这些 Tiptap chrome 文件只放 Papyro 宿主适配和兜底样式；官方组件自己的 SCSS 保留在 `js/src/components/tiptap-*`，并由 `assets/editor.js` 注入。
 - Tiptap node views 通过 Markdown 与 Tiptap chrome 样式中的 CSS class，以及聚焦的 `js/src/tiptap-*.js` 模块消费同一批 token。
 - 官方 Tiptap UI 组件保留上游 `--tt-*` 变量。Papyro 在 `assets/main.css`、`apps/*/assets/main.css` 和 `js/src/styles/_variables.scss` 中将这些变量映射到语义化 `--mn-*` 契约。
 

@@ -295,10 +295,10 @@ js/src/
 ### 阶段 6：样式统一
 
 - [x] 建立统一的 design tokens（CSS 变量）对齐官方组件样式系统
-- [ ] 移除所有与官方组件重复的自定义 SCSS
+- [x] 移除所有与官方组件重复的自定义 SCSS
 - [ ] 保留 Papyro 特有样式：Mermaid 图表、KaTeX 数学公式、源码模式
 - [ ] 确保暗色/亮色主题通过 CSS 变量切换（官方组件已支持）
-- [ ] 审计并删除 `table-node.scss`、`table-handle-menu.scss` 等被官方样式替代的文件
+- [x] 审计 `table-node.scss`、`table-handle-menu.scss` 等文件；保留上游官方 SCSS，将 Papyro 专属表格宿主覆盖移动到 `tiptap-chrome-table.css`
 
 ---
 
