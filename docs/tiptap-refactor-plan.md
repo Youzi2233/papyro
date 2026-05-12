@@ -310,7 +310,7 @@ These features are unique to Papyro, not in the official template, and need to b
 - [x] Rust protocol bridge (`window.papyroEditor` facade)
 - [x] Local image paste (file saving handled by Rust side)
 - [x] Mermaid diagram rendering
-- [ ] KaTeX math formula rendering
+- [x] KaTeX math formula rendering
 - [ ] Outline/TOC generation (consumed by Rust side)
 - [ ] i18n multilingual support
 - [ ] Multi-tab editor instance management (editorRegistry)

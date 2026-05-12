@@ -522,6 +522,7 @@ window.papyroEditor = {
   scrollEditorToLine,
   scrollPreviewToHeading,
   renderPreviewMermaid,
+  renderPreviewMath,
 };
 ```
 
@@ -540,6 +541,7 @@ internals behind explicit functions.
 | `syncOutline` | sync active heading state |
 | `navigateOutline` | jump to an outline heading |
 | `renderPreviewMermaid` | render Mermaid in Preview |
+| `renderPreviewMath` | render KaTeX math in Preview |
 
 ## 14. Rust-To-JS Commands
 
@@ -591,6 +593,14 @@ and `htmlLabels: false`, and marks those safety keys as secure so document-level
 Mermaid directives cannot relax the local-document sandbox. Rendering is
 tokenized per target element so stale async renders cannot overwrite a newer
 diagram state.
+
+KaTeX rendering also stays in JS. Rust enables `pulldown-cmark`
+`ENABLE_MATH`, strips raw HTML as usual, and converts inline/display math
+events into escaped `.mn-math-inline` and `.mn-math-block` placeholders.
+`js/src/tiptap-math.js` owns the shared renderer for Tiptap math node views and
+Preview placeholders. It renders with `trust: false`, `throwOnError: true`,
+`output: "mathml"`, bounded `maxSize`, and bounded `maxExpand`, so local
+documents cannot opt into trusted KaTeX HTML features.
 
 Most input follows this path:
 
@@ -655,12 +665,13 @@ Hybrid is therefore Rust analysis plus Tiptap/React presentation. As more editor
 | Editable | no | yes |
 | Primary rendering | Rust HTML | Tiptap/ProseMirror document view with React chrome |
 | Mermaid | JS-assisted render | Tiptap node/extension state |
+| KaTeX math | Rust placeholder + JS KaTeX render | Tiptap math node view |
 | Truth source | Rust tab content | Rust tab content plus JS input events |
 
 Preview uses `pulldown-cmark` and `syntect` on the Rust side, then JS helps with
-Mermaid and scroll/outline behavior. Preview Mermaid blocks render only when
-their source changed, show explicit pending/error states, and reuse the same
-strict Mermaid configuration as the editable node view.
+Mermaid, KaTeX, and scroll/outline behavior. Preview Mermaid and math blocks
+render only when their source changed, show explicit states, and reuse the same
+strict renderer configuration as the editable node views.
 
 Hybrid uses Tiptap as the interactive editor and keeps Markdown synchronization explicit so files remain portable.
 

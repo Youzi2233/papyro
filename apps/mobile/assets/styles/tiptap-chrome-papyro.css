@@ -123,6 +123,46 @@
     white-space: pre-wrap;
 }
 
+.mn-math-inline,
+.mn-math-block {
+    color: var(--mn-ink);
+    font-family: var(--mn-markdown-inline-math-font, Georgia, "Times New Roman", serif);
+}
+
+.mn-math-inline {
+    display: inline-flex;
+    align-items: baseline;
+    min-width: 1.5ch;
+    padding: 0 2px;
+    vertical-align: baseline;
+}
+
+.mn-math-block {
+    box-sizing: border-box;
+    min-width: 0;
+    max-width: 100%;
+    margin: 0 0 var(--mn-markdown-block-gap);
+    padding: 14px 16px;
+    border: var(--mn-border-subtle);
+    border-radius: var(--mn-markdown-code-radius);
+    background: var(--mn-markdown-code-block-bg);
+    overflow-x: auto;
+    text-align: center;
+}
+
+.mn-math-block .katex-display {
+    margin: 0;
+}
+
+.mn-math-source {
+    margin: 0;
+    white-space: pre-wrap;
+    font-family: var(--mn-markdown-mono-font);
+    font-size: var(--mn-markdown-code-block-size);
+    line-height: var(--mn-markdown-code-block-line);
+    color: var(--mn-ink-2);
+}
+
 .mn-tiptap-mermaid-block {
     cursor: default;
 }

@@ -189,6 +189,7 @@ function createRuntimeHarness({
       scrollEditorToLine: () => "editor-line",
       scrollPreviewToHeading: () => "preview-heading",
       renderPreviewMermaid: () => "mermaid",
+      renderPreviewMath: () => "math",
     },
   });
 
@@ -1227,4 +1228,5 @@ test("Tiptap runtime keeps facade navigation methods available", () => {
   assert.equal(runtime.scrollEditorToLine(), "editor-line");
   assert.equal(runtime.scrollPreviewToHeading(), "preview-heading");
   assert.equal(runtime.renderPreviewMermaid(), "mermaid");
+  assert.equal(runtime.renderPreviewMath(), "math");
 });

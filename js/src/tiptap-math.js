@@ -6,8 +6,37 @@ import { mathSourceEditorLabel } from "./tiptap-i18n.js";
 const INLINE_MATH_TOKEN = "inlineMath";
 const MATH_BLOCK_TOKEN = "mathBlock";
 
+export const PAPYRO_KATEX_OPTIONS = Object.freeze({
+  output: "mathml",
+  throwOnError: true,
+  strict: "ignore",
+  trust: false,
+  maxSize: 8,
+  maxExpand: 1000,
+});
+
 function normalizeMathSource(source) {
   return String(source ?? "").replace(/\r\n?/g, "\n").trim();
+}
+
+function ownerDocumentFor(element) {
+  if (element?.nodeType === 9) return element;
+  if (element?.ownerDocument) return element.ownerDocument;
+  return typeof document === "undefined" ? null : document;
+}
+
+function isHTMLElement(element) {
+  const elementWindow = element?.ownerDocument?.defaultView;
+  const HTMLElementConstructor = elementWindow?.HTMLElement ?? globalThis.HTMLElement;
+  return typeof HTMLElementConstructor === "function" && element instanceof HTMLElementConstructor;
+}
+
+function mathSourceFromElement(element) {
+  return element.querySelector(".mn-math-source")?.textContent ?? element.dataset.mathSource ?? "";
+}
+
+function isRenderedMathState(state) {
+  return state === "rendered" || state === "error" || state === "empty";
 }
 
 function nodeViewLanguage(view) {
@@ -104,35 +133,81 @@ export function tokenizeMathBlock(source) {
   };
 }
 
-export function renderKatexElement(element, source, displayMode) {
-  const math = normalizeMathSource(source);
-  element.classList.remove("mn-tiptap-math-error");
-  element.dataset.mathState = "rendered";
-  element.dataset.mathSource = math;
+export function createKatexRenderer({
+  katexApi = katex,
+  options = PAPYRO_KATEX_OPTIONS,
+} = {}) {
+  function renderKatexElement(element, source, displayMode) {
+    const math = normalizeMathSource(source);
+    element.classList.remove("mn-tiptap-math-error");
+    element.dataset.mathState = "rendered";
+    element.dataset.mathSource = math;
+    element.title = "";
 
-  if (!math) {
-    element.dataset.mathState = "empty";
-    element.textContent = displayMode ? "$$\n\n$$" : "$$";
-    return { ok: false, error: "empty_math" };
+    if (!math) {
+      element.dataset.mathState = "empty";
+      element.textContent = displayMode ? "$$\n\n$$" : "$$";
+      return { ok: false, error: "empty_math" };
+    }
+
+    try {
+      element.innerHTML = katexApi.renderToString(math, {
+        ...options,
+        displayMode,
+      });
+      return { ok: true, error: null };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      element.dataset.mathState = "error";
+      element.title = message;
+      element.classList.add("mn-tiptap-math-error");
+      element.textContent = displayMode ? `$$\n${math}\n$$` : `$${math}$`;
+      return { ok: false, error: message };
+    }
   }
 
-  try {
-    element.innerHTML = katex.renderToString(math, {
-      displayMode,
-      output: "mathml",
-      throwOnError: true,
-      strict: "ignore",
-    });
-    return { ok: true, error: null };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    element.dataset.mathState = "error";
-    element.title = message;
-    element.classList.add("mn-tiptap-math-error");
-    element.textContent = displayMode ? `$$\n${math}\n$$` : `$${math}$`;
-    return { ok: false, error: message };
+  function renderPreviewMath(root = ownerDocumentFor(null)) {
+    const documentRef = ownerDocumentFor(root);
+    if (!documentRef) return 0;
+
+    const scope = typeof root?.querySelectorAll === "function" ? root : documentRef;
+    const previewRoots = scope.matches?.(".mn-preview")
+      ? [scope]
+      : Array.from(scope.querySelectorAll(".mn-preview"));
+    let count = 0;
+
+    for (const previewRoot of previewRoots) {
+      for (const element of previewRoot.querySelectorAll(".mn-math-inline, .mn-math-block")) {
+        if (!isHTMLElement(element)) continue;
+
+        const source = mathSourceFromElement(element);
+        const math = normalizeMathSource(source);
+        if (
+          element.dataset.mathSource === math &&
+          isRenderedMathState(element.dataset.mathState)
+        ) {
+          continue;
+        }
+
+        const displayMode = element.classList.contains("mn-math-block");
+        renderKatexElement(element, source, displayMode);
+        count += 1;
+      }
+    }
+
+    return count;
   }
+
+  return {
+    renderKatexElement,
+    renderPreviewMath,
+  };
 }
+
+const defaultKatexRenderer = createKatexRenderer();
+
+export const renderKatexElement = defaultKatexRenderer.renderKatexElement;
+export const renderPreviewMath = defaultKatexRenderer.renderPreviewMath;
 
 function setMathNodeSource(view, getPos, node, source) {
   if (typeof getPos !== "function") return false;

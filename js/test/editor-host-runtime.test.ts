@@ -142,7 +142,7 @@ test("editor host runtime saves preview scroll and activates the nearest heading
   assert.equal(second.classList.contains("active"), true);
 });
 
-test("editor host runtime exposes preview Mermaid rendering", () => {
+test("editor host runtime exposes preview render helpers", () => {
   const registry = createEditorRuntimeRegistry();
   const host = createEditorHostRuntime({
     registry,
@@ -151,4 +151,5 @@ test("editor host runtime exposes preview Mermaid rendering", () => {
   });
 
   assert.equal(typeof host.navigation.renderPreviewMermaid, "function");
+  assert.equal(typeof host.navigation.renderPreviewMath, "function");
 });

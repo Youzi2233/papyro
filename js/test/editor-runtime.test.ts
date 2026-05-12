@@ -33,6 +33,7 @@ function createRuntimeAdapter(overrides = {}) {
     scrollEditorToLine: () => "scrollEditorToLine",
     scrollPreviewToHeading: () => "scrollPreviewToHeading",
     renderPreviewMermaid: () => "renderPreviewMermaid",
+    renderPreviewMath: () => "renderPreviewMath",
     ...overrides,
   };
 }
@@ -48,6 +49,7 @@ test("host runtime adapter validation reports missing methods", () => {
     "scrollEditorToLine",
     "scrollPreviewToHeading",
     "renderPreviewMermaid",
+    "renderPreviewMath",
   ]);
 });
 
@@ -73,6 +75,7 @@ test("Papyro editor facade validation reports contract gaps", () => {
       "scrollEditorToLine",
       "scrollPreviewToHeading",
       "renderPreviewMermaid",
+      "renderPreviewMath",
       "describe",
     ],
   );
@@ -92,6 +95,7 @@ test("editor runtime adapter contract validation reports stable migration method
     "scrollEditorToLine",
     "scrollPreviewToHeading",
     "renderPreviewMermaid",
+    "renderPreviewMath",
   ]);
   assert.throws(
     () => assertEditorRuntimeAdapter({ mount: () => {} }),

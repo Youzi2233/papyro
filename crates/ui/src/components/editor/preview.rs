@@ -198,6 +198,9 @@ fn attach_preview_scroll_script(tab_id: &str, revision: u64) -> String {
             if (scroller && window.papyroEditor?.renderPreviewMermaid) {{
                 window.papyroEditor.renderPreviewMermaid(scroller);
             }}
+            if (scroller && window.papyroEditor?.renderPreviewMath) {{
+                window.papyroEditor.renderPreviewMath(scroller);
+            }}
         }};
 
         if (typeof requestAnimationFrame === "function") {{
@@ -696,5 +699,6 @@ mod tests {
         assert!(script.contains("element.dataset.revision === revision"));
         assert!(script.contains("window.papyroEditor.attachPreviewScroll"));
         assert!(script.contains("window.papyroEditor.renderPreviewMermaid"));
+        assert!(script.contains("window.papyroEditor.renderPreviewMath"));
     }
 }

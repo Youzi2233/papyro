@@ -127,6 +127,7 @@ test("editor bundle mounts the full Tiptap runtime without a React island crash"
       "scrollEditorToLine",
       "scrollPreviewToHeading",
       "renderPreviewMermaid",
+      "renderPreviewMath",
     ]);
 
     const editor = windowRef.papyroEditor.ensureEditor({

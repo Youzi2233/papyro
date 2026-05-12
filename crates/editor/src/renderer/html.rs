@@ -84,6 +84,7 @@ pub fn render_markdown_html_with_image_resolver_and_highlight_theme(
     options.insert(Options::ENABLE_TASKLISTS);
     options.insert(Options::ENABLE_STRIKETHROUGH);
     options.insert(Options::ENABLE_HEADING_ATTRIBUTES);
+    options.insert(Options::ENABLE_MATH);
 
     let parser = Parser::new_ext(markdown, options);
     let sanitized = sanitize_events(parser, image_url_resolver);
@@ -103,6 +104,12 @@ fn sanitize_events<'a>(
     for event in events {
         match event {
             Event::Html(_) | Event::InlineHtml(_) => {}
+            Event::InlineMath(text) => {
+                sanitized.push(Event::Html(render_math_inline_placeholder(&text).into()));
+            }
+            Event::DisplayMath(text) => {
+                sanitized.push(Event::Html(render_math_block_placeholder(&text).into()));
+            }
             Event::Start(Tag::Link {
                 link_type,
                 dest_url,
@@ -236,6 +243,20 @@ fn render_mermaid_block(source: &str) -> String {
     let escaped = html_escape(source);
     format!(
         r#"<div class="mn-mermaid-block" data-mermaid-state="source"><pre class="mn-mermaid-source">{escaped}</pre></div>"#
+    )
+}
+
+fn render_math_inline_placeholder(source: &str) -> String {
+    let escaped = html_escape(source);
+    format!(
+        r#"<span class="mn-math-inline" data-math-state="source"><span class="mn-math-source">{escaped}</span></span>"#
+    )
+}
+
+fn render_math_block_placeholder(source: &str) -> String {
+    let escaped = html_escape(source);
+    format!(
+        r#"<div class="mn-math-block" data-math-state="source"><pre class="mn-math-source">{escaped}</pre></div>"#
     )
 }
 
@@ -388,6 +409,26 @@ mod tests {
             "```mermaid\n<script>alert(1)</script>\n```",
             true,
         );
+
+        assert!(html.contains("&lt;script&gt;alert(1)&lt;/script&gt;"));
+        assert!(!html.contains("<script>"));
+    }
+
+    #[test]
+    fn render_markdown_html_wraps_math_for_client_katex_rendering() {
+        let html = render_markdown_html("Euler $e^{i\\pi}+1=0$\n\n$$\nx^2 + y^2\n$$");
+
+        assert!(html.contains(r#"class="mn-math-inline""#));
+        assert!(html.contains(r#"class="mn-math-block""#));
+        assert!(html.contains(r#"class="mn-math-source""#));
+        assert!(html.contains(r#"data-math-state="source""#));
+        assert!(html.contains(r#"e^{i\pi}+1=0"#));
+        assert!(html.contains(r#"x^2 + y^2"#));
+    }
+
+    #[test]
+    fn render_markdown_html_escapes_math_source() {
+        let html = render_markdown_html(r#"$\htmlClass{bad}{<script>alert(1)</script>}$"#);
 
         assert!(html.contains("&lt;script&gt;alert(1)&lt;/script&gt;"));
         assert!(!html.contains("<script>"));

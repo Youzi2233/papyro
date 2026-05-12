@@ -11,6 +11,7 @@ import {
   scrollPreviewToHeading as scrollPreviewScrollerToHeading,
 } from "./editor-core.js";
 import { renderPreviewMermaid } from "./mermaid-renderer.js";
+import { renderPreviewMath } from "./tiptap-math.js";
 import {
   isTiptapEntry,
   scrollTiptapEntryToLine,
@@ -434,6 +435,7 @@ export function createEditorHostRuntime({
       scrollEditorToLine,
       scrollPreviewToHeading: scrollPreviewToHeadingImpl,
       renderPreviewMermaid,
+      renderPreviewMath,
     },
   };
 }

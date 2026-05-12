@@ -8,6 +8,7 @@ export const EDITOR_RUNTIME_HOST_METHODS = Object.freeze([
   "scrollEditorToLine",
   "scrollPreviewToHeading",
   "renderPreviewMermaid",
+  "renderPreviewMath",
 ]);
 
 export const EDITOR_RUNTIME_FACADE_METHODS = Object.freeze([
@@ -32,6 +33,7 @@ export const EDITOR_RUNTIME_ADAPTER_METHODS = Object.freeze([
   "scrollEditorToLine",
   "scrollPreviewToHeading",
   "renderPreviewMermaid",
+  "renderPreviewMath",
 ]);
 
 export function hostMessage(type, fields = {}) {
@@ -154,6 +156,7 @@ export function createEditorRuntimeAdapterContract(hostAdapter, { getMarkdown } 
     scrollEditorToLine: (...args) => host.scrollEditorToLine(...args),
     scrollPreviewToHeading: (...args) => host.scrollPreviewToHeading(...args),
     renderPreviewMermaid: (...args) => host.renderPreviewMermaid(...args),
+    renderPreviewMath: (...args) => host.renderPreviewMath(...args),
   });
 }
 
@@ -197,6 +200,7 @@ export function createPapyroEditorFacade(adapter) {
       scrollEditorToLine: (...args) => runtime.scrollEditorToLine(...args),
       scrollPreviewToHeading: (...args) => runtime.scrollPreviewToHeading(...args),
       renderPreviewMermaid: (...args) => runtime.renderPreviewMermaid(...args),
+      renderPreviewMath: (...args) => runtime.renderPreviewMath(...args),
     }),
   );
 }

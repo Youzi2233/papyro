@@ -21,6 +21,7 @@ function createRuntimeAdapter(overrides = {}) {
     scrollEditorToLine: () => "scrollEditorToLine",
     scrollPreviewToHeading: () => "scrollPreviewToHeading",
     renderPreviewMermaid: () => "renderPreviewMermaid",
+    renderPreviewMath: () => "renderPreviewMath",
     ...overrides,
   };
 }

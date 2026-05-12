@@ -269,6 +269,10 @@ export function createTiptapEditorRuntime({
     controls.renderPreviewMermaid,
     "navigation.renderPreviewMermaid",
   );
+  const renderPreviewMath = requireFunction(
+    controls.renderPreviewMath,
+    "navigation.renderPreviewMath",
+  );
   const protocolBridge = createTiptapRuntimeProtocolBridge({
     registry: runtimeRegistry,
     attachEditorScroll,
@@ -400,5 +404,6 @@ export function createTiptapEditorRuntime({
     scrollEditorToLine,
     scrollPreviewToHeading,
     renderPreviewMermaid,
+    renderPreviewMath,
   });
 }
