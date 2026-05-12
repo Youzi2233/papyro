@@ -96,24 +96,16 @@ fn build_startup_chrome(
     let light_bg = (243, 245, 248, 255);
     let dark_bg = (15, 17, 23, 255);
 
-    let (background_color, forced_theme_attr) = match &settings.theme {
-        Theme::System => (dark_bg, ""),
-        Theme::Light | Theme::GitHubLight | Theme::WarmReading => {
-            (light_bg, settings.theme.as_str())
-        }
-        Theme::Dark | Theme::GitHubDark | Theme::HighContrast => (dark_bg, settings.theme.as_str()),
+    let background_color = match &settings.theme {
+        Theme::System => dark_bg,
+        Theme::Light | Theme::GitHubLight | Theme::WarmReading => light_bg,
+        Theme::Dark | Theme::GitHubDark | Theme::HighContrast => dark_bg,
     };
 
-    let theme_script = if forced_theme_attr.is_empty() {
-        String::new()
-    } else {
-        format!(
-            "<script>document.documentElement.setAttribute('data-theme','{forced_theme_attr}');</script>"
-        )
-    };
+    let theme_script = papyro_ui::theme::theme_dom_script(&settings.theme);
 
     let custom_head = format!(
-        r#"{theme_script}<script>document.documentElement.dataset.platform='{platform}';</script>
+        r#"<script>{theme_script}</script><script>document.documentElement.dataset.platform='{platform}';</script>
 <link rel="icon" href="{favicon}">
 <style>
 html,body{{margin:0;padding:0;overflow:hidden;background:#f3f5f8;color:#111827;
@@ -285,7 +277,10 @@ mod tests {
             build_startup_chrome(&settings, "/favicon.ico", ".mn-shell { display: grid; }");
 
         assert_eq!(chrome.background_color, (243, 245, 248, 255));
-        assert!(chrome.custom_head.contains("data-theme','light'"));
+        assert!(chrome.custom_head.contains(r#"var theme = "light";"#));
+        assert!(chrome
+            .custom_head
+            .contains(r#"root.classList.toggle("dark", dark)"#));
         assert!(chrome
             .custom_head
             .contains("document.documentElement.dataset.platform="));
@@ -304,8 +299,9 @@ mod tests {
         let chrome = build_startup_chrome(&settings, "/favicon.ico", "");
 
         assert_eq!(chrome.background_color, (15, 17, 23, 255));
-        assert!(!chrome.custom_head.contains("setAttribute('data-theme'"));
+        assert!(chrome.custom_head.contains("var theme = null;"));
         assert!(chrome.custom_head.contains("prefers-color-scheme:dark"));
+        assert!(chrome.custom_head.contains("prefers-color-scheme: dark"));
     }
 
     #[test]
@@ -318,7 +314,8 @@ mod tests {
         let chrome = build_startup_chrome(&settings, "/favicon.ico", "");
 
         assert_eq!(chrome.background_color, (15, 17, 23, 255));
-        assert!(chrome.custom_head.contains("data-theme','github_dark'"));
+        assert!(chrome.custom_head.contains(r#"var theme = "github_dark";"#));
+        assert!(chrome.custom_head.contains("var dark = theme ? true"));
         assert!(chrome.custom_head.contains("github_dark"));
         assert!(chrome.custom_head.contains(":root:not([data-theme])"));
     }

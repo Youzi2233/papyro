@@ -425,17 +425,11 @@ fn settings_window_title(language: AppLanguage) -> &'static str {
 }
 
 fn settings_tool_window_head(theme: &Theme, language: AppLanguage) -> String {
-    let theme_script = match theme {
-        Theme::System => String::new(),
-        _ => format!(
-            "<script>document.documentElement.setAttribute('data-theme','{}');</script>",
-            theme.as_str()
-        ),
-    };
+    let theme_script = papyro_ui::theme::theme_dom_script(theme);
     let lang = settings_window_lang(language);
 
     format!(
-        r#"{theme_script}<script>document.documentElement.lang='{lang}';document.documentElement.dataset.platform='{platform}';</script>
+        r#"<script>{theme_script}</script><script>document.documentElement.lang='{lang}';document.documentElement.dataset.platform='{platform}';</script>
 <link rel="icon" href="{TOOL_WINDOW_FAVICON}">
 <style>
 html,body{{margin:0;padding:0;overflow:hidden;background:#f3f5f8;color:#111827;font-family:"SF Pro Text",-apple-system,BlinkMacSystemFont,"Segoe UI Variable","Segoe UI",system-ui,sans-serif;}}
@@ -452,8 +446,10 @@ html,body{{margin:0;padding:0;overflow:hidden;background:#f3f5f8;color:#111827;f
 }
 
 fn document_tool_window_head() -> String {
+    let theme_script = papyro_ui::theme::theme_dom_script(&Theme::System);
+
     format!(
-        r#"<script>document.documentElement.dataset.platform='{platform}';</script>
+        r#"<script>{theme_script}</script><script>document.documentElement.dataset.platform='{platform}';</script>
 <link rel="icon" href="{TOOL_WINDOW_FAVICON}">
 <style>
 html,body{{margin:0;padding:0;overflow:hidden;background:#f3f5f8;color:#111827;font-family:"SF Pro Text",-apple-system,BlinkMacSystemFont,"Segoe UI Variable","Segoe UI",system-ui,sans-serif;}}
@@ -532,7 +528,8 @@ mod tests {
     fn settings_tool_window_head_seeds_non_system_theme() {
         let head = settings_tool_window_head(&Theme::GitHubDark, AppLanguage::English);
 
-        assert!(head.contains("data-theme','github_dark'"));
+        assert!(head.contains(r#"var theme = "github_dark";"#));
+        assert!(head.contains(r#"root.classList.toggle("dark", dark)"#));
         assert!(head.contains(".mn-settings-window-shell"));
     }
 
