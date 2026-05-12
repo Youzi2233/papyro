@@ -349,7 +349,7 @@ node scripts/check-tiptap-release-smoke.js
   - 当前修复：官方 selection overlay 现在通过 Papyro 的小型 overlay-mode 模型判断显示状态。普通文本光标位于表格单元格内时，不再自动显示对象选中 chrome；overlay 只跟随真实 ProseMirror `CellSelection` 或明确的 Papyro 视觉单元格选中。
 - [x] 删除左上角选择整张表格入口，除非有明确产品动作需要它。
   - 当前覆盖：表格 overlay 不再渲染整表角落句柄；geometry 返回 `table: null`，只保留行/列 slim handle 作为轴向操作入口。
-- [ ] 默认隐藏可视句柄。只有在第一行或第一列附近有明确 hover 意图时展示行/列句柄。
+- [x] 默认隐藏可视句柄。只有在第一行或第一列附近有明确 hover 意图时展示行/列句柄。
   - 当前覆盖：行/列句柄默认保持隐藏；hover 表格单元格时，会在该行边缘显示对应行句柄，并在该列上方显示对应列句柄。句柄尺寸跟随行高或列宽，因此更接近官方轴向 chrome，同时不会遮住可编辑单元格文本。
   - 当前打磨：行/列句柄现在贴齐表格网格，朝向表格的一侧边框保持透明；鼠标从表格跨入顶部/左侧轨道时会刷新为对应轴向 hover，因此句柄不会在可点击前消失。
   - 当前修复：表格 chrome 现在会在 document 级别继续跟踪浮动行/列句柄上的 hover，因此鼠标从单元格跨到外部句柄时，句柄不会立刻消失。
@@ -357,7 +357,7 @@ node scripts/check-tiptap-release-smoke.js
   - 当前修复：官方 `tableHandleExtension` 不再因为鼠标按在单元格内就隐藏行/列句柄。句柄可见性现在只跟 hover 绑定，不再和单元格选中或拖选状态耦合。
   - 当前打磨：hover 单元格只显示行/列句柄；整行/整列的雾蒙层和主题外轮廓只保留给点击轴向句柄后的真实选中态。
   - 当前架构：官方 table-node 负责可见的行/列句柄、选区 overlay、单元格 handle 菜单和扩展按钮。Papyro 迁移期 table toolbar 不再是默认运行时路径；无 DOM 命令桥只保留宿主命令契约，旧 DOM renderer 仅作为显式 fallback 和测试路径。
-- [ ] 整个单元格表面都能进入编辑和聚焦，不应该只有中间一小块能触发。
+- [x] 整个单元格表面都能进入编辑和聚焦，不应该只有中间一小块能触发。
   - 纠偏要求：短点击不能再提交单个单元格 ProseMirror `CellSelection`。单个单元格选中必须是 Papyro 视觉状态，叠加在正常 ProseMirror 文本选区之上，让光标定位和单元格内文本拖选保持自然。
   - 当前目标：表格范围拖选仍然可以从已有文字、空白单元格表面或空段落开始，但 controller 只在指针跨入另一个单元格后才升级为真实表格范围。
   - 当前目标：双击不是唯一文字编辑入口。普通点击必须同时显示单元格选中边框，并把文本光标保留在鼠标位置。
@@ -376,7 +376,7 @@ node scripts/check-tiptap-release-smoke.js
   - 当前目标：空白单元格和空段落短点击必须有视觉 class 测试；范围选择测试必须证明只有拖到另一个单元格后才调用 `setCellSelection`。
   - 当前修复：初始 pointerdown 仍保留文本光标定位，但视觉单元格选中后的 follow-up browser click 会被抑制，避免对象选中边框立刻又被原生单元格/文字选择行为覆盖。
   - 当前修复：调用 `setCellSelection` 前会把 DOM 表格单元格解析回真实 ProseMirror `tableCell` / `tableHeader` 节点位置；真实挂载测试现在覆盖了之前 fixture 把 `posAtDOM(cell, 0)` 误当作可选中位置的假阳性。
-- [ ] 多单元格框选后显示克制遮罩，并在选区边缘显示小操作触发点。
+- [x] 多单元格框选后显示克制遮罩，并在选区边缘显示小操作触发点。
   - 当前覆盖：表格单元格操作触发器默认是边缘小点，只在 hover、focus 或打开状态展开为紧凑四点 grip。
   - 当前打磨：单个单元格的操作触发点现在优先按 ProseMirror 单元格选区在表格网格中的真实位置锚定，而不是沿用过期的 active cell 矩形。打开触发点时也复用这个已选位置，避免用户选中另一个单元格后菜单又跳回之前活跃的单元格。
   - 当前打磨：官方 table-node 层现在提供可见的单元格 handle 菜单触发点。真实运行时不再挂载旧快捷新增轨道、单元格触发点、插入轨道或行列句柄，因此不会留下与官方层竞争的旧焦点目标。
@@ -384,7 +384,7 @@ node scripts/check-tiptap-release-smoke.js
   - 当前纠偏：表格右侧单元格操作触发点现在只服务单个单元格和单元格范围选区；行/列菜单从细轴向句柄打开，整表动作也不再伪装成泛化的单元格操作。
   - 当前修复：官方 selection overlay 现在会把选区作用域区分为单元格、单元格范围、行、列和整表。单元格菜单和角点范围 resize 句柄只在单元格/范围作用域渲染，行、列和整表选中不再误露出单元格 chrome。
   - 当前打磨：已选单元格的操作触发点默认收敛为更小的边缘圆点，只有 hover、focus 或菜单打开时才展开为完整四点 grip，减少它与官方列宽拖拽 handle 的竞争。
-- [ ] 增加单元格菜单：合并、拆分、对齐、文字颜色、背景颜色、清除格式、复制、删除内容。
+- [x] 增加单元格菜单：合并、拆分、对齐、文字颜色、背景颜色、清除格式、复制、删除内容。
   - 当前覆盖：真实运行时的表格上下文菜单从 editor 入口注入，并由 React 组件渲染。headless 命令模型和 fake-DOM fallback 会保留到其余表格 chrome 完成迁移。
   - 当前打磨：React 渲染的表格命令行现在与 fallback renderer 使用同一套“标题 + 描述”的可访问标签契约，在表格 chrome 继续迁入 React 时保持屏幕阅读器语义一致。
   - 当前打磨：真实 React 表格上下文菜单现在使用专用 Lucide 图标映射渲染表格操作，迁移期 DOM fallback 继续保留 CSS 绘制图标；运行时菜单更接近官方 UI 组件质感，同时测试不耦合具体 SVG 标记。
@@ -394,7 +394,7 @@ node scripts/check-tiptap-release-smoke.js
   - 当前覆盖：选中单元格现在支持默认、弱化、强调、危险四种文字颜色命令，底层复用共享 `TextStyle` mark 路径。该命令作用于 ProseMirror 单元格选区，也支持从同一菜单清除颜色，并已补齐真实 editor 挂载测试、菜单元数据和国际化标签。
   - 当前覆盖：选中的表格单元格现在可以通过表格作用域命令复制为纯文本 TSV，底层使用官方 `selectedRect` 网格语义，不修改文档内容，并已补齐菜单文案、复制图标和真实 editor 挂载测试。
   - 当前决策：可见的单元格句柄菜单已经切回生成出来的官方付费 `table-node` 实现。Papyro 额外表格命令保留为兼容/fallback 管线；用户可见的单元格菜单行为先跟随授权组件，只在确实需要时再做很小、明确的适配。
-- [ ] 从细边缘句柄打开行/列操作菜单。
+- [x] 从细边缘句柄打开行/列操作菜单。
   - 当前覆盖：行/列上下文菜单现在也暴露与单元格选区一致的清空内容和清除样式动作，轴向选区不需要退回单元格菜单，也能复用官方表格清空/重置语义。
   - 当前打磨：行/列细句柄会先冻结自己的几何位置，再选择对应轴并打开菜单，避免 table chrome 重绘后菜单锚点漂移。
   - 当前打磨：行/列句柄现在是表格网格外侧的整段 strip。普通单元格 hover 会露出相关轴向入口；明确 gutter/边缘 hover 仍然把意图收窄到当前 hover 的轴。
@@ -406,17 +406,17 @@ node scripts/check-tiptap-release-smoke.js
   - 当前覆盖：行/列上下文菜单现在也暴露对齐、文字颜色和背景颜色命令，整行/整列样式复用与单元格范围一致的 ProseMirror `CellSelection` 和 Tiptap 表格属性语义。
   - 当前覆盖：行/列上下文菜单现在暴露重复行/列动作，作为官方 `table-node` duplicate 能力在免费/开源路径下的 Papyro 等价实现。常规无合并单元格表格会保留被选中行/列的内容；遇到 merged-cell 结构时会禁用，避免静默破坏表格结构。
   - 当前决策：可见的行/列句柄菜单保持在生成出来的官方付费 `table-node` 实现上。source-level 测试会守住不要再把 Papyro 自有菜单 wrapper re-export 回官方组件路径。
-- [ ] 列边框支持 resize，即使当前已有单元格选中也不能失效。
+- [x] 列边框支持 resize，即使当前已有单元格选中也不能失效。
   - 当前覆盖：已选中的表格单元格不会仅因为选中态就露出列 resize handle；resize chrome 只跟随 hover 或正在 resize 的明确意图。
   - 当前打磨：选中/激活单元格现在保留 16px 的列宽调整命中区，并用克制的主题色细 rail 提示可拖拽，避免选中后 resize 入口变得不可发现。
   - 当前打磨：表格单元格和内部常见块级内容都会保持整面可编辑的文本光标，同时保留选中/激活单元格上的官方列 resize 命中区，避免编辑入口和 resize 入口互相抵消。
-- [ ] 增加快捷新增行/列轨道：贴近表格边缘的细长轨道，宽/高跟随整表，中间是 `+`。
+- [x] 增加快捷新增行/列轨道：贴近表格边缘的细长轨道，宽/高跟随整表，中间是 `+`。
   - 当前覆盖：快捷新增轨道已贴着真实表格网格边缘，使用 12px 的紧凑 chrome，在亮色/暗色主题下保持对比度，但不再像调试 overlay。
   - 当前打磨：快捷新增轨道意图热区收紧到 12px，可见轨道收敛为 14px，减少在表格与相邻块之间移动时误露出新增行/列控件；表格 hover 比较也会忽略同一语义目标内的普通鼠标抖动，避免 overlay 重复重绘。
   - 当前打磨：快捷新增 chrome 现在在共享模型中区分可见的细轨道和稍大的命中区，React chrome 与迁移期 DOM fallback 共用同一套 visual-rect CSS 契约。
   - 当前修复：tableWrapper 现在使用 `overflow: hidden`（而非仅 `overflow-y: hidden`），防止通过 portal 注入的 extend 按钮因 `offset(4)` 超出 padding 区域导致水平滚动条。
   - 当前修复：菜单和下拉菜单原语容器的 z-index 从 50 提升到 200，确保渲染在表格 chrome 元素（z-index 158–170）之上。
-- [ ] 表格控件不能出现在相邻代码块或其它非表格内容下面。
+- [x] 表格控件不能出现在相邻代码块或其它非表格内容下面。
   - 当前覆盖：快捷新增行/列轨道现在要求 target 属于表格自身，或是明确的 editor rail 目标；相邻代码块和其它复杂块不能再借用表格坐标误显示表格新增 chrome。
 - [x] 为对齐、表头、合并单元格 fallback、单元格背景 metadata 补 Markdown round-trip fixtures。
   - 当前覆盖：release smoke 同时检查主无损 pipe-table fixture，以及带背景色、colspan metadata 的独立 HTML fallback 表格；真实挂载 runtime smoke 会验证复杂表格属性能够通过 HTML parse 保留。
@@ -455,19 +455,19 @@ node scripts/check-tiptap-release-smoke.js
 
 任务：
 
-- [ ] 如果能提升可维护性，用 React node view 实现代码块 chrome。
+- [x] 如果能提升可维护性，用 React node view 实现代码块 chrome。
   - 当前覆盖：桌面和移动运行时现在通过 Tiptap 扩展边界注入基于 React `NodeViewWrapper`/`NodeViewContent` 的代码块 node view。它保留官方 React node-view 生命周期，把代码块属性同步到真实 ProseMirror node-view 根节点，供句柄和样式识别；在 React `EditorContent` content component 尚未 ready 时仍回退到 DOM node view。
-- [ ] 显示语言标签，并支持切换语言。
+- [x] 显示语言标签，并支持切换语言。
   - 当前覆盖：代码块已提供语言 badge、显式/自动状态数据、紧凑语言 token 和可编辑语言菜单。语言列表现在由共享 React command model 驱动，React node view 和迁移期 fallback 都复用同一套命令模型。
   - 当前打磨：可见语言 chip 现在显示实际语法 token（`JS`、`RS`、`TXT` 等），自动检测语言也会显示检测结果 token，而不是泛泛的“语言”标签。
-- [ ] 增加复制按钮、自动换行开关；如果定义了 Markdown 策略，再支持 filename/title metadata。
+- [x] 增加复制按钮、自动换行开关；如果定义了 Markdown 策略，再支持 filename/title metadata。
   - 当前覆盖：代码块 node-view chrome 已提供低噪声复制和软换行控件，不改变保存后的 Markdown。复制/换行标签和状态已经进入共享 React command model，供后续 React node view 直接复用。
-- [ ] 亮色和暗色模式都使用真正的代码高亮主题。
+- [x] 亮色和暗色模式都使用真正的代码高亮主题。
   - 当前覆盖：Hybrid 代码块使用 lowlight 的 `.hljs-*` class，并通过主题 token、亮色模式左侧强调线与 smoke 检查覆盖核心语法分组。
   - 当前打磨：代码语言 chrome 增加主题感知的亮色 chip surface，语法控件不再像一整块纯蓝色区域。
 - [x] fenced code language 通过 Markdown round-trip 保留。
   - 当前覆盖：release smoke 和 Markdown 测试已覆盖 Rust、JavaScript、Markdown、plaintext、自定义安全语言 id 以及无语言自动 fence，避免保存笔记时静默丢失代码块语言元数据。
-- [ ] 为代码块前后增加插入入口，尤其是表格紧挨代码块的场景。
+- [x] 为代码块前后增加插入入口，尤其是表格紧挨代码块的场景。
   - 当前覆盖：复杂块插入 rail 已有独立且更宽容的底部热区，用于 table/code 相邻处插入，同时不扩大表格 resize 或 quick-add 的意图范围。
   - 当前覆盖：代码块后继续写作时优先使用 Tiptap 官方 `exitCode()` 命令，不可用时再回退到显式插入段落。
   - 当前覆盖：复杂块插入入口现在同时支持顶部和底部 rail。hover 到代码块或表格类复杂块顶部时，会在该块之前打开共享 slash 插入流程，因此表格紧挨代码块时，可以在二者之间插入新段落或 Markdown block，不再依赖难以命中的双击位置。
@@ -498,23 +498,23 @@ node scripts/check-tiptap-release-smoke.js
 
 任务：
 
-- [ ] 将浮动格式栏迁入 React。
+- [x] 将浮动格式栏迁入 React。
   - 当前覆盖：真实桌面/移动运行时已经在 editor 入口边界注入 React 渲染的格式工具栏 view；现有 controller 和 DOM fallback 暂时保留，用于测试与迁移期稳定性。
-- [ ] 用 Tiptap state selector 获取 active marks，不再 DOM polling。
+- [x] 用 Tiptap state selector 获取 active marks，不再 DOM polling。
   - 当前覆盖：active mark、文字颜色和高亮状态现在进入纯 format snapshot；React runtime 通过 Tiptap 文档推荐的 `useEditorState` selector 订阅，迁移期 controller 也消费同一份 snapshot，确保 controller 退场前两条路径的 active-state 语义一致。
-- [ ] 增加加粗、斜体、删除线、行内代码、链接、文字颜色、高亮、清除格式、turn into。
+- [x] 增加加粗、斜体、删除线、行内代码、链接、文字颜色、高亮、清除格式、turn into。
   - 当前覆盖：headless 行内格式命令模型现在已经暴露 Tiptap 官方免费版的加粗、斜体、下划线、删除线、行内代码、链接、文字颜色、高亮和 `unsetAllMarks` 清除格式命令，并把本地化标签同时供给 React view 和 DOM fallback。
   - 当前覆盖：文字颜色复用现有 `TextStyle` + 官方 `Color` 扩展路径，通过 `setColor` 和 `unsetColor` 执行；浮动格式栏提供默认、弱化、强调、危险四个紧凑色板按钮。
   - 当前覆盖：高亮复用官方 `Highlight.configure({ multicolor: true })` 扩展路径，通过 `toggleHighlight({ color })` 和 `unsetHighlight()` 执行；浮动格式栏提供黄色、蓝色、绿色和清除四个紧凑色板按钮。
   - 当前覆盖：链接编辑已改用 Papyro React/Dioxus 安全的 popover，不再使用浏览器原生 prompt；它通过 `editor.getAttributes("link").href` 读取当前链接，恢复选区后用 Tiptap 官方 `setLink` 和 `unsetLink` 命令应用或移除链接。
   - 当前覆盖：`turn into` 按钮现在会打开共享子菜单，包含段落、标题、列表、引用、标注和代码块转换；其中 code-block 转换已经纳入这套共享子菜单，让浮动工具栏和块操作菜单复用同一份命令源。
-- [ ] 靠近视口边缘时定位稳定。
+- [x] 靠近视口边缘时定位稳定。
   - 当前覆盖：ProseMirror remount/selection race 期间如果 `coordsAtPos` 短暂失败，工具栏刷新会沿用 React view 一致的防护路径，不再因为坐标查询异常中断。
-- [ ] 支持键盘访问和焦点回到编辑器。
+- [x] 支持键盘访问和焦点回到编辑器。
   - 当前覆盖：Hybrid 模式下 `Mod+K` 会打开 Papyro 链接编辑器，遵循 Tiptap Link 扩展文档里自定义链接 UI 的建议；当光标折叠在链接内时，会先用 `extendMarkRange("link")` 扩展到整段链接再编辑。
   - 当前覆盖：`Alt+F10` 可从编辑器选区打开浮动格式栏；方向键、Home/End、Enter/Space 和 Escape 已支持键盘导航、执行、关闭和焦点回到编辑器。
   - 当前覆盖：React 工具栏和 DOM fallback 已共享 `turn into` 子菜单的 `aria-activedescendant` 契约，包括独立子菜单 owner id、roving tab index，以及仅在键盘导航时触发的滚动同步。
-- [ ] 本地化 label 和 tooltip。
+- [x] 本地化 label 和 tooltip。
   - 当前覆盖：当前工具栏命令已从共享 Tiptap i18n model 提供英文和简体中文 title 与 accessible label。
 
 验收标准：

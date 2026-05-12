@@ -19,16 +19,18 @@ Papyro 是一个基于 Rust 和 Dioxus 0.7 的桌面优先 Markdown 应用。它
 
 ## 当前状态
 
-| 模块 | 状态 |
-| --- | --- |
-| 桌面端 | 可用于开发调试 |
-| 移动端 | 已接入共享运行时，还不是生产级 |
+
+| 模块          | 状态                         |
+| ----------- | -------------------------- |
+| 桌面端         | 可用于开发调试                    |
+| 移动端         | 已接入共享运行时，还不是生产级            |
 | Markdown 编辑 | Source、Preview、Hybrid 三种模式 |
-| Mermaid | Preview 和 Hybrid 已有渲染与编辑路径 |
-| 搜索和快速打开 | 已有基础 workspace 搜索和最近文件 |
-| 恢复 | 已有自动保存与恢复草稿流程 |
-| 打包发布 | 尚未完成 |
-| License | MIT |
+| Mermaid     | Preview 和 Hybrid 已有渲染与编辑路径 |
+| 搜索和快速打开     | 已有基础 workspace 搜索和最近文件     |
+| 恢复          | 已有自动保存与恢复草稿流程              |
+| 打包发布        | 尚未完成                       |
+| License     | MIT                        |
+
 
 ## 快速开始
 
@@ -123,21 +125,23 @@ flowchart TD
 
 ## 文档入口
 
-| 目标 | 中文 | English |
-| --- | --- | --- |
-| 文档地图 | [docs/zh-CN/README.md](docs/zh-CN/README.md) | [docs/README.md](docs/README.md) |
-| 架构导览 | [docs/zh-CN/architecture.md](docs/zh-CN/architecture.md) | [docs/architecture.md](docs/architecture.md) |
-| 开发规范 | [docs/zh-CN/development-standards.md](docs/zh-CN/development-standards.md) | [docs/development-standards.md](docs/development-standards.md) |
-| 产品路线图 | [docs/zh-CN/roadmap.md](docs/zh-CN/roadmap.md) | [docs/roadmap.md](docs/roadmap.md) |
-| Markdown 编辑器 | [docs/zh-CN/editor.md](docs/zh-CN/editor.md) | [docs/editor.md](docs/editor.md) |
-| UI/UX 重构 | [docs/zh-CN/ui-information-architecture.md](docs/zh-CN/ui-information-architecture.md) | [docs/ui-information-architecture.md](docs/ui-information-architecture.md) |
-| UI 界面审计 | [docs/zh-CN/ui-surface-audit.md](docs/zh-CN/ui-surface-audit.md) | [docs/ui-surface-audit.md](docs/ui-surface-audit.md) |
-| App icons | [docs/zh-CN/app-icons.md](docs/zh-CN/app-icons.md) | [docs/app-icons.md](docs/app-icons.md) |
-| 性能预算 | [docs/zh-CN/performance-budget.md](docs/zh-CN/performance-budget.md) | [docs/performance-budget.md](docs/performance-budget.md) |
-| Release packaging | [docs/zh-CN/release-packaging.md](docs/zh-CN/release-packaging.md) | [docs/release-packaging.md](docs/release-packaging.md) |
-| Release QA | [docs/zh-CN/release-qa.md](docs/zh-CN/release-qa.md) | [docs/release-qa.md](docs/release-qa.md) |
-| Known limitations | [docs/zh-CN/known-limitations.md](docs/zh-CN/known-limitations.md) | [docs/known-limitations.md](docs/known-limitations.md) |
-| AI skills | [docs/zh-CN/ai-skills.md](docs/zh-CN/ai-skills.md) | [docs/ai-skills.md](docs/ai-skills.md) |
+
+| 目标                | 中文                                                                                     | English                                                                    |
+| ----------------- | -------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| 文档地图              | [docs/zh-CN/README.md](docs/zh-CN/README.md)                                           | [docs/README.md](docs/README.md)                                           |
+| 架构导览              | [docs/zh-CN/architecture.md](docs/zh-CN/architecture.md)                               | [docs/architecture.md](docs/architecture.md)                               |
+| 开发规范              | [docs/zh-CN/development-standards.md](docs/zh-CN/development-standards.md)             | [docs/development-standards.md](docs/development-standards.md)             |
+| 产品路线图             | [docs/zh-CN/roadmap.md](docs/zh-CN/roadmap.md)                                         | [docs/roadmap.md](docs/roadmap.md)                                         |
+| Markdown 编辑器      | [docs/zh-CN/editor.md](docs/zh-CN/editor.md)                                           | [docs/editor.md](docs/editor.md)                                           |
+| UI/UX 重构          | [docs/zh-CN/ui-information-architecture.md](docs/zh-CN/ui-information-architecture.md) | [docs/ui-information-architecture.md](docs/ui-information-architecture.md) |
+| UI 界面审计           | [docs/zh-CN/ui-surface-audit.md](docs/zh-CN/ui-surface-audit.md)                       | [docs/ui-surface-audit.md](docs/ui-surface-audit.md)                       |
+| App icons         | [docs/zh-CN/app-icons.md](docs/zh-CN/app-icons.md)                                     | [docs/app-icons.md](docs/app-icons.md)                                     |
+| 性能预算              | [docs/zh-CN/performance-budget.md](docs/zh-CN/performance-budget.md)                   | [docs/performance-budget.md](docs/performance-budget.md)                   |
+| Release packaging | [docs/zh-CN/release-packaging.md](docs/zh-CN/release-packaging.md)                     | [docs/release-packaging.md](docs/release-packaging.md)                     |
+| Release QA        | [docs/zh-CN/release-qa.md](docs/zh-CN/release-qa.md)                                   | [docs/release-qa.md](docs/release-qa.md)                                   |
+| Known limitations | [docs/zh-CN/known-limitations.md](docs/zh-CN/known-limitations.md)                     | [docs/known-limitations.md](docs/known-limitations.md)                     |
+| AI skills         | [docs/zh-CN/ai-skills.md](docs/zh-CN/ai-skills.md)                                     | [docs/ai-skills.md](docs/ai-skills.md)                                     |
+
 
 ## AI 协作
 

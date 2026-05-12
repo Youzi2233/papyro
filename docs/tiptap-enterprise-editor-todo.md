@@ -353,7 +353,7 @@ Tasks:
   - Current fix: the official selection overlay now uses a small Papyro overlay-mode model. A normal text caret inside a table cell no longer shows object-selection chrome by itself; the overlay follows either a real ProseMirror `CellSelection` or an explicit Papyro visual cell selection.
 - [x] Remove the top-left whole-table selector unless a clear product action requires it.
   - Current coverage: the table overlay no longer renders a whole-table corner handle; geometry now returns `table: null`, leaving row/column handles as the only axis affordances.
-- [ ] Remove visible handles by default. Show row/column handles only on intentional table hover, with a full-span affordance for the hovered row or column.
+- [x] Remove visible handles by default. Show row/column handles only on intentional table hover, with a full-span affordance for the hovered row or column.
   - Current coverage: row and column handles now stay hidden by default, but hovering a table cell reveals the matching row handle at the row edge and the matching column handle above that column. The handle dimensions track the row height or column width, so the affordance reads like the official axis chrome without covering editable cell text.
   - Current polish: row and column handles now sit flush against the table grid, keep their table-facing border transparent, and the hover state refreshes as the pointer crosses into the rail so the handle does not disappear before it can be clicked.
   - Current fix: table chrome now keeps tracking hover at the document level while the pointer is over the floating row or column handle, so crossing from the table cell into the external handle does not immediately dismiss the handle.
@@ -361,7 +361,7 @@ Tasks:
   - Current fix: the official `tableHandleExtension` no longer hides row/column handles when the pointer is held down inside a cell. Handle visibility now remains hover-driven instead of being coupled to cell selection or drag-selection state.
   - Current polish: hovering a cell reveals only the row and column handles. Full row or column mist and theme outlines are reserved for actual row/column selection after the axis handle is clicked.
   - Current architecture: official table-node owns visible row/column handles, selection overlay, cell handle menu, and extend buttons. Papyro's migration table toolbar is no longer the default runtime path; a no-DOM command bridge keeps the host command contract available while the legacy DOM renderer remains only as an explicit fallback/test path.
-- [ ] Make the entire cell surface editable and focusable, not only a tiny center area.
+- [x] Make the entire cell surface editable and focusable, not only a tiny center area.
   - Correction required: short clicks must no longer commit a single-cell ProseMirror `CellSelection`. The single-cell state is a Papyro visual selection layered over normal ProseMirror text selection so caret placement and in-cell text dragging stay natural.
   - Current target: cell-range dragging can still start from filled text, blank cell surfaces, or empty paragraphs, but the controller should promote to a real table range only after the pointer crosses into another cell.
   - Current target: double-click is not the only editing affordance. A normal click must both show the selected-cell border and keep the text caret at the pointer location.
@@ -380,7 +380,7 @@ Tasks:
   - Current target: blank-cell and empty-paragraph short clicks are covered by visual-class tests, and range selection tests must prove `setCellSelection` runs only after drag crosses into another cell.
   - Current fix: the initial pointerdown still preserves text-caret placement, but the follow-up browser click is suppressed after a visual cell selection so the object-selection border cannot be immediately overwritten by native cell/text selection behavior.
   - Current fix: DOM table cells are resolved back to their real ProseMirror `tableCell` / `tableHeader` node positions before calling `setCellSelection`; real mounted coverage now guards against the earlier false-positive fixture where `posAtDOM(cell, 0)` was incorrectly treated as already selectable.
-- [ ] On cell selection range, show a restrained overlay and a small action trigger on the range edge.
+- [x] On cell selection range, show a restrained overlay and a small action trigger on the range edge.
   - Current coverage: the table cell action trigger idles as a small edge dot and expands into a compact four-dot grip only on hover, focus, or open state.
   - Current polish: the single-cell trigger now has a tested right-edge center intent zone. Ordinary cell hover stays clean, selected cells get a restrained border and right-edge rail, and only deliberate edge hover or an active selection reveals the action point.
   - Current polish: single-cell action triggers now anchor from the actual ProseMirror cell-selection position in the table grid, not a stale active-cell rectangle. Opening the trigger reuses that selected position, so the menu no longer jumps back to a previously active cell after the user selects a different cell.
@@ -389,7 +389,7 @@ Tasks:
   - Current correction: the right-edge table cell action trigger is now scoped only to single-cell and cell-range selections. Row and column menus open from their slim axis handles, and table-level actions no longer masquerade as generic cell actions.
   - Current fix: the official selection overlay now classifies its scope as cell, range, row, column, or whole table. Cell menus and corner range-resize handles render only for cell/range scope, so row, column, and table selections no longer expose misleading cell chrome.
   - Current polish: the selected-cell action trigger now idles as a smaller dot hit box and only expands to the full four-dot grip on hover, focus, or open state. This keeps the resize border cleaner and reduces competition with the official column-resize handle.
-- [ ] Add cell action menu: merge, split, alignment, text color, background color, clear formatting, copy, delete contents.
+- [x] Add cell action menu: merge, split, alignment, text color, background color, clear formatting, copy, delete contents.
   - Current coverage: the table context menu is injected at the editor entry boundary and rendered by React in the real runtime. The headless command model and fake-DOM fallback remain in place while the rest of table chrome migrates.
   - Current polish: React-rendered table command rows now use the same title-plus-description accessible label contract as the fallback renderer, keeping screen-reader semantics consistent while table chrome continues moving to React.
   - Current polish: the real React table context menu now uses a dedicated Lucide icon map for table actions, while the migration DOM fallback keeps the CSS-drawn icons. This makes the runtime menu closer to the official UI component quality without coupling tests to generated SVG markup.
@@ -399,7 +399,7 @@ Tasks:
   - Current coverage: selected cells now support default/muted/accent/danger text-color commands backed by the shared `TextStyle` mark path. The command operates on ProseMirror cell selections, clears color through the same menu, and is covered by mounted-editor tests plus context-menu metadata/i18n.
   - Current coverage: selected table cells can now be copied as plain TSV text through a table-scoped command backed by the official `selectedRect` grid semantics. The menu action is localized, has a dedicated copy icon, does not mutate the document, and is covered by mounted-editor tests.
   - Current decision: the visible cell handle menu now uses the generated official paid `table-node` implementation again. Papyro keeps extra table commands as compatibility/fallback plumbing, while the user-facing cell-menu behavior follows the licensed component until a small, explicit adapter is needed.
-- [ ] Add row and column action menus from slim edge handles.
+- [x] Add row and column action menus from slim edge handles.
   - Current coverage: row and column context menus now expose the same clear-content and clear-style actions as cell selections, so axis selections can reuse the official table clear/reset semantics without switching back to a cell menu.
   - Current polish: slim row/column handles freeze their own geometry before selecting the axis, so the context menu opens from the clicked handle instead of drifting after the table chrome re-renders.
   - Current polish: row/column handles are full-span strips outside the table grid. Ordinary cell hover reveals the relevant axis entries, and explicit gutter/edge hover still narrows intent to the directly hovered axis.
@@ -411,19 +411,19 @@ Tasks:
   - Current coverage: row and column context menus now expose alignment, text-color, and background-color commands, so whole-axis styling uses the same ProseMirror `CellSelection` and Tiptap table attributes as cell range styling.
   - Current coverage: row and column context menus now expose duplicate row/column actions as a free/open Papyro equivalent to the official `table-node` duplicate affordance. The implementation preserves selected row/column content for regular non-spanning tables and disables itself for merged-cell structures instead of risking silent table corruption.
   - Current decision: visible row/column handle menus now stay on the generated official paid `table-node` implementation. Source-level tests guard against re-exporting the Papyro-owned menu wrappers back into the official component path.
-- [ ] Add resize affordance on column borders that still works while a cell is active.
+- [x] Add resize affordance on column borders that still works while a cell is active.
   - Current coverage: selected table cells no longer reveal column resize handles by selection alone; resize chrome stays tied to hover or active resize intent.
   - Current polish: selected and active cells now keep a wider 16px resize hit zone with a restrained accent rail, so column resizing remains discoverable after cell selection without adding always-on table chrome.
   - Current polish: selected and active cells keep the resize hit zone invisible until the pointer is actually on the column edge, matching the official clean-default table pattern more closely.
   - Current polish: table cells and common inner block content now keep a full-surface text cursor while preserving the official column-resize handle hit area on selected or active cells, so editing affordance and resize affordance do not cancel each other.
-- [ ] Add quick row and column insertion rails: slim full-width/full-height rails with centered `+`, close enough to the table to be discoverable.
+- [x] Add quick row and column insertion rails: slim full-width/full-height rails with centered `+`, close enough to the table to be discoverable.
   - Current coverage: quick-add rails are now flush with the real table grid edge, use compact 12px hit chrome, and keep light/dark contrast without reading like debug overlays.
   - Current polish: quick-add rails keep the same slim visual rail but now use a larger 18px pointer hit area and treat the table's real bottom/right edge as part of the affordance, so users do not need to hunt for an off-by-one outside gap.
   - Current polish: the quick-add rail intent zone is now tightened to 12px and the visible rail is 14px, which reduces accidental row/column add controls when moving between adjacent blocks while keeping the edge discoverable. Table hover comparisons ignore ordinary pointer jitter inside the same semantic target, preventing redundant overlay re-renders.
   - Current polish: quick-add chrome now separates its visible slim rail from a slightly larger hit target in the shared model, and both React chrome and the migration DOM fallback consume the same visual-rect CSS contract.
   - Current fix: tableWrapper now uses `overflow: hidden` (not just `overflow-y: hidden`) to prevent horizontal scrollbars caused by extend buttons portaled inside with `offset(4)` pushing content beyond the padded area.
   - Current fix: menu and dropdown-menu primitive containers elevated from z-index 50 to 200 so they render above table chrome elements (z-index 158–170).
-- [ ] Keep table controls hidden for adjacent code blocks or other non-table content.
+- [x] Keep table controls hidden for adjacent code blocks or other non-table content.
   - Current coverage: quick-add row/column rails now require a table-owned target or explicit editor rail target, so adjacent code blocks and other complex blocks cannot accidentally display table insertion chrome.
 - [x] Add Markdown round-trip fixtures for alignment, header rows, merged-cell fallback, and cell background metadata if supported.
   - Current coverage: release smoke now checks both the main lossless pipe-table fixture and a dedicated HTML fallback table with background colors and colspan metadata; the mounted runtime smoke verifies complex table attrs survive HTML parse.
@@ -462,20 +462,20 @@ Goal: code blocks should read and edit like professional Markdown blocks.
 
 Tasks:
 
-- [ ] Use a React node view for code block chrome if it improves maintainability.
+- [x] Use a React node view for code block chrome if it improves maintainability.
   - Current coverage: the desktop/mobile runtime now injects a React `NodeViewWrapper`/`NodeViewContent` code block node view through the Tiptap extension boundary. It keeps the official React node-view lifecycle intact, applies code-block attributes to the real ProseMirror node-view root for handles/styling, and falls back to the DOM node view until the React `EditorContent` content component is ready.
-- [ ] Show language label with a language switcher.
+- [x] Show language label with a language switcher.
   - Current coverage: code blocks expose a language badge, explicit/auto state data, compact language tokens, and an editable language menu. The language list is now backed by the shared React command model in both the React node view and the migration fallback.
   - Current polish: the visible language chip now shows the effective syntax token (`JS`, `RS`, `TXT`, etc.) instead of a generic "Lang" label, including auto-detected languages.
   - Current polish: the React language menu now renders each option with a stable language token, localized title, and short explanation so users can understand whether the block is auto-detected, plain text, or syntax-highlighted.
-- [ ] Add copy button, wrap toggle, and optional filename/title metadata if Markdown strategy is defined.
+- [x] Add copy button, wrap toggle, and optional filename/title metadata if Markdown strategy is defined.
   - Current coverage: code blocks expose quiet copy and soft-wrap controls in the node-view chrome without changing saved Markdown. Copy/wrap labels and states are now represented by the shared React command model for the future React node view.
-- [ ] Use a real highlighter theme for light and dark modes.
+- [x] Use a real highlighter theme for light and dark modes.
   - Current coverage: Hybrid code blocks use lowlight `.hljs-*` classes with theme-scoped token palettes, a light-mode left accent rail, and smoke coverage for the core syntax groups.
   - Current polish: code-language chrome uses theme-aware light-mode chip surfaces so the syntax controls no longer read as a flat blue block.
 - [x] Preserve fenced code language through Markdown round-trip.
   - Current coverage: release smoke and Markdown tests now cover Rust, JavaScript, Markdown, plaintext, custom safe language ids, and language-less automatic fences so saved notes cannot silently drop code fence metadata.
-- [ ] Add insertion affordance before and after code blocks, especially when adjacent to tables.
+- [x] Add insertion affordance before and after code blocks, especially when adjacent to tables.
   - Current coverage: the complex-block insert rail has an independent, more forgiving bottom hot zone for table/code adjacency without widening table resize or quick-add intent.
   - Current coverage: code-block continuation now prefers Tiptap's official `exitCode()` command before falling back to explicit paragraph insertion.
   - Current coverage: complex block insertion now supports both top and bottom rails. Hovering the top edge of a code/table-like complex block opens the shared slash insert flow before that block, so a table immediately followed by a code block can receive a new paragraph or inserted Markdown block between them without relying on fragile double-click placement.
@@ -506,23 +506,23 @@ Goal: selected text formatting should be compact, stable, and keyboard accessibl
 
 Tasks:
 
-- [ ] Move floating toolbar into React.
+- [x] Move floating toolbar into React.
   - Current coverage: the real desktop/mobile runtime now injects a React-rendered format toolbar view at the editor entry boundary, while the existing controller and DOM fallback remain for tests and migration safety.
-- [ ] Use Tiptap state selectors for active marks instead of DOM polling.
+- [x] Use Tiptap state selectors for active marks instead of DOM polling.
   - Current coverage: active mark, text-color, and highlight state now flows through a pure format snapshot. The React runtime subscribes with Tiptap's documented `useEditorState` selector path, and the migration controller consumes the same snapshot so active-state semantics stay aligned until the controller is retired.
-- [ ] Add bold, italic, strike, inline code, link, text color, highlight, clear formatting, and turn into.
+- [x] Add bold, italic, strike, inline code, link, text color, highlight, clear formatting, and turn into.
   - Current coverage: the headless inline-format command model now exposes Tiptap's official/free bold, italic, underline, strike, inline code, link, text color, highlight, and `unsetAllMarks` clear-formatting commands, with localized labels feeding both the React view and DOM fallback.
   - Current coverage: text color uses the existing `TextStyle` + official `Color` extension path through `setColor` and `unsetColor`, with compact swatch buttons for default, muted, accent, and danger text.
   - Current coverage: highlight uses the official `Highlight.configure({ multicolor: true })` extension path with `toggleHighlight({ color })` and `unsetHighlight()`, exposed as compact yellow, blue, green, and clear swatches.
   - Current coverage: link editing now uses a Papyro React/Dioxus-safe popover instead of a native prompt; it reads the current href through `editor.getAttributes("link").href`, restores the selected range, and applies/removes links through Tiptap's official `setLink` and `unsetLink` commands.
   - Current coverage: the `turn into` button now opens a shared submenu for paragraph, headings, lists, quote, callout, and code block transforms. The code-block transform lives inside this shared submenu so the floating toolbar and block action menu use the same command source.
-- [ ] Keep toolbar placement stable near viewport edges.
+- [x] Keep toolbar placement stable near viewport edges.
   - Current coverage: the toolbar now tolerates transient `coordsAtPos` failures during ProseMirror remount/selection races, matching the React view's guarded positioning path instead of throwing during refresh.
-- [ ] Add keyboard access and focus return.
+- [x] Add keyboard access and focus return.
   - Current coverage: `Mod+K` opens the Papyro link editor from Hybrid mode, follows Tiptap's documented Link-extension guidance for custom link UI, and expands collapsed link selections with `extendMarkRange("link")` before editing.
   - Current coverage: `Alt+F10` opens the floating format toolbar from the editor selection; Arrow keys, Home/End, Enter/Space, and Escape now provide keyboard navigation, execution, close behavior, and focus return.
   - Current coverage: the React toolbar and DOM fallback now share the same `aria-activedescendant` contract for the `turn into` submenu, including a dedicated submenu owner id, roving tab index, and keyboard scroll only during keyboard navigation.
-- [ ] Localize labels and tooltips.
+- [x] Localize labels and tooltips.
   - Current coverage: current toolbar commands provide English and Simplified Chinese titles and accessible labels from the shared Tiptap i18n model.
 
 Acceptance criteria:
