@@ -351,7 +351,7 @@ The JS directory owns browser editor runtime code.
 | `js/src/editor-runtime-contract.ts` | stable host facade and adapter contract for `window.papyroEditor` |
 | `js/src/tiptap-react/` | React island provider, slots, mount controller, and future editor UI components |
 | `js/src/tiptap-*.js` | focused Tiptap controllers, commands, Markdown handlers, and UI helpers |
-| `js/test/tiptap-*.test.js` | JS unit tests for runtime, commands, tables, Markdown, and UI primitives |
+| `js/test/tiptap-*.test.ts` | Node test-runner coverage for runtime, commands, tables, Markdown, and UI primitives |
 | `js/build.js` | builds and syncs generated editor assets |
 
 Only edit `js/src/*` by hand. Do not edit generated `assets/editor.js` directly.
@@ -747,7 +747,7 @@ Their editor state is local, while storage and settings are supplied through sha
 | File tree behavior | `crates/ui/src/components/sidebar` | `crates/core/src/file_state.rs` |
 | Markdown Preview | `crates/editor/src/renderer/html.rs` | `crates/ui/src/components/editor/preview.rs` |
 | Hybrid editing | `js/src/editor-runtime.ts`, `js/src/tiptap-*.js` | `js/src/tiptap-react/`, `crates/editor/src/parser/blocks.rs` |
-| Paste/selection/IME | `js/src/tiptap-paste-controller.js`, `js/src/tiptap-ui-primitives.js` | `js/test/tiptap-*.test.js` |
+| Paste/selection/IME | `js/src/tiptap-paste-controller.js`, `js/src/tiptap-ui-primitives.js` | `js/test/tiptap-*.test.ts` |
 | Settings field | `crates/core/src/models.rs` | settings UI and storage settings |
 | OS file open | `apps/desktop/src/main.rs` | `crates/app/src/open_requests.rs`, `dispatcher.rs` |
 

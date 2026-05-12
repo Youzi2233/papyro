@@ -404,7 +404,7 @@ JS 目录负责浏览器编辑器 runtime。
 | `js/src/editor-runtime-contract.ts` | `window.papyroEditor` 使用的稳定 host facade 和 adapter contract。 |
 | `js/src/tiptap-react/` | React island provider、slots、mount controller 和后续编辑器 UI 组件。 |
 | `js/src/tiptap-*.js` | 聚焦的 Tiptap controller、command、Markdown handler 和 UI helper。 |
-| `js/test/tiptap-*.test.js` | runtime、command、table、Markdown 和 UI primitive 的 JS 单元测试。 |
+| `js/test/tiptap-*.test.ts` | runtime、command、table、Markdown 和 UI primitive 的 Node test-runner 覆盖。 |
 | `js/build.js` | 构建并同步 `editor.js` 生成物。 |
 
 只手动改 `js/src/*`，不要直接改生成出来的 `assets/editor.js`。
@@ -831,7 +831,7 @@ Document window 复用同一套进程级窗口模式，但和 settings 不同，
 | 改文件树 | `crates/ui/src/components/sidebar` | `crates/core/src/file_state.rs` |
 | 改 Markdown Preview | `crates/editor/src/renderer/html.rs` | `crates/ui/src/components/editor/preview.rs` |
 | 改 Hybrid 编辑 | `js/src/editor-runtime.ts`, `js/src/tiptap-*.js` | `js/src/tiptap-react/`, `crates/editor/src/parser/blocks.rs` |
-| 改粘贴/选区/IME | `js/src/tiptap-paste-controller.js`, `js/src/tiptap-ui-primitives.js` | `js/test/tiptap-*.test.js` |
+| 改粘贴/选区/IME | `js/src/tiptap-paste-controller.js`, `js/src/tiptap-ui-primitives.js` | `js/test/tiptap-*.test.ts` |
 | 改设置项 | `crates/core/src/models.rs` | settings UI、storage settings |
 | 改系统打开文件 | `apps/desktop/src/main.rs` | `crates/app/src/open_requests.rs`, `dispatcher.rs` |
 

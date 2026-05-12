@@ -288,7 +288,7 @@ Migrate by module priority, one module at a time:
 
 #### 5.3 Utilities and Tests
 - [x] Utility functions under `lib/`
-- [ ] Test file migration (keep `node --test` runner)
+- [x] Test file migration (keep `node --test` runner)
 
 ---
 
