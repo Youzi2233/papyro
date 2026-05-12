@@ -51,7 +51,7 @@ flowchart TD
 | Shell | 平台宿主，例如 `apps/desktop` 或 `apps/mobile`。 |
 | Runtime | `crates/app` 创建的应用运行时，包括 signals、commands、effects 和 context。 |
 | View model | UI 友好的状态投影，避免组件直接理解底层业务结构。 |
-| Editor runtime | 浏览器里的 Tiptap/ProseMirror runtime 和 React island，由 `js/src/editor-tiptap-entry.js` 构建而来。 |
+| Editor runtime | 浏览器里的 Tiptap/ProseMirror runtime 和 React island，由 `js/src/editor-entry.ts` 构建而来。 |
 | Protocol | Rust 和 JS 编辑器 runtime 之间传输的命令和事件结构。 |
 
 ## 3. 从启动开始看全链路
@@ -397,7 +397,7 @@ JS 目录负责浏览器编辑器 runtime。
 
 | 文件 | 作用 |
 | --- | --- |
-| `js/src/editor-tiptap-entry.js` | bundle 入口，把 Tiptap adapter 注册到 `window.papyroEditor` 后面。 |
+| `js/src/editor-entry.ts` | bundle 入口，把 Tiptap adapter 注册到 `window.papyroEditor` 后面。 |
 | `js/src/tiptap-runtime.js` | Tiptap 生命周期、Rust 消息处理和 Markdown 同步编排。 |
 | `js/src/tiptap-react/` | React island provider、slots、mount controller 和后续编辑器 UI 组件。 |
 | `js/src/tiptap-*.js` | 聚焦的 Tiptap controller、command、Markdown handler 和 UI helper。 |
@@ -563,7 +563,7 @@ sequenceDiagram
 
 ## 13. JS 如何注册编辑器 runtime
 
-关键文件是 `js/src/editor-tiptap-entry.js`。
+关键文件是 `js/src/editor-entry.ts`。
 
 它最后会注册：
 

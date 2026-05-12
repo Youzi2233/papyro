@@ -59,7 +59,7 @@ const tableCommandControllerSource = readFileSync(
   "utf8",
 );
 const editorEntrySource = readFileSync(
-  new URL("../src/editor-tiptap-entry.js", import.meta.url),
+  new URL("../src/editor-entry.ts", import.meta.url),
   "utf8",
 );
 const tiptapRuntimeSource = readFileSync(

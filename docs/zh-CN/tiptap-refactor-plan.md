@@ -238,7 +238,7 @@ js/src/
 - [ ] 运行时只负责：创建 Editor → 挂载 React 树 → 转发 Rust 命令/事件
 
 #### 3.2 简化 editor-entry
-- [ ] 将 `editor-tiptap-entry.js` 重写为 `editor-entry.ts`
+- [x] 将 `editor-tiptap-entry.js` 重写为 `editor-entry.ts`
 - [ ] 移除所有视图工厂注册（不再需要 DI 注入 React 视图）
 - [ ] 入口只做：创建 runtime → 安装到 `window.papyroEditor`
 
@@ -273,7 +273,7 @@ js/src/
 
 #### 5.1 核心模块（优先）
 - [ ] `editor-runtime.js` → `editor-runtime.ts`
-- [ ] `editor-entry.js` → `editor-entry.ts`
+- [x] `editor-tiptap-entry.js` → `editor-entry.ts`
 - [ ] `tiptap-react/runtime-context.jsx` → `.tsx`
 - [ ] `tiptap-react/runtime-model.js` → `.ts`
 - [ ] `tiptap-react/island.jsx` → `.tsx`

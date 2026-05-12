@@ -49,7 +49,7 @@ flowchart TD
 | Shell | A platform entry point such as `apps/desktop` or `apps/mobile`. |
 | Runtime | The shared signals, commands, effects, and context created by `crates/app`. |
 | View model | A UI-friendly projection of state from `crates/ui/src/view_model.rs`. |
-| Editor runtime | The Tiptap/ProseMirror runtime and React island built from `js/src/editor-tiptap-entry.js`. |
+| Editor runtime | The Tiptap/ProseMirror runtime and React island built from `js/src/editor-entry.ts`. |
 | Protocol | The command/event structs passed between Rust and JavaScript. |
 
 ## 3. Startup Flow
@@ -344,7 +344,7 @@ The JS directory owns browser editor runtime code.
 
 | File | Role |
 | --- | --- |
-| `js/src/editor-tiptap-entry.js` | bundle entry, registers the Tiptap adapter behind `window.papyroEditor` |
+| `js/src/editor-entry.ts` | bundle entry, registers the Tiptap adapter behind `window.papyroEditor` |
 | `js/src/tiptap-runtime.js` | Tiptap lifecycle, Rust message handling, Markdown sync orchestration |
 | `js/src/tiptap-react/` | React island provider, slots, mount controller, and future editor UI components |
 | `js/src/tiptap-*.js` | focused Tiptap controllers, commands, Markdown handlers, and UI helpers |
@@ -500,7 +500,7 @@ The `dioxus` object is provided by Dioxus eval:
 
 ## 13. How JS Registers The Runtime
 
-`js/src/editor-tiptap-entry.js` registers:
+`js/src/editor-entry.ts` registers:
 
 ```javascript
 window.papyroEditor = {

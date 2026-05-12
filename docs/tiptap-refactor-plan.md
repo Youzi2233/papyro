@@ -238,7 +238,7 @@ The current `tiptap-runtime.js` creates many controllers via dependency injectio
 - [ ] Runtime only does: create Editor → mount React tree → forward Rust commands/events
 
 #### 3.2 Simplify editor-entry
-- [ ] Rewrite `editor-tiptap-entry.js` as `editor-entry.ts`
+- [x] Rewrite `editor-tiptap-entry.js` as `editor-entry.ts`
 - [ ] Remove all view factory registrations (DI injection of React views no longer needed)
 - [ ] Entry only does: create runtime → install on `window.papyroEditor`
 
@@ -273,7 +273,7 @@ Migrate by module priority, one module at a time:
 
 #### 5.1 Core Modules (Priority)
 - [ ] `editor-runtime.js` → `editor-runtime.ts`
-- [ ] `editor-entry.js` → `editor-entry.ts`
+- [x] `editor-tiptap-entry.js` → `editor-entry.ts`
 - [ ] `tiptap-react/runtime-context.jsx` → `.tsx`
 - [ ] `tiptap-react/runtime-model.js` → `.ts`
 - [ ] `tiptap-react/island.jsx` → `.tsx`

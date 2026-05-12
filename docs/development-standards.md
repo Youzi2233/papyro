@@ -55,7 +55,7 @@ node scripts/check-workspace-deps.js
 Only edit focused source files under `js/src/` by hand. The most common entry
 points are:
 
-- `js/src/editor-tiptap-entry.js`
+- `js/src/editor-entry.ts`
 - `js/src/tiptap-runtime.js`
 - `js/src/tiptap-*.js`
 - `js/src/tiptap-react/`
