@@ -46,32 +46,16 @@ const pointerActivationHookSource = readFileSync(
   new URL("../src/tiptap-react/hooks/use-pointer-activation.js", import.meta.url),
   "utf8",
 );
-const tableContextMenuSource = readFileSync(
-  new URL("../src/tiptap-react/components/table-context-menu.jsx", import.meta.url),
-  "utf8",
-);
-const tableCommandIconsSource = readFileSync(
-  new URL("../src/tiptap-react/components/table-command-icons.jsx", import.meta.url),
-  "utf8",
-);
-const tableChromeSource = readFileSync(
-  new URL("../src/tiptap-react/components/table-chrome.jsx", import.meta.url),
-  "utf8",
-);
-const tableChromeRendererSource = readFileSync(
-  new URL("../src/tiptap-react/table-chrome-renderer.jsx", import.meta.url),
+const officialTableNodeLayerSource = readFileSync(
+  new URL("../src/tiptap-react/official-table-node-layer.jsx", import.meta.url),
   "utf8",
 );
 const floatingUtilsSource = readFileSync(
   new URL("../src/tiptap-react/utils/floating.js", import.meta.url),
   "utf8",
 );
-const tableToolbarViewSource = readFileSync(
-  new URL("../src/tiptap-table-toolbar-view.js", import.meta.url),
-  "utf8",
-);
-const tableCommandBridgeSource = readFileSync(
-  new URL("../src/tiptap-table-command-bridge.js", import.meta.url),
+const tableCommandControllerSource = readFileSync(
+  new URL("../src/tiptap-table-command-controller.js", import.meta.url),
   "utf8",
 );
 const editorEntrySource = readFileSync(
@@ -216,9 +200,6 @@ test("React command chrome uses shared menu primitives", () => {
   assert.match(primitivesSource, /export function ToolbarButton/u);
   assert.match(primitivesSource, /export function Kbd/u);
   assert.match(primitivesSource, /export function VisuallyHidden/u);
-  assert.match(tableContextMenuSource, /from "\.\/primitives\.jsx"/u);
-  assert.match(tableContextMenuSource, /<CommandRow/u);
-  assert.match(tableContextMenuSource, /createTableCommandMenuModel/u);
 });
 
 test("React slash menu uses hover intent for secondary panels without slowing keyboard focus", () => {
@@ -242,88 +223,37 @@ test("React floating chrome shares positioning utilities", () => {
 
 test("official table-node layer owns visible table chrome at the editor boundary", () => {
   assert.doesNotMatch(indexSource, /createTiptapReactFormatToolbarView/u);
-  assert.match(editorEntrySource, /createTiptapTableCommandBridge/u);
-  assert.match(editorEntrySource, /tableToolbarControllerFactory:\s*createTiptapTableCommandBridge/u);
-  assert.doesNotMatch(tiptapRuntimeSource, /from "\.\/tiptap-table-command-bridge\.js"/u);
-  assert.doesNotMatch(tiptapRuntimeSource, /tableToolbarControllerFactory\s*=\s*createTiptapTableCommandBridge/u);
+  assert.match(editorEntrySource, /createTiptapTableCommandController/u);
+  assert.match(editorEntrySource, /tableCommandControllerFactory:\s*createTiptapTableCommandController/u);
+  assert.doesNotMatch(tiptapRuntimeSource, /from "\.\/tiptap-table-command-controller\.js"/u);
+  assert.doesNotMatch(tiptapRuntimeSource, /tableToolbarControllerFactory/u);
+  assert.doesNotMatch(tiptapRuntimeSource, /tableToolbar/u);
   assert.doesNotMatch(tiptapRuntimeSource, /from "\.\/tiptap-table-toolbar\.js"/u);
   assert.doesNotMatch(editorEntrySource, /createTiptapReactTableContextMenuRenderer/u);
   assert.doesNotMatch(editorEntrySource, /createTiptapReactTableChromeRenderer/u);
+  assert.doesNotMatch(indexSource, /createTiptapReactTableContextMenuRenderer/u);
+  assert.doesNotMatch(indexSource, /createTiptapReactTableChromeRenderer/u);
   assert.doesNotMatch(editorEntrySource, /tableMenuRendererFactory/u);
   assert.doesNotMatch(editorEntrySource, /tableChromeRendererFactory/u);
   assert.doesNotMatch(editorEntrySource, /tableChromeRendererFactory:\s*null/u);
   assert.doesNotMatch(editorEntrySource, /formatToolbarViewFactory:\s*createTiptapReactFormatToolbarView/u);
   assert.match(slotsSource, /PapyroToolbarFloating/u);
   assert.match(slotsSource, /PapyroOfficialTableNodeLayer/u);
-  assert.match(tableCommandBridgeSource, /export function createTiptapTableCommandBridge/u);
-  assert.match(tableCommandBridgeSource, /TABLE_COMMANDS/u);
-  assert.doesNotMatch(tableCommandBridgeSource, /addEventListener/u);
-  assert.doesNotMatch(tableCommandBridgeSource, /createElement/u);
-  assert.doesNotMatch(tableCommandBridgeSource, /querySelector/u);
-  assert.doesNotMatch(tableCommandBridgeSource, /pointerdown|pointerenter|mousedown|contextmenu/u);
-  assert.match(tableToolbarViewSource, /menuRendererFactory/u);
-  assert.match(tableToolbarViewSource, /chromeRendererFactory/u);
-  assert.doesNotMatch(tableToolbarViewSource, /tiptap-react\/index\.js/u);
+  assert.match(officialTableNodeLayerSource, /TableHandle/u);
+  assert.match(officialTableNodeLayerSource, /TableSelectionOverlay/u);
+  assert.match(officialTableNodeLayerSource, /TableCellHandleMenu/u);
+  assert.match(officialTableNodeLayerSource, /TableExtendRowColumnButtons/u);
+  assert.match(tableCommandControllerSource, /export function createTiptapTableCommandController/u);
+  assert.match(tableCommandControllerSource, /TABLE_COMMANDS/u);
+  assert.doesNotMatch(tableCommandControllerSource, /addEventListener/u);
+  assert.doesNotMatch(tableCommandControllerSource, /createElement/u);
+  assert.doesNotMatch(tableCommandControllerSource, /querySelector/u);
+  assert.doesNotMatch(tableCommandControllerSource, /pointerdown|pointerenter|mousedown|contextmenu/u);
 });
 
-test("React table context menu keeps fallback command accessibility semantics", () => {
-  assert.match(tableContextMenuSource, /function tableCommandAccessibleLabel\(command\)/u);
-  assert.match(
-    tableContextMenuSource,
-    /command\.description\?\.trim\?\.\(\) \?\? ""/u,
-  );
-  assert.match(
-    tableContextMenuSource,
-    /description \? `\$\{command\.title\}\. \$\{description\}` : command\.title/u,
-  );
-  assert.match(
-    tableContextMenuSource,
-    /"aria-label":\s*tableCommandAccessibleLabel\(command\)/u,
-  );
-  assert.doesNotMatch(tableContextMenuSource, /"aria-label":\s*command\.title/u);
+test("React table chrome does not keep Papyro fallback menu exports", () => {
+  assert.doesNotMatch(indexSource, /TableCommandIcon/u);
+  assert.doesNotMatch(indexSource, /PapyroTableCommandMenuContent/u);
+  assert.doesNotMatch(officialTableNodeLayerSource, /table-command-icons/u);
+  assert.doesNotMatch(officialTableNodeLayerSource, /table-command-menu/u);
 });
-
-test("React table context menu uses lucide icons in the real runtime", () => {
-  assert.match(tableContextMenuSource, /TableCommandIcon/u);
-  assert.match(tableContextMenuSource, /"icon-source":\s*"lucide"/u);
-  assert.match(tableContextMenuSource, /data-menu-section/u);
-  assert.match(tableContextMenuSource, /TABLE_STYLE_LAYOUT_GROUPS/u);
-  assert.match(tableContextMenuSource, /mn-tiptap-table-toolbar-submenu-trigger/u);
-  assert.match(tableContextMenuSource, /mn-tiptap-table-toolbar-submenu-panel/u);
-  assert.match(tableContextMenuSource, /tableCommandLayoutGroupLabel/u);
-  assert.match(tableCommandIconsSource, /from "lucide-react"/u);
-  assert.match(tableCommandIconsSource, /export function TableCommandIcon/u);
-  assert.match(tableCommandIconsSource, /TableCellsMerge/u);
-  assert.match(tableCommandIconsSource, /TableCellsSplit/u);
-  assert.match(tableCommandIconsSource, /PaintBucket/u);
-});
-
-test("React table chrome bridge suppresses legacy visible chrome in the real runtime", () => {
-  assert.match(tableChromeRendererSource, /applyTableCellVisualState/u);
-  assert.match(tableChromeRendererSource, /clearTableCellVisualState/u);
-  assert.match(tableChromeRendererSource, /visual-state-bridge/u);
-  assert.match(tableChromeRendererSource, /setHidden\(this\.#root,\s*true/u);
-  assert.doesNotMatch(tableChromeRendererSource, /createRoot/u);
-  assert.doesNotMatch(tableChromeRendererSource, /<PapyroTableChrome/u);
-});
-
-test("React table chrome exposes explicit hidden state semantics", () => {
-  assert.match(tableChromeSource, /function chromeVisibilityProps\(visible\)/u);
-  assert.match(tableChromeSource, /"data-visible":\s*isVisible \? "true" : "false"/u);
-  assert.match(tableChromeSource, /"aria-hidden":\s*isVisible \? undefined : "true"/u);
-  assert.match(tableChromeSource, /tabIndex:\s*isVisible \? undefined : -1/u);
-  assert.match(tableChromeSource, /\{\.\.\.chromeVisibilityProps\(chrome\.visible\)\}/u);
-  assert.match(tableChromeSource, /\{\.\.\.chromeVisibilityProps\(triggerState\.visible\)\}/u);
-  assert.match(tableChromeSource, /\{\.\.\.chromeVisibilityProps\(handle\.visible\)\}/u);
-  assert.match(tableChromeSource, /data-visible=\{chrome\.visible \? "true" : "false"\}/u);
-});
-
-test("React table axis handles open menus only after selection succeeds", () => {
-  assert.match(
-    tableChromeSource,
-    /const selected = onSelectAxis\?\.\(handle\.axis, handle\.index\) === true/u,
-  );
-  assert.match(tableChromeSource, /if \(!selected\) return false/u);
-  assert.doesNotMatch(tableChromeSource, /onSelectAxis\?\.\(handle\.axis, handle\.index\);\s*return onSelectAxis/u);
-});
-

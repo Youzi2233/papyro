@@ -1,1069 +1,344 @@
-/* Papyro Tiptap table toolbar, quick-add rails, cell trigger, and axis handle chrome. */
+/* Papyro Tiptap table compatibility for the official table-node UI. */
 
-.mn-tiptap-table-toolbar {
-    position: fixed;
-    z-index: 170;
-    display: grid;
-    width: max-content;
-    max-width: min(640px, calc(100vw - 20px));
-    padding: 6px;
-    border: var(--mn-border-default);
-    border-radius: var(--mn-radius-md);
-    background: var(--mn-surface-raised);
-    color: var(--mn-ink);
-    box-shadow: var(--mn-shadow-lg);
-    font-family: var(--mn-font-ui);
-    user-select: none;
+:root {
+    --tt-table-border-color: var(--mn-markdown-table-border);
+    --tt-table-selected-bg: color-mix(in srgb, var(--mn-accent) 16%, transparent);
+    --tt-table-selected-stroke: var(--mn-accent);
+    --tt-table-column-resize-handle-bg: var(--mn-accent);
+    --tt-table-cell-padding: var(--mn-markdown-table-cell-pad);
+    --tt-table-margin-block: var(--mn-markdown-block-gap);
+    --tt-table-pad-block-start: 0;
+    --tt-table-pad-block-end: 0;
+    --tt-table-pad-inline-start: 0;
+    --tt-table-pad-inline-end: 0;
+    --tt-table-handle-bg-color: var(--mn-surface-raised);
+    --tt-table-extend-icon-color: var(--mn-ink-3);
 }
 
-.mn-tiptap-table-toolbar[data-mode="context"] {
-    width: 176px;
-    max-width: min(176px, calc(100vw - 20px));
-    padding: 5px;
-    border-radius: 8px;
-    background:
-        linear-gradient(
-            180deg,
-            color-mix(in srgb, var(--mn-surface-raised) 96%, var(--mn-surface) 4%),
-            var(--mn-surface-raised)
-        );
-    box-shadow: 0 14px 30px color-mix(in srgb, #000 10%, transparent), var(--mn-shadow-lg);
+[data-theme="github_dark"],
+.dark {
+    --tt-table-border-color: var(--mn-markdown-table-border);
+    --tt-table-selected-bg: color-mix(in srgb, var(--mn-accent) 18%, transparent);
+    --tt-table-selected-stroke: var(--mn-accent);
+    --tt-table-column-resize-handle-bg: var(--mn-accent);
+    --tt-table-handle-bg-color: var(--mn-surface-raised);
+    --tt-table-extend-icon-color: var(--mn-ink-3);
 }
 
-.mn-tiptap-table-toolbar.hidden {
-    display: none;
+.mn-tiptap-editor.tiptap [data-content-type="table"] {
+    margin-block: var(--tt-table-margin-block);
 }
 
-.mn-tiptap-table-toolbar-header {
-    display: none;
-}
-
-.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-header {
-    display: grid;
-    gap: 2px;
-    padding: 4px 7px 3px;
-    border-bottom: 0;
-}
-
-.mn-tiptap-table-toolbar-eyebrow {
-    color: color-mix(in srgb, var(--mn-accent) 68%, var(--mn-ink-3));
-    font-size: 9px;
-    font-weight: var(--mn-weight-semibold);
-    line-height: var(--mn-line-caption);
-    letter-spacing: .08em;
-    text-transform: uppercase;
-}
-
-.mn-tiptap-table-toolbar-title {
-    color: var(--mn-ink);
-    font-size: var(--mn-type-small);
-    font-weight: var(--mn-weight-semibold);
-    line-height: var(--mn-line-control);
-}
-
-.mn-tiptap-table-toolbar-subtitle {
-    color: var(--mn-ink-3);
-    font-size: 11px;
-    font-weight: var(--mn-weight-medium);
-    line-height: var(--mn-line-caption);
-}
-
-.mn-tiptap-table-toolbar-list {
-    display: flex;
-    align-items: center;
-    gap: 4px;
+.mn-tiptap-editor.tiptap .tableWrapper[data-content-type="table"],
+.mn-tiptap-editor .tableWrapper {
+    position: relative;
     overflow-x: auto;
+    margin: 0 0 var(--mn-markdown-block-gap);
+    padding: 0;
+    border-spacing: 0;
+    line-height: 0;
 }
 
-.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-list {
-    display: grid;
-    gap: 2px;
-    max-height: min(318px, calc(100vh - 130px));
-    padding: 1px 0 0;
-    overflow: visible;
-    scrollbar-gutter: stable;
+.mn-tiptap-editor.tiptap .tableWrapper[data-content-type="table"] table,
+.mn-tiptap-editor.tiptap .tableWrapper[data-content-type="table"] .mn-tiptap-table,
+.mn-tiptap-editor table,
+.mn-tiptap-editor .mn-tiptap-table {
+    width: auto !important;
+    border-collapse: collapse;
+    border-spacing: 0 !important;
+    table-layout: fixed;
+    background-clip: border-box;
+    empty-cells: show;
+    isolation: isolate;
+    line-height: normal;
 }
 
-.mn-tiptap-table-toolbar-group {
+.mn-tiptap-editor.tiptap .tableWrapper[data-content-type="table"] th,
+.mn-tiptap-editor.tiptap .tableWrapper[data-content-type="table"] td,
+.mn-tiptap-editor :where(th, td, .mn-tiptap-table-cell, .mn-tiptap-table-header) {
+    position: relative;
+    box-sizing: border-box;
+    min-width: 96px;
+    padding: var(--tt-table-cell-padding);
+    border: var(--tt-table-border-color);
+    background-clip: border-box;
+    background-origin: border-box;
+    vertical-align: top;
+}
+
+.mn-tiptap-editor .table-controls,
+.mn-tiptap-editor .table-selection-overlay-container {
+    position: absolute;
+    inset: 0;
+    z-index: 8;
+    pointer-events: none;
+}
+
+.ProseMirror .tableWrapper {
+    overflow-x: auto;
+    border-spacing: 0;
+}
+
+.ProseMirror table {
+    border-collapse: collapse;
+    border-spacing: 0;
+    table-layout: fixed;
+    width: 100%;
+    overflow: hidden;
+}
+
+.ProseMirror td,
+.ProseMirror th {
+    position: relative;
+    box-sizing: border-box;
+    vertical-align: top;
+}
+
+.ProseMirror td:not([data-colwidth]):not(.column-resize-dragging),
+.ProseMirror th:not([data-colwidth]):not(.column-resize-dragging) {
+    min-width: var(--default-cell-min-width, 96px);
+}
+
+.ProseMirror .column-resize-handle {
+    position: absolute;
+    top: 0;
+    right: -2px;
+    bottom: 0;
+    z-index: 20;
+    width: 4px;
+    background-color: var(--tt-table-column-resize-handle-bg);
+    pointer-events: none;
+}
+
+.ProseMirror.resize-cursor {
+    cursor: ew-resize;
+    cursor: col-resize;
+}
+
+.ProseMirror .selectedCell:after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    background: rgba(200, 200, 255, 0.4);
+    pointer-events: none;
+}
+
+.mn-tiptap-table-cell:hover:not(.mn-tiptap-table-cell-selected),
+.mn-tiptap-table-header:hover:not(.mn-tiptap-table-cell-selected) {
+    box-shadow: none;
+}
+
+.mn-tiptap-table-cell.selectedCell:not(.mn-tiptap-table-cell-selected),
+.mn-tiptap-table-header.selectedCell:not(.mn-tiptap-table-cell-selected),
+.mn-tiptap-editor :where(td.selectedCell, th.selectedCell):not(.mn-tiptap-table-cell-selected) {
+    background-image: none;
+    outline: 0;
+    box-shadow: none;
+}
+
+.mn-tiptap-table-cell.mn-tiptap-table-cell-selected > .column-resize-handle,
+.mn-tiptap-table-header.mn-tiptap-table-cell-selected > .column-resize-handle,
+.mn-tiptap-table-cell.mn-tiptap-table-cell-active > .column-resize-handle,
+.mn-tiptap-table-header.mn-tiptap-table-cell-active > .column-resize-handle {
+    right: -8px;
+    width: 16px;
+    opacity: 0;
+}
+
+.mn-tiptap-table-cell.mn-tiptap-table-cell-selected > .column-resize-handle::before,
+.mn-tiptap-table-header.mn-tiptap-table-cell-selected > .column-resize-handle::before,
+.mn-tiptap-table-cell.mn-tiptap-table-cell-active > .column-resize-handle::before,
+.mn-tiptap-table-header.mn-tiptap-table-cell-active > .column-resize-handle::before {
+    width: 2px;
+}
+
+.mn-tiptap-table-cell:hover > .column-resize-handle::before,
+.mn-tiptap-table-header:hover > .column-resize-handle::before,
+.mn-tiptap-editor.resize-cursor .column-resize-handle::before {
+    opacity: .64;
+}
+
+.tiptap-table-handle-menu {
     display: flex;
     align-items: center;
-    gap: 4px;
-}
-
-.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-group {
-    display: grid;
-    gap: 1px;
-}
-
-.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-group[data-layout-group="danger"] {
-    margin-top: 2px;
-    padding-top: 4px;
-    border-top: var(--mn-border-subtle);
-}
-
-.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-group[data-menu-section="structure"] + .mn-tiptap-table-toolbar-group[data-menu-section="content"],
-.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-group[data-menu-section="content"] + .mn-tiptap-table-toolbar-group[data-menu-section="style"],
-.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-group[data-menu-section="style"] + .mn-tiptap-table-toolbar-group[data-menu-section="danger"],
-.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-group[data-menu-section="structure"] + .mn-tiptap-table-toolbar-group[data-menu-section="style"],
-.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-group[data-menu-section="content"] + .mn-tiptap-table-toolbar-group[data-menu-section="danger"] {
-    margin-top: 3px;
-    padding-top: 5px;
-    border-top: var(--mn-border-subtle);
-}
-
-.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-group[data-layout-group="align"],
-.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-group[data-layout-group="text-color"],
-.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-group[data-layout-group="cell-color"] {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 5px;
-    padding: 1px 2px 0;
-}
-
-.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-group[data-layout-group="align"] {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-submenu-group {
-    position: relative;
-    display: grid;
-    grid-template-columns: 1fr !important;
-    gap: 1px;
-    padding: 0 !important;
-}
-
-.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-submenu-trigger {
-    position: relative;
-    display: grid;
-    grid-template-columns: 20px minmax(0, 1fr) 10px;
-    align-items: center;
-    gap: 7px;
-    min-height: 28px;
-    width: 100%;
-    padding: 4px 6px 4px 5px;
-    border: 1px solid transparent;
-    border-radius: 5px;
-    color: var(--mn-ink-2);
-    outline: 0;
-}
-
-.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-submenu-trigger:hover,
-.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-submenu-trigger:focus-visible,
-.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-submenu-group:focus-within > .mn-tiptap-table-toolbar-submenu-trigger {
-    border-color: color-mix(in srgb, var(--mn-accent) 16%, transparent);
-    background: color-mix(in srgb, var(--mn-accent) 6%, transparent);
-    color: var(--mn-ink);
-}
-
-.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-submenu-trigger:hover .mn-tiptap-table-toolbar-button-visual,
-.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-submenu-trigger:focus-visible .mn-tiptap-table-toolbar-button-visual,
-.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-submenu-group:focus-within > .mn-tiptap-table-toolbar-submenu-trigger .mn-tiptap-table-toolbar-button-visual {
-    background: var(--mn-surface-raised);
-    border-color: color-mix(in srgb, var(--mn-accent) 36%, var(--mn-border));
-    color: var(--mn-accent);
-}
-
-.mn-tiptap-table-toolbar-submenu-chevron {
-    justify-self: end;
-    width: 6px;
-    height: 6px;
-    border-top: 1.5px solid currentColor;
-    border-right: 1.5px solid currentColor;
-    opacity: .62;
-    transform: rotate(45deg);
-}
-
-.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-submenu-panel {
-    position: absolute;
-    z-index: 1;
-    top: -5px;
-    left: calc(100% + 8px);
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 27px));
-    gap: 5px;
-    min-width: max-content;
-    padding: 6px;
-    border: var(--mn-border-default);
-    border-radius: 8px;
-    background:
-        linear-gradient(
-            180deg,
-            color-mix(in srgb, var(--mn-surface-raised) 96%, var(--mn-surface) 4%),
-            var(--mn-surface-raised)
-        );
-    box-shadow: 0 14px 30px color-mix(in srgb, #000 10%, transparent), var(--mn-shadow-lg);
-    opacity: 0;
-    pointer-events: none;
-    transform: translateX(-3px);
-    transition:
-        opacity var(--mn-transition-fast),
-        transform var(--mn-transition-fast);
-}
-
-.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-submenu-panel[data-layout-group="align"] {
-    grid-template-columns: repeat(3, minmax(0, 27px));
-}
-
-.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-submenu-group:hover > .mn-tiptap-table-toolbar-submenu-panel,
-.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-submenu-group:focus-within > .mn-tiptap-table-toolbar-submenu-panel {
-    opacity: 1;
+    justify-content: center;
+    border: none;
+    border-radius: var(--tt-radius-lg, 8px);
+    background-color: var(--tt-table-handle-bg-color);
+    cursor: grab;
     pointer-events: auto;
-    transform: translateX(0);
 }
 
-.mn-tiptap-table-toolbar-group-label {
-    display: none;
+.tiptap-table-handle-menu .tiptap-button-icon {
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
 }
 
-.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-group-label {
-    display: block;
-    grid-column: 1 / -1;
-    padding: 4px 8px 2px;
-    color: var(--mn-ink-3);
-    font-size: 10px;
-    font-weight: var(--mn-weight-semibold);
-    line-height: var(--mn-line-caption);
-    text-transform: uppercase;
+.tiptap-table-handle-menu.menu-opened,
+.tiptap-table-handle-menu.is-dragging {
+    background-color: var(--tt-brand-color-500, var(--mn-accent));
 }
 
-.mn-tiptap-table-toolbar-button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    height: 30px;
-    border: 0;
-    border-radius: var(--mn-radius-sm);
-    background: transparent;
-    color: var(--mn-ink-2);
-    padding: 0 9px;
-    font-family: var(--mn-font-ui);
-    font-size: var(--mn-type-caption);
-    font-weight: var(--mn-weight-semibold);
-    line-height: var(--mn-line-tight);
-    white-space: nowrap;
+.tiptap-table-handle-menu.menu-opened .tiptap-button-icon,
+.tiptap-table-handle-menu.is-dragging .tiptap-button-icon {
+    color: var(--white, #fff);
 }
 
-.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-button {
-    justify-content: flex-start;
-    align-items: center;
-    gap: 7px;
-    width: 100%;
-    min-height: 28px;
-    height: auto;
-    padding: 4px 8px 4px 5px;
-    border: 1px solid transparent;
-    border-radius: 5px;
-    font-weight: var(--mn-weight-medium);
-    transition:
-        background-color var(--mn-transition-fast),
-        color var(--mn-transition-fast),
-        box-shadow var(--mn-transition-fast);
+.tiptap-table-handle-menu.is-dragging {
+    cursor: grabbing;
 }
 
-.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-button[data-variant="icon"],
-.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-button[data-variant="text-swatch"],
-.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-button[data-variant="swatch"] {
-    justify-content: center;
-    width: auto;
-    min-width: 0;
-    min-height: 27px;
-    height: 27px;
-    padding: 0;
+.tiptap-table-handle-menu.row {
+    width: 0.75rem;
+    height: var(--table-handle-ref-height);
 }
 
-.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-button-label {
-    min-width: 0;
-    overflow: hidden;
-    color: inherit;
-    font-size: var(--mn-type-caption);
-    font-weight: var(--mn-weight-medium);
-    line-height: var(--mn-line-control);
-    text-overflow: ellipsis;
-    white-space: nowrap;
+.tiptap-table-handle-menu.column {
+    height: 0.75rem;
+    width: var(--table-handle-ref-width);
 }
 
-.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-button-copy {
-    display: grid;
-    min-width: 0;
-    gap: 1px;
-    text-align: left;
+.tiptap-table-handle-menu.column .tiptap-button-icon {
+    transform: rotate(90deg);
 }
 
-.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-button-description {
-    min-width: 0;
-    overflow: hidden;
-    color: var(--mn-ink-3);
-    font-size: 10px;
-    font-weight: var(--mn-weight-regular);
-    line-height: var(--mn-line-caption);
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
+.expandable-menu-button {
+    --button-size: 16px;
+    --button-offset: -8px;
+    --dot-size-small: 8px;
+    --dot-size-large: 16px;
+    --dot-offset-small: 3px;
+    --dot-offset-large: 0;
+    --border-radius-full: 9999px;
+    --transition-duration: 0.05s;
+    --transition-timing: ease;
+    --icon-scale-small: 0.9;
+    --icon-scale-large: 1;
 
-.mn-tiptap-table-toolbar-button-visual {
-    position: relative;
-    display: grid;
-    place-items: center;
-    width: 17px;
-    height: 17px;
-    color: currentColor;
-    --mn-table-icon-grid: linear-gradient(currentColor, currentColor) 0 0 / 16px 1px no-repeat, linear-gradient(currentColor, currentColor) 0 6px / 16px 1px no-repeat, linear-gradient(currentColor, currentColor) 0 13px / 16px 1px no-repeat, linear-gradient(currentColor, currentColor) 0 0 / 1px 14px no-repeat, linear-gradient(currentColor, currentColor) 7px 0 / 1px 14px no-repeat, linear-gradient(currentColor, currentColor) 15px 0 / 1px 14px no-repeat;
-}
-
-.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-button-visual {
-    width: 20px;
-    height: 20px;
-    flex: 0 0 20px;
-    border: 1px solid color-mix(in srgb, var(--mn-border) 42%, transparent);
-    border-radius: 5px;
-    background: color-mix(in srgb, var(--mn-surface-sunken) 62%, transparent);
-    color: var(--mn-ink-3);
-}
-
-.mn-tiptap-table-toolbar-button-visual::before {
-    content: "";
-    display: block;
-    width: 15px;
-    height: 12px;
-    border-radius: 3px;
-}
-
-.mn-tiptap-table-command-icon-svg {
-    display: block;
-    width: 14.5px;
-    height: 14.5px;
-}
-
-.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-button-visual::before {
-    width: 15px;
-    height: 13px;
-    border-radius: 3px;
-    opacity: .92;
-}
-
-.mn-tiptap-table-toolbar-button-visual[data-icon-source="lucide"]::before,
-.mn-tiptap-table-toolbar-button-visual[data-icon-source="lucide"]::after {
-    content: none !important;
-}
-
-.mn-tiptap-table-toolbar-button[data-icon="column-left"] .mn-tiptap-table-toolbar-button-visual::before,
-.mn-tiptap-table-toolbar-button[data-icon="column-right"] .mn-tiptap-table-toolbar-button-visual::before,
-.mn-tiptap-table-toolbar-button[data-icon="move-column-left"] .mn-tiptap-table-toolbar-button-visual::before,
-.mn-tiptap-table-toolbar-button[data-icon="move-column-right"] .mn-tiptap-table-toolbar-button-visual::before,
-.mn-tiptap-table-toolbar-button[data-icon="duplicate-column"] .mn-tiptap-table-toolbar-button-visual::before,
-.mn-tiptap-table-toolbar-button[data-icon="header-column"] .mn-tiptap-table-toolbar-button-visual::before,
-.mn-tiptap-table-toolbar-button[data-icon="header-row"] .mn-tiptap-table-toolbar-button-visual::before,
-.mn-tiptap-table-toolbar-button[data-icon="header-cell"] .mn-tiptap-table-toolbar-button-visual::before,
-.mn-tiptap-table-toolbar-button[data-icon="row-above"] .mn-tiptap-table-toolbar-button-visual::before,
-.mn-tiptap-table-toolbar-button[data-icon="row-below"] .mn-tiptap-table-toolbar-button-visual::before,
-.mn-tiptap-table-toolbar-button[data-icon="duplicate-row"] .mn-tiptap-table-toolbar-button-visual::before,
-.mn-tiptap-table-toolbar-button[data-icon="move-row-up"] .mn-tiptap-table-toolbar-button-visual::before,
-.mn-tiptap-table-toolbar-button[data-icon="move-row-down"] .mn-tiptap-table-toolbar-button-visual::before {
-    background: var(--mn-table-icon-grid), color-mix(in srgb, currentColor 8%, transparent);
-}
-
-.mn-tiptap-table-toolbar-button[data-icon="sort-asc"] .mn-tiptap-table-toolbar-button-visual::before,
-.mn-tiptap-table-toolbar-button[data-icon="sort-desc"] .mn-tiptap-table-toolbar-button-visual::before {
-    width: 14px;
-    height: 13px;
-    border-radius: 0;
-    background:
-        linear-gradient(currentColor, currentColor) 6px 1px / 8px 1.4px no-repeat,
-        linear-gradient(currentColor, currentColor) 6px 6px / 6px 1.4px no-repeat,
-        linear-gradient(currentColor, currentColor) 6px 11px / 4px 1.4px no-repeat;
-}
-
-.mn-tiptap-table-toolbar-button[data-icon="sort-asc"] .mn-tiptap-table-toolbar-button-visual::after,
-.mn-tiptap-table-toolbar-button[data-icon="sort-desc"] .mn-tiptap-table-toolbar-button-visual::after {
-    content: "";
-    position: absolute;
-    left: 3px;
-    width: 6px;
-    height: 6px;
-    border-top: 1.5px solid currentColor;
-    border-left: 1.5px solid currentColor;
-}
-
-.mn-tiptap-table-toolbar-button[data-icon="sort-asc"] .mn-tiptap-table-toolbar-button-visual::after {
-    top: 4px;
-    transform: rotate(45deg);
-}
-
-.mn-tiptap-table-toolbar-button[data-icon="sort-desc"] .mn-tiptap-table-toolbar-button-visual::after {
-    bottom: 4px;
-    transform: rotate(225deg);
-}
-
-.mn-tiptap-table-toolbar-button[data-icon="row-above"] .mn-tiptap-table-toolbar-button-visual::after,
-.mn-tiptap-table-toolbar-button[data-icon="row-below"] .mn-tiptap-table-toolbar-button-visual::after,
-.mn-tiptap-table-toolbar-button[data-icon="column-left"] .mn-tiptap-table-toolbar-button-visual::after,
-.mn-tiptap-table-toolbar-button[data-icon="column-right"] .mn-tiptap-table-toolbar-button-visual::after {
-    content: "";
-    position: absolute;
-    width: 9px;
-    height: 9px;
-    border-radius: var(--mn-radius-round);
-    background: linear-gradient(var(--mn-surface-raised), var(--mn-surface-raised)) 50% 50% / 7px 1px no-repeat, linear-gradient(var(--mn-surface-raised), var(--mn-surface-raised)) 50% 50% / 1px 7px no-repeat, currentColor;
-    box-shadow: 0 0 0 1px var(--mn-surface-raised);
-}
-
-.mn-tiptap-table-toolbar-button[data-icon="row-above"] .mn-tiptap-table-toolbar-button-visual::after { top: -1px; left: 50%; transform: translateX(-50%); }
-.mn-tiptap-table-toolbar-button[data-icon="row-below"] .mn-tiptap-table-toolbar-button-visual::after { bottom: -1px; left: 50%; transform: translateX(-50%); }
-.mn-tiptap-table-toolbar-button[data-icon="column-left"] .mn-tiptap-table-toolbar-button-visual::after { top: 50%; left: -1px; transform: translateY(-50%); }
-.mn-tiptap-table-toolbar-button[data-icon="column-right"] .mn-tiptap-table-toolbar-button-visual::after { top: 50%; right: -1px; transform: translateY(-50%); }
-.mn-tiptap-table-toolbar-button[data-icon="move-row-up"] .mn-tiptap-table-toolbar-button-visual::after,
-.mn-tiptap-table-toolbar-button[data-icon="move-row-down"] .mn-tiptap-table-toolbar-button-visual::after,
-.mn-tiptap-table-toolbar-button[data-icon="move-column-left"] .mn-tiptap-table-toolbar-button-visual::after,
-.mn-tiptap-table-toolbar-button[data-icon="move-column-right"] .mn-tiptap-table-toolbar-button-visual::after {
-    content: "";
-    position: absolute;
-    width: 9px;
-    height: 9px;
-    border-top: 1.6px solid currentColor;
-    border-left: 1.6px solid currentColor;
-}
-.mn-tiptap-table-toolbar-button[data-icon="move-row-up"] .mn-tiptap-table-toolbar-button-visual::after { left: 50%; top: -1px; transform: translateX(-50%) rotate(45deg); }
-.mn-tiptap-table-toolbar-button[data-icon="move-row-down"] .mn-tiptap-table-toolbar-button-visual::after { left: 50%; bottom: -1px; transform: translateX(-50%) rotate(225deg); }
-.mn-tiptap-table-toolbar-button[data-icon="move-column-left"] .mn-tiptap-table-toolbar-button-visual::after { top: 50%; left: -1px; transform: translateY(-50%) rotate(-45deg); }
-.mn-tiptap-table-toolbar-button[data-icon="move-column-right"] .mn-tiptap-table-toolbar-button-visual::after { top: 50%; right: -1px; transform: translateY(-50%) rotate(135deg); }
-.mn-tiptap-table-toolbar-button[data-icon="duplicate-row"] .mn-tiptap-table-toolbar-button-visual::after,
-.mn-tiptap-table-toolbar-button[data-icon="duplicate-column"] .mn-tiptap-table-toolbar-button-visual::after {
-    content: "";
-    position: absolute;
-    width: 8px;
-    height: 8px;
-    border: 1.4px solid currentColor;
-    border-radius: 2.5px;
-    background: color-mix(in srgb, var(--mn-editor-bg) 72%, transparent);
-    box-shadow: -3px -3px 0 -1px var(--mn-editor-bg), -3px -3px 0 .4px currentColor;
-}
-.mn-tiptap-table-toolbar-button[data-icon="duplicate-row"] .mn-tiptap-table-toolbar-button-visual::after { left: 50%; bottom: -1px; transform: translateX(-50%); }
-.mn-tiptap-table-toolbar-button[data-icon="duplicate-column"] .mn-tiptap-table-toolbar-button-visual::after { top: 50%; right: -1px; transform: translateY(-50%); }
-.mn-tiptap-table-toolbar-button[data-icon="header-row"] .mn-tiptap-table-toolbar-button-visual::before { background: var(--mn-table-icon-grid), linear-gradient(color-mix(in srgb, currentColor 28%, transparent), color-mix(in srgb, currentColor 28%, transparent)) 1px 1px / 14px 5px no-repeat, color-mix(in srgb, currentColor 7%, transparent); }
-.mn-tiptap-table-toolbar-button[data-icon="header-column"] .mn-tiptap-table-toolbar-button-visual::before { background: var(--mn-table-icon-grid), linear-gradient(color-mix(in srgb, currentColor 28%, transparent), color-mix(in srgb, currentColor 28%, transparent)) 1px 1px / 6px 12px no-repeat, color-mix(in srgb, currentColor 7%, transparent); }
-.mn-tiptap-table-toolbar-button[data-icon="header-cell"] .mn-tiptap-table-toolbar-button-visual::before { background: var(--mn-table-icon-grid), radial-gradient(circle at 4px 3px, color-mix(in srgb, currentColor 38%, transparent) 0 3px, transparent 3.2px), color-mix(in srgb, currentColor 7%, transparent); }
-.mn-tiptap-table-toolbar-button[data-icon="merge"] .mn-tiptap-table-toolbar-button-visual::before,
-.mn-tiptap-table-toolbar-button[data-icon="split"] .mn-tiptap-table-toolbar-button-visual::before { background: linear-gradient(currentColor, currentColor) 0 0 / 16px 1px no-repeat, linear-gradient(currentColor, currentColor) 0 13px / 16px 1px no-repeat, linear-gradient(currentColor, currentColor) 0 0 / 1px 14px no-repeat, linear-gradient(currentColor, currentColor) 15px 0 / 1px 14px no-repeat, color-mix(in srgb, currentColor 8%, transparent); }
-.mn-tiptap-table-toolbar-button[data-icon="merge"] .mn-tiptap-table-toolbar-button-visual::after,
-.mn-tiptap-table-toolbar-button[data-icon="split"] .mn-tiptap-table-toolbar-button-visual::after { content: ""; position: absolute; top: 50%; left: 50%; width: 13px; height: 1.5px; border-radius: var(--mn-radius-round); background: currentColor; transform: translate(-50%, -50%); }
-.mn-tiptap-table-toolbar-button[data-icon="split"] .mn-tiptap-table-toolbar-button-visual::after { width: 1.5px; height: 13px; }
-.mn-tiptap-table-toolbar-button[data-icon="copy-cell"] .mn-tiptap-table-toolbar-button-visual::before { width: 13px; height: 11px; border: 1.5px solid currentColor; border-radius: 3px; background: linear-gradient(currentColor, currentColor) 3px 3px / 7px 1.2px no-repeat, linear-gradient(currentColor, currentColor) 3px 6px / 5px 1.2px no-repeat, color-mix(in srgb, currentColor 7%, transparent); transform: translate(1px, 1px); }
-.mn-tiptap-table-toolbar-button[data-icon="copy-cell"] .mn-tiptap-table-toolbar-button-visual::after { content: ""; position: absolute; left: 3px; top: 2px; width: 13px; height: 11px; border: 1.5px solid currentColor; border-radius: 3px; background: color-mix(in srgb, var(--mn-editor-bg) 72%, transparent); transform: translate(-2px, -2px); }
-.mn-tiptap-table-toolbar-button[data-icon="clear-content"] .mn-tiptap-table-toolbar-button-visual::before { width: 15px; height: 13px; border: 1.5px solid currentColor; border-radius: 3px; background: linear-gradient(currentColor, currentColor) 3px 3px / 9px 1.3px no-repeat, linear-gradient(currentColor, currentColor) 3px 7px / 6px 1.3px no-repeat, color-mix(in srgb, currentColor 7%, transparent); }
-.mn-tiptap-table-toolbar-button[data-icon="clear-content"] .mn-tiptap-table-toolbar-button-visual::after { content: ""; position: absolute; right: 2px; bottom: 2px; width: 7px; height: 1.5px; border-radius: var(--mn-radius-round); background: currentColor; transform: rotate(-35deg); }
-.mn-tiptap-table-toolbar-button[data-icon="clear-style"] .mn-tiptap-table-toolbar-button-visual::before { width: 15px; height: 13px; border: 1.5px solid currentColor; border-radius: 3px; background: radial-gradient(circle at 4px 4px, color-mix(in srgb, currentColor 46%, transparent) 0 2px, transparent 2.2px), radial-gradient(circle at 10px 8px, color-mix(in srgb, currentColor 30%, transparent) 0 2px, transparent 2.2px), color-mix(in srgb, currentColor 7%, transparent); }
-.mn-tiptap-table-toolbar-button[data-icon="clear-style"] .mn-tiptap-table-toolbar-button-visual::after { content: ""; position: absolute; right: 2px; bottom: 2px; width: 7px; height: 1.5px; border-radius: var(--mn-radius-round); background: currentColor; transform: rotate(-35deg); }
-.mn-tiptap-table-toolbar-button[data-icon="delete-row"] .mn-tiptap-table-toolbar-button-visual::before,
-.mn-tiptap-table-toolbar-button[data-icon="delete-column"] .mn-tiptap-table-toolbar-button-visual::before,
-.mn-tiptap-table-toolbar-button[data-icon="delete-table"] .mn-tiptap-table-toolbar-button-visual::before { width: 15px; height: 14px; border: 1.5px solid currentColor; border-top: 0; border-radius: 0 0 3px 3px; background: linear-gradient(currentColor, currentColor) 4px 3px / 1.3px 8px no-repeat, linear-gradient(currentColor, currentColor) 8px 3px / 1.3px 8px no-repeat; }
-.mn-tiptap-table-toolbar-button[data-icon="delete-row"] .mn-tiptap-table-toolbar-button-visual::after,
-.mn-tiptap-table-toolbar-button[data-icon="delete-column"] .mn-tiptap-table-toolbar-button-visual::after,
-.mn-tiptap-table-toolbar-button[data-icon="delete-table"] .mn-tiptap-table-toolbar-button-visual::after { content: ""; position: absolute; top: 7px; left: 50%; width: 16px; height: 1.5px; border-radius: var(--mn-radius-round); background: currentColor; transform: translateX(-50%) rotate(-18deg); }
-
-.mn-tiptap-table-toolbar-button[data-variant="icon"] .mn-tiptap-table-toolbar-button-visual::before {
-    background:
-        linear-gradient(currentColor, currentColor) 0 1px / 15px 1.5px no-repeat,
-        linear-gradient(currentColor, currentColor) 0 5px / 11px 1.5px no-repeat,
-        linear-gradient(currentColor, currentColor) 0 9px / 14px 1.5px no-repeat;
-}
-
-.mn-tiptap-table-toolbar-button[data-icon="align-center"] .mn-tiptap-table-toolbar-button-visual::before {
-    background:
-        linear-gradient(currentColor, currentColor) 1px 1px / 13px 1.5px no-repeat,
-        linear-gradient(currentColor, currentColor) 3px 5px / 9px 1.5px no-repeat,
-        linear-gradient(currentColor, currentColor) 1px 9px / 13px 1.5px no-repeat;
-}
-
-.mn-tiptap-table-toolbar-button[data-icon="align-right"] .mn-tiptap-table-toolbar-button-visual::before {
-    background:
-        linear-gradient(currentColor, currentColor) 0 1px / 15px 1.5px no-repeat,
-        linear-gradient(currentColor, currentColor) 4px 5px / 11px 1.5px no-repeat,
-        linear-gradient(currentColor, currentColor) 1px 9px / 14px 1.5px no-repeat;
-}
-
-.mn-tiptap-table-toolbar-button[data-variant="swatch"] .mn-tiptap-table-toolbar-button-visual::before {
-    border: var(--mn-border-subtle);
-    background: transparent;
-    box-shadow: inset 0 0 0 2px var(--mn-surface-raised);
-}
-
-.mn-tiptap-table-toolbar-button[data-variant="text-swatch"] .mn-tiptap-table-toolbar-button-visual::before {
-    width: 13px;
-    height: 15px;
-    border-radius: 0;
-    background:
-        linear-gradient(currentColor, currentColor) 1px 12px / 11px 2px no-repeat;
-    color: var(--mn-ink);
-    content: "A";
-    display: grid;
-    place-items: start center;
-    font-family: var(--mn-font-ui);
-    font-size: 12px;
-    font-weight: var(--mn-weight-semibold);
-    line-height: 13px;
-}
-
-.mn-tiptap-table-toolbar-button[data-icon="text-color-clear"] .mn-tiptap-table-toolbar-button-visual::before {
-    color: var(--mn-ink);
-    background:
-        linear-gradient(135deg, transparent 42%, var(--mn-danger) 44% 55%, transparent 57%),
-        linear-gradient(color-mix(in srgb, var(--mn-ink-3) 55%, transparent), color-mix(in srgb, var(--mn-ink-3) 55%, transparent)) 1px 12px / 11px 2px no-repeat;
-}
-
-.mn-tiptap-table-toolbar-button[data-icon="text-color-muted"] .mn-tiptap-table-toolbar-button-visual::before {
-    color: var(--mn-ink-3);
-}
-
-.mn-tiptap-table-toolbar-button[data-icon="text-color-accent"] .mn-tiptap-table-toolbar-button-visual::before {
-    color: var(--mn-accent);
-}
-
-.mn-tiptap-table-toolbar-button[data-icon="text-color-danger"] .mn-tiptap-table-toolbar-button-visual::before {
-    color: var(--mn-danger);
-}
-
-.mn-tiptap-table-toolbar-button[data-icon="color-yellow"] .mn-tiptap-table-toolbar-button-visual::before {
-    background: rgba(245, 158, 11, 0.34);
-}
-
-.mn-tiptap-table-toolbar-button[data-icon="color-blue"] .mn-tiptap-table-toolbar-button-visual::before {
-    background: rgba(59, 130, 246, 0.28);
-}
-
-.mn-tiptap-table-toolbar-button[data-icon="color-green"] .mn-tiptap-table-toolbar-button-visual::before {
-    background: rgba(16, 185, 129, 0.28);
-}
-
-.mn-tiptap-table-toolbar-button[data-icon="color-clear"] .mn-tiptap-table-toolbar-button-visual::before {
-    background:
-        linear-gradient(135deg, transparent 42%, var(--mn-danger) 44% 55%, transparent 57%),
-        var(--mn-surface-sunken);
-}
-
-.mn-tiptap-table-toolbar-button:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--mn-accent) 9%, transparent);
-    color: var(--mn-ink);
-}
-
-.mn-tiptap-table-toolbar-button:focus-visible,
-.mn-tiptap-table-toolbar-button[data-keyboard-active="true"] {
-    outline: 0;
-    background: color-mix(in srgb, var(--mn-accent) 11%, transparent);
-    color: var(--mn-ink);
-    box-shadow: var(--mn-ring-focus-sm);
-}
-
-.mn-tiptap-table-toolbar-button:disabled {
-    cursor: not-allowed;
-    opacity: var(--mn-primitive-disabled-opacity, 0.45);
-}
-
-.mn-tiptap-table-toolbar-button[data-active="true"] {
-    background: color-mix(in srgb, var(--mn-accent) 12%, transparent);
-    color: var(--mn-accent);
-}
-
-.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-button:hover:not(:disabled),
-.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-button[data-keyboard-active="true"],
-.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-button[data-active="true"] {
-    border-color: color-mix(in srgb, var(--mn-accent) 16%, transparent);
-    background: color-mix(in srgb, var(--mn-accent) 6%, transparent);
-    color: var(--mn-ink);
-    box-shadow: none;
-}
-
-.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-button:hover:not(:disabled) .mn-tiptap-table-toolbar-button-visual,
-.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-button[data-keyboard-active="true"] .mn-tiptap-table-toolbar-button-visual,
-.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-button[data-active="true"] .mn-tiptap-table-toolbar-button-visual {
-    background: var(--mn-surface-raised);
-    border-color: color-mix(in srgb, var(--mn-accent) 36%, var(--mn-border));
-    color: var(--mn-accent);
-}
-
-.mn-tiptap-table-toolbar-button[data-tone="danger"] {
-    color: var(--mn-danger);
-}
-
-.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-button[data-tone="danger"] {
-    background: transparent;
-}
-
-.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-button[data-tone="danger"]:hover:not(:disabled),
-.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-button[data-tone="danger"][data-keyboard-active="true"] {
-    background: color-mix(in srgb, var(--mn-danger) 9%, transparent);
-    border-color: color-mix(in srgb, var(--mn-danger) 18%, transparent);
-    box-shadow: none;
-}
-
-.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-button[data-tone="danger"]:hover:not(:disabled) .mn-tiptap-table-toolbar-button-visual,
-.mn-tiptap-table-toolbar[data-mode="context"] .mn-tiptap-table-toolbar-button[data-tone="danger"][data-keyboard-active="true"] .mn-tiptap-table-toolbar-button-visual {
-    border-color: color-mix(in srgb, var(--mn-danger) 36%, var(--mn-border));
-    color: var(--mn-danger);
-}
-
-.mn-tiptap-table-cell-menu-trigger {
-    position: fixed;
-    z-index: 164;
-    display: grid;
-    place-items: center;
-    width: 8px;
-    height: 12px;
-    border: 1px solid transparent;
-    border-radius: 8px;
-    background: transparent;
-    color: color-mix(in srgb, var(--mn-accent) 72%, var(--mn-ink-3));
-    box-shadow: none;
-    padding: 0;
-    font-family: var(--mn-font-ui);
-    font-size: 10px;
-    font-weight: var(--mn-weight-semibold);
-    line-height: 1;
-    transform: translate(-50%, -50%);
-    opacity: .74;
-    transition:
-        width var(--mn-transition-fast),
-        height var(--mn-transition-fast),
-        background-color var(--mn-transition-fast),
-        border-color var(--mn-transition-fast),
-        box-shadow var(--mn-transition-fast),
-        color var(--mn-transition-fast),
-        opacity var(--mn-transition-fast);
-}
-
-.mn-tiptap-table-cell-menu-trigger[data-placement="center"] {
-    width: 8px;
-    height: 12px;
-    color: color-mix(in srgb, var(--mn-accent) 66%, var(--mn-ink-3));
-    opacity: .72;
-}
-
-.mn-tiptap-table-cell-menu-trigger::before {
-    content: "";
-    display: block;
-    width: 4px;
-    height: 4px;
-    border-radius: var(--mn-radius-round);
-    background: currentColor;
-    opacity: .86;
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--mn-surface-raised) 86%, transparent);
-    transition:
-        box-shadow var(--mn-transition-fast),
-        opacity var(--mn-transition-fast),
-        transform var(--mn-transition-fast);
-}
-
-.mn-tiptap-table-cell-menu-trigger::after {
-    content: "";
     position: absolute;
     top: 50%;
-    left: 50%;
-    width: 10px;
-    height: 12px;
-    background:
-        radial-gradient(circle at 3px 3px, currentColor 1.2px, transparent 1.35px),
-        radial-gradient(circle at 7px 3px, currentColor 1.2px, transparent 1.35px),
-        radial-gradient(circle at 3px 9px, currentColor 1.2px, transparent 1.35px),
-        radial-gradient(circle at 7px 9px, currentColor 1.2px, transparent 1.35px);
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(.92);
-    transition:
-        opacity var(--mn-transition-fast),
-        transform var(--mn-transition-fast);
-}
-
-.mn-tiptap-table-cell-menu-trigger[data-selection-kind="cells"] {
-    width: 8px;
-    height: 12px;
-    color: color-mix(in srgb, var(--mn-accent) 76%, var(--mn-ink-3));
-}
-
-.mn-tiptap-table-cell-menu-trigger[data-selection-kind="row"],
-.mn-tiptap-table-cell-menu-trigger[data-selection-kind="column"],
-.mn-tiptap-table-cell-menu-trigger[data-selection-kind="table"] {
-    width: 20px;
-    height: 20px;
-}
-
-.mn-tiptap-table-cell-menu-trigger.hidden {
-    display: none;
-}
-
-.mn-tiptap-table-cell-menu-trigger:hover,
-.mn-tiptap-table-cell-menu-trigger:focus-visible,
-.mn-tiptap-table-cell-menu-trigger[data-open="true"] {
-    outline: 0;
-    width: 20px;
-    height: 20px;
-    border-color: color-mix(in srgb, var(--mn-accent) 24%, var(--mn-border));
-    background: color-mix(in srgb, var(--mn-surface-raised) 92%, transparent);
-    color: var(--mn-accent);
-    box-shadow:
-        0 4px 10px color-mix(in srgb, #000 7%, transparent),
-        0 0 0 2px color-mix(in srgb, var(--mn-accent) 8%, transparent);
-    opacity: 1;
-}
-
-.mn-tiptap-table-cell-menu-trigger:hover::before,
-.mn-tiptap-table-cell-menu-trigger:focus-visible::before,
-.mn-tiptap-table-cell-menu-trigger[data-open="true"]::before {
-    opacity: 0;
-    transform: scale(.55);
-    box-shadow: none;
-}
-
-.mn-tiptap-table-cell-menu-trigger:hover::after,
-.mn-tiptap-table-cell-menu-trigger:focus-visible::after,
-.mn-tiptap-table-cell-menu-trigger[data-open="true"]::after {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
-}
-
-.mn-tiptap-table-quick-add,
-.mn-tiptap-complex-block-insert {
-    position: fixed;
-    z-index: 161;
-    display: grid;
-    place-items: center;
-    min-width: 0;
-    border: 0;
-    border-radius: 6px;
+    right: var(--button-offset);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--button-size);
+    height: var(--button-size);
+    border-radius: var(--border-radius-full);
     background: transparent;
-    color: color-mix(in srgb, var(--mn-accent) 82%, var(--mn-ink-2));
-    box-shadow: none;
-    padding: 0;
-    transition:
-        background-color var(--mn-transition-fast),
-        border-color var(--mn-transition-fast),
-        box-shadow var(--mn-transition-fast),
-        color var(--mn-transition-fast),
-        opacity var(--mn-transition-fast);
-}
-
-.mn-tiptap-table-quick-add::selection,
-.mn-tiptap-complex-block-insert::selection {
-    background: transparent;
-}
-
-.mn-tiptap-table-quick-add[data-edge="row"]::before,
-.mn-tiptap-table-quick-add[data-edge="column"]::before {
-    border: 1px solid color-mix(in srgb, var(--mn-accent) 20%, var(--mn-border));
-    opacity: .74;
-    background: color-mix(in srgb, var(--mn-surface-raised) 92%, var(--mn-accent) 8%);
-    box-shadow:
-        0 1px 3px color-mix(in srgb, #000 5%, transparent),
-        0 0 0 1px color-mix(in srgb, var(--mn-editor-bg) 78%, transparent);
-    transition:
-        background-color var(--mn-transition-fast),
-        border-color var(--mn-transition-fast),
-        box-shadow var(--mn-transition-fast),
-        opacity var(--mn-transition-fast);
-}
-
-.mn-tiptap-table-quick-add::before,
-.mn-tiptap-table-quick-add::after,
-.mn-tiptap-complex-block-insert::before,
-.mn-tiptap-complex-block-insert::after {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    border-radius: var(--mn-radius-round);
-    background: currentColor;
-}
-
-.mn-tiptap-table-quick-add::before {
-    width: 11px;
-    height: 1px;
-}
-
-.mn-tiptap-table-quick-add::after {
-    width: 10px;
-    height: 10px;
-    background:
-        linear-gradient(currentColor, currentColor) 50% 50% / 10px 1.3px no-repeat,
-        linear-gradient(currentColor, currentColor) 50% 50% / 1.3px 10px no-repeat;
-    transform: translate(-50%, -50%);
-}
-
-.mn-tiptap-table-add-row {
-    min-width: 42px;
-    height: 14px;
-}
-
-.mn-tiptap-table-add-row[data-edge="row"]::before {
-    left: var(--mn-table-quick-add-visual-left, 50%);
-    top: var(--mn-table-quick-add-visual-center-y, 50%);
-    width: var(--mn-table-quick-add-visual-width, 100%);
-    height: 6px;
-    border-radius: var(--mn-radius-round);
+    cursor: pointer;
+    pointer-events: auto;
     transform: translateY(-50%);
 }
 
-.mn-tiptap-table-add-column {
-    width: 14px;
-    min-height: 42px;
-}
-
-.mn-tiptap-table-add-column[data-edge="column"]::before {
-    left: var(--mn-table-quick-add-visual-center-x, 50%);
-    top: var(--mn-table-quick-add-visual-top, 50%);
-    width: 6px;
-    height: var(--mn-table-quick-add-visual-height, 100%);
-    border-radius: var(--mn-radius-round);
-    transform: translateX(-50%);
-}
-
-.mn-tiptap-table-add-row[data-edge="row"]::after,
-.mn-tiptap-table-add-column[data-edge="column"]::after {
-    z-index: 1;
-}
-
-.mn-tiptap-table-quick-add:hover,
-.mn-tiptap-table-quick-add:focus-visible {
-    outline: 0;
-    background: transparent;
-    box-shadow: none;
-}
-
-.mn-tiptap-table-quick-add:hover::before,
-.mn-tiptap-table-quick-add:focus-visible::before {
-    border-color: color-mix(in srgb, var(--mn-accent) 38%, var(--mn-border));
-    background: color-mix(in srgb, var(--mn-surface-raised) 84%, var(--mn-accent) 16%);
-    box-shadow:
-        0 3px 10px color-mix(in srgb, #000 8%, transparent),
-        0 0 0 2px color-mix(in srgb, var(--mn-accent) 8%, transparent);
-    opacity: .9;
-}
-
-.mn-tiptap-table-quick-add.hidden {
-    display: none;
-}
-
-.mn-tiptap-complex-block-insert {
-    height: 18px;
-    color: color-mix(in srgb, var(--mn-accent) 64%, var(--mn-ink-3));
-    opacity: .88;
-    cursor: pointer;
-}
-
-.mn-tiptap-complex-block-insert::before {
-    width: 100%;
-    height: 1px;
-    border-radius: var(--mn-radius-round);
-    background:
-        linear-gradient(
-            90deg,
-            transparent 0,
-            transparent calc(50% - 28px),
-            color-mix(in srgb, var(--mn-accent) 18%, var(--mn-border)) calc(50% - 28px),
-            color-mix(in srgb, var(--mn-accent) 18%, var(--mn-border)) calc(50% - 12px),
-            transparent calc(50% - 12px),
-            transparent calc(50% + 12px),
-            color-mix(in srgb, var(--mn-accent) 18%, var(--mn-border)) calc(50% + 12px),
-            color-mix(in srgb, var(--mn-accent) 18%, var(--mn-border)) calc(50% + 28px),
-            transparent calc(50% + 28px),
-            transparent 100%
-        );
-    opacity: .54;
-    transform: translate(-50%, -50%);
-    transition: opacity var(--mn-transition-fast);
-}
-
-.mn-tiptap-complex-block-insert::after {
-    width: 14px;
-    height: 14px;
-    border: 1px solid color-mix(in srgb, var(--mn-accent) 20%, var(--mn-border));
-    border-radius: var(--mn-radius-round);
-    background:
-        linear-gradient(currentColor, currentColor) 50% 50% / 6px 1.1px no-repeat,
-        linear-gradient(currentColor, currentColor) 50% 50% / 1.1px 6px no-repeat,
-        color-mix(in srgb, var(--mn-editor-bg) 92%, var(--mn-surface-raised));
-    box-shadow:
-        0 1px 3px color-mix(in srgb, #000 5%, transparent),
-        0 0 0 3px color-mix(in srgb, var(--mn-editor-bg) 90%, transparent);
-    transform: translate(-50%, -50%);
-    z-index: 1;
-}
-
-.mn-tiptap-complex-block-insert:hover,
-.mn-tiptap-complex-block-insert:focus-visible {
-    outline: 0;
-    color: var(--mn-accent);
-}
-
-.mn-tiptap-complex-block-insert:hover::before,
-.mn-tiptap-complex-block-insert:focus-visible::before {
-    opacity: .82;
-}
-
-.mn-tiptap-complex-block-insert:hover::after,
-.mn-tiptap-complex-block-insert:focus-visible::after {
-    border-color: color-mix(in srgb, var(--mn-accent) 42%, var(--mn-border));
-    color: var(--mn-accent);
-    background:
-        linear-gradient(currentColor, currentColor) 50% 50% / 6px 1.1px no-repeat,
-        linear-gradient(currentColor, currentColor) 50% 50% / 1.1px 6px no-repeat,
-        var(--mn-surface-raised);
-    box-shadow:
-        0 2px 7px color-mix(in srgb, #000 8%, transparent),
-        0 0 0 2px color-mix(in srgb, var(--mn-accent) 7%, transparent);
-}
-
-.mn-tiptap-complex-block-insert.hidden {
-    display: none;
-}
-
-.mn-tiptap-table-quick-add:disabled {
-    cursor: not-allowed;
-    opacity: var(--mn-primitive-disabled-opacity, 0.45);
-}
-
-.mn-tiptap-table-axis-handle {
-    position: fixed;
-    z-index: 167;
-    display: grid;
-    place-items: center;
-    border: 1px solid transparent;
-    border-radius: 4px;
-    background: transparent;
-    color: color-mix(in srgb, var(--mn-ink-3) 66%, transparent);
-    box-shadow: none;
-    padding: 0;
-    pointer-events: auto;
-    transition:
-        background-color var(--mn-transition-fast),
-        border-color var(--mn-transition-fast),
-        box-shadow var(--mn-transition-fast),
-        color var(--mn-transition-fast);
-}
-
-.mn-tiptap-table-axis-hover-bridge {
-    position: fixed;
-    z-index: 166;
-    pointer-events: auto;
-    background: transparent;
-}
-
-.mn-tiptap-table-chrome-root.hidden {
-    display: none;
-}
-
-.mn-tiptap-table-chrome-root {
-    position: fixed;
-    inset: 0;
-    z-index: 158;
-    pointer-events: none;
-}
-
-.mn-tiptap-table-chrome-root button {
-    pointer-events: auto;
-}
-
-.mn-tiptap-table-selection-backdrop {
-    position: fixed;
-    z-index: 158;
-    pointer-events: none;
-    border-radius: 2px;
-    background:
-        linear-gradient(
-            180deg,
-            color-mix(in srgb, var(--mn-accent) 10%, transparent),
-            color-mix(in srgb, var(--mn-accent) 6%, transparent)
-        );
-    box-shadow: inset 0 0 0 999px color-mix(in srgb, var(--mn-accent) 4%, transparent);
-}
-
-.mn-tiptap-table-selection-backdrop[data-selection-kind="cell"] {
-    background: color-mix(in srgb, var(--mn-accent) 5%, transparent);
-    box-shadow: none;
-}
-
-.mn-tiptap-table-selection-backdrop.hidden {
-    display: none;
-}
-
-.mn-tiptap-table-selection-outline {
-    position: fixed;
-    z-index: 165;
-    box-sizing: border-box;
-    border: 2px solid var(--mn-accent);
-    border-radius: 2px;
-    pointer-events: none;
-    background: transparent;
-    box-shadow:
-        0 0 0 1px color-mix(in srgb, var(--mn-editor-bg) 82%, transparent),
-        0 2px 10px color-mix(in srgb, var(--mn-accent) 14%, transparent);
-    transform: translateZ(0);
-}
-
-.mn-tiptap-table-selection-outline[data-selection-kind="cell"] {
-    border-width: 2.5px;
-}
-
-.mn-tiptap-table-selection-outline.hidden {
-    display: none;
-}
-
-.mn-tiptap-table-selection-cell {
-    position: fixed;
-    z-index: 158;
-    pointer-events: none;
-    background:
-        linear-gradient(
-            180deg,
-            color-mix(in srgb, var(--mn-accent) 7%, transparent),
-            color-mix(in srgb, var(--mn-accent) 4%, transparent)
-        );
-}
-
-.mn-tiptap-table-axis-handle:hover,
-.mn-tiptap-table-axis-handle:focus-visible,
-.mn-tiptap-table-axis-handle[data-active="true"] {
-    outline: 0;
-    border-color: color-mix(in srgb, var(--mn-accent) 32%, var(--mn-border));
-    background: color-mix(in srgb, var(--mn-surface-raised) 84%, var(--mn-accent) 8%);
-    color: var(--mn-accent);
-    box-shadow:
-        0 3px 9px color-mix(in srgb, #000 7%, transparent),
-        0 0 0 2px color-mix(in srgb, var(--mn-accent) 8%, transparent);
-}
-
-.mn-tiptap-table-axis-handle.row,
-.mn-tiptap-table-axis-handle.column {
-    border-color: color-mix(in srgb, var(--mn-border) 44%, transparent);
-    background: color-mix(in srgb, var(--mn-surface-raised) 90%, transparent);
-    color: color-mix(in srgb, var(--mn-ink-3) 72%, transparent);
-    opacity: .98;
-    backdrop-filter: blur(10px);
-    box-shadow: 0 2px 6px color-mix(in srgb, #000 5%, transparent);
-}
-
-.mn-tiptap-table-axis-handle.row {
-    min-width: 20px;
-    border-radius: 5px 0 0 5px;
-    border-right-color: transparent;
-}
-
-.mn-tiptap-table-axis-handle.column {
-    min-height: 20px;
-    border-radius: 5px 5px 0 0;
-    border-bottom-color: transparent;
-}
-
-.mn-tiptap-table-axis-handle::before {
+.expandable-menu-button::before {
     content: "";
-    display: block;
-    border-radius: var(--mn-radius-round);
-    background: currentColor;
+    position: absolute;
+    top: 50%;
+    right: var(--dot-offset-small);
+    width: var(--dot-size-small);
+    height: var(--dot-size-small);
+    border-radius: var(--border-radius-full);
+    background: var(--tt-brand-color-600, var(--mn-accent));
+    transform: translateY(-50%);
+    transition:
+        width var(--transition-duration) var(--transition-timing),
+        height var(--transition-duration) var(--transition-timing),
+        right var(--transition-duration) var(--transition-timing),
+        background var(--transition-duration) var(--transition-timing);
 }
 
-.mn-tiptap-table-axis-handle.row::before {
-    width: 2.2px;
-    height: 2.2px;
-    box-shadow: 0 -4.5px 0 currentColor, 0 4.5px 0 currentColor;
+.expandable-menu-button svg {
+    position: relative;
+    z-index: 1;
+    width: var(--button-size);
+    height: var(--button-size);
+    color: var(--white, #fff);
+    opacity: 0;
+    flex-shrink: 0;
+    pointer-events: none;
+    transform: scale(var(--icon-scale-small));
+    transition:
+        opacity var(--transition-duration) var(--transition-timing),
+        transform var(--transition-duration) var(--transition-timing);
 }
 
-.mn-tiptap-table-axis-handle.column::before {
-    width: 2.2px;
-    height: 2.2px;
-    box-shadow: -4.5px 0 0 currentColor, 4.5px 0 0 currentColor;
+@media (hover: none) and (pointer: coarse) {
+    .expandable-menu-button::before {
+        width: var(--dot-size-large);
+        height: var(--dot-size-large);
+        right: var(--dot-offset-large);
+    }
+
+    .expandable-menu-button svg {
+        opacity: 1;
+        transform: scale(var(--icon-scale-large));
+    }
+}
+
+@media (hover: hover) {
+    .expandable-menu-button:hover::before,
+    .expandable-menu-button:focus-visible::before,
+    .expandable-menu-button.menu-opened::before {
+        width: var(--dot-size-large);
+        height: var(--dot-size-large);
+        right: var(--dot-offset-large);
+    }
+
+    .expandable-menu-button:hover svg,
+    .expandable-menu-button:focus-visible svg,
+    .expandable-menu-button.menu-opened svg {
+        opacity: 1;
+        transform: scale(var(--icon-scale-large));
+    }
+}
+
+.expandable-menu-button:focus-visible {
+    outline: 2px solid var(--tt-brand-color-600, var(--mn-accent));
+    outline-offset: 2px;
+}
+
+.expandable-menu-button:disabled {
+    cursor: not-allowed;
+    opacity: var(--mn-primitive-disabled-opacity, 0.5);
+}
+
+.expandable-menu-button:disabled::before {
+    background: var(--tt-disabled-color, var(--mn-ink-3));
+}
+
+.tiptap-table-extend-row-column-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: var(--tt-radius-lg, 8px);
+    background-color: var(--tt-table-handle-bg-color);
+    pointer-events: auto;
+}
+
+.tiptap-table-extend-row-column-button .tiptap-button-icon {
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+    color: var(--tt-table-extend-icon-color);
+}
+
+.tiptap-table-extend-row-column-button.tiptap-table-row-end-add-remove {
+    width: 100%;
+    height: 0.75rem;
+    cursor: row-resize;
+}
+
+.tiptap-table-extend-row-column-button.tiptap-table-column-end-add-remove {
+    width: 0.75rem;
+    cursor: col-resize;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .expandable-menu-button::before,
+    .expandable-menu-button svg {
+        transition: none;
+    }
 }

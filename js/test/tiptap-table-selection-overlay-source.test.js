@@ -3,23 +3,18 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const overlaySource = readFileSync(
-  new URL("../src/components/tiptap-node/table-selection-overlay.jsx", import.meta.url),
+  new URL("../src/components/tiptap-node/table-node/ui/table-selection-overlay/table-selection-overlay.jsx", import.meta.url),
   "utf8",
 );
 
-test("official table selection overlay does not treat ordinary cell caret as object selection", () => {
-  assert.match(overlaySource, /tableSelectionOverlayMode/u);
-  assert.match(
-    overlaySource,
-    /TABLE_SELECTION_OVERLAY_MODE\.CELL_SELECTION/u,
-  );
-  assert.match(
-    overlaySource,
-    /TABLE_SELECTION_OVERLAY_MODE\.VISUAL_CELL_SELECTION/u,
-  );
-  assert.match(overlaySource, /tableSelectionOverlayScope/u);
-  assert.match(overlaySource, /tableSelectionOverlayAllowsCellMenu\(overlayScope\)/u);
-  assert.match(overlaySource, /showResizeHandles && allowsCellSelectionChrome/u);
-  assert.doesNotMatch(overlaySource, /getSingleCellBoundingRect/u);
-  assert.doesNotMatch(overlaySource, /single cell handling/u);
+test("official table selection overlay owns cell selection and resize chrome", () => {
+  assert.match(overlaySource, /selection instanceof CellSelection/u);
+  assert.match(overlaySource, /getSelectionBoundingRect/u);
+  assert.match(overlaySource, /getSingleCellBoundingRect/u);
+  assert.match(overlaySource, /useResizeOverlay/u);
+  assert.match(overlaySource, /FloatingPortal root=\{containerRef\.current\}/u);
+  assert.match(overlaySource, /showResizeHandles/u);
+  assert.match(overlaySource, /onResizeStart=\{createResizeHandler\}/u);
+  assert.doesNotMatch(overlaySource, /tableSelectionOverlayMode/u);
+  assert.doesNotMatch(overlaySource, /PAPYRO_TABLE_SELECTED_CELL_CLASS/u);
 });

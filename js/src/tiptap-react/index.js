@@ -42,14 +42,6 @@ export {
   createTiptapReactMountController,
 } from "./mount-controller.jsx";
 export {
-  createTiptapReactTableChromeRenderer,
-  TiptapReactTableChromeRenderer,
-} from "./table-chrome-renderer.jsx";
-export {
-  createTiptapReactTableContextMenuRenderer,
-  TiptapReactTableContextMenuRenderer,
-} from "./table-context-menu-renderer.jsx";
-export {
   DragContextMenu,
 } from "../components/tiptap-ui/drag-context-menu/drag-context-menu.tsx";
 export {

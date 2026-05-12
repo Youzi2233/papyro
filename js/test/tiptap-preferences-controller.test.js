@@ -53,22 +53,14 @@ test("Tiptap preferences controller applies language without resetting paste set
   assert.deepEqual(entry.preferences, { autoLinkPaste: false, language: "Chinese" });
 });
 
-test("Tiptap preferences controller refreshes localized floating chrome", () => {
-  const calls = [];
+test("Tiptap preferences controller lets React chrome observe localized preferences", () => {
   const controller = createTiptapPreferencesController({ language: "english" });
-  const editor = { id: "editor" };
-  const entry = {
-    editor,
-    blockActionMenu: { refresh: () => calls.push(["blockActionMenu"]) },
-    slashMenu: { refresh: (targetEditor) => calls.push(["slashMenu", targetEditor]) },
-    tableToolbar: { refresh: (targetEditor) => calls.push(["tableToolbar", targetEditor]) },
-  };
+  const entry = {};
 
   controller.apply(entry, { language: "Chinese" });
 
-  assert.deepEqual(calls, [
-    ["blockActionMenu"],
-    ["slashMenu", editor],
-    ["tableToolbar", editor],
-  ]);
+  assert.deepEqual(entry.preferences, {
+    autoLinkPaste: true,
+    language: "Chinese",
+  });
 });

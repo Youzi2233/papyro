@@ -128,8 +128,6 @@ function defaultEditorOptions({
         if (isComposingKeyboardEvent(event)) {
           return false;
         }
-
-        if (entry?.tableToolbar?.handleKeyDown?.(event)) return true;
         return false;
       },
       handlePaste: (view, event, slice) => {
@@ -177,7 +175,7 @@ function createEntry({
   preferencesController,
   sourcePane,
   slashCommands,
-  tableToolbar,
+  tableCommands,
   reactMount,
 }) {
   return {
@@ -199,7 +197,7 @@ function createEntry({
     preferencesController,
     sourcePane,
     slashCommands,
-    tableToolbar,
+    tableCommands,
     reactMount,
   };
 }
@@ -220,17 +218,11 @@ export function createTiptapEditorRuntime({
   preferencesControllerFactory = createTiptapPreferencesController,
   sourcePaneControllerFactory = createTiptapSourcePaneController,
   slashCommandControllerFactory = createTiptapSlashCommandController,
-  tableToolbarControllerFactory = () => ({
+  tableCommandControllerFactory = () => ({
     attach() {},
     refresh() {},
-    handleKeyDown() { return false; },
-    shouldKeepOpenOnEditorBlur() { return false; },
-    contains() { return false; },
-    close() {},
     destroy() {},
   }),
-  tableMenuRendererFactory = null,
-  tableChromeRendererFactory = null,
   mountControllerFactory = createLegacyMountController,
   clipboard = {},
   layout = {},
@@ -282,9 +274,9 @@ export function createTiptapEditorRuntime({
     slashCommandControllerFactory,
     "slashCommandControllerFactory",
   );
-  const createTableToolbarController = requireFunction(
-    tableToolbarControllerFactory,
-    "tableToolbarControllerFactory",
+  const createTableCommandController = requireFunction(
+    tableCommandControllerFactory,
+    "tableCommandControllerFactory",
   );
   const createMountController = requireFunction(
     mountControllerFactory,
@@ -345,7 +337,6 @@ export function createTiptapEditorRuntime({
       existing.modeController.apply(existing, viewMode ?? existing.viewMode);
       existing.sourcePane.applyMode(existing);
       existing.reactMount?.refresh?.(existing);
-      existing.tableToolbar.refresh(existing.editor);
       return existing.editor;
     }
 
@@ -374,13 +365,7 @@ export function createTiptapEditorRuntime({
       onSelectionChange: (entry) => syncOutline(tabId, entry?.viewMode),
     });
     const slashCommands = createSlashCommandController();
-    const tableToolbar = createTableToolbarController({
-      dom: {
-        document: documentRef,
-      },
-      menuRendererFactory: tableMenuRendererFactory,
-      chromeRendererFactory: tableChromeRendererFactory,
-    });
+    const tableCommands = createTableCommandController();
     const editor = new TiptapEditor(
       defaultEditorOptions({
         initialContent: markdownSync.markdown,
@@ -408,23 +393,11 @@ export function createTiptapEditorRuntime({
           content: markdown,
         });
         entry.sourcePane.setMarkdown(markdown);
-        entry.tableToolbar.refresh(targetEditor);
       });
       editor.on("selectionUpdate", ({ editor: updatedEditor } = {}) => {
-        const targetEditor = updatedEditor ?? editor;
         const entry = runtimeRegistry.get(tabId);
-        entry?.tableToolbar?.refresh(targetEditor);
         entry?.modeSnapshots?.capture(entry, entry?.viewMode);
         syncOutline(tabId, entry?.viewMode);
-      });
-      editor.on("blur", () => {
-        const entry = runtimeRegistry.get(tabId);
-        const activeElement = documentRef?.activeElement;
-        const keepTableToolbarOpen =
-          entry?.tableToolbar?.shouldKeepOpenOnEditorBlur?.(activeElement) === true;
-        if (!keepTableToolbarOpen && !entry?.tableToolbar?.contains?.(activeElement)) {
-          entry?.tableToolbar?.close();
-        }
       });
     }
     const entry = createEntry({
@@ -441,7 +414,7 @@ export function createTiptapEditorRuntime({
       preferencesController,
       sourcePane,
       slashCommands,
-      tableToolbar,
+      tableCommands,
       reactMount: null,
     });
     const reactMount = mountController.mount?.({ root, editor, entry }) ?? null;
@@ -453,7 +426,7 @@ export function createTiptapEditorRuntime({
     sourcePane.attach({ editor, root, entry });
     modeSnapshots.capture(entry, entry.viewMode);
     pasteController.attach({ editor, root, entry });
-    tableToolbar.attach({ editor, root, entry });
+    tableCommands.attach({ editor, root, entry });
     runtimeRegistry.set(tabId, entry);
 
     return editor;
@@ -488,7 +461,6 @@ export function createTiptapEditorRuntime({
         entry.modeSnapshots.restore(entry, entry.viewMode);
         restoreEditorScrollSnapshot(entry);
         attachEditorScroll(tabId, entry);
-        entry.tableToolbar.refresh(entry.editor);
         syncOutline(tabId, entry.viewMode);
         entry.reactMount?.refresh?.(entry);
       } else if (message.type === "set_content") {
@@ -589,7 +561,7 @@ export function createTiptapEditorRuntime({
         detachEditorScroll(released);
         detachLayoutObserver(released);
         released?.sourcePane?.destroy?.();
-        released?.tableToolbar?.destroy?.();
+        released?.tableCommands?.destroy?.();
         released?.reactMount?.destroy?.();
         released?.editor?.destroy?.();
         return "destroyed";

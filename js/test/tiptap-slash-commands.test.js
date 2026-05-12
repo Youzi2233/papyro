@@ -219,27 +219,6 @@ test("Tiptap slash commands create tables with requested dimensions", () => {
   );
 });
 
-test("Tiptap slash table insertion refreshes table chrome", () => {
-  const { calls, editor } = createFakeEditor();
-  const controller = createTiptapSlashCommandController();
-  const chromeCalls = [];
-  const entry = {
-    tableToolbar: {
-      refresh(targetEditor) {
-        chromeCalls.push(["tableToolbarRefresh", targetEditor]);
-      },
-    },
-  };
-
-  assert.equal(controller.run("table", { editor, entry }).ok, true);
-
-  assert.deepEqual(calls, [
-    ["insertTable", 3, 2, true],
-    ["focus"],
-  ]);
-  assert.deepEqual(chromeCalls, [["tableToolbarRefresh", editor]]);
-});
-
 test("Tiptap slash commands create rich math blocks when the math extension is available", () => {
   const { calls, editor } = createFakeEditor();
   const controller = createTiptapSlashCommandController();

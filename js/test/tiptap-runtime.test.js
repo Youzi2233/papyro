@@ -36,7 +36,7 @@ function createRuntimeHarness({
   pasteControllerFactory,
   preferencesControllerFactory,
   sourcePaneControllerFactory,
-  tableToolbarControllerFactory,
+  tableCommandControllerFactory,
   mountControllerFactory,
   layout,
   document: documentOverride,
@@ -75,19 +75,11 @@ function createRuntimeHarness({
       },
     }));
 
-  const createTableToolbar =
-    tableToolbarControllerFactory ??
+  const createTableCommands =
+    tableCommandControllerFactory ??
     (() => ({
-      attach: ({ root }) => calls.push(["tableToolbarAttach", root.className]),
-      close: () => calls.push(["tableToolbarClose"]),
-      contains: () => false,
-      destroy: () => calls.push(["tableToolbarDestroy"]),
-      handleKeyDown: (event) => {
-        calls.push(["tableToolbarKeyDown", event.key]);
-        return event.key === "F10" && event.shiftKey;
-      },
-      refresh: () => calls.push(["tableToolbarRefresh"]),
-      shouldKeepOpenOnEditorBlur: () => false,
+      attach: ({ root }) => calls.push(["tableCommandsAttach", root.className]),
+      destroy: () => calls.push(["tableCommandsDestroy"]),
     }));
 
   class FakeTiptapEditor {
@@ -200,7 +192,7 @@ function createRuntimeHarness({
     pasteControllerFactory: createPasteController,
     ...(preferencesControllerFactory ? { preferencesControllerFactory } : {}),
     ...(sourcePaneControllerFactory ? { sourcePaneControllerFactory } : {}),
-    tableToolbarControllerFactory: createTableToolbar,
+    tableCommandControllerFactory: createTableCommands,
     ...(mountControllerFactory ? { mountControllerFactory } : {}),
     ...(layout ? { layout } : {}),
     navigation: {
@@ -240,7 +232,7 @@ test("Tiptap runtime creates an editor instance and registry entry", () => {
     ["setEditable", true],
     ["blockHintsAttach"],
     ["pasteControllerAttach", "mn-tiptap-runtime"],
-    ["tableToolbarAttach", "mn-tiptap-runtime"],
+    ["tableCommandsAttach", "mn-tiptap-runtime"],
   ]);
 });
 
@@ -317,9 +309,8 @@ test("Tiptap runtime reattaches existing editors without rebuilding", () => {
     ["setEditable", true],
     ["blockHintsAttach"],
     ["pasteControllerAttach", "mn-tiptap-runtime"],
-    ["tableToolbarAttach", "mn-tiptap-runtime"],
+    ["tableCommandsAttach", "mn-tiptap-runtime"],
     ["setEditable", false],
-    ["tableToolbarRefresh"],
   ]);
 });
 
@@ -468,12 +459,9 @@ test("Tiptap runtime handles baseline Rust messages", () => {
   assert.deepEqual(calls, [
     ["syncOutline", "tab-a", "hybrid"],
     ["setEditable", false],
-    ["tableToolbarRefresh"],
     ["syncOutline", "tab-a", "source"],
     ["setContent", "## Updated", "markdown"],
     ["insertContent", "\n- item", "markdown"],
-    ["tableToolbarRefresh"],
-    ["tableToolbarRefresh"],
     ["blockHintsApply", 7],
     ["toggleHeading", 2],
     ["focus"],
@@ -511,7 +499,6 @@ test("Tiptap runtime preserves set_view_mode protocol state", () => {
   assert.equal(entry.dom.dataset.viewMode, "preview");
   assert.deepEqual(calls, [
     ["setEditable", false],
-    ["tableToolbarRefresh"],
     ["syncOutline", "tab-a", "preview"],
   ]);
 });
@@ -543,7 +530,7 @@ test("Tiptap runtime mode contract keeps rich editing Hybrid-only", () => {
     ["setEditable", false],
     ["blockHintsAttach"],
     ["pasteControllerAttach", "mn-tiptap-runtime"],
-    ["tableToolbarAttach", "mn-tiptap-runtime"],
+    ["tableCommandsAttach", "mn-tiptap-runtime"],
   ]);
   assert.deepEqual(sourcePaneCalls, [["attach", "preview"]]);
 
@@ -555,10 +542,8 @@ test("Tiptap runtime mode contract keeps rich editing Hybrid-only", () => {
 
   assert.deepEqual(calls, [
     ["setEditable", false],
-    ["tableToolbarRefresh"],
     ["syncOutline", "tab-a", "source"],
     ["setEditable", true],
-    ["tableToolbarRefresh"],
     ["syncOutline", "tab-a", "hybrid"],
   ]);
   assert.deepEqual(sourcePaneCalls, [
@@ -676,7 +661,6 @@ test("Tiptap runtime preserves insert_markdown protocol updates", () => {
   assert.equal(registry.get("tab-a").editor.markdown, "# Note\n- item");
   assert.deepEqual(calls, [
     ["insertContent", "\n- item", "markdown"],
-    ["tableToolbarRefresh"],
   ]);
   assert.deepEqual(messages, [
     {
@@ -899,7 +883,7 @@ test("Tiptap runtime destroys and unregisters editor entries", () => {
   assert.equal(registry.has("tab-a"), false);
   assert.deepEqual(calls, [
     ["pasteControllerDestroy"],
-    ["tableToolbarDestroy"],
+    ["tableCommandsDestroy"],
     ["destroy"],
   ]);
   assert.deepEqual(detached, ["hybrid", "layout:hybrid"]);
@@ -1114,7 +1098,7 @@ test("Tiptap runtime sends image drop requests and moves the selection", async (
   ]);
 });
 
-test("Tiptap runtime wires table toolbar keyboard handling through editor props", () => {
+test("Tiptap runtime leaves table keyboard shortcuts to official table-node components", () => {
   const { calls, registry, runtime } = createRuntimeHarness();
   runtime.ensureEditor({
     tabId: "tab-a",
@@ -1127,28 +1111,7 @@ test("Tiptap runtime wires table toolbar keyboard handling through editor props"
   const handled = editor.options.editorProps.handleKeyDown(null, { key: "ArrowDown" });
 
   assert.equal(handled, false);
-  assert.deepEqual(calls, [
-    ["tableToolbarKeyDown", "ArrowDown"],
-  ]);
-});
-
-test("Tiptap runtime lets table toolbar keyboard handling consume matching keys", () => {
-  const { calls, registry, runtime } = createRuntimeHarness();
-  runtime.ensureEditor({
-    tabId: "tab-a",
-    containerId: "editor-root",
-    initialContent: "# Note",
-  });
-  calls.length = 0;
-
-  const editor = registry.get("tab-a").editor;
-  const handled = editor.options.editorProps.handleKeyDown(null, {
-    key: "F10",
-    shiftKey: true,
-  });
-
-  assert.equal(handled, true);
-  assert.deepEqual(calls, [["tableToolbarKeyDown", "F10"]]);
+  assert.deepEqual(calls, []);
 });
 
 test("Tiptap runtime does not consume keys during IME composition", () => {
@@ -1178,43 +1141,4 @@ test("Tiptap runtime keeps facade navigation methods available", () => {
   assert.equal(runtime.scrollEditorToLine(), "editor-line");
   assert.equal(runtime.scrollPreviewToHeading(), "preview-heading");
   assert.equal(runtime.renderPreviewMermaid(), "mermaid");
-});
-
-test("Tiptap runtime keeps table context menus stable when editor blur is internal", () => {
-  const container = createContainer();
-  const activeElement = { id: "table-menu" };
-  const documentRef = {
-    getElementById: (containerId) => (containerId === "editor-root" ? container : null),
-    get activeElement() {
-      return activeElement;
-    },
-  };
-  const { calls, registry, runtime } = createRuntimeHarness({
-    container,
-    document: documentRef,
-    tableToolbarControllerFactory: () => ({
-      attach: ({ root }) => calls.push(["tableToolbarAttach", root.className]),
-      close: () => calls.push(["tableToolbarClose"]),
-      contains: (target) => target === activeElement,
-      destroy: () => calls.push(["tableToolbarDestroy"]),
-      handleKeyDown: () => false,
-      refresh: () => calls.push(["tableToolbarRefresh"]),
-      shouldKeepOpenOnEditorBlur: (target) => {
-        calls.push(["tableToolbarBlurGuard", target.id]);
-        return true;
-      },
-    }),
-  });
-  runtime.ensureEditor({
-    tabId: "tab-a",
-    containerId: "editor-root",
-    initialContent: "# Note",
-  });
-  calls.length = 0;
-
-  registry.get("tab-a").editor.emit("blur");
-
-  assert.deepEqual(calls, [
-    ["tableToolbarBlurGuard", "table-menu"],
-  ]);
 });

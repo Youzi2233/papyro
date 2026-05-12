@@ -60,10 +60,6 @@ export function createMarkdownCodeBlock(language = null) {
   return `\`\`\`${normalized ?? ""}\ncode\n\`\`\``;
 }
 
-function refreshTableChrome(entry, editor) {
-  entry?.tableToolbar?.refresh?.(editor);
-}
-
 function commandSearchText(command) {
   return [
     command.id,
@@ -318,9 +314,6 @@ export const PAPYRO_TIPTAP_SLASH_COMMANDS = Object.freeze([
         [{ rows, cols, withHeaderRow: true }],
         createMarkdownTable(rows, cols),
       );
-      if (ok) {
-        refreshTableChrome(entry, editor);
-      }
       return ok;
     },
   }),

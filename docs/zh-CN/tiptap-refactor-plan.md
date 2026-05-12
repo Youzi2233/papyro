@@ -204,7 +204,7 @@ js/src/
 - [x] 删除 `format-toolbar-controller`（替代：官方 `BubbleMenu` + toolbar 组件）
 - [x] 删除 `slash-menu-controller`（替代：官方 `slash-dropdown-menu`）
 - [x] 删除 `link-editor-controller`（替代：官方 `link-popover`）
-- [ ] 删除 `table-toolbar-controller`（替代：官方 `table-node` 内置菜单）
+- [x] 删除 `table-toolbar-controller`（替代：官方 `table-node` 内置菜单）
 
 #### 2.2 删除自定义 React 视图（被官方组件替代）
 - [x] 删除 `tiptap-react/slash-menu-view.jsx`
@@ -261,7 +261,7 @@ js/src/
   - 行/列扩展按钮
   - 右键菜单（插入/删除行列、合并/拆分单元格）
   - 列宽调整
-- [ ] 移除 `tiptap-table-command-bridge.js` 中的冗余桥接逻辑
+- [x] 移除 `tiptap-table-command-controller.js` 中的冗余桥接逻辑
 - [ ] 移除 `tiptap-table.js` 中被官方组件替代的代码
 - [ ] 确保表格 Markdown 序列化正确（GFM table 格式）
 

@@ -8,18 +8,16 @@ function normalizeCommandId(value) {
   return String(value ?? "").trim().toLowerCase();
 }
 
-export class TiptapTableCommandBridge {
+export class TiptapTableCommandController {
   #editor = null;
-  #entry = null;
   #commands = TABLE_COMMANDS;
 
   constructor({ commands = TABLE_COMMANDS } = {}) {
     this.#commands = commands;
   }
 
-  attach({ editor, entry } = {}) {
+  attach({ editor } = {}) {
     this.#editor = editor ?? null;
-    this.#entry = entry ?? null;
   }
 
   refresh(editor = this.#editor) {
@@ -69,26 +67,11 @@ export class TiptapTableCommandBridge {
     };
   }
 
-  handleKeyDown() {
-    return false;
-  }
-
-  shouldKeepOpenOnEditorBlur() {
-    return false;
-  }
-
-  contains() {
-    return false;
-  }
-
-  close() {}
-
   destroy() {
     this.#editor = null;
-    this.#entry = null;
   }
 }
 
-export function createTiptapTableCommandBridge(options) {
-  return new TiptapTableCommandBridge(options);
+export function createTiptapTableCommandController(options) {
+  return new TiptapTableCommandController(options);
 }

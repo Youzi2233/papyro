@@ -6,7 +6,7 @@ import {
   createTiptapReactCodeBlockNodeViewRenderer,
   createTiptapReactMountController,
 } from "./tiptap-react/index.js";
-import { createTiptapTableCommandBridge } from "./tiptap-table-command-bridge.js";
+import { createTiptapTableCommandController } from "./tiptap-table-command-controller.js";
 import { createTiptapEditorRuntime } from "./tiptap-runtime.js";
 
 const editorRegistry = createEditorRuntimeRegistry();
@@ -26,7 +26,7 @@ const tiptapRuntimeAdapter = createTiptapEditorRuntime({
     restoreEditorScrollSnapshot: hostRuntime.restoreEditorScrollSnapshot,
   },
   mountControllerFactory: createTiptapReactMountController,
-  tableToolbarControllerFactory: createTiptapTableCommandBridge,
+  tableCommandControllerFactory: createTiptapTableCommandController,
   navigation: hostRuntime.navigation,
 });
 

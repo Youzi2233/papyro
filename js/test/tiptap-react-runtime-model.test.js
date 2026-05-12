@@ -95,7 +95,7 @@ test("Tiptap React command executor routes known command scopes", () => {
     formatCommands: controller("format"),
     historyCommands: controller("history"),
     blockActions: controller("block"),
-    tableToolbar: controller("table"),
+    tableCommands: controller("table"),
   };
   const executor = createPapyroTiptapCommandExecutor({
     editor: { id: "editor" },

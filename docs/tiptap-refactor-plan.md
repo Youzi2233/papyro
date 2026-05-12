@@ -204,7 +204,7 @@ The current `tiptap-runtime.js` creates many controllers via dependency injectio
 - [x] Remove `format-toolbar-controller` (replaced by: official `BubbleMenu` + toolbar components)
 - [x] Remove `slash-menu-controller` (replaced by: official `slash-dropdown-menu`)
 - [x] Remove `link-editor-controller` (replaced by: official `link-popover`)
-- [ ] Remove `table-toolbar-controller` (replaced by: official `table-node` built-in menus)
+- [x] Remove `table-toolbar-controller` (replaced by: official `table-node` built-in menus)
 
 #### 2.2 Remove Custom React Views (Replaced by Official Components)
 - [x] Remove `tiptap-react/slash-menu-view.jsx`
@@ -261,7 +261,7 @@ The table-node is partially integrated, needs completion:
   - Row/column extend buttons
   - Context menu (insert/delete rows/columns, merge/split cells)
   - Column width resize
-- [ ] Remove redundant bridging logic in `tiptap-table-command-bridge.js`
+- [x] Remove redundant bridging logic in `tiptap-table-command-controller.js`
 - [ ] Remove code in `tiptap-table.js` replaced by official components
 - [ ] Ensure table Markdown serialization is correct (GFM table format)
 

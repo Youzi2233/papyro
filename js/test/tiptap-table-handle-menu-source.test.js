@@ -10,10 +10,6 @@ const officialAxisMenuSource = readFileSync(
   new URL("../src/components/tiptap-node/table-node/ui/table-handle-menu/index.jsx", import.meta.url),
   "utf8",
 );
-const tableHandleSource = readFileSync(
-  new URL("../src/components/tiptap-node/table-handle.jsx", import.meta.url),
-  "utf8",
-);
 const officialLayerSource = readFileSync(
   new URL("../src/tiptap-react/official-table-node-layer.jsx", import.meta.url),
   "utf8",
@@ -96,10 +92,7 @@ test("Papyro table layer mounts official table-node menu paths", () => {
     officialLayerSource,
     /from "\.\.\/components\/tiptap-node\/table-cell-handle-menu\.jsx"/u,
   );
-  assert.match(
-    tableHandleSource,
-    /from "@\/components\/tiptap-node\/table-node\/ui\/table-handle-menu"/u,
-  );
+  assert.doesNotMatch(officialLayerSource, /from "\.\.\/components\/tiptap-node\/table-handle\.jsx"/u);
 });
 
 test("official table-node chrome paths are real implementations, not legacy re-exports", () => {

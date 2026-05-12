@@ -172,7 +172,7 @@ export function createPapyroTiptapCommandExecutor({
 
     if (scope === "table" || scope === "table-action") {
       return runControllerCommand({
-        controller: context.entry?.tableCommands ?? context.entry?.tableToolbar,
+        controller: context.entry?.tableCommands,
         commandId,
         context,
         missingError: "missing_table_command_controller",
