@@ -583,6 +583,15 @@ then queues `EditorCommand::InsertMarkdown` with a relative
 `![image](...)` link. If no Rust channel is attached, the paste/drop is left to
 Tiptap/ProseMirror instead of being consumed.
 
+Mermaid rendering stays in JS because Mermaid requires DOM APIs and manages its
+own SVG rendering queue. Papyro uses one shared renderer for Preview HTML and
+the Tiptap Mermaid node view. The renderer initializes Mermaid with
+`startOnLoad: false`, `securityLevel: "strict"`, `suppressErrorRendering: true`,
+and `htmlLabels: false`, and marks those safety keys as secure so document-level
+Mermaid directives cannot relax the local-document sandbox. Rendering is
+tokenized per target element so stale async renders cannot overwrite a newer
+diagram state.
+
 Most input follows this path:
 
 ```mermaid
@@ -648,7 +657,10 @@ Hybrid is therefore Rust analysis plus Tiptap/React presentation. As more editor
 | Mermaid | JS-assisted render | Tiptap node/extension state |
 | Truth source | Rust tab content | Rust tab content plus JS input events |
 
-Preview uses `pulldown-cmark` and `syntect` on the Rust side, then JS helps with Mermaid and scroll/outline behavior.
+Preview uses `pulldown-cmark` and `syntect` on the Rust side, then JS helps with
+Mermaid and scroll/outline behavior. Preview Mermaid blocks render only when
+their source changed, show explicit pending/error states, and reuse the same
+strict Mermaid configuration as the editable node view.
 
 Hybrid uses Tiptap as the interactive editor and keeps Markdown synchronization explicit so files remain portable.
 

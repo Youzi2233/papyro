@@ -648,6 +648,13 @@ Markdown 文档。JS 将文件读取为 base64，并发送
 `EditorCommand::InsertMarkdown`，插入相对路径 `![image](...)`。如果 Rust
 通信通道尚未附加，粘贴/拖入会交还给 Tiptap/ProseMirror 处理。
 
+Mermaid 渲染保留在 JS 侧，因为 Mermaid 依赖 DOM API，并且内部维护自己的
+SVG 渲染队列。Papyro 对 Preview HTML 和 Tiptap Mermaid node view 使用同一个
+渲染器。该渲染器以 `startOnLoad: false`、`securityLevel: "strict"`、
+`suppressErrorRendering: true`、`htmlLabels: false` 初始化 Mermaid，并把这些
+安全相关 key 标记为 secure，避免文档内 Mermaid 指令放宽本地文档沙箱。每个
+目标元素都有独立 render token，旧的异步渲染结果不会覆盖新的图表状态。
+
 最常见的是 `ContentChanged`：
 
 ```mermaid
@@ -730,6 +737,10 @@ Hybrid mode：
 | 主要渲染 | Rust HTML | Tiptap/ProseMirror document view + React chrome |
 | Mermaid | JS 辅助渲染 | Tiptap node/extension state |
 | 数据真相 | Rust tab content | Rust tab content + JS 当前输入事件 |
+
+Preview 使用 Rust 侧的 `pulldown-cmark` 和 `syntect` 输出 HTML，然后由 JS 负责
+Mermaid、滚动同步和大纲跳转辅助。Preview Mermaid block 只有在 source 变化时
+才会重新渲染，并复用和可编辑 node view 相同的 strict Mermaid 配置。
 
 ## 18. Editor host 为什么要复用
 

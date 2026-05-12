@@ -309,7 +309,7 @@ js/src/
 - [x] Markdown 源码模式（Source/Hybrid/Preview 三模式切换）
 - [x] Rust 协议桥接（`window.papyroEditor` facade）
 - [x] 本地图片粘贴（通过 Rust 端处理文件保存）
-- [ ] Mermaid 图表渲染
+- [x] Mermaid 图表渲染
 - [ ] KaTeX 数学公式渲染
 - [ ] 大纲/TOC 生成（通过 Rust 端消费）
 - [ ] i18n 多语言支持
