@@ -277,8 +277,8 @@ js/src/
 - [x] 2026-05-13 跟进：从 `markdown.css` 与 `tiptap-chrome-base.css` 移除旧 Papyro 表格 chrome；只在 `tiptap-chrome-table.css` 保留宿主适配，让官方 handle/menu SCSS 负责组件外观
 - [x] 2026-05-13 跟进：将 `tiptap-react/official-table-node-layer.jsx` 迁移为 `official-table-node-layer.tsx`
 - [x] 2026-05-13 跟进：通过 `tiptap-table-menu-content` 将表格下拉菜单的尺寸、层级和菜单项节奏限定在官方 table-node 菜单内，避免全局覆盖 slash/link/drag 菜单
-- [ ] 2026-05-13 审计跟进：弱化 Papyro 表格宿主覆盖，让官方 table-node 的 handle、扩展轨道和单元格操作点更接近 Notion-like 参考体验
-- [ ] 2026-05-13 审计跟进：验证嵌套表格菜单（`ColorMenu`、`TableAlignMenu`）继承稳定的表格菜单表面，同时不破坏 slash/link/drag 菜单样式
+- [x] 2026-05-13 审计跟进：弱化 Papyro 表格宿主覆盖，让官方 table-node 的 handle、扩展轨道和单元格操作点更接近 Notion-like 参考体验
+- [x] 2026-05-13 审计跟进：让嵌套表格菜单（`ColorMenu`、`TableAlignMenu`）继续使用受限的表格菜单表面，同时不改动 slash/link/drag 菜单样式
 
 ---
 

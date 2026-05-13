@@ -277,8 +277,8 @@ The table-node is partially integrated, needs completion:
 - [x] 2026-05-13 follow-up: remove legacy Papyro table chrome from `markdown.css` and `tiptap-chrome-base.css`; keep table host styling in `tiptap-chrome-table.css` so official handle/menu SCSS owns the component look
 - [x] 2026-05-13 follow-up: migrate `tiptap-react/official-table-node-layer.jsx` to `official-table-node-layer.tsx`
 - [x] 2026-05-13 follow-up: scope table dropdown sizing, z-index, and menu-item rhythm to the official table-node menus via `tiptap-table-menu-content`, avoiding global overrides of slash/link/drag menus
-- [ ] 2026-05-13 audit follow-up: soften Papyro's table host overrides so official table-node handles, extend rails, and cell action dots match the Notion-like reference more closely
-- [ ] 2026-05-13 audit follow-up: verify nested table menus (`ColorMenu`, `TableAlignMenu`) inherit a stable table menu surface without breaking slash/link/drag menu styling
+- [x] 2026-05-13 audit follow-up: soften Papyro's table host overrides so official table-node handles, extend rails, and cell action dots match the Notion-like reference more closely
+- [x] 2026-05-13 audit follow-up: keep nested table menus (`ColorMenu`, `TableAlignMenu`) on the scoped table menu surface without changing slash/link/drag menu styling
 
 ---
 
