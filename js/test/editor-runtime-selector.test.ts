@@ -5,7 +5,7 @@ import {
   DEFAULT_EDITOR_RUNTIME_KIND,
   normalizeEditorRuntimeKind,
   selectEditorRuntimeAdapter,
-} from "../src/editor-runtime-selector.js";
+} from "../src/editor-runtime-selector.ts";
 
 test("editor runtime selector defaults to Tiptap on the migration branch", () => {
   assert.equal(DEFAULT_EDITOR_RUNTIME_KIND, "tiptap");

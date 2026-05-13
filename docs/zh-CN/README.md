@@ -61,7 +61,7 @@ flowchart LR
 - SQLite、文件系统、workspace 扫描、watcher：`crates/storage`
 - 平台对话框和系统集成：`crates/platform`
 - Markdown 统计、渲染、协议结构：`crates/editor`
-- Tiptap runtime 行为：`js/src/editor-runtime.ts`、`js/src/tiptap-*.js`、`js/src/tiptap-react/`、`js/src/editor-host-runtime.js`、`js/src/editor-runtime-contract.ts` 或 `js/src/editor-runtime-bootstrap.js` 中的共享 helper
+- Tiptap runtime 行为：`js/src/editor-runtime.ts`、`js/src/tiptap-*.js`、`js/src/tiptap-react/`、`js/src/editor-host-runtime.js`、`js/src/editor-runtime-contract.ts` 或 `js/src/editor-runtime-bootstrap.ts` 中的共享 helper
 - 主题 token 或 Markdown 视觉语言：`assets/main.css`、`apps/*/assets/main.css` 和 [theme-system.md](theme-system.md)
 
 ## 文档维护规则

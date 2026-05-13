@@ -60,7 +60,7 @@ node scripts/check-workspace-deps.js
 - `js/src/tiptap-*.js`
 - `js/src/tiptap-react/`
 - `js/src/editor-host-runtime.js`
-- `js/src/editor-runtime-bootstrap.js`
+- `js/src/editor-runtime-bootstrap.ts`
 
 改完后运行：
 

@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { createEditorRuntimeRegistry } from "../src/editor-registry.js";
+import { createEditorRuntimeRegistry } from "../src/editor-registry.ts";
 import { createEditorHostRuntime } from "../src/editor-host-runtime.js";
 
 function createClassList() {

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createEditorRuntimeRegistry } from "../src/editor-registry.js";
+import { createEditorRuntimeRegistry } from "../src/editor-registry.ts";
 import { importBundledModule } from "./helpers/load-esbuild-module.js";
 
 const { createTiptapEditorRuntime } = await importBundledModule(

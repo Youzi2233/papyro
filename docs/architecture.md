@@ -722,7 +722,7 @@ Relevant files:
 
 - `crates/ui/src/components/editor/pane.rs`
 - `crates/ui/src/components/editor/host.rs`
-- `js/src/editor-registry.js`
+- `js/src/editor-registry.ts`
 - `js/src/editor-runtime.ts`
 - `js/src/tiptap-react/`
 

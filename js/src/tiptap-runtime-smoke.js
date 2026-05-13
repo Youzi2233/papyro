@@ -1,6 +1,6 @@
 import { Window } from "happy-dom";
 
-import { installPapyroEditorRuntime } from "./editor-runtime-bootstrap.js";
+import { installPapyroEditorRuntime } from "./editor-runtime-bootstrap.ts";
 import { createPapyroTiptapRuntimeAdapter } from "./editor-runtime-defaults.ts";
 import {
   createPapyroMarkdownManager,

@@ -5,7 +5,7 @@ import {
   EditorRuntimeRegistry,
   createEditorRuntimeRegistry,
   isRuntimeEditorDestroyed,
-} from "../src/editor-registry.js";
+} from "../src/editor-registry.ts";
 
 test("editor runtime registry exposes Map-compatible entry access", () => {
   const registry = createEditorRuntimeRegistry();

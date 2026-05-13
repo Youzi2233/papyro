@@ -1,5 +1,5 @@
 import { createEditorHostRuntime } from "./editor-host-runtime.js";
-import { createEditorRuntimeRegistry } from "./editor-registry.js";
+import { createEditorRuntimeRegistry } from "./editor-registry.ts";
 import { createTiptapEditorRuntime } from "./editor-runtime.ts";
 import { createPapyroTiptapExtensions } from "./tiptap-markdown.js";
 import { createTiptapReactCodeBlockNodeViewRenderer } from "./tiptap-react/extensions/code-block-node-view.js";

@@ -26,7 +26,7 @@ import {
   createTiptapRuntimeProtocolBridge,
   syncRuntimeLanguage,
 } from "./editor-runtime-protocol.ts";
-import { isRuntimeEditorDestroyed } from "./editor-registry.js";
+import { isRuntimeEditorDestroyed } from "./editor-registry.ts";
 
 function requireFunction(value, name) {
   if (typeof value !== "function") {

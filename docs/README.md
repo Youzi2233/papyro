@@ -61,7 +61,7 @@ If you are unsure where a change belongs:
 - SQLite, filesystem, workspace scan, watcher: `crates/storage`
 - Platform dialogs and shell integration: `crates/platform`
 - Markdown summary, render, protocol structs: `crates/editor`
-- Tiptap runtime behavior: `js/src/editor-runtime.ts`, `js/src/tiptap-*.js`, `js/src/tiptap-react/`, `js/src/editor-host-runtime.js`, `js/src/editor-runtime-contract.ts`, or shared helpers in `js/src/editor-runtime-bootstrap.js`
+- Tiptap runtime behavior: `js/src/editor-runtime.ts`, `js/src/tiptap-*.js`, `js/src/tiptap-react/`, `js/src/editor-host-runtime.js`, `js/src/editor-runtime-contract.ts`, or shared helpers in `js/src/editor-runtime-bootstrap.ts`
 - Theme tokens or Markdown visual language: `assets/main.css`, `apps/*/assets/main.css`, and [theme-system.md](theme-system.md)
 
 ## Documentation Maintenance Rules

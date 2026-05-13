@@ -795,7 +795,7 @@ source pane 状态、table command 状态、粘贴处理和滚动/layout hook �
 
 - `crates/ui/src/components/editor/pane.rs`
 - `crates/ui/src/components/editor/host.rs`
-- `js/src/editor-registry.js`
+- `js/src/editor-registry.ts`
 - `js/src/editor-runtime.ts`
 - `js/src/tiptap-react/`
 

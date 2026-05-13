@@ -7,7 +7,7 @@ const {
   createEditorRuntimeFacade,
   installPapyroEditorRuntime,
 } = await importBundledModule(
-  new URL("../src/editor-runtime-bootstrap.js", import.meta.url),
+  new URL("../src/editor-runtime-bootstrap.ts", import.meta.url),
 );
 
 function createRuntimeAdapter(overrides = {}) {
