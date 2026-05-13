@@ -17,7 +17,28 @@ import {
   SquareCode,
   TableProperties,
   Workflow,
+  type LucideIcon,
+  type LucideProps,
 } from "lucide-react";
+
+type CommandIconKey =
+  | "paragraph"
+  | "heading-1"
+  | "heading-2"
+  | "heading-3"
+  | "bullet-list"
+  | "ordered-list"
+  | "task-list"
+  | "quote"
+  | "callout"
+  | "code-block"
+  | "divider"
+  | "table"
+  | "math"
+  | "mermaid"
+  | "image"
+  | "code-language"
+  | "file";
 
 const ICON_PROPS = Object.freeze({
   className: "mn-tiptap-command-icon-svg",
@@ -26,13 +47,13 @@ const ICON_PROPS = Object.freeze({
   absoluteStrokeWidth: true,
   "aria-hidden": "true",
   focusable: "false",
-});
+} satisfies LucideProps);
 
-function LucideCommandIcon({ as: Icon }) {
+function LucideCommandIcon({ as: Icon }: { as: LucideIcon }) {
   return <Icon {...ICON_PROPS} />;
 }
 
-const COMMAND_ICONS = Object.freeze({
+const COMMAND_ICONS: Readonly<Record<CommandIconKey, React.ReactElement>> = Object.freeze({
   paragraph: <LucideCommandIcon as={Pilcrow} />,
   "heading-1": <LucideCommandIcon as={Heading1} />,
   "heading-2": <LucideCommandIcon as={Heading2} />,
@@ -52,6 +73,10 @@ const COMMAND_ICONS = Object.freeze({
   file: <LucideCommandIcon as={FileText} />,
 });
 
-export function CommandMenuIcon({ icon }) {
-  return COMMAND_ICONS[icon] ?? COMMAND_ICONS.paragraph;
+function isCommandIconKey(icon: unknown): icon is CommandIconKey {
+  return typeof icon === "string" && icon in COMMAND_ICONS;
+}
+
+export function CommandMenuIcon({ icon }: { icon?: string | null }) {
+  return isCommandIconKey(icon) ? COMMAND_ICONS[icon] : COMMAND_ICONS.paragraph;
 }

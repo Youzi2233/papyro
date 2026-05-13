@@ -1,7 +1,16 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  type KeyboardEvent,
+  type RefObject,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import type { Editor } from "@tiptap/core";
 import {
   NodeViewContent,
   NodeViewWrapper,
+  type ReactNodeViewProps,
 } from "@tiptap/react";
 
 import {
@@ -23,7 +32,13 @@ import { usePapyroTiptapLanguage } from "../runtime-context.tsx";
 const COPY_FEEDBACK_MS = 1400;
 const CODE_LANGUAGE_MENU_OWNER_ID = "mn-tiptap-react-code-language-menu";
 
-function safePosition(getPos) {
+type CodeBlockLanguageChrome = ReturnType<typeof createCodeBlockLanguageChrome>;
+type CodeBlockLanguageCommand = ReturnType<typeof createCodeBlockLanguageCommands>[number];
+type CodeBlockChromeCommand = ReturnType<typeof createCodeBlockChromeCommands>[number];
+type CopyState = "idle" | "copied" | "failed";
+type CodeBlockLanguage = string | null | undefined;
+
+function safePosition(getPos: ReactNodeViewProps["getPos"] | null | undefined) {
   if (typeof getPos !== "function") return null;
   try {
     const pos = getPos();
@@ -33,18 +48,24 @@ function safePosition(getPos) {
   }
 }
 
-function nodeViewRootElement(editor, getPos) {
+function nodeViewRootElement(
+  editor: Editor | null | undefined,
+  getPos: ReactNodeViewProps["getPos"] | null | undefined,
+) {
   const pos = safePosition(getPos);
   if (!Number.isSafeInteger(pos)) return null;
   try {
     const element = editor?.view?.nodeDOM?.(pos) ?? null;
-    return element?.nodeType === 1 ? element : null;
+    return element?.nodeType === 1 ? (element as Element) : null;
   } catch (_error) {
     return null;
   }
 }
 
-function applyElementAttributes(element, attributes) {
+function applyElementAttributes(
+  element: Element | null | undefined,
+  attributes: Record<string, unknown> | null | undefined,
+) {
   if (!element) return;
   Object.entries(attributes ?? {}).forEach(([name, value]) => {
     if (value === undefined || value === null) {
@@ -55,7 +76,7 @@ function applyElementAttributes(element, attributes) {
   });
 }
 
-function writeCodeToClipboard(text) {
+function writeCodeToClipboard(text: unknown) {
   const clipboard = globalThis?.navigator?.clipboard;
   if (typeof clipboard?.writeText !== "function") return Promise.resolve(false);
   return clipboard.writeText(String(text ?? "")).then(
@@ -70,6 +91,12 @@ function CodeLanguageButton({
   onToggle,
   onKeyDown,
   buttonRef,
+}: {
+  chrome: CodeBlockLanguageChrome;
+  expanded: boolean;
+  onToggle: () => void;
+  onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void;
+  buttonRef: RefObject<HTMLButtonElement | null>;
 }) {
   const activation = usePointerActivation(onToggle);
 
@@ -104,6 +131,13 @@ function CodeLanguageMenu({
   onChoose,
   onClose,
   buttonRef,
+}: {
+  ownerId: string;
+  language: string;
+  currentLanguage: CodeBlockLanguage;
+  onChoose: (language: CodeBlockLanguage) => void;
+  onClose: () => void;
+  buttonRef: RefObject<HTMLButtonElement | null>;
 }) {
   const commands = useMemo(
     () => createCodeBlockLanguageCommands({ language, currentLanguage }),
@@ -112,7 +146,7 @@ function CodeLanguageMenu({
   const [activeIndex, setActiveIndex] = useState(() =>
     activeCodeBlockLanguageCommandIndex(commands),
   );
-  const menuRef = useRef(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
   const activeCommand = commands[activeIndex] ?? commands[0];
   const activeDescendant = activeCommand ? `${ownerId}-item-${activeIndex}` : undefined;
 
@@ -137,7 +171,7 @@ function CodeLanguageMenu({
     [activeDescendant],
   );
 
-  const move = (direction) => {
+  const move = (direction: number) => {
     setActiveIndex((index) =>
       nextCodeBlockLanguageCommandIndex(commands, index, direction),
     );
@@ -151,7 +185,7 @@ function CodeLanguageMenu({
     onClose?.();
     buttonRef?.current?.focus?.({ preventScroll: true });
   };
-  const handleKeyDown = (event) => {
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event?.isComposing || event?.keyCode === 229 || event?.which === 229) return;
     if (event.key === "ArrowDown") {
       event.preventDefault();
@@ -220,7 +254,19 @@ function CodeLanguageMenu({
   );
 }
 
-function CodeLanguageMenuItem({ id, command, active, onActive, onChoose }) {
+function CodeLanguageMenuItem({
+  id,
+  command,
+  active,
+  onActive,
+  onChoose,
+}: {
+  id: string;
+  command: CodeBlockLanguageCommand;
+  active: boolean;
+  onActive: () => void;
+  onChoose: (language: CodeBlockLanguage) => void;
+}) {
   const activation = usePointerActivation(() => {
     if (!command.disabled) onChoose(command.language);
   });
@@ -254,6 +300,9 @@ function CodeLanguageMenuItem({ id, command, active, onActive, onChoose }) {
 function CodeToolbarButton({
   command,
   onRun,
+}: {
+  command?: CodeBlockChromeCommand;
+  onRun: () => void;
 }) {
   const activation = usePointerActivation(onRun);
 
@@ -262,11 +311,12 @@ function CodeToolbarButton({
       type="button"
       className="mn-tiptap-code-toolbar-button"
       contentEditable={false}
-      data-action={command.meta?.action}
-      data-state={command.state ?? undefined}
-      aria-label={command.title}
-      aria-pressed={command.pressed === undefined ? undefined : String(command.pressed)}
-      title={command.title}
+      data-action={command?.meta?.action as string | undefined}
+      data-state={command?.state ?? undefined}
+      aria-label={command?.title}
+      aria-pressed={command?.pressed === undefined ? undefined : String(command.pressed)}
+      title={command?.title}
+      disabled={!command}
       {...activation}
     />
   );
@@ -276,14 +326,14 @@ export function PapyroCodeBlockNodeView({
   editor,
   node,
   getPos,
-}) {
+}: ReactNodeViewProps) {
   const language = usePapyroTiptapLanguage();
   const [menuOpen, setMenuOpen] = useState(false);
   const [wrapped, setWrapped] = useState(false);
-  const [copyState, setCopyState] = useState("idle");
-  const copyTimerRef = useRef(null);
-  const languageButtonRef = useRef(null);
-  const currentLanguage = node?.attrs?.language ?? null;
+  const [copyState, setCopyState] = useState<CopyState>("idle");
+  const copyTimerRef = useRef<number | null>(null);
+  const languageButtonRef = useRef<HTMLButtonElement | null>(null);
+  const currentLanguage = node?.attrs?.language as CodeBlockLanguage;
   const detectedLanguage = currentLanguage ? null : inferCodeBlockLanguage(node?.textContent);
   const rootAttributes = useMemo(
     () =>
@@ -330,7 +380,7 @@ export function PapyroCodeBlockNodeView({
       if (!menuOpen) return undefined;
       const documentRef = editor?.view?.dom?.ownerDocument ?? globalThis.document;
       const closeOnPointerDown = (event) => {
-        const target = event?.target;
+        const target = event?.target as Element | null;
         if (target?.closest?.(".mn-tiptap-code-language-menu-inline, .mn-tiptap-code-language-button")) {
           return;
         }
@@ -344,7 +394,7 @@ export function PapyroCodeBlockNodeView({
     [editor, menuOpen],
   );
 
-  const chooseLanguage = (nextLanguage) => {
+  const chooseLanguage = (nextLanguage: CodeBlockLanguage) => {
     const pos = safePosition(getPos);
     const ok = setCodeBlockLanguage(editor, nextLanguage, pos);
     if (ok) setMenuOpen(false);
@@ -370,7 +420,7 @@ export function PapyroCodeBlockNodeView({
   const wrapCommand = chromeCommands.find((command) => command.id === "toggle-code-wrap");
   const openLanguageMenu = () => setMenuOpen(true);
   const closeLanguageMenu = () => setMenuOpen(false);
-  const handleLanguageButtonKeyDown = (event) => {
+  const handleLanguageButtonKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
     if (event?.isComposing || event?.keyCode === 229 || event?.which === 229) return;
     if (event.key === "ArrowDown" || event.key === "Enter" || event.key === " ") {
       event.preventDefault();

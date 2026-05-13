@@ -2,7 +2,18 @@ import React from "react";
 
 import { commandElementId } from "../../tiptap-ui-primitives.ts";
 
-function dataAttributes(data = {}) {
+type AttributeValue = string | number | boolean | null | undefined;
+type AttributeMap = Record<string, AttributeValue>;
+type ActivationHandlers = React.DOMAttributes<HTMLElement> & Record<string, unknown>;
+type PolymorphicComponent = React.ElementType;
+type CommandLike = {
+  index?: number;
+  title?: string;
+  description?: string;
+  disabled?: boolean;
+};
+
+function dataAttributes(data: AttributeMap = {}) {
   return Object.fromEntries(
     Object.entries(data)
       .filter(([, value]) => value !== undefined)
@@ -10,13 +21,13 @@ function dataAttributes(data = {}) {
   );
 }
 
-function ariaAttributes(aria = {}) {
+function ariaAttributes(aria: AttributeMap = {}) {
   return Object.fromEntries(
     Object.entries(aria).filter(([, value]) => value !== undefined),
   );
 }
 
-function classNames(...values) {
+function classNames(...values: Array<string | false | null | undefined>) {
   return values.filter(Boolean).join(" ");
 }
 
@@ -26,6 +37,12 @@ export function CommandIconFrame({
   children,
   dataIcon = icon,
   data = {},
+}: {
+  className?: string;
+  icon?: string | null;
+  children?: React.ReactNode;
+  dataIcon?: string | null;
+  data?: AttributeMap;
 }) {
   return (
     <span
@@ -45,6 +62,12 @@ export function CommandText({
   descriptionClassName,
   title,
   description = "",
+}: {
+  className?: string;
+  titleClassName?: string;
+  descriptionClassName?: string;
+  title?: React.ReactNode;
+  description?: React.ReactNode;
 }) {
   return (
     <span className={className}>
@@ -71,6 +94,23 @@ export function CommandRow({
   onFocus,
   activation = {},
   children,
+}: {
+  as?: PolymorphicComponent;
+  ownerId?: string;
+  index?: number;
+  selected?: boolean;
+  className?: string;
+  activeClassName?: string;
+  title?: string;
+  disabled?: boolean;
+  role?: React.AriaRole;
+  tabIndex?: number;
+  data?: AttributeMap;
+  aria?: AttributeMap;
+  onPointerMove?: React.PointerEventHandler<HTMLElement>;
+  onFocus?: React.FocusEventHandler<HTMLElement>;
+  activation?: ActivationHandlers;
+  children?: React.ReactNode;
 }) {
   return (
     <Component
@@ -96,6 +136,10 @@ export function VisuallyHidden({
   as: Component = "span",
   className = "",
   children,
+}: {
+  as?: PolymorphicComponent;
+  className?: string;
+  children?: React.ReactNode;
 }) {
   return (
     <Component className={classNames("mn-tiptap-visually-hidden", className)}>
@@ -107,6 +151,9 @@ export function VisuallyHidden({
 export function Kbd({
   className = "",
   children,
+}: {
+  className?: string;
+  children?: React.ReactNode;
 }) {
   return (
     <kbd className={classNames("mn-tiptap-kbd", className)}>
@@ -128,6 +175,19 @@ export function EditorPopover({
   aria = {},
   onKeyDown,
   children,
+}: {
+  as?: PolymorphicComponent;
+  id?: string;
+  className?: string;
+  role?: React.AriaRole;
+  label?: string;
+  labelledBy?: string;
+  hidden?: boolean;
+  tabIndex?: number;
+  data?: AttributeMap;
+  aria?: AttributeMap;
+  onKeyDown?: React.KeyboardEventHandler<HTMLElement>;
+  children?: React.ReactNode;
 }) {
   return (
     <Component
@@ -159,6 +219,18 @@ export function CommandMenu({
   aria = {},
   onKeyDown,
   children,
+}: {
+  as?: PolymorphicComponent;
+  id?: string;
+  className?: string;
+  role?: React.AriaRole;
+  label?: string;
+  labelledBy?: string;
+  activeDescendant?: string;
+  data?: AttributeMap;
+  aria?: AttributeMap;
+  onKeyDown?: React.KeyboardEventHandler<HTMLElement>;
+  children?: React.ReactNode;
 }) {
   return (
     <Component
@@ -186,6 +258,15 @@ export function CommandSection({
   role = "group",
   data = {},
   children,
+}: {
+  as?: PolymorphicComponent;
+  className?: string;
+  titleClassName?: string;
+  title?: React.ReactNode;
+  label?: string;
+  role?: React.AriaRole;
+  data?: AttributeMap;
+  children?: React.ReactNode;
 }) {
   return (
     <Component
@@ -227,6 +308,29 @@ export function CommandItem({
   onFocus,
   activation = {},
   children,
+}: {
+  command?: CommandLike;
+  ownerId?: string;
+  index?: number;
+  selected?: boolean;
+  className?: string;
+  activeClassName?: string;
+  role?: React.AriaRole;
+  title?: string;
+  description?: React.ReactNode;
+  disabled?: boolean;
+  tabIndex?: number;
+  icon?: React.ReactNode;
+  accessory?: React.ReactNode;
+  textClassName?: string;
+  titleClassName?: string;
+  descriptionClassName?: string;
+  data?: AttributeMap;
+  aria?: AttributeMap;
+  onPointerMove?: React.PointerEventHandler<HTMLElement>;
+  onFocus?: React.FocusEventHandler<HTMLElement>;
+  activation?: ActivationHandlers;
+  children?: React.ReactNode;
 }) {
   return (
     <CommandRow
@@ -285,6 +389,29 @@ export function IconButton({
   onMouseDown,
   onContextMenu,
   children,
+}: {
+  id?: string;
+  role?: React.AriaRole;
+  className?: string;
+  active?: boolean;
+  activeClassName?: string;
+  title?: string;
+  label?: string;
+  pressed?: boolean;
+  disabled?: boolean;
+  tabIndex?: number;
+  iconClassName?: string;
+  data?: AttributeMap;
+  aria?: AttributeMap;
+  activation?: ActivationHandlers;
+  onPointerEnter?: React.PointerEventHandler<HTMLButtonElement>;
+  onPointerMove?: React.PointerEventHandler<HTMLButtonElement>;
+  onFocus?: React.FocusEventHandler<HTMLButtonElement>;
+  onBlur?: React.FocusEventHandler<HTMLButtonElement>;
+  onKeyDown?: React.KeyboardEventHandler<HTMLButtonElement>;
+  onMouseDown?: React.MouseEventHandler<HTMLButtonElement>;
+  onContextMenu?: React.MouseEventHandler<HTMLButtonElement>;
+  children?: React.ReactNode;
 }) {
   return (
     <button
@@ -344,6 +471,30 @@ export function ToolbarButton({
   onBlur,
   onKeyDown,
   children,
+}: {
+  ownerId?: string;
+  index?: number;
+  role?: React.AriaRole;
+  commandId?: string;
+  commandIndex?: number;
+  className?: string;
+  active?: boolean;
+  activeClassName?: string;
+  title?: string;
+  label?: string;
+  ariaLabel?: string;
+  pressed?: boolean;
+  disabled?: boolean;
+  tabIndex?: number;
+  data?: AttributeMap;
+  aria?: AttributeMap;
+  activation?: ActivationHandlers;
+  onPointerEnter?: React.PointerEventHandler<HTMLButtonElement>;
+  onPointerMove?: React.PointerEventHandler<HTMLButtonElement>;
+  onFocus?: React.FocusEventHandler<HTMLButtonElement>;
+  onBlur?: React.FocusEventHandler<HTMLButtonElement>;
+  onKeyDown?: React.KeyboardEventHandler<HTMLButtonElement>;
+  children?: React.ReactNode;
 }) {
   return (
     <IconButton

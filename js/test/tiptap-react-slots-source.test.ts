@@ -7,7 +7,7 @@ const slotsSource = readFileSync(
   "utf8",
 );
 const indexSource = readFileSync(
-  new URL("../src/tiptap-react/index.js", import.meta.url),
+  new URL("../src/tiptap-react/index.ts", import.meta.url),
   "utf8",
 );
 const runtimeContextSource = readFileSync(
@@ -27,11 +27,11 @@ const codeBlockCommandModelSource = readFileSync(
   "utf8",
 );
 const codeBlockNodeViewSource = readFileSync(
-  new URL("../src/tiptap-react/components/code-block-node-view.jsx", import.meta.url),
+  new URL("../src/tiptap-react/components/code-block-node-view.tsx", import.meta.url),
   "utf8",
 );
 const codeBlockNodeViewExtensionSource = readFileSync(
-  new URL("../src/tiptap-react/extensions/code-block-node-view.js", import.meta.url),
+  new URL("../src/tiptap-react/extensions/code-block-node-view.ts", import.meta.url),
   "utf8",
 );
 const hoverIntentHookSource = readFileSync(
@@ -71,7 +71,7 @@ const editorRuntimeProtocolSource = readFileSync(
   "utf8",
 );
 const primitivesSource = readFileSync(
-  new URL("../src/tiptap-react/components/primitives.jsx", import.meta.url),
+  new URL("../src/tiptap-react/components/primitives.tsx", import.meta.url),
   "utf8",
 );
 

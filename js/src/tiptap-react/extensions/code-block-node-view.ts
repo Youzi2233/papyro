@@ -1,9 +1,18 @@
+import type {
+  Editor,
+  NodeViewRenderer,
+  NodeViewRendererProps,
+} from "@tiptap/core";
 import { ReactNodeViewRenderer } from "@tiptap/react";
 
-import { PapyroCodeBlockNodeView } from "../components/code-block-node-view.jsx";
+import { PapyroCodeBlockNodeView } from "../components/code-block-node-view.tsx";
 import { codeBlockDomAttributes } from "../../tiptap-code-block.js";
 
-export function reactCodeBlockEditorLanguage(editor) {
+type CodeBlockRendererFactoryOptions = {
+  fallbackNodeView?: NodeViewRenderer | null;
+};
+
+export function reactCodeBlockEditorLanguage(editor: Editor | null | undefined) {
   const dom = editor?.view?.dom ?? null;
   const root =
     dom?.closest?.(".mn-tiptap-runtime") ??
@@ -12,7 +21,7 @@ export function reactCodeBlockEditorLanguage(editor) {
   return root?.dataset?.language ?? dom?.ownerDocument?.documentElement?.lang ?? "english";
 }
 
-export function createReactCodeBlockAttrs({ editor }) {
+export function createReactCodeBlockAttrs({ editor }: Pick<NodeViewRendererProps, "editor">) {
   return ({ node }) =>
     codeBlockDomAttributes({
       language: reactCodeBlockEditorLanguage(editor),
@@ -22,8 +31,8 @@ export function createReactCodeBlockAttrs({ editor }) {
 }
 
 export function createTiptapReactCodeBlockNodeViewRenderer() {
-  return ({ fallbackNodeView } = {}) =>
-    (props) => {
+  return ({ fallbackNodeView }: CodeBlockRendererFactoryOptions = {}): NodeViewRenderer =>
+    (props: NodeViewRendererProps) => {
       if (!props?.editor?.contentComponent && typeof fallbackNodeView === "function") {
         return fallbackNodeView(props);
       }

@@ -16,7 +16,7 @@
 
 | 维度 | 当前状态 | 目标状态 |
 |------|---------|---------|
-| 语言 | 混合 TypeScript，且截至 2026-05-13 `js/src/` 下仍有 29 个被跟踪的 `.js` 文件和 3 个被跟踪的 `.jsx` 文件 | TypeScript (.ts/.tsx) |
+| 语言 | 混合 TypeScript，且截至 2026-05-13 React 支撑边界迁移后，`js/src/` 下仍有 27 个被跟踪的 `.js` 文件且不再有被跟踪的 `.jsx` 文件 | TypeScript (.ts/.tsx) |
 | 构建 | esbuild (原生支持 TS，无需改动) | esbuild + tsconfig |
 | UI 框架 | React 18.3 (已满足) | React 18.3 (不变) |
 | Tiptap | 3.23.1 (已对齐) | 3.23.1+ (保持同版本) |
@@ -31,7 +31,7 @@
 
 - 表格架构：`PapyroOfficialTableNodeLayer` 已经把官方 `TableHandle`、`TableSelectionOverlay`、`TableCellHandleMenu`、`TableExtendRowColumnButtons` 挂在 `EditorContent` 外部，符合官方 table-node 集成契约。最新表格跟进已经移除宿主 chrome 漂移：Papyro CSS 不再重绘官方 handle、扩展按钮和单元格操作点；表格专属菜单 CSS 只限制顶层行/列/单元格菜单的层级、视口边界和文本裁剪，嵌套颜色/对齐子菜单回到官方 menu 表面。
 - 表格 UX 目标：官方 table-node SCSS 负责组件外观，Papyro CSS 只做宿主布局、视口安全、主题 token 桥接和 Markdown 持久化约束。行列 handle 应该是接近 Notion-like 的轻量暗示，而不是常驻的开发者工具条控件。
-- JavaScript 存量：`js/src/` 下仍有 29 个被跟踪的 `.js` 文件和 3 个被跟踪的 `.jsx` 文件。它们是源码，不是生成物。它们分三类：需要行为覆盖后类型化的 Papyro 特有 Markdown/媒体适配；仍暴露旧 JS 边界的编辑器交互/协议适配；以及应迁移为 TSX 或在官方组件完全接管后删除的剩余 React 支撑文件。
+- JavaScript 存量：React 支撑边界迁移后，`js/src/` 下仍有 27 个被跟踪的 `.js` 文件且不再有被跟踪的 `.jsx` 文件。它们是源码，不是生成物。剩余文件主要是需要行为覆盖后类型化的 Papyro 特有 Markdown/媒体适配，以及仍暴露旧 JS 边界的编辑器交互 helper；当官方 TS/TSX 组件完全接管对应行为时应直接删除。
 - 格式化入口：顶部 shell 工具栏只保留应用级控制。富文本格式化入口应全部来自官方 Tiptap React 表面：`PapyroToolbarFloating`、slash menu、drag context menu、link popover 和 table-node menus。当前活跃的 `PapyroToolbarFloating` 仍与官方 Notion-like 工具栏组合有偏差：文本对齐、撤销/重做和高亮控件常驻展示；它应收敛为官方模板组合，仅移除 AI/Cloud 等 Papyro 暂未实现的能力。
 - 验证标准：每个 UI 收敛步骤都要跑源码测试、构建和 editor Markdown gate；视觉改动在有可用 app target 时优先做 desktop WebView/manual smoke 或截图验证。
 
@@ -316,14 +316,14 @@ js/src/
 - [x] 将 `editor-core.js` 转换为 `.ts` 源码模块，同时保持当前测试覆盖的行为表面不变
 - [x] 将 `editor-clipboard.js` 转换为带类型的 `.ts` 模块
 - [x] 将 `tiptap-ui-primitives.js` 转换为带类型的 `.ts` 模块
-- [ ] 将 `js/src/` 下剩余 29 个 `.js` 文件和 3 个 `.jsx` 文件迁移为 `.ts`/`.tsx`；若官方 TS/TSX 组件已经接管对应行为，则直接删除旧文件
-- [ ] 将剩余 JS/JSX 迁移拆成三条线推进：核心运行时（`editor-*`、`markdown-sync-controller`）、Papyro 功能适配（`tiptap-math`、`tiptap-mermaid`、`tiptap-image`、`tiptap-callout` 等）、残留 React 支撑（`tiptap-react/*`）
+- [ ] 将 `js/src/` 下剩余 27 个 `.js` 文件迁移为 `.ts`/`.tsx`，并保持无被跟踪 `.jsx` 文件；若官方 TS/TSX 组件已经接管对应行为，则直接删除旧文件
+- [x] 将剩余 JS/JSX 迁移拆成三条线推进：核心运行时（`editor-*`、`markdown-sync-controller`）、Papyro 功能适配（`tiptap-math`、`tiptap-mermaid`、`tiptap-image`、`tiptap-callout` 等）、残留 React 支撑（`tiptap-react/*`）；当前核心运行时和 React 支撑线已收口
 - [x] 在表格命令行为已有源码测试和 runtime 测试覆盖后，将 `tiptap-table-command-controller.js` 迁移为 `tiptap-table-command-controller.ts`
 - [x] 在表格命令行为已有源码测试和 runtime 测试覆盖后，将 `tiptap-table.js` 迁移为 `tiptap-table.ts`
 - [x] 将 `tiptap-table-commands.js` 迁移为 `tiptap-table-commands.ts`，让表格命令元数据和菜单模型暴露类型化边界
 - [x] 迁移 `editor-core.js`
 - [x] 将 React 支撑 helper 模块迁移为类型化边界：`code-block-command-model.ts`、`use-pointer-activation.ts`、`use-hover-intent-activation.ts` 和 `floating.ts`
-- [ ] 迁移 `js/src/tiptap-react/` 下剩余 React 支撑文件，包括 code-block node view、primitive wrappers、code-block node-view extension 和 package index
+- [x] 迁移 `js/src/tiptap-react/` 下剩余 React 支撑文件，包括 code-block node view、primitive wrappers、command icons、code-block node-view extension 和 package index
 - [ ] 在现有 TS 模板债务完成类型化或隔离后，新增可通过的 `npm --prefix js run typecheck` 闸门
 - [ ] 启用 typecheck 闸门前解决已知阻塞：缺失的官方 image extension 依赖/类型、`allowImportingTsExtensions` import path、table-handle 工具里的隐式 `any`、以及 runtime context 的类型边界
 

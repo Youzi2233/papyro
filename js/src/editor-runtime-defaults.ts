@@ -2,7 +2,7 @@ import { createEditorHostRuntime } from "./editor-host-runtime.ts";
 import { createEditorRuntimeRegistry } from "./editor-registry.ts";
 import { createTiptapEditorRuntime } from "./editor-runtime.ts";
 import { createPapyroTiptapExtensions } from "./tiptap-markdown.js";
-import { createTiptapReactCodeBlockNodeViewRenderer } from "./tiptap-react/extensions/code-block-node-view.js";
+import { createTiptapReactCodeBlockNodeViewRenderer } from "./tiptap-react/extensions/code-block-node-view.ts";
 import { createTiptapReactMountController } from "./tiptap-react/mount-controller.tsx";
 
 function createRuntimeExtensions() {

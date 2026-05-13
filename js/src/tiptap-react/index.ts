@@ -36,7 +36,7 @@ export {
 } from "./commands/code-block-command-model.ts";
 export {
   createTiptapReactCodeBlockNodeViewRenderer,
-} from "./extensions/code-block-node-view.js";
+} from "./extensions/code-block-node-view.ts";
 export {
   createTiptapLegacyMountController,
   createTiptapReactMountController,
