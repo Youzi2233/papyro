@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { importBundledModule } from "./helpers/load-esbuild-module.js";
 
 const { createMarkdownSyncController } = await importBundledModule(
-  new URL("../src/markdown-sync-controller.js", import.meta.url),
+  new URL("../src/markdown-sync-controller.ts", import.meta.url),
 );
 const { parseTiptapMarkdown } = await importBundledModule(
   new URL("../src/tiptap-markdown.js", import.meta.url),

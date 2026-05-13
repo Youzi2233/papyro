@@ -6,7 +6,7 @@ import {
   sendEditorImageRequest,
 } from "./editor-clipboard.js";
 import { createTiptapRuntimeAdapter } from "./editor-runtime-contract.ts";
-import { createMarkdownSyncController } from "./markdown-sync-controller.js";
+import { createMarkdownSyncController } from "./markdown-sync-controller.ts";
 import { createTiptapBlockHintsController } from "./tiptap-block-hints-controller.js";
 import { createTiptapFormatCommandController } from "./tiptap-format-commands.js";
 import { createTiptapHistoryCommandController } from "./tiptap-history-commands.js";

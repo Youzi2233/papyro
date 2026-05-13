@@ -4,7 +4,56 @@ import {
   serializeTiptapMarkdown,
 } from "./tiptap-markdown.js";
 
-function createParseFailure(error, markdown) {
+type MarkdownManager = {
+  parse?: (markdown: string) => unknown;
+  serialize?: (doc: unknown) => string;
+};
+
+type MarkdownParseFailure = {
+  type: "markdown_parse_failed";
+  message: string;
+  markdown: string;
+};
+
+type MarkdownParseSuccess = {
+  ok: true;
+  doc: unknown;
+  markdown: string;
+};
+
+type MarkdownParseResult =
+  | MarkdownParseSuccess
+  | {
+      ok: false;
+      error: MarkdownParseFailure;
+      markdown: string;
+    };
+
+type MarkdownSerializeResult =
+  | {
+      ok: true;
+      markdown: string;
+    }
+  | {
+      ok: false;
+      error: MarkdownParseFailure;
+      markdown: string;
+    };
+
+type MarkdownSyncControllerOptions = {
+  initialMarkdown?: string | null;
+  manager?: MarkdownManager;
+};
+
+type TiptapMarkdownEditor = {
+  getJSON?: () => unknown;
+  getMarkdown?: () => string | null | undefined;
+};
+
+function createParseFailure(
+  error: unknown,
+  markdown: string,
+): MarkdownParseFailure {
   return {
     type: "markdown_parse_failed",
     message: error instanceof Error ? error.message : String(error),
@@ -13,11 +62,14 @@ function createParseFailure(error, markdown) {
 }
 
 export class MarkdownSyncController {
-  #markdown;
-  #manager;
-  #lastError;
+  #markdown: string;
+  #manager: MarkdownManager;
+  #lastError: MarkdownParseFailure | null;
 
-  constructor({ initialMarkdown = "", manager = createPapyroMarkdownManager() } = {}) {
+  constructor({
+    initialMarkdown = "",
+    manager = createPapyroMarkdownManager(),
+  }: MarkdownSyncControllerOptions = {}) {
     this.#markdown = initialMarkdown ?? "";
     this.#manager = manager;
     this.#lastError = null;
@@ -31,7 +83,7 @@ export class MarkdownSyncController {
     return this.#lastError;
   }
 
-  parse(markdown = this.#markdown) {
+  parse(markdown = this.#markdown): MarkdownParseResult {
     try {
       const doc = parseTiptapMarkdown(markdown, this.#manager);
       this.#lastError = null;
@@ -50,7 +102,7 @@ export class MarkdownSyncController {
     }
   }
 
-  setMarkdown(markdown) {
+  setMarkdown(markdown: string | null | undefined): MarkdownParseResult {
     const nextMarkdown = markdown ?? "";
     const result = this.parse(nextMarkdown);
     if (result.ok) {
@@ -59,12 +111,12 @@ export class MarkdownSyncController {
     return result;
   }
 
-  setFromEditor(editor) {
+  setFromEditor(editor: TiptapMarkdownEditor | null | undefined): string {
     if (!editor) {
       throw new TypeError("MarkdownSyncController requires a Tiptap editor");
     }
 
-    let markdown = null;
+    let markdown: string | null | undefined = null;
     if (typeof editor.getJSON === "function") {
       markdown = serializeTiptapMarkdown(editor.getJSON(), this.#manager);
     } else if (typeof editor.getMarkdown === "function") {
@@ -78,7 +130,10 @@ export class MarkdownSyncController {
     return this.#markdown;
   }
 
-  insertMarkdown(markdown, insertAt = this.#markdown.length) {
+  insertMarkdown(
+    markdown: string | null | undefined,
+    insertAt = this.#markdown.length,
+  ): MarkdownParseResult {
     const insertion = markdown ?? "";
     const offset = Math.max(0, Math.min(Number(insertAt) || 0, this.#markdown.length));
     return this.setMarkdown(
@@ -86,7 +141,7 @@ export class MarkdownSyncController {
     );
   }
 
-  serializeDoc(doc) {
+  serializeDoc(doc: unknown): MarkdownSerializeResult {
     try {
       const markdown = serializeTiptapMarkdown(doc, this.#manager);
       this.#markdown = markdown;
@@ -106,6 +161,8 @@ export class MarkdownSyncController {
   }
 }
 
-export function createMarkdownSyncController(options) {
+export function createMarkdownSyncController(
+  options?: MarkdownSyncControllerOptions,
+) {
   return new MarkdownSyncController(options);
 }
