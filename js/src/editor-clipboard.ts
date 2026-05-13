@@ -41,12 +41,12 @@ type EditorTransfer = {
 type FileReaderLike = {
   result?: unknown;
   error?: unknown;
-  onload?: () => void;
-  onerror?: () => void;
+  onload?: ((event?: unknown) => void) | null;
+  onerror?: ((event?: unknown) => void) | null;
   readAsDataURL: (blob: unknown) => void;
 };
 
-type FileReaderConstructor = new () => FileReaderLike;
+type FileReaderConstructor = new () => FileReader | FileReaderLike;
 
 type SendEditorImageRequestOptions = {
   tabId?: string | null;
@@ -65,7 +65,7 @@ type SendEditorImageRequestOptions = {
 function normalizeImageMimeType(mimeType: unknown): string {
   const normalized = String(mimeType ?? "")
     .split(";")
-    .at(0)
+    [0]
     ?.trim()
     .toLowerCase();
 
@@ -124,7 +124,7 @@ export function blobToBase64(
       return;
     }
 
-    const reader = new FileReaderCtor();
+    const reader = new FileReaderCtor() as FileReaderLike;
     reader.onload = () => resolve(dataUrlPayload(reader.result));
     reader.onerror = () =>
       reject(

@@ -357,8 +357,9 @@ js/src/
 - [x] 将 `tiptap-code-block.js` 迁移为 `tiptap-code-block.ts`，让 lowlight、DOM fallback NodeView chrome、React code-block NodeView 注入、语言菜单状态、复制/换行动作和 `setCodeBlockLanguage` 暴露类型化边界
 - [x] 解决上一轮 image/table-node typecheck 阻塞：`@tiptap/extension-image` 已安装为对齐的 Tiptap 版本，官方 table-handle helper/extension/action 模块已具备类型化 TS/TSX 边界
 - [x] 从 `js/src` 移除未使用的官方模板残留：AI/Improve、emoji、mention、TOC、textarea-autosize、协作 token helper、完整 Notion demo shell 文件和 AI 专用图标；将剩余通用 helper 边界重命名为 `tiptap-ui-utils`
+- [x] 清理 `turn-into-dropdown` 和 `editor-clipboard.ts` 的集中 TS 阻塞：为本地化后的官方 dropdown 暴露共享块选项类型边界，避开 ES2020 target 下的 `String.prototype.at`，并同时兼容 DOM `FileReader` 与测试 reader 构造器
 - [ ] 在现有 TS 模板债务完成类型化或隔离后，新增可通过的 `npm --prefix js run typecheck` 闸门
-- [ ] 启用 typecheck 闸门前解决剩余阻塞：`editor-core.ts`、`editor-runtime.ts`、`editor-runtime-contract.ts`、`tiptap-react/runtime-model.ts`、`editor-runtime-protocol.ts`、`tiptap-react/runtime-context.tsx`、`editor-host-runtime.ts`、`tiptap-block-move.ts` 等全局 runtime/model 债务；`turn-into-dropdown`、`tiptap-ui-primitives.ts`、runtime context/island 边界等当前组件类型债务；以及 `tiptap-table.ts` 中 Papyro 自定义表格 action/Markdown 层的类型债务
+- [ ] 启用 typecheck 闸门前解决剩余阻塞：`editor-core.ts`、`editor-runtime.ts`、`editor-runtime-contract.ts`、`tiptap-react/runtime-model.ts`、`editor-runtime-protocol.ts`、`tiptap-react/runtime-context.tsx`、`editor-host-runtime.ts`、`tiptap-block-move.ts` 等全局 runtime/model 债务；`tiptap-ui-primitives.ts`、runtime context/island 边界、`tiptap-react/utils/floating.ts`、`tiptap-react/mount-controller.tsx` 等当前组件/运行时支撑类型债务；以及 `tiptap-table.ts` 中 Papyro 自定义表格 action/Markdown 层的类型债务
 
 ---
 

@@ -4,7 +4,10 @@ import { forwardRef } from "react"
 import type { Editor } from "@tiptap/react"
 
 // --- Tiptap UI ---
-import type { UseTurnIntoDropdownConfig } from "@/components/tiptap-ui/turn-into-dropdown"
+import type {
+  TurnIntoBlockTypeOption,
+  UseTurnIntoDropdownConfig,
+} from "@/components/tiptap-ui/turn-into-dropdown"
 import {
   useTurnIntoDropdown,
   getFilteredBlockTypeOptions,
@@ -65,7 +68,7 @@ export function TurnIntoDropdownContent({
 }
 
 function renderBlockTypeButton(
-  option: ReturnType<typeof getFilteredBlockTypeOptions>[0],
+  option: TurnIntoBlockTypeOption,
   key: string,
   editor?: Editor | null
 ) {

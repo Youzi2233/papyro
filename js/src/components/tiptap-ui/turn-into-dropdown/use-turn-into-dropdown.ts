@@ -26,6 +26,15 @@ export const TURN_INTO_BLOCKS = [
   "codeBlock",
 ]
 
+export type TurnIntoBlockType = (typeof TURN_INTO_BLOCKS)[number]
+
+export interface TurnIntoBlockTypeOption {
+  type: TurnIntoBlockType
+  label: string
+  level?: Level
+  isActive: (editor: Editor) => boolean
+}
+
 /**
  * Configuration for the turn into dropdown functionality
  */
@@ -50,7 +59,7 @@ export interface UseTurnIntoDropdownConfig {
   onOpenChange?: (isOpen: boolean) => void
 }
 
-export const blockTypeOptions = [
+export const blockTypeOptions: TurnIntoBlockTypeOption[] = [
   {
     type: "paragraph",
     label: "Text",
@@ -133,7 +142,9 @@ export function canTurnInto(
 /**
  * Gets filtered block type options based on available types
  */
-export function getFilteredBlockTypeOptions(blockTypes?: string[]) {
+export function getFilteredBlockTypeOptions(
+  blockTypes?: string[]
+): TurnIntoBlockTypeOption[] {
   if (!blockTypes) return blockTypeOptions
 
   return blockTypeOptions.filter((option) => {
@@ -141,7 +152,10 @@ export function getFilteredBlockTypeOptions(blockTypes?: string[]) {
   })
 }
 
-export function localizeBlockTypeOptions(options, language) {
+export function localizeBlockTypeOptions(
+  options: TurnIntoBlockTypeOption[],
+  language: unknown
+): TurnIntoBlockTypeOption[] {
   return options.map((option) => ({
     ...option,
     label: blockTypeLabel(language, option),
@@ -154,7 +168,7 @@ export function localizeBlockTypeOptions(options, language) {
 export function getActiveBlockType(
   editor: Editor | null,
   blockTypes?: string[]
-) {
+): TurnIntoBlockTypeOption | undefined {
   if (!editor) return getFilteredBlockTypeOptions(blockTypes)[0]
 
   const filteredOptions = getFilteredBlockTypeOptions(blockTypes)
