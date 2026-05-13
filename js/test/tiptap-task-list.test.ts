@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { taskItemCheckboxLabel } from "../src/tiptap-task-list.js";
+import { taskItemCheckboxLabel } from "../src/tiptap-task-list.ts";
 
 test("Tiptap task item checkbox labels describe the next action", () => {
   assert.equal(

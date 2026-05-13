@@ -1,13 +1,21 @@
 import { TaskItem } from "@tiptap/extension-list/task-item";
 import { TaskList } from "@tiptap/extension-list/task-list";
+import type { Extension as TiptapExtension } from "@tiptap/core";
 
-export function taskItemCheckboxLabel(node, checked) {
+type TaskItemLabelNode = {
+  textContent?: string | null;
+} | null | undefined;
+
+export function taskItemCheckboxLabel(
+  node: TaskItemLabelNode,
+  checked: boolean,
+): string {
   const text = String(node?.textContent ?? "").trim();
   const target = text ? `: ${text}` : "";
   return checked ? `Mark task incomplete${target}` : `Mark task complete${target}`;
 }
 
-export function createPapyroTaskListExtensions() {
+export function createPapyroTaskListExtensions(): TiptapExtension[] {
   return [
     TaskList.configure({
       HTMLAttributes: {
