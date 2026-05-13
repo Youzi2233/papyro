@@ -11,7 +11,7 @@ import {
   scrollPreviewToHeading as scrollPreviewScrollerToHeading,
 } from "./editor-core.ts";
 import { renderPreviewMermaid } from "./mermaid-renderer.ts";
-import { renderPreviewMath } from "./tiptap-math.js";
+import { renderPreviewMath } from "./tiptap-math.ts";
 import {
   isTiptapEntry,
   scrollTiptapEntryToLine,

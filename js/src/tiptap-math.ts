@@ -1,4 +1,13 @@
 import { mergeAttributes, Node } from "@tiptap/core";
+import type {
+  CommandProps,
+  MarkdownParseHelpers,
+  MarkdownToken,
+  NodeViewRenderer,
+  NodeViewRendererProps,
+} from "@tiptap/core";
+import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
+import type { EditorView } from "@tiptap/pm/view";
 import katex from "katex";
 
 import { mathSourceEditorLabel } from "./tiptap-i18n.ts";
@@ -15,35 +24,101 @@ export const PAPYRO_KATEX_OPTIONS = Object.freeze({
   maxExpand: 1000,
 });
 
-function normalizeMathSource(source) {
+type MathAttributes = {
+  source?: unknown;
+  singleLine?: unknown;
+};
+
+type InlineMathMatch = {
+  index: number;
+  raw: string;
+  source: string;
+};
+
+type InlineMathToken = MarkdownToken & {
+  type: typeof INLINE_MATH_TOKEN;
+  raw: string;
+  text: string;
+};
+
+type MathBlockToken = MarkdownToken & {
+  type: typeof MATH_BLOCK_TOKEN;
+  raw: string;
+  text: string;
+  singleLine: boolean;
+};
+
+type KatexOptions = typeof PAPYRO_KATEX_OPTIONS & {
+  displayMode?: boolean;
+};
+
+type KatexApi = {
+  renderToString: (source: string, options: KatexOptions) => string;
+};
+
+type KatexRenderResult = {
+  ok: boolean;
+  error: string | null;
+};
+
+type KatexRenderer = {
+  renderKatexElement: (
+    element: HTMLElement,
+    source: unknown,
+    displayMode: boolean,
+  ) => KatexRenderResult;
+  renderPreviewMath: (root?: unknown) => number;
+};
+
+type DomQueryScope = {
+  querySelectorAll: (selectors: string) => ArrayLike<Element>;
+  matches?: (selectors: string) => boolean;
+};
+
+type DocumentOrNode = {
+  nodeType?: number;
+  ownerDocument?: Document | null;
+};
+
+declare module "@tiptap/core" {
+  interface Commands<ReturnType> {
+    papyroMath: {
+      setInlineMath: (attributes?: MathAttributes) => ReturnType;
+      setMathBlock: (attributes?: MathAttributes) => ReturnType;
+    };
+  }
+}
+
+function normalizeMathSource(source: unknown): string {
   return String(source ?? "").replace(/\r\n?/g, "\n").trim();
 }
 
-function ownerDocumentFor(element) {
-  if (element?.nodeType === 9) return element;
-  if (element?.ownerDocument) return element.ownerDocument;
+function ownerDocumentFor(element: unknown): Document | null {
+  const candidate = element as DocumentOrNode | null | undefined;
+  if (candidate?.nodeType === 9) return candidate as Document;
+  if (candidate?.ownerDocument) return candidate.ownerDocument;
   return typeof document === "undefined" ? null : document;
 }
 
-function isHTMLElement(element) {
-  const elementWindow = element?.ownerDocument?.defaultView;
+function isHTMLElement(element: unknown): element is HTMLElement {
+  const elementWindow = (element as Element | null | undefined)?.ownerDocument?.defaultView;
   const HTMLElementConstructor = elementWindow?.HTMLElement ?? globalThis.HTMLElement;
   return typeof HTMLElementConstructor === "function" && element instanceof HTMLElementConstructor;
 }
 
-function mathSourceFromElement(element) {
+function mathSourceFromElement(element: HTMLElement): string {
   return element.querySelector(".mn-math-source")?.textContent ?? element.dataset.mathSource ?? "";
 }
 
-function isRenderedMathState(state) {
+function isRenderedMathState(state: unknown): boolean {
   return state === "rendered" || state === "error" || state === "empty";
 }
 
-function nodeViewLanguage(view) {
+function nodeViewLanguage(view: EditorView): string {
   return view?.dom?.dataset?.language ?? view?.dom?.ownerDocument?.documentElement?.lang ?? "english";
 }
 
-function isEscaped(source, index) {
+function isEscaped(source: string, index: number): boolean {
   let backslashes = 0;
   for (let cursor = index - 1; cursor >= 0 && source[cursor] === "\\"; cursor -= 1) {
     backslashes += 1;
@@ -51,7 +126,7 @@ function isEscaped(source, index) {
   return backslashes % 2 === 1;
 }
 
-function isValidInlineBoundary(source, open, close) {
+function isValidInlineBoundary(source: string, open: number, close: number): boolean {
   const afterOpen = source[open + 1];
   const beforeClose = source[close - 1];
   if (!afterOpen || !beforeClose) return false;
@@ -60,7 +135,7 @@ function isValidInlineBoundary(source, open, close) {
   return true;
 }
 
-export function findInlineMathToken(source) {
+export function findInlineMathToken(source: unknown): InlineMathMatch | null {
   const text = String(source ?? "");
   let cursor = 0;
 
@@ -96,7 +171,7 @@ export function findInlineMathToken(source) {
   return null;
 }
 
-export function tokenizeInlineMath(source) {
+export function tokenizeInlineMath(source: unknown): InlineMathToken | undefined {
   const token = findInlineMathToken(source);
   if (!token || token.index !== 0) return undefined;
 
@@ -107,7 +182,7 @@ export function tokenizeInlineMath(source) {
   };
 }
 
-export function tokenizeMathBlock(source) {
+export function tokenizeMathBlock(source: unknown): MathBlockToken | undefined {
   const text = String(source ?? "");
   const singleLine = /^(?: {0,3})\$\$([^\n]+?)\$\$(?:[ \t]*(?:\n|$))/u.exec(text);
   if (singleLine) {
@@ -136,8 +211,15 @@ export function tokenizeMathBlock(source) {
 export function createKatexRenderer({
   katexApi = katex,
   options = PAPYRO_KATEX_OPTIONS,
-} = {}) {
-  function renderKatexElement(element, source, displayMode) {
+}: {
+  katexApi?: KatexApi;
+  options?: typeof PAPYRO_KATEX_OPTIONS;
+} = {}): KatexRenderer {
+  function renderKatexElement(
+    element: HTMLElement,
+    source: unknown,
+    displayMode: boolean,
+  ): KatexRenderResult {
     const math = normalizeMathSource(source);
     element.classList.remove("mn-tiptap-math-error");
     element.dataset.mathState = "rendered";
@@ -166,18 +248,24 @@ export function createKatexRenderer({
     }
   }
 
-  function renderPreviewMath(root = ownerDocumentFor(null)) {
+  function renderPreviewMath(root: unknown = ownerDocumentFor(null)): number {
     const documentRef = ownerDocumentFor(root);
     if (!documentRef) return 0;
 
-    const scope = typeof root?.querySelectorAll === "function" ? root : documentRef;
+    const rootScope = root as Partial<DomQueryScope> | null | undefined;
+    const scope: DomQueryScope =
+      rootScope && typeof rootScope.querySelectorAll === "function"
+        ? (rootScope as DomQueryScope)
+        : documentRef;
     const previewRoots = scope.matches?.(".mn-preview")
       ? [scope]
       : Array.from(scope.querySelectorAll(".mn-preview"));
     let count = 0;
 
     for (const previewRoot of previewRoots) {
-      for (const element of previewRoot.querySelectorAll(".mn-math-inline, .mn-math-block")) {
+      for (const element of Array.from(
+        previewRoot.querySelectorAll(".mn-math-inline, .mn-math-block"),
+      )) {
         if (!isHTMLElement(element)) continue;
 
         const source = mathSourceFromElement(element);
@@ -209,11 +297,16 @@ const defaultKatexRenderer = createKatexRenderer();
 export const renderKatexElement = defaultKatexRenderer.renderKatexElement;
 export const renderPreviewMath = defaultKatexRenderer.renderPreviewMath;
 
-function setMathNodeSource(view, getPos, node, source) {
+function setMathNodeSource(
+  view: EditorView,
+  getPos: NodeViewRendererProps["getPos"],
+  node: ProseMirrorNode,
+  source: unknown,
+): boolean {
   if (typeof getPos !== "function") return false;
 
   const pos = getPos();
-  if (!Number.isSafeInteger(pos)) return false;
+  if (typeof pos !== "number" || !Number.isSafeInteger(pos)) return false;
 
   const nextAttrs = {
     ...node.attrs,
@@ -223,7 +316,7 @@ function setMathNodeSource(view, getPos, node, source) {
   return true;
 }
 
-function createMathNodeView({ displayMode }) {
+function createMathNodeView({ displayMode }: { displayMode: boolean }): NodeViewRenderer {
   return ({ editor, getPos, node, view }) => {
     let currentNode = node;
     let editing = false;
@@ -232,7 +325,9 @@ function createMathNodeView({ displayMode }) {
     const tagName = displayMode ? "div" : "span";
     const root = documentRef.createElement(tagName);
     const preview = documentRef.createElement(tagName);
-    const sourceEditor = documentRef.createElement(displayMode ? "textarea" : "input");
+    const sourceEditor = documentRef.createElement(displayMode ? "textarea" : "input") as
+      | HTMLTextAreaElement
+      | HTMLInputElement;
 
     root.className = displayMode ? "mn-tiptap-math-block" : "mn-tiptap-inline-math";
     root.contentEditable = "false";
@@ -245,7 +340,7 @@ function createMathNodeView({ displayMode }) {
       ? "mn-tiptap-math-source"
       : "mn-tiptap-inline-math-source";
     sourceEditor.spellcheck = false;
-    if (!displayMode) sourceEditor.type = "text";
+    if (!displayMode) sourceEditor.setAttribute("type", "text");
 
     const commit = () => {
       if (!editing) return;
@@ -267,19 +362,20 @@ function createMathNodeView({ displayMode }) {
     };
 
     sourceEditor.addEventListener("keydown", (event) => {
-      if (event.key === "Escape") {
+      const keyboardEvent = event as KeyboardEvent;
+      if (keyboardEvent.key === "Escape") {
         event.preventDefault();
         cancel();
         editor.commands.focus();
         return;
       }
-      if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+      if ((keyboardEvent.metaKey || keyboardEvent.ctrlKey) && keyboardEvent.key === "Enter") {
         event.preventDefault();
         commit();
         editor.commands.focus();
         return;
       }
-      if (!displayMode && event.key === "Enter") {
+      if (!displayMode && keyboardEvent.key === "Enter") {
         event.preventDefault();
         commit();
         editor.commands.focus();
@@ -307,7 +403,7 @@ function createMathNodeView({ displayMode }) {
 
     return {
       dom: root,
-      update(updatedNode) {
+      update(updatedNode: ProseMirrorNode) {
         if (updatedNode.type.name !== currentNode.type.name) return false;
         currentNode = updatedNode;
         draft = currentNode.attrs.source ?? "";
@@ -317,8 +413,9 @@ function createMathNodeView({ displayMode }) {
       ignoreMutation() {
         return true;
       },
-      stopEvent(event) {
-        return editing && root.contains(event.target);
+      stopEvent(event: Event) {
+        const windowRef = root.ownerDocument.defaultView ?? window;
+        return editing && event.target instanceof windowRef.Node && root.contains(event.target);
       },
     };
   };
@@ -377,16 +474,17 @@ export const PapyroInlineMath = Node.create({
     tokenize: tokenizeInlineMath,
   },
 
-  parseMarkdown: (token, helpers) =>
+  parseMarkdown: (token: MarkdownToken, helpers: MarkdownParseHelpers) =>
     helpers.createNode("inlineMath", { source: normalizeMathSource(token.text) }),
 
-  renderMarkdown: (node) => `$${normalizeMathSource(node.attrs?.source)}$`,
+  renderMarkdown: (node: ProseMirrorNode | { attrs?: MathAttributes }) =>
+    `$${normalizeMathSource(node.attrs?.source)}$`,
 
   addCommands() {
     return {
       setInlineMath:
-        (attributes = {}) =>
-        ({ commands }) =>
+        (attributes: MathAttributes = {}) =>
+        ({ commands }: CommandProps) =>
           commands.insertContent({
             type: this.name,
             attrs: { source: normalizeMathSource(attributes.source) },
@@ -455,13 +553,13 @@ export const PapyroMathBlock = Node.create({
     tokenize: tokenizeMathBlock,
   },
 
-  parseMarkdown: (token, helpers) =>
+  parseMarkdown: (token: MarkdownToken, helpers: MarkdownParseHelpers) =>
     helpers.createNode("mathBlock", {
       source: normalizeMathSource(token.text),
-      singleLine: token.singleLine === true,
+      singleLine: (token as Partial<MathBlockToken>).singleLine === true,
     }),
 
-  renderMarkdown: (node) => {
+  renderMarkdown: (node: ProseMirrorNode | { attrs?: MathAttributes }) => {
     const source = normalizeMathSource(node.attrs?.source);
     if (node.attrs?.singleLine && source && !source.includes("\n")) {
       return `$$${source}$$`;
@@ -472,8 +570,8 @@ export const PapyroMathBlock = Node.create({
   addCommands() {
     return {
       setMathBlock:
-        (attributes = {}) =>
-        ({ commands }) =>
+        (attributes: MathAttributes = {}) =>
+        ({ commands }: CommandProps) =>
           commands.insertContent({
             type: this.name,
             attrs: {

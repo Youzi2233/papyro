@@ -10,7 +10,7 @@ import {
   renderPreviewMath,
   tokenizeInlineMath,
   tokenizeMathBlock,
-} from "../src/tiptap-math.js";
+} from "../src/tiptap-math.ts";
 import { Window } from "happy-dom";
 
 function createElement() {

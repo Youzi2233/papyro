@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { createPapyroImageExtensions } from "../src/tiptap-image.ts";
-import { createPapyroMathExtensions } from "../src/tiptap-math.js";
+import { createPapyroMathExtensions } from "../src/tiptap-math.ts";
 import { createPapyroMermaidExtensions } from "../src/tiptap-mermaid.ts";
 
 class FakeClassList {
