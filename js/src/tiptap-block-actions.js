@@ -1,4 +1,4 @@
-import { PAPYRO_CALLOUT_KIND_OPTIONS } from "./tiptap-markdown-snippets.js";
+import { PAPYRO_CALLOUT_KIND_OPTIONS } from "./tiptap-markdown-snippets.ts";
 import {
   PAPYRO_CODE_LANGUAGE_OPTIONS,
   codeBlockLanguageDisplayLabel,

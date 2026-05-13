@@ -2,7 +2,7 @@ import {
   createMarkdownCallout,
   createMarkdownTable,
   normalizeCalloutKind,
-} from "./tiptap-markdown-snippets.js";
+} from "./tiptap-markdown-snippets.ts";
 import { normalizeCodeBlockLanguage } from "./tiptap-code-block.js";
 import { localizeSlashCommand, normalizeTiptapLanguage } from "./tiptap-i18n.js";
 

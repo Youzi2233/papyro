@@ -1,6 +1,6 @@
 import { mergeAttributes, Node } from "@tiptap/core";
 
-import { normalizeCalloutKind } from "./tiptap-markdown-snippets.js";
+import { normalizeCalloutKind } from "./tiptap-markdown-snippets.ts";
 
 const CALLOUT_TOKEN = "calloutBlock";
 const CALLOUT_KIND_PATTERN = /^[a-z][a-z0-9_-]{0,31}$/iu;

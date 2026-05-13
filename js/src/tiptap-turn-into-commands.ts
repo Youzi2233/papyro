@@ -1,4 +1,4 @@
-import { createMarkdownCallout } from "./tiptap-markdown-snippets.js";
+import { createMarkdownCallout } from "./tiptap-markdown-snippets.ts";
 
 type CommandName =
   | "insertContent"
