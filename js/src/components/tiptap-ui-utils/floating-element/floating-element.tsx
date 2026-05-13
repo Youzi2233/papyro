@@ -27,7 +27,7 @@ import { useFloatingElement } from "@/hooks/use-floating-element"
 import {
   getSelectionBoundingRect,
   isSelectionValid,
-} from "@/lib/tiptap-collab-utils"
+} from "@/lib/tiptap-ui-utils"
 
 import {
   isElementWithinEditor,

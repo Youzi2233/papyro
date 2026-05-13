@@ -33,6 +33,7 @@ The editor has moved in the right direction, but it is not yet at the official N
 - Table UX target: keep the official table-node SCSS as the component owner, and limit Papyro CSS to host layout, viewport safety, theme token bridging, and Markdown persistence constraints. Row/column handles should feel like subtle Notion-like affordances, not persistent developer toolbar controls.
 - JavaScript inventory: `js/src/` now contains 0 tracked `.js` files and 0 tracked `.jsx` files after the code block migration. Generated bundles remain JavaScript artifacts, but editor source is TS/TSX-only.
 - TypeScript posture: the latest table-node pass typed the official table-handle extension, plugin, helper, hook, and action-button modules while keeping Papyro's caret-restoration behavior after `CellSelection`. The official `image-node` dependency is now explicit through `@tiptap/extension-image@3.23.1`, so the previous image/table-node typecheck blockers are no longer the next gate risk.
+- Template inventory: unused official AI/Improve, emoji, mention, TOC, textarea-autosize, collaboration helpers, and full Notion demo shell sources have been removed from `js/src`. Papyro keeps only the active Papyro-adapted Notion-like toolbar (`PapyroToolbarFloating`) and the mounted editor surfaces.
 - Formatting entry points: the top shell toolbar must stay app-level only. Rich-text formatting belongs to official Tiptap React surfaces: `PapyroToolbarFloating`, slash menu, drag context menu, link popover, and table-node menus. The active `PapyroToolbarFloating` still diverges from the official Notion-like toolbar by keeping text alignment, undo/redo, and highlight controls permanently visible; it should become an official-template composition with only Papyro-specific omissions such as AI/Cloud controls.
 - Verification bar: for every UI convergence step, run source tests, build, and the editor Markdown gate; for visual changes, prefer desktop WebView/manual smoke or a screenshot-backed check when the app target is available.
 
@@ -152,7 +153,7 @@ Copy the following primitive components from the template (they are dependencies
 - [x] `use-mobile`
 - [x] `use-window-size`
 - [x] `use-ui-editor-state`
-- [x] `tiptap-utils` (trim AI/collaboration utility functions)
+- [x] `tiptap-utils` / `tiptap-ui-utils` (trim AI/collaboration utility functions and keep only local UI helpers)
 
 #### 1.4 Slash Command Menu (Highest Priority)
 - [x] Copy official `slash-dropdown-menu` component
@@ -355,8 +356,9 @@ Migrate by module priority, one module at a time:
 - [x] Convert `tiptap-markdown.js` to `tiptap-markdown.ts` so the Markdown manager, extension chain, persistence normalization, and parse/serialize/round-trip helpers expose typed boundaries
 - [x] Convert `tiptap-code-block.js` to `tiptap-code-block.ts` so lowlight, DOM fallback NodeView chrome, React code-block NodeView injection, language menu state, copy/wrap actions, and `setCodeBlockLanguage` expose typed boundaries
 - [x] Resolve the previous image/table-node typecheck blockers: `@tiptap/extension-image` is installed at the aligned Tiptap version, and the official table-handle helper/extension/action modules now have typed TS/TSX boundaries
+- [x] Remove unused official template leftovers from `js/src`: AI/Improve, emoji, mention, TOC, textarea-autosize, collaboration token helpers, full Notion demo shell files, and AI-only icons; rename the remaining generic helper boundary to `tiptap-ui-utils`
 - [ ] Add a passing `npm --prefix js run typecheck` gate once current TS template debt is typed or intentionally isolated
-- [ ] Resolve the remaining typecheck blockers before enabling the gate: global runtime/model debt in `editor-core.ts`, `editor-runtime.ts`, `editor-runtime-contract.ts`, `tiptap-react/runtime-model.ts`, and `tiptap-block-move.ts`; unused or untrimmed official template modules for AI, collaboration, emoji, TOC, and Notion header/mobile toolbar paths; and the Papyro custom table action/Markdown layer in `tiptap-table.ts`
+- [ ] Resolve the remaining typecheck blockers before enabling the gate: global runtime/model debt in `editor-core.ts`, `editor-runtime.ts`, `editor-runtime-contract.ts`, `tiptap-react/runtime-model.ts`, `editor-runtime-protocol.ts`, `tiptap-react/runtime-context.tsx`, `editor-host-runtime.ts`, and `tiptap-block-move.ts`; current component typing in `turn-into-dropdown`, `tiptap-ui-primitives.ts`, runtime context/island boundaries; and the Papyro custom table action/Markdown layer in `tiptap-table.ts`
 
 ---
 
@@ -478,6 +480,8 @@ The editor surface must behave like the official Notion-like template first, wit
 | `improve-dropdown` | AI feature, same as above |
 | `emoji-dropdown-menu` | Not needed for local Markdown editor |
 | `mention-dropdown-menu` | Requires user system, not applicable for local editor |
+| `toc-node` | Papyro consumes outline/TOC from the Rust side, so the editor should not keep the unmounted official TOC node UI |
+| `textarea-autosize` | Only depended on removed AI/Improve flows |
 | `collaboration` / `collab-context` | Requires Tiptap Cloud, not applicable for local editor |
 | `image-node-pro` | To be evaluated later, basic `image-node` may suffice |
 

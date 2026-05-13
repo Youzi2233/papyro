@@ -33,6 +33,7 @@
 - 表格 UX 目标：官方 table-node SCSS 负责组件外观，Papyro CSS 只做宿主布局、视口安全、主题 token 桥接和 Markdown 持久化约束。行列 handle 应该是接近 Notion-like 的轻量暗示，而不是常驻的开发者工具条控件。
 - JavaScript 存量：code block 迁移后，`js/src/` 下已有 0 个被跟踪的 `.js` 文件和 0 个被跟踪的 `.jsx` 文件。生成后的 bundle 仍是 JavaScript 产物，但编辑器源码已经只保留 TS/TSX。
 - TypeScript 状态：最新 table-node 跟进已经类型化官方 table-handle extension、plugin、helper、hook 和 action-button 模块，同时保留 Papyro 在 `CellSelection` 后恢复光标的本地行为。官方 `image-node` 依赖已经通过 `@tiptap/extension-image@3.23.1` 显式补齐，因此之前的 image/table-node typecheck 阻塞不再是下一步风险。
+- 模板存量：未挂载的官方 AI/Improve、emoji、mention、TOC、textarea-autosize、协作 token helper 和完整 Notion demo shell 源码已经从 `js/src` 移除。Papyro 只保留活跃的 Papyro 适配版 Notion-like 工具栏（`PapyroToolbarFloating`）和实际挂载的编辑器表面。
 - 格式化入口：顶部 shell 工具栏只保留应用级控制。富文本格式化入口应全部来自官方 Tiptap React 表面：`PapyroToolbarFloating`、slash menu、drag context menu、link popover 和 table-node menus。当前活跃的 `PapyroToolbarFloating` 仍与官方 Notion-like 工具栏组合有偏差：文本对齐、撤销/重做和高亮控件常驻展示；它应收敛为官方模板组合，仅移除 AI/Cloud 等 Papyro 暂未实现的能力。
 - 验证标准：每个 UI 收敛步骤都要跑源码测试、构建和 editor Markdown gate；视觉改动在有可用 app target 时优先做 desktop WebView/manual smoke 或截图验证。
 
@@ -152,7 +153,7 @@ js/src/
 - [x] `use-mobile`
 - [x] `use-window-size`
 - [x] `use-ui-editor-state`
-- [x] `tiptap-utils`（裁剪掉 AI/协作相关工具函数）
+- [x] `tiptap-utils` / `tiptap-ui-utils`（裁剪掉 AI/协作相关工具函数，只保留本地 UI helper）
 
 #### 1.4 Slash 命令菜单（最高优先级）
 - [x] 复制官方 `slash-dropdown-menu` 组件
@@ -355,8 +356,9 @@ js/src/
 - [x] 将 `tiptap-markdown.js` 迁移为 `tiptap-markdown.ts`，让 Markdown manager、扩展链、持久化归一化，以及 parse/serialize/round-trip helper 暴露类型化边界
 - [x] 将 `tiptap-code-block.js` 迁移为 `tiptap-code-block.ts`，让 lowlight、DOM fallback NodeView chrome、React code-block NodeView 注入、语言菜单状态、复制/换行动作和 `setCodeBlockLanguage` 暴露类型化边界
 - [x] 解决上一轮 image/table-node typecheck 阻塞：`@tiptap/extension-image` 已安装为对齐的 Tiptap 版本，官方 table-handle helper/extension/action 模块已具备类型化 TS/TSX 边界
+- [x] 从 `js/src` 移除未使用的官方模板残留：AI/Improve、emoji、mention、TOC、textarea-autosize、协作 token helper、完整 Notion demo shell 文件和 AI 专用图标；将剩余通用 helper 边界重命名为 `tiptap-ui-utils`
 - [ ] 在现有 TS 模板债务完成类型化或隔离后，新增可通过的 `npm --prefix js run typecheck` 闸门
-- [ ] 启用 typecheck 闸门前解决剩余阻塞：`editor-core.ts`、`editor-runtime.ts`、`editor-runtime-contract.ts`、`tiptap-react/runtime-model.ts`、`tiptap-block-move.ts` 等全局 runtime/model 债务；AI、协作、emoji、TOC、Notion header/mobile toolbar 路径等未使用或未裁剪的官方模板模块；以及 `tiptap-table.ts` 中 Papyro 自定义表格 action/Markdown 层的类型债务
+- [ ] 启用 typecheck 闸门前解决剩余阻塞：`editor-core.ts`、`editor-runtime.ts`、`editor-runtime-contract.ts`、`tiptap-react/runtime-model.ts`、`editor-runtime-protocol.ts`、`tiptap-react/runtime-context.tsx`、`editor-host-runtime.ts`、`tiptap-block-move.ts` 等全局 runtime/model 债务；`turn-into-dropdown`、`tiptap-ui-primitives.ts`、runtime context/island 边界等当前组件类型债务；以及 `tiptap-table.ts` 中 Papyro 自定义表格 action/Markdown 层的类型债务
 
 ---
 
@@ -478,6 +480,8 @@ js/src/
 | `improve-dropdown` | AI 功能，同上 |
 | `emoji-dropdown-menu` | 本地 Markdown 编辑器暂不需要 |
 | `mention-dropdown-menu` | 需要用户系统，本地编辑器不适用 |
+| `toc-node` | Papyro 通过 Rust 侧消费大纲/TOC，不应在编辑器内保留未挂载的官方 TOC node UI |
+| `textarea-autosize` | 只被已移除的 AI/Improve 流程依赖 |
 | `collaboration` / `collab-context` | 需要 Tiptap Cloud，本地编辑器不适用 |
 | `image-node-pro` | 评估后决定，基础 `image-node` 可能已足够 |
 

@@ -35,7 +35,7 @@ import {
 
 import { FloatingElement } from "@/components/tiptap-ui-utils/floating-element"
 
-import { isSelectionValid } from "@/lib/tiptap-collab-utils"
+import { isSelectionValid } from "@/lib/tiptap-ui-utils"
 
 export function PapyroToolbarFloating() {
   const { editor } = useTiptapEditor()
