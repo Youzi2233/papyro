@@ -29,14 +29,14 @@ const tableExtendButtonsSource = readFileSync(
 );
 const tableHandleMenuSource = readFileSync(
   new URL(
-    "../src/components/tiptap-node/table-node/ui/table-handle-menu/index.tsx",
+    "../src/components/tiptap-node/table-node/ui/table-handle-menu/table-handle-menu.tsx",
     import.meta.url,
   ),
   "utf8",
 );
 const tableCellHandleMenuSource = readFileSync(
   new URL(
-    "../src/components/tiptap-node/table-node/ui/table-cell-handle-menu/index.tsx",
+    "../src/components/tiptap-node/table-node/ui/table-cell-handle-menu/table-cell-handle-menu.tsx",
     import.meta.url,
   ),
   "utf8",

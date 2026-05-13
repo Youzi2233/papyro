@@ -1,4 +1,6 @@
-const STYLE_PROPS = [
+import type { Editor } from "@tiptap/core"
+
+const STYLE_PROPS: (keyof CSSStyleDeclaration | string)[] = [
   // Box & border
   "boxSizing",
   "backgroundColor",
@@ -45,20 +47,20 @@ const STYLE_PROPS = [
   "backgroundClip",
 ]
 
-const toDash = (p) => p.replace(/[A-Z]/g, (m) => "-" + m.toLowerCase())
+const toDash = (p: string) => p.replace(/[A-Z]/g, (m) => "-" + m.toLowerCase())
 
 /**
  * Copy a curated list of computed styles from source -> target
  * (Works for TD/TH and most inline content you'd expect inside.)
  */
-function copyComputedStyles(source, target) {
+function copyComputedStyles(source: HTMLElement, target: HTMLElement) {
   const cs = getComputedStyle(source)
 
   for (const p of STYLE_PROPS) {
     const prop = String(p)
     const val = cs.getPropertyValue(toDash(prop))
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (val) (target.style)[prop] = val
+    if (val) (target.style as any)[prop] = val
   }
 
   // Ensure long content doesn't overflow the drag image
@@ -74,13 +76,13 @@ function copyComputedStyles(source, target) {
  * Deep clone a node and copy computed styles element-by-element.
  * Avoids the browser's default cloning which loses computed styles.
  */
-function cloneWithStyles(root) {
-  const clone = root.cloneNode(true)
+function cloneWithStyles(root: HTMLElement): HTMLElement {
+  const clone = root.cloneNode(true) as HTMLElement
 
   // Iterative walk to avoid recursion limits
-  const q = [{ src: root, dst: clone }]
+  const q: Array<{ src: Element; dst: Element }> = [{ src: root, dst: clone }]
   while (q.length) {
-    const { src, dst } = q.shift()
+    const { src, dst } = q.shift()!
     if (src instanceof HTMLElement && dst instanceof HTMLElement) {
       copyComputedStyles(src, dst)
     }
@@ -102,7 +104,7 @@ function cloneWithStyles(root) {
 /**
  * Apply crisp, rounded, off-screen wrapper styling for drag image.
  */
-function styleDragWrapper(el, maxWidth) {
+function styleDragWrapper(el: HTMLElement, maxWidth: number) {
   Object.assign(el.style, {
     position: "fixed",
     top: "-10000px",
@@ -112,19 +114,17 @@ function styleDragWrapper(el, maxWidth) {
     maxWidth: `${maxWidth}px`,
     borderRadius: "12px",
     background: "transparent",
-
     filter:
       "drop-shadow(0 8px 24px rgba(0,0,0,0.18)) drop-shadow(0 2px 8px rgba(0,0,0,0.10))",
-
-    overflow: "hidden"
-  })
+    overflow: "hidden",
+  } as CSSStyleDeclaration)
 }
 
 /**
  * Scale an element down if it exceeds the max width, keeping crisp layout.
  * Assumes the element is already positioned off-screen (so attaching to body is safe).
  */
-function scaleToFit(el, maxWidth) {
+function scaleToFit(el: HTMLElement, maxWidth: number): void {
   // Attach once (if not already) so measurements are correct.
   if (!el.isConnected) document.body.appendChild(el)
   const rect = el.getBoundingClientRect()
@@ -139,8 +139,8 @@ function scaleToFit(el, maxWidth) {
  * Copy table-level styles that affect layout.
  */
 function applyTableBoxStyles(
-  srcTable,
-  dstTable
+  srcTable: HTMLTableElement,
+  dstTable: HTMLTableElement
 ) {
   const tcs = getComputedStyle(srcTable)
   dstTable.style.borderCollapse = tcs.borderCollapse
@@ -152,7 +152,7 @@ function applyTableBoxStyles(
 /**
  * Lock a cell's width to its rendered width.
  */
-function lockCellWidth(fromCell, toCell) {
+function lockCellWidth(fromCell: HTMLElement, toCell: HTMLElement) {
   const rect = fromCell.getBoundingClientRect()
   if (rect.width > 0) {
     toCell.style.width = `${rect.width}px`
@@ -163,23 +163,26 @@ function lockCellWidth(fromCell, toCell) {
 /**
  * Build a 1-row preview table.
  */
-function buildRowPreview(tableEl, rowIndex) {
+function buildRowPreview(
+  tableEl: HTMLTableElement,
+  rowIndex: number
+): HTMLTableElement | null {
   const body = tableEl.tBodies?.[0] ?? tableEl.querySelector("tbody")
   if (!body) return null
 
-  const row = body.rows?.[rowIndex]
+  const row = body.rows?.[rowIndex] as HTMLTableRowElement | undefined
   if (!row) return null
 
   const tableClone = document.createElement("table")
   const tbodyClone = document.createElement("tbody")
-  const rowClone = cloneWithStyles(row)
+  const rowClone = cloneWithStyles(row) as HTMLTableRowElement
 
   applyTableBoxStyles(tableEl, tableClone)
 
   // Lock each cell width
   for (let i = 0; i < row.cells.length; i++) {
-    const src = row.cells[i]
-    const dst = rowClone.cells[i]
+    const src = row.cells[i] as HTMLElement
+    const dst = rowClone.cells[i] as HTMLElement | undefined
     if (dst) lockCellWidth(src, dst)
   }
 
@@ -191,7 +194,10 @@ function buildRowPreview(tableEl, rowIndex) {
 /**
  * Build a 1-column preview table (one cell per row).
  */
-function buildColumnPreview(tableEl, colIndex) {
+function buildColumnPreview(
+  tableEl: HTMLTableElement,
+  colIndex: number
+): HTMLTableElement | null {
   const body = tableEl.tBodies?.[0] ?? tableEl.querySelector("tbody")
   if (!body) return null
 
@@ -204,7 +210,7 @@ function buildColumnPreview(tableEl, colIndex) {
   for (let r = 0; r < body.rows.length; r++) {
     const srcRow = body.rows[r]
     if (!srcRow) continue
-    const srcCell = srcRow.cells?.[colIndex]
+    const srcCell = srcRow.cells?.[colIndex] as HTMLElement | undefined
     if (!srcCell) continue
 
     const tr = document.createElement("tr")
@@ -234,14 +240,19 @@ function buildColumnPreview(tableEl, colIndex) {
  * - Scales down if it exceeds editor width
  * - Preserves computed styles to look 1:1 with the table
  */
-export function createTableDragImage(editor, orientation, index, tablePos) {
+export function createTableDragImage(
+  editor: Editor,
+  orientation: "row" | "col",
+  index: number,
+  tablePos: number
+): HTMLElement {
   const editorRect = editor.view.dom.getBoundingClientRect()
   const maxWidth = Math.max(0, editorRect.width)
 
   const wrapper = document.createElement("div")
   styleDragWrapper(wrapper, maxWidth)
 
-  const tableEl = editor.view.nodeDOM(tablePos)
+  const tableEl = editor.view.nodeDOM(tablePos) as HTMLTableElement | null
   if (!tableEl) {
     document.body.appendChild(wrapper)
     return wrapper
@@ -260,8 +271,8 @@ export function createTableDragImage(editor, orientation, index, tablePos) {
     const card = document.createElement("div")
     Object.assign(card.style, {
       background: "var(--drag-image-bg, transparent)",
-      overflow: "hidden"
-    })
+      overflow: "hidden",
+    } as CSSStyleDeclaration)
 
     card.appendChild(preview)
     wrapper.appendChild(card)

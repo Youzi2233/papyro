@@ -1,5 +1,8 @@
+import type { Editor } from "@tiptap/core"
+import type { Node as TiptapNode } from "@tiptap/pm/model"
+import type { PluginView, Transaction } from "@tiptap/pm/state"
 import { Plugin, PluginKey, TextSelection } from "@tiptap/pm/state"
-import { Decoration, DecorationSet } from "@tiptap/pm/view";
+import { Decoration, DecorationSet, type EditorView } from "@tiptap/pm/view"
 import {
   CellSelection,
   moveTableColumn,
@@ -18,26 +21,55 @@ import {
   isTableNode,
   safeClosest,
   selectCellsByCoords,
-} from "../../lib/tiptap-table-utils"
-import { isValidPosition } from "../../../../../lib/tiptap-utils"
-import { createTableDragImage } from "./helpers/create-image"
+} from "@/components/tiptap-node/table-node/lib/tiptap-table-utils"
+import { isValidPosition } from "@/lib/tiptap-utils"
+import { createTableDragImage } from "@/components/tiptap-node/table-node/extensions/table-handle/helpers/create-image"
 
-function hideElements(selector, rootEl) {
-  rootEl.querySelectorAll(selector).forEach((el) => {
+export type TableHandlesState = {
+  show: boolean
+  showAddOrRemoveRowsButton: boolean
+  showAddOrRemoveColumnsButton: boolean
+  referencePosCell?: DOMRect
+  referencePosTable: DOMRect
+  block: TiptapNode
+  blockPos: number
+  colIndex: number | undefined
+  rowIndex: number | undefined
+  draggingState?:
+    | {
+        draggedCellOrientation: "row" | "col"
+        originalIndex: number
+        mousePos: number
+        initialOffset: number
+      }
+    | undefined
+  widgetContainer: HTMLElement | undefined
+}
+
+function hideElements(selector: string, rootEl: Document | ShadowRoot) {
+  rootEl.querySelectorAll<HTMLElement>(selector).forEach((el) => {
     el.style.visibility = "hidden"
   })
 }
 
 export const tableHandlePluginKey = new PluginKey("tableHandlePlugin")
 
-class TableHandleView {
-  state = undefined;
-  menuFrozen = false;
+class TableHandleView implements PluginView {
+  public editor: Editor
+  public editorView: EditorView
+
+  public state: TableHandlesState | undefined = undefined
+  public menuFrozen = false
+  public tableId: string | undefined
+  public tablePos: number | undefined
+  public tableElement: HTMLElement | undefined
+
+  public emitUpdate: () => void
 
   constructor(
-    editor,
-    editorView,
-    emitUpdate
+    editor: Editor,
+    editorView: EditorView,
+    emitUpdate: (state: TableHandlesState) => void
   ) {
     this.editor = editor
     this.editorView = editorView
@@ -47,11 +79,17 @@ class TableHandleView {
     this.editorView.dom.addEventListener("mousedown", this.viewMousedownHandler)
     window.addEventListener("mouseup", this.mouseUpHandler)
 
-    this.editorView.root.addEventListener("dragover", this.dragOverHandler)
-    this.editorView.root.addEventListener("drop", this.dropHandler)
+    this.editorView.root.addEventListener(
+      "dragover",
+      this.dragOverHandler as EventListener
+    )
+    this.editorView.root.addEventListener(
+      "drop",
+      this.dropHandler as unknown as EventListener
+    )
   }
 
-  viewMousedownHandler = (event) => {
+  private viewMousedownHandler = (event: MouseEvent) => {
     const { state, view } = this.editor
     if (!(state.selection instanceof CellSelection) || this.editor.isFocused)
       return
@@ -63,6 +101,7 @@ class TableHandleView {
     if (!posInfo) return
 
     const $pos = state.doc.resolve(posInfo.pos)
+    const { nodes } = state.schema
     let inTableCell = false
 
     for (let d = $pos.depth; d >= 0; d--) {
@@ -88,22 +127,22 @@ class TableHandleView {
 
     view.dispatch(state.tr.setSelection(nextSel))
     view.focus()
-  };
+  }
 
-  mouseUpHandler = (event) => {
+  private mouseUpHandler = (event: MouseEvent) => {
     this.mouseMoveHandler(event)
-  };
+  }
 
-  mouseMoveHandler = (event) => {
+  private mouseMoveHandler = (event: MouseEvent) => {
     if (this.menuFrozen) return
 
     const target = event.target
     if (!isHTMLElement(target) || !this.editorView.dom.contains(target)) return
 
     this._handleMouseMoveNow(event)
-  };
+  }
 
-  hideHandles() {
+  private hideHandles() {
     if (!this.state?.show) return
 
     this.state = {
@@ -118,8 +157,8 @@ class TableHandleView {
     this.emitUpdate()
   }
 
-  _handleMouseMoveNow(event) {
-    const around = domCellAround(event.target)
+  private _handleMouseMoveNow(event: MouseEvent) {
+    const around = domCellAround(event.target as Element)
 
     if (!around || !this.editor.isEditable) {
       this.hideHandles()
@@ -138,7 +177,7 @@ class TableHandleView {
 
     // Find the table node at this position
     const $pos = this.editor.view.state.doc.resolve(coords.pos)
-    let blockInfo
+    let blockInfo: { node: TiptapNode; pos: number } | undefined
     for (let d = $pos.depth; d >= 0; d--) {
       const node = $pos.node(d)
       if (isTableNode(node)) {
@@ -148,12 +187,16 @@ class TableHandleView {
     }
     if (!blockInfo || blockInfo.node.type.name !== "table") return
 
-    this.tableElement = this.editor.view.nodeDOM(blockInfo.pos)
+    this.tableElement = this.editor.view.nodeDOM(blockInfo.pos) as
+      | HTMLElement
+      | undefined
     this.tablePos = blockInfo.pos
     this.tableId = blockInfo.node.attrs.id
 
-    const wrapper = safeClosest(around.domNode, ".tableWrapper")
-    const widgetContainer = wrapper?.querySelector(".table-controls")
+    const wrapper = safeClosest<HTMLElement>(around.domNode, ".tableWrapper")
+    const widgetContainer = wrapper?.querySelector(".table-controls") as
+      | HTMLElement
+      | undefined
 
     // Hovering around the table (outside cells)
     if (around.type === "wrapper") {
@@ -183,11 +226,15 @@ class TableHandleView {
       }
     } else {
       // Hovering over a cell
-      const cellPosition = getCellIndicesFromDOM(around.domNode, blockInfo.node, this.editor)
+      const cellPosition = getCellIndicesFromDOM(
+        around.domNode as HTMLTableCellElement,
+        blockInfo.node,
+        this.editor
+      )
       if (!cellPosition) return
 
       const { rowIndex, colIndex } = cellPosition
-      const cellRect = (around.domNode).getBoundingClientRect()
+      const cellRect = (around.domNode as HTMLElement).getBoundingClientRect()
       const lastRowIndex = blockInfo.node.content.childCount - 1
       const lastColIndex =
         (blockInfo.node.content.firstChild?.content.childCount ?? 0) - 1
@@ -221,13 +268,13 @@ class TableHandleView {
     return false
   }
 
-  dragOverHandler = (event) => {
+  dragOverHandler = (event: DragEvent) => {
     if (this.state?.draggingState === undefined) {
       return
     }
 
     event.preventDefault()
-    event.dataTransfer.dropEffect = "move"
+    event.dataTransfer!.dropEffect = "move"
 
     hideElements(
       ".prosemirror-dropcursor-block, .prosemirror-dropcursor-inline",
@@ -259,7 +306,11 @@ class TableHandleView {
       return
     }
 
-    const cellPosition = getCellIndicesFromDOM(tableCellElement, this.state.block, this.editor)
+    const cellPosition = getCellIndicesFromDOM(
+      tableCellElement as HTMLTableCellElement,
+      this.state.block,
+      this.editor
+    )
     if (!cellPosition) return
 
     const { rowIndex, colIndex } = cellPosition
@@ -302,7 +353,9 @@ class TableHandleView {
 
     // Dispatch decorations transaction if needed
     if (dispatchDecorationsTransaction) {
-      this.editor.view.dispatch(this.editor.state.tr.setMeta(tableHandlePluginKey, true))
+      this.editor.view.dispatch(
+        this.editor.state.tr.setMeta(tableHandlePluginKey, true)
+      )
     }
   }
 
@@ -325,7 +378,7 @@ class TableHandleView {
 
     const isRow = draggingState.draggedCellOrientation === "row"
     const orientation = isRow ? "row" : "column"
-    const destIndex = isRow ? rowIndex : colIndex
+    const destIndex = isRow ? rowIndex! : colIndex!
 
     const cellCoords = getIndexCoordinates({
       editor: this.editor,
@@ -335,10 +388,15 @@ class TableHandleView {
     })
     if (!cellCoords) return false
 
-    const stateWithCellSel = selectCellsByCoords(this.editor, blockPos, cellCoords, { mode: "state" })
+    const stateWithCellSel = selectCellsByCoords(
+      this.editor,
+      blockPos,
+      cellCoords,
+      { mode: "state" }
+    )
     if (!stateWithCellSel) return false
 
-    const dispatch = (tr) => this.editor.view.dispatch(tr)
+    const dispatch = (tr: Transaction) => this.editor.view.dispatch(tr)
 
     if (isRow) {
       moveTableRow({
@@ -359,12 +417,14 @@ class TableHandleView {
     this.state = { ...st, draggingState: undefined }
     this.emitUpdate()
 
-    this.editor.view.dispatch(this.editor.state.tr.setMeta(tableHandlePluginKey, null))
+    this.editor.view.dispatch(
+      this.editor.state.tr.setMeta(tableHandlePluginKey, null)
+    )
 
     return true
   }
 
-  update(view) {
+  update(view: EditorView): void {
     const pluginState = tableHandlePluginKey.getState(view.state)
     if (pluginState !== undefined && pluginState !== this.menuFrozen) {
       this.menuFrozen = pluginState
@@ -456,18 +516,33 @@ class TableHandleView {
     }
   }
 
-  destroy() {
-    this.editorView.dom.removeEventListener("mousemove", this.mouseMoveHandler)
-    window.removeEventListener("mouseup", this.mouseUpHandler)
-    this.editorView.dom.removeEventListener("mousedown", this.viewMousedownHandler)
-    this.editorView.root.removeEventListener("dragover", this.dragOverHandler)
-    this.editorView.root.removeEventListener("drop", this.dropHandler)
+  destroy(): void {
+    this.editorView.dom.removeEventListener(
+      "mousemove",
+      this.mouseMoveHandler as EventListener
+    )
+    window.removeEventListener("mouseup", this.mouseUpHandler as EventListener)
+    this.editorView.dom.removeEventListener(
+      "mousedown",
+      this.viewMousedownHandler as EventListener
+    )
+    this.editorView.root.removeEventListener(
+      "dragover",
+      this.dragOverHandler as EventListener
+    )
+    this.editorView.root.removeEventListener(
+      "drop",
+      this.dropHandler as unknown as EventListener
+    )
   }
 }
 
-let tableHandleView = null
+let tableHandleView: TableHandleView | null = null
 
-export function TableHandlePlugin(editor, emitUpdate) {
+export function TableHandlePlugin(
+  editor: Editor,
+  emitUpdate: (state: TableHandlesState) => void
+): Plugin {
   return new Plugin({
     key: tableHandlePluginKey,
 
@@ -507,28 +582,40 @@ export function TableHandlePlugin(editor, emitUpdate) {
           return
         }
 
-        const decorations = []
+        const decorations: Decoration[] = []
         const { draggingState } = tableHandleView.state
         const { originalIndex } = draggingState
 
         if (
           tableHandleView.state.draggingState.draggedCellOrientation === "row"
         ) {
-          const originalCells = getRowCells(editor, originalIndex, tableHandleView.state.blockPos)
+          const originalCells = getRowCells(
+            editor,
+            originalIndex,
+            tableHandleView.state.blockPos
+          )
           originalCells.cells.forEach((cell) => {
             if (cell.node) {
-              decorations.push(Decoration.node(cell.pos, cell.pos + cell.node.nodeSize, {
-                class: "table-cell-dragging-source",
-              }))
+              decorations.push(
+                Decoration.node(cell.pos, cell.pos + cell.node.nodeSize, {
+                  class: "table-cell-dragging-source",
+                })
+              )
             }
           })
         } else {
-          const originalCells = getColumnCells(editor, originalIndex, tableHandleView.state.blockPos)
+          const originalCells = getColumnCells(
+            editor,
+            originalIndex,
+            tableHandleView.state.blockPos
+          )
           originalCells.cells.forEach((cell) => {
             if (cell.node) {
-              decorations.push(Decoration.node(cell.pos, cell.pos + cell.node.nodeSize, {
-                class: "table-cell-dragging-source",
-              }))
+              decorations.push(
+                Decoration.node(cell.pos, cell.pos + cell.node.nodeSize, {
+                  class: "table-cell-dragging-source",
+                })
+              )
             }
           })
         }
@@ -537,13 +624,17 @@ export function TableHandlePlugin(editor, emitUpdate) {
         // - original index is same as new index (no change)
         // - editor is not defined for some reason
         if (newIndex === originalIndex || !editor) {
-          return DecorationSet.create(state.doc, decorations);
+          return DecorationSet.create(state.doc, decorations)
         }
 
         if (
           tableHandleView.state.draggingState.draggedCellOrientation === "row"
         ) {
-          const cellsInRow = getRowCells(editor, newIndex, tableHandleView.state.blockPos)
+          const cellsInRow = getRowCells(
+            editor,
+            newIndex,
+            tableHandleView.state.blockPos
+          )
 
           cellsInRow.cells.forEach((cell) => {
             const cellNode = cell.node
@@ -556,28 +647,34 @@ export function TableHandlePlugin(editor, emitUpdate) {
             // original index.
             const decorationPos =
               cell.pos + (newIndex > originalIndex ? cellNode.nodeSize - 2 : 2)
-            decorations.push(Decoration.widget(decorationPos, () => {
-              const widget = document.createElement("div")
-              widget.className = "tiptap-table-dropcursor"
-              widget.style.left = "0"
-              widget.style.right = "0"
-              // This is only necessary because the drop indicator's height
-              // is an even number of pixels, whereas the border between
-              // table cells is an odd number of pixels. So this makes the
-              // positioning slightly more consistent regardless of where
-              // the row is being dropped.
-              if (newIndex > originalIndex) {
-                widget.style.bottom = "-1px"
-              } else {
-                widget.style.top = "-1px"
-              }
-              widget.style.height = "3px"
+            decorations.push(
+              Decoration.widget(decorationPos, () => {
+                const widget = document.createElement("div")
+                widget.className = "tiptap-table-dropcursor"
+                widget.style.left = "0"
+                widget.style.right = "0"
+                // This is only necessary because the drop indicator's height
+                // is an even number of pixels, whereas the border between
+                // table cells is an odd number of pixels. So this makes the
+                // positioning slightly more consistent regardless of where
+                // the row is being dropped.
+                if (newIndex > originalIndex) {
+                  widget.style.bottom = "-1px"
+                } else {
+                  widget.style.top = "-1px"
+                }
+                widget.style.height = "3px"
 
-              return widget
-            }))
+                return widget
+              })
+            )
           })
         } else {
-          const cellsInColumn = getColumnCells(editor, newIndex, tableHandleView.state.blockPos)
+          const cellsInColumn = getColumnCells(
+            editor,
+            newIndex,
+            tableHandleView.state.blockPos
+          )
           cellsInColumn.cells.forEach((cell) => {
             const cellNode = cell.node
             if (!cellNode) {
@@ -588,39 +685,46 @@ export function TableHandlePlugin(editor, emitUpdate) {
             // original index.
             const decorationPos =
               cell.pos + (newIndex > originalIndex ? cellNode.nodeSize - 2 : 2)
-            decorations.push(Decoration.widget(decorationPos, () => {
-              const widget = document.createElement("div")
-              widget.className = "tiptap-table-dropcursor"
-              widget.style.top = "0"
-              widget.style.bottom = "0"
-              // This is only necessary because the drop indicator's width
-              // is an even number of pixels, whereas the border between
-              // table cells is an odd number of pixels. So this makes the
-              // positioning slightly more consistent regardless of where
-              // the column is being dropped.
-              if (newIndex > originalIndex) {
-                widget.style.right = "-1px"
-              } else {
-                widget.style.left = "-1px"
-              }
-              widget.style.width = "3px"
-              return widget
-            }))
+            decorations.push(
+              Decoration.widget(decorationPos, () => {
+                const widget = document.createElement("div")
+                widget.className = "tiptap-table-dropcursor"
+                widget.style.top = "0"
+                widget.style.bottom = "0"
+                // This is only necessary because the drop indicator's width
+                // is an even number of pixels, whereas the border between
+                // table cells is an odd number of pixels. So this makes the
+                // positioning slightly more consistent regardless of where
+                // the column is being dropped.
+                if (newIndex > originalIndex) {
+                  widget.style.right = "-1px"
+                } else {
+                  widget.style.left = "-1px"
+                }
+                widget.style.width = "3px"
+                return widget
+              })
+            )
           })
         }
 
-        return DecorationSet.create(state.doc, decorations);
+        return DecorationSet.create(state.doc, decorations)
       },
     },
-  });
+  })
 }
 
 /**
  * Shared drag start handler for table rows and columns
  */
 const tableDragStart = (
-  orientation,
-  event
+  orientation: "col" | "row",
+  event: {
+    dataTransfer: DataTransfer | null
+    currentTarget: EventTarget & Element
+    clientX: number
+    clientY: number
+  }
 ) => {
   if (!tableHandleView?.state) {
     throw new Error(
@@ -651,7 +755,7 @@ const tableDragStart = (
   // Configure drag image
   if (event.dataTransfer) {
     const handleRect = (
-      event.currentTarget
+      event.currentTarget as HTMLElement
     ).getBoundingClientRect()
     const offset =
       orientation === "col"
@@ -690,12 +794,20 @@ const tableDragStart = (
 /**
  * Callback for column drag handle
  */
-export const colDragStart = (event) => tableDragStart("col", { ...event, clientY: 0 })
+export const colDragStart = (event: {
+  dataTransfer: DataTransfer | null
+  currentTarget: EventTarget & Element
+  clientX: number
+}) => tableDragStart("col", { ...event, clientY: 0 })
 
 /**
  * Callback for row drag handle
  */
-export const rowDragStart = (event) => tableDragStart("row", { ...event, clientX: 0 })
+export const rowDragStart = (event: {
+  dataTransfer: DataTransfer | null
+  currentTarget: EventTarget & Element
+  clientY: number
+}) => tableDragStart("row", { ...event, clientX: 0 })
 
 /**
  * Drag end cleanup

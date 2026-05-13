@@ -11,7 +11,10 @@ const tableHandlePluginSource = readFileSync(
 );
 
 test("official table handles stay hover-driven while the pointer is down in a cell", () => {
-  assert.match(tableHandlePluginSource, /mouseMoveHandler = \(event\) => \{/u);
+  assert.match(
+    tableHandlePluginSource,
+    /mouseMoveHandler = \(event(?:: MouseEvent)?\) => \{/u,
+  );
   assert.match(tableHandlePluginSource, /if \(this\.menuFrozen\) return/u);
   assert.doesNotMatch(tableHandlePluginSource, /mouseState/u);
   assert.equal(

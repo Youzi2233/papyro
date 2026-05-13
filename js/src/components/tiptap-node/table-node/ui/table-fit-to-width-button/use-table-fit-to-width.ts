@@ -1,5 +1,5 @@
-"use client";
 import { useCallback } from "react"
+import type { Editor } from "@tiptap/react"
 
 // --Hooks ---
 import { useTiptapEditor } from "@/hooks/use-tiptap-editor"
@@ -14,6 +14,23 @@ import {
 // --Icons ---
 import { MoveHorizontalIcon } from "@/components/tiptap-icons/move-horizontal-icon"
 
+export interface UseTableFitToWidthConfig {
+  /**
+   * The Tiptap editor instance. If omitted, the hook will use
+   * the editor from `useTiptapEditor`.
+   */
+  editor?: Editor | null
+  /**
+   * Hide the button when the action isn't currently possible.
+   * @default false
+   */
+  hideWhenUnavailable?: boolean
+  /**
+   * Called after the table width is successfully adjusted.
+   */
+  onWidthAdjusted?: () => void
+}
+
 /**
  * Required Tiptap extensions for this feature to work.
  * - `table` to target the node and update attributes
@@ -26,7 +43,7 @@ const REQUIRED_EXTENSIONS = ["table", "tableHandleExtension"]
  * Checks: editor presence, editability, required extensions,
  * and that the selection is somewhere inside a table.
  */
-function canFitTableToWidth(editor) {
+function canFitTableToWidth(editor: Editor | null): boolean {
   if (
     !editor ||
     !editor.isEditable ||
@@ -36,8 +53,11 @@ function canFitTableToWidth(editor) {
   }
 
   try {
-    return (editor.isActive("table") ||
-    editor.isActive("tableCell") || editor.isActive("tableHeader"));
+    return (
+      editor.isActive("table") ||
+      editor.isActive("tableCell") ||
+      editor.isActive("tableHeader")
+    )
   } catch {
     return false
   }
@@ -53,7 +73,7 @@ function canFitTableToWidth(editor) {
  * @param editor - The ProseMirror editor instance, or null
  * @returns true if the table width was successfully set, false otherwise
  */
-function setTableAutoWidth(editor) {
+function setTableAutoWidth(editor: Editor | null): boolean {
   if (!canFitTableToWidth(editor) || !editor) return false
 
   try {
@@ -61,7 +81,7 @@ function setTableAutoWidth(editor) {
     if (!table) return false
 
     // Calculate the editor width available for the table
-    const editorElement = editor.view.dom
+    const editorElement = editor.view.dom as HTMLElement
     const style = getComputedStyle(editorElement)
 
     const paddingLeft = parseFloat(style.paddingLeft) || 0
@@ -112,15 +132,13 @@ function setTableAutoWidth(editor) {
  * Executes the "fit to width" operation. Safely no-ops if unavailable.
  * Returns `true` on success, `false` otherwise.
  */
-function tableFitToWidth({
-  editor
-}) {
+function tableFitToWidth({ editor }: { editor: Editor | null }) {
   if (!canFitTableToWidth(editor) || !editor) {
     return false
   }
 
   try {
-    return setTableAutoWidth(editor);
+    return setTableAutoWidth(editor)
   } catch (error) {
     console.error("Error adjusting table width:", error)
     return false
@@ -131,16 +149,17 @@ function tableFitToWidth({
  * Determines whether a UI control should be visible based on the editor
  * state and `hideWhenUnavailable` setting.
  */
-function shouldShowButton(
-  {
-    editor,
-    hideWhenUnavailable
-  }
-) {
+function shouldShowButton({
+  editor,
+  hideWhenUnavailable,
+}: {
+  editor: Editor | null
+  hideWhenUnavailable: boolean
+}): boolean {
   if (!editor || !editor.isEditable) return false
   if (!isExtensionAvailable(editor, REQUIRED_EXTENSIONS)) return false
 
-  return hideWhenUnavailable ? canFitTableToWidth(editor) : true;
+  return hideWhenUnavailable ? canFitTableToWidth(editor) : true
 }
 
 /**
@@ -186,7 +205,7 @@ function shouldShowButton(
  *   )
  * }
  */
-export function useTableFitToWidth(config = {}) {
+export function useTableFitToWidth(config: UseTableFitToWidthConfig = {}) {
   const {
     editor: providedEditor,
     hideWhenUnavailable = false,

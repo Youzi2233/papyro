@@ -1,5 +1,11 @@
+"use client"
+
 import { useEffect, useState, useCallback, useRef } from "react"
+import type { Editor } from "@tiptap/react"
 import { CellSelection, cellAround } from "@tiptap/pm/tables"
+import type { EditorState, Selection } from "@tiptap/pm/state"
+import type { Node } from "@tiptap/pm/model"
+import type { EditorView } from "@tiptap/pm/view"
 import { FloatingPortal, useFloating } from "@floating-ui/react"
 
 // --- Hooks ---
@@ -7,31 +13,55 @@ import { useTiptapEditor } from "@/hooks/use-tiptap-editor"
 import { useResizeOverlay } from "@/components/tiptap-node/table-node/ui/table-selection-overlay/use-resize-overlay"
 
 // --- Lib ---
-import { domCellAround, getTable, rectEq } from "@/components/tiptap-node/table-node/lib/tiptap-table-utils";
+import {
+  domCellAround,
+  getTable,
+  rectEq,
+} from "@/components/tiptap-node/table-node/lib/tiptap-table-utils"
+
+export interface TableSelectionOverlayProps {
+  editor?: Editor | null
+  cellMenu?: React.ComponentType<{
+    onOpenChange?: (isOpen: boolean) => void
+    editor?: Editor | null
+    onResizeStart?: (handle: ResizeHandle) => (event: React.MouseEvent) => void
+  }>
+  showResizeHandles?: boolean
+  onMenuOpenChange?: (isOpen: boolean) => void
+}
+
+// tl = top-left
+// tr = top-right
+// bl = bottom-left
+// br = bottom-right
+type ResizeHandle = "tl" | "tr" | "bl" | "br" | null
 
 // if an element’s edge is within 5px of the selection edge,
 // it is treated as aligned.
 const CORNER_DETECTION_TOLERANCE = 5
 
 const getCellAtCoordinates = (
-  state,
-  view,
-  x,
-  y
+  state: EditorState,
+  view: EditorView,
+  x: number,
+  y: number
 ) => {
   const pos = view.posAtCoords({ left: x, top: y })?.pos
   if (pos == null) return null
 
   const $pos = state.doc.resolve(pos)
-  return cellAround($pos);
+  return cellAround($pos)
 }
 
-const getSelectionBoundingRect = (view, selection) => {
+const getSelectionBoundingRect = (
+  view: EditorView,
+  selection: Selection
+): DOMRect | null => {
   if (!(selection instanceof CellSelection)) return null
 
-  const cells = []
-  selection.forEachCell((_node, pos) => {
-    const dom = view.nodeDOM(pos)
+  const cells: Element[] = []
+  selection.forEachCell((_node: Node, pos: number) => {
+    const dom = view.nodeDOM(pos) as Element | null
     if (dom) cells.push(dom)
   })
 
@@ -57,23 +87,37 @@ const getSelectionBoundingRect = (view, selection) => {
     bounds.top,
     bounds.right - bounds.left,
     bounds.bottom - bounds.top
-  );
+  )
 }
 
-const getSingleCellBoundingRect = (view, cellPos) => {
-  const cellDom = view.nodeDOM(cellPos)
+const getSingleCellBoundingRect = (
+  view: EditorView,
+  cellPos: number
+): DOMRect | null => {
+  const cellDom = view.nodeDOM(cellPos) as Element | null
   if (!cellDom) return null
 
   const rect = cellDom.getBoundingClientRect()
-  return new DOMRect(rect.left, rect.top, rect.width, rect.height);
+  return new DOMRect(rect.left, rect.top, rect.width, rect.height)
 }
 
-const createVirtualReference = (rect) => ({
+const createVirtualReference = (rect: DOMRect) => ({
   getBoundingClientRect: () => rect,
 })
 
-const findCornerCells = (view, selection, selectionRect) => {
-  const corners = {
+interface CornerPositions {
+  topLeft: number | null
+  topRight: number | null
+  bottomLeft: number | null
+  bottomRight: number | null
+}
+
+const findCornerCells = (
+  view: EditorView,
+  selection: CellSelection,
+  selectionRect: DOMRect
+): CornerPositions => {
+  const corners: CornerPositions = {
     topLeft: null,
     topRight: null,
     bottomLeft: null,
@@ -86,11 +130,11 @@ const findCornerCells = (view, selection, selectionRect) => {
   // It returns a boolean:
   // true → if value1 and value2 are within 5 (CORNER_DETECTION_TOLERANCE) of each other.
   // false → if they are 5 or more units apart.
-  const isNearEdge = (value1, value2) =>
+  const isNearEdge = (value1: number, value2: number) =>
     Math.abs(value1 - value2) < CORNER_DETECTION_TOLERANCE
 
-  selection.forEachCell((_node, pos) => {
-    const dom = view.nodeDOM(pos)
+  selection.forEachCell((_node: Node, pos: number) => {
+    const dom = view.nodeDOM(pos) as Element | null
     if (!dom) return
 
     const cellRect = dom.getBoundingClientRect()
@@ -131,12 +175,17 @@ const findCornerCells = (view, selection, selectionRect) => {
   return corners
 }
 
-const getAnchorCellForHandle = (view, selection, selectionRect, handle) => {
+const getAnchorCellForHandle = (
+  view: EditorView,
+  selection: CellSelection,
+  selectionRect: DOMRect,
+  handle: ResizeHandle
+): { pos: number } | null => {
   if (!handle) return null
 
   const corners = findCornerCells(view, selection, selectionRect)
 
-  const anchorMap = {
+  const anchorMap: Record<NonNullable<ResizeHandle>, keyof CornerPositions> = {
     tl: "bottomRight",
     tr: "bottomLeft",
     bl: "topRight",
@@ -147,7 +196,7 @@ const getAnchorCellForHandle = (view, selection, selectionRect, handle) => {
   return anchorPos ? { pos: anchorPos } : null
 }
 
-const createHandleStyles = () => ({
+const createHandleStyles = (): React.CSSProperties => ({
   position: "absolute",
   width: 15,
   height: 15,
@@ -157,13 +206,17 @@ const createHandleStyles = () => ({
   justifyContent: "center",
   background: "transparent",
   pointerEvents: "auto",
-  zIndex: 10
+  zIndex: 10,
 })
 
-const createCornerHandleStyles = (position, isActiveHandle, isDisabled = false) => {
+const createCornerHandleStyles = (
+  position: "tl" | "tr" | "bl" | "br",
+  isActiveHandle: boolean,
+  isDisabled: boolean = false
+): React.CSSProperties => {
   const baseStyles = createHandleStyles()
 
-  const positionStyles = {
+  const positionStyles: Record<typeof position, React.CSSProperties> = {
     tl: {
       top: -7.5,
       left: -7.5,
@@ -194,7 +247,7 @@ const createCornerHandleStyles = (position, isActiveHandle, isDisabled = false) 
   }
 }
 
-export const TableSelectionOverlay = ({
+export const TableSelectionOverlay: React.FC<TableSelectionOverlayProps> = ({
   editor: providedEditor,
   cellMenu: CellMenu,
   showResizeHandles = true,
@@ -202,14 +255,14 @@ export const TableSelectionOverlay = ({
 }) => {
   const { editor } = useTiptapEditor(providedEditor)
   const [isVisible, setIsVisible] = useState(true)
-  const [selectionRect, setSelectionRect] = useState(null)
-  const [activeHandle, setActiveHandle] = useState(null)
-  const [tableDom, setTableDom] = useState(null)
+  const [selectionRect, setSelectionRect] = useState<DOMRect | null>(null)
+  const [activeHandle, setActiveHandle] = useState<ResizeHandle>(null)
+  const [tableDom, setTableDom] = useState<HTMLElement | null>(null)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
 
-  const anchorCellRef = useRef(null)
-  const activeHandleRef = useRef(null)
-  const containerRef = useRef(null)
+  const anchorCellRef = useRef<number | null>(null)
+  const activeHandleRef = useRef<ResizeHandle>(null)
+  const containerRef = useRef<HTMLElement | null>(null)
 
   const { refs, floatingStyles, update } = useFloating({
     placement: "top-start",
@@ -267,78 +320,102 @@ export const TableSelectionOverlay = ({
     }
   }, [update, selectionRect])
 
-  const createResizeHandler = useCallback((handle) => (event) => {
-    if (
-      !editor ||
-      !handle ||
-      !selectionRect ||
-      isMenuOpen ||
-      !showResizeHandles
-    )
-      return
+  const createResizeHandler = useCallback(
+    (handle: ResizeHandle) => (event: React.MouseEvent) => {
+      if (
+        !editor ||
+        !handle ||
+        !selectionRect ||
+        isMenuOpen ||
+        !showResizeHandles
+      )
+        return
 
-    event.preventDefault()
-    event.stopPropagation()
+      event.preventDefault()
+      event.stopPropagation()
 
-    const { selection } = editor.state
-    let cellSelection = null
+      const { selection } = editor.state
+      let cellSelection: CellSelection | null = null
 
-    if (selection instanceof CellSelection) {
-      cellSelection = selection
-    } else {
-      const { $anchor } = selection
-      const cell = cellAround($anchor)
+      if (selection instanceof CellSelection) {
+        cellSelection = selection
+      } else {
+        const { $anchor } = selection
+        const cell = cellAround($anchor)
 
-      if (cell) {
-        try {
-          cellSelection = CellSelection.create(editor.state.doc, cell.pos, cell.pos)
-        } catch (error) {
-          console.warn("Could not create single cell selection for resize:", error)
-          return
+        if (cell) {
+          try {
+            cellSelection = CellSelection.create(
+              editor.state.doc,
+              cell.pos,
+              cell.pos
+            )
+          } catch (error) {
+            console.warn(
+              "Could not create single cell selection for resize:",
+              error
+            )
+            return
+          }
         }
       }
-    }
 
-    if (!cellSelection) return
+      if (!cellSelection) return
 
-    const anchorCell = getAnchorCellForHandle(editor.view, cellSelection, selectionRect, handle)
-    if (!anchorCell) return
+      const anchorCell = getAnchorCellForHandle(
+        editor.view,
+        cellSelection,
+        selectionRect,
+        handle
+      )
+      if (!anchorCell) return
 
-    setActiveHandle(handle)
-    activeHandleRef.current = handle
-    anchorCellRef.current = anchorCell.pos
+      setActiveHandle(handle)
+      activeHandleRef.current = handle
+      anchorCellRef.current = anchorCell.pos
 
-    const handleMouseMove = (mouseEvent) => {
-      if (!editor || anchorCellRef.current == null) return
+      const handleMouseMove = (mouseEvent: MouseEvent) => {
+        if (!editor || anchorCellRef.current == null) return
 
-      const target = domCellAround(mouseEvent.target)
-      if (!target || target.type !== "cell") return
+        const target = domCellAround(mouseEvent.target as Element)
+        if (!target || target.type !== "cell") return
 
-      const targetCell = getCellAtCoordinates(editor.state, editor.view, mouseEvent.clientX, mouseEvent.clientY)
-      if (!targetCell) return
+        const targetCell = getCellAtCoordinates(
+          editor.state,
+          editor.view,
+          mouseEvent.clientX,
+          mouseEvent.clientY
+        )
+        if (!targetCell) return
 
-      try {
-        const newSelection = CellSelection.create(editor.state.doc, anchorCellRef.current, targetCell.pos)
+        try {
+          const newSelection = CellSelection.create(
+            editor.state.doc,
+            anchorCellRef.current,
+            targetCell.pos
+          )
 
-        const transaction = editor.state.tr.setSelection(newSelection)
-        editor.view.dispatch(transaction)
-      } catch (error) {
-        console.debug("Invalid cell selection during resize:", error)
+          const transaction = editor.state.tr.setSelection(newSelection)
+          editor.view.dispatch(transaction)
+        } catch (error) {
+          console.debug("Invalid cell selection during resize:", error)
+        }
       }
-    }
 
-    const handleMouseUp = () => {
-      setActiveHandle(null)
-      activeHandleRef.current = null
-      anchorCellRef.current = null
+      const handleMouseUp = () => {
+        setActiveHandle(null)
+        activeHandleRef.current = null
+        anchorCellRef.current = null
 
-      window.removeEventListener("mousemove", handleMouseMove)
-      window.removeEventListener("mouseup", handleMouseUp)
-    }
+        window.removeEventListener("mousemove", handleMouseMove)
+        window.removeEventListener("mouseup", handleMouseUp)
+      }
 
-    window.addEventListener("mousemove", handleMouseMove)
-    window.addEventListener("mouseup", handleMouseUp)
-  }, [editor, selectionRect, isMenuOpen, showResizeHandles])
+      window.addEventListener("mousemove", handleMouseMove)
+      window.addEventListener("mouseup", handleMouseUp)
+    },
+    [editor, selectionRect, isMenuOpen, showResizeHandles]
+  )
 
   const updateTableDom = useCallback(() => {
     if (!editor) {
@@ -354,15 +431,18 @@ export const TableSelectionOverlay = ({
 
     setTableDom((prev) => {
       const currentDom = prev
-      const newDom = editor.view.nodeDOM(table.pos)
+      const newDom = editor.view.nodeDOM(table.pos) as HTMLElement | null
       return currentDom === newDom ? currentDom : newDom
     })
   }, [editor])
 
-  const handleMenuOpenChange = useCallback((isOpen) => {
-    setIsMenuOpen(isOpen)
-    onMenuOpenChange?.(isOpen)
-  }, [onMenuOpenChange])
+  const handleMenuOpenChange = useCallback(
+    (isOpen: boolean) => {
+      setIsMenuOpen(isOpen)
+      onMenuOpenChange?.(isOpen)
+    },
+    [onMenuOpenChange]
+  )
 
   useEffect(() => {
     if (!editor) return
@@ -378,11 +458,13 @@ export const TableSelectionOverlay = ({
 
     return () => {
       editor.off("selectionUpdate", handleSelectionUpdate)
-    };
+    }
   }, [editor, updateSelectionRect, updateTableDom])
 
   useEffect(() => {
-    const c = tableDom?.querySelector(".table-selection-overlay-container")
+    const c = tableDom?.querySelector(
+      ".table-selection-overlay-container"
+    ) as HTMLElement | null
     containerRef.current = c ?? null
   }, [tableDom])
 
@@ -398,13 +480,15 @@ export const TableSelectionOverlay = ({
     return (
       <span
         onMouseDown={(e) => e.stopPropagation()}
-        style={{ pointerEvents: "auto" }}>
+        style={{ pointerEvents: "auto" }}
+      >
         <CellMenu
           onOpenChange={handleMenuOpenChange}
           editor={editor}
-          onResizeStart={createResizeHandler} />
+          onResizeStart={createResizeHandler}
+        />
       </span>
-    );
+    )
   }
 
   return (
@@ -415,7 +499,8 @@ export const TableSelectionOverlay = ({
           ...floatingStyles,
           pointerEvents: "none",
           zIndex: 10,
-        }}>
+        }}
+      >
         <div className="tiptap-table-selection-overlay">
           <div
             style={{
@@ -426,7 +511,8 @@ export const TableSelectionOverlay = ({
               borderRadius: 2,
               top: 0,
               left: 0,
-            }} />
+            }}
+          />
 
           <div
             style={{
@@ -438,7 +524,8 @@ export const TableSelectionOverlay = ({
               zIndex: 3,
               top: 0,
               left: 0,
-            }}>
+            }}
+          >
             {/* Menu Component */}
             {renderCellMenu()}
 
@@ -446,22 +533,42 @@ export const TableSelectionOverlay = ({
             {showResizeHandles && (
               <>
                 <div
-                  style={createCornerHandleStyles("tl", !activeHandle || activeHandle === "tl", isMenuOpen)}
-                  onMouseDown={createResizeHandler("tl")} />
+                  style={createCornerHandleStyles(
+                    "tl",
+                    !activeHandle || activeHandle === "tl",
+                    isMenuOpen
+                  )}
+                  onMouseDown={createResizeHandler("tl")}
+                />
                 <div
-                  style={createCornerHandleStyles("tr", !activeHandle || activeHandle === "tr", isMenuOpen)}
-                  onMouseDown={createResizeHandler("tr")} />
+                  style={createCornerHandleStyles(
+                    "tr",
+                    !activeHandle || activeHandle === "tr",
+                    isMenuOpen
+                  )}
+                  onMouseDown={createResizeHandler("tr")}
+                />
                 <div
-                  style={createCornerHandleStyles("bl", !activeHandle || activeHandle === "bl", isMenuOpen)}
-                  onMouseDown={createResizeHandler("bl")} />
+                  style={createCornerHandleStyles(
+                    "bl",
+                    !activeHandle || activeHandle === "bl",
+                    isMenuOpen
+                  )}
+                  onMouseDown={createResizeHandler("bl")}
+                />
                 <div
-                  style={createCornerHandleStyles("br", !activeHandle || activeHandle === "br", isMenuOpen)}
-                  onMouseDown={createResizeHandler("br")} />
+                  style={createCornerHandleStyles(
+                    "br",
+                    !activeHandle || activeHandle === "br",
+                    isMenuOpen
+                  )}
+                  onMouseDown={createResizeHandler("br")}
+                />
               </>
             )}
           </div>
         </div>
       </div>
     </FloatingPortal>
-  );
+  )
 }

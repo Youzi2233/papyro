@@ -1,12 +1,13 @@
-"use client";
 import { useEffect, useCallback, useRef } from "react"
+import type { Editor } from "@tiptap/react"
 import { columnResizingPluginKey } from "@tiptap/pm/tables"
+import type { Transaction } from "@tiptap/pm/state"
 
 export function useResizeOverlay(
-  editor,
-  updateSelectionRect
+  editor: Editor | null,
+  updateSelectionRect: () => void
 ) {
-  const rafId = useRef(null)
+  const rafId = useRef<number | null>(null)
 
   const stopLoop = useCallback(() => {
     if (rafId.current != null) {
@@ -18,7 +19,7 @@ export function useResizeOverlay(
   const startLoop = useCallback(() => {
     if (rafId.current != null) return
     const tick = () => {
-      const st = columnResizingPluginKey.getState(editor.state)
+      const st = columnResizingPluginKey.getState(editor!.state)
       const dragging = !!st?.dragging
       updateSelectionRect() // mutate overlay styles; avoid setState if possible
       if (dragging) {
@@ -35,9 +36,7 @@ export function useResizeOverlay(
   useEffect(() => {
     if (!editor) return
 
-    const onTx = ({
-      transaction
-    }) => {
+    const onTx = ({ transaction }: { transaction: Transaction }) => {
       // this is for non-resize txs that may affect selection
       updateSelectionRect()
 
@@ -72,6 +71,6 @@ export function useResizeOverlay(
     return () => {
       editor.off("transaction", onTx)
       stopLoop()
-    };
+    }
   }, [editor, startLoop, stopLoop, updateSelectionRect])
 }

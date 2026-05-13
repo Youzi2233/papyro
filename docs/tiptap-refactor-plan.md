@@ -32,6 +32,7 @@ The editor has moved in the right direction, but it is not yet at the official N
 - Table architecture: `PapyroOfficialTableNodeLayer` now mounts the official `TableHandle`, `TableSelectionOverlay`, `TableCellHandleMenu`, and `TableExtendRowColumnButtons` outside `EditorContent`, matching the official table-node integration contract. The latest table pass restored the official table wrapper operation rails (`--tt-table-pad-*`) so row/column handles and extend buttons have the same breathing room as the Notion-like template; Papyro CSS no longer restyles official handles, extend buttons, or cell action dots, and table-scoped menu CSS is limited to viewport bounds and text clipping while nested color/alignment submenus use the official menu surface and stacking level.
 - Table UX target: keep the official table-node SCSS as the component owner, and limit Papyro CSS to host layout, viewport safety, theme token bridging, and Markdown persistence constraints. Row/column handles should feel like subtle Notion-like affordances, not persistent developer toolbar controls.
 - JavaScript inventory: `js/src/` now contains 0 tracked `.js` files and 0 tracked `.jsx` files after the code block migration. Generated bundles remain JavaScript artifacts, but editor source is TS/TSX-only.
+- TypeScript posture: the latest table-node pass typed the official table-handle extension, plugin, helper, hook, and action-button modules while keeping Papyro's caret-restoration behavior after `CellSelection`. The official `image-node` dependency is now explicit through `@tiptap/extension-image@3.23.1`, so the previous image/table-node typecheck blockers are no longer the next gate risk.
 - Formatting entry points: the top shell toolbar must stay app-level only. Rich-text formatting belongs to official Tiptap React surfaces: `PapyroToolbarFloating`, slash menu, drag context menu, link popover, and table-node menus. The active `PapyroToolbarFloating` still diverges from the official Notion-like toolbar by keeping text alignment, undo/redo, and highlight controls permanently visible; it should become an official-template composition with only Papyro-specific omissions such as AI/Cloud controls.
 - Verification bar: for every UI convergence step, run source tests, build, and the editor Markdown gate; for visual changes, prefer desktop WebView/manual smoke or a screenshot-backed check when the app target is available.
 
@@ -282,6 +283,8 @@ The table-node is partially integrated, needs completion:
 - [x] 2026-05-13 audit follow-up: remove Papyro-specific handle, extend button, and cell-dot visual overrides so the official table-node SCSS owns the Notion-like table chrome
 - [x] 2026-05-13 audit follow-up: stop applying the table-scoped menu class to nested color/alignment submenus, and reduce Papyro table menu CSS to z-index, viewport bounds, and text clipping so official menu/combobox styles own the Notion-like surface
 - [x] 2026-05-13 audit follow-up: restore the official table wrapper operation rail padding and remove the host wrapper margin reset, fixing cramped row/column handles, extend controls, and nested table menu stacking against the Notion-like reference
+- [x] 2026-05-13 type follow-up: align the official table-handle extension/plugin/helper, table-handle state hook, table utility helpers, and table action-button modules with typed TS/TSX source while preserving Papyro's post-`CellSelection` caret restoration and scoped table menu surface
+- [x] 2026-05-13 type follow-up: expose `TableKit` through the Papyro table boundary and add the aligned official `@tiptap/extension-image@3.23.1` dependency required by `image-node`
 
 ---
 
@@ -351,8 +354,9 @@ Migrate by module priority, one module at a time:
 - [x] Convert `tiptap-block-actions.js` to `tiptap-block-actions.ts` so the official drag context menu's Papyro adapter exposes typed block target, editor facade, submenu, and command result boundaries
 - [x] Convert `tiptap-markdown.js` to `tiptap-markdown.ts` so the Markdown manager, extension chain, persistence normalization, and parse/serialize/round-trip helpers expose typed boundaries
 - [x] Convert `tiptap-code-block.js` to `tiptap-code-block.ts` so lowlight, DOM fallback NodeView chrome, React code-block NodeView injection, language menu state, copy/wrap actions, and `setCodeBlockLanguage` expose typed boundaries
+- [x] Resolve the previous image/table-node typecheck blockers: `@tiptap/extension-image` is installed at the aligned Tiptap version, and the official table-handle helper/extension/action modules now have typed TS/TSX boundaries
 - [ ] Add a passing `npm --prefix js run typecheck` gate once current TS template debt is typed or intentionally isolated
-- [ ] Resolve known typecheck blockers before enabling the gate: missing official image extension dependency/types and official table-handle helper/extension typing gaps
+- [ ] Resolve the remaining typecheck blockers before enabling the gate: global runtime/model debt in `editor-core.ts`, `editor-runtime.ts`, `editor-runtime-contract.ts`, `tiptap-react/runtime-model.ts`, and `tiptap-block-move.ts`; unused or untrimmed official template modules for AI, collaboration, emoji, TOC, and Notion header/mobile toolbar paths; and the Papyro custom table action/Markdown layer in `tiptap-table.ts`
 
 ---
 

@@ -32,6 +32,7 @@
 - 表格架构：`PapyroOfficialTableNodeLayer` 已经把官方 `TableHandle`、`TableSelectionOverlay`、`TableCellHandleMenu`、`TableExtendRowColumnButtons` 挂在 `EditorContent` 外部，符合官方 table-node 集成契约。最新表格跟进已经恢复官方 table wrapper 操作轨道（`--tt-table-pad-*`），让行列 handle 和扩展按钮拥有与 Notion-like 模板一致的留白；Papyro CSS 不再重绘官方 handle、扩展按钮和单元格操作点，表格专属菜单 CSS 只限制视口边界和文本裁剪，嵌套颜色/对齐子菜单回到官方 menu 表面与层级。
 - 表格 UX 目标：官方 table-node SCSS 负责组件外观，Papyro CSS 只做宿主布局、视口安全、主题 token 桥接和 Markdown 持久化约束。行列 handle 应该是接近 Notion-like 的轻量暗示，而不是常驻的开发者工具条控件。
 - JavaScript 存量：code block 迁移后，`js/src/` 下已有 0 个被跟踪的 `.js` 文件和 0 个被跟踪的 `.jsx` 文件。生成后的 bundle 仍是 JavaScript 产物，但编辑器源码已经只保留 TS/TSX。
+- TypeScript 状态：最新 table-node 跟进已经类型化官方 table-handle extension、plugin、helper、hook 和 action-button 模块，同时保留 Papyro 在 `CellSelection` 后恢复光标的本地行为。官方 `image-node` 依赖已经通过 `@tiptap/extension-image@3.23.1` 显式补齐，因此之前的 image/table-node typecheck 阻塞不再是下一步风险。
 - 格式化入口：顶部 shell 工具栏只保留应用级控制。富文本格式化入口应全部来自官方 Tiptap React 表面：`PapyroToolbarFloating`、slash menu、drag context menu、link popover 和 table-node menus。当前活跃的 `PapyroToolbarFloating` 仍与官方 Notion-like 工具栏组合有偏差：文本对齐、撤销/重做和高亮控件常驻展示；它应收敛为官方模板组合，仅移除 AI/Cloud 等 Papyro 暂未实现的能力。
 - 验证标准：每个 UI 收敛步骤都要跑源码测试、构建和 editor Markdown gate；视觉改动在有可用 app target 时优先做 desktop WebView/manual smoke 或截图验证。
 
@@ -282,6 +283,8 @@ js/src/
 - [x] 2026-05-13 审计跟进：移除 Papyro 专属的 handle、扩展按钮和单元格圆点视觉覆盖，让官方 table-node SCSS 接管 Notion-like 表格 chrome
 - [x] 2026-05-13 审计跟进：不再把表格专属菜单 class 传给嵌套颜色/对齐子菜单，并将 Papyro 表格菜单 CSS 收敛到层级、视口边界和文本裁剪，让官方 menu/combobox 样式接管 Notion-like 表面
 - [x] 2026-05-13 审计跟进：恢复官方 table wrapper 操作轨道 padding，并移除宿主 wrapper 的 margin reset，修复行列 handle、扩展控件和嵌套表格菜单相对 Notion-like 参考过于拥挤的问题
+- [x] 2026-05-13 类型跟进：将官方 table-handle extension/plugin/helper、table-handle 状态 hook、表格工具函数和表格 action-button 模块对齐为类型化 TS/TSX 源码，同时保留 Papyro 在 `CellSelection` 后恢复光标以及表格菜单 scoped surface 的本地行为
+- [x] 2026-05-13 类型跟进：通过 Papyro table 边界暴露 `TableKit`，并补齐 `image-node` 需要的官方 `@tiptap/extension-image@3.23.1` 对齐依赖
 
 ---
 
@@ -351,8 +354,9 @@ js/src/
 - [x] 将 `tiptap-block-actions.js` 迁移为 `tiptap-block-actions.ts`，让官方 drag context menu 的 Papyro 适配器暴露类型化块目标、编辑器 facade、子菜单和命令结果边界
 - [x] 将 `tiptap-markdown.js` 迁移为 `tiptap-markdown.ts`，让 Markdown manager、扩展链、持久化归一化，以及 parse/serialize/round-trip helper 暴露类型化边界
 - [x] 将 `tiptap-code-block.js` 迁移为 `tiptap-code-block.ts`，让 lowlight、DOM fallback NodeView chrome、React code-block NodeView 注入、语言菜单状态、复制/换行动作和 `setCodeBlockLanguage` 暴露类型化边界
+- [x] 解决上一轮 image/table-node typecheck 阻塞：`@tiptap/extension-image` 已安装为对齐的 Tiptap 版本，官方 table-handle helper/extension/action 模块已具备类型化 TS/TSX 边界
 - [ ] 在现有 TS 模板债务完成类型化或隔离后，新增可通过的 `npm --prefix js run typecheck` 闸门
-- [ ] 启用 typecheck 闸门前解决已知阻塞：缺失的官方 image extension 依赖/类型，以及官方 table-handle helper/extension 的类型缺口
+- [ ] 启用 typecheck 闸门前解决剩余阻塞：`editor-core.ts`、`editor-runtime.ts`、`editor-runtime-contract.ts`、`tiptap-react/runtime-model.ts`、`tiptap-block-move.ts` 等全局 runtime/model 债务；AI、协作、emoji、TOC、Notion header/mobile toolbar 路径等未使用或未裁剪的官方模板模块；以及 `tiptap-table.ts` 中 Papyro 自定义表格 action/Markdown 层的类型债务
 
 ---
 

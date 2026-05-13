@@ -20,6 +20,8 @@ import {
 } from "@tiptap/pm/tables";
 import { TableHandleExtension } from "./components/tiptap-node/table-node/extensions/table-handle/index.ts";
 
+export { TableKit };
+
 type TableCellResetAttribute = "align" | "backgroundColor";
 type TableCellAlign = "left" | "center" | "right";
 type AttributeValue = string | number | boolean | readonly number[] | null | undefined;

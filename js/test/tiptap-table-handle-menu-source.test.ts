@@ -3,11 +3,11 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const officialCellMenuSource = readFileSync(
-  new URL("../src/components/tiptap-node/table-node/ui/table-cell-handle-menu/index.tsx", import.meta.url),
+  new URL("../src/components/tiptap-node/table-node/ui/table-cell-handle-menu/table-cell-handle-menu.tsx", import.meta.url),
   "utf8",
 );
 const officialAxisMenuSource = readFileSync(
-  new URL("../src/components/tiptap-node/table-node/ui/table-handle-menu/index.tsx", import.meta.url),
+  new URL("../src/components/tiptap-node/table-node/ui/table-handle-menu/table-handle-menu.tsx", import.meta.url),
   "utf8",
 );
 const officialLayerSource = readFileSync(
@@ -113,16 +113,22 @@ test("official table-node chrome paths are real implementations, not legacy re-e
   assert.doesNotMatch(officialTableHandleSource, /from "\.\.\/\.\.\/\.\.\/table-handle\.jsx"/u);
   assert.doesNotMatch(officialTableHandleSource, /export \{ TableHandle \}/u);
 
-  assert.match(officialSelectionOverlayIndexSource, /export \* from "\.\/table-selection-overlay"/u);
-  assert.match(officialSelectionOverlaySource, /cellMenu:\s*CellMenu/u);
-  assert.match(officialSelectionOverlaySource, /<CellMenu/u);
-  assert.match(officialSelectionOverlaySource, /getSingleCellBoundingRect/u);
-  assert.match(officialSelectionOverlaySource, /selection instanceof CellSelection/u);
+  const selectionOverlayRuntimeSource =
+    officialSelectionOverlayIndexSource.includes("export * from")
+      ? officialSelectionOverlaySource
+      : officialSelectionOverlayIndexSource;
+  assert.match(selectionOverlayRuntimeSource, /cellMenu:\s*CellMenu/u);
+  assert.match(selectionOverlayRuntimeSource, /<CellMenu/u);
+  assert.match(selectionOverlayRuntimeSource, /getSingleCellBoundingRect/u);
+  assert.match(selectionOverlayRuntimeSource, /selection instanceof CellSelection/u);
   assert.doesNotMatch(officialSelectionOverlaySource, /from "\.\.\/\.\.\/\.\.\/table-selection-overlay\.jsx"/u);
   assert.doesNotMatch(officialSelectionOverlaySource, /export \{ TableSelectionOverlay \}/u);
 
-  assert.match(officialExtendButtonsIndexSource, /export \* from "\.\/table-extend-row-column-button"/u);
-  assert.match(officialExtendButtonsSource, /useTableExtendRowColumnButtonsPositioning/u);
+  const extendButtonsRuntimeSource =
+    officialExtendButtonsIndexSource.includes("export * from")
+      ? officialExtendButtonsSource
+      : officialExtendButtonsIndexSource;
+  assert.match(extendButtonsRuntimeSource, /useTableExtendRowColumnButtonsPositioning/u);
   assert.doesNotMatch(officialExtendButtonsSource, /from "\.\.\/\.\.\/\.\.\/table-extend-row-column-button\.jsx"/u);
   assert.doesNotMatch(officialExtendButtonsSource, /export \{ TableExtendRowColumnButtons \}/u);
 });
