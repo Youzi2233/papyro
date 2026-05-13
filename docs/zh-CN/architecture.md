@@ -899,7 +899,7 @@ Document window 复用同一套进程级窗口模式，但和 settings 不同，
 | 改文件树 | `crates/ui/src/components/sidebar` | `crates/core/src/file_state.rs` |
 | 改 Markdown Preview | `crates/editor/src/renderer/html.rs` | `crates/ui/src/components/editor/preview.rs` |
 | 改 Hybrid 编辑 | `js/src/editor-runtime.ts`, `js/src/tiptap-*.js` | `js/src/tiptap-react/`, `crates/editor/src/parser/blocks.rs` |
-| 改粘贴/选区/IME | `js/src/tiptap-paste-controller.js`, `js/src/tiptap-ui-primitives.ts` | `js/test/tiptap-*.test.ts` |
+| 改粘贴/选区/IME | `js/src/tiptap-paste-controller.ts`, `js/src/tiptap-ui-primitives.ts` | `js/test/tiptap-*.test.ts` |
 | 改设置项 | `crates/core/src/models.rs` | settings UI、storage settings |
 | 改系统打开文件 | `apps/desktop/src/main.rs` | `crates/app/src/open_requests.rs`, `dispatcher.rs` |
 

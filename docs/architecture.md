@@ -825,7 +825,7 @@ Their editor state is local, while storage and settings are supplied through sha
 | File tree behavior | `crates/ui/src/components/sidebar` | `crates/core/src/file_state.rs` |
 | Markdown Preview | `crates/editor/src/renderer/html.rs` | `crates/ui/src/components/editor/preview.rs` |
 | Hybrid editing | `js/src/editor-runtime.ts`, `js/src/tiptap-*.js` | `js/src/tiptap-react/`, `crates/editor/src/parser/blocks.rs` |
-| Paste/selection/IME | `js/src/tiptap-paste-controller.js`, `js/src/tiptap-ui-primitives.ts` | `js/test/tiptap-*.test.ts` |
+| Paste/selection/IME | `js/src/tiptap-paste-controller.ts`, `js/src/tiptap-ui-primitives.ts` | `js/test/tiptap-*.test.ts` |
 | Settings field | `crates/core/src/models.rs` | settings UI and storage settings |
 | OS file open | `apps/desktop/src/main.rs` | `crates/app/src/open_requests.rs`, `dispatcher.rs` |
 

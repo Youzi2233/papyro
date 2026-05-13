@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import {
   autoLinkSelectedTextOnPaste,
   createTiptapPasteController,
-} from "../src/tiptap-paste-controller.js";
+} from "../src/tiptap-paste-controller.ts";
 
 function createEditor({
   text = "Read docs",
