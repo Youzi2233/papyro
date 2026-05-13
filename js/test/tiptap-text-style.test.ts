@@ -13,7 +13,7 @@ const {
   roundTripTiptapMarkdown,
   serializeTiptapMarkdown,
 } = await importBundledModule(
-  new URL("../src/tiptap-markdown.js", import.meta.url),
+  new URL("../src/tiptap-markdown.ts", import.meta.url),
 );
 
 function collectMarks(node, marks = []) {

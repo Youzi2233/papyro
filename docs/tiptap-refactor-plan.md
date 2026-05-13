@@ -16,7 +16,7 @@ This document is the complete execution plan for refactoring Papyro's editor fro
 
 | Dimension | Current State | Target State |
 |-----------|--------------|--------------|
-| Language | Mixed TypeScript with 2 tracked `.js` files and no tracked `.jsx` files still under `js/src/` as of the 2026-05-13 block actions migration | TypeScript (.ts/.tsx) |
+| Language | Mixed TypeScript with 1 tracked `.js` file and no tracked `.jsx` files still under `js/src/` as of the 2026-05-13 Markdown manager migration | TypeScript (.ts/.tsx) |
 | Build | esbuild (native TS support, no changes needed) | esbuild + tsconfig |
 | UI Framework | React 18.3 (already satisfied) | React 18.3 (unchanged) |
 | Tiptap | 3.23.1 (already aligned) | 3.23.1+ (keep same version) |
@@ -31,7 +31,7 @@ The editor has moved in the right direction, but it is not yet at the official N
 
 - Table architecture: `PapyroOfficialTableNodeLayer` now mounts the official `TableHandle`, `TableSelectionOverlay`, `TableCellHandleMenu`, and `TableExtendRowColumnButtons` outside `EditorContent`, matching the official table-node integration contract. The latest table pass restored the official table wrapper operation rails (`--tt-table-pad-*`) so row/column handles and extend buttons have the same breathing room as the Notion-like template; Papyro CSS no longer restyles official handles, extend buttons, or cell action dots, and table-scoped menu CSS is limited to viewport bounds and text clipping while nested color/alignment submenus use the official menu surface and stacking level.
 - Table UX target: keep the official table-node SCSS as the component owner, and limit Papyro CSS to host layout, viewport safety, theme token bridging, and Markdown persistence constraints. Row/column handles should feel like subtle Notion-like affordances, not persistent developer toolbar controls.
-- JavaScript inventory: `js/src/` still contains 2 tracked `.js` files and no tracked `.jsx` files after the block actions migration. They are source files, not generated output. The remaining files are Papyro-specific Markdown/editor adapters and code block behavior that should be typed after behavior coverage or deleted when official TS/TSX components own the behavior.
+- JavaScript inventory: `js/src/` still contains 1 tracked `.js` file and no tracked `.jsx` files after the Markdown manager migration. It is source code, not generated output. The remaining file owns Papyro-specific code block behavior and should be typed after behavior coverage or deleted when official TS/TSX components own the behavior.
 - Formatting entry points: the top shell toolbar must stay app-level only. Rich-text formatting belongs to official Tiptap React surfaces: `PapyroToolbarFloating`, slash menu, drag context menu, link popover, and table-node menus. The active `PapyroToolbarFloating` still diverges from the official Notion-like toolbar by keeping text alignment, undo/redo, and highlight controls permanently visible; it should become an official-template composition with only Papyro-specific omissions such as AI/Cloud controls.
 - Verification bar: for every UI convergence step, run source tests, build, and the editor Markdown gate; for visual changes, prefer desktop WebView/manual smoke or a screenshot-backed check when the app target is available.
 
@@ -317,7 +317,7 @@ Migrate by module priority, one module at a time:
 - [x] Convert `editor-core.js` to a `.ts` source module while preserving the current tested behavior surface
 - [x] Convert `editor-clipboard.js` to a typed `.ts` module
 - [x] Convert `tiptap-ui-primitives.js` to a typed `.ts` module
-- [ ] Migrate the remaining 2 `.js` files and no `.jsx` files under `js/src/` to `.ts`/`.tsx`, or delete them when an official TS/TSX component already owns the behavior
+- [ ] Migrate the remaining 1 `.js` file and no `.jsx` files under `js/src/` to `.ts`/`.tsx`, or delete it when an official TS/TSX component already owns the behavior
 - [x] Split the remaining JS/JSX migration into tracks: core runtime (`editor-*`, `markdown-sync-controller`), Papyro feature adapters (`tiptap-math`, `tiptap-mermaid`, `tiptap-image`, `tiptap-callout`, etc.), and leftover React support (`tiptap-react/*`); the core runtime and React support tracks are now closed
 - [x] Convert `tiptap-table-command-controller.js` to `tiptap-table-command-controller.ts` after table command behavior was covered by source and runtime tests
 - [x] Convert `tiptap-table.js` to `tiptap-table.ts` after table command behavior was covered by source and runtime tests
@@ -349,6 +349,7 @@ Migrate by module priority, one module at a time:
 - [x] Convert `tiptap-runtime-smoke.js` to `tiptap-runtime-smoke.ts` so the mounted Tiptap gate helper has typed fake-DOM, facade, and Markdown round-trip boundaries
 - [x] Convert `tiptap-slash-commands.js` to `tiptap-slash-commands.ts` so the official slash menu's Papyro command adapter exposes typed command, query, recent-item, and fallback Markdown boundaries
 - [x] Convert `tiptap-block-actions.js` to `tiptap-block-actions.ts` so the official drag context menu's Papyro adapter exposes typed block target, editor facade, submenu, and command result boundaries
+- [x] Convert `tiptap-markdown.js` to `tiptap-markdown.ts` so the Markdown manager, extension chain, persistence normalization, and parse/serialize/round-trip helpers expose typed boundaries
 - [ ] Add a passing `npm --prefix js run typecheck` gate once current TS template debt is typed or intentionally isolated
 - [ ] Resolve known typecheck blockers before enabling the gate: missing official image extension dependency/types, `allowImportingTsExtensions` import paths, implicit `any` in table-handle utilities, and typed runtime context boundaries
 

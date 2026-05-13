@@ -7,7 +7,7 @@ import {
   createPapyroTiptapExtensions,
   preparePapyroMarkdownDoc,
   serializeTiptapMarkdown,
-} from "./tiptap-markdown.js";
+} from "./tiptap-markdown.ts";
 
 type SmokeFailureList = string[];
 type SmokeDataset = Record<string, string | undefined>;

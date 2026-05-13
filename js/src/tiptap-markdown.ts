@@ -1,4 +1,5 @@
 import { MarkdownManager } from "@tiptap/markdown";
+import type { AnyExtension, JSONContent } from "@tiptap/core";
 import { NodeRange } from "@tiptap/extension-node-range";
 import { TextAlign } from "@tiptap/extension-text-align";
 import { UniqueID } from "@tiptap/extension-unique-id";
@@ -15,7 +16,30 @@ import { createPapyroTableExtensions } from "./tiptap-table.ts";
 import { createPapyroTaskListExtensions } from "./tiptap-task-list.ts";
 import { createPapyroTextStyleExtensions } from "./tiptap-text-style.ts";
 
-export const PAPYRO_UNIQUE_ID_NODE_TYPES = Object.freeze([
+type PapyroJsonContent = JSONContent & {
+  attrs?: Record<string, unknown>;
+  content?: PapyroJsonContent[];
+};
+
+export type PapyroTiptapExtensionOptions = Readonly<{
+  codeBlockNodeViewRenderer?: unknown;
+}>;
+
+export type PapyroMarkdownManagerOptions = Readonly<{
+  extensions?: AnyExtension[];
+}>;
+
+export type PapyroMarkdownParser = Pick<MarkdownManager, "parse">;
+export type PapyroMarkdownSerializer = Pick<MarkdownManager, "serialize">;
+export type PapyroMarkdownManager = PapyroMarkdownParser & PapyroMarkdownSerializer;
+
+export type PapyroMarkdownRoundTrip = Readonly<{
+  parsed: JSONContent;
+  serialized: string;
+  reparsed: JSONContent;
+}>;
+
+export const PAPYRO_UNIQUE_ID_NODE_TYPES: readonly string[] = Object.freeze([
   "paragraph",
   "heading",
   "blockquote",
@@ -29,10 +53,12 @@ export const PAPYRO_UNIQUE_ID_NODE_TYPES = Object.freeze([
   "mermaidBlock",
 ]);
 
-function cloneWithoutPapyroRuntimeAttrs(node) {
+function cloneWithoutPapyroRuntimeAttrs(
+  node: PapyroJsonContent | unknown,
+): PapyroJsonContent | unknown {
   if (!node || typeof node !== "object" || Array.isArray(node)) return node;
 
-  const next = { ...node };
+  const next: PapyroJsonContent = { ...(node as PapyroJsonContent) };
   if (next.attrs && typeof next.attrs === "object") {
     const attrs = { ...next.attrs };
     delete attrs.id;
@@ -45,36 +71,39 @@ function cloneWithoutPapyroRuntimeAttrs(node) {
   }
 
   if (Array.isArray(next.content)) {
-    next.content = next.content.map(cloneWithoutPapyroRuntimeAttrs);
+    next.content = next.content.map((child) =>
+      cloneWithoutPapyroRuntimeAttrs(child),
+    ) as PapyroJsonContent[];
   }
 
   return next;
 }
 
-function isEmptyParagraph(node) {
+function isEmptyParagraph(node: PapyroJsonContent | undefined): boolean {
   return node?.type === "paragraph" && (!Array.isArray(node.content) || node.content.length === 0);
 }
 
-export function preparePapyroMarkdownDoc(doc) {
+export function preparePapyroMarkdownDoc(doc: JSONContent): JSONContent {
   const normalized = cloneWithoutPapyroRuntimeAttrs(doc);
-  if (!normalized || typeof normalized !== "object" || normalized.type !== "doc") {
-    return normalized;
+  const normalizedDoc = normalized as PapyroJsonContent | null;
+  if (!normalizedDoc || typeof normalizedDoc !== "object" || normalizedDoc.type !== "doc") {
+    return normalized as JSONContent;
   }
 
-  const content = Array.isArray(normalized.content) ? [...normalized.content] : [];
-  if (content.length > 1 && isEmptyParagraph(content.at(-1))) {
+  const content = Array.isArray(normalizedDoc.content) ? [...normalizedDoc.content] : [];
+  if (content.length > 1 && isEmptyParagraph(content[content.length - 1])) {
     content.pop();
   }
 
   return {
-    ...normalized,
+    ...normalizedDoc,
     ...(content.length > 0 ? { content } : {}),
   };
 }
 
 export function createPapyroTiptapExtensions({
   codeBlockNodeViewRenderer = null,
-} = {}) {
+}: PapyroTiptapExtensionOptions = {}): AnyExtension[] {
   return [
     StarterKit.configure({
       heading: {
@@ -99,7 +128,7 @@ export function createPapyroTiptapExtensions({
       notAfter: ["paragraph"],
     }),
     UniqueID.configure({
-      types: PAPYRO_UNIQUE_ID_NODE_TYPES,
+      types: [...PAPYRO_UNIQUE_ID_NODE_TYPES],
     }),
     UiState,
     ...createPapyroCodeBlockExtensions({
@@ -115,7 +144,9 @@ export function createPapyroTiptapExtensions({
   ];
 }
 
-export function createPapyroMarkdownManager({ extensions } = {}) {
+export function createPapyroMarkdownManager({
+  extensions,
+}: PapyroMarkdownManagerOptions = {}): MarkdownManager {
   return new MarkdownManager({
     extensions: extensions ?? createPapyroTiptapExtensions(),
     indentation: {
@@ -125,15 +156,24 @@ export function createPapyroMarkdownManager({ extensions } = {}) {
   });
 }
 
-export function parseTiptapMarkdown(markdown, manager = createPapyroMarkdownManager()) {
-  return manager.parse(markdown ?? "");
+export function parseTiptapMarkdown(
+  markdown: unknown,
+  manager: PapyroMarkdownParser = createPapyroMarkdownManager(),
+): JSONContent {
+  return manager.parse(String(markdown ?? ""));
 }
 
-export function serializeTiptapMarkdown(doc, manager = createPapyroMarkdownManager()) {
+export function serializeTiptapMarkdown(
+  doc: JSONContent,
+  manager: PapyroMarkdownSerializer = createPapyroMarkdownManager(),
+): string {
   return manager.serialize(preparePapyroMarkdownDoc(doc));
 }
 
-export function roundTripTiptapMarkdown(markdown, manager = createPapyroMarkdownManager()) {
+export function roundTripTiptapMarkdown(
+  markdown: unknown,
+  manager: PapyroMarkdownManager = createPapyroMarkdownManager(),
+): PapyroMarkdownRoundTrip {
   const parsed = parseTiptapMarkdown(markdown, manager);
   const serialized = serializeTiptapMarkdown(parsed, manager);
 

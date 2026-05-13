@@ -20,7 +20,7 @@ import { isComposingKeyboardEvent } from "./tiptap-ui-primitives.ts";
 import {
   createPapyroMarkdownManager,
   createPapyroTiptapExtensions,
-} from "./tiptap-markdown.js";
+} from "./tiptap-markdown.ts";
 import { createTiptapTableCommandController } from "./tiptap-table-command-controller.ts";
 import {
   createTiptapRuntimeProtocolBridge,

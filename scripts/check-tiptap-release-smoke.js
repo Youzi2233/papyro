@@ -7,7 +7,7 @@ const {
   parseTiptapMarkdown,
   roundTripTiptapMarkdown,
   serializeTiptapMarkdown,
-} = await importBundledModule(new URL("../js/src/tiptap-markdown.js", import.meta.url));
+} = await importBundledModule(new URL("../js/src/tiptap-markdown.ts", import.meta.url));
 
 const DEFAULT_FIXTURE = "js/test/fixtures/tiptap-release-smoke.md";
 

@@ -18,7 +18,7 @@ import {
   localizeBlockAction,
   normalizeTiptapLanguage,
 } from "./tiptap-i18n";
-import { serializeTiptapMarkdown } from "./tiptap-markdown.js";
+import { serializeTiptapMarkdown } from "./tiptap-markdown.ts";
 import {
   blockSiblingDrop,
   canMoveTiptapBlock,

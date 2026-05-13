@@ -6,7 +6,7 @@ const { createMarkdownSyncController } = await importBundledModule(
   new URL("../src/markdown-sync-controller.ts", import.meta.url),
 );
 const { parseTiptapMarkdown } = await importBundledModule(
-  new URL("../src/tiptap-markdown.js", import.meta.url),
+  new URL("../src/tiptap-markdown.ts", import.meta.url),
 );
 
 test("MarkdownSyncController keeps canonical Markdown after set", () => {

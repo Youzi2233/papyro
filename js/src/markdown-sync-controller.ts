@@ -1,12 +1,16 @@
+import type { JSONContent } from "@tiptap/core";
+
 import {
   createPapyroMarkdownManager,
+  type PapyroMarkdownManager,
+  type PapyroMarkdownParser,
+  type PapyroMarkdownSerializer,
   parseTiptapMarkdown,
   serializeTiptapMarkdown,
-} from "./tiptap-markdown.js";
+} from "./tiptap-markdown.ts";
 
-type MarkdownManager = {
+type MarkdownManager = Partial<PapyroMarkdownManager> & {
   parse?: (markdown: string) => unknown;
-  serialize?: (doc: unknown) => string;
 };
 
 type MarkdownParseFailure = {
@@ -85,7 +89,10 @@ export class MarkdownSyncController {
 
   parse(markdown = this.#markdown): MarkdownParseResult {
     try {
-      const doc = parseTiptapMarkdown(markdown, this.#manager);
+      const doc = parseTiptapMarkdown(
+        markdown,
+        this.#manager as PapyroMarkdownParser,
+      );
       this.#lastError = null;
       return {
         ok: true,
@@ -118,7 +125,10 @@ export class MarkdownSyncController {
 
     let markdown: string | null | undefined = null;
     if (typeof editor.getJSON === "function") {
-      markdown = serializeTiptapMarkdown(editor.getJSON(), this.#manager);
+      markdown = serializeTiptapMarkdown(
+        editor.getJSON() as JSONContent,
+        this.#manager as PapyroMarkdownSerializer,
+      );
     } else if (typeof editor.getMarkdown === "function") {
       markdown = editor.getMarkdown();
     } else {
@@ -143,7 +153,10 @@ export class MarkdownSyncController {
 
   serializeDoc(doc: unknown): MarkdownSerializeResult {
     try {
-      const markdown = serializeTiptapMarkdown(doc, this.#manager);
+      const markdown = serializeTiptapMarkdown(
+        doc as JSONContent,
+        this.#manager as PapyroMarkdownSerializer,
+      );
       this.#markdown = markdown;
       this.#lastError = null;
       return {
