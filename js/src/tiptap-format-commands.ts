@@ -4,17 +4,130 @@ import {
   PAPYRO_HIGHLIGHT_OPTIONS,
   PAPYRO_TEXT_COLOR_OPTIONS,
 } from "./tiptap-text-style.js";
-import { PAPYRO_TIPTAP_TURN_INTO_COMMANDS } from "./tiptap-turn-into-commands.ts";
+import {
+  PAPYRO_TIPTAP_TURN_INTO_COMMANDS,
+  type PapyroTurnIntoCommand,
+} from "./tiptap-turn-into-commands.ts";
 
-function normalizeCommandId(value) {
+type FormatCommandName =
+  | "toggleBold"
+  | "toggleCode"
+  | "toggleItalic"
+  | "toggleStrike"
+  | "toggleUnderline"
+  | "toggleHighlight"
+  | "unsetHighlight"
+  | "setColor"
+  | "unsetColor"
+  | "unsetAllMarks";
+
+type EditorCommandMap = Partial<Record<FormatCommandName | "focus", (...args: unknown[]) => unknown>>;
+
+type FormatEditor = {
+  commands?: EditorCommandMap;
+  isActive?: (name: string, attrs?: Record<string, unknown>) => boolean;
+  getAttributes?: (name: string) => Record<string, unknown>;
+};
+
+type FormatOption = {
+  id: string;
+  title: string;
+  description: string;
+  color?: string | null;
+};
+
+type FormatSnapshot = ReturnType<typeof createPapyroTiptapFormatSnapshot>;
+
+export type TiptapFormatCommandContext = {
+  editor?: FormatEditor | null;
+  entry?: {
+    preferences?: {
+      language?: string | null;
+    } | null;
+  } | null;
+  language?: string | null;
+  formatSnapshot?: FormatSnapshot | null;
+  openLinkEditor?: () => boolean;
+  openTurnIntoMenu?: () => boolean;
+  childCommandId?: string | null;
+};
+
+type FormatCommandState = {
+  id: string;
+  label: string;
+  title: string;
+  ariaLabel: string;
+  icon: string;
+  priority: number;
+  focusAfterRun: boolean;
+  active: boolean;
+  children: FormatCommandChildState[];
+};
+
+type FormatCommandChildState = {
+  id: string;
+  title: string;
+  ariaLabel: string;
+  description?: string;
+  icon: string;
+  priority: number;
+  active: boolean;
+};
+
+type FormatCommand = Readonly<{
+  id: string;
+  label: string;
+  title: string;
+  ariaLabel: string;
+  commandName?: FormatCommandName;
+  commandArgs: readonly unknown[];
+  activeName: string;
+  activeAttrs?: Record<string, unknown>;
+  icon: string;
+  priority: number;
+  focusAfterRun: boolean;
+  children: readonly PapyroTurnIntoCommand[];
+  run: (context: TiptapFormatCommandContext) => boolean;
+  active: (context: TiptapFormatCommandContext) => boolean;
+}>;
+
+type FormatCommandInput = {
+  id: string;
+  label: string;
+  title: string;
+  ariaLabel?: string;
+  commandName?: FormatCommandName;
+  commandArgs?: readonly unknown[];
+  activeName?: string;
+  activeAttrs?: Record<string, unknown>;
+  run?: (context: TiptapFormatCommandContext) => boolean;
+  active?: (context: TiptapFormatCommandContext) => boolean;
+  focusAfterRun?: boolean;
+  icon?: string;
+  priority?: number;
+  children?: readonly PapyroTurnIntoCommand[];
+};
+
+type FormatRunResult = {
+  ok: boolean;
+  commandId: string;
+  parentCommandId?: string;
+  error: "unknown_format_command" | "format_command_failed" | null;
+};
+
+function normalizeCommandId(value: unknown): string {
   return String(value ?? "").trim().toLowerCase();
 }
 
-function freezeCommand(command) {
+function freezeCommand<T extends object>(command: T): Readonly<T> {
   return Object.freeze({ ...command });
 }
 
-function editorCommand(editor, commandName, ...args) {
+function editorCommand(
+  editor: FormatEditor | null | undefined,
+  commandName: FormatCommandName | undefined,
+  ...args: unknown[]
+): boolean {
   const command = editor?.commands?.[commandName];
   if (typeof command !== "function") {
     return false;
@@ -22,38 +135,57 @@ function editorCommand(editor, commandName, ...args) {
   return command(...args) !== false;
 }
 
-function focusEditor(editor) {
+function focusEditor(editor: FormatEditor | null | undefined): void {
   editor?.commands?.focus?.();
 }
 
-function isCommandActive(editor, activeName, activeAttrs) {
+function isCommandActive(
+  editor: FormatEditor | null | undefined,
+  activeName: string | undefined,
+  activeAttrs?: Record<string, unknown>,
+): boolean {
   if (typeof editor?.isActive !== "function") {
+    return false;
+  }
+  if (!activeName) {
     return false;
   }
   return activeAttrs ? editor.isActive(activeName, activeAttrs) : editor.isActive(activeName);
 }
 
-function formatSnapshot(context = {}) {
+function formatSnapshot(context: TiptapFormatCommandContext = {}): FormatSnapshot {
   return context.formatSnapshot ?? createPapyroTiptapFormatSnapshot(context.editor);
 }
 
-function isSnapshotMarkActive(context, markId) {
+function isSnapshotMarkActive(
+  context: TiptapFormatCommandContext,
+  markId: keyof FormatSnapshot["marks"],
+): boolean {
   return formatSnapshot(context).marks?.[markId] === true;
 }
 
-function isSnapshotTextColorActive(context, option) {
+function isSnapshotTextColorActive(
+  context: TiptapFormatCommandContext,
+  option: FormatOption,
+): boolean {
   return formatSnapshot(context).textColors?.[option.id] === true;
 }
 
-function isSnapshotHighlightActive(context, option) {
+function isSnapshotHighlightActive(
+  context: TiptapFormatCommandContext,
+  option: FormatOption,
+): boolean {
   return formatSnapshot(context).highlights?.[option.id] === true;
 }
 
-function formatCommandLanguage(context = {}) {
+function formatCommandLanguage(context: TiptapFormatCommandContext = {}): string {
   return context.language ?? context.entry?.preferences?.language ?? "english";
 }
 
-function localizeTurnIntoLabel(language, command) {
+function localizeTurnIntoLabel<T extends { id: string; title: string; ariaLabel?: string }>(
+  language: string,
+  command: T,
+): T & { title: string; ariaLabel: string } {
   const labels = {
     "turn-into": [
       "Turn into",
@@ -108,7 +240,12 @@ function localizeTurnIntoLabel(language, command) {
     ],
   };
   const label = labels[command.id];
-  if (!label) return command;
+  if (!label) {
+    return {
+      ...command,
+      ariaLabel: command.ariaLabel ?? command.title,
+    };
+  }
 
   return {
     ...command,
@@ -184,7 +321,10 @@ const HIGHLIGHT_FORMAT_COMMAND_LABELS = Object.freeze({
   ],
 });
 
-function localizeFormatCommand(command, language) {
+function localizeFormatCommand(
+  command: FormatCommandState,
+  language: string,
+): FormatCommandState {
   if (command.id === "turn-into") {
     return localizeTurnIntoLabel(language, command);
   }
@@ -215,7 +355,7 @@ function createCommand({
   icon,
   priority = 100,
   children = [],
-}) {
+}: FormatCommandInput): FormatCommand {
   if (!id || (!commandName && typeof run !== "function")) {
     throw new TypeError("Tiptap format commands require an id and runnable command");
   }
@@ -247,7 +387,10 @@ function createCommand({
   });
 }
 
-export const PAPYRO_TIPTAP_FORMAT_COMMANDS = Object.freeze([
+const textColorOptions = PAPYRO_TEXT_COLOR_OPTIONS as readonly FormatOption[];
+const highlightOptions = PAPYRO_HIGHLIGHT_OPTIONS as readonly FormatOption[];
+
+export const PAPYRO_TIPTAP_FORMAT_COMMANDS: readonly FormatCommand[] = Object.freeze([
   createCommand({
     id: "bold",
     label: "B",
@@ -305,7 +448,7 @@ export const PAPYRO_TIPTAP_FORMAT_COMMANDS = Object.freeze([
     focusAfterRun: false,
     priority: 45,
   }),
-  ...PAPYRO_TEXT_COLOR_OPTIONS.map((option, index) =>
+  ...textColorOptions.map((option, index) =>
     createCommand({
       id: `text-color-${option.id}`,
       label: "A",
@@ -318,7 +461,7 @@ export const PAPYRO_TIPTAP_FORMAT_COMMANDS = Object.freeze([
       priority: 46 + index,
     }),
   ),
-  ...PAPYRO_HIGHLIGHT_OPTIONS.map((option, index) =>
+  ...highlightOptions.map((option, index) =>
     createCommand({
       id: `highlight-${option.id}`,
       label: "H",
@@ -357,24 +500,26 @@ export const PAPYRO_TIPTAP_FORMAT_COMMANDS = Object.freeze([
 ]);
 
 export class TiptapFormatCommandController {
-  #commands;
+  #commands: readonly FormatCommand[];
 
-  constructor(commands = PAPYRO_TIPTAP_FORMAT_COMMANDS) {
+  constructor(commands: readonly FormatCommand[] = PAPYRO_TIPTAP_FORMAT_COMMANDS) {
     this.#commands = Object.freeze(
       [...commands].sort((a, b) => a.priority - b.priority),
     );
   }
 
-  get commands() {
+  get commands(): readonly FormatCommand[] {
     return this.#commands;
   }
 
-  find(commandId) {
+  find(commandId: unknown): FormatCommand | null {
     const id = normalizeCommandId(commandId);
     return this.#commands.find((command) => command.id === id) ?? null;
   }
 
-  findChild(commandId) {
+  findChild(
+    commandId: unknown,
+  ): { parent: FormatCommand; child: PapyroTurnIntoCommand } | null {
     const id = normalizeCommandId(commandId);
     for (const command of this.#commands) {
       const child = command.children.find((item) => item.id === id);
@@ -385,7 +530,7 @@ export class TiptapFormatCommandController {
     return null;
   }
 
-  states(context = {}) {
+  states(context: TiptapFormatCommandContext = {}): FormatCommandState[] {
     const language = formatCommandLanguage(context);
     return this.#commands.map((command) =>
       localizeFormatCommand(
@@ -415,7 +560,7 @@ export class TiptapFormatCommandController {
     );
   }
 
-  run(commandId, context = {}) {
+  run(commandId: string, context: TiptapFormatCommandContext = {}): FormatRunResult {
     const command = this.find(commandId);
     const childMatch = command ? null : this.findChild(commandId);
     if (childMatch) {
@@ -454,6 +599,8 @@ export class TiptapFormatCommandController {
   }
 }
 
-export function createTiptapFormatCommandController(commands) {
+export function createTiptapFormatCommandController(
+  commands?: readonly FormatCommand[],
+): TiptapFormatCommandController {
   return new TiptapFormatCommandController(commands);
 }

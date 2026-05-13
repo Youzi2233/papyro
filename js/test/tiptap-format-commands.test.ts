@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import {
   createTiptapFormatCommandController,
   PAPYRO_TIPTAP_FORMAT_COMMANDS,
-} from "../src/tiptap-format-commands.js";
+} from "../src/tiptap-format-commands.ts";
 import { PAPYRO_TIPTAP_TURN_INTO_COMMANDS } from "../src/tiptap-turn-into-commands.ts";
 
 function createFakeEditor(activeIds = []) {
