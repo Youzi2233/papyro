@@ -7,31 +7,124 @@ import {
   tiptapModeUsesSourcePane,
 } from "./tiptap-mode-controller.ts";
 
-function defaultDocument() {
+type SourcePaneDocument = {
+  createElement?: (tagName: "textarea") => SourcePaneTextarea;
+};
+
+type SourcePaneTextarea = {
+  className: string;
+  spellcheck?: boolean;
+  autocapitalize?: string;
+  autocomplete?: string;
+  hidden: boolean;
+  value?: string;
+  selectionStart?: number;
+  selectionEnd?: number;
+  parentElement?: unknown;
+  setAttribute?: (name: string, value: string) => void;
+  addEventListener?: (name: string, handler: SourcePaneEventHandler) => void;
+  removeEventListener?: (name: string, handler: SourcePaneEventHandler) => void;
+  setSelectionRange?: (start: number, end: number) => void;
+  focus?: () => void;
+  remove?: () => void;
+};
+
+type SourcePaneKeyboardEvent = {
+  key?: unknown;
+  altKey?: boolean;
+  ctrlKey?: boolean;
+  metaKey?: boolean;
+  preventDefault?: () => void;
+};
+
+type SourcePaneEventHandler = (event?: SourcePaneKeyboardEvent) => void;
+
+type SourcePaneRoot = {
+  appendChild?: (child: SourcePaneTextarea) => void;
+};
+
+type SourcePaneMarkdownSync = {
+  markdown?: string;
+  setMarkdown?: (markdown: string) => {
+    ok?: boolean;
+    markdown?: string;
+    error?: {
+      message?: string;
+    } | null;
+  } | null | undefined;
+};
+
+type SourcePaneEntry = {
+  tabId?: string;
+  dom?: {
+    dataset?: {
+      tabId?: string;
+      language?: string;
+    };
+  } | null;
+  preferences?: {
+    language?: string;
+  } | null;
+  dioxus?: {
+    send?: (message: Record<string, unknown>) => void;
+  } | null;
+  editor?: {
+    commands?: {
+      setContent?: (
+        markdown: string,
+        options: { contentType: "markdown" },
+      ) => unknown;
+    };
+  } | null;
+  markdownSync?: SourcePaneMarkdownSync | null;
+  viewMode?: unknown;
+  suppressChange?: boolean;
+};
+
+type SourcePaneAttachOptions = {
+  root?: SourcePaneRoot | null;
+  entry?: SourcePaneEntry | null;
+};
+
+type SourcePaneControllerOptions = {
+  document?: SourcePaneDocument | null;
+  onSelectionChange?: ((entry: SourcePaneEntry) => void) | null;
+};
+
+type TextareaSelection = {
+  start?: unknown;
+  end?: unknown;
+};
+
+function defaultDocument(): SourcePaneDocument | null {
   return typeof document === "undefined" ? null : document;
 }
 
-function tabIdForEntry(entry) {
+function tabIdForEntry(entry: SourcePaneEntry | null | undefined): string {
   return entry?.tabId ?? entry?.dom?.dataset?.tabId ?? "";
 }
 
-function entryLanguage(entry) {
+function entryLanguage(entry: SourcePaneEntry | null | undefined): string {
   return entry?.preferences?.language ?? entry?.dom?.dataset?.language ?? "english";
 }
 
-function isSaveShortcut(event) {
+function isSaveShortcut(event: SourcePaneKeyboardEvent | undefined): boolean {
   if (!event || event.altKey) return false;
   const key = String(event.key ?? "").toLowerCase();
   return key === "s" && (event.ctrlKey || event.metaKey);
 }
 
-function normalizedCursorOffset(offset, length) {
+function normalizedCursorOffset(offset: unknown, length: number): number {
   if (offset == null) return length;
   const value = Number(offset);
   return Number.isSafeInteger(value) && value >= 0 && value <= length ? value : length;
 }
 
-function replaceTextareaSelection(textarea, text, cursorOffset = null) {
+function replaceTextareaSelection(
+  textarea: SourcePaneTextarea,
+  text: unknown,
+  cursorOffset: unknown = null,
+): string {
   const source = String(textarea.value ?? "");
   const from = Math.max(0, Math.min(textarea.selectionStart ?? source.length, source.length));
   const to = Math.max(from, Math.min(textarea.selectionEnd ?? from, source.length));
@@ -42,7 +135,10 @@ function replaceTextareaSelection(textarea, text, cursorOffset = null) {
   return textarea.value;
 }
 
-function restoreTextareaSelection(textarea, previousSelection) {
+function restoreTextareaSelection(
+  textarea: SourcePaneTextarea | null | undefined,
+  previousSelection: TextareaSelection | null | undefined,
+): boolean {
   if (!textarea || !previousSelection) return false;
   const valueLength = String(textarea.value ?? "").length;
   const from = Math.max(
@@ -57,14 +153,14 @@ function restoreTextareaSelection(textarea, previousSelection) {
   return true;
 }
 
-function emit(entry, message) {
+function emit(entry: SourcePaneEntry | null | undefined, message: Record<string, unknown>): void {
   entry?.dioxus?.send?.({
     tab_id: tabIdForEntry(entry),
     ...message,
   });
 }
 
-function syncTiptapEditor(entry, markdown) {
+function syncTiptapEditor(entry: SourcePaneEntry, markdown: string): void {
   entry.suppressChange = true;
   try {
     entry.editor?.commands?.setContent?.(markdown, {
@@ -75,7 +171,10 @@ function syncTiptapEditor(entry, markdown) {
   }
 }
 
-function commitSourceMarkdown(entry, markdown) {
+function commitSourceMarkdown(
+  entry: SourcePaneEntry | null | undefined,
+  markdown: string,
+): boolean {
   if (entry?.markdownSync?.markdown === markdown) {
     return true;
   }
@@ -89,34 +188,38 @@ function commitSourceMarkdown(entry, markdown) {
     return false;
   }
 
-  syncTiptapEditor(entry, entry.markdownSync.markdown);
+  if (!entry) return false;
+  syncTiptapEditor(entry, entry.markdownSync?.markdown ?? markdown);
   emit(entry, {
     type: "content_changed",
-    content: entry.markdownSync.markdown,
+    content: entry.markdownSync?.markdown ?? markdown,
   });
   return true;
 }
 
 export class TiptapSourcePaneController {
-  #document;
-  #entry = null;
-  #textarea = null;
-  #inputHandler = null;
-  #keydownHandler = null;
-  #selectionHandler = null;
-  #onSelectionChange = null;
+  #document: SourcePaneDocument | null;
+  #entry: SourcePaneEntry | null = null;
+  #textarea: SourcePaneTextarea | null = null;
+  #inputHandler: SourcePaneEventHandler | null = null;
+  #keydownHandler: SourcePaneEventHandler | null = null;
+  #selectionHandler: SourcePaneEventHandler | null = null;
+  #onSelectionChange: ((entry: SourcePaneEntry) => void) | null = null;
 
-  constructor({ document = defaultDocument(), onSelectionChange = null } = {}) {
+  constructor({
+    document = defaultDocument(),
+    onSelectionChange = null,
+  }: SourcePaneControllerOptions = {}) {
     this.#document = document;
     this.#onSelectionChange =
       typeof onSelectionChange === "function" ? onSelectionChange : null;
   }
 
-  get textarea() {
+  get textarea(): SourcePaneTextarea | null {
     return this.#textarea;
   }
 
-  attach({ root, entry } = {}) {
+  attach({ root, entry }: SourcePaneAttachOptions = {}): SourcePaneTextarea | null {
     if (!root || !this.#document?.createElement || !entry) return null;
     this.#entry = entry;
 
@@ -161,7 +264,10 @@ export class TiptapSourcePaneController {
     return this.#textarea;
   }
 
-  applyMode(entry = this.#entry, mode = entry?.viewMode) {
+  applyMode(
+    entry: SourcePaneEntry | null = this.#entry,
+    mode: unknown = entry?.viewMode,
+  ): boolean {
     if (!this.#textarea) return false;
     const active = tiptapModeUsesSourcePane(mode);
     this.#textarea.hidden = !active;
@@ -176,7 +282,7 @@ export class TiptapSourcePaneController {
     return active;
   }
 
-  setMarkdown(markdown) {
+  setMarkdown(markdown: unknown): boolean {
     if (!this.#textarea) return false;
     const value = String(markdown ?? "");
     if (this.#textarea.value !== value) {
@@ -185,7 +291,11 @@ export class TiptapSourcePaneController {
     return true;
   }
 
-  insertMarkdown(entry = this.#entry, markdown = "", cursorOffset = null) {
+  insertMarkdown(
+    entry: SourcePaneEntry | null = this.#entry,
+    markdown: unknown = "",
+    cursorOffset: unknown = null,
+  ): boolean {
     if (!this.#textarea || normalizeTiptapViewMode(entry?.viewMode) !== "source") {
       return false;
     }
@@ -193,7 +303,7 @@ export class TiptapSourcePaneController {
     return commitSourceMarkdown(entry, nextMarkdown);
   }
 
-  focus(entry = this.#entry) {
+  focus(entry: SourcePaneEntry | null = this.#entry): boolean {
     if (!this.#textarea || normalizeTiptapViewMode(entry?.viewMode) !== "source") {
       return false;
     }
@@ -224,6 +334,8 @@ export class TiptapSourcePaneController {
   }
 }
 
-export function createTiptapSourcePaneController(options) {
+export function createTiptapSourcePaneController(
+  options?: SourcePaneControllerOptions,
+): TiptapSourcePaneController {
   return new TiptapSourcePaneController(options);
 }

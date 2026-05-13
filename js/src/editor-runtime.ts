@@ -14,7 +14,7 @@ import { createTiptapModeController } from "./tiptap-mode-controller.ts";
 import { createTiptapModeSnapshotController } from "./tiptap-mode-snapshots.ts";
 import { createTiptapPasteController } from "./tiptap-paste-controller.ts";
 import { createTiptapPreferencesController } from "./tiptap-preferences-controller.ts";
-import { createTiptapSourcePaneController } from "./tiptap-source-pane.js";
+import { createTiptapSourcePaneController } from "./tiptap-source-pane.ts";
 import { createTiptapSlashCommandController } from "./tiptap-slash-commands.js";
 import { isComposingKeyboardEvent } from "./tiptap-ui-primitives.ts";
 import {

@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { createTiptapSourcePaneController } from "../src/tiptap-source-pane.js";
+import { createTiptapSourcePaneController } from "../src/tiptap-source-pane.ts";
 
 function createElement(tagName) {
   const listeners = new Map();
