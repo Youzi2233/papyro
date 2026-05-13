@@ -9,7 +9,7 @@ import {
   restoreScrollSnapshot,
   saveModeScrollSnapshot,
   scrollPreviewToHeading as scrollPreviewScrollerToHeading,
-} from "./editor-core.js";
+} from "./editor-core.ts";
 import { renderPreviewMermaid } from "./mermaid-renderer.js";
 import { renderPreviewMath } from "./tiptap-math.js";
 import {

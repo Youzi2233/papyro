@@ -1,4 +1,4 @@
-import { activeOutlineHeadingIndex } from "./editor-core.js";
+import { activeOutlineHeadingIndex } from "./editor-core.ts";
 import { normalizeTiptapViewMode } from "./tiptap-mode-controller.js";
 
 const HEADING_SELECTOR = "h1, h2, h3, h4, h5, h6";

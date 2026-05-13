@@ -2,7 +2,7 @@ import {
   blockHintsEqual,
   normalizeBlockHints,
   setBlockHints,
-} from "./editor-core.js";
+} from "./editor-core.ts";
 
 export class TiptapBlockHintsController {
   #hints = null;

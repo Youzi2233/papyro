@@ -1,4 +1,4 @@
-import { isPlainUrl, normalizeEditorPreferences } from "./editor-core.js";
+import { isPlainUrl, normalizeEditorPreferences } from "./editor-core.ts";
 
 function clipboardPlainText(event, slice) {
   const fromClipboard = event?.clipboardData?.getData?.("text/plain");

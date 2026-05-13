@@ -1,6 +1,6 @@
 import { mergeAttributes, Node } from "@tiptap/core";
 
-import { sanitizeMarkdownImageSrc } from "./editor-core.js";
+import { sanitizeMarkdownImageSrc } from "./editor-core.ts";
 
 function normalizeText(value) {
   return String(value ?? "");

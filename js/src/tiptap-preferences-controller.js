@@ -2,7 +2,7 @@ import {
   editorPreferencesEqual,
   nextEditorPreferences,
   normalizeEditorPreferences,
-} from "./editor-core.js";
+} from "./editor-core.ts";
 
 export class TiptapPreferencesController {
   #preferences;

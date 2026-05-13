@@ -87,7 +87,7 @@ import {
   utf8ByteOffsetToStringIndex,
   utf8ByteRangeToStringRange,
   viewIsComposing,
-} from "../src/editor-core.js";
+} from "../src/editor-core.ts";
 
 const hybridFixture = readFileSync(
   new URL("./fixtures/hybrid-editing-baseline.md", import.meta.url),
