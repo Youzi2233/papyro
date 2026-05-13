@@ -18,7 +18,7 @@ import {
   tiptapActiveMarkdownLineNumber,
   tiptapEditorScroller,
   tiptapTopMarkdownLineNumber,
-} from "./tiptap-navigation.js";
+} from "./tiptap-navigation.ts";
 
 const OUTLINE_MOBILE_MEDIA_QUERY = "(max-width: 1280px)";
 

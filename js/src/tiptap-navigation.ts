@@ -3,27 +3,119 @@ import { normalizeTiptapViewMode } from "./tiptap-mode-controller.ts";
 
 const HEADING_SELECTOR = "h1, h2, h3, h4, h5, h6";
 
-function safeInteger(value) {
+type RectLike = {
+  top: number;
+};
+
+type HeadingNodeLike = {
+  type?: {
+    name?: string;
+  };
+  isTextblock?: boolean;
+  content?: {
+    size?: number;
+  };
+  textContent?: string | null;
+};
+
+type TiptapNavigationDoc = {
+  descendants?: (callback: (node: HeadingNodeLike, pos: number) => void) => void;
+};
+
+type TiptapNavigationEditor = {
+  state?: {
+    doc?: TiptapNavigationDoc | null;
+    selection?: {
+      from?: unknown;
+    } | null;
+  } | null;
+  view?: {
+    dom?: {
+      querySelectorAll?: (selector: string) => ArrayLike<HeadingElementLike>;
+    } | null;
+  } | null;
+  chain?: () => {
+    setTextSelection?: (position: number) => unknown;
+    scrollIntoView?: () => unknown;
+    focus?: () => unknown;
+    run?: () => unknown;
+  } | null;
+  commands?: {
+    setTextSelection?: (position: number) => unknown;
+    scrollIntoView?: () => unknown;
+    focus?: () => unknown;
+  };
+};
+
+type HeadingElementLike = {
+  getBoundingClientRect?: () => RectLike;
+};
+
+type ScrollElementLike = HeadingElementLike & {
+  scrollTop?: number;
+  scrollTo?: (options: { top: number; behavior?: ScrollBehavior }) => void;
+  querySelectorAll?: (selector: string) => ArrayLike<HeadingElementLike>;
+};
+
+type TextAreaLike = ScrollElementLike & {
+  value?: string;
+  selectionStart?: number;
+  selectionEnd?: number;
+  ownerDocument?: {
+    defaultView?: {
+      getComputedStyle?: (element: TextAreaLike) => {
+        lineHeight?: string;
+        fontSize?: string;
+      };
+    } | null;
+  } | null;
+  setSelectionRange?: (start: number, end: number) => void;
+  focus?: () => void;
+};
+
+type TiptapNavigationEntry = {
+  editor?: TiptapNavigationEditor | null;
+  dom?: ScrollElementLike | null;
+  viewMode?: unknown;
+  markdownSync?: {
+    markdown?: unknown;
+  } | null;
+  sourcePane?: {
+    textarea?: TextAreaLike | null;
+  } | null;
+};
+
+type HeadingPosition = {
+  pos: number;
+  selectionPos: number;
+  text: string;
+};
+
+type ScrollToLineOptions = {
+  headingIndex?: unknown;
+};
+
+function safeInteger(value: unknown): number | null {
   const number = Number(value);
   return Number.isSafeInteger(number) ? number : null;
 }
 
-function clamp(value, min, max) {
+function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
 
-function markdownForEntry(entry) {
+function markdownForEntry(entry: TiptapNavigationEntry | null | undefined): string {
   const textareaValue = entry?.sourcePane?.textarea?.value;
   if (typeof textareaValue === "string") return textareaValue;
   return String(entry?.markdownSync?.markdown ?? "");
 }
 
-function lineCount(markdown) {
+function lineCount(markdown: unknown): number {
   const source = String(markdown ?? "");
   return source.length === 0 ? 1 : source.split("\n").length;
 }
 
-export function lineStartOffset(markdown, lineNumber) {
+export function lineStartOffset(markdown: unknown, lineNumber: unknown): number {
   const source = String(markdown ?? "");
   const target = clamp(safeInteger(lineNumber) ?? 1, 1, lineCount(source));
   if (target === 1) return 0;
@@ -40,7 +132,7 @@ export function lineStartOffset(markdown, lineNumber) {
   return source.length;
 }
 
-export function lineNumberAtOffset(markdown, offset) {
+export function lineNumberAtOffset(markdown: unknown, offset: unknown): number {
   const source = String(markdown ?? "");
   const cursor = clamp(safeInteger(offset) ?? 0, 0, source.length);
   let line = 1;
@@ -54,7 +146,7 @@ export function lineNumberAtOffset(markdown, offset) {
   return line;
 }
 
-function lineHeightForElement(element) {
+function lineHeightForElement(element: TextAreaLike): number {
   const fallback = 22;
   const view = element?.ownerDocument?.defaultView ?? globalThis;
   const computed = view?.getComputedStyle?.(element);
@@ -65,7 +157,10 @@ function lineHeightForElement(element) {
   return Number.isFinite(fontSize) && fontSize > 0 ? fontSize * 1.5 : fallback;
 }
 
-function scrollElementToTop(scroller, targetTop) {
+function scrollElementToTop(
+  scroller: ScrollElementLike | null | undefined,
+  targetTop: unknown,
+): void {
   const top = Math.max(0, Number(targetTop) || 0);
   if (typeof scroller?.scrollTo === "function") {
     scroller.scrollTo({ top, behavior: "auto" });
@@ -74,19 +169,25 @@ function scrollElementToTop(scroller, targetTop) {
   }
 }
 
-function sourcePaneActiveLineNumber(entry) {
+function sourcePaneActiveLineNumber(entry: TiptapNavigationEntry): number | null {
   const textarea = entry?.sourcePane?.textarea;
   if (!textarea) return null;
   return lineNumberAtOffset(textarea.value ?? "", textarea.selectionStart ?? 0);
 }
 
-function sourcePaneTopLineNumber(entry, scroller = entry?.sourcePane?.textarea) {
+function sourcePaneTopLineNumber(
+  entry: TiptapNavigationEntry,
+  scroller: TextAreaLike | null | undefined = entry?.sourcePane?.textarea,
+): number | null {
   if (!scroller) return null;
   const lineHeight = lineHeightForElement(scroller);
   return Math.max(1, Math.floor((Number(scroller.scrollTop) || 0) / lineHeight) + 1);
 }
 
-function scrollSourcePaneToLine(entry, lineNumber) {
+function scrollSourcePaneToLine(
+  entry: TiptapNavigationEntry,
+  lineNumber: unknown,
+): boolean {
   const textarea = entry?.sourcePane?.textarea;
   if (!textarea) return false;
 
@@ -102,12 +203,14 @@ function scrollSourcePaneToLine(entry, lineNumber) {
   return true;
 }
 
-function isHeadingNode(node) {
+function isHeadingNode(node: HeadingNodeLike | null | undefined): boolean {
   return node?.type?.name === "heading";
 }
 
-function headingPositions(editor) {
-  const positions = [];
+function headingPositions(
+  editor: TiptapNavigationEditor | null | undefined,
+): HeadingPosition[] {
+  const positions: HeadingPosition[] = [];
   editor?.state?.doc?.descendants?.((node, pos) => {
     if (!isHeadingNode(node)) return;
     positions.push({
@@ -119,13 +222,16 @@ function headingPositions(editor) {
   return positions;
 }
 
-function headingPositionForIndex(editor, headingIndex) {
+function headingPositionForIndex(
+  editor: TiptapNavigationEditor | null | undefined,
+  headingIndex: unknown,
+): number | null {
   const index = safeInteger(headingIndex);
   if (index === null || index < 0) return null;
   return headingPositions(editor)[index]?.selectionPos ?? null;
 }
 
-function atxHeadingIndexAtLine(markdown, lineNumber) {
+function atxHeadingIndexAtLine(markdown: unknown, lineNumber: unknown): number | null {
   const target = safeInteger(lineNumber);
   if (target === null || target < 1) return null;
 
@@ -150,7 +256,9 @@ function atxHeadingIndexAtLine(markdown, lineNumber) {
   return null;
 }
 
-function activeHeadingIndexForSelection(editor) {
+function activeHeadingIndexForSelection(
+  editor: TiptapNavigationEditor | null | undefined,
+): number {
   const from = safeInteger(editor?.state?.selection?.from);
   if (from === null) return -1;
 
@@ -163,11 +271,14 @@ function activeHeadingIndexForSelection(editor) {
   return active;
 }
 
-function headingsForEditor(entry) {
+function headingsForEditor(entry: TiptapNavigationEntry): HeadingElementLike[] {
   return Array.from(entry?.editor?.view?.dom?.querySelectorAll?.(HEADING_SELECTOR) ?? []);
 }
 
-function headingTopWithinScroller(heading, scroller) {
+function headingTopWithinScroller(
+  heading: HeadingElementLike | null | undefined,
+  scroller: ScrollElementLike | null | undefined,
+): number | null {
   if (
     typeof heading?.getBoundingClientRect !== "function" ||
     typeof scroller?.getBoundingClientRect !== "function"
@@ -180,7 +291,10 @@ function headingTopWithinScroller(heading, scroller) {
   return headingRect.top - scrollerRect.top + (Number(scroller.scrollTop) || 0);
 }
 
-function scrollHeadingIntoView(entry, headingIndex) {
+function scrollHeadingIntoView(
+  entry: TiptapNavigationEntry,
+  headingIndex: unknown,
+): boolean {
   const scroller = tiptapEditorScroller(entry);
   const heading = headingsForEditor(entry)[safeInteger(headingIndex) ?? -1];
   const top = headingTopWithinScroller(heading, scroller);
@@ -190,7 +304,10 @@ function scrollHeadingIntoView(entry, headingIndex) {
   return true;
 }
 
-function runTiptapSelectionCommand(editor, position) {
+function runTiptapSelectionCommand(
+  editor: TiptapNavigationEditor | null | undefined,
+  position: number | null,
+): boolean {
   if (!Number.isSafeInteger(position)) return false;
 
   const chain = editor?.chain?.();
@@ -210,7 +327,11 @@ function runTiptapSelectionCommand(editor, position) {
   return selected;
 }
 
-function scrollHybridEditorToLine(entry, lineNumber, { headingIndex = null } = {}) {
+function scrollHybridEditorToLine(
+  entry: TiptapNavigationEntry,
+  lineNumber: unknown,
+  { headingIndex = null }: ScrollToLineOptions = {},
+): boolean {
   const targetHeadingIndex =
     safeInteger(headingIndex) ?? atxHeadingIndexAtLine(markdownForEntry(entry), lineNumber);
   const position = headingPositionForIndex(entry?.editor, targetHeadingIndex);
@@ -221,14 +342,20 @@ function scrollHybridEditorToLine(entry, lineNumber, { headingIndex = null } = {
   return selected || scrolled;
 }
 
-function lineNumberForHeadingIndex(outlineLineNumbers, headingIndex) {
+function lineNumberForHeadingIndex(
+  outlineLineNumbers: readonly unknown[],
+  headingIndex: unknown,
+): number | null {
   const index = safeInteger(headingIndex);
   if (index === -1) return 0;
   if (index === null || index < 0) return null;
   return safeInteger(outlineLineNumbers?.[index]);
 }
 
-function hybridTopHeadingIndex(entry, scroller = tiptapEditorScroller(entry)) {
+function hybridTopHeadingIndex(
+  entry: TiptapNavigationEntry,
+  scroller: ScrollElementLike | null = tiptapEditorScroller(entry),
+): number {
   if (!scroller) return -1;
 
   const targetTop = (Number(scroller.scrollTop) || 0) + 24;
@@ -242,18 +369,24 @@ function hybridTopHeadingIndex(entry, scroller = tiptapEditorScroller(entry)) {
   return active;
 }
 
-export function isTiptapEntry(entry) {
-  return Boolean(entry?.editor && entry?.dom);
+export function isTiptapEntry(entry: unknown): entry is TiptapNavigationEntry {
+  const value = entry as TiptapNavigationEntry | null | undefined;
+  return Boolean(value?.editor && value?.dom);
 }
 
-export function tiptapEditorScroller(entry) {
+export function tiptapEditorScroller(
+  entry: TiptapNavigationEntry | null | undefined,
+): ScrollElementLike | TextAreaLike | null {
   if (!isTiptapEntry(entry)) return null;
   return normalizeTiptapViewMode(entry.viewMode) === "source"
     ? entry.sourcePane?.textarea ?? entry.dom
     : entry.dom;
 }
 
-export function tiptapActiveMarkdownLineNumber(entry, outlineLineNumbers = []) {
+export function tiptapActiveMarkdownLineNumber(
+  entry: TiptapNavigationEntry | null | undefined,
+  outlineLineNumbers: readonly unknown[] = [],
+): number | null {
   if (!isTiptapEntry(entry)) return null;
 
   if (normalizeTiptapViewMode(entry.viewMode) === "source") {
@@ -264,20 +397,26 @@ export function tiptapActiveMarkdownLineNumber(entry, outlineLineNumbers = []) {
 }
 
 export function tiptapTopMarkdownLineNumber(
-  entry,
-  outlineLineNumbers = [],
-  scroller = tiptapEditorScroller(entry),
-) {
+  entry: TiptapNavigationEntry | null | undefined,
+  outlineLineNumbers: readonly unknown[] = [],
+  scroller: ScrollElementLike | TextAreaLike | null = tiptapEditorScroller(entry),
+): number | null {
   if (!isTiptapEntry(entry)) return null;
 
   if (normalizeTiptapViewMode(entry.viewMode) === "source") {
-    return sourcePaneTopLineNumber(entry, scroller);
+    return sourcePaneTopLineNumber(entry, scroller as TextAreaLike | null);
   }
 
-  return lineNumberForHeadingIndex(outlineLineNumbers, hybridTopHeadingIndex(entry, scroller));
+  return lineNumberForHeadingIndex(
+    outlineLineNumbers,
+    hybridTopHeadingIndex(entry, scroller as ScrollElementLike | null),
+  );
 }
 
-export function tiptapActiveOutlineIndex(entry, outlineLineNumbers = []) {
+export function tiptapActiveOutlineIndex(
+  entry: TiptapNavigationEntry | null | undefined,
+  outlineLineNumbers: readonly unknown[] = [],
+): number {
   if (!isTiptapEntry(entry)) return -1;
 
   if (normalizeTiptapViewMode(entry.viewMode) === "source") {
@@ -287,7 +426,11 @@ export function tiptapActiveOutlineIndex(entry, outlineLineNumbers = []) {
   return activeHeadingIndexForSelection(entry.editor);
 }
 
-export function scrollTiptapEntryToLine(entry, lineNumber, options = {}) {
+export function scrollTiptapEntryToLine(
+  entry: TiptapNavigationEntry | null | undefined,
+  lineNumber: unknown,
+  options: ScrollToLineOptions = {},
+): boolean {
   if (!isTiptapEntry(entry)) return false;
 
   if (normalizeTiptapViewMode(entry.viewMode) === "source") {

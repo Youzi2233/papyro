@@ -9,7 +9,7 @@ import {
   tiptapActiveOutlineIndex,
   tiptapEditorScroller,
   tiptapTopMarkdownLineNumber,
-} from "../src/tiptap-navigation.js";
+} from "../src/tiptap-navigation.ts";
 
 function createTextarea(value = "") {
   return {
