@@ -10,7 +10,7 @@ import {
   codeBlockWrapLabel,
   normalizeCodeBlockLanguage,
 } from "../../tiptap-code-block.js";
-import { localizedText } from "../../tiptap-i18n.js";
+import { localizedText } from "../../tiptap-i18n.ts";
 
 const CODE_LANGUAGE_GROUP_KEY = "Code language";
 const CODE_BLOCK_GROUP_KEY = "Code block";

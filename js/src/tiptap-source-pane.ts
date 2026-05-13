@@ -1,7 +1,7 @@
 import {
   sourceMarkdownParseErrorLabel,
   sourcePaneLabel,
-} from "./tiptap-i18n.js";
+} from "./tiptap-i18n.ts";
 import {
   normalizeTiptapViewMode,
   tiptapModeUsesSourcePane,

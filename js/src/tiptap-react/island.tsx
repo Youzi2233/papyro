@@ -1,7 +1,7 @@
 import React from "react";
 import { Tiptap } from "@tiptap/react";
 
-import { loadingEditorLabel } from "../tiptap-i18n.js";
+import { loadingEditorLabel } from "../tiptap-i18n.ts";
 import { PapyroTiptapRuntimeProvider } from "./runtime-context.tsx";
 import {
   createPapyroTiptapReactComponents,

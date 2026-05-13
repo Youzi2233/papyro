@@ -1,4 +1,4 @@
-import { normalizeTiptapLanguage } from "../tiptap-i18n.js";
+import { normalizeTiptapLanguage } from "../tiptap-i18n.ts";
 import {
   createPapyroTiptapFormatSnapshot,
   samePapyroTiptapFormatSnapshot,

@@ -1,7 +1,7 @@
 import { mergeAttributes, Node } from "@tiptap/core";
 import katex from "katex";
 
-import { mathSourceEditorLabel } from "./tiptap-i18n.js";
+import { mathSourceEditorLabel } from "./tiptap-i18n.ts";
 
 const INLINE_MATH_TOKEN = "inlineMath";
 const MATH_BLOCK_TOKEN = "mathBlock";

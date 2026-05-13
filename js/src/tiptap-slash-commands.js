@@ -4,7 +4,7 @@ import {
   normalizeCalloutKind,
 } from "./tiptap-markdown-snippets.ts";
 import { normalizeCodeBlockLanguage } from "./tiptap-code-block.js";
-import { localizeSlashCommand, normalizeTiptapLanguage } from "./tiptap-i18n.js";
+import { localizeSlashCommand, normalizeTiptapLanguage } from "./tiptap-i18n.ts";
 
 const DEFAULT_LIMIT = 8;
 const DEFAULT_RECENT_LIMIT = 4;

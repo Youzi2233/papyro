@@ -15,7 +15,7 @@ import {
   blockActionSubmenuLabel,
   localizeBlockAction,
   normalizeTiptapLanguage,
-} from "./tiptap-i18n.js";
+} from "./tiptap-i18n.ts";
 import { serializeTiptapMarkdown } from "./tiptap-markdown.js";
 import {
   blockSiblingDrop,

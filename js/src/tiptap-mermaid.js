@@ -1,6 +1,6 @@
 import { mergeAttributes, Node } from "@tiptap/core";
 
-import { mermaidSourceEditorLabel } from "./tiptap-i18n.js";
+import { mermaidSourceEditorLabel } from "./tiptap-i18n.ts";
 import { renderMermaidIntoElement } from "./mermaid-renderer.js";
 
 const MERMAID_TOKEN = "mermaidBlock";

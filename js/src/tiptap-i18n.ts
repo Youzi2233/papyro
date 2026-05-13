@@ -1,6 +1,70 @@
-const CHINESE_LANGUAGE_VALUES = new Set(["chinese", "zh", "zh-cn", "zh_cn"]);
+export type TiptapLanguage = "en" | "zh-CN";
 
-export function normalizeTiptapLanguage(value = "english") {
+type LanguageInput = unknown;
+type LocalizedPair = readonly [english: string, chinese: string];
+type LocalizedQuad = readonly [
+  englishTitle: string,
+  chineseTitle: string,
+  englishDescription: string,
+  chineseDescription: string,
+];
+type SlashCommandLabels = readonly [
+  englishTitle: string,
+  chineseTitle: string,
+  englishDescription: string,
+  chineseDescription: string,
+  englishGroup: string,
+  chineseGroup: string,
+];
+type TableCommandLabels = readonly [
+  englishTitle: string,
+  chineseTitle: string,
+  englishLabel: string,
+  chineseLabel: string,
+];
+
+type LocalizableCommand = {
+  id?: string;
+  group: string;
+  title?: string;
+  description?: string;
+  label?: string;
+  groupKey?: string;
+  sourceGroup?: unknown;
+  icon?: string;
+  [key: string]: unknown;
+};
+
+type CalloutKindOption = {
+  kind?: unknown;
+  title?: string;
+  description?: string;
+  [key: string]: unknown;
+};
+
+type BlockTypeOption = {
+  type?: string;
+  level?: number;
+  label?: string;
+};
+
+type TableSelectionSummary = {
+  kind?: string;
+  positions?: { size?: number };
+  rows?: unknown[];
+  columns?: unknown[];
+};
+
+const CHINESE_LANGUAGE_VALUES = new Set<string>([
+  "chinese",
+  "zh",
+  "zh-cn",
+  "zh_cn",
+]);
+
+export function normalizeTiptapLanguage(
+  value: LanguageInput = "english",
+): TiptapLanguage {
   const normalized = String(value ?? "")
     .trim()
     .toLowerCase()
@@ -8,15 +72,19 @@ export function normalizeTiptapLanguage(value = "english") {
   return CHINESE_LANGUAGE_VALUES.has(normalized) ? "zh-CN" : "en";
 }
 
-export function isChineseLanguage(value) {
+export function isChineseLanguage(value: LanguageInput): boolean {
   return normalizeTiptapLanguage(value) === "zh-CN";
 }
 
-export function localizedText(language, english, chinese) {
+export function localizedText(
+  language: LanguageInput,
+  english: string,
+  chinese: string,
+): string {
   return isChineseLanguage(language) ? chinese : english;
 }
 
-const GROUP_LABELS = Object.freeze({
+const GROUP_LABELS: Record<string, string> = Object.freeze({
   Advanced: "高级",
   Align: "对齐",
   Arrange: "排列",
@@ -46,7 +114,7 @@ const GROUP_LABELS = Object.freeze({
   "Text color": "文字颜色",
 });
 
-const BLOCK_ACTION_LABELS = Object.freeze({
+const BLOCK_ACTION_LABELS: Record<string, LocalizedQuad> = Object.freeze({
   "insert-before": ["Insert above", "在上方插入", "Add a paragraph before this block", "在当前块前添加段落"],
   "insert-after": ["Insert below", "在下方插入", "Add a paragraph after this block", "在当前块后添加段落"],
   paragraph: ["Paragraph", "段落", "Use plain body text", "使用普通正文"],
@@ -99,7 +167,7 @@ const BLOCK_ACTION_LABELS = Object.freeze({
   delete: ["Delete block", "删除当前块", "Remove this block", "移除当前块"],
 });
 
-const SLASH_COMMAND_LABELS = Object.freeze({
+const SLASH_COMMAND_LABELS: Record<string, SlashCommandLabels> = Object.freeze({
   paragraph: ["Paragraph", "段落", "Write plain body text", "书写普通正文", "Text", "文本"],
   "heading-1": ["Heading 1", "一级标题", "Large section title", "大型章节标题", "Text", "文本"],
   "heading-2": ["Heading 2", "二级标题", "Medium section title", "中型章节标题", "Text", "文本"],
@@ -117,7 +185,7 @@ const SLASH_COMMAND_LABELS = Object.freeze({
   mermaid: ["Mermaid diagram", "Mermaid 图表", "Insert a Mermaid code fence", "插入 Mermaid 代码围栏", "Advanced", "高级"],
 });
 
-const TABLE_COMMAND_LABELS = Object.freeze({
+const TABLE_COMMAND_LABELS: Record<string, TableCommandLabels> = Object.freeze({
   "add-column-before": ["Insert column left", "左侧插入列", "Left", "左侧"],
   "add-column-after": ["Insert column right", "右侧插入列", "Right", "右侧"],
   "delete-column": ["Delete current column", "删除当前列", "Delete", "删除"],
@@ -150,7 +218,7 @@ const TABLE_COMMAND_LABELS = Object.freeze({
   "delete-table": ["Delete table", "删除表格", "Delete", "删除"],
 });
 
-const TABLE_COMMAND_DESCRIPTIONS = Object.freeze({
+const TABLE_COMMAND_DESCRIPTIONS: Record<string, LocalizedPair> = Object.freeze({
   "add-column-before": [
     "Add a column before the selected column.",
     "\u5728\u5f53\u524d\u5217\u5de6\u4fa7\u63d2\u5165\u4e00\u5217\u3002",
@@ -273,7 +341,7 @@ const TABLE_COMMAND_DESCRIPTIONS = Object.freeze({
   ],
 });
 
-const MARK_LABELS = Object.freeze({
+const MARK_LABELS: Record<string, LocalizedPair> = Object.freeze({
   bold: ["Bold", "\u52a0\u7c97"],
   italic: ["Italic", "\u659c\u4f53"],
   underline: ["Underline", "\u4e0b\u5212\u7ebf"],
@@ -283,7 +351,7 @@ const MARK_LABELS = Object.freeze({
   subscript: ["Subscript", "\u4e0b\u6807"],
 });
 
-const BLOCK_TYPE_LABELS = Object.freeze({
+const BLOCK_TYPE_LABELS: Record<string, LocalizedPair> = Object.freeze({
   paragraph: ["Text", "\u6587\u672c"],
   "heading-1": ["Heading 1", "\u4e00\u7ea7\u6807\u9898"],
   "heading-2": ["Heading 2", "\u4e8c\u7ea7\u6807\u9898"],
@@ -295,25 +363,25 @@ const BLOCK_TYPE_LABELS = Object.freeze({
   codeBlock: ["Code block", "\u4ee3\u7801\u5757"],
 });
 
-const LIST_LABELS = Object.freeze({
+const LIST_LABELS: Record<string, LocalizedPair> = Object.freeze({
   bulletList: ["Bullet List", "\u65e0\u5e8f\u5217\u8868"],
   orderedList: ["Ordered List", "\u6709\u5e8f\u5217\u8868"],
   taskList: ["Task List", "\u4efb\u52a1\u5217\u8868"],
 });
 
-const TEXT_ALIGN_LABELS = Object.freeze({
+const TEXT_ALIGN_LABELS: Record<string, LocalizedPair> = Object.freeze({
   left: ["Align left", "\u5de6\u5bf9\u9f50"],
   center: ["Align center", "\u5c45\u4e2d\u5bf9\u9f50"],
   right: ["Align right", "\u53f3\u5bf9\u9f50"],
   justify: ["Align justify", "\u4e24\u7aef\u5bf9\u9f50"],
 });
 
-const HISTORY_LABELS = Object.freeze({
+const HISTORY_LABELS: Record<string, LocalizedPair> = Object.freeze({
   undo: ["Undo", "\u64a4\u9500"],
   redo: ["Redo", "\u91cd\u505a"],
 });
 
-const TEXT_COLOR_LABELS = Object.freeze({
+const TEXT_COLOR_LABELS: Record<string, string> = Object.freeze({
   "Default text": "\u9ed8\u8ba4\u6587\u5b57",
   "Gray text": "\u7070\u8272\u6587\u5b57",
   "Brown text": "\u68d5\u8272\u6587\u5b57",
@@ -326,7 +394,7 @@ const TEXT_COLOR_LABELS = Object.freeze({
   "Red text": "\u7ea2\u8272\u6587\u5b57",
 });
 
-const HIGHLIGHT_COLOR_LABELS = Object.freeze({
+const HIGHLIGHT_COLOR_LABELS: Record<string, string> = Object.freeze({
   "Default background": "\u9ed8\u8ba4\u80cc\u666f",
   "Gray background": "\u7070\u8272\u80cc\u666f",
   "Brown background": "\u68d5\u8272\u80cc\u666f",
@@ -339,22 +407,28 @@ const HIGHLIGHT_COLOR_LABELS = Object.freeze({
   "Red background": "\u7ea2\u8272\u80cc\u666f",
 });
 
-function localizedGroup(group, language) {
+function localizedGroup(group: string, language: LanguageInput): string {
   return localizedText(language, group, GROUP_LABELS[group] ?? group);
 }
 
-export function localizeBlockAction(command, language) {
-  const labels = BLOCK_ACTION_LABELS[command.id];
+export function localizeBlockAction<T extends LocalizableCommand>(
+  command: T,
+  language: LanguageInput,
+): T & { group: string } {
+  const labels = command.id ? BLOCK_ACTION_LABELS[command.id] : undefined;
   return {
     ...command,
     title: labels ? localizedText(language, labels[0], labels[1]) : command.title,
     description: labels ? localizedText(language, labels[2], labels[3]) : command.description,
     group: localizedGroup(command.group, language),
-  };
+  } as T & { group: string };
 }
 
-export function localizeSlashCommand(command, language) {
-  const labels = SLASH_COMMAND_LABELS[command.id];
+export function localizeSlashCommand<T extends LocalizableCommand>(
+  command: T,
+  language: LanguageInput,
+): T & { group: string; icon: string } {
+  const labels = command.id ? SLASH_COMMAND_LABELS[command.id] : undefined;
   const group = command.sourceGroup
     ? localizedGroup(command.group, language)
     : labels
@@ -366,12 +440,17 @@ export function localizeSlashCommand(command, language) {
     description: labels ? localizedText(language, labels[2], labels[3]) : command.description,
     group,
     icon: command.icon ?? "paragraph",
-  };
+  } as T & { group: string; icon: string };
 }
 
-export function localizeTableCommand(command, language) {
-  const labels = TABLE_COMMAND_LABELS[command.id];
-  const description = TABLE_COMMAND_DESCRIPTIONS[command.id];
+export function localizeTableCommand<T extends LocalizableCommand>(
+  command: T,
+  language: LanguageInput,
+): T & { group: string; groupKey: string } {
+  const labels = command.id ? TABLE_COMMAND_LABELS[command.id] : undefined;
+  const description = command.id
+    ? TABLE_COMMAND_DESCRIPTIONS[command.id]
+    : undefined;
   return {
     ...command,
     groupKey: command.groupKey ?? command.group,
@@ -381,79 +460,94 @@ export function localizeTableCommand(command, language) {
     description: description
       ? localizedText(language, description[0], description[1])
       : command.description,
-  };
+  } as T & { group: string; groupKey: string };
 }
 
-const CALLOUT_KIND_LABELS = Object.freeze({
+const CALLOUT_KIND_LABELS: Record<string, LocalizedQuad> = Object.freeze({
   NOTE: ["Note", "备注", "Neutral context", "普通补充信息"],
   TIP: ["Tip", "提示", "Helpful suggestion", "有帮助的建议"],
   WARNING: ["Warning", "警告", "Risk or caution", "风险或注意事项"],
   DANGER: ["Danger", "危险", "Critical issue", "关键问题"],
 });
 
-export function localizeCalloutKindOption(option, language) {
+export function localizeCalloutKindOption<T extends CalloutKindOption>(
+  option: T,
+  language: LanguageInput,
+): T {
   const kind = String(option?.kind ?? "").trim().toUpperCase();
   const labels = CALLOUT_KIND_LABELS[kind];
   return {
     ...option,
-    title: labels ? localizedText(language, labels[0], labels[1]) : option?.title,
+    title: labels
+      ? localizedText(language, labels[0], labels[1])
+      : option?.title,
     description: labels
       ? localizedText(language, labels[2], labels[3])
       : option?.description,
-  };
+  } as T;
 }
 
-export function markLabel(language, mark) {
-  const labels = MARK_LABELS[mark];
+export function markLabel(language: LanguageInput, mark: unknown): string {
+  const key = String(mark ?? "");
+  const labels = MARK_LABELS[key];
   return labels ? localizedText(language, labels[0], labels[1]) : String(mark ?? "");
 }
 
-export function blockTypeLabel(language, option = {}) {
+export function blockTypeLabel(
+  language: LanguageInput,
+  option: BlockTypeOption = {},
+): string {
   const key = option.type === "heading" && option.level
     ? `heading-${option.level}`
     : option.type;
-  const labels = BLOCK_TYPE_LABELS[key];
+  const labels = key ? BLOCK_TYPE_LABELS[key] : undefined;
   return labels
     ? localizedText(language, labels[0], labels[1])
     : String(option.label ?? option.type ?? "");
 }
 
-export function listLabel(language, type) {
-  const labels = LIST_LABELS[type];
+export function listLabel(language: LanguageInput, type: unknown): string {
+  const key = String(type ?? "");
+  const labels = LIST_LABELS[key];
   return labels ? localizedText(language, labels[0], labels[1]) : String(type ?? "");
 }
 
-export function headingLabel(language, level) {
+export function headingLabel(language: LanguageInput, level: number): string {
   return blockTypeLabel(language, { type: "heading", level });
 }
 
-export function textButtonLabel(language) {
+export function textButtonLabel(language: LanguageInput): string {
   return blockTypeLabel(language, { type: "paragraph" });
 }
 
-export function blockquoteLabel(language) {
+export function blockquoteLabel(language: LanguageInput): string {
   return blockTypeLabel(language, { type: "blockquote" });
 }
 
-export function codeBlockLabel(language) {
+export function codeBlockLabel(language: LanguageInput): string {
   return blockTypeLabel(language, { type: "codeBlock" });
 }
 
-export function textAlignLabel(language, align) {
-  const labels = TEXT_ALIGN_LABELS[align];
+export function textAlignLabel(language: LanguageInput, align: unknown): string {
+  const key = String(align ?? "");
+  const labels = TEXT_ALIGN_LABELS[key];
   return labels ? localizedText(language, labels[0], labels[1]) : String(align ?? "");
 }
 
-export function historyLabel(language, action) {
-  const labels = HISTORY_LABELS[action];
+export function historyLabel(language: LanguageInput, action: unknown): string {
+  const key = String(action ?? "");
+  const labels = HISTORY_LABELS[key];
   return labels ? localizedText(language, labels[0], labels[1]) : String(action ?? "");
 }
 
-export function turnIntoLabel(language) {
+export function turnIntoLabel(language: LanguageInput): string {
   return localizedText(language, "Turn into", "\u8f6c\u6362\u4e3a");
 }
 
-export function turnIntoCurrentLabel(language, currentLabel) {
+export function turnIntoCurrentLabel(
+  language: LanguageInput,
+  currentLabel?: string,
+): string {
   return localizedText(
     language,
     `Turn into (current: ${currentLabel || "Text"})`,
@@ -461,89 +555,113 @@ export function turnIntoCurrentLabel(language, currentLabel) {
   );
 }
 
-export function linkLabel(language) {
+export function linkLabel(language: LanguageInput): string {
   return localizedText(language, "Link", "\u94fe\u63a5");
 }
 
-export function linkInputPlaceholder(language) {
+export function linkInputPlaceholder(language: LanguageInput): string {
   return localizedText(language, "Paste a link...", "\u7c98\u8d34\u94fe\u63a5...");
 }
 
-export function linkApplyTitle(language) {
+export function linkApplyTitle(language: LanguageInput): string {
   return localizedText(language, "Apply link", "\u5e94\u7528\u94fe\u63a5");
 }
 
-export function linkOpenTitle(language) {
+export function linkOpenTitle(language: LanguageInput): string {
   return localizedText(language, "Open in new window", "\u5728\u65b0\u7a97\u53e3\u6253\u5f00");
 }
 
-export function linkRemoveTitle(language) {
+export function linkRemoveTitle(language: LanguageInput): string {
   return localizedText(language, "Remove link", "\u79fb\u9664\u94fe\u63a5");
 }
 
-export function textColorLabel(language) {
+export function textColorLabel(language: LanguageInput): string {
   return localizedText(language, "Text color", "\u6587\u5b57\u989c\u8272");
 }
 
-export function highlightLabel(language) {
+export function highlightLabel(language: LanguageInput): string {
   return localizedText(language, "Highlight", "\u9ad8\u4eae");
 }
 
-export function highlightTextLabel(language) {
+export function highlightTextLabel(language: LanguageInput): string {
   return localizedText(language, "Highlight text", "\u9ad8\u4eae\u6587\u5b57");
 }
 
-export function removeHighlightLabel(language) {
+export function removeHighlightLabel(language: LanguageInput): string {
   return localizedText(language, "Remove highlight", "\u79fb\u9664\u9ad8\u4eae");
 }
 
-export function recentColorsLabel(language) {
+export function recentColorsLabel(language: LanguageInput): string {
   return localizedText(language, "Recently used", "\u6700\u8fd1\u4f7f\u7528");
 }
 
-export function highlightColorsLabel(language) {
+export function highlightColorsLabel(language: LanguageInput): string {
   return localizedText(language, "Highlight colors", "\u9ad8\u4eae\u989c\u8272");
 }
 
-export function textColorOptionsLabel(language) {
+export function textColorOptionsLabel(language: LanguageInput): string {
   return localizedText(language, "Text color options", "\u6587\u5b57\u989c\u8272\u9009\u9879");
 }
 
-export function colorKindLabel(language, type) {
+export function colorKindLabel(language: LanguageInput, type: unknown): string {
   return type === "highlight"
     ? localizedText(language, "highlight", "\u9ad8\u4eae")
     : localizedText(language, "text", "\u6587\u5b57");
 }
 
-export function textColorOptionLabel(language, label) {
-  return localizedText(language, String(label ?? ""), TEXT_COLOR_LABELS[label] ?? String(label ?? ""));
+export function textColorOptionLabel(
+  language: LanguageInput,
+  label: unknown,
+): string {
+  const key = String(label ?? "");
+  return localizedText(language, key, TEXT_COLOR_LABELS[key] ?? key);
 }
 
-export function highlightColorOptionLabel(language, label) {
+export function highlightColorOptionLabel(
+  language: LanguageInput,
+  label: unknown,
+): string {
+  const key = String(label ?? "");
   return localizedText(
     language,
-    String(label ?? ""),
-    HIGHLIGHT_COLOR_LABELS[label] ?? String(label ?? ""),
+    key,
+    HIGHLIGHT_COLOR_LABELS[key] ?? key,
   );
 }
 
-export function colorOptionLabel(language, type, label) {
+export function colorOptionLabel(
+  language: LanguageInput,
+  type: unknown,
+  label: unknown,
+): string {
   return type === "highlight"
     ? highlightColorOptionLabel(language, label)
     : textColorOptionLabel(language, label);
 }
 
-export function colorOptionAriaLabel(language, type, label) {
+export function colorOptionAriaLabel(
+  language: LanguageInput,
+  type: unknown,
+  label: unknown,
+): string {
   const option = colorOptionLabel(language, type, label);
   const kind = colorKindLabel(language, type);
   return localizedText(language, `${option} ${kind} color`, `${option}${kind}\u989c\u8272`);
 }
 
-export function tableSizeLabel(language, rows, cols) {
+export function tableSizeLabel(
+  language: LanguageInput,
+  rows: number,
+  cols: number,
+): string {
   return localizedText(language, `Table ${rows} x ${cols}`, `表格 ${rows} x ${cols}`);
 }
 
-export function insertTableLabel(language, rows, cols) {
+export function insertTableLabel(
+  language: LanguageInput,
+  rows: unknown,
+  cols: unknown,
+): string {
   const rowCount = Number(rows) || 1;
   const colCount = Number(cols) || 1;
   return localizedText(
@@ -553,19 +671,19 @@ export function insertTableLabel(language, rows, cols) {
   );
 }
 
-export function markdownCommandsLabel(language) {
+export function markdownCommandsLabel(language: LanguageInput): string {
   return localizedText(language, "Markdown block commands", "Markdown 块命令");
 }
 
-export function formatToolbarLabel(language) {
+export function formatToolbarLabel(language: LanguageInput): string {
   return localizedText(language, "Text formatting", "\u6587\u672c\u683c\u5f0f");
 }
 
-export function sourcePaneLabel(language) {
+export function sourcePaneLabel(language: LanguageInput): string {
   return localizedText(language, "Markdown source", "Markdown \u6e90\u7801");
 }
 
-export function sourceMarkdownParseErrorLabel(language) {
+export function sourceMarkdownParseErrorLabel(language: LanguageInput): string {
   return localizedText(
     language,
     "Unable to parse Markdown source",
@@ -573,11 +691,11 @@ export function sourceMarkdownParseErrorLabel(language) {
   );
 }
 
-export function loadingEditorLabel(language) {
+export function loadingEditorLabel(language: LanguageInput): string {
   return localizedText(language, "Loading editor", "\u6b63\u5728\u52a0\u8f7d\u7f16\u8f91\u5668");
 }
 
-export function mermaidSourceEditorLabel(language) {
+export function mermaidSourceEditorLabel(language: LanguageInput): string {
   return localizedText(
     language,
     "Edit Mermaid diagram source",
@@ -585,7 +703,10 @@ export function mermaidSourceEditorLabel(language) {
   );
 }
 
-export function mathSourceEditorLabel(language, displayMode = false) {
+export function mathSourceEditorLabel(
+  language: LanguageInput,
+  displayMode = false,
+): string {
   return displayMode
     ? localizedText(
         language,
@@ -599,34 +720,43 @@ export function mathSourceEditorLabel(language, displayMode = false) {
       );
 }
 
-export function insertBlockMenuTitleLabel(language) {
+export function insertBlockMenuTitleLabel(language: LanguageInput): string {
   return localizedText(language, "Insert block", "\u63d2\u5165\u5185\u5bb9\u5757");
 }
 
-export function slashQueryMenuTitleLabel(language, query) {
+export function slashQueryMenuTitleLabel(
+  language: LanguageInput,
+  query: unknown,
+): string {
   const normalizedQuery = String(query ?? "");
   return normalizedQuery ? `/${normalizedQuery}` : insertBlockMenuTitleLabel(language);
 }
 
-export function noCommandsLabel(language) {
+export function noCommandsLabel(language: LanguageInput): string {
   return localizedText(language, "No commands", "没有可用命令");
 }
 
-export function calloutOptionLabel(language, title) {
+export function calloutOptionLabel(
+  language: LanguageInput,
+  title: string,
+): string {
   return localizedText(language, `Insert ${title} callout`, `插入${title}标注`);
 }
 
-export function blockHandleInsertLabel(language) {
+export function blockHandleInsertLabel(language: LanguageInput): string {
   return localizedText(language, "Insert block below", "在下方插入块");
 }
 
-export function blockHandleActionsLabel(language) {
+export function blockHandleActionsLabel(language: LanguageInput): string {
   return localizedText(language, "Block actions", "块操作");
 }
 
-export function blockActionTargetLabel(language, kind) {
-  const normalized = String(kind ?? "block").replaceAll("-", "_");
-  const labels = {
+export function blockActionTargetLabel(
+  language: LanguageInput,
+  kind: unknown,
+): string {
+  const normalized = String(kind ?? "block").replace(/-/g, "_");
+  const labels: Record<string, LocalizedPair> = {
     block: ["Block", "\u5185\u5bb9\u5757"],
     paragraph: ["Paragraph", "\u6bb5\u843d"],
     heading: ["Heading", "\u6807\u9898"],
@@ -642,21 +772,28 @@ export function blockActionTargetLabel(language, kind) {
   const label = labels[normalized];
   if (label) return localizedText(language, label[0], label[1]);
 
-  const fallback = normalized.replaceAll("_", " ");
+  const fallback = normalized.replace(/_/g, " ");
   return fallback.charAt(0).toUpperCase() + fallback.slice(1);
 }
 
-export function blockActionSubmenuLabel(language, submenu) {
-  const labels = {
+export function blockActionSubmenuLabel(
+  language: LanguageInput,
+  submenu: unknown,
+): string {
+  const labels: Record<string, LocalizedPair> = {
     "turn-into": ["Turn into", "\u8f6c\u6362\u4e3a"],
     "code-language": ["Code language", "\u4ee3\u7801\u8bed\u8a00"],
   };
-  const label = labels[submenu];
+  const key = String(submenu ?? "");
+  const label = labels[key];
   return label ? localizedText(language, label[0], label[1]) : String(submenu ?? "");
 }
 
-export function blockActionSubmenuDescription(language, submenu) {
-  const labels = {
+export function blockActionSubmenuDescription(
+  language: LanguageInput,
+  submenu: unknown,
+): string {
+  const labels: Record<string, LocalizedPair> = {
     "turn-into": [
       "Change the current block type",
       "\u66f4\u6539\u5f53\u524d\u5757\u7c7b\u578b",
@@ -666,35 +803,35 @@ export function blockActionSubmenuDescription(language, submenu) {
       "\u8bbe\u7f6e\u4ee3\u7801\u5757\u9ad8\u4eae\u8bed\u8a00",
     ],
   };
-  const label = labels[submenu];
+  const label = labels[String(submenu ?? "")];
   return label ? localizedText(language, label[0], label[1]) : "";
 }
 
-export function linkEditorTitleLabel(language) {
+export function linkEditorTitleLabel(language: LanguageInput): string {
   return localizedText(language, "Edit link", "\u7f16\u8f91\u94fe\u63a5");
 }
 
-export function linkEditorInputLabel(language) {
+export function linkEditorInputLabel(language: LanguageInput): string {
   return localizedText(language, "Link URL", "\u94fe\u63a5\u5730\u5740");
 }
 
-export function linkEditorPlaceholder(language) {
+export function linkEditorPlaceholder(language: LanguageInput): string {
   return localizedText(language, "https://example.com", "https://example.com");
 }
 
-export function linkEditorApplyLabel(language) {
+export function linkEditorApplyLabel(language: LanguageInput): string {
   return localizedText(language, "Apply", "\u5e94\u7528");
 }
 
-export function linkEditorRemoveLabel(language) {
+export function linkEditorRemoveLabel(language: LanguageInput): string {
   return localizedText(language, "Remove", "\u79fb\u9664");
 }
 
-export function linkEditorCloseLabel(language) {
+export function linkEditorCloseLabel(language: LanguageInput): string {
   return localizedText(language, "Close link editor", "\u5173\u95ed\u94fe\u63a5\u7f16\u8f91\u5668");
 }
 
-export function linkEditorInvalidLabel(language) {
+export function linkEditorInvalidLabel(language: LanguageInput): string {
   return localizedText(
     language,
     "Enter a valid http, https, mailto, tel, or relative link.",
@@ -702,35 +839,41 @@ export function linkEditorInvalidLabel(language) {
   );
 }
 
-export function tableToolsLabel(language) {
+export function tableToolsLabel(language: LanguageInput): string {
   return localizedText(language, "Table tools", "表格工具");
 }
 
-export function tableCellActionsLabel(language) {
+export function tableCellActionsLabel(language: LanguageInput): string {
   return localizedText(language, "Cell actions", "单元格操作");
 }
 
-export function tableSelectionActionsLabel(language) {
+export function tableSelectionActionsLabel(language: LanguageInput): string {
   return localizedText(language, "Selection actions", "选区操作");
 }
 
-export function tableContextEyebrowLabel(language) {
+export function tableContextEyebrowLabel(language: LanguageInput): string {
   return localizedText(language, "Table", "表格");
 }
 
-export function tableContextTitleLabel(language, selectionKind) {
-  const labels = {
+export function tableContextTitleLabel(
+  language: LanguageInput,
+  selectionKind: unknown,
+): string {
+  const labels: Record<string, LocalizedPair> = {
     cell: ["Cell actions", "单元格操作"],
     cells: ["Selection actions", "选区操作"],
     row: ["Row actions", "行操作"],
     column: ["Column actions", "列操作"],
     table: ["Table actions", "整表操作"],
   };
-  const label = labels[selectionKind] ?? labels.cell;
+  const label = labels[String(selectionKind ?? "")] ?? labels.cell;
   return localizedText(language, label[0], label[1]);
 }
 
-export function tableContextSubtitleLabel(language, selection = {}) {
+export function tableContextSubtitleLabel(
+  language: LanguageInput,
+  selection: TableSelectionSummary = {},
+): string {
   const kind = selection?.kind ?? "cell";
   const selectedCount = selection?.positions?.size ?? 0;
   if (kind === "table") {
@@ -766,29 +909,38 @@ export function tableContextSubtitleLabel(language, selection = {}) {
   return localizedText(language, "Current cell", "当前单元格");
 }
 
-export function tableCommandMenuSectionLabel(language, section) {
-  const labels = {
+export function tableCommandMenuSectionLabel(
+  language: LanguageInput,
+  section: unknown,
+): string {
+  const labels: Record<string, LocalizedPair> = {
     structure: ["Structure", "结构"],
     content: ["Content", "内容"],
     style: ["Style", "样式"],
     danger: ["Danger", "危险"],
   };
-  const label = labels[section];
+  const label = labels[String(section ?? "")];
   return label ? localizedText(language, label[0], label[1]) : String(section ?? "");
 }
 
-export function tableCommandLayoutGroupLabel(language, layoutGroup) {
-  const labels = {
+export function tableCommandLayoutGroupLabel(
+  language: LanguageInput,
+  layoutGroup: unknown,
+): string {
+  const labels: Record<string, LocalizedPair> = {
     align: ["Alignment", "\u5bf9\u9f50"],
     "text-color": ["Text color", "\u6587\u5b57\u989c\u8272"],
     "cell-color": ["Cell color", "\u5355\u5143\u683c\u989c\u8272"],
   };
-  const label = labels[layoutGroup];
+  const label = labels[String(layoutGroup ?? "")];
   return label ? localizedText(language, label[0], label[1]) : String(layoutGroup ?? "");
 }
 
-export function tableCommandLayoutGroupDescription(language, layoutGroup) {
-  const labels = {
+export function tableCommandLayoutGroupDescription(
+  language: LanguageInput,
+  layoutGroup: unknown,
+): string {
+  const labels: Record<string, LocalizedPair> = {
     align: [
       "Choose horizontal alignment.",
       "\u9009\u62e9\u6c34\u5e73\u5bf9\u9f50\u65b9\u5f0f\u3002",
@@ -802,38 +954,47 @@ export function tableCommandLayoutGroupDescription(language, layoutGroup) {
       "\u9009\u62e9\u5355\u5143\u683c\u80cc\u666f\u8272\u3002",
     ],
   };
-  const label = labels[layoutGroup];
+  const label = labels[String(layoutGroup ?? "")];
   return label ? localizedText(language, label[0], label[1]) : "";
 }
 
-export function addRowBelowLabel(language) {
+export function addRowBelowLabel(language: LanguageInput): string {
   return localizedText(language, "Add row below", "在下方添加行");
 }
 
-export function addColumnRightLabel(language) {
+export function addColumnRightLabel(language: LanguageInput): string {
   return localizedText(language, "Add column right", "在右侧添加列");
 }
 
-export function insertBlockAfterLabel(language) {
+export function insertBlockAfterLabel(language: LanguageInput): string {
   return localizedText(language, "Insert block after", "在下方插入内容块");
 }
 
-export function insertBlockBeforeLabel(language) {
+export function insertBlockBeforeLabel(language: LanguageInput): string {
   return localizedText(language, "Insert block before", "在上方插入内容块");
 }
 
-export function insertBlockAtEdgeLabel(language, edge = "after") {
+export function insertBlockAtEdgeLabel(
+  language: LanguageInput,
+  edge = "after",
+): string {
   return edge === "before"
     ? insertBlockBeforeLabel(language)
     : insertBlockAfterLabel(language);
 }
 
-export function selectTableRowLabel(language, index) {
+export function selectTableRowLabel(
+  language: LanguageInput,
+  index: unknown,
+): string {
   const row = Number(index) + 1;
   return localizedText(language, `Select row ${row}`, `选择第 ${row} 行`);
 }
 
-export function selectTableColumnLabel(language, index) {
+export function selectTableColumnLabel(
+  language: LanguageInput,
+  index: unknown,
+): string {
   const column = Number(index) + 1;
   return localizedText(language, `Select column ${column}`, `选择第 ${column} 列`);
 }

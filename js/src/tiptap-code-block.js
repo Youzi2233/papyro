@@ -3,7 +3,7 @@ import { CodeBlockLowlight } from "@tiptap/extension-code-block-lowlight";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import { all, createLowlight } from "lowlight";
-import { localizedText } from "./tiptap-i18n.js";
+import { localizedText } from "./tiptap-i18n.ts";
 import {
   commandElementId,
   createFloatingDismissController,

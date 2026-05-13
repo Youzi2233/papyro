@@ -36,7 +36,7 @@ import {
   tableToolsLabel,
   textAlignLabel,
   turnIntoCurrentLabel,
-} from "../src/tiptap-i18n.js";
+} from "../src/tiptap-i18n.ts";
 
 test("Tiptap i18n normalizes Chinese language values", () => {
   assert.equal(normalizeTiptapLanguage("Chinese"), "zh-CN");
