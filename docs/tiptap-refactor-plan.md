@@ -16,7 +16,7 @@ This document is the complete execution plan for refactoring Papyro's editor fro
 
 | Dimension | Current State | Target State |
 |-----------|--------------|--------------|
-| Language | Mixed TypeScript with 51 production `.js`/`.jsx` files still under `js/src/` as of 2026-05-13 | TypeScript (.ts/.tsx) |
+| Language | Mixed TypeScript with 50 production `.js`/`.jsx` files still under `js/src/` as of 2026-05-13 | TypeScript (.ts/.tsx) |
 | Build | esbuild (native TS support, no changes needed) | esbuild + tsconfig |
 | UI Framework | React 18.3 (already satisfied) | React 18.3 (unchanged) |
 | Tiptap | 3.23.1 (already aligned) | 3.23.1+ (keep same version) |
@@ -294,8 +294,9 @@ Migrate by module priority, one module at a time:
 - [x] Test file migration (keep `node --test` runner)
 
 #### 5.4 Current TypeScript Debt Audit (2026-05-13)
-- [ ] Migrate the remaining 51 production `.js`/`.jsx` files under `js/src/` to `.ts`/`.tsx`
-- [ ] Convert `tiptap-table.js` and `tiptap-table-command-controller.js` after table command behavior is covered by source and runtime tests
+- [ ] Migrate the remaining 50 production `.js`/`.jsx` files under `js/src/` to `.ts`/`.tsx`
+- [x] Convert `tiptap-table-command-controller.js` to `tiptap-table-command-controller.ts` after table command behavior was covered by source and runtime tests
+- [ ] Convert `tiptap-table.js` after table command behavior is covered by source and runtime tests
 - [ ] Convert `editor-core.js`, `markdown-sync-controller.js`, `editor-host-runtime.js`, `editor-registry.js`, `editor-runtime-bootstrap.js`, and `editor-runtime-selector.js`
 - [ ] Convert remaining React support files under `js/src/tiptap-react/`, including code-block node view, primitive wrappers, hooks, and utility modules
 - [ ] Add a passing `npm --prefix js run typecheck` gate once current TS template debt is typed or intentionally isolated

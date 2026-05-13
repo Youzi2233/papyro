@@ -21,7 +21,7 @@ import {
   createPapyroMarkdownManager,
   createPapyroTiptapExtensions,
 } from "./tiptap-markdown.js";
-import { createTiptapTableCommandController } from "./tiptap-table-command-controller.js";
+import { createTiptapTableCommandController } from "./tiptap-table-command-controller.ts";
 import {
   createTiptapRuntimeProtocolBridge,
   syncRuntimeLanguage,

@@ -51,7 +51,7 @@ const floatingUtilsSource = readFileSync(
   "utf8",
 );
 const tableCommandControllerSource = readFileSync(
-  new URL("../src/tiptap-table-command-controller.js", import.meta.url),
+  new URL("../src/tiptap-table-command-controller.ts", import.meta.url),
   "utf8",
 );
 const editorEntrySource = readFileSync(
@@ -265,7 +265,7 @@ test("official table-node layer owns visible table chrome at the editor boundary
     editorRuntimeSource,
     /const tableCommands = createTiptapTableCommandController\(\)/u,
   );
-  assert.match(editorRuntimeSource, /from "\.\/tiptap-table-command-controller\.js"/u);
+  assert.match(editorRuntimeSource, /from "\.\/tiptap-table-command-controller\.ts"/u);
   assert.doesNotMatch(editorRuntimeSource, /tableToolbarControllerFactory/u);
   assert.doesNotMatch(editorRuntimeSource, /tableToolbar/u);
   assert.doesNotMatch(editorRuntimeSource, /from "\.\/tiptap-table-toolbar\.js"/u);

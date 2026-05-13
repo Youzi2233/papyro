@@ -16,7 +16,7 @@
 
 | 维度 | 当前状态 | 目标状态 |
 |------|---------|---------|
-| 语言 | 混合 TypeScript，且截至 2026-05-13 `js/src/` 下仍有 51 个生产 `.js`/`.jsx` 文件 | TypeScript (.ts/.tsx) |
+| 语言 | 混合 TypeScript，且截至 2026-05-13 `js/src/` 下仍有 50 个生产 `.js`/`.jsx` 文件 | TypeScript (.ts/.tsx) |
 | 构建 | esbuild (原生支持 TS，无需改动) | esbuild + tsconfig |
 | UI 框架 | React 18.3 (已满足) | React 18.3 (不变) |
 | Tiptap | 3.23.1 (已对齐) | 3.23.1+ (保持同版本) |
@@ -294,8 +294,9 @@ js/src/
 - [x] 测试文件迁移（保持 `node --test` 运行器）
 
 #### 5.4 当前 TypeScript 债务审计（2026-05-13）
-- [ ] 将 `js/src/` 下剩余 51 个生产 `.js`/`.jsx` 文件迁移为 `.ts`/`.tsx`
-- [ ] 在表格命令行为已有源码测试和 runtime 测试覆盖后，迁移 `tiptap-table.js` 与 `tiptap-table-command-controller.js`
+- [ ] 将 `js/src/` 下剩余 50 个生产 `.js`/`.jsx` 文件迁移为 `.ts`/`.tsx`
+- [x] 在表格命令行为已有源码测试和 runtime 测试覆盖后，将 `tiptap-table-command-controller.js` 迁移为 `tiptap-table-command-controller.ts`
+- [ ] 在表格命令行为已有源码测试和 runtime 测试覆盖后，迁移 `tiptap-table.js`
 - [ ] 迁移 `editor-core.js`、`markdown-sync-controller.js`、`editor-host-runtime.js`、`editor-registry.js`、`editor-runtime-bootstrap.js`、`editor-runtime-selector.js`
 - [ ] 迁移 `js/src/tiptap-react/` 下剩余 React 支撑文件，包括 code-block node view、primitive wrappers、hooks 和 utility modules
 - [ ] 在现有 TS 模板债务完成类型化或隔离后，新增可通过的 `npm --prefix js run typecheck` 闸门
