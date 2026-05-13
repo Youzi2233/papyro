@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { importBundledModule } from "../js/test/helpers/load-esbuild-module.js";
 
 const { checkTiptapRuntimeSmoke } = await importBundledModule(
-  new URL("../js/src/tiptap-runtime-smoke.js", import.meta.url),
+  new URL("../js/src/tiptap-runtime-smoke.ts", import.meta.url),
 );
 
 const DEFAULT_FIXTURE = "js/test/fixtures/tiptap-release-smoke.md";

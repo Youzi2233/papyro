@@ -9,31 +9,99 @@ import {
   serializeTiptapMarkdown,
 } from "./tiptap-markdown.js";
 
-export async function checkTiptapRuntimeSmoke(markdown) {
-  const failures = [];
-  const windowRef = new Window({ url: "http://localhost/" });
+type SmokeFailureList = string[];
+type SmokeDataset = Record<string, string | undefined>;
+type SmokeClassList = {
+  contains?: (value: string) => boolean;
+};
+type SmokeDomElement = {
+  id?: string;
+  className?: unknown;
+  dataset?: SmokeDataset;
+  classList?: SmokeClassList;
+  firstElementChild?: SmokeDomElement | null;
+  parentElement?: SmokeDomElement | null;
+  querySelector?: (selectors: string) => SmokeDomElement | null;
+  querySelectorAll?: (selectors: string) => ArrayLike<SmokeDomElement>;
+  appendChild?: (child: unknown) => unknown;
+};
+type SmokeWindow = Window & {
+  papyroEditor?: SmokeFacade;
+  happyDOM?: {
+    waitUntilComplete?: () => Promise<void>;
+  };
+  ResizeObserver?: typeof ResizeObserver;
+};
+type SmokeGlobalRecord = {
+  exists: boolean;
+  value: unknown;
+};
+type SmokeGlobalRestoreMap = Map<string, SmokeGlobalRecord>;
+type SmokeFacade = {
+  describe?: () => {
+    name?: string;
+    runtimeKind?: string;
+    methods?: string[];
+  };
+  ensureEditor: (options: Record<string, unknown>) => SmokeEditor;
+  attachChannel: (tabId: string, channel: { send: (message: unknown) => void }) => unknown;
+  handleRustMessage: (tabId: string, message: Record<string, unknown>) => unknown;
+};
+type SmokeRectInit = {
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+};
+type SmokeEditor = {
+  isDestroyed?: boolean;
+  view?: {
+    dom?: SmokeDomElement;
+  };
+  getJSON: () => SmokeJsonNode;
+};
+type SmokeMarkdownManager = {
+  parse: (markdown: string) => SmokeJsonNode;
+};
+type SmokeJsonNode = {
+  type?: string;
+  text?: string;
+  attrs?: Record<string, unknown>;
+  content?: SmokeJsonNode[];
+  [key: string]: unknown;
+};
+
+export async function checkTiptapRuntimeSmoke(markdown: string): Promise<SmokeFailureList> {
+  const failures: SmokeFailureList = [];
+  const windowRef = new Window({ url: "http://localhost/" }) as SmokeWindow;
   const previousGlobals = installDomGlobals(windowRef);
-  const container = windowRef.document.createElement("div");
+  const container = windowRef.document.createElement("div") as unknown as SmokeDomElement;
   container.id = "editor-root";
-  windowRef.document.body.appendChild(container);
+  const appendToBody = windowRef.document.body.appendChild.bind(
+    windowRef.document.body,
+  ) as unknown as (child: unknown) => unknown;
+  appendToBody(container);
 
   const extensions = createPapyroTiptapExtensions();
   const markdownManager = createPapyroMarkdownManager({ extensions });
-  let editor = null;
+  let editor: SmokeEditor | null = null;
 
   try {
-    const runtime = createPapyroTiptapRuntimeAdapter({
+    const createRuntimeAdapter = createPapyroTiptapRuntimeAdapter as unknown as (
+      options: Record<string, unknown>,
+    ) => Record<string, unknown>;
+    const runtime = createRuntimeAdapter({
       dom: {
         document: windowRef.document,
       },
       navigation: createSmokeNavigation(),
     });
-    const facade = installPapyroEditorRuntime(windowRef, {
+    const facade = installPapyroEditorRuntime(windowRef as unknown as Record<string, unknown>, {
       adapters: {
         tiptap: runtime,
       },
-    });
-    const dioxusMessages = [];
+    }) as SmokeFacade;
+    const dioxusMessages: unknown[] = [];
 
     checkRuntimeFacade(failures, facade);
     editor = facade.ensureEditor({
@@ -44,7 +112,7 @@ export async function checkTiptapRuntimeSmoke(markdown) {
       viewMode: "hybrid",
     });
     facade.attachChannel("tab-a", {
-      send: (message) => dioxusMessages.push(message),
+      send: (message: unknown) => dioxusMessages.push(message),
     });
     facade.handleRustMessage("tab-a", {
       type: "set_preferences",
@@ -78,15 +146,15 @@ export async function checkTiptapRuntimeSmoke(markdown) {
   return failures;
 }
 
-async function flushRuntime(windowRef) {
+async function flushRuntime(windowRef: SmokeWindow) {
   await Promise.resolve();
   await new Promise((resolve) => setTimeout(resolve, 0));
   await windowRef.happyDOM?.waitUntilComplete?.();
 }
 
-function installDomGlobals(windowRef) {
-  const previous = new Map();
-  const install = {
+function installDomGlobals(windowRef: SmokeWindow): SmokeGlobalRestoreMap {
+  const previous: SmokeGlobalRestoreMap = new Map();
+  const install: Record<string, unknown> = {
     window: windowRef,
     self: windowRef,
     document: windowRef.document,
@@ -103,8 +171,9 @@ function installDomGlobals(windowRef) {
     DOMParser: windowRef.DOMParser,
     MutationObserver: windowRef.MutationObserver,
     getComputedStyle: windowRef.getComputedStyle.bind(windowRef),
-    requestAnimationFrame: (callback) => setTimeout(() => callback(Date.now()), 0),
-    cancelAnimationFrame: (id) => clearTimeout(id),
+    requestAnimationFrame: (callback: FrameRequestCallback) =>
+      setTimeout(() => callback(Date.now()), 0),
+    cancelAnimationFrame: (id: ReturnType<typeof setTimeout>) => clearTimeout(id),
     innerHeight: 900,
     innerWidth: 1200,
   };
@@ -119,8 +188,18 @@ function installDomGlobals(windowRef) {
     install.ResizeObserver = ResizeObserver;
   }
 
-  if (!windowRef.DOMRect) {
-    class DOMRect {
+  const windowRecord = windowRef as unknown as Record<string, unknown>;
+  if (!windowRecord.DOMRect) {
+    class SmokeDOMRect {
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+      top: number;
+      left: number;
+      right: number;
+      bottom: number;
+
       constructor(x = 0, y = 0, width = 0, height = 0) {
         this.x = x;
         this.y = y;
@@ -132,8 +211,8 @@ function installDomGlobals(windowRef) {
         this.bottom = y + height;
       }
 
-      static fromRect(rect = {}) {
-        return new DOMRect(
+      static fromRect(rect: SmokeRectInit = {}) {
+        return new SmokeDOMRect(
           rect.x ?? 0,
           rect.y ?? 0,
           rect.width ?? 0,
@@ -141,27 +220,27 @@ function installDomGlobals(windowRef) {
         );
       }
     }
-    windowRef.DOMRect = DOMRect;
-    install.DOMRect = DOMRect;
+    windowRecord.DOMRect = SmokeDOMRect;
+    install.DOMRect = SmokeDOMRect;
   }
 
   for (const [name, value] of Object.entries(install)) {
     previous.set(name, {
       exists: Object.prototype.hasOwnProperty.call(globalThis, name),
-      value: globalThis[name],
+      value: (globalThis as unknown as Record<string, unknown>)[name],
     });
-    globalThis[name] = value;
+    (globalThis as unknown as Record<string, unknown>)[name] = value;
   }
 
   return previous;
 }
 
-function restoreDomGlobals(previous) {
+function restoreDomGlobals(previous: SmokeGlobalRestoreMap) {
   for (const [name, record] of previous.entries()) {
     if (record.exists) {
-      globalThis[name] = record.value;
+      (globalThis as unknown as Record<string, unknown>)[name] = record.value;
     } else {
-      delete globalThis[name];
+      delete (globalThis as unknown as Record<string, unknown>)[name];
     }
   }
 }
@@ -178,7 +257,7 @@ function createSmokeNavigation() {
   };
 }
 
-function checkRuntimeFacade(failures, facade) {
+function checkRuntimeFacade(failures: SmokeFailureList, facade: SmokeFacade) {
   const descriptor = facade?.describe?.();
   if (!Object.isFrozen(facade)) {
     failures.push("runtime facade is not frozen");
@@ -194,7 +273,14 @@ function checkRuntimeFacade(failures, facade) {
   }
 }
 
-async function checkRuntimeBridge(failures, facade, container, editor, dioxusMessages, windowRef) {
+async function checkRuntimeBridge(
+  failures: SmokeFailureList,
+  facade: SmokeFacade,
+  container: SmokeDomElement,
+  editor: SmokeEditor | null,
+  _dioxusMessages: unknown[],
+  windowRef: SmokeWindow,
+) {
   if (container.firstElementChild?.dataset?.tabId !== "tab-a") {
     failures.push("runtime did not mount a tab-routed root");
   }
@@ -217,7 +303,10 @@ async function checkRuntimeBridge(failures, facade, container, editor, dioxusMes
   }
 
   facade.handleRustMessage("tab-a", { type: "focus" });
-  if (windowRef.document.activeElement !== container.querySelector("textarea")) {
+  if (
+    (windowRef.document.activeElement as unknown) !==
+    (container.querySelector?.("textarea") as unknown)
+  ) {
     failures.push("runtime bridge did not route focus to the source pane");
   }
 
@@ -228,17 +317,17 @@ async function checkRuntimeBridge(failures, facade, container, editor, dioxusMes
   await flushRuntime(windowRef);
 }
 
-function checkMountedEditor(failures, editor) {
+function checkMountedEditor(failures: SmokeFailureList, editor: SmokeEditor | null) {
   if (!editor?.view) {
     failures.push("editor view is not available after mount");
     return;
   }
 
-  if (!editor.view.dom?.classList?.contains("ProseMirror")) {
+  if (!editor.view.dom?.classList?.contains?.("ProseMirror")) {
     failures.push("editor view DOM is missing ProseMirror root class");
   }
 
-  if (!editor.view.dom?.classList?.contains("tiptap")) {
+  if (!editor.view.dom?.classList?.contains?.("tiptap")) {
     failures.push("editor view DOM is missing the official Tiptap root class");
   }
 
@@ -247,13 +336,13 @@ function checkMountedEditor(failures, editor) {
   }
 }
 
-function checkReactIsland(failures, container) {
+function checkReactIsland(failures: SmokeFailureList, container: SmokeDomElement) {
   if (!container.querySelector?.(".mn-tiptap-react-root")) {
     failures.push("React editor island did not mount");
   }
 }
 
-function checkRenderedDom(failures, dom) {
+function checkRenderedDom(failures: SmokeFailureList, dom: SmokeDomElement | null | undefined) {
   if (!dom) return;
 
   const expectedSelectors = [
@@ -275,7 +364,7 @@ function checkRenderedDom(failures, dom) {
   }
 }
 
-function checkCodeBlockChrome(failures, dom) {
+function checkCodeBlockChrome(failures: SmokeFailureList, dom: SmokeDomElement | null | undefined) {
   if (!dom) return;
 
   const codeBlock = dom.querySelector?.(".mn-tiptap-code-block, pre");
@@ -305,7 +394,11 @@ function checkCodeBlockChrome(failures, dom) {
   }
 }
 
-function checkRegistryLifecycle(failures, facade, container) {
+function checkRegistryLifecycle(
+  failures: SmokeFailureList,
+  facade: SmokeFacade,
+  container: SmokeDomElement,
+) {
   const firstEditor = facade.ensureEditor({
     tabId: "tab-b",
     containerId: "editor-root",
@@ -346,8 +439,16 @@ function checkRegistryLifecycle(failures, facade, container) {
   });
 }
 
-function checkRoundTrip(failures, editor, markdownManager) {
-  const serialized = serializeTiptapMarkdown(editor.getJSON(), markdownManager);
+function checkRoundTrip(
+  failures: SmokeFailureList,
+  editor: SmokeEditor | null,
+  markdownManager: SmokeMarkdownManager,
+) {
+  if (!editor) {
+    failures.push("mounted editor is not available for Markdown round-trip");
+    return;
+  }
+  const serialized = serializeTiptapMarkdown(editor.getJSON(), markdownManager as never);
   const reparsed = markdownManager.parse(serialized);
   const editorJson = preparePapyroMarkdownDoc(editor.getJSON());
 
@@ -367,24 +468,25 @@ function checkRoundTrip(failures, editor, markdownManager) {
 
 }
 
-function stableStringify(value) {
+function stableStringify(value: unknown): string {
   return JSON.stringify(sortJson(value));
 }
 
-function sortJson(value) {
+function sortJson(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(sortJson);
   if (!value || typeof value !== "object") return value;
 
-  const entries = Object.keys(value)
+  const record = value as Record<string, unknown>;
+  const entries = Object.keys(record)
       .sort()
       .flatMap((key) => {
-        if (key === "rel" && value[key] === "noopener noreferrer nofollow") return [];
-        if (key === "target" && (value[key] === null || value[key] === "_blank")) return [];
-        if (key === "class" && value[key] === null) return [];
-        if (key === "start" && value[key] === 1) return [];
-        if ((key === "colspan" || key === "rowspan") && value[key] === 1) return [];
-        if (value[key] === null || value[key] === undefined) return [];
-        const sortedValue = sortJson(value[key]);
+        if (key === "rel" && record[key] === "noopener noreferrer nofollow") return [];
+        if (key === "target" && (record[key] === null || record[key] === "_blank")) return [];
+        if (key === "class" && record[key] === null) return [];
+        if (key === "start" && record[key] === 1) return [];
+        if ((key === "colspan" || key === "rowspan") && record[key] === 1) return [];
+        if (record[key] === null || record[key] === undefined) return [];
+        const sortedValue = sortJson(record[key]);
         if (
           sortedValue &&
           typeof sortedValue === "object" &&
@@ -399,7 +501,7 @@ function sortJson(value) {
   return Object.fromEntries(entries);
 }
 
-function findNode(node, type) {
+function findNode(node: SmokeJsonNode | null | undefined, type: string): SmokeJsonNode | null {
   if (!node || typeof node !== "object") return null;
   if (node.type === type) return node;
   for (const child of node.content ?? []) {
@@ -409,8 +511,8 @@ function findNode(node, type) {
   return null;
 }
 
-function findComplexTable(node) {
-  let found = null;
+function findComplexTable(node: SmokeJsonNode | null | undefined): SmokeJsonNode | null {
+  let found: SmokeJsonNode | null = null;
   walkJson(node, (child) => {
     if (found || child?.type !== "table") return;
     const rows = child.content ?? [];
@@ -425,8 +527,12 @@ function findComplexTable(node) {
   return found;
 }
 
-function checkComplexTableRuntime(failures, facade, container) {
-  let editor = null;
+function checkComplexTableRuntime(
+  failures: SmokeFailureList,
+  facade: SmokeFacade,
+  container: SmokeDomElement,
+) {
+  let editor: SmokeEditor | null = null;
 
   try {
     editor = facade.ensureEditor({
@@ -454,7 +560,10 @@ function checkComplexTableRuntime(failures, facade, container) {
   }
 }
 
-function walkJson(node, visit) {
+function walkJson(
+  node: SmokeJsonNode | null | undefined,
+  visit: (node: SmokeJsonNode) => void,
+) {
   if (!node || typeof node !== "object") return;
   visit(node);
   for (const child of node.content ?? []) {
