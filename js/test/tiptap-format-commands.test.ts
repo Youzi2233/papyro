@@ -5,7 +5,7 @@ import {
   createTiptapFormatCommandController,
   PAPYRO_TIPTAP_FORMAT_COMMANDS,
 } from "../src/tiptap-format-commands.js";
-import { PAPYRO_TIPTAP_TURN_INTO_COMMANDS } from "../src/tiptap-turn-into-commands.js";
+import { PAPYRO_TIPTAP_TURN_INTO_COMMANDS } from "../src/tiptap-turn-into-commands.ts";
 
 function createFakeEditor(activeIds = []) {
   const calls = [];

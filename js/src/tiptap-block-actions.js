@@ -23,7 +23,7 @@ import {
   moveTiptapBlock,
   targetEndPos,
 } from "./tiptap-block-move.js";
-import { PAPYRO_TIPTAP_TURN_INTO_COMMANDS } from "./tiptap-turn-into-commands.js";
+import { PAPYRO_TIPTAP_TURN_INTO_COMMANDS } from "./tiptap-turn-into-commands.ts";
 
 function normalizeCommandId(value) {
   return String(value ?? "").trim().toLowerCase();

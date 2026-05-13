@@ -4,7 +4,7 @@ import {
   PAPYRO_HIGHLIGHT_OPTIONS,
   PAPYRO_TEXT_COLOR_OPTIONS,
 } from "./tiptap-text-style.js";
-import { PAPYRO_TIPTAP_TURN_INTO_COMMANDS } from "./tiptap-turn-into-commands.js";
+import { PAPYRO_TIPTAP_TURN_INTO_COMMANDS } from "./tiptap-turn-into-commands.ts";
 
 function normalizeCommandId(value) {
   return String(value ?? "").trim().toLowerCase();

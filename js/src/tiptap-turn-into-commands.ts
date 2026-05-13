@@ -1,10 +1,53 @@
 import { createMarkdownCallout } from "./tiptap-markdown-snippets.js";
 
-function freezeCommand(command) {
+type CommandName =
+  | "insertContent"
+  | "setParagraph"
+  | "toggleHeading"
+  | "toggleBulletList"
+  | "toggleOrderedList"
+  | "toggleTaskList"
+  | "toggleBlockquote"
+  | "setCalloutBlock"
+  | "toggleCodeBlock";
+
+type EditorCommandMap = Partial<Record<CommandName, (...args: unknown[]) => unknown>>;
+
+export type PapyroTurnIntoEditor = {
+  commands?: EditorCommandMap;
+  isActive?: (name: string, attrs?: Record<string, unknown>) => boolean;
+};
+
+export type PapyroTurnIntoCommandContext = {
+  editor?: PapyroTurnIntoEditor | null;
+};
+
+export type PapyroTurnIntoCommand = Readonly<{
+  id: string;
+  title: string;
+  description: string;
+  group: string;
+  icon: string;
+  priority: number;
+  activeName?: string;
+  activeAttrs?: Readonly<Record<string, unknown>>;
+  active: (context: PapyroTurnIntoCommandContext) => boolean;
+  run: (context: PapyroTurnIntoCommandContext) => boolean;
+}>;
+
+type TurnIntoCommandInput = Omit<PapyroTurnIntoCommand, "active"> & {
+  active?: (context: PapyroTurnIntoCommandContext) => boolean;
+};
+
+function freezeCommand<T extends object>(command: T): Readonly<T> {
   return Object.freeze({ ...command });
 }
 
-function editorCommand(editor, commandName, ...args) {
+function editorCommand(
+  editor: PapyroTurnIntoEditor | null | undefined,
+  commandName: CommandName,
+  ...args: unknown[]
+): boolean {
   const command = editor?.commands?.[commandName];
   if (typeof command !== "function") {
     return false;
@@ -12,11 +55,19 @@ function editorCommand(editor, commandName, ...args) {
   return command(...args) !== false;
 }
 
-function insertMarkdown(editor, markdown) {
+function insertMarkdown(
+  editor: PapyroTurnIntoEditor | null | undefined,
+  markdown: string,
+): boolean {
   return editorCommand(editor, "insertContent", markdown, { contentType: "markdown" });
 }
 
-function runEditorCommand(editor, commandName, args = [], fallbackMarkdown = null) {
+function runEditorCommand(
+  editor: PapyroTurnIntoEditor | null | undefined,
+  commandName: CommandName,
+  args: unknown[] = [],
+  fallbackMarkdown: string | null = null,
+): boolean {
   const ok = editorCommand(editor, commandName, ...args);
   if (!ok && typeof fallbackMarkdown === "string") {
     return insertMarkdown(editor, fallbackMarkdown);
@@ -24,12 +75,22 @@ function runEditorCommand(editor, commandName, args = [], fallbackMarkdown = nul
   return ok;
 }
 
-function canRunEditorCommand(editor, commandName) {
+function canRunEditorCommand(
+  editor: PapyroTurnIntoEditor | null | undefined,
+  commandName: CommandName,
+): boolean {
   return typeof editor?.commands?.[commandName] === "function";
 }
 
-function isCommandActive(editor, activeName, activeAttrs) {
+function isCommandActive(
+  editor: PapyroTurnIntoEditor | null | undefined,
+  activeName: string | undefined,
+  activeAttrs: Readonly<Record<string, unknown>> | undefined,
+): boolean {
   if (typeof editor?.isActive !== "function") {
+    return false;
+  }
+  if (!activeName) {
     return false;
   }
   return activeAttrs ? editor.isActive(activeName, activeAttrs) : editor.isActive(activeName);
@@ -46,7 +107,7 @@ function createTurnIntoCommand({
   activeAttrs,
   active,
   run,
-}) {
+}: TurnIntoCommandInput): PapyroTurnIntoCommand {
   if (!id || typeof run !== "function") {
     throw new TypeError("Tiptap turn-into commands require an id and run function");
   }
@@ -68,7 +129,7 @@ function createTurnIntoCommand({
   });
 }
 
-export const PAPYRO_TIPTAP_TURN_INTO_COMMANDS = Object.freeze([
+export const PAPYRO_TIPTAP_TURN_INTO_COMMANDS: readonly PapyroTurnIntoCommand[] = Object.freeze([
   createTurnIntoCommand({
     id: "paragraph",
     title: "Paragraph",
