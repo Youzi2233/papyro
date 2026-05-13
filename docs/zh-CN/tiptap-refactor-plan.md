@@ -25,6 +25,16 @@
 
 结论：React 已满足，TypeScript 可增量迁移（esbuild 原生支持），无阻塞项。
 
+## 当前专家审计（2026-05-13）
+
+编辑器方向已经回到官方组件体系，但还没有达到官方 Notion-like 模板的体验标准。
+
+- 表格架构：`PapyroOfficialTableNodeLayer` 已经把官方 `TableHandle`、`TableSelectionOverlay`、`TableCellHandleMenu`、`TableExtendRowColumnButtons` 挂在 `EditorContent` 外部，符合官方 table-node 集成契约。剩余问题在宿主 chrome 漂移：Papyro 侧 CSS 对官方 handle 做了过强视觉强化，并通过 `tiptap-table-menu-content` 改写菜单表面，容易让句柄显得厚重、嵌套菜单节奏不一致。
+- 表格 UX 目标：官方 table-node SCSS 负责组件外观，Papyro CSS 只做宿主布局、视口安全、主题 token 桥接和 Markdown 持久化约束。行列 handle 应该是接近 Notion-like 的轻量暗示，而不是常驻的开发者工具条控件。
+- JavaScript 存量：`js/src/` 下剩余 48 个生产 `.js`/`.jsx` 文件是真实技术债，不是过期生成物。它们分三类：必须迁移为 TypeScript 的核心 runtime/registry/Markdown sync；需要行为覆盖后类型化的 Papyro 特有 Markdown/媒体适配；以及应迁移为 TSX 或在官方组件完全接管后删除的旧 React 支撑文件。
+- 格式化入口：顶部 shell 工具栏只保留应用级控制。富文本格式化入口应全部来自官方 Tiptap React 表面：`PapyroToolbarFloating`、slash menu、drag context menu、link popover 和 table-node menus。剩余 `mn-tiptap-format-toolbar` 或旧 block-handle CSS，除非仍有活跃挂载组件依赖，否则都视为待清理债务。
+- 验证标准：每个 UI 收敛步骤都要跑源码测试、构建和 editor Markdown gate；视觉改动在有可用 app target 时优先做 desktop WebView/manual smoke 或截图验证。
+
 ## 架构对齐：官方 Notion-like 模板结构
 
 重构后的目录结构应对齐官方 CLI 安装的布局：
@@ -267,6 +277,8 @@ js/src/
 - [x] 2026-05-13 跟进：从 `markdown.css` 与 `tiptap-chrome-base.css` 移除旧 Papyro 表格 chrome；只在 `tiptap-chrome-table.css` 保留宿主适配，让官方 handle/menu SCSS 负责组件外观
 - [x] 2026-05-13 跟进：将 `tiptap-react/official-table-node-layer.jsx` 迁移为 `official-table-node-layer.tsx`
 - [x] 2026-05-13 跟进：通过 `tiptap-table-menu-content` 将表格下拉菜单的尺寸、层级和菜单项节奏限定在官方 table-node 菜单内，避免全局覆盖 slash/link/drag 菜单
+- [ ] 2026-05-13 审计跟进：弱化 Papyro 表格宿主覆盖，让官方 table-node 的 handle、扩展轨道和单元格操作点更接近 Notion-like 参考体验
+- [ ] 2026-05-13 审计跟进：验证嵌套表格菜单（`ColorMenu`、`TableAlignMenu`）继承稳定的表格菜单表面，同时不破坏 slash/link/drag 菜单样式
 
 ---
 
@@ -295,6 +307,7 @@ js/src/
 
 #### 5.4 当前 TypeScript 债务审计（2026-05-13）
 - [ ] 将 `js/src/` 下剩余 48 个生产 `.js`/`.jsx` 文件迁移为 `.ts`/`.tsx`
+- [ ] 将剩余 JS/JSX 迁移拆成三条线推进：核心运行时（`editor-*`、`markdown-sync-controller`）、Papyro 功能适配（`tiptap-math`、`tiptap-mermaid`、`tiptap-image`、`tiptap-callout` 等）、残留 React 支撑（`tiptap-react/*`、`tiptap-react-island.jsx`）
 - [x] 在表格命令行为已有源码测试和 runtime 测试覆盖后，将 `tiptap-table-command-controller.js` 迁移为 `tiptap-table-command-controller.ts`
 - [x] 在表格命令行为已有源码测试和 runtime 测试覆盖后，将 `tiptap-table.js` 迁移为 `tiptap-table.ts`
 - [x] 将 `tiptap-table-commands.js` 迁移为 `tiptap-table-commands.ts`，让表格命令元数据和菜单模型暴露类型化边界
@@ -347,6 +360,8 @@ js/src/
 - [x] 移除顶部旧 Rust/Dioxus Markdown 插入工具栏
 - [x] 顶栏只保留应用级控制：标签页、侧边栏开关、主题切换、设置、窗口控制和大纲开关
 - [x] 使用官方 Tiptap 浮动工具栏、slash menu、drag context menu 和 table menus 作为格式化入口
+- [ ] 确认没有活跃 React 组件依赖后，删除或隔离旧 `mn-tiptap-format-toolbar`、旧 block handle、旧 block action menu CSS
+- [ ] 对照官方 Notion-like 工具栏组合审查 `PapyroToolbarFloating`，删除仍在重复官方 toolbar 组件的 Papyro 专属命令模型
 - [ ] 每迁移一个组件后，对照官方 Notion-like 模板审计剩余顶层编辑器布局
 - [ ] 当 desktop WebView smoke 能在 CI 中稳定运行后，为 table handles、cell menu、floating toolbar、slash menu 和 drag handle 补视觉回归覆盖
 
