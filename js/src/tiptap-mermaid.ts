@@ -1,4 +1,14 @@
 import { mergeAttributes, Node } from "@tiptap/core";
+import type {
+  CommandProps,
+  MarkdownParseHelpers,
+  MarkdownToken,
+  MarkdownRendererHelpers,
+  NodeViewRenderer,
+  NodeViewRendererProps,
+} from "@tiptap/core";
+import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
+import type { EditorView } from "@tiptap/pm/view";
 
 import { mermaidSourceEditorLabel } from "./tiptap-i18n.ts";
 import { renderMermaidIntoElement } from "./mermaid-renderer.js";
@@ -6,15 +16,34 @@ import { renderMermaidIntoElement } from "./mermaid-renderer.js";
 const MERMAID_TOKEN = "mermaidBlock";
 const MERMAID_EDIT_RENDER_DELAY_MS = 220;
 
-function normalizeMermaidSource(source) {
+type MermaidToken = MarkdownToken & {
+  type: typeof MERMAID_TOKEN;
+  raw: string;
+  text: string;
+};
+
+type MermaidAttributes = {
+  source?: unknown;
+};
+
+declare module "@tiptap/core" {
+  interface Commands<ReturnType> {
+    papyroMermaid: {
+      setMermaidBlock: (attributes?: MermaidAttributes) => ReturnType;
+    };
+  }
+}
+
+function normalizeMermaidSource(source: unknown): string {
   return String(source ?? "").replace(/\r\n?/g, "\n").trim();
 }
 
-function nodeViewLanguage(view) {
-  return view?.dom?.dataset?.language ?? view?.dom?.ownerDocument?.documentElement?.lang ?? "english";
+function nodeViewLanguage(view: EditorView): string {
+  const dom = view.dom as HTMLElement | null;
+  return dom?.dataset?.language ?? dom?.ownerDocument?.documentElement?.lang ?? "english";
 }
 
-export function tokenizeMermaidBlock(source) {
+export function tokenizeMermaidBlock(source: string): MermaidToken | undefined {
   const text = String(source ?? "");
   const match = /^(?: {0,3})(`{3,}|~{3,})[ \t]*mermaid[^\n]*\n([\s\S]*?)\n\1[ \t]*(?:\n|$)/iu.exec(text);
   if (!match) return undefined;
@@ -26,11 +55,16 @@ export function tokenizeMermaidBlock(source) {
   };
 }
 
-function setMermaidSource(view, getPos, node, source) {
+function setMermaidSource(
+  view: EditorView,
+  getPos: NodeViewRendererProps["getPos"],
+  node: ProseMirrorNode,
+  source: unknown,
+): boolean {
   if (typeof getPos !== "function") return false;
 
   const pos = getPos();
-  if (!Number.isSafeInteger(pos)) return false;
+  if (typeof pos !== "number" || !Number.isSafeInteger(pos)) return false;
 
   view.dispatch(
     view.state.tr.setNodeMarkup(pos, undefined, {
@@ -41,11 +75,11 @@ function setMermaidSource(view, getPos, node, source) {
   return true;
 }
 
-function createMermaidNodeView() {
+function createMermaidNodeView(): NodeViewRenderer {
   return ({ editor, getPos, node, view }) => {
     let currentNode = node;
     let editing = false;
-    let renderTimer = 0;
+    let renderTimer: ReturnType<Window["setTimeout"]> | number = 0;
     const documentRef = view.dom.ownerDocument;
     const windowRef = documentRef.defaultView ?? window;
     const root = documentRef.createElement("div");
@@ -67,7 +101,7 @@ function createMermaidNodeView() {
     previewPane.className = "mn-tiptap-mermaid-preview-pane";
 
     const schedulePreview = () => {
-      windowRef.clearTimeout(renderTimer);
+      windowRef.clearTimeout(renderTimer as ReturnType<Window["setTimeout"]>);
       renderTimer = windowRef.setTimeout(() => {
         void renderMermaidIntoElement(previewPane, sourceEditor.value);
       }, MERMAID_EDIT_RENDER_DELAY_MS);
@@ -75,13 +109,13 @@ function createMermaidNodeView() {
     const commit = () => {
       if (!editing) return;
       editing = false;
-      windowRef.clearTimeout(renderTimer);
+      windowRef.clearTimeout(renderTimer as ReturnType<Window["setTimeout"]>);
       setMermaidSource(view, getPos, currentNode, sourceEditor.value);
       render();
     };
     const cancel = () => {
       editing = false;
-      windowRef.clearTimeout(renderTimer);
+      windowRef.clearTimeout(renderTimer as ReturnType<Window["setTimeout"]>);
       render();
     };
     const startEditing = () => {
@@ -130,20 +164,20 @@ function createMermaidNodeView() {
 
     return {
       dom: root,
-      update(updatedNode) {
+      update(updatedNode: ProseMirrorNode) {
         if (updatedNode.type.name !== currentNode.type.name) return false;
         currentNode = updatedNode;
         render();
         return true;
       },
       destroy() {
-        windowRef.clearTimeout(renderTimer);
+        windowRef.clearTimeout(renderTimer as ReturnType<Window["setTimeout"]>);
       },
       ignoreMutation() {
         return true;
       },
-      stopEvent(event) {
-        return editing && root.contains(event.target);
+      stopEvent(event: Event) {
+        return editing && event.target instanceof windowRef.Node && root.contains(event.target);
       },
     };
   };
@@ -207,18 +241,21 @@ export const PapyroMermaidBlock = Node.create({
     tokenize: tokenizeMermaidBlock,
   },
 
-  parseMarkdown: (token, helpers) =>
+  parseMarkdown: (token: MarkdownToken, helpers: MarkdownParseHelpers) =>
     helpers.createNode("mermaidBlock", {
       source: normalizeMermaidSource(token.text),
     }),
 
-  renderMarkdown: (node) => `\`\`\`mermaid\n${normalizeMermaidSource(node.attrs?.source)}\n\`\`\``,
+  renderMarkdown: (
+    node: { attrs?: { source?: unknown } },
+    _helpers: MarkdownRendererHelpers,
+  ) => `\`\`\`mermaid\n${normalizeMermaidSource(node.attrs?.source)}\n\`\`\``,
 
   addCommands() {
     return {
       setMermaidBlock:
-        (attributes = {}) =>
-        ({ commands }) =>
+        (attributes: MermaidAttributes = {}) =>
+        ({ commands }: CommandProps) =>
           commands.insertContent({
             type: this.name,
             attrs: { source: normalizeMermaidSource(attributes.source) },

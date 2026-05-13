@@ -10,7 +10,7 @@ import { createPapyroCodeBlockExtensions } from "./tiptap-code-block.js";
 import { UiState } from "./components/tiptap-extension/ui-state-extension.ts";
 import { createPapyroImageExtensions } from "./tiptap-image.js";
 import { createPapyroMathExtensions } from "./tiptap-math.js";
-import { createPapyroMermaidExtensions } from "./tiptap-mermaid.js";
+import { createPapyroMermaidExtensions } from "./tiptap-mermaid.ts";
 import { createPapyroTableExtensions } from "./tiptap-table.ts";
 import { createPapyroTaskListExtensions } from "./tiptap-task-list.ts";
 import { createPapyroTextStyleExtensions } from "./tiptap-text-style.ts";

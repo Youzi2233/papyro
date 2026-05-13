@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import {
   createPapyroMermaidExtensions,
   tokenizeMermaidBlock,
-} from "../src/tiptap-mermaid.js";
+} from "../src/tiptap-mermaid.ts";
 
 test("Papyro Mermaid extension exposes a single block node", () => {
   const extensions = createPapyroMermaidExtensions();

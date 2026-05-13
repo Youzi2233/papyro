@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 
 import { createPapyroImageExtensions } from "../src/tiptap-image.js";
 import { createPapyroMathExtensions } from "../src/tiptap-math.js";
-import { createPapyroMermaidExtensions } from "../src/tiptap-mermaid.js";
+import { createPapyroMermaidExtensions } from "../src/tiptap-mermaid.ts";
 
 class FakeClassList {
   constructor() {
