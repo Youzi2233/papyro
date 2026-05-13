@@ -11,7 +11,7 @@ const officialAxisMenuSource = readFileSync(
   "utf8",
 );
 const officialLayerSource = readFileSync(
-  new URL("../src/tiptap-react/official-table-node-layer.jsx", import.meta.url),
+  new URL("../src/tiptap-react/official-table-node-layer.tsx", import.meta.url),
   "utf8",
 );
 const officialTableHandleIndexSource = readFileSync(
@@ -47,6 +47,8 @@ test("official paid table-node cell menu remains the visible runtime source", ()
   assert.match(officialCellMenuSource, /useTableClearRowColumnContent/u);
   assert.match(officialCellMenuSource, /ColorMenu/u);
   assert.match(officialCellMenuSource, /TableAlignMenu/u);
+  assert.match(officialCellMenuSource, /className="tiptap-table-menu-content"/u);
+  assert.match(officialCellMenuSource, /contentClassName="tiptap-table-menu-content"/u);
   assert.doesNotMatch(officialCellMenuSource, /PapyroTableCommandMenuContent/u);
   assert.doesNotMatch(officialCellMenuSource, /createTableCellHandleCommandMenuModel/u);
   assert.doesNotMatch(officialCellMenuSource, /from "@\/components\/tiptap-node\/table-cell-handle-menu\.jsx"/u);
@@ -58,6 +60,8 @@ test("official paid table-node row and column menus remain the visible runtime s
   assert.match(officialAxisMenuSource, /useTableClearRowColumnContent/u);
   assert.match(officialAxisMenuSource, /ColorMenu/u);
   assert.match(officialAxisMenuSource, /TableAlignMenu/u);
+  assert.match(officialAxisMenuSource, /className="tiptap-table-menu-content"/u);
+  assert.match(officialAxisMenuSource, /contentClassName="tiptap-table-menu-content"/u);
   assert.doesNotMatch(officialAxisMenuSource, /PapyroTableCommandMenuContent/u);
   assert.doesNotMatch(officialAxisMenuSource, /createPapyroTableCommandMenuModel/u);
   assert.doesNotMatch(officialAxisMenuSource, /from "@\/components\/tiptap-node\/table-handle-menu\.jsx"/u);

@@ -1,4 +1,6 @@
-import React, { useCallback, useState } from "react";
+import type { Editor } from "@tiptap/core";
+import type { MouseEvent } from "react";
+import { useCallback, useState } from "react";
 
 import { TableExtendRowColumnButtons } from "../components/tiptap-node/table-node/ui/table-extend-row-column-button";
 import { TableHandle } from "../components/tiptap-node/table-node/ui/table-handle/table-handle";
@@ -12,11 +14,36 @@ import "../components/tiptap-node/table-node/ui/table-handle-menu/table-handle-m
 import "../styles/_variables.scss";
 import "../styles/_keyframe-animations.scss";
 
-export function PapyroOfficialTableNodeLayer({ editor, entry = null }) {
+type ResizeHandle = "tl" | "tr" | "bl" | "br";
+
+type RuntimeEntry = {
+  preferences?: {
+    language?: string;
+  };
+  dom?: HTMLElement | null;
+};
+
+type TableCellMenuProps = {
+  editor: Editor;
+  onOpenChange?: (open: boolean) => void;
+  onResizeStart?: (
+    handle: ResizeHandle,
+  ) => ((event: MouseEvent<HTMLElement>) => void) | undefined;
+};
+
+export type PapyroOfficialTableNodeLayerProps = {
+  editor?: Editor | null;
+  entry?: RuntimeEntry | null;
+};
+
+export function PapyroOfficialTableNodeLayer({
+  editor,
+  entry = null,
+}: PapyroOfficialTableNodeLayerProps) {
   const [cellMenuOpen, setCellMenuOpen] = useState(false);
   const language = entry?.preferences?.language ?? entry?.dom?.dataset?.language ?? "english";
 
-  const renderCellMenu = useCallback((props) => (
+  const renderCellMenu = useCallback((props: TableCellMenuProps) => (
     <TableCellHandleMenu
       editor={props.editor}
       onOpenChange={props.onOpenChange}

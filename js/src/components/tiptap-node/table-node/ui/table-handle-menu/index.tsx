@@ -525,8 +525,12 @@ const TableActionGroup = () => {
       {/* Actions */}
       <>
         <MenuGroup>
-          <ColorMenu />
-          <TableAlignMenu index={index} orientation={orientation} />
+          <ColorMenu contentClassName="tiptap-table-menu-content" />
+          <TableAlignMenu
+            index={index}
+            orientation={orientation}
+            contentClassName="tiptap-table-menu-content"
+          />
           {clearContentAction.isVisible && (
             <TableActionItem
               icon={clearContentAction.Icon}
@@ -567,7 +571,13 @@ const TableActionMenu = () => {
   const { resetMenu } = useTableHandleMenu()
 
   return (
-    <MenuContent autoFocusOnShow autoFocusOnHide={false} modal onClose={resetMenu}>
+    <MenuContent
+      className="tiptap-table-menu-content"
+      autoFocusOnShow
+      autoFocusOnHide={false}
+      modal
+      onClose={resetMenu}
+    >
       <Combobox style={SR_ONLY} />
       <ComboboxList style={{ minWidth: "15rem" }}>
         <TableActionGroup />

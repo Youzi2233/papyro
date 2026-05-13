@@ -1689,12 +1689,11 @@ button.mn-sidebar-workspace-main:hover {
     position: relative;
     z-index: 20;
     flex: 0 0 auto;
-    display: grid;
-    grid-template-rows: 44px 40px;
+    display: block;
     min-width: 0;
-    background: linear-gradient(to bottom, var(--mn-bg) 0 44px, var(--mn-editor-bg) 44px);
+    background: var(--mn-bg);
     border-bottom: 0;
-    box-shadow: inset 0 -40px 0 var(--mn-editor-bg);
+    box-shadow: none;
 }
 
 .mn-editor-chrome {
@@ -1712,6 +1711,12 @@ button.mn-sidebar-workspace-main:hover {
     overflow: hidden;
     -webkit-user-select: none;
     user-select: none;
+}
+
+.mn-editor-document-tools {
+    margin-left: -16px;
+    padding-left: 8px;
+    border-left: var(--mn-border-subtle);
 }
 
 .mn-editor-titlebar {

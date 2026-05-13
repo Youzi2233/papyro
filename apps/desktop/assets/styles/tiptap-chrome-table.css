@@ -1,31 +1,36 @@
 /* Papyro table host bridge for the official Tiptap table-node UI.
-   Component-owned selectors live in the official SCSS imported by editor.js. */
+   Component-owned selectors stay in the official SCSS imported by editor.js. */
 
-.mn-tiptap-editor .tableWrapper {
-    position: relative;
-    overflow-x: auto;
-    margin: 0 0 var(--mn-markdown-block-gap);
-    padding: 0;
-    border-spacing: 0;
-    line-height: 0;
+.mn-tiptap-editor [data-content-type="table"] {
+    margin-block: var(--tt-table-margin-block);
 }
 
-.mn-tiptap-editor table,
-.mn-tiptap-editor .mn-tiptap-table {
+.mn-tiptap-editor [data-content-type="table"] .tableWrapper,
+.mn-tiptap-editor .tableWrapper {
+    position: relative;
+    width: 100%;
+    margin: 0;
+    padding-block: var(--tt-table-pad-block-start) var(--tt-table-pad-block-end);
+    padding-inline: var(--tt-table-pad-inline-start) var(--tt-table-pad-inline-end);
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+.mn-tiptap-editor table {
     width: auto !important;
+    margin: 0;
     border-collapse: collapse;
     border-spacing: 0 !important;
     table-layout: fixed;
-    background-clip: border-box;
+    word-break: break-word;
     empty-cells: show;
     isolation: isolate;
-    line-height: normal;
 }
 
-.mn-tiptap-editor :where(th, td, .mn-tiptap-table-cell, .mn-tiptap-table-header) {
-    position: relative;
+.mn-tiptap-editor :where(th, td) {
     box-sizing: border-box;
-    min-width: 96px;
+    position: relative;
+    min-width: var(--default-cell-min-width, 96px);
     padding: var(--tt-table-cell-padding);
     border: 1px solid var(--tt-table-border-color);
     background-clip: border-box;
@@ -33,56 +38,149 @@
     vertical-align: top;
 }
 
-.mn-tiptap-editor .table-controls,
-.mn-tiptap-editor .table-selection-overlay-container {
-    position: absolute;
-    inset: 0;
-    z-index: 8;
-    pointer-events: none;
+.mn-tiptap-editor table th {
+    background-color: var(--mn-markdown-table-head-bg);
+    font-weight: var(--mn-weight-bold);
+    text-align: left;
 }
 
-.tiptap-table-handle-menu,
-.tiptap-table-extend-row-column-button {
-    pointer-events: auto;
+.mn-tiptap-editor :where(td, th) > * {
+    position: relative;
+    min-height: 1.45em;
+    z-index: 1;
 }
 
-.tiptap-menu-content,
-.tiptap-dropdown-menu-content,
-.tiptap-dropdown-menu-sub-content {
-    z-index: 200;
+.mn-tiptap-editor :where(td, th) :where(p, ul, ol, blockquote, pre) {
+    cursor: text;
 }
 
-.mn-tiptap-table-cell:hover:not(.mn-tiptap-table-cell-selected),
-.mn-tiptap-table-header:hover:not(.mn-tiptap-table-cell-selected) {
-    box-shadow: none;
-}
-
-.mn-tiptap-table-cell.selectedCell:not(.mn-tiptap-table-cell-selected),
-.mn-tiptap-table-header.selectedCell:not(.mn-tiptap-table-cell-selected),
-.mn-tiptap-editor :where(td.selectedCell, th.selectedCell):not(.mn-tiptap-table-cell-selected) {
+.mn-tiptap-editor :where(td.selectedCell, th.selectedCell) {
     background-image: none;
     outline: 0;
     box-shadow: none;
 }
 
-.mn-tiptap-table-cell.mn-tiptap-table-cell-selected > .column-resize-handle,
-.mn-tiptap-table-header.mn-tiptap-table-cell-selected > .column-resize-handle,
-.mn-tiptap-table-cell.mn-tiptap-table-cell-active > .column-resize-handle,
-.mn-tiptap-table-header.mn-tiptap-table-cell-active > .column-resize-handle {
-    right: -8px;
-    width: 16px;
+.mn-tiptap-editor :where(td.selectedCell, th.selectedCell)::after {
+    z-index: 2;
+    background: var(--tt-table-selected-bg);
+    box-shadow: inset 0 0 0 1px var(--tt-table-selected-stroke);
+}
+
+.mn-tiptap-editor .column-resize-handle {
+    right: -2px;
+    z-index: 20;
+    width: 4px;
+    background: var(--tt-table-column-resize-handle-bg);
     opacity: 0;
+    pointer-events: auto;
+    transition: opacity var(--mn-transition-fast), background-color var(--mn-transition-fast);
 }
 
-.mn-tiptap-table-cell.mn-tiptap-table-cell-selected > .column-resize-handle::before,
-.mn-tiptap-table-header.mn-tiptap-table-cell-selected > .column-resize-handle::before,
-.mn-tiptap-table-cell.mn-tiptap-table-cell-active > .column-resize-handle::before,
-.mn-tiptap-table-header.mn-tiptap-table-cell-active > .column-resize-handle::before {
-    width: 2px;
+.mn-tiptap-editor :where(td:hover, th:hover) > .column-resize-handle,
+.mn-tiptap-editor.resize-cursor .column-resize-handle {
+    opacity: .72;
 }
 
-.mn-tiptap-table-cell:hover > .column-resize-handle::before,
-.mn-tiptap-table-header:hover > .column-resize-handle::before,
-.mn-tiptap-editor.resize-cursor .column-resize-handle::before {
-    opacity: .64;
+.mn-tiptap-editor.resize-cursor {
+    cursor: col-resize;
+}
+
+.mn-tiptap-editor .table-controls,
+.mn-tiptap-editor .table-selection-overlay-container {
+    position: absolute;
+    inset: 0;
+    z-index: 30;
+    pointer-events: none;
+}
+
+.mn-tiptap-editor .table-selection-overlay-container {
+    overflow: visible;
+}
+
+.tiptap-table-selection-overlay {
+    position: relative;
+    overflow: visible;
+}
+
+.tiptap-table-handle-menu,
+.tiptap-table-extend-row-column-button,
+.expandable-menu-button {
+    pointer-events: auto;
+}
+
+.tiptap-table-handle-menu,
+.tiptap-table-extend-row-column-button {
+    border: 1px solid color-mix(in srgb, var(--mn-border) 72%, transparent);
+    box-shadow: var(--mn-shadow-xs);
+}
+
+.tiptap-table-handle-menu:hover,
+.tiptap-table-extend-row-column-button:hover {
+    background-color: color-mix(in srgb, var(--mn-accent) 8%, var(--mn-surface-raised));
+    border-color: color-mix(in srgb, var(--mn-accent) 28%, var(--mn-border));
+}
+
+.tiptap-table-handle-menu.menu-opened,
+.tiptap-table-handle-menu.is-dragging {
+    background-color: var(--tt-brand-color-500);
+    border-color: var(--tt-brand-color-500);
+    box-shadow:
+        0 0 0 2px color-mix(in srgb, var(--mn-accent) 12%, transparent),
+        var(--mn-shadow-sm);
+}
+
+.tiptap-table-menu-content {
+    z-index: 260;
+    min-width: 15rem;
+    height: auto;
+    max-height: min(28rem, var(--popover-available-height, 70vh));
+    padding: 0;
+    border-radius: calc(var(--tt-radius-lg) + 6px);
+    outline: none;
+    pointer-events: auto;
+}
+
+.tiptap-table-menu-content .tiptap-combobox-list {
+    width: max-content;
+    min-width: 15rem;
+    max-width: min(18rem, calc(100vw - 32px));
+    height: auto;
+    max-height: min(28rem, var(--popover-available-height, 70vh));
+    margin-block: 0;
+    padding: 6px;
+    border-color: color-mix(in srgb, var(--mn-border) 80%, transparent);
+    border-radius: calc(var(--tt-radius-lg) + 6px);
+    box-shadow: var(--mn-shadow-lg);
+}
+
+.tiptap-table-menu-content .tiptap-menu-group {
+    padding: 2px 0;
+}
+
+.tiptap-table-menu-content .tiptap-menu-item {
+    min-height: 32px;
+}
+
+.tiptap-table-menu-content .tiptap-button {
+    width: 100%;
+    min-width: 0;
+    height: 32px;
+    justify-content: flex-start;
+    padding: 0 8px;
+    gap: 8px;
+    border-radius: var(--mn-radius-sm);
+    white-space: nowrap;
+}
+
+.tiptap-table-menu-content .tiptap-button-text {
+    min-width: 0;
+    padding: 0;
+    overflow: hidden;
+    line-height: 1.35;
+    text-overflow: ellipsis;
+}
+
+.tiptap-table-menu-content :where(.tiptap-separator, [data-slot="tiptap-separator"]) {
+    margin: 4px 2px;
+    background: color-mix(in srgb, var(--mn-border) 82%, transparent);
 }

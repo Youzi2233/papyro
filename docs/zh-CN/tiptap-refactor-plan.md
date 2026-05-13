@@ -16,7 +16,7 @@
 
 | 维度 | 当前状态 | 目标状态 |
 |------|---------|---------|
-| 语言 | JavaScript (.js/.jsx) 235 个文件 | TypeScript (.ts/.tsx) |
+| 语言 | 混合 TypeScript，且截至 2026-05-13 `js/src/` 下仍有 51 个生产 `.js`/`.jsx` 文件 | TypeScript (.ts/.tsx) |
 | 构建 | esbuild (原生支持 TS，无需改动) | esbuild + tsconfig |
 | UI 框架 | React 18.3 (已满足) | React 18.3 (不变) |
 | Tiptap | 3.23.1 (已对齐) | 3.23.1+ (保持同版本) |
@@ -264,6 +264,9 @@ js/src/
 - [x] 移除 `tiptap-table-command-controller.js` 中的冗余桥接逻辑
 - [x] 移除 `tiptap-table.js` 中被官方组件替代的代码
 - [x] 确保表格 Markdown 序列化正确（GFM table 格式）
+- [x] 2026-05-13 跟进：从 `markdown.css` 与 `tiptap-chrome-base.css` 移除旧 Papyro 表格 chrome；只在 `tiptap-chrome-table.css` 保留宿主适配，让官方 handle/menu SCSS 负责组件外观
+- [x] 2026-05-13 跟进：将 `tiptap-react/official-table-node-layer.jsx` 迁移为 `official-table-node-layer.tsx`
+- [x] 2026-05-13 跟进：通过 `tiptap-table-menu-content` 将表格下拉菜单的尺寸、层级和菜单项节奏限定在官方 table-node 菜单内，避免全局覆盖 slash/link/drag 菜单
 
 ---
 
@@ -289,6 +292,14 @@ js/src/
 #### 5.3 工具和测试
 - [x] `lib/` 下的工具函数
 - [x] 测试文件迁移（保持 `node --test` 运行器）
+
+#### 5.4 当前 TypeScript 债务审计（2026-05-13）
+- [ ] 将 `js/src/` 下剩余 51 个生产 `.js`/`.jsx` 文件迁移为 `.ts`/`.tsx`
+- [ ] 在表格命令行为已有源码测试和 runtime 测试覆盖后，迁移 `tiptap-table.js` 与 `tiptap-table-command-controller.js`
+- [ ] 迁移 `editor-core.js`、`markdown-sync-controller.js`、`editor-host-runtime.js`、`editor-registry.js`、`editor-runtime-bootstrap.js`、`editor-runtime-selector.js`
+- [ ] 迁移 `js/src/tiptap-react/` 下剩余 React 支撑文件，包括 code-block node view、primitive wrappers、hooks 和 utility modules
+- [ ] 在现有 TS 模板债务完成类型化或隔离后，新增可通过的 `npm --prefix js run typecheck` 闸门
+- [ ] 启用 typecheck 闸门前解决已知阻塞：缺失的官方 image extension 依赖/类型、`allowImportingTsExtensions` import path、table-handle 工具里的隐式 `any`、以及 runtime context 的类型边界
 
 ---
 
@@ -324,6 +335,18 @@ js/src/
 - [x] 为每个官方组件接入添加 Markdown 序列化往返测试
 - [x] 验证 `scripts/check-editor-markdown-gate.js` 通过
 - [x] 在桌面 WebView 中端到端验证所有交互
+
+---
+
+### 阶段 9：编辑器 Chrome 与 UX 收敛
+
+编辑区域优先对齐官方 Notion-like 模板体验；Papyro shell 控制保留在富文本格式化流程之外。
+
+- [x] 移除顶部旧 Rust/Dioxus Markdown 插入工具栏
+- [x] 顶栏只保留应用级控制：标签页、侧边栏开关、主题切换、设置、窗口控制和大纲开关
+- [x] 使用官方 Tiptap 浮动工具栏、slash menu、drag context menu 和 table menus 作为格式化入口
+- [ ] 每迁移一个组件后，对照官方 Notion-like 模板审计剩余顶层编辑器布局
+- [ ] 当 desktop WebView smoke 能在 CI 中稳定运行后，为 table handles、cell menu、floating toolbar、slash menu 和 drag handle 补视觉回归覆盖
 
 ---
 

@@ -43,7 +43,7 @@ const pointerActivationHookSource = readFileSync(
   "utf8",
 );
 const officialTableNodeLayerSource = readFileSync(
-  new URL("../src/tiptap-react/official-table-node-layer.jsx", import.meta.url),
+  new URL("../src/tiptap-react/official-table-node-layer.tsx", import.meta.url),
   "utf8",
 );
 const floatingUtilsSource = readFileSync(
@@ -86,7 +86,7 @@ test("React island slots register official editor overlay layers by default", ()
   );
   assert.match(
     slotsSource,
-    /import\s+\{\s*PapyroOfficialTableNodeLayer\s*\}\s+from\s+"\.\/official-table-node-layer\.jsx";/u,
+    /import\s+\{\s*PapyroOfficialTableNodeLayer\s*\}\s+from\s+"\.\/official-table-node-layer";/u,
   );
   assert.match(slotsSource, /function PapyroOverlayLayer/u);
   assert.match(slotsSource, /<PapyroDragContextMenu \/>/u);

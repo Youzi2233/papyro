@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const officialLayerSource = readFileSync(
-  new URL("../src/tiptap-react/official-table-node-layer.jsx", import.meta.url),
+  new URL("../src/tiptap-react/official-table-node-layer.tsx", import.meta.url),
   "utf8",
 );
 const tableHandleSource = readFileSync(

@@ -123,7 +123,12 @@ const TableActionMenu = ({
   const hasMergeOrSplit = mergeAction.isAvailable || splitAction.isAvailable
 
   return (
-    <MenuContent autoFocusOnShow modal onClose={onClose}>
+    <MenuContent
+      className="tiptap-table-menu-content"
+      autoFocusOnShow
+      modal
+      onClose={onClose}
+    >
       <Combobox style={SR_ONLY} />
       <ComboboxList style={{ minWidth: "15rem" }}>
         {hasMergeOrSplit && (
@@ -139,8 +144,8 @@ const TableActionMenu = ({
         )}
 
         <MenuGroup>
-          <ColorMenu />
-          <TableAlignMenu />
+          <ColorMenu contentClassName="tiptap-table-menu-content" />
+          <TableAlignMenu contentClassName="tiptap-table-menu-content" />
           {clearAction.isAvailable && <TableActionItem action={clearAction} />}
         </MenuGroup>
       </ComboboxList>

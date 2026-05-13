@@ -16,7 +16,7 @@ This document is the complete execution plan for refactoring Papyro's editor fro
 
 | Dimension | Current State | Target State |
 |-----------|--------------|--------------|
-| Language | JavaScript (.js/.jsx) 235 files | TypeScript (.ts/.tsx) |
+| Language | Mixed TypeScript with 51 production `.js`/`.jsx` files still under `js/src/` as of 2026-05-13 | TypeScript (.ts/.tsx) |
 | Build | esbuild (native TS support, no changes needed) | esbuild + tsconfig |
 | UI Framework | React 18.3 (already satisfied) | React 18.3 (unchanged) |
 | Tiptap | 3.23.1 (already aligned) | 3.23.1+ (keep same version) |
@@ -264,6 +264,9 @@ The table-node is partially integrated, needs completion:
 - [x] Remove redundant bridging logic in `tiptap-table-command-controller.js`
 - [x] Remove code in `tiptap-table.js` replaced by official components
 - [x] Ensure table Markdown serialization is correct (GFM table format)
+- [x] 2026-05-13 follow-up: remove legacy Papyro table chrome from `markdown.css` and `tiptap-chrome-base.css`; keep table host styling in `tiptap-chrome-table.css` so official handle/menu SCSS owns the component look
+- [x] 2026-05-13 follow-up: migrate `tiptap-react/official-table-node-layer.jsx` to `official-table-node-layer.tsx`
+- [x] 2026-05-13 follow-up: scope table dropdown sizing, z-index, and menu-item rhythm to the official table-node menus via `tiptap-table-menu-content`, avoiding global overrides of slash/link/drag menus
 
 ---
 
@@ -289,6 +292,14 @@ Migrate by module priority, one module at a time:
 #### 5.3 Utilities and Tests
 - [x] Utility functions under `lib/`
 - [x] Test file migration (keep `node --test` runner)
+
+#### 5.4 Current TypeScript Debt Audit (2026-05-13)
+- [ ] Migrate the remaining 51 production `.js`/`.jsx` files under `js/src/` to `.ts`/`.tsx`
+- [ ] Convert `tiptap-table.js` and `tiptap-table-command-controller.js` after table command behavior is covered by source and runtime tests
+- [ ] Convert `editor-core.js`, `markdown-sync-controller.js`, `editor-host-runtime.js`, `editor-registry.js`, `editor-runtime-bootstrap.js`, and `editor-runtime-selector.js`
+- [ ] Convert remaining React support files under `js/src/tiptap-react/`, including code-block node view, primitive wrappers, hooks, and utility modules
+- [ ] Add a passing `npm --prefix js run typecheck` gate once current TS template debt is typed or intentionally isolated
+- [ ] Resolve known typecheck blockers before enabling the gate: missing official image extension dependency/types, `allowImportingTsExtensions` import paths, implicit `any` in table-handle utilities, and typed runtime context boundaries
 
 ---
 
@@ -324,6 +335,18 @@ These features are unique to Papyro, not in the official template, and need to b
 - [x] Add Markdown serialization round-trip tests for each official component
 - [x] Verify `scripts/check-editor-markdown-gate.js` passes
 - [x] End-to-end verification of all interactions in desktop WebView
+
+---
+
+### Phase 9: Editor Chrome and UX Convergence
+
+The editor surface must behave like the official Notion-like template first, with Papyro shell controls kept outside the rich-text formatting workflow.
+
+- [x] Remove the legacy Rust/Dioxus Markdown insertion toolbar from the top chrome
+- [x] Keep app-level controls in the titlebar: tabs, sidebar toggle, theme switch, settings, window controls, and outline toggle
+- [x] Use official Tiptap floating toolbar, slash menu, drag context menu, and table menus as the formatting entry points
+- [ ] Audit remaining top-level editor layout against the official Notion-like template after each migrated component
+- [ ] Add visual regression coverage for table handles, cell menu, floating toolbar, slash menu, and drag handle once the desktop WebView smoke can run in CI
 
 ---
 

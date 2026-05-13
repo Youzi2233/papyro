@@ -146,61 +146,6 @@
     box-shadow: var(--mn-shadow-xs), 0 0 0 1px color-mix(in srgb, var(--mn-border) 70%, transparent);
 }
 
-.mn-markdown-toolbar {
-    position: relative;
-    z-index: 1;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    min-width: 0;
-    height: 40px;
-    padding: 0 12px;
-    border-top: 1px solid var(--mn-editor-bg);
-    background: var(--mn-editor-bg);
-}
-
-.mn-markdown-tools-left,
-.mn-markdown-tools-right {
-    display: flex;
-    align-items: center;
-    gap: 3px;
-    min-width: 0;
-}
-
-.mn-markdown-tools-left {
-    overflow-x: auto;
-    scrollbar-width: none;
-}
-
-.mn-markdown-tools-left::-webkit-scrollbar { display: none; }
-
-.mn-markdown-tool {
-    display: inline-grid;
-    place-items: center;
-    width: 32px;
-    height: 32px;
-    flex: 0 0 32px;
-    border-radius: var(--mn-radius-sm);
-    color: var(--mn-ink-3);
-    transition: var(--mn-transition-theme);
-}
-
-.mn-markdown-tool:hover {
-    background: var(--mn-surface-sunken);
-    color: var(--mn-ink);
-}
-
-.mn-markdown-tool:disabled {
-    opacity: .38;
-    cursor: not-allowed;
-}
-
-.mn-markdown-tool:focus-visible {
-    outline: 0;
-    box-shadow: var(--mn-ring-focus-sm);
-}
-
 .mn-window-controls {
     display: flex;
     align-items: center;

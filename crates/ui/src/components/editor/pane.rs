@@ -368,7 +368,6 @@ pub fn EditorPane(
             EditorChrome {
                 tab_items: pane.tab_items.clone(),
                 has_active_tab: pane.has_active_tab,
-                view_mode: view_mode.clone(),
                 theme,
                 outline_visible,
                 sidebar_collapsed,
@@ -466,7 +465,6 @@ pub fn EditorPane(
 fn EditorChrome(
     tab_items: Vec<EditorTabItemViewModel>,
     has_active_tab: bool,
-    view_mode: ViewMode,
     theme: Theme,
     outline_visible: bool,
     sidebar_collapsed: bool,
@@ -486,12 +484,6 @@ fn EditorChrome(
     } else {
         i18n.text("Show outline", "显示大纲")
     };
-    let active_tab_id = tab_items
-        .iter()
-        .find(|item| item.is_active)
-        .map(|item| item.id.clone());
-    let can_insert = has_active_tab && view_mode.is_editable();
-
     rsx! {
         div { class: "mn-editor-chrome-shell",
             div {
@@ -564,83 +556,7 @@ fn EditorChrome(
                         WindowControls {}
                     }
                 }
-            }
-            div { class: "mn-markdown-toolbar",
-                div { class: "mn-markdown-tools-left",
-                    MarkdownToolButton {
-                        label: i18n.text("Heading", "标题").to_string(),
-                        icon_class: "mn-tool-icon heading".to_string(),
-                        disabled: !can_insert,
-                        commands: commands.clone(),
-                        active_tab_id: active_tab_id.clone(),
-                        template: TEMPLATE_HEADING,
-                    }
-                    MarkdownToolButton {
-                        label: i18n.text("Bold", "加粗").to_string(),
-                        icon_class: "mn-tool-icon bold".to_string(),
-                        disabled: !can_insert,
-                        commands: commands.clone(),
-                        active_tab_id: active_tab_id.clone(),
-                        template: TEMPLATE_BOLD,
-                    }
-                    MarkdownToolButton {
-                        label: i18n.text("Italic", "斜体").to_string(),
-                        icon_class: "mn-tool-icon italic".to_string(),
-                        disabled: !can_insert,
-                        commands: commands.clone(),
-                        active_tab_id: active_tab_id.clone(),
-                        template: TEMPLATE_ITALIC,
-                    }
-                    MarkdownToolButton {
-                        label: i18n.text("Quote", "引用").to_string(),
-                        icon_class: "mn-tool-icon quote".to_string(),
-                        disabled: !can_insert,
-                        commands: commands.clone(),
-                        active_tab_id: active_tab_id.clone(),
-                        template: TEMPLATE_QUOTE,
-                    }
-                    MarkdownToolButton {
-                        label: i18n.text("Code", "代码").to_string(),
-                        icon_class: "mn-tool-icon code".to_string(),
-                        disabled: !can_insert,
-                        commands: commands.clone(),
-                        active_tab_id: active_tab_id.clone(),
-                        template: TEMPLATE_CODE,
-                    }
-                    MarkdownToolButton {
-                        label: i18n.text("Link", "链接").to_string(),
-                        icon_class: "mn-tool-icon link".to_string(),
-                        disabled: !can_insert,
-                        commands: commands.clone(),
-                        active_tab_id: active_tab_id.clone(),
-                        template: TEMPLATE_LINK,
-                    }
-                    MarkdownToolButton {
-                        label: i18n.text("List", "列表").to_string(),
-                        icon_class: "mn-tool-icon list".to_string(),
-                        disabled: !can_insert,
-                        commands: commands.clone(),
-                        active_tab_id: active_tab_id.clone(),
-                        template: TEMPLATE_LIST,
-                    }
-                    MarkdownToolButton {
-                        label: i18n.text("Task list", "任务列表").to_string(),
-                        icon_class: "mn-tool-icon task".to_string(),
-                        disabled: !can_insert,
-                        commands: commands.clone(),
-                        active_tab_id: active_tab_id.clone(),
-                        template: TEMPLATE_TASK,
-                    }
-                    MarkdownToolButton {
-                        label: i18n.text("Table", "表格").to_string(),
-                        icon_class: "mn-tool-icon table".to_string(),
-                        disabled: !can_insert,
-                        commands: commands.clone(),
-                        active_tab_id: active_tab_id.clone(),
-                        template: TEMPLATE_TABLE,
-                    }
-                }
-                div { class: "mn-markdown-tools-right",
+                ToolbarZone { kind: ToolbarZoneKind::Fixed, class_name: "mn-editor-document-tools".to_string(),
                     EditorToolButton {
                         label: outline_label.to_string(),
                         class_name: "mn-editor-outline-toggle".to_string(),
@@ -711,36 +627,6 @@ fn ThemeSwitchOption(
 }
 
 #[component]
-fn MarkdownToolButton(
-    label: String,
-    icon_class: String,
-    disabled: bool,
-    commands: AppCommands,
-    active_tab_id: Option<String>,
-    template: &'static str,
-) -> Element {
-    rsx! {
-        RawButton {
-            class_name: "mn-markdown-tool".to_string(),
-            label: Some(label.clone()),
-            title: Some(label),
-            disabled,
-            pressed: None::<bool>,
-            checked: None::<bool>,
-            role: None::<String>,
-            stop_events: false,
-            on_click: move |_| {
-                if let Some(tab_id) = active_tab_id.clone() {
-                    insert_markdown_template(commands.clone(), tab_id, template);
-                }
-            },
-            on_context_menu: None::<EventHandler<MouseEvent>>,
-            span { class: "{icon_class}", "aria-hidden": "true" }
-        }
-    }
-}
-
-#[component]
 fn WindowControls() -> Element {
     let i18n = use_i18n();
 
@@ -790,39 +676,6 @@ fn WindowControls() -> Element {
             }
         }
     }
-}
-
-fn insert_markdown_template(commands: AppCommands, tab_id: String, template: &str) {
-    let (markdown, cursor_offset) = markdown_insert_template(template);
-    commands
-        .insert_markdown
-        .call(crate::commands::InsertMarkdownRequest {
-            tab_id,
-            markdown,
-            cursor_offset,
-        });
-}
-
-const INSERT_CURSOR_MARKER: &str = "{|cursor|}";
-const TEMPLATE_HEADING: &str = "## {|cursor|}";
-const TEMPLATE_BOLD: &str = "**{|cursor|}**";
-const TEMPLATE_ITALIC: &str = "*{|cursor|}*";
-const TEMPLATE_QUOTE: &str = "\n> {|cursor|}";
-const TEMPLATE_CODE: &str = "`{|cursor|}`";
-const TEMPLATE_LINK: &str = "[{|cursor|}](https://)";
-const TEMPLATE_LIST: &str = "\n- {|cursor|}";
-const TEMPLATE_TASK: &str = "\n- [ ] {|cursor|}";
-const TEMPLATE_TABLE: &str = "\n| Column | Column |\n| --- | --- |\n| {|cursor|} |  |\n";
-
-fn markdown_insert_template(template: &str) -> (String, Option<usize>) {
-    let Some(cursor_offset) = template.find(INSERT_CURSOR_MARKER) else {
-        return (template.to_string(), None);
-    };
-
-    let mut markdown = String::with_capacity(template.len() - INSERT_CURSOR_MARKER.len());
-    markdown.push_str(&template[..cursor_offset]);
-    markdown.push_str(&template[cursor_offset + INSERT_CURSOR_MARKER.len()..]);
-    (markdown, Some(cursor_offset))
 }
 
 #[component]
@@ -1096,18 +949,6 @@ mod tests {
 
         assert!(editor_style(&typography).contains("--mn-editor-font-size: 18px"));
         assert!(!editor_style(&typography).contains("sidebar"));
-    }
-
-    #[test]
-    fn editor_chrome_markdown_template_tracks_cursor_offset() {
-        assert_eq!(
-            markdown_insert_template("**{|cursor|}**"),
-            ("****".to_string(), Some(2))
-        );
-        assert_eq!(
-            markdown_insert_template("plain"),
-            ("plain".to_string(), None)
-        );
     }
 
     #[test]
