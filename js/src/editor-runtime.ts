@@ -13,7 +13,7 @@ import { createTiptapHistoryCommandController } from "./tiptap-history-commands.
 import { createTiptapModeController } from "./tiptap-mode-controller.ts";
 import { createTiptapModeSnapshotController } from "./tiptap-mode-snapshots.ts";
 import { createTiptapPasteController } from "./tiptap-paste-controller.js";
-import { createTiptapPreferencesController } from "./tiptap-preferences-controller.js";
+import { createTiptapPreferencesController } from "./tiptap-preferences-controller.ts";
 import { createTiptapSourcePaneController } from "./tiptap-source-pane.js";
 import { createTiptapSlashCommandController } from "./tiptap-slash-commands.js";
 import { isComposingKeyboardEvent } from "./tiptap-ui-primitives.ts";

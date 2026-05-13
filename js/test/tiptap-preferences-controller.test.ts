@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { createTiptapPreferencesController } from "../src/tiptap-preferences-controller.js";
+import { createTiptapPreferencesController } from "../src/tiptap-preferences-controller.ts";
 
 test("Tiptap preferences controller normalizes default preferences", () => {
   const controller = createTiptapPreferencesController();
