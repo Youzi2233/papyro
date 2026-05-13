@@ -10,7 +10,7 @@ const {
   friendlyMermaidErrorMessage,
   mermaidSvgErrorMessage,
 } = await importBundledModule(
-  new URL("../src/mermaid-renderer.js", import.meta.url),
+  new URL("../src/mermaid-renderer.ts", import.meta.url),
 );
 
 function installDomGlobals(windowRef) {

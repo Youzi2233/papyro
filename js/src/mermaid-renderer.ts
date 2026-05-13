@@ -1,7 +1,8 @@
 import mermaid from "mermaid";
+import type { Mermaid, MermaidConfig, RenderResult } from "mermaid";
 
 const MERMAID_RENDER_TIMEOUT_MS = 2500;
-const PAPYRO_MERMAID_SECURE_KEYS = Object.freeze([
+const PAPYRO_MERMAID_SECURE_KEYS = [
   "secure",
   "securityLevel",
   "startOnLoad",
@@ -9,7 +10,9 @@ const PAPYRO_MERMAID_SECURE_KEYS = Object.freeze([
   "suppressErrorRendering",
   "htmlLabels",
   "dompurifyConfig",
-]);
+] as const;
+
+type MermaidSecureKey = (typeof PAPYRO_MERMAID_SECURE_KEYS)[number];
 
 export const PAPYRO_MERMAID_CONFIG = Object.freeze({
   startOnLoad: false,
@@ -17,10 +20,25 @@ export const PAPYRO_MERMAID_CONFIG = Object.freeze({
   suppressErrorRendering: true,
   theme: "base",
   htmlLabels: false,
-  secure: PAPYRO_MERMAID_SECURE_KEYS,
-});
+  secure: [...PAPYRO_MERMAID_SECURE_KEYS] satisfies MermaidSecureKey[],
+}) satisfies Readonly<MermaidConfig>;
 
-export function friendlyMermaidErrorMessage(message) {
+type TimerId = ReturnType<typeof globalThis.setTimeout>;
+
+type MermaidRendererOptions = {
+  mermaidApi?: Pick<Mermaid, "initialize" | "render">;
+  config?: MermaidConfig;
+  timeoutMs?: number;
+  setTimeoutFn?: typeof globalThis.setTimeout;
+  clearTimeoutFn?: typeof globalThis.clearTimeout;
+};
+
+type MermaidRenderer = {
+  renderMermaidIntoElement: (element: unknown, source: unknown) => Promise<boolean>;
+  renderPreviewMermaid: (root?: unknown) => number;
+};
+
+export function friendlyMermaidErrorMessage(message: unknown): string {
   const text = String(message ?? "").trim();
   if (!text) return "Mermaid diagram could not be rendered.";
   if (/syntax error in text/i.test(text)) return "Mermaid syntax error.";
@@ -32,19 +50,27 @@ export function friendlyMermaidErrorMessage(message) {
   return text;
 }
 
-function ownerDocumentFor(element) {
-  if (element?.nodeType === 9) return element;
-  if (element?.ownerDocument) return element.ownerDocument;
+function ownerDocumentFor(element: unknown): Document | null {
+  const maybeNode = element as Node | null | undefined;
+  const maybeElement = element as Element | null | undefined;
+  if (maybeNode?.nodeType === 9) return maybeNode as Document;
+  if (maybeElement?.ownerDocument) return maybeElement.ownerDocument;
   return typeof document === "undefined" ? null : document;
 }
 
-function isHTMLElement(element) {
-  const elementWindow = element?.ownerDocument?.defaultView;
+function isHTMLElement(element: unknown): element is HTMLElement {
+  const maybeElement = element as Element | null | undefined;
+  const elementWindow = maybeElement?.ownerDocument?.defaultView;
   const HTMLElementConstructor = elementWindow?.HTMLElement ?? globalThis.HTMLElement;
   return typeof HTMLElementConstructor === "function" && element instanceof HTMLElementConstructor;
 }
 
-function createMermaidStatus(documentRef, message, error = false, rawMessage = "") {
+function createMermaidStatus(
+  documentRef: Document,
+  message: string,
+  error = false,
+  rawMessage = "",
+): HTMLElement {
   const wrapper = documentRef.createElement("div");
   wrapper.className = error
     ? "mn-mermaid-status mn-mermaid-status-error"
@@ -66,7 +92,7 @@ function createMermaidStatus(documentRef, message, error = false, rawMessage = "
   return wrapper;
 }
 
-export function mermaidSvgErrorMessage(svg) {
+export function mermaidSvgErrorMessage(svg: unknown): string {
   const markup = String(svg ?? "").trim();
   if (!markup) return "Mermaid diagram could not be rendered.";
 
@@ -104,7 +130,7 @@ export function mermaidSvgErrorMessage(svg) {
   }
 }
 
-function mermaidSourceFromElement(element) {
+function mermaidSourceFromElement(element: HTMLElement): string {
   return (
     element.querySelector(".mn-mermaid-source")?.textContent ??
     element.dataset.mermaidSource ??
@@ -118,7 +144,7 @@ export function createMermaidRenderer({
   timeoutMs = MERMAID_RENDER_TIMEOUT_MS,
   setTimeoutFn = globalThis.setTimeout,
   clearTimeoutFn = globalThis.clearTimeout,
-} = {}) {
+}: MermaidRendererOptions = {}): MermaidRenderer {
   let initialized = false;
   let renderCounter = 0;
 
@@ -128,12 +154,12 @@ export function createMermaidRenderer({
     initialized = true;
   }
 
-  function withRenderTimeout(promise, label) {
+  function withRenderTimeout<T>(promise: Promise<T> | T, label: string): Promise<T> {
     if (typeof setTimeoutFn !== "function" || typeof clearTimeoutFn !== "function") {
       return Promise.resolve(promise);
     }
 
-    let timer = 0;
+    let timer: TimerId;
     return new Promise((resolve, reject) => {
       timer = setTimeoutFn(() => reject(new Error(`${label} timed out`)), timeoutMs);
       Promise.resolve(promise).then(
@@ -149,7 +175,7 @@ export function createMermaidRenderer({
     });
   }
 
-  async function renderMermaidSvg(source) {
+  async function renderMermaidSvg(source: unknown): Promise<RenderResult> {
     const trimmed = String(source ?? "").trim();
     if (!trimmed) throw new Error("Mermaid source is empty");
 
@@ -158,7 +184,7 @@ export function createMermaidRenderer({
     return withRenderTimeout(mermaidApi.render(id, trimmed), "Mermaid render");
   }
 
-  async function renderMermaidIntoElement(element, source) {
+  async function renderMermaidIntoElement(element: unknown, source: unknown): Promise<boolean> {
     if (!isHTMLElement(element)) return false;
 
     const documentRef = ownerDocumentFor(element);
@@ -196,10 +222,13 @@ export function createMermaidRenderer({
     }
   }
 
-  function renderPreviewMermaid(root = ownerDocumentFor(null)) {
+  function renderPreviewMermaid(root: unknown = ownerDocumentFor(null)): number {
     const documentRef = ownerDocumentFor(root);
     if (!documentRef) return 0;
-    const scope = typeof root?.querySelectorAll === "function" ? root : documentRef;
+    const scope =
+      typeof (root as ParentNode | null | undefined)?.querySelectorAll === "function"
+        ? (root as ParentNode)
+        : documentRef;
     let count = 0;
     for (const block of scope.querySelectorAll(".mn-preview .mn-mermaid-block")) {
       if (!isHTMLElement(block)) continue;

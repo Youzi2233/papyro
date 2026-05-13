@@ -11,7 +11,7 @@ import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
 import type { EditorView } from "@tiptap/pm/view";
 
 import { mermaidSourceEditorLabel } from "./tiptap-i18n.ts";
-import { renderMermaidIntoElement } from "./mermaid-renderer.js";
+import { renderMermaidIntoElement } from "./mermaid-renderer.ts";
 
 const MERMAID_TOKEN = "mermaidBlock";
 const MERMAID_EDIT_RENDER_DELAY_MS = 220;

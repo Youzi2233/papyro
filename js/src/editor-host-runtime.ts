@@ -10,7 +10,7 @@ import {
   saveModeScrollSnapshot,
   scrollPreviewToHeading as scrollPreviewScrollerToHeading,
 } from "./editor-core.ts";
-import { renderPreviewMermaid } from "./mermaid-renderer.js";
+import { renderPreviewMermaid } from "./mermaid-renderer.ts";
 import { renderPreviewMath } from "./tiptap-math.js";
 import {
   isTiptapEntry,
