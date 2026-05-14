@@ -502,6 +502,8 @@ js/src/
 - [x] 2026-05-15 跟进：将表格单元格内容选择器限定为 `:not(.column-resize-handle)`，并在宿主 CSS 中锁定 resize handle 为绝对定位、零内容高度，避免 hover/resize chrome 参与单元格正文布局导致行高被撑开
 - [x] 2026-05-15 跟进：为 `tiptap-table-menu-content` 增加官方 card/menu token 的不透明表面兜底，并把 resize handle 出流约束与 table menu 背景写入 Markdown style smoke 防回归
 - [x] 2026-05-15 跟进：收敛 `tiptap-table-menu-content` 的职责边界，根菜单不再绘制表面，直接面板使用官方 combobox/card token 与统一按钮节奏，并把直接面板、嵌套 flyout、按钮对齐和文本裁剪写入 Markdown style smoke 防回归
+- [x] 2026-05-15 跟进：移除宿主 CSS 对所有表格单元格正文的 `min-height` 强制值，只保留官方 resize handle 的出流、零文本度量和 layout/paint 隔离；同时让 table menu 直接面板具备 `overflow-y: auto` 与稳定 scrollbar gutter，避免菜单长内容挤压或透明穿透
+- [x] 2026-05-15 跟进：扩展 desktop Tiptap WebView smoke 为真实表格交互验收：点击单元格、移动到列边缘触发 ProseMirror `columnResizing` 句柄、断言 hover 前后单元格高度/正文子节点/文本稳定，并打开 `TableCellHandleMenu` 断言不透明 bounded surface、按钮对齐、文本裁剪和滚动行为
 
 #### 9.5 官方组件差异审计
 

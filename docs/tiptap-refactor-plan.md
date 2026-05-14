@@ -502,6 +502,8 @@ The editor surface must behave like the official Notion-like template first, wit
 - [x] 2026-05-15 follow-up: limit table-cell content styling to `:not(.column-resize-handle)` and lock the resize handle to absolute positioning with zero content height in the host CSS, preventing hover/resize chrome from participating in table-cell text layout and inflating row height
 - [x] 2026-05-15 follow-up: add an opaque official card/menu-token fallback surface for `tiptap-table-menu-content`, and add Markdown style smoke guards for resize-handle out-of-flow behavior plus table-menu background
 - [x] 2026-05-15 follow-up: tighten the responsibility boundary for `tiptap-table-menu-content`; the root menu no longer paints the surface, the direct panel uses official combobox/card tokens and consistent button rhythm, and Markdown style smoke now guards the direct panel, nested flyout allowance, button alignment, and text clipping
+- [x] 2026-05-15 follow-up: remove the host CSS `min-height` override from table-cell body content and keep only resize-handle out-of-flow, zero-text-metric, and layout/paint isolation guarantees; the table menu direct panel now also owns `overflow-y: auto` and stable scrollbar gutter so long menus do not squeeze content or become transparent
+- [x] 2026-05-15 follow-up: extend the desktop Tiptap WebView smoke into a real table interaction acceptance path: click a cell, move to a column edge to trigger the ProseMirror `columnResizing` handle, assert cell height/body children/text stay stable across hover, and open `TableCellHandleMenu` to verify an opaque bounded surface, aligned buttons, clipped text, and scroll behavior
 
 #### 9.5 Official Component Difference Audit
 

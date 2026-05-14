@@ -47,15 +47,23 @@
     text-align: left;
 }
 
-.mn-tiptap-editor :where(td, th) > :not(.column-resize-handle) {
+.mn-tiptap-editor :where(td, th) > :where(p, ul, ol, blockquote, pre, figure) {
     position: relative;
-    min-height: 1.45em;
     z-index: 1;
+}
+
+.mn-tiptap-editor :where(td, th) > :where(p, ul, ol, blockquote, pre) {
+    margin-block: 0;
 }
 
 .mn-tiptap-editor :where(td, th) > .column-resize-handle {
     position: absolute;
+    display: block;
+    box-sizing: border-box;
     min-height: 0;
+    font-size: 0;
+    line-height: 0;
+    contain: layout paint;
 }
 
 .mn-tiptap-editor :where(td, th) :where(p, ul, ol, blockquote, pre) {
@@ -146,6 +154,8 @@
     background-color: var(--tiptap-card-bg-color, var(--tt-card-bg-color, var(--mn-surface-raised)));
     box-shadow: var(--tt-shadow-elevated-md, var(--mn-shadow-menu));
     overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
 }
 
 .tiptap-table-menu-content > .tiptap-combobox-list .tiptap-button {

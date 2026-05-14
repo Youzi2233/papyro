@@ -362,6 +362,123 @@ async function exerciseTableLayer(client) {
       document.querySelector(".tiptap-table-extend-row-column-button")
     );
   });
+  const resizeBaseline = await evaluate(client, () => {
+    const cell = document.querySelector(".ProseMirror table td, .ProseMirror table th");
+    if (!cell) return null;
+    cell.scrollIntoView({ block: "center", inline: "center" });
+    const rect = cell.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return null;
+    const contentChildren = Array
+      .from(cell.children)
+      .filter((child) => !child.classList.contains("column-resize-handle"));
+    return {
+      point: {
+        x: Math.max(rect.left + 1, rect.right - 2),
+        y: rect.top + Math.min(Math.max(rect.height / 2, 1), rect.height - 1),
+      },
+      height: rect.height,
+      contentChildCount: contentChildren.length,
+      contentTags: contentChildren.map((child) => child.tagName),
+      text: cell.textContent,
+    };
+  });
+  if (!resizeBaseline) {
+    throw new Error("Unable to resolve a table cell baseline for resize smoke");
+  }
+  await movePoint(client, resizeBaseline.point);
+  await assertEventually(client, "table column resize handle appears near a cell edge", () => {
+    return Boolean(document.querySelector(".ProseMirror table .column-resize-handle"));
+  });
+  await assertEvaluate(client, "table resize chrome does not inflate cell layout", (baseline) => {
+    const cell = document.querySelector(".ProseMirror table td, .ProseMirror table th");
+    const handle = cell?.querySelector(":scope > .column-resize-handle");
+    const contentChildren = cell
+      ? Array.from(cell.children).filter((child) => !child.classList.contains("column-resize-handle"))
+      : [];
+    const firstContent = contentChildren.at(0) ?? null;
+    if (!cell || !handle || !firstContent) {
+      throw new Error(JSON.stringify({
+        hasCell: Boolean(cell),
+        hasHandle: Boolean(handle),
+        hasFirstContent: Boolean(firstContent),
+        childClasses: cell ? Array.from(cell.children).map((child) => child.className || child.tagName) : [],
+      }));
+    }
+
+    const cellStyle = getComputedStyle(cell);
+    const handleStyle = getComputedStyle(handle);
+    const contentStyle = getComputedStyle(firstContent);
+    const rect = cell.getBoundingClientRect();
+    const contentTags = contentChildren.map((child) => child.tagName);
+
+    const checks = {
+      cellPosition: cellStyle.position,
+      handlePosition: handleStyle.position,
+      handleDisplay: handleStyle.display,
+      handleLineHeight: handleStyle.lineHeight,
+      handleMinHeight: handleStyle.minHeight,
+      handleContain: handleStyle.contain,
+      contentTag: firstContent.tagName,
+      contentChildCount: contentChildren.length,
+      contentTags,
+      contentMarginTop: contentStyle.marginTop,
+      contentMarginBottom: contentStyle.marginBottom,
+      baselineContentChildCount: baseline.contentChildCount,
+      baselineContentTags: baseline.contentTags,
+      baselineHeight: baseline.height,
+      currentHeight: rect.height,
+      heightDelta: Math.abs(rect.height - baseline.height),
+      textStable: cell.textContent === baseline.text,
+    };
+
+    const passed = checks.cellPosition === "relative" &&
+      checks.handlePosition === "absolute" &&
+      checks.handleDisplay === "block" &&
+      checks.handleLineHeight === "0px" &&
+      checks.handleMinHeight === "0px" &&
+      checks.contentMarginTop === "0px" &&
+      checks.contentMarginBottom === "0px" &&
+      checks.contentChildCount === checks.baselineContentChildCount &&
+      checks.contentTags.join("|") === checks.baselineContentTags.join("|") &&
+      checks.textStable &&
+      checks.heightDelta < 1;
+
+    if (!passed) {
+      throw new Error(JSON.stringify(checks));
+    }
+
+    return true;
+  }, resizeBaseline);
+  await clickSelector(client, ".expandable-menu-button");
+  await assertEventually(client, "official table cell menu opens with an opaque bounded surface", () => {
+    const root = document.querySelector(".tiptap-menu-content.tiptap-table-menu-content");
+    const panel = root?.querySelector(":scope > .tiptap-combobox-list");
+    if (!root || !panel) return false;
+
+    const rootStyle = getComputedStyle(root);
+    const panelStyle = getComputedStyle(panel);
+    const rect = panel.getBoundingClientRect();
+    const buttons = Array.from(panel.querySelectorAll(".tiptap-button"));
+    const labels = Array.from(panel.querySelectorAll(".tiptap-button-text"));
+
+    return rootStyle.overflow === "visible" &&
+      Number.parseInt(rootStyle.zIndex, 10) >= 50 &&
+      panelStyle.backgroundColor !== "rgba(0, 0, 0, 0)" &&
+      panelStyle.backgroundColor !== "transparent" &&
+      panelStyle.overflowX === "hidden" &&
+      panelStyle.overflowY === "auto" &&
+      rect.width >= 180 &&
+      rect.width <= Math.min(288, window.innerWidth - 24) + 1 &&
+      rect.height > 32 &&
+      buttons.every((button) => getComputedStyle(button).justifyContent === "flex-start") &&
+      labels.every((label) => {
+        const style = getComputedStyle(label);
+        return style.whiteSpace === "nowrap" &&
+          style.overflow === "hidden" &&
+          style.textOverflow === "ellipsis";
+      });
+  });
+  await pressKey(client, "Escape");
 }
 
 async function exerciseSourceMode(client) {
@@ -528,6 +645,15 @@ async function clickPoint(client, point) {
     y: point.y,
     button: "left",
     clickCount: 1,
+  });
+}
+
+async function movePoint(client, point) {
+  await client.send("Input.dispatchMouseEvent", {
+    type: "mouseMoved",
+    x: point.x,
+    y: point.y,
+    button: "none",
   });
 }
 
