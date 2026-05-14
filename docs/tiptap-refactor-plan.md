@@ -529,9 +529,10 @@ Official component difference list:
 - [x] Extend `docs/tiptap-release-smoke.md` editor UI scenarios to cover table handles, cell menu, floating toolbar, slash menu, drag handle, link/color popovers, and image controls
 - [x] Add desktop WebView smoke coverage for slash menu, floating toolbar, link/color popovers, drag context menu, table resize/cell menu, and image controls; screenshot-level visual regression remains a later CI/browser infrastructure task
 - [x] UI task reports must include checked views, keyboard paths, dark/high-contrast result, narrow-window result, automated checks, and known follow-ups
-- [ ] Before release, run `node scripts/check-editor-markdown-gate.js` and add `node scripts/check-tiptap-theme-bridge.js`, `node scripts/check-ui-contrast.js`, and `node scripts/check-ui-a11y.js` according to the changed surface
+- [x] Before release, run `node scripts/check-editor-markdown-gate.js` and add `node scripts/check-tiptap-theme-bridge.js`, `node scripts/check-ui-contrast.js`, and `node scripts/check-ui-a11y.js` according to the changed surface
 - [x] 2026-05-15 follow-up: make `node scripts/check-tiptap-release-smoke.js` guard that the release checklist retains the editor UI surface acceptance section in English and Chinese, so table handles, cell menu, floating toolbar, slash menu, drag handle, link/color popovers, image controls, narrow-window, and dark/high-contrast checks stay part of the release gate
 - [x] 2026-05-15 follow-up: extend `node scripts/check-desktop-tiptap-webview-smoke.js` to verify opaque bounded surfaces and usable controls for slash menu, floating toolbar, link popover, color popover, drag context menu, table cell menu, and image floating controls inside the real desktop WebView
+- [x] 2026-05-15 follow-up: wire `check-ui-a11y.js` and `check-ui-contrast.js` into the default `check-editor-markdown-gate.js` flow; editor UI/UX changes are now validated together with theme bridge, release smoke, runtime smoke, desktop resource smoke, and optional real WebView smoke. Release-candidate screenshots or screen captures remain manual records in `tiptap-release-smoke.md`, not committed artifacts.
 
 ---
 

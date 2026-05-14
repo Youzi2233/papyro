@@ -14,6 +14,8 @@ const STEPS = [
     command: "npm",
     args: ["--prefix", "js", "run", "build"],
     shell: process.platform === "win32",
+    retries: process.platform === "win32" ? 2 : 0,
+    retryDelayMs: 2_000,
   },
   {
     name: "Markdown style smoke",
@@ -24,6 +26,16 @@ const STEPS = [
     name: "Tiptap theme bridge",
     command: process.execPath,
     args: ["scripts/check-tiptap-theme-bridge.js"],
+  },
+  {
+    name: "UI accessibility",
+    command: process.execPath,
+    args: ["scripts/check-ui-a11y.js"],
+  },
+  {
+    name: "UI contrast",
+    command: process.execPath,
+    args: ["scripts/check-ui-contrast.js"],
   },
   {
     name: "Tiptap release smoke",
@@ -103,34 +115,57 @@ function printUsage() {
 
 Runs the minimum pre-commit gate for Tiptap/editor/Markdown changes:
 JS tests, editor bundle build, Markdown style smoke, Markdown round-trip
-smoke, mounted Tiptap runtime smoke, generated bundle sync, and runtime
-style mirror sync.`);
+smoke, mounted Tiptap runtime smoke, UI accessibility/contrast checks,
+generated bundle sync, and runtime style mirror sync.`);
 }
 
-function runStep({ name, command, args, shell = false, optional = false }) {
+function runStep({
+  name,
+  command,
+  args,
+  shell = false,
+  optional = false,
+  retries = 0,
+  retryDelayMs = 0,
+}) {
   if (optional && process.env.PAPYRO_DESKTOP_WEBVIEW_SMOKE !== "1") {
     console.log(`=== ${name} (skipped) ===`);
     console.log(`Set PAPYRO_DESKTOP_WEBVIEW_SMOKE=1 to run this desktop-only gate.`);
     return;
   }
 
-  console.log(`=== ${name} ===`);
-  const result = spawnSync(command, args, {
-    cwd: process.cwd(),
-    env: process.env,
-    shell,
-    stdio: "inherit",
-  });
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    console.log(`=== ${name}${attempt > 0 ? ` (retry ${attempt}/${retries})` : ""} ===`);
+    const result = spawnSync(command, args, {
+      cwd: process.cwd(),
+      env: process.env,
+      shell,
+      stdio: "inherit",
+    });
 
-  if (result.error) {
-    console.error(`${name} failed to start: ${result.error.message}`);
-    process.exit(result.status ?? 1);
-  }
+    if (!result.error && result.status === 0) {
+      return;
+    }
 
-  if (result.status !== 0) {
+    if (result.error) {
+      console.error(`${name} failed to start: ${result.error.message}`);
+      process.exit(result.status ?? 1);
+    }
+
+    if (attempt < retries) {
+      console.error(`${name} failed with exit code ${result.status}; retrying.`);
+      sleep(retryDelayMs);
+      continue;
+    }
+
     console.error(`${name} failed with exit code ${result.status}.`);
     process.exit(result.status ?? 1);
   }
+}
+
+function sleep(ms) {
+  if (ms <= 0) return;
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 }
 
 function checkMirroredCopies(name, copies) {

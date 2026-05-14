@@ -529,9 +529,10 @@ js/src/
 - [x] 扩展 `docs/zh-CN/tiptap-release-smoke.md` 的编辑器 UI 场景，覆盖 table handles、cell menu、floating toolbar、slash menu、drag handle、link/color popover 和 image controls
 - [x] 为 slash menu、floating toolbar、link/color popover、drag context menu、table resize/cell menu 和 image controls 补 desktop WebView smoke 覆盖；截图级视觉回归仍留给后续 CI/browser 基础设施任务
 - [x] UI 任务汇报必须包含：检查过的视图、键盘路径、暗色/高对比结果、窄窗口结果、自动化检查和已知 follow-up
-- [ ] 发布前运行 `node scripts/check-editor-markdown-gate.js`，并根据改动范围补充 `node scripts/check-tiptap-theme-bridge.js`、`node scripts/check-ui-contrast.js`、`node scripts/check-ui-a11y.js`
+- [x] 发布前运行 `node scripts/check-editor-markdown-gate.js`，并根据改动范围补充 `node scripts/check-tiptap-theme-bridge.js`、`node scripts/check-ui-contrast.js`、`node scripts/check-ui-a11y.js`
 - [x] 2026-05-15 跟进：让 `node scripts/check-tiptap-release-smoke.js` 守护中英文 release checklist 必须保留编辑器 UI surface 视觉验收章节，确保 table handles、cell menu、floating toolbar、slash menu、drag handle、link/color popover、image controls、窄窗口和暗色/高对比检查不会从发布门禁里消失
 - [x] 2026-05-15 跟进：扩展 `node scripts/check-desktop-tiptap-webview-smoke.js`，在真实 desktop WebView 中验证 slash menu、floating toolbar、link popover、color popover、drag context menu、table cell menu 和 image floating controls 的不透明 bounded surface 与可用控件
+- [x] 2026-05-15 跟进：将 `check-ui-a11y.js` 与 `check-ui-contrast.js` 接入 `check-editor-markdown-gate.js` 默认流程；编辑器 UI/UX 改动现在会随同 theme bridge、release smoke、runtime smoke、desktop resource smoke 和可选真实 WebView smoke 一起被门禁验证。Release candidate 截图/录屏仍按 `tiptap-release-smoke.md` 手工记录，不作为仓库提交物。
 
 ---
 
