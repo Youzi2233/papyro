@@ -489,6 +489,8 @@ The editor surface must behave like the official Notion-like template first, wit
 - [ ] Define menu stacking rules: editor contextual layers sit above document content and below app modals; nested table color/alignment menus must not override or pollute slash/link/drag menus
 - [ ] Add source tests or smoke notes for menu keyboard paths: open, arrow navigation, Enter, Escape, and focus return
 - [x] 2026-05-15 follow-up: constrain the table menu root layer to positioning/stacking only and keep `overflow: visible` so nested color/alignment flyouts can expand correctly; the direct child `ComboboxList` now owns the opaque background, border, shadow, scrolling, and viewport width guard, avoiding transparent menus, double surfaces, and clipped nested menus
+- [x] 2026-05-15 follow-up: establish an editor-context floating surface contract for slash menu, drag context menu, link/color popover, floating toolbar, table menu, and code language menu: opaque background, border, shadow, stacking, viewport width/height, text clipping, and focus-visible fallback; static `tiptap-chrome-command.css` plus the runtime-final `papyro-menu-surface.scss` guard against official SCSS injection order making WebView menus transparent or mispositioned again
+- [x] 2026-05-15 follow-up: add Markdown style smoke guards for floating token bridging, menu z-index/viewport limits, generic combobox panels, card/toolbar opaque surfaces, button text clipping, and focus rings
 
 #### 9.4 Table Experience Convergence
 

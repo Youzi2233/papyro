@@ -13,6 +13,7 @@ import "@/components/tiptap-node/blockquote-node/blockquote-node.scss";
 import "@/components/tiptap-node/code-block-node/code-block-node.scss";
 import "@/components/tiptap-node/horizontal-rule-node/horizontal-rule-node.scss";
 import "@/components/tiptap-node/image-node/image-node.scss";
+import "@/styles/papyro-menu-surface.scss";
 
 type PapyroReactRuntime = {
   editor?: Parameters<typeof PapyroOfficialTableNodeLayer>[0]["editor"];

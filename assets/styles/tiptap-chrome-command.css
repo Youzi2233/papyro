@@ -1,5 +1,105 @@
 /* Official Tiptap command chrome bridge.
    Slash menu, drag context menu, link popover, and floating toolbar styles are
    owned by the official React component SCSS injected into the generated editor
-   bundle. This file intentionally no longer carries legacy mn-tiptap DOM menu
-   or toolbar chrome. */
+   bundle. This file keeps only host-level surface and viewport guarantees. */
+
+.mn-tiptap-react-root,
+.mn-tiptap-editor {
+    --mn-tiptap-menu-z: 166;
+    --mn-tiptap-menu-max-width: min(22rem, calc(100vw - 32px));
+    --mn-tiptap-menu-max-height: min(28rem, calc(100vh - 32px));
+}
+
+.tiptap-suggestion-menu,
+.tiptap-menu-content,
+.tiptap-combobox-popover,
+.tiptap-popover {
+    z-index: var(--mn-tiptap-menu-z, 166);
+    max-width: var(--mn-tiptap-menu-max-width, min(22rem, calc(100vw - 32px)));
+    max-height: var(--mn-tiptap-menu-max-height, min(28rem, calc(100vh - 32px)));
+    color: var(--tt-popover-text-color, var(--mn-ink-2));
+    isolation: isolate;
+    pointer-events: auto;
+    overflow: visible;
+}
+
+.tiptap-menu-content:not(.tiptap-table-menu-content) {
+    height: auto;
+    min-width: min(15rem, calc(100vw - 32px));
+}
+
+.tiptap-menu-content:not(.tiptap-table-menu-content) > .tiptap-combobox-list,
+.tiptap-combobox-popover > .tiptap-combobox-list {
+    width: 100%;
+    min-width: min(15rem, calc(100vw - 32px));
+    max-width: var(--mn-tiptap-menu-max-width, min(22rem, calc(100vw - 32px)));
+    max-height: var(--mn-tiptap-menu-max-height, min(28rem, calc(100vh - 32px)));
+    margin-block: 0;
+    border-color: var(--tt-combobox-border-color, var(--tiptap-card-border-color, var(--mn-divider)));
+    background-color: var(--tt-combobox-bg-color, var(--tiptap-card-bg-color, var(--mn-surface-raised)));
+    color: var(--tt-combobox-text-color, var(--mn-ink-2));
+    box-shadow: var(--tt-shadow-elevated-md, var(--mn-shadow-md));
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+}
+
+.tiptap-card {
+    max-width: var(--mn-tiptap-menu-max-width, min(22rem, calc(100vw - 32px)));
+    max-height: var(--mn-tiptap-menu-max-height, min(28rem, calc(100vh - 32px)));
+    border-color: var(--tiptap-card-border-color, var(--mn-divider));
+    background-color: var(--tiptap-card-bg-color, var(--mn-surface-raised));
+    color: var(--tt-popover-text-color, var(--mn-ink-2));
+    box-shadow: var(--tt-shadow-elevated-md, var(--mn-shadow-md));
+    overflow: hidden;
+}
+
+.tiptap-card-body {
+    max-width: 100%;
+    overflow-x: hidden;
+    scrollbar-gutter: stable;
+}
+
+.tiptap-toolbar[data-variant="floating"] {
+    max-width: min(max-content, calc(100vw - 32px));
+    border-color: var(--tt-toolbar-border-color, var(--mn-divider));
+    background-color: var(--tt-toolbar-bg-color, var(--mn-surface-raised));
+    color: var(--tt-popover-text-color, var(--mn-ink-2));
+    box-shadow: var(--tt-shadow-elevated-md, var(--mn-shadow-md));
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.tiptap-toolbar[data-variant="floating"]::-webkit-scrollbar {
+    display: none;
+}
+
+.tiptap-combobox-list .tiptap-button,
+.tiptap-card .tiptap-button {
+    max-width: 100%;
+    justify-content: flex-start;
+}
+
+.tiptap-combobox-list .tiptap-button-text,
+.tiptap-card .tiptap-button-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tiptap-combobox-list:focus-visible,
+.tiptap-card:focus-visible,
+.tiptap-toolbar[data-variant="floating"]:focus-visible {
+    outline: 0;
+    box-shadow:
+        var(--tt-shadow-elevated-md, var(--mn-shadow-md)),
+        var(--mn-focus-ring-sm);
+}
+
+.tiptap-combobox-list .tiptap-button:focus-visible,
+.tiptap-card .tiptap-button:focus-visible,
+.tiptap-toolbar[data-variant="floating"] .tiptap-button:focus-visible {
+    outline: 0;
+    box-shadow: var(--mn-focus-ring-sm);
+}

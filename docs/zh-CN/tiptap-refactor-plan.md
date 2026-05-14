@@ -489,6 +489,8 @@ js/src/
 - [ ] 建立菜单层级规则：编辑器上下文浮层高于文档内容，低于 app modal；嵌套 table color/alignment menu 不应覆盖或污染 slash/link/drag 菜单
 - [ ] 为菜单 keyboard path 补源码测试或 smoke 记录：打开、方向键移动、Enter 执行、Escape 关闭、焦点返还
 - [x] 2026-05-15 跟进：将表格菜单根浮层限定为定位/层级容器，保持 `overflow: visible` 以允许嵌套颜色/对齐 flyout 正常展开；直接子 `ComboboxList` 承担不透明背景、边框、阴影、滚动和视口宽度约束，避免透明菜单、双层面板或嵌套菜单被裁剪
+- [x] 2026-05-15 跟进：建立编辑器上下文浮层 surface 契约，统一 slash menu、drag context menu、link/color popover、floating toolbar、table menu 和 code language menu 的不透明背景、边框、阴影、层级、视口宽高、文本裁剪和 focus-visible 兜底；静态 `tiptap-chrome-command.css` 与运行时最终加载的 `papyro-menu-surface.scss` 双层守护，避免官方 SCSS 注入顺序导致 WebView 内菜单再次透明或错位
+- [x] 2026-05-15 跟进：为浮层 token 桥接、菜单 z-index/viewport、generic combobox panel、card/toolbar opaque surface、按钮文本裁剪和焦点环补 Markdown style smoke 防回归
 
 #### 9.4 表格体验收敛
 
