@@ -37,6 +37,64 @@ The editor has moved in the right direction, but it is not yet at the official N
 - Formatting entry points: the top shell toolbar must stay app-level only. Rich-text formatting belongs to official Tiptap React surfaces: `PapyroToolbarFloating`, slash menu, drag context menu, link popover, and table-node menus. The active `PapyroToolbarFloating` still diverges from the official Notion-like toolbar by keeping text alignment, undo/redo, and highlight controls permanently visible; it should become an official-template composition with only Papyro-specific omissions such as AI/Cloud controls.
 - Verification bar: for every UI convergence step, run source tests, build, and the editor Markdown gate; for visual changes, prefer desktop WebView/manual smoke or a screenshot-backed check when the app target is available.
 
+## Long-Term Editor UI/UX Spec (2026-05-15)
+
+Integrating official components only proves that the source path is correct. It does not prove the editor experience matches the official Notion-like template. Future AI work must judge official source integration, Papyro host adaptation, and real desktop UX acceptance separately.
+
+### Experience Target
+
+The Papyro editor surface should feel like a quiet, precise desktop writing surface that supports long-form work. The visual direction follows the **disciplined utility** brief in `docs/ui-visual-brief.md`, while interaction patterns and component composition should stay anchored to the official Notion-like template in `.reference/notion-like-editor`.
+
+- Keep the document canvas restrained, readable, and stable. Do not use marketing-page heroes, stacked cards, or decorative gradients inside the editor.
+- Rich-text actions appear only in context: floating selection toolbar, slash menu, drag context menu, link/color popovers, and table-node menus.
+- The top app shell must not host Markdown formatting commands. It only owns tabs, view mode, outline, settings, theme, and window-level controls.
+- Official component DOM, state machines, ARIA behavior, keyboard navigation, and SCSS are the baseline. Papyro should only adapt Markdown persistence, i18n, theme tokens, local resources, and the Rust protocol.
+
+### Surface Ownership
+
+| Surface | Visual/Interaction Owner | Allowed Papyro Adaptation | Disallowed |
+|---------|--------------------------|---------------------------|------------|
+| Document canvas | Official Notion-like layout + Papyro Markdown typography tokens | Content width, CJK typography, Source/Hybrid/Preview consistency, Mermaid/KaTeX/error states | Global CSS that breaks official block spacing, selection, placeholder, or node-view hit areas |
+| Floating toolbar | Official `Toolbar`, `FloatingElement`, button/popover primitives | Localization, remove unimplemented AI/Cloud items, preserve selection, prevent WebView focus loss | Recreating the old top formatting toolbar or showing persistent controls that crowd the writing surface |
+| Slash menu | Official `slash-dropdown-menu` + `suggestion-menu` | Papyro block commands, recent items, Markdown fallback | Global menu CSS overriding official active/focus/disabled states |
+| Drag context menu | Official `drag-context-menu` | Papyro block move, copy, delete, reset formatting, color/highlight commands | Restoring old block handle/controller visuals or old DOM injection |
+| Link/Color/Image popovers | Official popover/menu/input primitives | Local images, link Markdown serialization, localized labels, focus return | Transparent, borderless, clipped layers, or clicks that lose the editor selection |
+| Table chrome | Official `table-node`, `TableHandle`, `TableSelectionOverlay`, `TableCellHandleMenu`, `TableExtendRowColumnButtons` | Table host wrapper, viewport safety, theme tokens, GFM Markdown serialization | Redrawing official handles/menus, injecting layout-changing placeholders into cells, or resize handles that create extra blank lines |
+
+### Interaction Acceptance
+
+For every editor UI change, verify at least these scenarios. If they cannot be automated, record the manual result in the task notes.
+
+- Hover: table row/column handles, cell handles, and drag handles appear as subtle affordances without shifting layout, changing cell height, or blocking text cursor hits.
+- Click: after a handle/menu trigger opens, the layer anchors correctly, has an opaque surface, border/shadow, consistent item density, and does not unexpectedly lose the editor selection.
+- Resize: table column resizing uses overlay/handle hit areas and never creates extra paragraphs, blank lines, or abnormal padding inside cells.
+- Keyboard: slash menu, drag menu, table menu, and link/color popovers support arrow keys, Enter, and Escape; focus is visible, and closing returns focus to the trigger or editor where possible.
+- State: default, hover, active, selected/current, disabled, focus-visible, destructive, dark, and high-contrast states are distinguishable.
+- Layout: 1440x920, 900x640, dark theme, high-contrast theme, CJK labels, long table content, and long filenames do not overlap or clip key actions.
+- Persistence: all UI actions preserve Markdown round trips. Visual fixes must not introduce DOM-only state that cannot serialize.
+
+### Visual QA Record
+
+For editor UI tasks, prefer recording these views before completion. Screenshots do not need to be committed, but the task report or PR should say what was checked.
+
+- Normal text selection + floating toolbar.
+- Slash menu triggered with `/`, including search, active item, and empty result.
+- Block drag handle + drag context menu.
+- Link edit popover, color popover, and image floating controls.
+- Table hover, column resizing, row/column handles, cell handle, cell menu, and nested color/alignment menus.
+- The same Markdown document in Source, Hybrid, and Preview modes.
+
+### Non-Ship Criteria
+
+Do not mark the task complete if any of these remain:
+
+- Menus are transparent, backgroundless, stacked incorrectly, overlapping, or clipped by the editor container.
+- Table hover/resize adds blank space inside cells, changes row height unexpectedly, or breaks cursor hit testing.
+- Papyro global CSS heavily overrides official component appearance without documenting the official-reference difference.
+- Rich-text formatting buttons return to the top app shell.
+- Only fake DOM / unit tests pass, with no note about real desktop WebView or screenshot-oriented checks.
+- Dark or high-contrast themes make selected, focus, hover, or destructive states indistinguishable.
+
 ## Architecture Alignment: Official Notion-like Template Structure
 
 Post-refactoring directory structure should align with the official CLI installation layout:
@@ -406,14 +464,49 @@ These features are unique to Papyro, not in the official template, and need to b
 
 The editor surface must behave like the official Notion-like template first, with Papyro shell controls kept outside the rich-text formatting workflow.
 
+#### 9.1 Formatting Entry Point Convergence
+
 - [x] Remove the legacy Rust/Dioxus Markdown insertion toolbar from the top chrome
 - [x] Keep app-level controls in the titlebar: tabs, sidebar toggle, theme switch, settings, window controls, and outline toggle
 - [x] Use official Tiptap floating toolbar, slash menu, drag context menu, and table menus as the formatting entry points
 - [x] Remove or quarantine old `mn-tiptap-format-toolbar`, legacy block handle, and legacy block action menu CSS after confirming no mounted React component still depends on it
 - [x] Compare `PapyroToolbarFloating` against the official Notion-like toolbar composition and remove any remaining Papyro-only command model that duplicates official toolbar components
 - [x] Replace the active floating toolbar composition with the official Notion-like pattern: turn-into, marks, image floating controls, link/text color, and a More popover for superscript/subscript, alignment, and indentation; exclude AI/Improve until a real local/Pro-backed AI workflow is implemented
-- [ ] Audit remaining top-level editor layout against the official Notion-like template after each migrated component
-- [ ] Add visual regression coverage for table handles, cell menu, floating toolbar, slash menu, and drag handle once the desktop WebView smoke can run in CI
+
+#### 9.2 Document Canvas and Typography Convergence
+
+- [ ] Audit Papyro's editor canvas width, side operation rails, bottom breathing room, and narrow-window behavior against the official `.notion-like-editor-layout`, ensuring Source/Hybrid/Preview do not jump between layouts
+- [ ] Unify Markdown typography tokens so headings, paragraphs, lists, blockquotes, inline code, code blocks, tables, Mermaid, and KaTeX share the same reading rhythm in Hybrid and Preview
+- [ ] Audit CJK mixed text, long URLs, long code lines, wide tables, and image nodes for overflow behavior; key actions must never be clipped into unreachable areas
+- [ ] Keep the app shell aligned with disciplined utility; do not wrap the editor canvas in a large card or marketing-style section
+
+#### 9.3 Floating Layer and Menu Convergence
+
+- [ ] Compare slash menu, drag context menu, link popover, color popover, and table menu against the official `menu`, `popover`, `dropdown-menu`, and `combobox` SCSS for background, border, shadow, radius, item density, and active/focus states
+- [ ] Fix all transparent layers, stacking mistakes, clipping, drifting anchors, and focus loss after close
+- [ ] Define menu stacking rules: editor contextual layers sit above document content and below app modals; nested table color/alignment menus must not override or pollute slash/link/drag menus
+- [ ] Add source tests or smoke notes for menu keyboard paths: open, arrow navigation, Enter, Escape, and focus return
+
+#### 9.4 Table Experience Convergence
+
+- [ ] Re-audit the full table path against the official table-node template: hover, row/column handles, cell handle, extend buttons, selection overlay, resize handle, cell menu, and nested menus
+- [ ] Fix hover/resize behavior that adds blank lines, extra paragraphs, or inflated row height inside cells; inspect ProseMirror table-cell default content, CSS `min-height`, resize handle DOM, and wrapper padding together
+- [ ] Fix the cell handle menu background, stacking, layout, and item density so it uses the official menu surface instead of a transparent or broken host layer
+- [ ] Limit Papyro table CSS to host wrapper, overflow, theme tokens, and Markdown table baseline; do not redraw official handles, buttons, menu items, or overlays
+- [ ] Verify table interactions still serialize to stable GFM tables; complex table features that cannot be represented by GFM need an explicit degradation policy
+
+#### 9.5 Official Component Difference Audit
+
+- [ ] Create an official-template difference list for `PapyroToolbarFloating`, `SlashDropdownMenu`, `DragContextMenu`, `TableHandleMenu`, `TableCellHandleMenu`, and `ImageNodeFloating`, documenting source differences from `.reference/notion-like-editor` and why each exists
+- [ ] After every official component migration or adjustment, audit the remaining top-level editor layout, component states, and CSS overrides against the official Notion-like template
+- [ ] Document or comment every retained Papyro adaptation as Markdown persistence, Rust protocol, i18n, local resource handling, or WebView focus protection; remove adaptations that cannot be explained
+
+#### 9.6 Visual Regression and Release Acceptance
+
+- [ ] Extend `docs/tiptap-release-smoke.md` editor UI scenarios to cover table handles, cell menu, floating toolbar, slash menu, drag handle, link/color popovers, and image controls
+- [ ] Add visual regression coverage for table handles, cell menu, floating toolbar, slash menu, and drag handle once the desktop WebView smoke can run reliably in CI
+- [ ] UI task reports must include checked views, keyboard paths, dark/high-contrast result, narrow-window result, automated checks, and known follow-ups
+- [ ] Before release, run `node scripts/check-editor-markdown-gate.js` and add `node scripts/check-tiptap-theme-bridge.js`, `node scripts/check-ui-contrast.js`, and `node scripts/check-ui-a11y.js` according to the changed surface
 
 ---
 

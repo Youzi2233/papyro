@@ -37,6 +37,64 @@
 - 格式化入口：顶部 shell 工具栏只保留应用级控制。富文本格式化入口应全部来自官方 Tiptap React 表面：`PapyroToolbarFloating`、slash menu、drag context menu、link popover 和 table-node menus。当前活跃的 `PapyroToolbarFloating` 仍与官方 Notion-like 工具栏组合有偏差：文本对齐、撤销/重做和高亮控件常驻展示；它应收敛为官方模板组合，仅移除 AI/Cloud 等 Papyro 暂未实现的能力。
 - 验证标准：每个 UI 收敛步骤都要跑源码测试、构建和 editor Markdown gate；视觉改动在有可用 app target 时优先做 desktop WebView/manual smoke 或截图验证。
 
+## 编辑器 UI/UX 长期推进规格（2026-05-15）
+
+接入官方组件只代表源码路径正确，不代表体验已经达到官方 Notion-like 模板标准。后续 AI 推进时，必须把“官方源码接入”“Papyro 宿主适配”和“真实桌面体验验收”分开判断。
+
+### 体验目标
+
+Papyro 编辑区域应是安静、精确、可长期写作的桌面文档 surface。视觉方向遵循 `docs/zh-CN/ui-visual-brief.md` 的 **disciplined utility**，交互和组件组合优先对齐 `.reference/notion-like-editor` 中的官方 Notion-like 模板。
+
+- 文档画布保持克制、可读、稳定，不做营销页式 hero、卡片堆叠或装饰性渐变。
+- 富文本操作只在上下文中出现：选区浮动工具栏、slash menu、drag context menu、link/color popover 和 table-node menu。
+- 顶部 app shell 不承载 Markdown 格式化动作；它只负责标签页、视图模式、大纲、设置、主题和窗口级控制。
+- 官方组件的 DOM、状态机、ARIA、keyboard navigation 和 SCSS 是默认基线；Papyro 只做必要的 Markdown、i18n、主题 token、本地资源和 Rust 协议适配。
+
+### Surface Ownership
+
+| Surface | 视觉/交互所有者 | Papyro 允许适配 | 不允许做法 |
+|---------|----------------|----------------|------------|
+| 文档画布 | 官方 Notion-like layout + Papyro Markdown typography tokens | 内容宽度、中文排版、Source/Hybrid/Preview 一致性、Mermaid/KaTeX/error state | 用全局 CSS 破坏官方 block 间距、选区、placeholder 或 node view 命中区域 |
+| 浮动工具栏 | 官方 `Toolbar`、`FloatingElement`、按钮/Popover 原语 | 本地化、移除未实现 AI/Cloud 项、保持选区、防止 WebView 焦点丢失 | 重新发明旧顶部格式栏，或让常驻按钮挤占写作区 |
+| Slash menu | 官方 `slash-dropdown-menu` + `suggestion-menu` | Papyro block 命令、最近项、Markdown fallback | 用全局 menu CSS 覆盖官方 active/focus/disabled 状态 |
+| Drag context menu | 官方 `drag-context-menu` | Papyro 块移动、复制、删除、重置格式、颜色/高亮命令 | 恢复旧 block handle/controller 视觉或旧 DOM 注入 |
+| Link/Color/Image popover | 官方 popover/menu/input 原语 | 本地图片、链接 Markdown 序列化、中文标签、焦点返还 | 弹层透明、无边框、被裁剪、或点击后丢失编辑器选区 |
+| Table chrome | 官方 `table-node`、`TableHandle`、`TableSelectionOverlay`、`TableCellHandleMenu`、`TableExtendRowColumnButtons` | table host wrapper、视口安全、主题 token、Markdown GFM 序列化 | 重绘官方 handle/menu，给单元格注入会改变行高的占位内容，或让 resize handle 造成额外空行 |
+
+### 交互验收标准
+
+每次修改编辑区域 UI，都至少按以下场景自检。无法自动化时，在任务记录中说明手工检查结果。
+
+- Hover：表格行/列 handle、单元格 handle、拖拽 handle 只作为轻量暗示出现，不推动布局、不改变单元格高度、不遮挡文本光标。
+- Click：handle/menu 触发后，弹层锚点正确、表面不透明、有边框/阴影、菜单项密度一致，且编辑器选区不会意外丢失。
+- Resize：表格列宽拖拽使用 overlay/handle 命中区，不能让每个单元格多出空段落、空行或异常 padding。
+- Keyboard：slash menu、drag menu、table menu、link/color popover 支持方向键、Enter、Escape；焦点可见，关闭后尽量回到触发入口或编辑器。
+- State：default、hover、active、selected/current、disabled、focus-visible、destructive、dark/high-contrast 状态都必须可区分。
+- Layout：在 1440x920、900x640、暗色主题、高对比主题、中英文标签、长表格内容和长文件名场景下不重叠、不裁切关键动作。
+- Persistence：所有 UI 动作必须保持 Markdown 往返稳定；视觉修复不能引入只存在于 DOM 里的不可序列化状态。
+
+### 视觉 QA 记录要求
+
+涉及编辑器 UI 的任务，完成前应优先记录这些视图；截图不必提交进仓库，但应在任务汇报或 PR 里说明。
+
+- 普通段落选区 + 浮动工具栏。
+- `/` 触发 slash menu，并覆盖搜索、active item、空结果。
+- 块拖拽 handle + drag context menu。
+- 链接编辑 popover、颜色 popover、图片浮动 controls。
+- 表格 hover、列宽拖拽、行/列 handle、单元格 handle、cell menu、嵌套颜色/对齐菜单。
+- Source、Hybrid、Preview 三模式下同一 Markdown 文档的视觉一致性。
+
+### 不可交付标准
+
+出现以下情况时，不能把任务标记为完成：
+
+- 菜单透明、无背景、层级错乱、菜单项重叠或被 editor 容器裁剪。
+- 表格 hover/resize 导致单元格额外空行、行高跳变或文本光标命中异常。
+- 官方组件外观被 Papyro 全局 CSS 大面积覆盖，但没有对应的官方参考差异说明。
+- 顶部 app shell 又出现富文本格式化按钮。
+- 只通过 fake DOM / 单元测试，未对真实 desktop WebView 或截图场景做任何说明。
+- 暗色或高对比主题下 selected、focus、hover、destructive 状态不可辨认。
+
 ## 架构对齐：官方 Notion-like 模板结构
 
 重构后的目录结构应对齐官方 CLI 安装的布局：
@@ -406,14 +464,49 @@ js/src/
 
 编辑区域优先对齐官方 Notion-like 模板体验；Papyro shell 控制保留在富文本格式化流程之外。
 
+#### 9.1 格式化入口收敛
+
 - [x] 移除顶部旧 Rust/Dioxus Markdown 插入工具栏
 - [x] 顶栏只保留应用级控制：标签页、侧边栏开关、主题切换、设置、窗口控制和大纲开关
 - [x] 使用官方 Tiptap 浮动工具栏、slash menu、drag context menu 和 table menus 作为格式化入口
 - [x] 确认没有活跃 React 组件依赖后，删除或隔离旧 `mn-tiptap-format-toolbar`、旧 block handle、旧 block action menu CSS
 - [x] 对照官方 Notion-like 工具栏组合审查 `PapyroToolbarFloating`，删除仍在重复官方 toolbar 组件的 Papyro 专属命令模型
 - [x] 将活跃浮动工具栏替换为官方 Notion-like 组合：turn-into、marks、图片浮动控制、链接/文字颜色，以及把上标/下标、对齐、缩进收纳到 More 弹层；在真实本地或 Pro AI 工作流落地前排除 AI/Improve
-- [ ] 每迁移一个组件后，对照官方 Notion-like 模板审计剩余顶层编辑器布局
+
+#### 9.2 文档画布与排版收敛
+
+- [ ] 对照官方 `.notion-like-editor-layout` 审计 Papyro 编辑画布宽度、左右操作轨道、底部留白和窄窗口表现，确保 Source/Hybrid/Preview 不出现布局跳变
+- [ ] 统一 Markdown typography token：标题、段落、列表、blockquote、inline code、code block、table、Mermaid、KaTeX 在 Hybrid 和 Preview 中共享同一阅读节奏
+- [ ] 审计中英文混排、长 URL、长代码行、宽表格和图片节点的 overflow 行为，禁止关键操作被裁剪到不可达
+- [ ] 保留 app shell 的 disciplined utility 风格，不把编辑器画布包装成大卡片或营销页式 section
+
+#### 9.3 浮层与菜单系统收敛
+
+- [ ] 对照官方 `menu`、`popover`、`dropdown-menu`、`combobox` SCSS，审计 slash menu、drag context menu、link popover、color popover、table menu 是否共享一致的背景、边框、阴影、圆角、item density 和 active/focus 状态
+- [ ] 修复所有浮层透明、层级错乱、被裁剪、锚点漂移和关闭后焦点丢失的问题
+- [ ] 建立菜单层级规则：编辑器上下文浮层高于文档内容，低于 app modal；嵌套 table color/alignment menu 不应覆盖或污染 slash/link/drag 菜单
+- [ ] 为菜单 keyboard path 补源码测试或 smoke 记录：打开、方向键移动、Enter 执行、Escape 关闭、焦点返还
+
+#### 9.4 表格体验收敛
+
+- [ ] 对照官方 table-node 模板重新审计表格 hover、row/column handle、cell handle、extend button、selection overlay、resize handle、cell menu 和 nested menu 的完整路径
+- [ ] 修复列宽 hover/resize 导致单元格多出空行、额外 paragraph 或行高被撑大的问题；优先检查 ProseMirror table cell 默认内容、CSS `min-height`、resize handle DOM 和 wrapper padding 的相互作用
+- [ ] 修复 cell handle menu 的背景、层级、布局和 item density，确保其是官方 menu 表面，而不是透明或错乱的宿主浮层
+- [ ] 限制 Papyro 表格 CSS 的职责：host wrapper、overflow、theme token、Markdown table baseline；禁止重绘官方 handle、button、menu item 和 overlay
+- [ ] 验证表格交互后 Markdown 仍输出稳定 GFM table，复杂表格在不支持 GFM 表达的能力上必须有明确降级策略
+
+#### 9.5 官方组件差异审计
+
+- [ ] 建立官方模板差异清单：逐项记录 `PapyroToolbarFloating`、`SlashDropdownMenu`、`DragContextMenu`、`TableHandleMenu`、`TableCellHandleMenu`、`ImageNodeFloating` 与 `.reference/notion-like-editor` 的源码差异和原因
+- [ ] 每迁移或调整一个官方组件后，对照官方 Notion-like 模板审计剩余顶层编辑器布局、组件状态和 CSS override
+- [ ] 对所有保留的 Papyro 适配加注释或文档说明：Markdown 持久化、Rust 协议、i18n、本地资源或 WebView 焦点保护；无法说明的适配应删除
+
+#### 9.6 视觉回归与发布验收
+
+- [ ] 扩展 `docs/zh-CN/tiptap-release-smoke.md` 的编辑器 UI 场景，覆盖 table handles、cell menu、floating toolbar、slash menu、drag handle、link/color popover 和 image controls
 - [ ] 当 desktop WebView smoke 能在 CI 中稳定运行后，为 table handles、cell menu、floating toolbar、slash menu 和 drag handle 补视觉回归覆盖
+- [ ] UI 任务汇报必须包含：检查过的视图、键盘路径、暗色/高对比结果、窄窗口结果、自动化检查和已知 follow-up
+- [ ] 发布前运行 `node scripts/check-editor-markdown-gate.js`，并根据改动范围补充 `node scripts/check-tiptap-theme-bridge.js`、`node scripts/check-ui-contrast.js`、`node scripts/check-ui-a11y.js`
 
 ---
 
