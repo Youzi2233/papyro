@@ -3,6 +3,7 @@ use crate::open_requests::{
     MarkdownOpenRequestReceiver, MarkdownOpenRequestSender,
 };
 use crate::runtime::{use_app_runtime, AppShell};
+use base64::{engine::general_purpose::STANDARD, Engine as _};
 use dioxus::prelude::*;
 use papyro_core::models::{AppSettings, Theme, Workspace};
 use papyro_core::{FileState, NoteStorage, WorkspaceBootstrap};
@@ -13,6 +14,9 @@ use std::fmt::Display;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use url::Url;
+
+const DESKTOP_EDITOR_JS_SOURCE: &str = include_str!("../../../assets/editor.js");
+const DESKTOP_LOGO_PNG: &[u8] = include_bytes!("../../../assets/logo.png");
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DesktopStartupChrome {
@@ -64,6 +68,61 @@ pub fn desktop_startup_chrome(favicon: impl Display, main_css: &str) -> DesktopS
 
 pub fn desktop_startup_open_request_from_env() -> DesktopStartupOpenRequest {
     desktop_startup_open_request_from_args(std::env::args_os())
+}
+
+pub fn desktop_brand_logo_src() -> String {
+    embedded_png_data_url(DESKTOP_LOGO_PNG)
+}
+
+pub fn desktop_editor_runtime_head(editor_js_src: &str) -> String {
+    desktop_editor_runtime_head_for_source(editor_js_src, DESKTOP_EDITOR_JS_SOURCE)
+}
+
+pub fn desktop_editor_runtime_head_for_source(
+    editor_js_src: &str,
+    editor_js_source: &str,
+) -> String {
+    let editor_js_attr = html_attr(editor_js_src);
+    let editor_js_src = js_string_literal(editor_js_src);
+    let editor_js_source = inline_script_body(editor_js_source);
+
+    format!(
+        r#"<script>
+window.__PAPYRO_EDITOR_SCRIPT_SRC__ = {editor_js_src};
+window.__PAPYRO_EDITOR_LOAD_ERROR__ = "desktop editor runtime script has not loaded yet";
+</script>
+<script
+    data-papyro-editor-runtime="inline"
+    data-papyro-editor-runtime-src="{editor_js_attr}"
+>
+{editor_js_source}
+</script>
+<script>
+(() => {{
+    const runtimeSrc = window.__PAPYRO_EDITOR_SCRIPT_SRC__ || {editor_js_src};
+    if (window.papyroEditor) {{
+        delete window.__PAPYRO_EDITOR_LOAD_ERROR__;
+        return;
+    }}
+
+    const script = document.createElement("script");
+    script.src = runtimeSrc;
+    script.dataset.papyroEditorRuntime = "external-fallback";
+    script.dataset.papyroEditorRuntimeSrc = runtimeSrc;
+    script.onload = () => {{
+        if (window.papyroEditor) {{
+            delete window.__PAPYRO_EDITOR_LOAD_ERROR__;
+        }} else {{
+            window.__PAPYRO_EDITOR_LOAD_ERROR__ = "desktop editor runtime fallback loaded but did not register";
+        }}
+    }};
+    script.onerror = () => {{
+        window.__PAPYRO_EDITOR_LOAD_ERROR__ = `failed to load editor runtime script: ${{runtimeSrc}}`;
+    }};
+    document.head.appendChild(script);
+}})();
+</script>"#
+    )
 }
 
 pub fn desktop_startup_open_request_from_args<I, S>(args: I) -> DesktopStartupOpenRequest
@@ -263,6 +322,45 @@ fn absolutize_startup_path(path: &Path) -> PathBuf {
     std::env::current_dir()
         .map(|current_dir| current_dir.join(path))
         .unwrap_or_else(|_| path.to_path_buf())
+}
+
+fn embedded_png_data_url(bytes: &[u8]) -> String {
+    format!("data:image/png;base64,{}", STANDARD.encode(bytes))
+}
+
+fn js_string_literal(value: &str) -> String {
+    let escaped = value
+        .replace('\\', "\\\\")
+        .replace('\n', "\\n")
+        .replace('\r', "\\r")
+        .replace('"', "\\\"");
+    format!("\"{escaped}\"")
+}
+
+fn inline_script_body(source: &str) -> String {
+    let lower_source = source.to_ascii_lowercase();
+    let mut escaped = String::with_capacity(source.len());
+    let mut offset = 0;
+    let needle = "</script";
+
+    while let Some(relative_index) = lower_source[offset..].find(needle) {
+        let index = offset + relative_index;
+        escaped.push_str(&source[offset..index]);
+        escaped.push_str("<\\/");
+        escaped.push_str(&source[index + 2..index + needle.len()]);
+        offset = index + needle.len();
+    }
+
+    escaped.push_str(&source[offset..]);
+    escaped.replace("<!--", "<\\!--")
+}
+
+fn html_attr(value: &str) -> String {
+    value
+        .replace('&', "&amp;")
+        .replace('"', "&quot;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
 }
 
 #[cfg(test)]

@@ -67,7 +67,7 @@ sequenceDiagram
 
     User->>Desktop: cargo run -p papyro-desktop
     Desktop->>Desktop: configure window, icon, menu, assets
-    Desktop->>Desktop: inject /assets/editor.js
+    Desktop->>Desktop: inline editor runtime, keep /assets/editor.js fallback
     Desktop->>App: launch DesktopApp
     App->>Storage: bootstrap workspace/settings/recovery
     Storage-->>App: WorkspaceBootstrap
@@ -225,8 +225,9 @@ The desktop shell owns:
 - logging setup
 - native window title, size, icon, and menu configuration
 - platform window chrome policy: macOS keeps native traffic-light controls, while Windows and Linux keep the Papyro custom titlebar controls
-- runtime asset sync
-- `/assets/editor.js` injection
+- runtime asset sync for packaged fallback paths
+- inline editor runtime injection with `/assets/editor.js` as fallback
+- embedded brand logo context for shared UI surfaces
 - startup Markdown path collection
 - system opened-file event handling
 - mounting `papyro_app::desktop::DesktopApp`
@@ -357,8 +358,8 @@ The JS directory owns browser editor runtime code.
 | `js/src/editor-runtime-protocol.ts` | Rust command bridge for view mode, content, preferences, commands, focus, and destroy messages |
 | `js/src/editor-runtime-contract.ts` | stable host facade and adapter contract for `window.papyroEditor` |
 | `js/src/tiptap-react/` | React island provider, slots, mount controller, and future editor UI components |
-| `js/src/tiptap-i18n.js` | centralized labels for Tiptap runtime chrome, command menus, and accessibility text |
-| `js/src/tiptap-*.js` | focused Tiptap controllers, commands, Markdown handlers, and UI helpers |
+| `js/src/tiptap-i18n.ts` | centralized labels for Tiptap runtime chrome, command menus, and accessibility text |
+| `js/src/tiptap-*.ts` | focused Tiptap controllers, commands, Markdown handlers, and UI helpers |
 | `js/test/tiptap-*.test.ts` | Node test-runner coverage for runtime, commands, tables, Markdown, and UI primitives |
 | `js/build.js` | builds and syncs generated editor assets |
 
@@ -569,7 +570,7 @@ internals behind explicit functions.
 `SetPreferences` carries the Rust `AppLanguage` into the browser runtime. The
 React island exposes the normalized language through
 `usePapyroTiptapLanguage()`, and active editor chrome reads user-facing labels
-from `js/src/tiptap-i18n.js`. This keeps Tiptap component state local to React
+from `js/src/tiptap-i18n.ts`. This keeps Tiptap component state local to React
 while making menu labels, tooltips, placeholders, and accessibility text follow
 the same language preference as the Rust UI.
 
@@ -612,7 +613,7 @@ diagram state.
 KaTeX rendering also stays in JS. Rust enables `pulldown-cmark`
 `ENABLE_MATH`, strips raw HTML as usual, and converts inline/display math
 events into escaped `.mn-math-inline` and `.mn-math-block` placeholders.
-`js/src/tiptap-math.js` owns the shared renderer for Tiptap math node views and
+`js/src/tiptap-math.ts` owns the shared renderer for Tiptap math node views and
 Preview placeholders. It renders with `trust: false`, `throwOnError: true`,
 `output: "mathml"`, bounded `maxSize`, and bounded `maxExpand`, so local
 documents cannot opt into trusted KaTeX HTML features.
@@ -805,7 +806,7 @@ The implementation path is:
 - `crates/ui/src/layouts/desktop_layout.rs` asks a `SettingsWindowLauncher` context to open the tool window, with the old modal kept as a fallback.
 - The tool window receives the same app context as the main window, so settings changes still flow through normal commands and update the main editor live.
 - The tool window is created hidden, then shown and focused after the desktop context resolves. This avoids a visible blank white window during webview startup.
-- Window title text is localized through the shared app context, and the native window icon is loaded from the Papyro logo asset so secondary windows match the main app chrome.
+- Window title text is localized through the shared app context. Native window icons still load from bundled logo bytes, while shared UI logos use the embedded brand logo context so secondary windows do not depend on resolving `/assets/logo.png` from disk.
 - Desktop chrome is platform-aware. macOS settings and main windows use native traffic-light controls and hide Papyro's self-drawn minimize, maximize, and close buttons. Windows and Linux keep the custom Papyro controls and drag regions.
 
 Document windows reuse the same process-level window pattern, but unlike settings
@@ -817,14 +818,14 @@ Their editor state is local, while storage and settings are supplied through sha
 | Task | Start here | Also check |
 | --- | --- | --- |
 | UI layout/style | `crates/ui/src/components` | `assets/main.css`, `apps/*/assets/main.css` |
-| Theme tokens or Markdown visual style | [theme-system.md](theme-system.md) | `assets/main.css`, `js/src/tiptap-*.js`, `js/src/tiptap-react/` |
+| Theme tokens or Markdown visual style | [theme-system.md](theme-system.md) | `assets/main.css`, `js/src/tiptap-*.ts`, `js/src/tiptap-react/` |
 | New UI command | `crates/ui/src/commands.rs` | `crates/app/src/actions.rs` |
 | New app behavior | `crates/app/src/dispatcher.rs` | `handlers/*`, `workspace_flow/*` |
 | File operation | `crates/app/src/workspace_flow` | `crates/storage/src/fs` |
 | Save behavior | `workspace_flow/save.rs` | `crates/storage/src/lib.rs` |
 | File tree behavior | `crates/ui/src/components/sidebar` | `crates/core/src/file_state.rs` |
 | Markdown Preview | `crates/editor/src/renderer/html.rs` | `crates/ui/src/components/editor/preview.rs` |
-| Hybrid editing | `js/src/editor-runtime.ts`, `js/src/tiptap-*.js` | `js/src/tiptap-react/`, `crates/editor/src/parser/blocks.rs` |
+| Hybrid editing | `js/src/editor-runtime.ts`, `js/src/tiptap-*.ts` | `js/src/tiptap-react/`, `crates/editor/src/parser/blocks.rs` |
 | Paste/selection/IME | `js/src/tiptap-paste-controller.ts`, `js/src/tiptap-ui-primitives.ts` | `js/test/tiptap-*.test.ts` |
 | Settings field | `crates/core/src/models.rs` | settings UI and storage settings |
 | OS file open | `apps/desktop/src/main.rs` | `crates/app/src/open_requests.rs`, `dispatcher.rs` |
@@ -852,7 +853,7 @@ When Rust and JS need a new message:
 1. update `crates/editor/src/protocol.rs`
 2. add serde JSON tests
 3. update Rust sender or receiver in `EditorHost`
-4. handle the message in `js/src/editor-runtime.ts` or a focused `js/src/tiptap-*.js` controller
+4. handle the message in `js/src/editor-runtime.ts` or a focused `js/src/tiptap-*.ts` controller
 5. send JS events with `dioxus.send(...)`
 6. handle events in the Rust `EditorHost` match
 7. add Rust or JS tests

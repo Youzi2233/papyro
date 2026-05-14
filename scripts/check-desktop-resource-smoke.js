@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 
 const DESKTOP_SOURCE = "apps/desktop/src/main.rs";
 const MOBILE_SOURCE = "apps/mobile/src/main.rs";
+const APP_DESKTOP_SOURCE = "crates/app/src/desktop.rs";
 const TOOL_WINDOWS_SOURCE = "crates/app/src/desktop_tool_windows.rs";
 const HEADER_SOURCE = "crates/ui/src/components/header/mod.rs";
 const SIDEBAR_SOURCE = "crates/ui/src/components/sidebar/mod.rs";
@@ -37,13 +38,13 @@ const DESKTOP_URL_CONSTANTS = [
 
 const TOOL_WINDOW_URL_CONSTANTS = [
   ["TOOL_WINDOW_FAVICON", "/assets/favicon.ico"],
-  ["TOOL_WINDOW_LOGO_SRC", "/assets/logo.png"],
   ["TOOL_WINDOW_EDITOR_JS_SRC", "/assets/editor.js"],
 ];
 
 function main() {
   const failures = [];
   const desktopSource = readUtf8(DESKTOP_SOURCE, failures);
+  const appDesktopSource = readUtf8(APP_DESKTOP_SOURCE, failures);
   const toolWindowSource = readUtf8(TOOL_WINDOWS_SOURCE, failures);
   const mobileSource = readUtf8(MOBILE_SOURCE, failures);
 
@@ -52,10 +53,12 @@ function main() {
   checkImageHeaders(failures);
   checkEditorRuntimeBundle(failures);
   checkDesktopSourceUrls(desktopSource, failures);
+  checkAppDesktopEmbeddedResources(appDesktopSource, failures);
   checkToolWindowSourceUrls(toolWindowSource, failures);
   checkLogoSurfaceBindings(
     {
       desktopSource,
+      appDesktopSource,
       toolWindowSource,
       mobileSource,
       headerSource: readUtf8(HEADER_SOURCE, failures),
@@ -165,8 +168,8 @@ function checkDesktopSourceUrls(source, failures) {
   requireSourcePattern(
     source,
     DESKTOP_SOURCE,
-    /use_context_provider\(\|\|\s+BRAND_LOGO_SRC\.to_string\(\)\);/,
-    "desktop root must provide the WebView logo URL to shared UI components",
+    /use_context_provider\(papyro_app::desktop::desktop_brand_logo_src\);/,
+    "desktop root must provide the embedded logo data URL to shared UI components",
     failures,
   );
   requireSourcePattern(
@@ -207,8 +210,62 @@ function checkDesktopSourceUrls(source, failures) {
   requireSourcePattern(
     source,
     DESKTOP_SOURCE,
-    /src="\{editor_js_attr\}"/,
-    "desktop editor runtime script tag must use the escaped WebView URL attribute",
+    /desktop_editor_runtime_head\(\s*EDITOR_JS_SRC\s*,?\s*\)/,
+    "desktop startup must use the shared inline editor runtime head",
+    failures,
+  );
+}
+
+function checkAppDesktopEmbeddedResources(source, failures) {
+  if (!source) return;
+
+  requireSourcePattern(
+    source,
+    APP_DESKTOP_SOURCE,
+    /include_str!\("\.\.\/\.\.\/\.\.\/assets\/editor\.js"\)/,
+    "shared desktop helper must embed the generated editor runtime source",
+    failures,
+  );
+  requireSourcePattern(
+    source,
+    APP_DESKTOP_SOURCE,
+    /include_bytes!\("\.\.\/\.\.\/\.\.\/assets\/logo\.png"\)/,
+    "shared desktop helper must embed the logo bytes",
+    failures,
+  );
+  requireSourcePattern(
+    source,
+    APP_DESKTOP_SOURCE,
+    /data:image\/png;base64,/,
+    "shared desktop helper must expose the logo as a PNG data URL",
+    failures,
+  );
+  requireSourcePattern(
+    source,
+    APP_DESKTOP_SOURCE,
+    /data-papyro-editor-runtime="inline"/,
+    "desktop editor runtime head must inline the editor runtime",
+    failures,
+  );
+  requireSourcePattern(
+    source,
+    APP_DESKTOP_SOURCE,
+    /external-fallback/,
+    "desktop editor runtime head must keep /assets/editor.js as an external fallback",
+    failures,
+  );
+  requireSourcePattern(
+    source,
+    APP_DESKTOP_SOURCE,
+    /fn\s+inline_script_body\(/,
+    "desktop editor runtime head must escape inline script bodies",
+    failures,
+  );
+  requireSourcePattern(
+    source,
+    APP_DESKTOP_SOURCE,
+    /document\.createElement\("script"\)/,
+    "desktop editor runtime fallback must be created after inline registration fails",
     failures,
   );
 }
@@ -223,15 +280,15 @@ function checkToolWindowSourceUrls(source, failures) {
   requireSourcePattern(
     source,
     TOOL_WINDOWS_SOURCE,
-    /use_context_provider\(\|\|\s+TOOL_WINDOW_LOGO_SRC\.to_string\(\)\);/,
-    "document tool windows must provide the WebView logo URL to shared UI components",
+    /use_context_provider\(crate::desktop::desktop_brand_logo_src\);/,
+    "tool windows must provide the embedded logo data URL to shared UI components",
     failures,
   );
   requireSourcePattern(
     source,
     TOOL_WINDOWS_SOURCE,
-    /src="\{TOOL_WINDOW_EDITOR_JS_SRC\}"/,
-    "document tool window editor runtime script tag must use /assets/editor.js",
+    /desktop_editor_runtime_head\(TOOL_WINDOW_EDITOR_JS_SRC\)/,
+    "document tool window editor runtime head must use the shared inline helper",
     failures,
   );
   requireSourcePattern(
@@ -246,6 +303,7 @@ function checkToolWindowSourceUrls(source, failures) {
 function checkLogoSurfaceBindings(sources, failures) {
   const {
     desktopSource,
+    appDesktopSource,
     toolWindowSource,
     mobileSource,
     headerSource,
@@ -274,14 +332,22 @@ function checkLogoSurfaceBindings(sources, failures) {
     requireSourcePattern(
       settingsSource,
       SETTINGS_SOURCE,
-      /class:\s*"mn-about-logo"[\s\S]*?src:\s*"\/assets\/logo\.png"/,
-      "settings About logo must use the WebView logo URL",
+      /try_use_context::<String>\(\)\.unwrap_or_else\(\|\|\s+"\/assets\/logo\.png"\.to_string\(\)\)/,
+      "settings About logo must fall back to the WebView logo URL",
+      failures,
+    );
+    requireSourcePattern(
+      settingsSource,
+      SETTINGS_SOURCE,
+      /class:\s*"mn-about-logo"[\s\S]*?src:\s*brand_logo_src/,
+      "settings About logo must bind to the shared logo URL",
       failures,
     );
   }
 
   for (const [path, source] of [
     [DESKTOP_SOURCE, desktopSource],
+    [APP_DESKTOP_SOURCE, appDesktopSource],
     [TOOL_WINDOWS_SOURCE, toolWindowSource],
     [MOBILE_SOURCE, mobileSource],
     [HEADER_SOURCE, headerSource],

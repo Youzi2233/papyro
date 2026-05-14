@@ -388,13 +388,13 @@ js/src/
 - [x] 大纲/TOC 生成（通过 Rust 端消费）
 - [x] i18n 多语言支持
 - [x] 多标签页编辑器实例管理（editorRegistry）
-- [x] 加固 desktop/macOS 运行时资源：将 editor runtime、logo、favicon 和镜像后的编辑器 CSS 以内嵌 bytes 作为启动资源，再同步到 Dioxus native asset roots，包括 macOS `.app/Contents/Resources/assets`，确保 `/assets/editor.js` 与 `/assets/logo.png` 在脱离开发 checkout 后仍可解析
+- [x] 加固 desktop/macOS 运行时资源：将生成后的 editor runtime 内联注入 desktop WebView head，并保留 `/assets/editor.js` 作为外部 fallback；品牌 logo 改为内嵌 PNG data URL，同时继续把 editor runtime、logo、favicon 和 CSS bytes 镜像到 Dioxus native asset roots，包括 macOS `.app/Contents/Resources/assets`
 
 ---
 
 ### 阶段 8：测试和验证
 
-- [x] 更新 `tiptap-runtime-smoke.js` 适配新架构
+- [x] 更新 `tiptap-runtime-smoke.ts` 适配新架构
 - [x] 更新所有现有测试文件适配新模块路径
 - [x] 为每个官方组件接入添加 Markdown 序列化往返测试
 - [x] 验证 `scripts/check-editor-markdown-gate.js` 通过

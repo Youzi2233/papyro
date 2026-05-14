@@ -77,6 +77,8 @@ pub fn SettingsSurface(
     let effective_settings = settings_form.workspace_settings.clone();
     let workspace_overrides = settings_form.workspace_overrides.clone();
     let has_workspace = settings_form.has_workspace;
+    let brand_logo_src =
+        try_use_context::<String>().unwrap_or_else(|| "/assets/logo.png".to_string());
 
     let mut active_panel = use_signal(|| SettingsPanelKind::General);
     let mut language = use_signal(|| effective_settings.language);
@@ -326,7 +328,7 @@ pub fn SettingsSurface(
                                     div { class: "mn-about-logo-tile",
                                         img {
                                             class: "mn-about-logo",
-                                            src: "/assets/logo.png",
+                                            src: brand_logo_src,
                                             alt: "Papyro logo",
                                         }
                                     }

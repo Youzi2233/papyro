@@ -136,7 +136,9 @@ fn main() {
     // chrome.custom_head.push_str(desktop_tab_close_patch_head());
     chrome
         .custom_head
-        .push_str(&editor_runtime_head(EDITOR_JS_SRC));
+        .push_str(&papyro_app::desktop::desktop_editor_runtime_head(
+            EDITOR_JS_SRC,
+        ));
 
     let window = WindowBuilder::new()
         .with_title("Papyro")
@@ -257,7 +259,7 @@ fn sync_runtime_asset_bytes(target: &Path, bytes: &[u8]) -> io::Result<()> {
 
 #[component]
 fn DesktopRoot() -> Element {
-    use_context_provider(|| BRAND_LOGO_SRC.to_string());
+    use_context_provider(papyro_app::desktop::desktop_brand_logo_src);
 
     rsx! {
         papyro_app::desktop::DesktopApp {}
@@ -274,25 +276,6 @@ fn load_window_icon() -> Option<Icon> {
         .into_rgba8();
     let (width, height) = image.dimensions();
     Icon::from_rgba(image.into_raw(), width, height).ok()
-}
-
-fn editor_runtime_head(editor_js_src: &str) -> String {
-    let editor_js_attr = html_attr(editor_js_src);
-    let editor_js_src = js_string_literal(editor_js_src);
-
-    format!(
-        r#"<script>
-window.__PAPYRO_EDITOR_SCRIPT_SRC__ = {editor_js_src};
-window.__PAPYRO_EDITOR_LOAD_ERROR__ = "desktop editor runtime script has not loaded yet";
-</script>
-<script
-    src="{editor_js_attr}"
-    data-papyro-editor-runtime="external"
-    data-papyro-editor-runtime-src="{editor_js_attr}"
-    onload="if (window.papyroEditor) delete window.__PAPYRO_EDITOR_LOAD_ERROR__; else window.__PAPYRO_EDITOR_LOAD_ERROR__ = 'desktop editor runtime script loaded but did not register';"
-    onerror="window.__PAPYRO_EDITOR_LOAD_ERROR__ = 'failed to load editor runtime script: {editor_js_attr}';"
-></script>"#
-    )
 }
 
 fn desktop_interpreter_patch_head() -> &'static str {
@@ -472,34 +455,22 @@ fn normalize_desktop_webview_browser_args(value: Option<String>) -> Option<Strin
         .filter(|value| !value.is_empty())
 }
 
-fn js_string_literal(value: &str) -> String {
-    let escaped = value
-        .replace('\\', "\\\\")
-        .replace('\n', "\\n")
-        .replace('\r', "\\r")
-        .replace('"', "\\\"");
-    format!("\"{escaped}\"")
-}
-
-fn html_attr(value: &str) -> String {
-    value
-        .replace('&', "&amp;")
-        .replace('"', "&quot;")
-        .replace('<', "&lt;")
-        .replace('>', "&gt;")
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn editor_runtime_head_loads_external_script() {
-        let head = editor_runtime_head(EDITOR_JS_SRC);
+        let head = papyro_app::desktop::desktop_editor_runtime_head_for_source(
+            EDITOR_JS_SRC,
+            "window.papyroEditor = {};",
+        );
 
-        assert_eq!(head.matches("</script>").count(), 2);
-        assert!(head.contains(r#"src="/assets/editor.js""#));
-        assert!(head.contains(r#"data-papyro-editor-runtime="external""#));
+        assert_eq!(head.matches("</script>").count(), 3);
+        assert!(head.contains(r#"data-papyro-editor-runtime="inline""#));
+        assert!(head.contains(r#"data-papyro-editor-runtime-src="/assets/editor.js""#));
+        assert!(head.contains("external-fallback"));
+        assert!(!head.contains(r#"<script src="/assets/editor.js""#));
     }
 
     #[test]
@@ -535,7 +506,10 @@ mod tests {
 
     #[test]
     fn editor_runtime_head_does_not_expose_local_asset_paths() {
-        let head = editor_runtime_head(EDITOR_JS_SRC);
+        let head = papyro_app::desktop::desktop_editor_runtime_head_for_source(
+            EDITOR_JS_SRC,
+            "window.papyroEditor = {};",
+        );
 
         assert!(head.contains(r#"window.__PAPYRO_EDITOR_SCRIPT_SRC__ = "/assets/editor.js";"#));
         assert!(!head.contains("apps/desktop/assets"));
@@ -545,11 +519,35 @@ mod tests {
 
     #[test]
     fn editor_runtime_head_configures_fallback_src() {
-        let head = editor_runtime_head(r#"/assets/editor.js?name="quoted""#);
+        let head = papyro_app::desktop::desktop_editor_runtime_head_for_source(
+            r#"/assets/editor.js?name="quoted""#,
+            "window.papyroEditor = {};",
+        );
 
         assert!(head.contains("window.__PAPYRO_EDITOR_SCRIPT_SRC__"));
         assert!(head.contains(r#"/assets/editor.js?name=\"quoted\""#));
-        assert!(head.contains(r#"src="/assets/editor.js?name=&quot;quoted&quot;""#));
+        assert!(head.contains(
+            r#"data-papyro-editor-runtime-src="/assets/editor.js?name=&quot;quoted&quot;""#
+        ));
+    }
+
+    #[test]
+    fn editor_runtime_head_escapes_inline_script_body() {
+        let head = papyro_app::desktop::desktop_editor_runtime_head_for_source(
+            EDITOR_JS_SRC,
+            r#"window.x = "</script><!--";"#,
+        );
+
+        assert!(head.contains(r#"<\/script><\!--"#));
+        assert!(!head.contains(r#""</script><!--""#));
+    }
+
+    #[test]
+    fn desktop_brand_logo_src_embeds_png_data_url() {
+        let logo = papyro_app::desktop::desktop_brand_logo_src();
+
+        assert!(logo.starts_with("data:image/png;base64,"));
+        assert!(logo.len() > 128);
     }
 
     #[test]

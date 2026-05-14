@@ -28,7 +28,6 @@ const TOOL_WINDOW_CSS: &str = concat!(
     include_str!("../../../assets/main.css")
 );
 const TOOL_WINDOW_FAVICON: &str = "/assets/favicon.ico";
-const TOOL_WINDOW_LOGO_SRC: &str = "/assets/logo.png";
 const TOOL_WINDOW_EDITOR_JS_SRC: &str = "/assets/editor.js";
 const PAPYRO_WINDOW_ICON: &[u8] = include_bytes!("../../../assets/logo.png");
 const SETTINGS_WINDOW_WIDTH: f64 = 980.0;
@@ -233,6 +232,7 @@ fn SettingsToolWindowRoot(props: SettingsToolWindowProps) -> Element {
         platform,
         process_settings,
     } = props;
+    use_context_provider(crate::desktop::desktop_brand_logo_src);
     use_app_runtime_with_shared_services(
         RuntimeOptions {
             shell: AppShell::Mobile,
@@ -284,7 +284,7 @@ fn DocumentToolWindowRoot(props: DocumentToolWindowProps) -> Element {
         shared_services,
         on_closed,
     } = props;
-    use_context_provider(|| TOOL_WINDOW_LOGO_SRC.to_string());
+    use_context_provider(crate::desktop::desktop_brand_logo_src);
     let window_id_for_close = window_id.clone();
     let native_window_id = window().id();
     let native_close = on_closed;
@@ -447,6 +447,8 @@ html,body{{margin:0;padding:0;overflow:hidden;background:#f3f5f8;color:#111827;f
 
 fn document_tool_window_head() -> String {
     let theme_script = papyro_ui::theme::theme_dom_script(&Theme::System);
+    let editor_runtime_head =
+        crate::desktop::desktop_editor_runtime_head(TOOL_WINDOW_EDITOR_JS_SRC);
 
     format!(
         r#"<script>{theme_script}</script><script>document.documentElement.dataset.platform='{platform}';</script>
@@ -461,17 +463,7 @@ html,body{{margin:0;padding:0;overflow:hidden;background:#f3f5f8;color:#111827;f
 @media(prefers-color-scheme:dark){{:root:not([data-theme]) html,:root:not([data-theme]) body{{background:#0f1117;color:#f3f4f6;}}}}
 </style>
 <style>{TOOL_WINDOW_CSS}</style>
-<script>
-window.__PAPYRO_EDITOR_SCRIPT_SRC__ = "{TOOL_WINDOW_EDITOR_JS_SRC}";
-window.__PAPYRO_EDITOR_LOAD_ERROR__ = "desktop editor runtime script has not loaded yet";
-</script>
-<script
-    src="{TOOL_WINDOW_EDITOR_JS_SRC}"
-    data-papyro-editor-runtime="external"
-    data-papyro-editor-runtime-src="{TOOL_WINDOW_EDITOR_JS_SRC}"
-    onload="if (window.papyroEditor) delete window.__PAPYRO_EDITOR_LOAD_ERROR__; else window.__PAPYRO_EDITOR_LOAD_ERROR__ = 'desktop editor runtime script loaded but did not register';"
-    onerror="window.__PAPYRO_EDITOR_LOAD_ERROR__ = 'failed to load editor runtime script: {TOOL_WINDOW_EDITOR_JS_SRC}';"
-></script>"#,
+{editor_runtime_head}"#,
         platform = DesktopChromePolicy::current().platform.as_str(),
     )
 }
@@ -540,6 +532,16 @@ mod tests {
         assert!(head.contains("document.documentElement.lang='zh-CN'"));
         assert!(head.contains("document.documentElement.dataset.platform="));
         assert!(head.contains(r#"<link rel="icon" href="/assets/favicon.ico">"#));
+    }
+
+    #[test]
+    fn document_tool_window_head_inlines_editor_runtime_with_fallback() {
+        let head = document_tool_window_head();
+
+        assert!(head.contains(r#"data-papyro-editor-runtime="inline""#));
+        assert!(head.contains(r#"data-papyro-editor-runtime-src="/assets/editor.js""#));
+        assert!(head.contains("external-fallback"));
+        assert!(!head.contains(r#"<script src="/assets/editor.js""#));
     }
 
     #[test]

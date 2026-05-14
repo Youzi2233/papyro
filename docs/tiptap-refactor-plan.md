@@ -388,13 +388,13 @@ These features are unique to Papyro, not in the official template, and need to b
 - [x] Outline/TOC generation (consumed by Rust side)
 - [x] i18n multilingual support
 - [x] Multi-tab editor instance management (editorRegistry)
-- [x] Harden desktop/macOS runtime assets: embed the editor runtime, logo, favicon, and mirrored editor CSS as startup bytes, then mirror them into the Dioxus-native asset roots including macOS `.app/Contents/Resources/assets` so `/assets/editor.js` and `/assets/logo.png` resolve outside the development checkout
+- [x] Harden desktop/macOS runtime assets: inline the generated editor runtime into the desktop WebView head, keep `/assets/editor.js` as an external fallback, expose the brand logo as an embedded PNG data URL, and still mirror editor runtime, logo, favicon, and CSS bytes into Dioxus-native asset roots including macOS `.app/Contents/Resources/assets`
 
 ---
 
 ### Phase 8: Testing and Verification
 
-- [x] Update `tiptap-runtime-smoke.js` for new architecture
+- [x] Update `tiptap-runtime-smoke.ts` for new architecture
 - [x] Update all existing test files for new module paths
 - [x] Add Markdown serialization round-trip tests for each official component
 - [x] Verify `scripts/check-editor-markdown-gate.js` passes
