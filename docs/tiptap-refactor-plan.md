@@ -494,6 +494,8 @@ The editor surface must behave like the official Notion-like template first, wit
 - [ ] Fix the cell handle menu background, stacking, layout, and item density so it uses the official menu surface instead of a transparent or broken host layer
 - [ ] Limit Papyro table CSS to host wrapper, overflow, theme tokens, and Markdown table baseline; do not redraw official handles, buttons, menu items, or overlays
 - [ ] Verify table interactions still serialize to stable GFM tables; complex table features that cannot be represented by GFM need an explicit degradation policy
+- [x] 2026-05-15 follow-up: limit table-cell content styling to `:not(.column-resize-handle)` and lock the resize handle to absolute positioning with zero content height in the host CSS, preventing hover/resize chrome from participating in table-cell text layout and inflating row height
+- [x] 2026-05-15 follow-up: add an opaque official card/menu-token fallback surface for `tiptap-table-menu-content`, and add Markdown style smoke guards for resize-handle out-of-flow behavior plus table-menu background
 
 #### 9.5 Official Component Difference Audit
 

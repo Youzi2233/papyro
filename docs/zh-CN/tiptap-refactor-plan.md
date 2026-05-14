@@ -494,6 +494,8 @@ js/src/
 - [ ] 修复 cell handle menu 的背景、层级、布局和 item density，确保其是官方 menu 表面，而不是透明或错乱的宿主浮层
 - [ ] 限制 Papyro 表格 CSS 的职责：host wrapper、overflow、theme token、Markdown table baseline；禁止重绘官方 handle、button、menu item 和 overlay
 - [ ] 验证表格交互后 Markdown 仍输出稳定 GFM table，复杂表格在不支持 GFM 表达的能力上必须有明确降级策略
+- [x] 2026-05-15 跟进：将表格单元格内容选择器限定为 `:not(.column-resize-handle)`，并在宿主 CSS 中锁定 resize handle 为绝对定位、零内容高度，避免 hover/resize chrome 参与单元格正文布局导致行高被撑开
+- [x] 2026-05-15 跟进：为 `tiptap-table-menu-content` 增加官方 card/menu token 的不透明表面兜底，并把 resize handle 出流约束与 table menu 背景写入 Markdown style smoke 防回归
 
 #### 9.5 官方组件差异审计
 

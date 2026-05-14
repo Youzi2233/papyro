@@ -47,10 +47,15 @@
     text-align: left;
 }
 
-.mn-tiptap-editor :where(td, th) > * {
+.mn-tiptap-editor :where(td, th) > :not(.column-resize-handle) {
     position: relative;
     min-height: 1.45em;
     z-index: 1;
+}
+
+.mn-tiptap-editor :where(td, th) > .column-resize-handle {
+    position: absolute;
+    min-height: 0;
 }
 
 .mn-tiptap-editor :where(td, th) :where(p, ul, ol, blockquote, pre) {
@@ -70,9 +75,14 @@
 }
 
 .mn-tiptap-editor .column-resize-handle {
+    position: absolute;
+    top: 0;
+    bottom: 0;
     right: -2px;
     z-index: 20;
     width: 4px;
+    height: auto;
+    margin: 0;
     background: var(--tt-table-column-resize-handle-bg);
     opacity: 0;
     pointer-events: auto;
@@ -113,12 +123,19 @@
 
 .tiptap-menu-content.tiptap-table-menu-content {
     z-index: 50;
+    display: flex;
+    flex-direction: column;
     min-width: 15rem;
     height: auto;
     max-height: min(28rem, var(--popover-available-height, 70vh));
+    border: 1px solid var(--tiptap-card-border-color, var(--tt-border-color, var(--mn-border)));
+    border-radius: calc(0.375rem + var(--tt-radius-lg, var(--mn-radius-md)));
+    background-color: var(--tiptap-card-bg-color, var(--tt-card-bg-color, var(--mn-surface-raised)));
+    box-shadow: var(--tt-shadow-elevated-md, var(--mn-shadow-menu));
     outline: none;
     isolation: isolate;
     pointer-events: auto;
+    overflow: hidden;
 }
 
 .tiptap-table-menu-content .tiptap-combobox-list {
