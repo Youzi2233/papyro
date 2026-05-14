@@ -213,7 +213,26 @@ End of document.
 - [ ] 确认菜单动作执行后焦点回到编辑器。
 - [ ] 确认控件在英文和中文 UI 中都有可读 label 或 tooltip。
 
-## 10. 通过和失败规则
+## 10. 编辑器 UI Surface 视觉验收
+
+准备 release candidate 时，为这些 surface 记录桌面截图或短录屏。截图不需要提交进仓库，但 release note 或 QA 记录必须说明检查过哪些视图。
+
+- [ ] Floating toolbar：选中普通段落文字，确认工具栏是不透明 surface、有清晰边框/阴影、按钮节奏接近官方模板，并且没有依赖顶部 shell 的格式化按钮。
+- [ ] Link popover：从 floating toolbar 打开链接控件，确认 URL 输入框可读，应用/打开/删除控件同一行对齐，Escape 返回编辑器且不丢内容。
+- [ ] Color popover：从 floating toolbar 打开文字颜色，确认 text/highlight 分组是不透明 card surface，label 可读，focus 可见，靠近视口边缘也不裁剪关键动作。
+- [ ] Slash menu：输入 `/`，确认菜单是不透明 card，有 active item 状态、分组命令标签、滚动行为、空查询行为，并支持方向键、Enter 和 Escape。
+- [ ] Drag handle 和 block menu：hover 段落/标题，确认 handle 和 `+` 入口克制且可触达；打开菜单后确认 Turn into、颜色、适用时的表格动作、duplicate/copy/delete、焦点返还和 destructive 项可辨认。
+- [ ] Table handles：hover 表格，确认行/列/单元格 handle、扩展按钮、selection overlay 和 resize handle 不推动布局、不增加空行、不遮挡文本光标。
+- [ ] Table cell menu：打开 cell menu 和嵌套 color/alignment 菜单，确认每层不透明、限制在视口内、文本以省略号裁剪、按钮左对齐，长菜单滚动不会改变单元格高度。
+- [ ] Image controls：选中本地图片节点，确认左/中/右对齐、caption、download、replace、delete 控件出现在官方 floating toolbar 内，且不破坏本地资源渲染。
+- [ ] 窄窗口：在约 900x640 下重复 floating toolbar、slash menu、drag menu 和 table cell menu；关键动作必须可触达，不与 app shell 重叠。
+- [ ] 暗色/高对比主题：重复 floating toolbar、slash menu、table cell menu、link/color popover 和 image controls；selected、hover、focus-visible、disabled、destructive 状态必须可区分。
+
+UI-heavy 修复的任务汇报必须包含：检查过的视图、键盘路径、暗色/高对比结果、窄窗口结果、自动化检查和已知 follow-up。
+
+当前自动化覆盖包括 `node scripts/check-desktop-tiptap-webview-smoke.js`：它会启动真实 desktop WebView，并检查 slash menu、floating toolbar、link/color popover、drag context menu、table resize/cell menu、image controls、Source mode 和 Preview mode。它补充但不替代 release candidate 截图验收。
+
+## 11. 通过和失败规则
 
 出现以下任一情况，本轮 smoke 失败：
 
@@ -223,7 +242,9 @@ End of document.
 - 中文输入法在常见写作 block 中提交异常。
 - Source/Hybrid/Preview 切换导致用户工作丢失。
 - 表格编辑留下残留句柄、破坏 Markdown，或单元格不可触达。
-- 浮层菜单无法稳定打开、关闭或操作。
+- 浮层菜单无法稳定打开、关闭、操作，或不是不透明 bounded surface。
+- 表格 hover/resize 增加空行、行高异常跳变，或破坏文本光标命中。
+- Link/color/image 控件透明、被裁剪、不可读，或让编辑器选区丢失。
 - 系统打开文件不能同步 tab 和工作区上下文。
 
 失败时：

@@ -525,10 +525,12 @@ js/src/
 
 #### 9.6 视觉回归与发布验收
 
-- [ ] 扩展 `docs/zh-CN/tiptap-release-smoke.md` 的编辑器 UI 场景，覆盖 table handles、cell menu、floating toolbar、slash menu、drag handle、link/color popover 和 image controls
-- [ ] 当 desktop WebView smoke 能在 CI 中稳定运行后，为 table handles、cell menu、floating toolbar、slash menu 和 drag handle 补视觉回归覆盖
-- [ ] UI 任务汇报必须包含：检查过的视图、键盘路径、暗色/高对比结果、窄窗口结果、自动化检查和已知 follow-up
+- [x] 扩展 `docs/zh-CN/tiptap-release-smoke.md` 的编辑器 UI 场景，覆盖 table handles、cell menu、floating toolbar、slash menu、drag handle、link/color popover 和 image controls
+- [x] 为 slash menu、floating toolbar、link/color popover、drag context menu、table resize/cell menu 和 image controls 补 desktop WebView smoke 覆盖；截图级视觉回归仍留给后续 CI/browser 基础设施任务
+- [x] UI 任务汇报必须包含：检查过的视图、键盘路径、暗色/高对比结果、窄窗口结果、自动化检查和已知 follow-up
 - [ ] 发布前运行 `node scripts/check-editor-markdown-gate.js`，并根据改动范围补充 `node scripts/check-tiptap-theme-bridge.js`、`node scripts/check-ui-contrast.js`、`node scripts/check-ui-a11y.js`
+- [x] 2026-05-15 跟进：让 `node scripts/check-tiptap-release-smoke.js` 守护中英文 release checklist 必须保留编辑器 UI surface 视觉验收章节，确保 table handles、cell menu、floating toolbar、slash menu、drag handle、link/color popover、image controls、窄窗口和暗色/高对比检查不会从发布门禁里消失
+- [x] 2026-05-15 跟进：扩展 `node scripts/check-desktop-tiptap-webview-smoke.js`，在真实 desktop WebView 中验证 slash menu、floating toolbar、link popover、color popover、drag context menu、table cell menu 和 image floating controls 的不透明 bounded surface 与可用控件
 
 ---
 

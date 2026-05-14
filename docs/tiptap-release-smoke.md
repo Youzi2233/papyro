@@ -213,7 +213,26 @@ End of document.
 - [ ] Confirm focus returns to the editor after menu actions.
 - [ ] Confirm controls have readable labels or tooltips in both English and Chinese UI.
 
-## 10. Pass And Fail Rules
+## 10. Editor UI Surface Visual Acceptance
+
+Record desktop screenshots or a short screen capture for these surfaces when preparing a release candidate. The screenshots do not need to be committed, but the release note or QA record must say which views were checked.
+
+- [ ] Floating toolbar: select normal paragraph text and confirm the toolbar uses an opaque surface, visible border/shadow, compact official button rhythm, and no top-shell formatting buttons are involved.
+- [ ] Link popover: open the Link control from the floating toolbar, confirm the URL input is readable, the apply/open/remove controls align on one row, and Escape returns to the editor without losing content.
+- [ ] Color popover: open Text color from the floating toolbar, confirm text/highlight groups have opaque card surfaces, readable labels, visible focus, and no clipping at the viewport edge.
+- [ ] Slash menu: type `/`, verify the menu has an opaque card, active item state, grouped command labels, scroll behavior, empty-query behavior, and keyboard navigation with Arrow keys, Enter, and Escape.
+- [ ] Drag handle and block menu: hover paragraphs/headings, confirm the handle and `+` affordance stay subtle and reachable; open the menu and verify Turn into, color, table-specific actions when applicable, duplicate/copy/delete, focus return, and destructive item visibility.
+- [ ] Table handles: hover a table and confirm row/column/cell handles, extend buttons, selection overlay, and resize handle do not shift layout, add blank lines, or cover the text caret.
+- [ ] Table cell menu: open the cell menu and nested color/alignment menus, confirm every layer is opaque, bounded to the viewport, text is clipped with ellipsis, buttons align left, and long menus scroll without changing cell height.
+- [ ] Image controls: select a local-image node and confirm align left/center/right, caption, download, replace, and delete controls appear in the official floating toolbar and do not break local resource rendering.
+- [ ] Narrow window: repeat floating toolbar, slash menu, drag menu, and table cell menu at about 900x640; key actions must remain reachable without overlapping the app shell.
+- [ ] Dark/high-contrast themes: repeat floating toolbar, slash menu, table cell menu, link/color popovers, and image controls; selected, hover, focus-visible, disabled, and destructive states must be distinguishable.
+
+For UI-heavy fixes, the task report must include checked views, keyboard paths, dark/high-contrast result, narrow-window result, automated checks, and known follow-ups.
+
+Automated coverage currently includes `node scripts/check-desktop-tiptap-webview-smoke.js`, which launches the real desktop WebView and checks slash menu, floating toolbar, link/color popovers, drag context menu, table resize/cell menu, image controls, Source mode, and Preview mode. This complements, but does not replace, release-candidate screenshots.
+
+## 11. Pass And Fail Rules
 
 The smoke run fails if any of these occur:
 
@@ -223,7 +242,9 @@ The smoke run fails if any of these occur:
 - IME input commits incorrectly in common writing blocks.
 - Source/Hybrid/Preview mode switching loses the user's work.
 - Table editing leaves orphan handles, broken Markdown, or unreachable cells.
-- Floating menus cannot be opened, dismissed, or operated predictably.
+- Floating menus cannot be opened, dismissed, operated predictably, or rendered as opaque bounded surfaces.
+- Table hover or resize adds blank lines, changes row height unexpectedly, or breaks cursor hit testing.
+- Link/color/image controls are transparent, clipped, unreadable, or lose the editor selection.
 - OS-opened files do not synchronize tab and workspace context.
 
 When a failure occurs:

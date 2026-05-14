@@ -228,6 +228,9 @@ async function runWebViewChecks(client, { noteTitle }) {
 
   await exerciseSlashMenu(client);
   await exerciseFloatingToolbar(client);
+  await exerciseLinkAndColorPopovers(client);
+  await exerciseDragContextMenu(client);
+  await exerciseImageControls(client);
   await exerciseTableLayer(client);
   await exerciseSourceMode(client);
   await exercisePreviewMode(client);
@@ -276,6 +279,16 @@ async function exerciseSlashMenu(client) {
     return Boolean(
       document.querySelector(".tiptap-suggestion-menu") ||
       document.querySelector(".tiptap-slash-card")
+    );
+  });
+  await assertEvaluate(client, "slash command menu uses an opaque bounded card surface", () => {
+    return isOpaqueBoundedSurface(document.querySelector(".tiptap-slash-card"));
+  });
+  await pressKey(client, "ArrowDown");
+  await assertEvaluate(client, "slash command menu keeps a visible active item", () => {
+    return Boolean(
+      document.querySelector(".tiptap-slash-card [data-active-state='on']") ||
+      document.querySelector(".tiptap-slash-card [aria-selected='true']")
     );
   });
   await pressKey(client, "Escape");
@@ -328,11 +341,12 @@ async function exerciseFloatingToolbar(client) {
     if (!toolbar) return false;
     const buttons = Array.from(toolbar.querySelectorAll("button:not(:disabled)"));
     const names = buttons.map((button) => button.getAttribute("aria-label") ?? "");
-    return names.some((name) => /Turn into/u.test(name)) &&
+    return isOpaqueBoundedSurface(toolbar) &&
+      names.some((name) => /Turn into/u.test(name)) &&
       names.some((name) => /Bold/u.test(name)) &&
       names.some((name) => /Italic/u.test(name));
   });
-  await clickFloatingToolbarButton(client, /More options/u);
+  await activateFloatingToolbarButton(client, /More options/u);
   await assertEventually(client, "floating toolbar more options opens", () => {
     const toolbars = Array.from(document.querySelectorAll(".tiptap-toolbar[data-variant='floating']"));
     return toolbars.length > 1 && toolbars.some((toolbar) =>
@@ -341,10 +355,161 @@ async function exerciseFloatingToolbar(client) {
       )
     );
   });
-  await clickFloatingToolbarButton(client, /Align center/u);
+  await activateFloatingToolbarButton(client, /Align center/u);
   await assertEventually(client, "TextAlign center changes editor DOM", () =>
     Boolean(document.querySelector(".ProseMirror [style*='text-align: center']")),
   );
+  await pressKey(client, "Escape");
+}
+
+async function exerciseLinkAndColorPopovers(client) {
+  await createTextSelection(client);
+  await clickFloatingToolbarButton(client, /Link/u);
+  await assertEventually(client, "link popover opens with an opaque bounded input surface", () => {
+    const popover = document.querySelector(".tiptap-popover");
+    const card = popover?.querySelector(".tiptap-card") ?? null;
+    const input = popover?.querySelector("input.tiptap-link-input") ?? null;
+    const buttons = Array.from(popover?.querySelectorAll("button") ?? []);
+
+    return isOpaqueBoundedSurface(card) &&
+      input &&
+      input.getBoundingClientRect().width >= 120 &&
+      buttons.length >= 3 &&
+      buttons.every((button) => button.getBoundingClientRect().height >= 24);
+  });
+  await pressKey(client, "Escape");
+
+  await createTextSelection(client);
+  await activateFloatingToolbarButton(client, /Text color/u);
+  await assertEventually(client, "color popover opens with grouped opaque color controls", () => {
+    const activeCard = document.activeElement?.closest?.(".tiptap-card") ?? null;
+    const card = activeCard || document.querySelector(".tiptap-popover .tiptap-card");
+    const labels = Array.from(card?.querySelectorAll(".tiptap-card-group-label") ?? []);
+    const groups = Array.from(card?.querySelectorAll(".tiptap-card-item-group") ?? []);
+    const buttons = Array.from(card?.querySelectorAll("button") ?? []);
+    const visibleButtons = buttons.filter((button) => {
+      const rect = button.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0;
+    });
+
+    return isOpaqueBoundedSurface(card) &&
+      labels.length >= 2 &&
+      groups.length >= 2 &&
+      visibleButtons.length >= 6;
+  });
+  await pressKey(client, "Escape");
+}
+
+async function createTextSelection(client) {
+  await assertEvaluate(client, "text selection is available for floating surface smoke", () => {
+    const editorDom = document.querySelector(".ProseMirror");
+    const editor = editorDom?.editor;
+    if (!editor?.state?.doc || !editor.commands?.setTextSelection) return false;
+
+    const targetText = "This paragraph has";
+    let range = null;
+    editor.state.doc.descendants((node, pos) => {
+      if (
+        range ||
+        !node.isTextblock ||
+        node.type?.name !== "paragraph" ||
+        !node.textContent ||
+        !node.textContent.includes(targetText)
+      ) {
+        return !range;
+      }
+      const textStart = pos + 1 + node.textContent.indexOf(targetText);
+      range = {
+        from: textStart,
+        to: textStart + Math.min(node.textContent.length, 12),
+      };
+      return false;
+    });
+
+    if (!range || range.to <= range.from) return false;
+    editor.commands.setTextSelection(range.from);
+    if (editor.commands.setTextSelection(range) === false) return false;
+    editor.commands.focus();
+    return !editor.state.selection.empty;
+  });
+  await assertEventually(client, "floating toolbar is available after text selection", () => {
+    return Boolean(document.querySelector(".tiptap-toolbar[data-variant='floating']"));
+  });
+}
+
+async function exerciseDragContextMenu(client) {
+  await moveToSelector(client, ".ProseMirror p");
+  await assertEventually(client, "drag handle appears on block hover", () => {
+    return Boolean(document.querySelector(".drag-handle"));
+  });
+  await assertEvaluate(client, "drag handle menu trigger activates", () => {
+    const handle = document.querySelector(".mn-tiptap-drag-context-menu-handle");
+    const buttons = Array.from(handle?.querySelectorAll("button") ?? []);
+    const trigger = buttons.find((button) =>
+      /options|drag/u.test(button.getAttribute("aria-label") ?? "")
+    ) ?? buttons.at(-1);
+    if (!trigger) return false;
+    trigger.click();
+    return true;
+  });
+  await assertEventually(client, "drag context menu opens with core official actions", () => {
+    const menu = Array
+      .from(document.querySelectorAll(".tiptap-menu-content:not(.tiptap-table-menu-content)"))
+      .find((candidate) => candidate.querySelector(".tiptap-combobox-list"));
+    const panel = menu?.querySelector(".tiptap-combobox-list") ?? null;
+    const text = panel?.textContent ?? "";
+    const labels = Array.from(panel?.querySelectorAll(".tiptap-button-text") ?? []);
+
+    return isOpaqueBoundedSurface(panel) &&
+      /Turn Into/i.test(text) &&
+      /Duplicate node|Copy to clipboard|Delete/iu.test(text) &&
+      labels.every((label) => {
+        const style = getComputedStyle(label);
+        return style.whiteSpace === "nowrap" &&
+          style.overflow === "hidden" &&
+          style.textOverflow === "ellipsis";
+      });
+  });
+  await pressKey(client, "Escape");
+}
+
+async function exerciseImageControls(client) {
+  await assertEvaluate(client, "image node selection is created through Tiptap", () => {
+    const editorDom = document.querySelector(".ProseMirror");
+    const editor = editorDom?.editor;
+    if (!editor?.state?.doc || !editor.commands?.setNodeSelection) return false;
+
+    let imagePos = null;
+    editor.state.doc.descendants((node, pos) => {
+      if (node.type?.name === "image") {
+        imagePos = pos;
+        return false;
+      }
+      return true;
+    });
+
+    if (imagePos === null) return false;
+    if (editor.commands.setNodeSelection(imagePos) === false) return false;
+    editor.commands.focus();
+    return editor.state.selection?.node?.type?.name === "image";
+  });
+  await assertEventually(client, "image floating controls expose official image actions", () => {
+    const toolbar = document.querySelector(".tiptap-toolbar[data-variant='floating']");
+    if (!toolbar || !isOpaqueBoundedSurface(toolbar)) return false;
+
+    const names = Array
+      .from(toolbar.querySelectorAll("button"))
+      .map((button) => button.getAttribute("aria-label") ?? button.getAttribute("title") ?? button.textContent ?? "");
+
+    return names.some((name) => /Image align left/u.test(name)) &&
+      names.some((name) => /Image align center/u.test(name)) &&
+      names.some((name) => /Image align right/u.test(name)) &&
+      names.some((name) => /Caption/u.test(name)) &&
+      names.some((name) => /Download image/u.test(name)) &&
+      names.some((name) => /Replace|Add image/u.test(name)) &&
+      names.some((name) => /Delete/u.test(name));
+  });
+  await pressKey(client, "Escape");
 }
 
 async function exerciseTableLayer(client) {
@@ -525,6 +690,33 @@ async function setStatusMode(client, mode) {
   await clickStatusModeOption(client, mode);
 }
 
+async function moveToSelector(client, selector) {
+  const point = await evaluate(client, (targetSelector) => {
+    const element = document.querySelector(targetSelector);
+    if (!element) return null;
+    return pointForElement(element);
+
+    function pointForElement(target) {
+      target.scrollIntoView?.({ block: "center", inline: "center" });
+      const rect = target.getBoundingClientRect();
+      const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+      const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+      const left = Math.max(0, Math.min(rect.left, viewportWidth - 1));
+      const right = Math.max(1, Math.min(rect.right, viewportWidth));
+      const top = Math.max(0, Math.min(rect.top, viewportHeight - 1));
+      const bottom = Math.max(1, Math.min(rect.bottom, viewportHeight));
+      return {
+        x: left + Math.max(1, Math.min((right - left) / 2, right - left - 1)),
+        y: top + Math.max(1, Math.min((bottom - top) / 2, bottom - top - 1)),
+      };
+    }
+  }, selector);
+  if (!point) {
+    throw new Error(`Unable to move to missing selector: ${selector}`);
+  }
+  await movePoint(client, point);
+}
+
 async function clickSelector(client, selector) {
   const point = await evaluate(client, (targetSelector) => {
     const element = document.querySelector(targetSelector);
@@ -598,6 +790,23 @@ async function clickFloatingToolbarButton(client, labelPatternSource) {
     throw new Error(`Unable to click floating toolbar button: ${labelPatternSource}`);
   }
   await clickPoint(client, point);
+}
+
+async function activateFloatingToolbarButton(client, labelPatternSource) {
+  const clicked = await evaluate(client, (patternSource) => {
+    const pattern = new RegExp(patternSource, "u");
+    const toolbars = Array.from(document.querySelectorAll(".tiptap-toolbar[data-variant='floating']"));
+    const button = toolbars
+      .flatMap((toolbar) => Array.from(toolbar.querySelectorAll("button:not(:disabled)")))
+      .find((candidate) => pattern.test(candidate.getAttribute("aria-label") ?? ""));
+    if (!button) return false;
+    button.scrollIntoView?.({ block: "center", inline: "center" });
+    button.click();
+    return true;
+  }, labelPatternSource.source);
+  if (!clicked) {
+    throw new Error(`Unable to activate floating toolbar button: ${labelPatternSource}`);
+  }
 }
 
 async function clickStatusModeOption(client, mode) {
@@ -688,6 +897,7 @@ function keyForCode(code) {
 
 function virtualKeyCode(code, key) {
   if (code === "KeyA") return 65;
+  if (code === "ArrowDown") return 40;
   if (code === "Enter") return 13;
   if (code === "End") return 35;
   if (code === "Escape") return 27;
@@ -738,12 +948,46 @@ async function debugDomSnapshot(client) {
         .filter(Boolean)
         .join("|")
     ).join(" / ");
+    const cards = Array.from(document.querySelectorAll(".tiptap-card"))
+      .map((card) => {
+        const rect = card.getBoundingClientRect();
+        const style = getComputedStyle(card);
+        return [
+          `card=${card.className}`,
+          `rect=${Math.round(rect.width)}x${Math.round(rect.height)}@${Math.round(rect.left)},${Math.round(rect.top)}`,
+          `bg=${style.backgroundColor}`,
+          `labels=${Array.from(card.querySelectorAll(".tiptap-card-group-label")).map((label) => label.textContent?.trim() ?? "").join("|")}`,
+          `groups=${card.querySelectorAll(".tiptap-card-item-group").length}`,
+          `buttons=${card.querySelectorAll("button").length}`,
+          `text="${(card.textContent ?? "").slice(0, 100)}"`,
+        ].join(" ");
+      })
+      .join("\n");
+    const menus = Array.from(document.querySelectorAll(".tiptap-menu-content"))
+      .map((content) => {
+        const rect = content.getBoundingClientRect();
+        const style = getComputedStyle(content);
+        const panel = content.querySelector(".tiptap-combobox-list");
+        const panelRect = panel?.getBoundingClientRect();
+        const panelStyle = panel ? getComputedStyle(panel) : null;
+        return [
+          `menu=${content.className}`,
+          `rect=${Math.round(rect.width)}x${Math.round(rect.height)}@${Math.round(rect.left)},${Math.round(rect.top)}`,
+          `bg=${style.backgroundColor}`,
+          `panel=${panel ? `${Math.round(panelRect.width)}x${Math.round(panelRect.height)} bg=${panelStyle.backgroundColor}` : "none"}`,
+          `labels=${Array.from(content.querySelectorAll(".tiptap-button-text")).map((label) => label.textContent?.trim() ?? "").join("|")}`,
+          `text="${(content.textContent ?? "").slice(0, 160)}"`,
+        ].join(" ");
+      })
+      .join("\n");
     return [
       `active=${activeElement?.tagName ?? "none"}.${activeElement?.className ?? ""}`,
       `selection="${selection?.toString?.() ?? ""}"`,
       `anchor=${anchorElement?.tagName ?? "none"}.${anchorElement?.className ?? ""}`,
       `menu=${menu ? `${menu.tagName}.${menu.className}` : "none"}`,
       `toolbars="${toolbarLabels}"`,
+      cards,
+      menus,
       `editorText="${(editor?.textContent ?? "").slice(-160)}"`,
     ].join("\n");
   });
@@ -765,7 +1009,10 @@ async function assertEvaluate(client, label, fn, ...args) {
 }
 
 async function evaluate(client, fn, ...args) {
-  const expression = `(${fn.toString()})(...${JSON.stringify(args)})`;
+  const expression = `(() => {
+    const isOpaqueBoundedSurface = ${isOpaqueBoundedSurfaceSource()};
+    return (${fn.toString()})(...${JSON.stringify(args)});
+  })()`;
   const response = await client.send("Runtime.evaluate", {
     expression,
     awaitPromise: true,
@@ -779,6 +1026,27 @@ async function evaluate(client, fn, ...args) {
     throw new Error(text);
   }
   return response.result?.value;
+}
+
+function isOpaqueBoundedSurfaceSource() {
+  return `(element) => {
+    if (!element) return false;
+    const style = getComputedStyle(element);
+    const rect = element.getBoundingClientRect();
+    const background = style.backgroundColor;
+    const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+    return rect.width >= 24 &&
+      rect.height >= 24 &&
+      rect.left >= -1 &&
+      rect.top >= -1 &&
+      rect.right <= viewportWidth + 1 &&
+      rect.bottom <= viewportHeight + 1 &&
+      background !== "rgba(0, 0, 0, 0)" &&
+      background !== "transparent" &&
+      style.visibility !== "hidden" &&
+      style.display !== "none";
+  }`;
 }
 
 async function waitFor(operation, { label, timeoutMs, intervalMs }) {

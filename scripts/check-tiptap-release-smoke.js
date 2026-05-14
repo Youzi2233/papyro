@@ -10,6 +10,44 @@ const {
 } = await importBundledModule(new URL("../js/src/tiptap-markdown.ts", import.meta.url));
 
 const DEFAULT_FIXTURE = "js/test/fixtures/tiptap-release-smoke.md";
+const RELEASE_SMOKE_DOCS = [
+  {
+    path: "docs/tiptap-release-smoke.md",
+    snippets: [
+      "Editor UI Surface Visual Acceptance",
+      "Floating toolbar",
+      "Link popover",
+      "Color popover",
+      "Slash menu",
+      "Drag handle and block menu",
+      "Table handles",
+      "Table cell menu",
+      "Image controls",
+      "Narrow window",
+      "Dark/high-contrast themes",
+      "node scripts/check-desktop-tiptap-webview-smoke.js",
+      "opaque bounded surfaces",
+    ],
+  },
+  {
+    path: "docs/zh-CN/tiptap-release-smoke.md",
+    snippets: [
+      "编辑器 UI Surface 视觉验收",
+      "Floating toolbar",
+      "Link popover",
+      "Color popover",
+      "Slash menu",
+      "Drag handle 和 block menu",
+      "Table handles",
+      "Table cell menu",
+      "Image controls",
+      "窄窗口",
+      "暗色/高对比主题",
+      "node scripts/check-desktop-tiptap-webview-smoke.js",
+      "不透明 bounded surface",
+    ],
+  },
+];
 
 function main() {
   const args = process.argv.slice(2);
@@ -33,7 +71,10 @@ function main() {
   }
 
   const fixturePath = args[0] ?? DEFAULT_FIXTURE;
-  const failures = checkReleaseFixture(readFileSync(fixturePath, "utf8"));
+  const failures = [
+    ...checkReleaseFixture(readFileSync(fixturePath, "utf8")),
+    ...checkReleaseSmokeDocs(),
+  ];
 
   if (failures.length > 0) {
     console.error("Tiptap release smoke fixture check failed:");
@@ -121,6 +162,19 @@ function checkReleaseFixture(markdown) {
   ]);
   expectEqual(failures, "round-trip document JSON", reparsed, parsed);
   checkComplexTableFallback(failures);
+
+  return failures;
+}
+
+function checkReleaseSmokeDocs() {
+  const failures = [];
+
+  for (const doc of RELEASE_SMOKE_DOCS) {
+    const source = readFileSync(doc.path, "utf8");
+    for (const snippet of doc.snippets) {
+      expectIncludes(failures, `${doc.path} release UI acceptance`, source, snippet);
+    }
+  }
 
   return failures;
 }
@@ -447,6 +501,7 @@ function runSelfTest() {
   assert(
     checkReleaseFixture(missingChinese).some((failure) => failure.includes("Chinese paragraph")),
   );
+  assert(checkReleaseSmokeDocs().length === 0);
 
   console.log("Tiptap release smoke fixture checker self-test passed.");
 }
