@@ -41,6 +41,7 @@ import {
   linkRemoveTitle,
 } from "@/tiptap-i18n"
 import { usePapyroTiptapLanguage } from "@/tiptap-react/runtime-context"
+import { restoreEditorFocusAfterFloatingMenu } from "@/lib/tiptap-menu-focus"
 
 import "./link-popover.scss"
 
@@ -259,14 +260,18 @@ export const LinkPopover = forwardRef<HTMLButtonElement, LinkPopoverProps>(
       (nextIsOpen: boolean) => {
         setIsOpen(nextIsOpen)
         onOpenChange?.(nextIsOpen)
+        if (!nextIsOpen) {
+          restoreEditorFocusAfterFloatingMenu(editor)
+        }
       },
-      [onOpenChange]
+      [editor, onOpenChange]
     )
 
     const handleSetLink = useCallback(() => {
       setLink()
       setIsOpen(false)
-    }, [setLink])
+      restoreEditorFocusAfterFloatingMenu(editor)
+    }, [editor, setLink])
 
     const handleClick = useCallback(
       (event: React.MouseEvent<HTMLButtonElement>) => {

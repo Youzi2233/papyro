@@ -12,6 +12,7 @@ import type { Node } from "@tiptap/pm/model"
 // --- Hooks ---
 import { useTiptapEditor } from "@/hooks/use-tiptap-editor"
 import { cn, isValidPosition, SR_ONLY } from "@/lib/tiptap-utils"
+import { restoreEditorFocusAfterFloatingMenu } from "@/lib/tiptap-menu-focus"
 import type { Orientation } from "@/components/tiptap-node/table-node/lib/tiptap-table-utils"
 import { selectCellsByCoords } from "@/components/tiptap-node/table-node/lib/tiptap-table-utils"
 
@@ -119,6 +120,10 @@ function useTableHandleMenu(
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
 
+  const restoreEditorFocus = useCallback(() => {
+    restoreEditorFocusAfterFloatingMenu(editor)
+  }, [editor])
+
   const menuPlacement = useMemo(
     () => MENU_PLACEMENT_MAP[orientation],
     [orientation]
@@ -164,10 +169,11 @@ function useTableHandleMenu(
         onToggleOtherHandle?.(false)
       } else {
         editor.commands.unfreezeHandles()
+        restoreEditorFocus()
         onToggleOtherHandle?.(true)
       }
     },
-    [editor, onOpenChange, onToggleOtherHandle, selectRowOrColumn]
+    [editor, onOpenChange, onToggleOtherHandle, restoreEditorFocus, selectRowOrColumn]
   )
 
   const resetMenu = useCallback(() => {
@@ -176,8 +182,9 @@ function useTableHandleMenu(
     setIsMenuOpen(false)
     onOpenChange?.(false)
     editor.commands.unfreezeHandles()
+    restoreEditorFocus()
     onToggleOtherHandle?.(true)
-  }, [editor, onOpenChange, onToggleOtherHandle])
+  }, [editor, onOpenChange, onToggleOtherHandle, restoreEditorFocus])
 
   return {
     isMenuOpen,

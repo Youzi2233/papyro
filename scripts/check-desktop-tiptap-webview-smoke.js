@@ -292,7 +292,67 @@ async function exerciseSlashMenu(client) {
     );
   });
   await pressKey(client, "Escape");
+  await assertEventually(client, "slash Escape closes the menu and returns focus to the editor", () => {
+    const editorDom = document.querySelector(".ProseMirror");
+    return Boolean(
+      editorDom &&
+      document.activeElement === editorDom &&
+      !document.querySelector(".tiptap-suggestion-menu") &&
+      !document.querySelector(".tiptap-slash-card")
+    );
+  });
   await pressKey(client, "Backspace");
+  await assertEvaluate(client, "slash table query is prepared for Enter activation", () => {
+    const editorDom = document.querySelector(".ProseMirror");
+    const editor = editorDom?.editor;
+    const view = editor?.view ?? null;
+    if (!editorDom || !editor || !view?.state) return false;
+    const json = editor.getJSON?.();
+    if (!Array.isArray(json?.content)) return false;
+
+    window.__PAPYRO_TIPTAP_SMOKE_TABLE_COUNT__ =
+      editorDom.querySelectorAll("table").length;
+
+    const content = [
+      ...json.content,
+      { type: "paragraph", content: [{ type: "text", text: "/table" }] },
+    ];
+    if (editor.commands.setContent({ type: "doc", content }) === false) return false;
+    editor.commands.focus("end");
+
+    return view.state.doc.textBetween(0, view.state.doc.content.size, "\n").endsWith("\n/table") &&
+      document.activeElement === editorDom;
+  });
+  await assertEventually(client, "slash table command menu opens with Table active", () => {
+    const card = document.querySelector(".tiptap-slash-card");
+    const active = card?.querySelector("[data-active-state='on'], [aria-selected='true']");
+    return Boolean(card && /Table/u.test(active?.textContent ?? card.textContent ?? ""));
+  });
+  await pressKey(client, "Enter");
+  await assertEventually(client, "slash Enter executes the highlighted command and restores editor focus", () => {
+    const editorDom = document.querySelector(".ProseMirror");
+    const editor = editorDom?.editor;
+    const tableCountBefore = window.__PAPYRO_TIPTAP_SMOKE_TABLE_COUNT__ ?? 0;
+    const currentText = editor?.state?.doc?.textBetween?.(
+      0,
+      editor.state.doc.content.size,
+      "\n",
+    ) ?? "";
+
+    return Boolean(
+      editorDom &&
+      editor &&
+      document.activeElement === editorDom &&
+      editorDom.querySelectorAll("table").length > tableCountBefore &&
+      !currentText.endsWith("/table") &&
+      !document.querySelector(".tiptap-suggestion-menu") &&
+      !document.querySelector(".tiptap-slash-card")
+    );
+  });
+  await assertEvaluate(client, "slash keyboard smoke cleanup clears transient state", () => {
+    delete window.__PAPYRO_TIPTAP_SMOKE_TABLE_COUNT__;
+    return true;
+  });
 }
 
 async function exerciseFloatingToolbar(client) {
@@ -378,6 +438,14 @@ async function exerciseLinkAndColorPopovers(client) {
       buttons.every((button) => button.getBoundingClientRect().height >= 24);
   });
   await pressKey(client, "Escape");
+  await assertEventually(client, "link popover Escape closes the popover and restores editor focus", () => {
+    const editorDom = document.querySelector(".ProseMirror");
+    return Boolean(
+      editorDom &&
+      document.activeElement === editorDom &&
+      !document.querySelector(".tiptap-popover .tiptap-card")
+    );
+  });
 
   await createTextSelection(client);
   await activateFloatingToolbarButton(client, /Text color/u);
@@ -398,6 +466,14 @@ async function exerciseLinkAndColorPopovers(client) {
       visibleButtons.length >= 6;
   });
   await pressKey(client, "Escape");
+  await assertEventually(client, "color popover Escape closes the popover and restores editor focus", () => {
+    const editorDom = document.querySelector(".ProseMirror");
+    return Boolean(
+      editorDom &&
+      document.activeElement === editorDom &&
+      !document.querySelector(".tiptap-popover .tiptap-card")
+    );
+  });
 }
 
 async function createTextSelection(client) {
@@ -471,6 +547,15 @@ async function exerciseDragContextMenu(client) {
       });
   });
   await pressKey(client, "Escape");
+  await assertEventually(client, "drag context menu Escape closes the menu and restores editor focus", () => {
+    const editorDom = document.querySelector(".ProseMirror");
+    return Boolean(
+      editorDom &&
+      document.activeElement === editorDom &&
+      !Array.from(document.querySelectorAll(".tiptap-menu-content:not(.tiptap-table-menu-content)"))
+        .some((candidate) => candidate.querySelector(".tiptap-combobox-list"))
+    );
+  });
 }
 
 async function exerciseImageControls(client) {
@@ -491,6 +576,11 @@ async function exerciseImageControls(client) {
     if (imagePos === null) return false;
     if (editor.commands.setNodeSelection(imagePos) === false) return false;
     editor.commands.focus();
+    editor.commands.scrollIntoView?.();
+    const selectedImage = editorDom.querySelector(
+      "img.ProseMirror-selectednode, .ProseMirror-selectednode img, img",
+    );
+    selectedImage?.scrollIntoView({ block: "center", inline: "center" });
     return editor.state.selection?.node?.type?.name === "image";
   });
   await assertEventually(client, "image floating controls expose official image actions", () => {
@@ -644,6 +734,14 @@ async function exerciseTableLayer(client) {
       });
   });
   await pressKey(client, "Escape");
+  await assertEventually(client, "table cell menu Escape closes the menu and restores editor focus", () => {
+    const editorDom = document.querySelector(".ProseMirror");
+    return Boolean(
+      editorDom &&
+      document.activeElement === editorDom &&
+      !document.querySelector(".tiptap-menu-content.tiptap-table-menu-content")
+    );
+  });
 }
 
 async function exerciseSourceMode(client) {
@@ -683,7 +781,13 @@ async function exercisePreviewMode(client) {
 }
 
 async function setStatusMode(client, mode) {
-  await clickSelector(client, ".mn-status-mode .mn-select-trigger");
+  await assertEvaluate(client, "status mode trigger activates", () => {
+    const trigger = document.querySelector(".mn-status-mode .mn-select-trigger");
+    if (!trigger) return false;
+    trigger.scrollIntoView?.({ block: "center", inline: "center" });
+    trigger.click();
+    return true;
+  });
   await assertEventually(client, "status mode menu opens", () => {
     return Boolean(document.querySelector(".mn-status-mode .mn-select-menu"));
   });

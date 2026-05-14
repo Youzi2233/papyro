@@ -8,6 +8,7 @@ import { useTiptapEditor } from "@/hooks/use-tiptap-editor"
 
 // --- Lib ---
 import { cn, SR_ONLY } from "@/lib/tiptap-utils"
+import { restoreEditorFocusAfterFloatingMenu } from "@/lib/tiptap-menu-focus"
 
 // --- UI ---
 import { ColorMenu } from "@/components/tiptap-ui/color-menu"
@@ -83,10 +84,15 @@ function useTableActions() {
 function useTableCellHandleMenu({ editor }: { editor: Editor | null }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
 
+  const restoreEditorFocus = useCallback(() => {
+    restoreEditorFocusAfterFloatingMenu(editor)
+  }, [editor])
+
   const closeMenu = useCallback(() => {
     setIsMenuOpen(false)
     editor?.commands.unfreezeHandles()
-  }, [editor])
+    restoreEditorFocus()
+  }, [editor, restoreEditorFocus])
 
   const handleMenuToggle = useCallback(
     (isOpen: boolean) => {
@@ -98,9 +104,10 @@ function useTableCellHandleMenu({ editor }: { editor: Editor | null }) {
         editor.commands.freezeHandles()
       } else {
         editor.commands.unfreezeHandles()
+        restoreEditorFocus()
       }
     },
-    [editor]
+    [editor, restoreEditorFocus]
   )
 
   return {

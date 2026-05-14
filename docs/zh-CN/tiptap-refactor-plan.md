@@ -475,30 +475,31 @@ js/src/
 
 #### 9.2 文档画布与排版收敛
 
-- [ ] 对照官方 `.notion-like-editor-layout` 审计 Papyro 编辑画布宽度、左右操作轨道、底部留白和窄窗口表现，确保 Source/Hybrid/Preview 不出现布局跳变
-- [ ] 统一 Markdown typography token：标题、段落、列表、blockquote、inline code、code block、table、Mermaid、KaTeX 在 Hybrid 和 Preview 中共享同一阅读节奏
-- [ ] 审计中英文混排、长 URL、长代码行、宽表格和图片节点的 overflow 行为，禁止关键操作被裁剪到不可达
-- [ ] 保留 app shell 的 disciplined utility 风格，不把编辑器画布包装成大卡片或营销页式 section
+- [x] 对照官方 `.notion-like-editor-layout` 审计 Papyro 编辑画布宽度、左右操作轨道、底部留白和窄窗口表现，确保 Source/Hybrid/Preview 不出现布局跳变
+- [x] 统一 Markdown typography token：标题、段落、列表、blockquote、inline code、code block、table、Mermaid、KaTeX 在 Hybrid 和 Preview 中共享同一阅读节奏
+- [x] 审计中英文混排、长 URL、长代码行、宽表格和图片节点的 overflow 行为，禁止关键操作被裁剪到不可达
+- [x] 保留 app shell 的 disciplined utility 风格，不把编辑器画布包装成大卡片或营销页式 section
 - [x] 2026-05-15 跟进：将正文阅读列收敛到接近官方 Notion-like 模板的 708px 内容宽度，并建立 `--mn-document-content-width` / `--mn-document-wide-width` 画布契约；Source、Hybrid、Preview、错误 fallback 共享同一正文 rail，代码块、表格、Mermaid/KaTeX 等宽内容通过自身容器滚动，不再把整个文档正文拉成宽工作台
 - [x] 2026-05-15 跟进：为三模式画布宽度、Preview 横向溢出、代码块宽度、表格滚动和 Source/fallback 宽度一致性补 Markdown style smoke 防回归
 
 #### 9.3 浮层与菜单系统收敛
 
-- [ ] 对照官方 `menu`、`popover`、`dropdown-menu`、`combobox` SCSS，审计 slash menu、drag context menu、link popover、color popover、table menu 是否共享一致的背景、边框、阴影、圆角、item density 和 active/focus 状态
-- [ ] 修复所有浮层透明、层级错乱、被裁剪、锚点漂移和关闭后焦点丢失的问题
-- [ ] 建立菜单层级规则：编辑器上下文浮层高于文档内容，低于 app modal；嵌套 table color/alignment menu 不应覆盖或污染 slash/link/drag 菜单
-- [ ] 为菜单 keyboard path 补源码测试或 smoke 记录：打开、方向键移动、Enter 执行、Escape 关闭、焦点返还
+- [x] 对照官方 `menu`、`popover`、`dropdown-menu`、`combobox` SCSS，审计 slash menu、drag context menu、link popover、color popover、table menu 是否共享一致的背景、边框、阴影、圆角、item density 和 active/focus 状态
+- [x] 修复所有浮层透明、层级错乱、被裁剪、锚点漂移和关闭后焦点丢失的问题
+- [x] 建立菜单层级规则：编辑器上下文浮层高于文档内容，低于 app modal；嵌套 table color/alignment menu 不应覆盖或污染 slash/link/drag 菜单
+- [x] 为菜单 keyboard path 补源码测试或 smoke 记录：打开、方向键移动、Enter 执行、Escape 关闭、焦点返还
 - [x] 2026-05-15 跟进：将表格菜单根浮层限定为定位/层级容器，保持 `overflow: visible` 以允许嵌套颜色/对齐 flyout 正常展开；直接子 `ComboboxList` 承担不透明背景、边框、阴影、滚动和视口宽度约束，避免透明菜单、双层面板或嵌套菜单被裁剪
 - [x] 2026-05-15 跟进：建立编辑器上下文浮层 surface 契约，统一 slash menu、drag context menu、link/color popover、floating toolbar、table menu 和 code language menu 的不透明背景、边框、阴影、层级、视口宽高、文本裁剪和 focus-visible 兜底；静态 `tiptap-chrome-command.css` 与运行时最终加载的 `papyro-menu-surface.scss` 双层守护，避免官方 SCSS 注入顺序导致 WebView 内菜单再次透明或错位
 - [x] 2026-05-15 跟进：为浮层 token 桥接、菜单 z-index/viewport、generic combobox panel、card/toolbar opaque surface、按钮文本裁剪和焦点环补 Markdown style smoke 防回归
+- [x] 2026-05-15 跟进：新增 WebView 安全的 `restoreEditorFocusAfterFloatingMenu`，在 link/color popover、drag context menu、table row/column menu 和 table cell menu 关闭后多次尝试把焦点还给 ProseMirror；desktop Tiptap WebView smoke 覆盖 slash Arrow/Enter/Escape、link/color Escape、drag Escape 和 table cell menu Escape 的关闭与焦点返还路径
 
 #### 9.4 表格体验收敛
 
-- [ ] 对照官方 table-node 模板重新审计表格 hover、row/column handle、cell handle、extend button、selection overlay、resize handle、cell menu 和 nested menu 的完整路径
-- [ ] 修复列宽 hover/resize 导致单元格多出空行、额外 paragraph 或行高被撑大的问题；优先检查 ProseMirror table cell 默认内容、CSS `min-height`、resize handle DOM 和 wrapper padding 的相互作用
-- [ ] 修复 cell handle menu 的背景、层级、布局和 item density，确保其是官方 menu 表面，而不是透明或错乱的宿主浮层
-- [ ] 限制 Papyro 表格 CSS 的职责：host wrapper、overflow、theme token、Markdown table baseline；禁止重绘官方 handle、button、menu item 和 overlay
-- [ ] 验证表格交互后 Markdown 仍输出稳定 GFM table，复杂表格在不支持 GFM 表达的能力上必须有明确降级策略
+- [x] 对照官方 table-node 模板重新审计表格 hover、row/column handle、cell handle、extend button、selection overlay、resize handle、cell menu 和 nested menu 的完整路径
+- [x] 修复列宽 hover/resize 导致单元格多出空行、额外 paragraph 或行高被撑大的问题；优先检查 ProseMirror table cell 默认内容、CSS `min-height`、resize handle DOM 和 wrapper padding 的相互作用
+- [x] 修复 cell handle menu 的背景、层级、布局和 item density，确保其是官方 menu 表面，而不是透明或错乱的宿主浮层
+- [x] 限制 Papyro 表格 CSS 的职责：host wrapper、overflow、theme token、Markdown table baseline；禁止重绘官方 handle、button、menu item 和 overlay
+- [x] 验证表格交互后 Markdown 仍输出稳定 GFM table，复杂表格在不支持 GFM 表达的能力上必须有明确降级策略
 - [x] 2026-05-15 跟进：将表格单元格内容选择器限定为 `:not(.column-resize-handle)`，并在宿主 CSS 中锁定 resize handle 为绝对定位、零内容高度，避免 hover/resize chrome 参与单元格正文布局导致行高被撑开
 - [x] 2026-05-15 跟进：为 `tiptap-table-menu-content` 增加官方 card/menu token 的不透明表面兜底，并把 resize handle 出流约束与 table menu 背景写入 Markdown style smoke 防回归
 - [x] 2026-05-15 跟进：收敛 `tiptap-table-menu-content` 的职责边界，根菜单不再绘制表面，直接面板使用官方 combobox/card token 与统一按钮节奏，并把直接面板、嵌套 flyout、按钮对齐和文本裁剪写入 Markdown style smoke 防回归

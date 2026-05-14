@@ -56,6 +56,7 @@ import { useTableFitToWidth } from "@/components/tiptap-node/table-node/ui/table
 import { useTableClearRowColumnContent } from "@/components/tiptap-node/table-node/ui/table-clear-row-column-content-button"
 
 import { SR_ONLY } from "@/lib/tiptap-utils"
+import { restoreEditorFocusAfterFloatingMenu } from "@/lib/tiptap-menu-focus"
 
 import { GripVerticalIcon } from "@/components/tiptap-icons/grip-vertical-icon"
 import { ChevronRightIcon } from "@/components/tiptap-icons/chevron-right-icon"
@@ -324,11 +325,22 @@ export const DragContextMenu: React.FC<DragContextMenuProps> = ({
     }
   }, [])
 
-  const handleOnMenuClose = useCallback(() => {
+  const restoreEditorFocusAfterMenuClose = useCallback(() => {
     if (editor) {
       editor.commands.setMeta("hideDragHandle", true)
+      restoreEditorFocusAfterFloatingMenu(editor)
     }
   }, [editor])
+
+  const handleMenuOpenChange = useCallback(
+    (isOpen: boolean) => {
+      setOpen(isOpen)
+      if (!isOpen) {
+        restoreEditorFocusAfterMenuClose()
+      }
+    },
+    [restoreEditorFocusAfterMenuClose]
+  )
 
   const onElementDragStart = useCallback(() => {
     if (!editor) return
@@ -387,7 +399,7 @@ export const DragContextMenu: React.FC<DragContextMenuProps> = ({
 
           <Menu
             open={open}
-            onOpenChange={setOpen}
+            onOpenChange={handleMenuOpenChange}
             placement="left"
             trigger={
               <MenuButton
@@ -417,7 +429,7 @@ export const DragContextMenu: React.FC<DragContextMenuProps> = ({
             }
           >
             <MenuContent
-              onClose={handleOnMenuClose}
+              onClose={restoreEditorFocusAfterMenuClose}
               autoFocusOnHide={false}
               preventBodyScroll={true}
               portal

@@ -48,6 +48,7 @@ import {
 
 // --- Utils ---
 import { chunkArray } from "@/lib/tiptap-advanced-utils"
+import { restoreEditorFocusAfterFloatingMenu } from "@/lib/tiptap-menu-focus"
 import {
   colorKindLabel,
   colorOptionAriaLabel,
@@ -418,10 +419,20 @@ export function ColorTextPopover({
     [onClick]
   )
 
+  const handleOpenChange = useCallback(
+    (nextIsOpen: boolean) => {
+      setIsOpen(nextIsOpen)
+      if (!nextIsOpen) {
+        restoreEditorFocusAfterFloatingMenu(editor)
+      }
+    },
+    [editor]
+  )
+
   if (!isVisible) return null
 
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
+    <Popover open={isOpen} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <Button
           type="button"
