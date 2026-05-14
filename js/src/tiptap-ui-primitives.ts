@@ -10,12 +10,12 @@ type DocumentLike = {
   createElement?: (tagName: string) => ElementLike;
   addEventListener?: (
     type: string,
-    listener: (event: EventLike) => void,
+    listener: EventLikeListener,
     options?: boolean | AddEventListenerOptions,
   ) => void;
   removeEventListener?: (
     type: string,
-    listener: (event: EventLike) => void,
+    listener: EventLikeListener,
     options?: boolean | EventListenerOptions,
   ) => void;
 };
@@ -23,8 +23,8 @@ type DocumentLike = {
 type WindowLike = {
   innerWidth?: number;
   innerHeight?: number;
-  addEventListener?: (type: string, listener: (event: EventLike) => void) => void;
-  removeEventListener?: (type: string, listener: (event: EventLike) => void) => void;
+  addEventListener?: (type: string, listener: EventLikeListener) => void;
+  removeEventListener?: (type: string, listener: EventLikeListener) => void;
 };
 
 type ClassListLike = {
@@ -51,7 +51,7 @@ type ElementLike = {
     top?: string;
   };
   appendChild?: (child: ElementLike) => void;
-  addEventListener?: (type: string, listener: (event: EventLike) => void) => void;
+  addEventListener?: (type: string, listener: EventLikeListener) => void;
   setAttribute?: (name: string, value: string) => void;
   getAttribute?: (name: string) => string | null;
   removeAttribute?: (name: string) => void;
@@ -75,6 +75,8 @@ type EventLike = {
   stopImmediatePropagation?: () => void;
 };
 
+type EventLikeListener = (event: EventLike) => void;
+
 type FloatingRect = {
   left: number;
   right?: number;
@@ -97,6 +99,38 @@ type FloatingPlacement = "bottom" | "top" | "left" | "right";
 
 type CommandLike = unknown;
 
+type FloatingDismissControllerConfig = {
+  document?: DocumentLike | null;
+  window?: WindowLike | null;
+  contains?: (target: unknown, event: EventLike) => boolean;
+  shouldDismiss?: (event: EventLike) => boolean;
+  shouldDismissOnScroll?: (event: EventLike) => boolean;
+  onDismiss?: (event: EventLike) => void;
+  pointerDismissEvent?: string;
+};
+
+type SetHiddenOptions = {
+  visibilityAttributes?: boolean;
+  inertFocus?: boolean;
+};
+
+type PositionFloatingOptions = {
+  viewport?: FloatingViewport;
+  size?: FloatingSize;
+  placement?: FloatingPlacement;
+};
+
+type MenuCommandItemsOptions = {
+  indexDataset?: string;
+};
+
+type SyncMenuActiveDescendantOptions = MenuCommandItemsOptions & {
+  activeClass?: string;
+  ariaSelected?: boolean;
+  manageTabIndex?: boolean;
+  scroll?: boolean;
+};
+
 function hasMapAttributes(element: ElementLike | null | undefined): element is ElementLike & {
   attributes: Map<string, string>;
 } {
@@ -108,11 +142,11 @@ export function clamp(value: number, min: number, max: number) {
 }
 
 export function defaultDocument(): DocumentLike | null {
-  return typeof document === "undefined" ? null : document;
+  return typeof document === "undefined" ? null : (document as unknown as DocumentLike);
 }
 
 export function defaultWindow(documentRef?: DocumentLike | null): WindowLike | null {
-  return documentRef?.defaultView ?? (typeof window === "undefined" ? null : window);
+  return documentRef?.defaultView ?? (typeof window === "undefined" ? null : (window as WindowLike));
 }
 
 export function createElement(
@@ -133,7 +167,8 @@ export function mountFloatingRoot(
   documentRef = defaultDocument(),
 ) {
   if (!root) return;
-  (container?.ownerDocument?.body ?? documentRef?.body)?.appendChild(root);
+  const target = container?.ownerDocument?.body ?? documentRef?.body;
+  target?.appendChild?.(root);
 }
 
 export function createFloatingDismissController({
@@ -144,9 +179,10 @@ export function createFloatingDismissController({
   shouldDismissOnScroll = shouldDismiss,
   onDismiss = () => {},
   pointerDismissEvent = "pointerdown",
-} = {}) {
+}: FloatingDismissControllerConfig = {}) {
   let removeListeners: Array<() => void> = [];
   let pointerEventHandled = false;
+  const shouldDismissScroll = shouldDismissOnScroll ?? shouldDismiss;
 
   const close = () => {
     removeListeners.forEach((remove) => remove());
@@ -172,7 +208,7 @@ export function createFloatingDismissController({
   };
   const dismissScroll = (event: EventLike) => {
     if (contains(event?.target, event)) return;
-    if (shouldDismissOnScroll(event) === false) return;
+    if (shouldDismissScroll(event) === false) return;
     if (shouldDismiss(event) === false) return;
     onDismiss(event);
   };
@@ -251,10 +287,10 @@ function setHiddenFocusState(element: ElementLike | null | undefined, hidden: bo
     if (previousProperty == null) {
       delete element.tabIndex;
     } else {
-      element.tabIndex = previousProperty;
+      element.tabIndex = Number(previousProperty);
     }
   } else {
-    element.setAttribute?.("tabindex", previous);
+    element.setAttribute?.("tabindex", String(previous));
     element.tabIndex = Number(previous);
   }
   delete element[attributeKey];
@@ -264,7 +300,7 @@ function setHiddenFocusState(element: ElementLike | null | undefined, hidden: bo
 export function setHidden(
   element: ElementLike | null | undefined,
   hidden: boolean,
-  { visibilityAttributes = false, inertFocus = false } = {},
+  { visibilityAttributes = false, inertFocus = false }: SetHiddenOptions = {},
 ) {
   if (!element) return;
   element.hidden = hidden;
@@ -312,7 +348,7 @@ export function positionFloatingElement(
     viewport,
     size,
     placement = "bottom",
-  }: { viewport?: FloatingViewport; size?: FloatingSize; placement?: FloatingPlacement },
+  }: PositionFloatingOptions,
 ) {
   if (!element || !rect || !viewport) return;
 
@@ -340,7 +376,8 @@ export function positionFloatingElement(
         : clamp(preferredLeft, margin, viewport.width - width - margin);
     top = clamp(rect.top, margin, Math.max(margin, viewport.height - height - margin));
   } else if (placement === "right") {
-    const preferredLeft = rect.right + 12;
+    const rectRight = rect.right ?? rect.left;
+    const preferredLeft = rectRight + 12;
     const fallbackLeft = rect.left - width - 12;
     left =
       preferredLeft + width + margin > viewport.width
@@ -370,9 +407,9 @@ export function updateActiveDescendant(
   commands: CommandLike[] | null | undefined,
   selectedIndex: number,
 ) {
-  root?.setAttribute(
+  root?.setAttribute?.(
     "aria-activedescendant",
-    commands?.length > 0 ? commandElementId(ownerId, selectedIndex) : "",
+    (commands?.length ?? 0) > 0 ? commandElementId(ownerId, selectedIndex) : "",
   );
 }
 
@@ -419,7 +456,7 @@ export function scrollActiveDescendantIntoView(
 
 export function menuCommandItems(
   root: ElementLike | null | undefined,
-  { indexDataset = "commandIndex" } = {},
+  { indexDataset = "commandIndex" }: MenuCommandItemsOptions = {},
 ) {
   const items: ElementLike[] = [];
   const visit = (element: ElementLike | null | undefined) => {
@@ -444,7 +481,7 @@ export function syncMenuActiveDescendant(
     indexDataset = "commandIndex",
     manageTabIndex = false,
     scroll = true,
-  } = {},
+  }: SyncMenuActiveDescendantOptions = {},
 ) {
   if (!root) return false;
   menuCommandItems(root, { indexDataset }).forEach((item) => {
@@ -478,27 +515,27 @@ export function bindPointerActivation(
   };
   const execute = () => run() !== false;
 
-  element.addEventListener("pointerdown", (event) => {
+  element.addEventListener?.("pointerdown", (event) => {
     guard(event);
     pointerActivated = true;
     execute();
   });
-  element.addEventListener("click", (event) => {
+  element.addEventListener?.("click", (event) => {
     guard(event);
     if (!pointerActivated) {
       execute();
     }
     pointerActivated = false;
   });
-  element.addEventListener("auxclick", (event) => {
+  element.addEventListener?.("auxclick", (event) => {
     guard(event);
     pointerActivated = false;
   });
-  element.addEventListener("contextmenu", (event) => {
+  element.addEventListener?.("contextmenu", (event) => {
     guard(event);
     pointerActivated = false;
   });
-  element.addEventListener("mousedown", (event) => {
+  element.addEventListener?.("mousedown", (event) => {
     guard(event);
   });
 }

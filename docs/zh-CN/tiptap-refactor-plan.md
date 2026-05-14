@@ -358,8 +358,9 @@ js/src/
 - [x] 解决上一轮 image/table-node typecheck 阻塞：`@tiptap/extension-image` 已安装为对齐的 Tiptap 版本，官方 table-handle helper/extension/action 模块已具备类型化 TS/TSX 边界
 - [x] 从 `js/src` 移除未使用的官方模板残留：AI/Improve、emoji、mention、TOC、textarea-autosize、协作 token helper、完整 Notion demo shell 文件和 AI 专用图标；将剩余通用 helper 边界重命名为 `tiptap-ui-utils`
 - [x] 清理 `turn-into-dropdown` 和 `editor-clipboard.ts` 的集中 TS 阻塞：为本地化后的官方 dropdown 暴露共享块选项类型边界，避开 ES2020 target 下的 `String.prototype.at`，并同时兼容 DOM `FileReader` 与测试 reader 构造器
+- [x] 将 `tiptap-ui-primitives.ts` 从当前 typecheck 阻塞列表中清出：补齐 DOM/fake-DOM listener 边界、floating dismiss 配置、hidden-state 选项、floating placement 选项和 command menu active descendant helper 的类型
 - [ ] 在现有 TS 模板债务完成类型化或隔离后，新增可通过的 `npm --prefix js run typecheck` 闸门
-- [ ] 启用 typecheck 闸门前解决剩余阻塞：`editor-core.ts`、`editor-runtime.ts`、`editor-runtime-contract.ts`、`tiptap-react/runtime-model.ts`、`editor-runtime-protocol.ts`、`tiptap-react/runtime-context.tsx`、`editor-host-runtime.ts`、`tiptap-block-move.ts` 等全局 runtime/model 债务；`tiptap-ui-primitives.ts`、runtime context/island 边界、`tiptap-react/utils/floating.ts`、`tiptap-react/mount-controller.tsx` 等当前组件/运行时支撑类型债务；以及 `tiptap-table.ts` 中 Papyro 自定义表格 action/Markdown 层的类型债务
+- [ ] 启用 typecheck 闸门前解决剩余阻塞：`editor-core.ts`、`editor-runtime.ts`、`editor-runtime-contract.ts`、`tiptap-react/runtime-model.ts`、`editor-runtime-protocol.ts`、`tiptap-react/runtime-context.tsx`、`editor-host-runtime.ts`、`tiptap-block-move.ts` 等全局 runtime/model 债务；runtime context/island 边界、`tiptap-react/utils/floating.ts`、`tiptap-react/mount-controller.tsx` 等当前组件/运行时支撑类型债务；以及 `tiptap-table.ts` 中 Papyro 自定义表格 action/Markdown 层的类型债务
 
 ---
 
