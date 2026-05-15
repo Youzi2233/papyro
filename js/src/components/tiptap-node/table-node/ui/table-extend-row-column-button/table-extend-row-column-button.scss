@@ -1,62 +1,156 @@
 :root {
-  --tt-table-handle-bg-color: var(--tt-gray-light-a-100);
-  --tt-table-extend-icon-color: var(--tt-gray-light-a-400);
+  --tt-table-handle-bg-color: color-mix(
+    in srgb,
+    var(--mn-surface-raised, #ffffff) 90%,
+    var(--mn-ink, #111827)
+  );
+  --tt-table-handle-border-color: color-mix(
+    in srgb,
+    var(--mn-border, #e5e7eb) 72%,
+    transparent
+  );
+  --tt-table-handle-control-bg: color-mix(
+    in srgb,
+    var(--mn-surface-raised, #ffffff) 88%,
+    transparent
+  );
+  --tt-table-handle-control-shadow:
+    0 1px 2px color-mix(in srgb, var(--mn-ink, #111827) 7%, transparent),
+    0 8px 18px color-mix(in srgb, var(--mn-ink, #111827) 8%, transparent);
+  --tt-table-extend-icon-color: color-mix(
+    in srgb,
+    var(--mn-ink-3, #64748b) 72%,
+    transparent
+  );
 }
 
 .dark {
-  --tt-table-handle-bg-color: var(--tt-gray-dark-a-100);
-  --tt-table-extend-icon-color: var(--tt-gray-dark-a-400);
+  --tt-table-handle-bg-color: color-mix(
+    in srgb,
+    var(--mn-surface-raised, #111827) 84%,
+    var(--mn-ink, #e5e7eb)
+  );
+  --tt-table-handle-border-color: color-mix(
+    in srgb,
+    var(--mn-border, #334155) 64%,
+    transparent
+  );
+  --tt-table-handle-control-bg: color-mix(
+    in srgb,
+    var(--mn-surface-raised, #111827) 88%,
+    transparent
+  );
+  --tt-table-extend-icon-color: color-mix(
+    in srgb,
+    var(--mn-ink-3, #94a3b8) 82%,
+    transparent
+  );
 }
 
 .tiptap-table-extend-row-column-button {
-  border: 1px solid color-mix(in srgb, var(--mn-border, #e5e7eb) 62%, transparent);
+  position: relative;
+  border: 0;
+  padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--tt-table-handle-bg-color);
-  border-radius: var(--tt-radius-md, 0.5rem);
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, #fff 38%, transparent),
-    0 1px 2px color-mix(in srgb, var(--mn-ink, #111827) 5%, transparent);
+  background: transparent;
+  background-color: transparent;
+  color: var(--tt-table-extend-icon-color);
+  box-shadow: none;
   transition:
-    background-color var(--tt-transition-duration-short, 0.1s) ease,
-    border-color var(--tt-transition-duration-short, 0.1s) ease,
-    box-shadow var(--tt-transition-duration-short, 0.1s) ease;
+    color var(--tt-transition-duration-short, 0.1s) ease,
+    opacity var(--tt-transition-duration-short, 0.1s) ease;
+
+  &::before {
+    content: "";
+    position: absolute;
+    box-sizing: border-box;
+    border: 1px solid var(--tt-table-handle-border-color);
+    border-radius: var(--tt-radius-md, 0.5rem);
+    background:
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, #fff 42%, transparent),
+        transparent 58%
+      ),
+      var(--tt-table-handle-control-bg);
+    box-shadow: var(--tt-table-handle-control-shadow);
+    opacity: 0.92;
+    transition:
+      background-color var(--tt-transition-duration-short, 0.1s) ease,
+      border-color var(--tt-transition-duration-short, 0.1s) ease,
+      box-shadow var(--tt-transition-duration-short, 0.1s) ease,
+      opacity var(--tt-transition-duration-short, 0.1s) ease,
+      transform var(--tt-transition-duration-short, 0.1s) ease;
+  }
 
   .tiptap-button-icon {
-    width: 0.9375rem;
-    height: 0.9375rem;
+    position: relative;
+    z-index: 1;
+    width: 0.8125rem;
+    height: 0.8125rem;
     flex-shrink: 0;
-    color: var(--tt-table-extend-icon-color);
+    color: currentColor;
   }
 
   &:hover,
   &:focus-visible,
   &.editing {
-    background-color: var(--mn-surface-raised, var(--tt-table-handle-bg-color));
-    border-color: color-mix(in srgb, var(--mn-accent, var(--tt-brand-color-500)) 28%, var(--mn-border, #e5e7eb));
-    box-shadow: var(--mn-shadow-sm, 0 8px 22px rgba(15, 23, 42, 0.08));
+    color: var(--mn-ink-2, var(--tt-table-extend-icon-color));
 
-    .tiptap-button-icon {
-      color: var(--mn-ink-2, var(--tt-table-extend-icon-color));
+    &::before {
+      border-color: color-mix(
+        in srgb,
+        var(--mn-accent, var(--tt-brand-color-500)) 32%,
+        var(--mn-border, #e5e7eb)
+      );
+      background:
+        linear-gradient(
+          180deg,
+          color-mix(in srgb, #fff 55%, transparent),
+          transparent 62%
+        ),
+        var(--mn-surface-raised, var(--tt-table-handle-bg-color));
+      box-shadow: var(--mn-shadow-sm, var(--tt-table-handle-control-shadow));
+      opacity: 1;
     }
   }
 
   &:focus-visible {
     outline: 0;
-    box-shadow:
-      var(--mn-shadow-sm, 0 8px 22px rgba(15, 23, 42, 0.08)),
-      var(--mn-focus-ring-sm, 0 0 0 2px rgba(37, 99, 235, 0.13));
+    box-shadow: var(--mn-focus-ring-sm, 0 0 0 2px rgba(37, 99, 235, 0.13));
   }
 
   &.tiptap-table-row-end-add-remove {
     width: 100%;
     height: 1rem;
     cursor: row-resize;
+
+    &::before {
+      width: 2rem;
+      height: 0.875rem;
+      transform: scale(0.96);
+    }
   }
 
   &.tiptap-table-column-end-add-remove {
     width: 1rem;
     cursor: col-resize;
+
+    &::before {
+      width: 0.875rem;
+      height: 2rem;
+      transform: scale(0.96);
+    }
+  }
+
+  &.tiptap-table-row-end-add-remove:hover::before,
+  &.tiptap-table-row-end-add-remove:focus-visible::before,
+  &.tiptap-table-row-end-add-remove.editing::before,
+  &.tiptap-table-column-end-add-remove:hover::before,
+  &.tiptap-table-column-end-add-remove:focus-visible::before,
+  &.tiptap-table-column-end-add-remove.editing::before {
+    transform: scale(1);
   }
 }

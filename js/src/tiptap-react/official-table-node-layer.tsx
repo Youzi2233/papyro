@@ -1,5 +1,4 @@
 import type { Editor } from "@tiptap/core";
-import type { MouseEvent } from "react";
 import { useCallback, useState } from "react";
 
 import { TableExtendRowColumnButtons } from "../components/tiptap-node/table-node/ui/table-extend-row-column-button";
@@ -26,9 +25,7 @@ type RuntimeEntry = {
 type TableCellMenuProps = {
   editor: Editor;
   onOpenChange?: (open: boolean) => void;
-  onResizeStart?: (
-    handle: ResizeHandle,
-  ) => ((event: MouseEvent<HTMLElement>) => void) | undefined;
+  onResizeStart?: (handle: ResizeHandle) => unknown;
 };
 
 export type PapyroOfficialTableNodeLayerProps = {
@@ -47,7 +44,6 @@ export function PapyroOfficialTableNodeLayer({
     <TableCellHandleMenu
       editor={props.editor}
       onOpenChange={props.onOpenChange}
-      onMouseDown={(event) => props.onResizeStart?.("br")?.(event)}
     />
   ), []);
 

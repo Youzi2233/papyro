@@ -10,6 +10,7 @@ const {
   PAPYRO_TABLE_CELL_RESET_ATTRS,
   PapyroTableCellBackground,
   PapyroTableCellContentActions,
+  PapyroTableResizeEdgeBridge,
   createPapyroTableExtensions,
   resetSelectedTableCellAttrs,
   selectedTableCellsPlainText,
@@ -76,6 +77,7 @@ test("Papyro table extensions expose the TableKit boundary", () => {
   assert.deepEqual(
     extensions.map((extension) => extension.name),
     [
+      "papyroTableResizeEdgeBridge",
       "table",
       "tableKit",
       "tableHandleExtension",
@@ -83,13 +85,14 @@ test("Papyro table extensions expose the TableKit boundary", () => {
       "papyroTableCellContentActions",
     ],
   );
-  assert.equal(extensions[0].options.resizable, true);
-  assert.equal(extensions[0].options.handleWidth, 6);
-  assert.equal(extensions[0].options.cellMinWidth, 96);
-  assert.equal(extensions[0].options.lastColumnResizable, true);
-  assert.equal(extensions[0].options.allowTableNodeSelection, false);
-  assert.equal(extensions[1].options.table, false);
-  assert.equal(extensions[2].name, "tableHandleExtension");
+  assert.equal(extensions[0].name, PapyroTableResizeEdgeBridge.name);
+  assert.equal(extensions[1].options.resizable, true);
+  assert.equal(extensions[1].options.handleWidth, 6);
+  assert.equal(extensions[1].options.cellMinWidth, 96);
+  assert.equal(extensions[1].options.lastColumnResizable, true);
+  assert.equal(extensions[1].options.allowTableNodeSelection, false);
+  assert.equal(extensions[2].options.table, false);
+  assert.equal(extensions[3].name, "tableHandleExtension");
 });
 
 test("Papyro table view exposes official table-node portal containers only", () => {

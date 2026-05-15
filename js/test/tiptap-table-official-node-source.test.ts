@@ -65,7 +65,10 @@ test("Papyro mounts every official table-node interaction from the documented la
   assert.match(officialLayerSource, /<TableSelectionOverlay\s+editor=\{editor\}/u);
   assert.match(officialLayerSource, /cellMenu=\{renderCellMenu\}/u);
   assert.match(officialLayerSource, /<TableCellHandleMenu[\s\S]*editor=\{props\.editor\}/u);
-  assert.match(officialLayerSource, /onMouseDown=\{\(event\) => props\.onResizeStart\?\.\("br"\)\?\.\(event\)\}/u);
+  assert.doesNotMatch(
+    officialLayerSource,
+    /onMouseDown=\{\(event\) => props\.onResizeStart\?\.\("br"\)\?\.\(event\)\}/u,
+  );
   assert.match(officialLayerSource, /<TableExtendRowColumnButtons editor=\{editor\}/u);
 
   assert.match(tableHandleSource, /useTableHandleState\(\{ editor \}\)/u);
@@ -96,6 +99,8 @@ test("Papyro mounts every official table-node interaction from the documented la
   assert.match(tableCellHandleMenuSource, /useTableMergeSplitCell\(\{ action: "split" \}\)/u);
 
   assert.match(tableExtensionSource, /PapyroTable\.configure\(\{\s*resizable:\s*true,/u);
+  assert.match(tableExtensionSource, /PapyroTableResizeEdgeBridge/u);
+  assert.match(tableExtensionSource, /papyroTableResizeEdgeBridge/u);
   assert.match(tableExtensionSource, /handleWidth:\s*6/u);
   assert.match(tableExtensionSource, /lastColumnResizable:\s*true/u);
   assert.match(tableStylesSource, /\.ProseMirror \.column-resize-handle/u);

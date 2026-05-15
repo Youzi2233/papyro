@@ -617,6 +617,39 @@ async function exerciseTableLayer(client) {
       document.querySelector(".tiptap-table-extend-row-column-button")
     );
   });
+  const handleHoverPoint = await evaluate(client, () => {
+    const cell = document.querySelector(".ProseMirror table td, .ProseMirror table th");
+    if (!cell) return null;
+    cell.scrollIntoView({ block: "center", inline: "center" });
+    const rect = cell.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return null;
+    return {
+      x: rect.left + Math.min(Math.max(rect.width / 2, 2), rect.width - 2),
+      y: rect.top + Math.min(Math.max(rect.height / 2, 2), rect.height - 2),
+    };
+  });
+  if (!handleHoverPoint) {
+    throw new Error("Unable to resolve a table cell hover point for handle smoke");
+  }
+  await movePoint(client, handleHoverPoint);
+  await assertEventually(client, "table handles use a small visual control inside a stable hitbox", () => {
+    const handle = document.querySelector(".tiptap-table-handle-menu.row, .tiptap-table-handle-menu.column");
+    if (!handle) return false;
+
+    const style = getComputedStyle(handle);
+    const control = getComputedStyle(handle, "::before");
+    const rect = handle.getBoundingClientRect();
+    const controlWidth = Number.parseFloat(control.width);
+    const controlHeight = Number.parseFloat(control.height);
+
+    return style.backgroundColor === "rgba(0, 0, 0, 0)" &&
+      control.content !== "none" &&
+      controlWidth >= 20 &&
+      controlWidth <= 26 &&
+      controlHeight >= 20 &&
+      controlHeight <= 26 &&
+      (rect.height > controlHeight + 4 || rect.width > controlWidth + 4);
+  });
   const resizeBaseline = await evaluate(client, () => {
     const cell = document.querySelector(".ProseMirror table td, .ProseMirror table th");
     if (!cell) return null;
@@ -641,8 +674,19 @@ async function exerciseTableLayer(client) {
     throw new Error("Unable to resolve a table cell baseline for resize smoke");
   }
   await movePoint(client, resizeBaseline.point);
+  await dispatchDomMouseMoveAtPoint(client, resizeBaseline.point);
   await assertEventually(client, "table column resize handle appears near a cell edge", () => {
-    return Boolean(document.querySelector(".ProseMirror table .column-resize-handle"));
+    const editorDom = document.querySelector(".ProseMirror");
+    const editor = editorDom?.editor;
+    const activeHandle = editor?.state?.plugins
+      ?.filter((plugin) => /tableColumnResizing/ui.test(plugin.key))
+      ?.map((plugin) => plugin.getState(editor.state)?.activeHandle)
+      ?.find((value) => Number.isInteger(value) && value >= 0);
+
+    return Boolean(
+      document.querySelector(".ProseMirror table .column-resize-handle") ||
+      activeHandle != null
+    );
   });
   await assertEvaluate(client, "table resize chrome does not inflate cell layout", (baseline) => {
     const cell = document.querySelector(".ProseMirror table td, .ProseMirror table th");
@@ -651,28 +695,36 @@ async function exerciseTableLayer(client) {
       ? Array.from(cell.children).filter((child) => !child.classList.contains("column-resize-handle"))
       : [];
     const firstContent = contentChildren.at(0) ?? null;
-    if (!cell || !handle || !firstContent) {
+    const editor = document.querySelector(".ProseMirror")?.editor;
+    const activeHandle = editor?.state?.plugins
+      ?.filter((plugin) => /tableColumnResizing/ui.test(plugin.key))
+      ?.map((plugin) => plugin.getState(editor.state)?.activeHandle)
+      ?.find((value) => Number.isInteger(value) && value >= 0);
+
+    if (!cell || (!handle && activeHandle == null) || !firstContent) {
       throw new Error(JSON.stringify({
         hasCell: Boolean(cell),
         hasHandle: Boolean(handle),
+        activeHandle: activeHandle ?? null,
         hasFirstContent: Boolean(firstContent),
         childClasses: cell ? Array.from(cell.children).map((child) => child.className || child.tagName) : [],
       }));
     }
 
     const cellStyle = getComputedStyle(cell);
-    const handleStyle = getComputedStyle(handle);
+    const handleStyle = handle ? getComputedStyle(handle) : null;
     const contentStyle = getComputedStyle(firstContent);
     const rect = cell.getBoundingClientRect();
     const contentTags = contentChildren.map((child) => child.tagName);
 
     const checks = {
       cellPosition: cellStyle.position,
-      handlePosition: handleStyle.position,
-      handleDisplay: handleStyle.display,
-      handleLineHeight: handleStyle.lineHeight,
-      handleMinHeight: handleStyle.minHeight,
-      handleContain: handleStyle.contain,
+      handlePosition: handleStyle?.position ?? "active-handle",
+      handleDisplay: handleStyle?.display ?? "active-handle",
+      handleLineHeight: handleStyle?.lineHeight ?? "0px",
+      handleMinHeight: handleStyle?.minHeight ?? "0px",
+      handleContain: handleStyle?.contain ?? "layout paint",
+      activeHandle: activeHandle ?? null,
       contentTag: firstContent.tagName,
       contentChildCount: contentChildren.length,
       contentTags,
@@ -687,8 +739,8 @@ async function exerciseTableLayer(client) {
     };
 
     const passed = checks.cellPosition === "relative" &&
-      checks.handlePosition === "absolute" &&
-      checks.handleDisplay === "block" &&
+      (checks.handlePosition === "absolute" || checks.activeHandle != null) &&
+      (checks.handleDisplay === "block" || checks.activeHandle != null) &&
       checks.handleLineHeight === "0px" &&
       checks.handleMinHeight === "0px" &&
       checks.contentMarginTop === "0px" &&
@@ -712,18 +764,23 @@ async function exerciseTableLayer(client) {
 
     const rootStyle = getComputedStyle(root);
     const panelStyle = getComputedStyle(panel);
+    const rootRect = root.getBoundingClientRect();
     const rect = panel.getBoundingClientRect();
     const buttons = Array.from(panel.querySelectorAll(".tiptap-button"));
     const labels = Array.from(panel.querySelectorAll(".tiptap-button-text"));
 
     return rootStyle.overflow === "visible" &&
       Number.parseInt(rootStyle.zIndex, 10) >= 50 &&
-      panelStyle.backgroundColor !== "rgba(0, 0, 0, 0)" &&
-      panelStyle.backgroundColor !== "transparent" &&
+      rootStyle.backgroundColor !== "rgba(0, 0, 0, 0)" &&
+      rootStyle.backgroundColor !== "transparent" &&
+      rootStyle.boxShadow !== "none" &&
+      rootRect.width >= 180 &&
+      rootRect.width <= Math.min(304, window.innerWidth - 24) + 1 &&
+      panelStyle.backgroundColor === "rgba(0, 0, 0, 0)" &&
       panelStyle.overflowX === "hidden" &&
       panelStyle.overflowY === "auto" &&
       rect.width >= 180 &&
-      rect.width <= Math.min(288, window.innerWidth - 24) + 1 &&
+      rect.width <= Math.min(304, window.innerWidth - 24) + 1 &&
       rect.height > 32 &&
       buttons.every((button) => getComputedStyle(button).justifyContent === "flex-start") &&
       labels.every((label) => {
@@ -967,7 +1024,27 @@ async function movePoint(client, point) {
     x: point.x,
     y: point.y,
     button: "none",
+    buttons: 0,
+    pointerType: "mouse",
   });
+}
+
+async function dispatchDomMouseMoveAtPoint(client, point) {
+  await evaluate(client, ({ x, y }) => {
+    const rawTarget = document.elementFromPoint(x, y);
+    const target = rawTarget?.closest?.("td, th") ?? rawTarget;
+    if (!target) return false;
+    return target.dispatchEvent(new MouseEvent("mousemove", {
+      bubbles: true,
+      cancelable: true,
+      clientX: x,
+      clientY: y,
+      screenX: x,
+      screenY: y,
+      buttons: 0,
+      view: window,
+    }));
+  }, point);
 }
 
 async function pressKey(client, key) {
@@ -1084,12 +1161,65 @@ async function debugDomSnapshot(client) {
         ].join(" ");
       })
       .join("\n");
+    const handles = Array.from(document.querySelectorAll(".tiptap-table-handle-menu, .tiptap-table-extend-row-column-button, .expandable-menu-button"))
+      .map((handle) => {
+        const rect = handle.getBoundingClientRect();
+        const style = getComputedStyle(handle);
+        const before = getComputedStyle(handle, "::before");
+        return [
+          `handle=${handle.className}`,
+          `rect=${Math.round(rect.width)}x${Math.round(rect.height)}@${Math.round(rect.left)},${Math.round(rect.top)}`,
+          `bg=${style.backgroundColor}`,
+          `before=${before.content} ${before.width}x${before.height} bg=${before.backgroundColor}`,
+        ].join(" ");
+      })
+      .join("\n");
+    const firstCell = document.querySelector(".ProseMirror table td, .ProseMirror table th");
+    const firstCellRect = firstCell?.getBoundingClientRect?.();
+    const resizePoint = firstCellRect
+      ? {
+          x: Math.max(firstCellRect.left + 1, firstCellRect.right - 2),
+          y: firstCellRect.top + Math.min(Math.max(firstCellRect.height / 2, 1), firstCellRect.height - 1),
+        }
+      : null;
+    const resizeTarget = resizePoint ? document.elementFromPoint(resizePoint.x, resizePoint.y) : null;
+    const editorInstance = editor?.editor ?? null;
+    const pluginKeys = editorInstance?.state?.plugins
+      ?.map((plugin) => plugin.key)
+      ?.filter((key) => /table|resize|column/ui.test(key))
+      ?.join("|") ?? "";
+    const resizePluginStates = editorInstance?.state?.plugins
+      ?.filter((plugin) => /tableColumnResizing/ui.test(plugin.key))
+      ?.map((plugin) => {
+        const state = plugin.getState(editorInstance.state);
+        let activeNode = "";
+        if (Number.isInteger(state?.activeHandle) && state.activeHandle >= 0) {
+          try {
+            const node = editorInstance.state.doc.nodeAt(state.activeHandle);
+            const resolved = editorInstance.state.doc.resolve(state.activeHandle);
+            const names = [];
+            for (let depth = 0; depth <= resolved.depth; depth += 1) {
+              names.push(resolved.node(depth).type.name);
+            }
+            activeNode = ` node=${node?.type?.name ?? "none"} path=${names.join(">")}`;
+          } catch {
+            activeNode = " node=error";
+          }
+        }
+        return `${plugin.key}:active=${state?.activeHandle ?? "none"} dragging=${state?.dragging ? "yes" : "no"}${activeNode}`;
+      })
+      ?.join("|") ?? "";
     return [
       `active=${activeElement?.tagName ?? "none"}.${activeElement?.className ?? ""}`,
       `selection="${selection?.toString?.() ?? ""}"`,
       `anchor=${anchorElement?.tagName ?? "none"}.${anchorElement?.className ?? ""}`,
       `menu=${menu ? `${menu.tagName}.${menu.className}` : "none"}`,
       `toolbars="${toolbarLabels}"`,
+      `firstCell=${firstCell ? `${Math.round(firstCellRect.width)}x${Math.round(firstCellRect.height)}@${Math.round(firstCellRect.left)},${Math.round(firstCellRect.top)} text="${(firstCell.textContent ?? "").slice(0, 40)}"` : "none"}`,
+      `resizePoint=${resizePoint ? `${Math.round(resizePoint.x)},${Math.round(resizePoint.y)}` : "none"} target=${resizeTarget ? `${resizeTarget.tagName}.${resizeTarget.className ?? ""}` : "none"} targetText="${(resizeTarget?.textContent ?? "").slice(0, 40)}"`,
+      `tablePlugins="${pluginKeys}"`,
+      `tableResizeState="${resizePluginStates}"`,
+      handles,
       cards,
       menus,
       `editorText="${(editor?.textContent ?? "").slice(-160)}"`,

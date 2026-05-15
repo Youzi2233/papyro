@@ -11,8 +11,10 @@ import type {
   MarkdownRendererHelpers,
 } from "@tiptap/core";
 import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
+import { Plugin, PluginKey } from "@tiptap/pm/state";
 import type { EditorState, Transaction } from "@tiptap/pm/state";
 import {
+  columnResizingPluginKey,
   deleteCellSelection,
   selectedRect,
   type TableMap,
@@ -456,6 +458,88 @@ export const PapyroTableCellContentActions = Extension.create({
   },
 });
 
+const papyroTableResizeEdgeBridgeKey = new PluginKey("papyroTableResizeEdgeBridge");
+
+function domTableCellAround(target: EventTarget | null): HTMLTableCellElement | null {
+  let element = target instanceof Element ? target : null;
+  while (element && element.nodeName !== "TD" && element.nodeName !== "TH") {
+    if (element.classList?.contains("ProseMirror")) return null;
+    element = element.parentElement;
+  }
+  return element instanceof HTMLTableCellElement ? element : null;
+}
+
+function getEdgeCellPosition(
+  view: Parameters<NonNullable<Plugin["props"]["handleDOMEvents"]>["mousemove"]>[0],
+  event: MouseEvent,
+  handleWidth: number,
+): number | null {
+  const targetCell = domTableCellAround(event.target);
+  if (!targetCell) return null;
+
+  const rect = targetCell.getBoundingClientRect();
+  const isNearLeft = event.clientX - rect.left <= handleWidth;
+  const isNearRight = rect.right - event.clientX <= handleWidth;
+
+  if (!isNearLeft && !isNearRight) return -1;
+
+  const edgeCell = isNearLeft
+    ? targetCell.previousElementSibling
+    : targetCell;
+  if (!(edgeCell instanceof HTMLTableCellElement)) return -1;
+
+  try {
+    const domPos = view.posAtDOM(edgeCell, 0);
+    const $pos = view.state.doc.resolve(domPos);
+    for (let depth = $pos.depth; depth > 0; depth -= 1) {
+      const node = $pos.node(depth);
+      if (node.type.spec.tableRole === "cell" || node.type.spec.tableRole === "header_cell") {
+        return $pos.before(depth);
+      }
+    }
+    return -1;
+  } catch (_error) {
+    return -1;
+  }
+}
+
+export const PapyroTableResizeEdgeBridge = Extension.create({
+  name: "papyroTableResizeEdgeBridge",
+
+  addProseMirrorPlugins() {
+    const handleWidth = 8;
+
+    return [
+      new Plugin({
+        key: papyroTableResizeEdgeBridgeKey,
+        props: {
+          handleDOMEvents: {
+            mousemove: (view, event) => {
+              if (!view.editable) return false;
+
+              const pluginState = columnResizingPluginKey.getState(view.state);
+              if (!pluginState || pluginState.dragging) return false;
+
+              const cellPos = getEdgeCellPosition(view, event, handleWidth);
+              if (cellPos == null) return false;
+
+              if (cellPos !== pluginState.activeHandle) {
+                view.dispatch(
+                  view.state.tr.setMeta(columnResizingPluginKey, {
+                    setHandle: cellPos,
+                  }),
+                );
+              }
+
+              return false;
+            },
+          },
+        },
+      }),
+    ];
+  },
+});
+
 export const PapyroTable = Table.extend({
   renderMarkdown: (node: JSONContent, helpers: MarkdownRendererHelpers) => {
     const tableNode = node as PapyroTableJSONNode;
@@ -498,6 +582,7 @@ export function createPapyroTableExtensions({
   writeText = null,
 }: PapyroTableExtensionOptions = {}): TiptapExtension[] {
   return [
+    PapyroTableResizeEdgeBridge,
     PapyroTable.configure({
       resizable: true,
       handleWidth: 6,
