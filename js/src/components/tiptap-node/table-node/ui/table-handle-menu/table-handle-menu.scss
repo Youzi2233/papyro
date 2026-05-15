@@ -168,6 +168,9 @@
 }
 
 .tiptap-table-menu-content .tiptap-button {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
   width: 100%;
   min-height: 2.125rem;
   max-width: 100%;
@@ -199,9 +202,26 @@
 }
 
 .tiptap-table-menu-content .tiptap-button-icon {
+  flex: 0 0 auto;
   width: 0.9375rem;
   height: 0.9375rem;
   color: color-mix(in srgb, var(--mn-ink-3, #64748b) 82%, transparent);
+}
+
+.tiptap-table-menu-content .tiptap-menu-button-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 1rem;
+  height: 1rem;
+  margin-left: auto;
+  color: color-mix(in srgb, var(--mn-ink-3, #64748b) 78%, transparent);
+}
+
+.tiptap-table-menu-content .tiptap-menu-button-arrow svg {
+  width: 1rem;
+  height: 1rem;
 }
 
 .tiptap-table-menu-content .tiptap-button-text {

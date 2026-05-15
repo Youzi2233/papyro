@@ -17,7 +17,6 @@ import { useUiEditorState } from "@/hooks/use-ui-editor-state"
 import { selectNodeAndHideFloating } from "@/hooks/use-floating-toolbar-visibility"
 
 import { Button } from "@/components/tiptap-ui-primitive/button"
-import { Spacer } from "@/components/tiptap-ui-primitive/spacer"
 import { Separator } from "@/components/tiptap-ui-primitive/separator"
 import {
   Menu,
@@ -26,6 +25,7 @@ import {
   MenuGroup,
   MenuGroupLabel,
   MenuButton,
+  MenuButtonArrow,
 } from "@/components/tiptap-ui-primitive/menu"
 import { Combobox, ComboboxList } from "@/components/tiptap-ui-primitive/combobox"
 
@@ -142,8 +142,7 @@ const SubMenuTrigger: React.FC<{
               <Button variant="ghost">
                 <Icon className="tiptap-button-icon" />
                 <span className="tiptap-button-text">{label}</span>
-                <Spacer />
-                <ChevronRightIcon className="tiptap-button-icon" />
+                <MenuButtonArrow render={<ChevronRightIcon />} />
               </Button>
             }
           />

@@ -85,6 +85,9 @@
 
 .tiptap-combobox-list .tiptap-button,
 .tiptap-card .tiptap-button {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
     width: 100%;
     min-height: var(--mn-tiptap-menu-item-height, 2rem);
     max-width: 100%;
@@ -94,8 +97,29 @@
     text-align: left;
 }
 
+.tiptap-combobox-list .tiptap-button-icon,
+.tiptap-combobox-list .tiptap-button-icon-sub,
+.tiptap-combobox-list .tiptap-menu-button-arrow,
+.tiptap-card .tiptap-button-icon,
+.tiptap-card .tiptap-button-icon-sub,
+.tiptap-card .tiptap-menu-button-arrow {
+    flex: 0 0 auto;
+    width: 1rem;
+    height: 1rem;
+}
+
+.tiptap-combobox-list .tiptap-menu-button-arrow,
+.tiptap-card .tiptap-menu-button-arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
+    color: color-mix(in srgb, var(--mn-ink-3, #64748b) 78%, transparent);
+}
+
 .tiptap-combobox-list .tiptap-button-text,
 .tiptap-card .tiptap-button-text {
+    flex: 1 1 auto;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;

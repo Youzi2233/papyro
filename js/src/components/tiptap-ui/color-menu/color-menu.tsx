@@ -2,7 +2,6 @@ import type { Editor } from "@tiptap/react"
 
 // Primitive UI Components
 import { Button } from "@/components/tiptap-ui-primitive/button"
-import { Spacer } from "@/components/tiptap-ui-primitive/spacer"
 import {
   Menu,
   MenuContent,
@@ -10,6 +9,7 @@ import {
   MenuGroup,
   MenuGroupLabel,
   MenuButton,
+  MenuButtonArrow,
 } from "@/components/tiptap-ui-primitive/menu"
 import { ComboboxList } from "@/components/tiptap-ui-primitive/combobox"
 import { Separator } from "@/components/tiptap-ui-primitive/separator"
@@ -153,8 +153,7 @@ export const ColorMenu: React.FC<ColorMenuProps> = ({
             <Button variant="ghost">
               <PaintBucketIcon className="tiptap-button-icon" />
               <span className="tiptap-button-text">{label}</span>
-              <Spacer />
-              <ChevronRightIcon className="tiptap-button-icon" />
+              <MenuButtonArrow render={<ChevronRightIcon />} />
             </Button>
           }
         />

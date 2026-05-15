@@ -784,12 +784,45 @@ async function exerciseTableLayer(client) {
       rect.width >= 180 &&
       rect.width <= Math.min(304, window.innerWidth - 24) + 1 &&
       rect.height > 32 &&
-      buttons.every((button) => getComputedStyle(button).justifyContent === "flex-start") &&
+      buttons.every((button) => {
+        const style = getComputedStyle(button);
+        const buttonRect = button.getBoundingClientRect();
+        return style.display === "flex" &&
+          style.justifyContent === "flex-start" &&
+          style.alignItems === "center" &&
+          style.flexWrap === "nowrap" &&
+          buttonRect.height <= 40;
+      }) &&
       labels.every((label) => {
         const style = getComputedStyle(label);
         return style.whiteSpace === "nowrap" &&
           style.overflow === "hidden" &&
           style.textOverflow === "ellipsis";
+      }) &&
+      ["Color", "Alignment"].every((text) => {
+        const label = labels.find((candidate) => candidate.textContent?.trim() === text);
+        const button = label?.closest(".tiptap-button");
+        const arrow = button?.querySelector(".tiptap-menu-button-arrow");
+        const icon = button?.querySelector(".tiptap-button-icon");
+        if (!label || !button || !arrow || !icon) return false;
+
+        const buttonRect = button.getBoundingClientRect();
+        const labelRect = label.getBoundingClientRect();
+        const arrowRect = arrow.getBoundingClientRect();
+        const iconRect = icon.getBoundingClientRect();
+        const buttonStyle = getComputedStyle(button);
+        const labelCenter = labelRect.top + labelRect.height / 2;
+        const arrowCenter = arrowRect.top + arrowRect.height / 2;
+        const iconCenter = iconRect.top + iconRect.height / 2;
+
+        return buttonStyle.flexWrap === "nowrap" &&
+          arrowRect.width <= 18 &&
+          arrowRect.height <= 18 &&
+          arrowRect.right <= buttonRect.right - 6 &&
+          arrowRect.left >= labelRect.right - 1 &&
+          Math.abs(labelCenter - arrowCenter) <= 4 &&
+          Math.abs(labelCenter - iconCenter) <= 4 &&
+          buttonRect.height <= 40;
       });
   });
   await pressKey(client, "Escape");
