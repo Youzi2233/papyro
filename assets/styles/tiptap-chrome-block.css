@@ -1,7 +1,39 @@
-/* Official Tiptap block chrome bridge.
-   Drag handle and block action UI are owned by the official React component SCSS
-   injected into the generated editor bundle. Keep this file limited to Papyro
-   host-level stacking and drag-state bridges. */
+/* Papyro block chrome bridge for official Tiptap drag context controls.
+   React component SCSS owns state; this file keeps the desktop handle quiet,
+   aligned, and stable when the generated bundle load order changes. */
+
+.mn-tiptap-react-root,
+.mn-tiptap-editor {
+    --mn-tiptap-handle-size: 1.75rem;
+}
+
+.mn-tiptap-drag-context-menu-handle {
+    height: var(--mn-tiptap-handle-size, 1.625rem);
+}
+
+.mn-tiptap-drag-context-menu-handle .tiptap-button {
+    width: var(--mn-tiptap-handle-size, 1.625rem);
+    min-width: var(--mn-tiptap-handle-size, 1.625rem);
+    height: var(--mn-tiptap-handle-size, 1.625rem);
+    border-radius: var(--tt-radius-md, 0.5rem);
+    border: 1px solid color-mix(in srgb, var(--mn-border) 58%, transparent);
+    background: color-mix(in srgb, var(--mn-surface-raised) 72%, transparent);
+    color: color-mix(in srgb, var(--mn-ink-3) 76%, transparent);
+    box-shadow: 0 1px 2px color-mix(in srgb, var(--mn-ink) 5%, transparent);
+}
+
+.mn-tiptap-drag-context-menu-handle .tiptap-button:hover,
+.mn-tiptap-drag-context-menu-handle .tiptap-button[data-state="open"] {
+    color: var(--mn-ink-2);
+    border-color: color-mix(in srgb, var(--mn-accent) 28%, var(--mn-border));
+    background-color: var(--mn-surface-raised);
+    box-shadow: var(--mn-shadow-xs);
+}
+
+.mn-tiptap-drag-context-menu-handle .tiptap-button-icon {
+    width: 1rem;
+    height: 1rem;
+}
 
 .mn-tiptap-drag-context-menu-handle[data-dragging="true"] .tiptap-button {
     cursor: grabbing;

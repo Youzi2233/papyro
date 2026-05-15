@@ -5,6 +5,7 @@
   height: 100%;
   outline: none;
   min-width: var(--popover-anchor-width);
+  color: var(--tt-popover-text-color, inherit);
 
   &[data-state="closed"] {
     display: none;
@@ -26,6 +27,7 @@
 
 .tiptap-menu-item {
   width: 100%;
+  min-width: 0;
 }
 
 .tiptap-menu-group-label {

@@ -13,12 +13,12 @@
   hr {
     border: none;
     height: 1px;
-    background-color: var(--horizontal-rule-color);
+    background-color: color-mix(in srgb, var(--mn-border, var(--horizontal-rule-color)) 82%, transparent);
   }
 
   [data-type="horizontalRule"] {
-    margin-top: 2.25em;
-    margin-bottom: 2.25em;
+    margin-top: 2em;
+    margin-bottom: 2em;
     padding-top: 0.75rem;
     padding-bottom: 0.75rem;
   }

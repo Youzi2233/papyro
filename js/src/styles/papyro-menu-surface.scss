@@ -21,6 +21,10 @@
   --mn-tiptap-menu-z: 166;
   --mn-tiptap-menu-max-width: min(22rem, calc(100vw - 32px));
   --mn-tiptap-menu-max-height: min(28rem, calc(100vh - 32px));
+  --mn-tiptap-menu-radius: var(--mn-radius-md, 8px);
+  --mn-tiptap-menu-item-height: 2.125rem;
+  --mn-tiptap-menu-item-gap: 0.625rem;
+  --mn-tiptap-handle-size: 1.75rem;
 }
 
 .tiptap-suggestion-menu,
@@ -48,10 +52,12 @@
   max-width: var(--mn-tiptap-menu-max-width, min(22rem, calc(100vw - 32px)));
   max-height: var(--mn-tiptap-menu-max-height, min(28rem, calc(100vh - 32px)));
   margin-block: 0;
+  padding: 0.375rem;
+  border-radius: var(--mn-tiptap-menu-radius, var(--tt-radius-lg, 0.5rem));
   border-color: var(--tt-combobox-border-color, var(--tiptap-card-border-color, var(--mn-divider, rgba(15, 23, 42, 0.08))));
   background-color: var(--tt-combobox-bg-color, var(--tiptap-card-bg-color, var(--mn-surface-raised, #ffffff)));
   color: var(--tt-combobox-text-color, var(--mn-ink-2, #4b5563));
-  box-shadow: var(--tt-shadow-elevated-md, var(--mn-shadow-md, 0 18px 42px rgba(15, 23, 42, 0.09)));
+  box-shadow: var(--tt-shadow-elevated-md, var(--mn-shadow-menu, 0 18px 42px rgba(15, 23, 42, 0.09)));
   overflow-x: hidden;
   overflow-y: auto;
   scrollbar-gutter: stable;
@@ -60,10 +66,11 @@
 .tiptap-card {
   max-width: var(--mn-tiptap-menu-max-width, min(22rem, calc(100vw - 32px)));
   max-height: var(--mn-tiptap-menu-max-height, min(28rem, calc(100vh - 32px)));
+  border-radius: var(--mn-tiptap-menu-radius, var(--tt-radius-lg, 0.5rem));
   border-color: var(--tiptap-card-border-color, var(--mn-divider, rgba(15, 23, 42, 0.08)));
   background-color: var(--tiptap-card-bg-color, var(--mn-surface-raised, #ffffff));
   color: var(--tt-popover-text-color, var(--mn-ink-2, #4b5563));
-  box-shadow: var(--tt-shadow-elevated-md, var(--mn-shadow-md, 0 18px 42px rgba(15, 23, 42, 0.09)));
+  box-shadow: var(--tt-shadow-elevated-md, var(--mn-shadow-menu, 0 18px 42px rgba(15, 23, 42, 0.09)));
   overflow: hidden;
 }
 
@@ -75,10 +82,11 @@
 
 .tiptap-toolbar[data-variant="floating"] {
   max-width: min(max-content, calc(100vw - 32px));
+  border-radius: var(--mn-tiptap-menu-radius, var(--tt-radius-lg, 0.5rem));
   border-color: var(--tt-toolbar-border-color, var(--mn-divider, rgba(15, 23, 42, 0.08)));
   background-color: var(--tt-toolbar-bg-color, var(--mn-surface-raised, #ffffff));
   color: var(--tt-popover-text-color, var(--mn-ink-2, #4b5563));
-  box-shadow: var(--tt-shadow-elevated-md, var(--mn-shadow-md, 0 18px 42px rgba(15, 23, 42, 0.09)));
+  box-shadow: var(--tt-shadow-elevated-md, var(--mn-shadow-menu, 0 18px 42px rgba(15, 23, 42, 0.09)));
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -89,8 +97,13 @@
 
 .tiptap-combobox-list .tiptap-button,
 .tiptap-card .tiptap-button {
+  width: 100%;
+  min-height: var(--mn-tiptap-menu-item-height, 2rem);
   max-width: 100%;
+  gap: var(--mn-tiptap-menu-item-gap, 0.5rem);
   justify-content: flex-start;
+  border-radius: var(--tt-radius-sm, 6px);
+  text-align: left;
 }
 
 .tiptap-combobox-list .tiptap-button-text,
@@ -115,4 +128,32 @@
 .tiptap-toolbar[data-variant="floating"] .tiptap-button:focus-visible {
   outline: 0;
   box-shadow: var(--mn-focus-ring-sm, 0 0 0 2px rgba(37, 99, 235, 0.13));
+}
+
+.mn-tiptap-drag-context-menu-handle {
+  height: var(--mn-tiptap-handle-size, 1.625rem);
+}
+
+.mn-tiptap-drag-context-menu-handle .tiptap-button {
+  width: var(--mn-tiptap-handle-size, 1.625rem);
+  min-width: var(--mn-tiptap-handle-size, 1.625rem);
+  height: var(--mn-tiptap-handle-size, 1.625rem);
+  border-radius: var(--tt-radius-md, 0.5rem);
+  border: 1px solid color-mix(in srgb, var(--mn-border, #e5e7eb) 58%, transparent);
+  background: color-mix(in srgb, var(--mn-surface-raised, #ffffff) 72%, transparent);
+  color: color-mix(in srgb, var(--mn-ink-3, #64748b) 76%, transparent);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--mn-ink, #111827) 5%, transparent);
+}
+
+.mn-tiptap-drag-context-menu-handle .tiptap-button:hover,
+.mn-tiptap-drag-context-menu-handle .tiptap-button[data-state="open"] {
+  color: var(--mn-ink-2, #4b5563);
+  border-color: color-mix(in srgb, var(--mn-accent, #2563eb) 28%, var(--mn-border, #e5e7eb));
+  background-color: var(--mn-surface-raised, #ffffff);
+  box-shadow: var(--mn-shadow-xs, 0 1px 2px rgba(15, 23, 42, 0.05));
+}
+
+.mn-tiptap-drag-context-menu-handle .tiptap-button-icon {
+  width: 1rem;
+  height: 1rem;
 }

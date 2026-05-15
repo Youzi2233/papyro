@@ -150,6 +150,8 @@
     height: auto;
     max-height: min(28rem, var(--popover-available-height, 70vh));
     margin-block: 0;
+    padding: 0.375rem;
+    border-radius: var(--mn-tiptap-menu-radius, var(--tt-radius-lg, 0.5rem));
     border-color: var(--tiptap-card-border-color, var(--tt-card-border-color, var(--tt-border-color, var(--mn-border))));
     background-color: var(--tiptap-card-bg-color, var(--tt-card-bg-color, var(--mn-surface-raised)));
     box-shadow: var(--tt-shadow-elevated-md, var(--mn-shadow-menu));
@@ -160,7 +162,11 @@
 
 .tiptap-table-menu-content > .tiptap-combobox-list .tiptap-button {
     width: 100%;
+    min-height: var(--mn-tiptap-menu-item-height, 2rem);
+    gap: var(--mn-tiptap-menu-item-gap, 0.5rem);
     justify-content: flex-start;
+    border-radius: var(--tt-radius-sm, 6px);
+    text-align: left;
 }
 
 .tiptap-table-menu-content > .tiptap-combobox-list .tiptap-separator[data-orientation="horizontal"] {

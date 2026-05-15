@@ -492,6 +492,8 @@ js/src/
 - [x] 2026-05-15 跟进：建立编辑器上下文浮层 surface 契约，统一 slash menu、drag context menu、link/color popover、floating toolbar、table menu 和 code language menu 的不透明背景、边框、阴影、层级、视口宽高、文本裁剪和 focus-visible 兜底；静态 `tiptap-chrome-command.css` 与运行时最终加载的 `papyro-menu-surface.scss` 双层守护，避免官方 SCSS 注入顺序导致 WebView 内菜单再次透明或错位
 - [x] 2026-05-15 跟进：为浮层 token 桥接、菜单 z-index/viewport、generic combobox panel、card/toolbar opaque surface、按钮文本裁剪和焦点环补 Markdown style smoke 防回归
 - [x] 2026-05-15 跟进：新增 WebView 安全的 `restoreEditorFocusAfterFloatingMenu`，在 link/color popover、drag context menu、table row/column menu 和 table cell menu 关闭后多次尝试把焦点还给 ProseMirror；desktop Tiptap WebView smoke 覆盖 slash Arrow/Enter/Escape、link/color Escape、drag Escape 和 table cell menu Escape 的关闭与焦点返还路径
+- [x] 2026-05-15 视觉跟进：收敛菜单视觉节奏，统一 `ComboboxList`、`Card`、floating toolbar 和 table menu 的 8px 内圆角、2.125rem 菜单项高度、0.625rem 图标/文字间距、实底边框/阴影与按钮文本裁剪；静态 CSS 与运行时 `papyro-menu-surface.scss` 同步守护，避免菜单再次透明、错位或按钮行高不一致
+- [x] 2026-05-15 视觉跟进：将 Papyro 默认视觉升级为现代专业笔记软件的 disciplined utility 方向：更克制的冷灰背景、更宽的 760px 文档行宽、更成熟的标题/引用/代码块节奏、浮层专用阴影 token、胶囊式但非浏览器化的顶部标签栏，以及 Preview/Hybrid 共用 Markdown typography token
 
 #### 9.4 表格体验收敛
 
@@ -505,6 +507,7 @@ js/src/
 - [x] 2026-05-15 跟进：收敛 `tiptap-table-menu-content` 的职责边界，根菜单不再绘制表面，直接面板使用官方 combobox/card token 与统一按钮节奏，并把直接面板、嵌套 flyout、按钮对齐和文本裁剪写入 Markdown style smoke 防回归
 - [x] 2026-05-15 跟进：移除宿主 CSS 对所有表格单元格正文的 `min-height` 强制值，只保留官方 resize handle 的出流、零文本度量和 layout/paint 隔离；同时让 table menu 直接面板具备 `overflow-y: auto` 与稳定 scrollbar gutter，避免菜单长内容挤压或透明穿透
 - [x] 2026-05-15 跟进：扩展 desktop Tiptap WebView smoke 为真实表格交互验收：点击单元格、移动到列边缘触发 ProseMirror `columnResizing` 句柄、断言 hover 前后单元格高度/正文子节点/文本稳定，并打开 `TableCellHandleMenu` 断言不透明 bounded surface、按钮对齐、文本裁剪和滚动行为
+- [x] 2026-05-15 视觉跟进：将 block drag handle、insert plus、table row/column handle、extend button 和 cell handle 统一为低干扰桌面控件：使用 lucide 线性图标，1.75rem block handle 与 1rem 表格 handle 的稳定点击目标，默认中性色轻量展示，hover/focus/open 才提升对比；表格句柄保留官方状态机但补充 Papyro 的边框、阴影、focus ring 和静态 CSS 防回归
 
 #### 9.5 官方组件差异审计
 

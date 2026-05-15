@@ -8,6 +8,9 @@
     --mn-tiptap-menu-z: 166;
     --mn-tiptap-menu-max-width: min(22rem, calc(100vw - 32px));
     --mn-tiptap-menu-max-height: min(28rem, calc(100vh - 32px));
+    --mn-tiptap-menu-radius: var(--mn-radius-md, 8px);
+    --mn-tiptap-menu-item-height: 2.125rem;
+    --mn-tiptap-menu-item-gap: 0.625rem;
 }
 
 .tiptap-suggestion-menu,
@@ -35,10 +38,12 @@
     max-width: var(--mn-tiptap-menu-max-width, min(22rem, calc(100vw - 32px)));
     max-height: var(--mn-tiptap-menu-max-height, min(28rem, calc(100vh - 32px)));
     margin-block: 0;
+    padding: 0.375rem;
+    border-radius: var(--mn-tiptap-menu-radius, var(--tt-radius-lg, 0.5rem));
     border-color: var(--tt-combobox-border-color, var(--tiptap-card-border-color, var(--mn-divider)));
     background-color: var(--tt-combobox-bg-color, var(--tiptap-card-bg-color, var(--mn-surface-raised)));
     color: var(--tt-combobox-text-color, var(--mn-ink-2));
-    box-shadow: var(--tt-shadow-elevated-md, var(--mn-shadow-md));
+    box-shadow: var(--tt-shadow-elevated-md, var(--mn-shadow-menu));
     overflow-x: hidden;
     overflow-y: auto;
     scrollbar-gutter: stable;
@@ -47,10 +52,11 @@
 .tiptap-card {
     max-width: var(--mn-tiptap-menu-max-width, min(22rem, calc(100vw - 32px)));
     max-height: var(--mn-tiptap-menu-max-height, min(28rem, calc(100vh - 32px)));
+    border-radius: var(--mn-tiptap-menu-radius, var(--tt-radius-lg, 0.5rem));
     border-color: var(--tiptap-card-border-color, var(--mn-divider));
     background-color: var(--tiptap-card-bg-color, var(--mn-surface-raised));
     color: var(--tt-popover-text-color, var(--mn-ink-2));
-    box-shadow: var(--tt-shadow-elevated-md, var(--mn-shadow-md));
+    box-shadow: var(--tt-shadow-elevated-md, var(--mn-shadow-menu));
     overflow: hidden;
 }
 
@@ -62,10 +68,11 @@
 
 .tiptap-toolbar[data-variant="floating"] {
     max-width: min(max-content, calc(100vw - 32px));
+    border-radius: var(--mn-tiptap-menu-radius, var(--tt-radius-lg, 0.5rem));
     border-color: var(--tt-toolbar-border-color, var(--mn-divider));
     background-color: var(--tt-toolbar-bg-color, var(--mn-surface-raised));
     color: var(--tt-popover-text-color, var(--mn-ink-2));
-    box-shadow: var(--tt-shadow-elevated-md, var(--mn-shadow-md));
+    box-shadow: var(--tt-shadow-elevated-md, var(--mn-shadow-menu));
     overflow-x: auto;
     scrollbar-width: none;
 }
@@ -76,8 +83,13 @@
 
 .tiptap-combobox-list .tiptap-button,
 .tiptap-card .tiptap-button {
+    width: 100%;
+    min-height: var(--mn-tiptap-menu-item-height, 2rem);
     max-width: 100%;
+    gap: var(--mn-tiptap-menu-item-gap, 0.5rem);
     justify-content: flex-start;
+    border-radius: var(--tt-radius-sm, 6px);
+    text-align: left;
 }
 
 .tiptap-combobox-list .tiptap-button-text,

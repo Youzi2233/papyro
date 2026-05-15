@@ -9,32 +9,32 @@
     color-scheme: light;
 
     /* Surfaces */
-    --mn-bg:              #f3f5f8;
-    --mn-surface:         #ffffff;
+    --mn-bg:              #eef2f7;
+    --mn-surface:         #fbfcfe;
     --mn-surface-raised:  #ffffff;
-    --mn-surface-sunken:  #f6f8fb;
-    --mn-sidebar-bg:      #f7f8fa;
+    --mn-surface-sunken:  #f3f6fa;
+    --mn-sidebar-bg:      #f7f9fc;
 
     /* Ink */
-    --mn-ink:             #111827;
-    --mn-ink-2:           #4b5563;
-    --mn-ink-3:           #64748b;
+    --mn-ink:             #101620;
+    --mn-ink-2:           #455468;
+    --mn-ink-3:           #66758a;
     --mn-ink-inverse:     #ffffff;
 
     /* Borders */
-    --mn-border:          #e5e7eb;
-    --mn-border-strong:   #cbd5e1;
-    --mn-divider:         rgba(15, 23, 42, 0.08);
+    --mn-border:          #dfe5ee;
+    --mn-border-strong:   #c5cfdd;
+    --mn-divider:         rgba(16, 22, 32, 0.09);
     --mn-border-default:  1px solid var(--mn-border);
     --mn-border-subtle:   1px solid var(--mn-divider);
     --mn-border-accent:   1px solid var(--mn-accent);
     --mn-border-transparent: 1px solid transparent;
 
     /* Accent */
-    --mn-accent:          #2563eb;
-    --mn-accent-strong:   #1d4ed8;
-    --mn-accent-dim:      rgba(37, 99, 235, 0.13);
-    --mn-accent-wash:     rgba(37, 99, 235, 0.06);
+    --mn-accent:          #2557d6;
+    --mn-accent-strong:   #183f9f;
+    --mn-accent-dim:      rgba(37, 87, 214, 0.14);
+    --mn-accent-wash:     rgba(37, 87, 214, 0.07);
     --mn-accent-ink:      #ffffff;
 
     /* Semantic state */
@@ -46,10 +46,11 @@
     --mn-success-ink:     #ffffff;
 
     /* Shadows */
-    --mn-shadow-xs:       0 1px 1px rgba(15, 23, 42, .04);
-    --mn-shadow-sm:       0 1px 2px rgba(15, 23, 42, .05), 0 8px 22px rgba(15, 23, 42, .05);
-    --mn-shadow-md:       0 2px 8px rgba(15, 23, 42, .08), 0 18px 42px rgba(15, 23, 42, .09);
-    --mn-shadow-lg:       0 4px 14px rgba(15, 23, 42, .12), 0 28px 64px rgba(15, 23, 42, .13);
+    --mn-shadow-xs:       0 1px 2px rgba(16, 22, 32, .045);
+    --mn-shadow-sm:       0 1px 2px rgba(16, 22, 32, .05), 0 10px 26px rgba(16, 22, 32, .06);
+    --mn-shadow-md:       0 2px 10px rgba(16, 22, 32, .08), 0 20px 46px rgba(16, 22, 32, .10);
+    --mn-shadow-lg:       0 4px 18px rgba(16, 22, 32, .12), 0 34px 72px rgba(16, 22, 32, .16);
+    --mn-shadow-menu:     0 10px 30px rgba(16, 22, 32, .13), 0 0 0 1px rgba(16, 22, 32, .06);
     --mn-shadow-modal:    0 22px 70px rgba(15, 23, 42, 0.18);
     --mn-shadow-hairline: 0 0 0 1px var(--mn-divider);
     --mn-control-highlight: rgba(255, 255, 255, .42);
@@ -61,7 +62,10 @@
     --mn-overlay-backdrop: rgba(15, 23, 42, 0.42);
     --mn-motion-theme:       200ms ease;
     --mn-motion-theme-duration: 200ms;
+    --mn-transition-fast:    120ms ease;
     --mn-transition-theme:   background-color var(--mn-motion-theme), background var(--mn-motion-theme), border-color var(--mn-motion-theme), color var(--mn-motion-theme), box-shadow var(--mn-motion-theme);
+    --mn-chrome-hover:       color-mix(in srgb, var(--mn-ink) 5%, transparent);
+    --mn-chrome-active:      color-mix(in srgb, var(--mn-accent) 10%, var(--mn-surface-raised));
 
     /* Radii */
     --mn-radius-xxs:      3px;
@@ -219,24 +223,24 @@
     --tt-transition-duration-default: var(--mn-motion-theme-duration, 200ms);
     --tt-transition-easing-default: ease;
     --tt-table-border-color:     var(--mn-border, #e5e7eb);
-    --tt-table-selected-bg:      color-mix(in srgb, var(--mn-accent, #2563eb) 16%, transparent);
+    --tt-table-selected-bg:      color-mix(in srgb, var(--mn-accent, #2563eb) 14%, transparent);
     --tt-table-selected-stroke:  var(--mn-accent, #2563eb);
     --tt-table-column-resize-handle-bg: var(--mn-accent, #2563eb);
     --tt-table-cell-padding:     var(--mn-markdown-table-cell-pad, 0.5rem);
     --tt-table-margin-block:     var(--mn-markdown-block-gap, 1.25rem);
-    --tt-table-pad-block-start:  0;
-    --tt-table-pad-block-end:    0;
-    --tt-table-pad-inline-start: 0;
-    --tt-table-pad-inline-end:   0;
-    --tt-table-handle-bg-color:  var(--mn-surface-raised, #ffffff);
-    --tt-table-extend-icon-color: var(--mn-ink-3, #64748b);
+    --tt-table-pad-block-start:  0.875rem;
+    --tt-table-pad-block-end:    1.25rem;
+    --tt-table-pad-inline-start: 0.875rem;
+    --tt-table-pad-inline-end:   1.25rem;
+    --tt-table-handle-bg-color:  color-mix(in srgb, var(--mn-ink, #111827) 4%, var(--mn-surface-raised, #ffffff));
+    --tt-table-extend-icon-color: color-mix(in srgb, var(--mn-ink-3, #64748b) 68%, transparent);
 
     /* Document rhythm shared by Source, Hybrid, and Preview */
-    --mn-document-measure:      708px;
-    --mn-document-wide-measure: min(1080px, calc(100vw - 48px));
-    --mn-document-pad-x:        clamp(12px, 2vw, 32px);
-    --mn-document-pad-top:      clamp(18px, 3vw, 36px);
-    --mn-document-pad-bottom:   72px;
+    --mn-document-measure:      760px;
+    --mn-document-wide-measure: min(1120px, calc(100vw - 48px));
+    --mn-document-pad-x:        clamp(18px, 2.4vw, 40px);
+    --mn-document-pad-top:      clamp(28px, 3.2vw, 48px);
+    --mn-document-pad-bottom:   88px;
     --mn-document-gutter-gap:   8px;
 
     /* Typography */
@@ -250,9 +254,9 @@
     --mn-document-font:   var(--mn-editor-font, var(--mn-font-body));
     --mn-document-heading-font: var(--mn-font-heading);
     --mn-document-code-font: var(--mn-font-code);
-    --mn-document-body-size: var(--mn-editor-font-size, 16px);
-    --mn-document-line-height: var(--mn-editor-line-height, 1.75);
-    --mn-document-heading-line: 1.18;
+    --mn-document-body-size: var(--mn-editor-font-size, 16.5px);
+    --mn-document-line-height: var(--mn-editor-line-height, 1.72);
+    --mn-document-heading-line: 1.16;
     --mn-type-dot:        8px;
     --mn-type-tiny:       9px;
     --mn-type-label:      10px;
@@ -284,12 +288,12 @@
     --mn-markdown-body-size:         var(--mn-document-body-size);
     --mn-markdown-line-height:       var(--mn-document-line-height);
     --mn-markdown-heading-line:      var(--mn-document-heading-line);
-    --mn-markdown-h1-size:           1.95em;
-    --mn-markdown-h2-size:           1.48em;
-    --mn-markdown-h3-size:           1.22em;
-    --mn-markdown-h4-size:           1.06em;
+    --mn-markdown-h1-size:           2em;
+    --mn-markdown-h2-size:           1.52em;
+    --mn-markdown-h3-size:           1.24em;
+    --mn-markdown-h4-size:           1.08em;
     --mn-markdown-h5-size:           .9em;
-    --mn-markdown-block-gap:         .95em;
+    --mn-markdown-block-gap:         1em;
     --mn-markdown-list-indent:       1.55em;
     --mn-markdown-list-item-gap:     .28em;
     --mn-markdown-list-marker-width: 1.4em;
@@ -299,8 +303,8 @@
     --mn-markdown-quote-pad-y:       .48em;
     --mn-markdown-quote-bg:          var(--mn-accent-wash);
     --mn-markdown-quote-color:       var(--mn-ink-2);
-    --mn-markdown-code-bg:           var(--mn-surface-sunken);
-    --mn-markdown-code-block-bg:     var(--mn-surface-sunken);
+    --mn-markdown-code-bg:           #f1f4f8;
+    --mn-markdown-code-block-bg:     #f4f7fb;
     --mn-markdown-code-color:        var(--mn-ink-2);
     --mn-markdown-code-radius:       var(--mn-radius-sm);
     --mn-markdown-inline-code-pad:   .1em .42em;
@@ -310,8 +314,8 @@
     --mn-markdown-code-block-line:   var(--mn-line-reader);
     --mn-markdown-front-matter-pad-x: 12px;
     --mn-markdown-front-matter-pad-y: .45em;
-    --mn-markdown-table-bg:          var(--mn-surface-sunken);
-    --mn-markdown-table-head-bg:     var(--mn-surface-sunken);
+    --mn-markdown-table-bg:          #f8fafc;
+    --mn-markdown-table-head-bg:     #f2f5f9;
     --mn-markdown-table-border:      var(--mn-border-default);
     --mn-markdown-table-line-pad-x:  12px;
     --mn-markdown-table-line-pad-y:  .48em;
@@ -381,7 +385,10 @@
     --mn-shadow-sm:       0 1px 2px rgba(0, 0, 0, .28), 0 8px 24px rgba(0, 0, 0, .24);
     --mn-shadow-md:       0 2px 8px rgba(0, 0, 0, .36), 0 18px 42px rgba(0, 0, 0, .34);
     --mn-shadow-lg:       0 4px 14px rgba(0, 0, 0, .42), 0 28px 64px rgba(0, 0, 0, .46);
+    --mn-shadow-menu:     0 12px 32px rgba(0, 0, 0, .42), 0 0 0 1px rgba(226, 232, 240, .07);
     --mn-control-highlight: rgba(255, 255, 255, .035);
+    --mn-chrome-hover:    color-mix(in srgb, var(--mn-ink) 7%, transparent);
+    --mn-chrome-active:   color-mix(in srgb, var(--mn-accent) 14%, var(--mn-surface-raised));
 
     /* Editor internals */
     --mn-editor-bg:          #111827;
@@ -448,6 +455,9 @@
     --mn-code-token-attribute: #953800;
     --mn-code-token-type: #0a7f72;
     --mn-code-token-operator: #57606a;
+    --mn-shadow-menu:     0 10px 30px rgba(27, 31, 36, .13), 0 0 0 1px rgba(27, 31, 36, .06);
+    --mn-chrome-hover:    rgba(27, 31, 36, 0.055);
+    --mn-chrome-active:   rgba(9, 105, 218, 0.10);
 }
 
 :root[data-theme="github_dark"] {
@@ -494,6 +504,9 @@
     --mn-code-token-attribute: #ffa657;
     --mn-code-token-type: #7ee787;
     --mn-code-token-operator: #c9d1d9;
+    --mn-shadow-menu:     0 12px 32px rgba(0, 0, 0, .42), 0 0 0 1px rgba(240, 246, 252, .08);
+    --mn-chrome-hover:    rgba(240, 246, 252, 0.07);
+    --mn-chrome-active:   rgba(88, 166, 255, 0.14);
 }
 
 :root[data-theme="high_contrast"] {
@@ -523,6 +536,9 @@
     --mn-success:         #86efac;
     --mn-success-ink:     #000000;
     --mn-shadow-modal:    0 0 0 2px var(--mn-border-strong);
+    --mn-shadow-menu:     0 0 0 2px var(--mn-border-strong);
+    --mn-chrome-hover:    rgba(255, 255, 255, 0.16);
+    --mn-chrome-active:   rgba(250, 204, 21, 0.22);
     --mn-editor-bg:       #000000;
     --mn-editor-ink:      #ffffff;
     --mn-active-line:     rgba(250, 204, 21, 0.14);
@@ -584,6 +600,9 @@
     --mn-code-token-attribute: #7c3f74;
     --mn-code-token-type: #2f766d;
     --mn-code-token-operator: #6f4e37;
+    --mn-shadow-menu:     0 10px 30px rgba(48, 42, 31, .13), 0 0 0 1px rgba(48, 42, 31, .07);
+    --mn-chrome-hover:    rgba(48, 42, 31, 0.06);
+    --mn-chrome-active:   rgba(47, 118, 109, 0.11);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -623,6 +642,9 @@
         --mn-shadow-sm:       0 1px 2px rgba(0, 0, 0, .28), 0 8px 24px rgba(0, 0, 0, .24);
         --mn-shadow-md:       0 2px 8px rgba(0, 0, 0, .36), 0 18px 42px rgba(0, 0, 0, .34);
         --mn-shadow-lg:       0 4px 14px rgba(0, 0, 0, .42), 0 28px 64px rgba(0, 0, 0, .46);
+        --mn-shadow-menu:     0 12px 32px rgba(0, 0, 0, .42), 0 0 0 1px rgba(226, 232, 240, .07);
+        --mn-chrome-hover:    color-mix(in srgb, var(--mn-ink) 7%, transparent);
+        --mn-chrome-active:   color-mix(in srgb, var(--mn-accent) 14%, var(--mn-surface-raised));
 
         --mn-editor-bg:          #111827;
         --mn-editor-ink:         #f3f4f6;
@@ -657,7 +679,8 @@ html, body, #main {
 }
 
 body {
-    background: var(--mn-chrome-bg);
+    background:
+        linear-gradient(180deg, color-mix(in srgb, var(--mn-bg) 92%, #ffffff) 0%, var(--mn-bg) 48%, color-mix(in srgb, var(--mn-bg) 88%, #dfe7f1) 100%);
     color: var(--mn-chrome-ink);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -695,11 +718,13 @@ button { border: 0; cursor: pointer; background: transparent; }
     width: 100vw;
     height: 100vh;
     overflow: hidden;
-    background: var(--mn-bg);
+    background:
+        linear-gradient(180deg, color-mix(in srgb, var(--mn-bg) 96%, var(--mn-surface)) 0%, var(--mn-bg) 100%);
 }
 
 .mn-shell.mn-platform-macos {
-    background: var(--mn-bg);
+    background:
+        linear-gradient(180deg, color-mix(in srgb, var(--mn-bg) 96%, var(--mn-surface)) 0%, var(--mn-bg) 100%);
 }
 
 /* Header */
@@ -1010,7 +1035,9 @@ button { border: 0; cursor: pointer; background: transparent; }
     min-width: 0;
     min-height: 0;
     flex-direction: column;
-    background: var(--mn-editor-bg);
+    background:
+        linear-gradient(90deg, color-mix(in srgb, var(--mn-border) 20%, transparent), transparent 18px),
+        var(--mn-editor-bg);
     overflow: visible;
 }
 
@@ -1026,7 +1053,8 @@ button { border: 0; cursor: pointer; background: transparent; }
     border: 0;
     border-right: var(--mn-border-default);
     border-radius: 0;
-    background: var(--mn-sidebar-bg);
+    background:
+        linear-gradient(180deg, color-mix(in srgb, var(--mn-sidebar-bg) 94%, var(--mn-surface-raised)) 0%, var(--mn-sidebar-bg) 100%);
     box-shadow: none;
     transition: width 0.2s ease, opacity 0.15s ease;
     flex-shrink: 0;
@@ -1082,7 +1110,8 @@ button { border: 0; cursor: pointer; background: transparent; }
     gap: 14px;
     padding: 0 14px 14px;
     border-bottom: var(--mn-border-subtle);
-    background: var(--mn-sidebar-bg);
+    background:
+        linear-gradient(180deg, color-mix(in srgb, var(--mn-sidebar-bg) 88%, var(--mn-surface-raised)) 0%, var(--mn-sidebar-bg) 100%);
 }
 
 .mn-sidebar-brand {
@@ -1107,9 +1136,13 @@ button { border: 0; cursor: pointer; background: transparent; }
     width: 32px;
     height: 32px;
     flex: 0 0 32px;
-    border-radius: 10px;
+    border: 1px solid color-mix(in srgb, var(--mn-border) 80%, transparent);
+    border-radius: var(--mn-radius-md);
     object-fit: contain;
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+    background: var(--mn-surface-raised);
+    box-shadow:
+        inset 0 1px 0 var(--mn-control-highlight),
+        0 2px 8px color-mix(in srgb, var(--mn-ink) 8%, transparent);
 }
 
 .mn-sidebar-brand-copy {
@@ -1121,8 +1154,8 @@ button { border: 0; cursor: pointer; background: transparent; }
 }
 
 .mn-sidebar-brand-title {
-    font-size: 22px;
-    font-weight: var(--mn-weight-bold);
+    font-size: 21px;
+    font-weight: var(--mn-weight-strong);
     letter-spacing: var(--mn-letter-normal);
     color: var(--mn-ink);
     line-height: var(--mn-line-tight);
@@ -1263,11 +1296,13 @@ button { border: 0; cursor: pointer; background: transparent; }
     width: 100%;
     padding: 0 10px;
     border: var(--mn-border-default);
-    border-radius: var(--mn-radius-sm);
-    background: var(--mn-surface-sunken);
+    border-radius: var(--mn-radius-md);
+    background: color-mix(in srgb, var(--mn-surface-raised) 70%, var(--mn-sidebar-bg));
     color: var(--mn-ink-3);
     text-align: left;
-    box-shadow: inset 0 1px 0 var(--mn-control-highlight);
+    box-shadow:
+        inset 0 1px 0 var(--mn-control-highlight),
+        0 1px 2px color-mix(in srgb, var(--mn-ink) 4%, transparent);
     transition: color var(--mn-motion-theme);
 }
 
@@ -1281,10 +1316,12 @@ button { border: 0; cursor: pointer; background: transparent; }
     width: 100%;
     padding: 0 10px;
     border: var(--mn-border-default);
-    border-radius: var(--mn-radius-sm);
-    background: var(--mn-surface-sunken);
+    border-radius: var(--mn-radius-md);
+    background: color-mix(in srgb, var(--mn-surface-raised) 70%, var(--mn-sidebar-bg));
     color: var(--mn-ink-3);
-    box-shadow: inset 0 1px 0 var(--mn-control-highlight);
+    box-shadow:
+        inset 0 1px 0 var(--mn-control-highlight),
+        0 1px 2px color-mix(in srgb, var(--mn-ink) 4%, transparent);
     transition: color var(--mn-motion-theme);
     z-index: 30;
 }
@@ -1367,14 +1404,18 @@ button { border: 0; cursor: pointer; background: transparent; }
     width: 100%;
     padding: 5px;
     border: var(--mn-border-default);
-    border-radius: var(--mn-radius-sm);
-    background: color-mix(in srgb, var(--mn-surface) 54%, var(--mn-sidebar-bg));
-    box-shadow: none;
+    border-radius: var(--mn-radius-md);
+    background: color-mix(in srgb, var(--mn-surface-raised) 62%, var(--mn-sidebar-bg));
+    box-shadow:
+        inset 0 1px 0 var(--mn-control-highlight),
+        0 1px 2px color-mix(in srgb, var(--mn-ink) 4%, transparent);
 }
 
 .mn-sidebar-workspace-card.active {
     border-color: color-mix(in srgb, var(--mn-accent) 32%, var(--mn-border));
-    background: color-mix(in srgb, var(--mn-accent-wash) 52%, var(--mn-surface));
+    background:
+        linear-gradient(90deg, color-mix(in srgb, var(--mn-accent) 13%, transparent), transparent 52%),
+        color-mix(in srgb, var(--mn-accent-wash) 52%, var(--mn-surface));
 }
 
 .mn-sidebar-workspace-card.empty {
@@ -1706,9 +1747,10 @@ button.mn-sidebar-workspace-main:hover {
     flex: 0 0 auto;
     display: block;
     min-width: 0;
-    background: var(--mn-bg);
-    border-bottom: 0;
-    box-shadow: none;
+    background:
+        linear-gradient(180deg, color-mix(in srgb, var(--mn-bg) 96%, var(--mn-surface-raised)) 0%, var(--mn-bg) 100%);
+    border-bottom: 1px solid color-mix(in srgb, var(--mn-border) 62%, transparent);
+    box-shadow: 0 1px 0 color-mix(in srgb, var(--mn-surface-raised) 70%, transparent);
 }
 
 .mn-editor-chrome {
@@ -1716,12 +1758,12 @@ button.mn-sidebar-workspace-main:hover {
     z-index: 1;
     display: flex;
     align-items: center;
-    gap: 24px;
+    gap: 18px;
     width: 100%;
     min-width: 0;
-    min-height: 44px;
-    padding: 0 10px 0 12px;
-    background: var(--mn-bg);
+    min-height: 46px;
+    padding: 0 12px;
+    background: transparent;
     container-type: inline-size;
     overflow: hidden;
     -webkit-user-select: none;
@@ -1729,8 +1771,8 @@ button.mn-sidebar-workspace-main:hover {
 }
 
 .mn-editor-document-tools {
-    margin-left: -16px;
-    padding-left: 8px;
+    margin-left: -10px;
+    padding-left: 10px;
     border-left: var(--mn-border-subtle);
 }
 
@@ -1775,10 +1817,10 @@ button.mn-sidebar-workspace-main:hover {
 }
 
 .mn-editor-tool {
-    --mn-primitive-hover-bg: var(--mn-surface-sunken);
+    --mn-primitive-hover-bg: color-mix(in srgb, var(--mn-surface-raised) 74%, transparent);
     --mn-primitive-hover-border: var(--mn-border);
     --mn-primitive-hover-ink: var(--mn-ink);
-    --mn-primitive-active-bg: var(--mn-accent-wash);
+    --mn-primitive-active-bg: color-mix(in srgb, var(--mn-accent-wash) 82%, var(--mn-surface-raised));
     --mn-primitive-active-border: var(--mn-accent-dim);
     --mn-primitive-active-ink: var(--mn-accent);
     --mn-primitive-focus-ring: var(--mn-ring-focus-sm);
@@ -1787,10 +1829,10 @@ button.mn-sidebar-workspace-main:hover {
     align-items: center;
     justify-content: center;
     min-width: 32px;
-    height: 32px;
-    padding: 0 11px;
+    height: 30px;
+    padding: 0 10px;
     border: var(--mn-border-transparent);
-    border-radius: var(--mn-radius-sm);
+    border-radius: var(--mn-radius-md);
     background: transparent;
     color: var(--mn-ink-2);
     font-size: var(--mn-type-caption);
@@ -1801,7 +1843,7 @@ button.mn-sidebar-workspace-main:hover {
 }
 
 .mn-editor-tool.icon-only {
-    width: 32px;
+    width: 30px;
     padding: 0;
 }
 
@@ -1838,18 +1880,18 @@ button.mn-sidebar-workspace-main:hover {
 .mn-tabbar {
     display: flex;
     align-items: stretch;
-    gap: 3px;
+    gap: 4px;
     flex: 1 1 0;
     width: auto;
     max-width: 100%;
     min-width: 0;
-    padding: 6px 0 0;
+    padding: 6px 0 5px;
     border-bottom: 0;
     background: transparent;
     overflow-x: auto;
     overscroll-behavior-x: contain;
     scrollbar-width: none;
-    min-height: 44px;
+    min-height: 46px;
 }
 
 .mn-tabbar::-webkit-scrollbar { display: none; }
@@ -1857,7 +1899,7 @@ button.mn-sidebar-workspace-main:hover {
 .mn-tabbar-placeholder {
     display: inline-flex;
     flex: 1 1 auto;
-    min-height: 38px;
+    min-height: 34px;
     align-items: center;
     justify-content: flex-start;
     padding-inline: 16px;
@@ -1871,15 +1913,14 @@ button.mn-sidebar-workspace-main:hover {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    min-height: 38px;
+    min-height: 34px;
     border: 1px solid transparent;
-    border-bottom: 0;
-    border-radius: 7px 7px 0 0;
+    border-radius: var(--mn-radius-md);
     background: transparent;
     color: var(--mn-ink-3);
-    padding: 0 7px 0 14px;
+    padding: 0 8px 0 12px;
     flex-shrink: 0;
-    transition: color var(--mn-motion-theme);
+    transition: var(--mn-transition-theme);
     transform: translateY(0);
 }
 
@@ -1888,17 +1929,18 @@ button.mn-sidebar-workspace-main:hover {
 }
 
 .mn-tab:hover {
-    background: color-mix(in srgb, var(--mn-surface) 48%, transparent);
+    background: color-mix(in srgb, var(--mn-surface-raised) 62%, transparent);
     color: var(--mn-ink);
 }
 
 .mn-tab.active {
     z-index: 2;
-    background: var(--mn-editor-bg);
-    border-color: color-mix(in srgb, var(--mn-editor-bg) 76%, var(--mn-border));
-    border-bottom-color: transparent;
+    background: color-mix(in srgb, var(--mn-editor-bg) 88%, var(--mn-surface-raised));
+    border-color: color-mix(in srgb, var(--mn-border) 70%, transparent);
     color: var(--mn-ink);
-    box-shadow: 0 -1px 0 var(--mn-control-highlight), 0 1px 0 var(--mn-editor-bg);
+    box-shadow:
+        inset 0 1px 0 var(--mn-control-highlight),
+        0 1px 3px color-mix(in srgb, var(--mn-ink) 6%, transparent);
 }
 
 .mn-tab.active::after {
@@ -1906,16 +1948,17 @@ button.mn-sidebar-workspace-main:hover {
     position: absolute;
     left: -1px;
     right: -1px;
-    bottom: -1px;
+    bottom: 3px;
     height: 2px;
-    background: var(--mn-editor-bg);
+    border-radius: var(--mn-radius-pill);
+    background: color-mix(in srgb, var(--mn-accent) 72%, transparent);
     pointer-events: none;
 }
 
 .mn-tab-title {
     display: inline-flex;
     align-items: center;
-    padding: 6px 0;
+    padding: 5px 0;
     font-size: var(--mn-type-small);
     font-weight: var(--mn-weight-semibold);
     max-width: 190px;

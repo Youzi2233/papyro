@@ -35,10 +35,10 @@
 
   // Paragraph spacing
   p:not(:first-child):not(td p):not(th p) {
-    font-size: 1rem;
-    line-height: 1.6;
+    font-size: 1em;
+    line-height: var(--mn-markdown-line-height, 1.72);
     font-weight: normal;
-    margin-top: 20px;
+    margin-top: var(--mn-markdown-block-gap, 1em);
   }
 
   // Selection styles

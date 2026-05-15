@@ -15,8 +15,11 @@
     min-height: 0;
     min-width: 0;
     position: relative;
-    gap: clamp(16px, 3vw, 36px);
+    gap: clamp(18px, 3vw, 38px);
     overflow: hidden;
+    background:
+        linear-gradient(90deg, color-mix(in srgb, var(--mn-border) 18%, transparent), transparent 18px),
+        var(--mn-editor-bg);
 }
 
 .mn-document-main > .mn-editor-edit,
@@ -37,13 +40,14 @@
     display: flex;
     flex-direction: column;
     border-left: var(--mn-border-subtle);
-    background: transparent;
+    background:
+        linear-gradient(180deg, color-mix(in srgb, var(--mn-surface) 42%, transparent), transparent 72px);
     overflow: hidden;
 }
 
 .mn-outline-title {
     flex-shrink: 0;
-    padding: 4px 0 12px 16px;
+    padding: 8px 0 12px 16px;
     color: var(--mn-ink-3);
     font-size: var(--mn-type-small);
     font-weight: var(--mn-weight-semibold);
@@ -62,10 +66,10 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    border-radius: var(--mn-radius-xs);
+    border-radius: var(--mn-radius-sm);
     border: 0;
     background: transparent;
-    padding: 5px 8px;
+    padding: 6px 8px;
     color: var(--mn-ink-2);
     font-size: var(--mn-type-small);
     font-family: inherit;
@@ -76,11 +80,13 @@
     transition: background 0.14s, color 0.14s;
 }
 .mn-outline-item:hover {
-    background: var(--mn-surface-sunken);
+    background: color-mix(in srgb, var(--mn-surface-raised) 72%, transparent);
     color: var(--mn-ink);
 }
 .mn-outline-item.active {
-    background: color-mix(in srgb, var(--mn-accent) 12%, var(--mn-surface));
+    background:
+        linear-gradient(90deg, color-mix(in srgb, var(--mn-accent) 18%, transparent), transparent 72%),
+        color-mix(in srgb, var(--mn-accent-wash) 76%, var(--mn-surface));
     color: var(--mn-ink);
     font-weight: var(--mn-weight-semibold);
 }
@@ -203,7 +209,9 @@
     overflow: hidden;
     border-radius: 0;
     border: 0;
-    background: var(--mn-editor-bg);
+    background:
+        linear-gradient(180deg, color-mix(in srgb, var(--mn-editor-bg) 92%, var(--mn-surface-sunken)) 0%, var(--mn-editor-bg) 160px),
+        var(--mn-editor-bg);
 }
 
 .mn-tiptap-runtime {
@@ -241,15 +249,59 @@
     max-width: var(--mn-document-content-width, var(--mn-document-measure));
     margin-inline: auto;
     padding:
-        max(24px, var(--mn-document-pad-top))
+        max(28px, var(--mn-document-pad-top))
         max(24px, var(--mn-document-pad-x))
-        max(24px, var(--mn-document-pad-bottom));
+        max(32px, var(--mn-document-pad-bottom));
     outline: 0;
     font-family: var(--mn-document-font);
     font-size: var(--mn-document-body-size);
     line-height: var(--mn-document-line-height);
     caret-color: var(--mn-accent);
     overflow-wrap: anywhere;
+}
+
+.mn-tiptap-editor > :first-child {
+    margin-top: 0;
+}
+
+.mn-tiptap-editor :where(h1, h2, h3, h4, h5, h6) {
+    font-family: var(--mn-markdown-heading-font);
+    line-height: var(--mn-markdown-heading-line);
+    color: var(--mn-editor-ink);
+}
+
+.mn-tiptap-editor h1 {
+    font-size: var(--mn-markdown-h1-size);
+    font-weight: var(--mn-weight-bold);
+    margin: 0 0 .58em;
+    padding-bottom: .26em;
+    border-bottom: 1px solid color-mix(in srgb, var(--mn-border) 72%, transparent);
+}
+
+.mn-tiptap-editor h2 {
+    font-size: var(--mn-markdown-h2-size);
+    font-weight: var(--mn-weight-bold);
+    margin: 1.65em 0 .52em;
+}
+
+.mn-tiptap-editor h3 {
+    font-size: var(--mn-markdown-h3-size);
+    font-weight: var(--mn-weight-semibold);
+    margin: 1.35em 0 .42em;
+}
+
+.mn-tiptap-editor h4 {
+    font-size: var(--mn-markdown-h4-size);
+    font-weight: var(--mn-weight-semibold);
+    margin: 1.15em 0 .34em;
+}
+
+.mn-tiptap-editor :where(p, blockquote, pre, figure) {
+    margin-bottom: var(--mn-markdown-block-gap);
+}
+
+.mn-tiptap-editor p {
+    color: var(--mn-editor-ink);
 }
 
 .mn-tiptap-editor :where(ul:not(.mn-tiptap-task-list), ol) {
@@ -318,7 +370,7 @@
     display: grid;
     gap: 8px;
     margin: 0 0 var(--mn-markdown-block-gap);
-    padding: 12px 14px 13px 16px;
+    padding: 13px 15px 14px 16px;
     border: 1px solid var(--mn-tiptap-callout-border);
     border-left: 3px solid var(--mn-tiptap-callout-tone);
     border-radius: var(--mn-markdown-code-radius);
@@ -418,10 +470,11 @@
     margin: 0 0 var(--mn-markdown-block-gap);
     overflow-x: auto;
     border: var(--mn-code-border);
-    border-radius: var(--mn-markdown-code-radius);
+    border-radius: var(--mn-radius-md);
     background: var(--mn-code-block-surface);
     box-shadow:
-        inset 0 1px 0 color-mix(in srgb, #fff 36%, transparent),
+        inset 0 1px 0 color-mix(in srgb, #fff 42%, transparent),
+        inset 3px 0 0 color-mix(in srgb, var(--mn-accent) 8%, transparent),
         0 1px 2px color-mix(in srgb, #000 4%, transparent);
     color: var(--mn-code-ink);
     padding: var(--mn-markdown-code-block-pad-y) var(--mn-markdown-code-block-pad-x);
@@ -607,10 +660,12 @@
     border-radius: 0;
     border: 0;
     padding:
-        max(24px, var(--mn-document-pad-top))
+        max(28px, var(--mn-document-pad-top))
         max(24px, var(--mn-document-pad-x))
-        max(24px, var(--mn-document-pad-bottom));
-    background: transparent;
+        max(32px, var(--mn-document-pad-bottom));
+    background:
+        linear-gradient(180deg, color-mix(in srgb, var(--mn-editor-bg) 92%, var(--mn-surface-sunken)) 0%, var(--mn-editor-bg) 160px),
+        var(--mn-editor-bg);
 }
 
 .mn-preview {
@@ -647,13 +702,13 @@
 .mn-preview h1 {
     font-size: var(--mn-markdown-h1-size);
     font-weight: var(--mn-weight-bold);
-    margin: 0 0 .55em;
-    padding-bottom: .24em;
-    border-bottom: var(--mn-border-subtle);
+    margin: 0 0 .58em;
+    padding-bottom: .26em;
+    border-bottom: 1px solid color-mix(in srgb, var(--mn-border) 72%, transparent);
 }
-.mn-preview h2 { font-size: var(--mn-markdown-h2-size); font-weight: var(--mn-weight-bold); margin: 1.6em 0 .5em; }
-.mn-preview h3 { font-size: var(--mn-markdown-h3-size); font-weight: var(--mn-weight-semibold); margin: 1.3em 0 .4em; }
-.mn-preview h4 { font-size: var(--mn-markdown-h4-size); font-weight: var(--mn-weight-semibold); margin: 1.1em 0 .3em; }
+.mn-preview h2 { font-size: var(--mn-markdown-h2-size); font-weight: var(--mn-weight-bold); margin: 1.65em 0 .52em; }
+.mn-preview h3 { font-size: var(--mn-markdown-h3-size); font-weight: var(--mn-weight-semibold); margin: 1.35em 0 .42em; }
+.mn-preview h4 { font-size: var(--mn-markdown-h4-size); font-weight: var(--mn-weight-semibold); margin: 1.15em 0 .34em; }
 .mn-preview h5, .mn-preview h6 {
     font-size: var(--mn-markdown-h5-size);
     font-weight: var(--mn-weight-bold);
@@ -673,12 +728,12 @@
 .mn-preview li > ul, .mn-preview li > ol { margin-bottom: 0; }
 
 .mn-preview blockquote {
-    border-left: var(--mn-markdown-quote-border) solid var(--mn-border-strong);
+    border-left: 3px solid color-mix(in srgb, var(--mn-accent) 45%, var(--mn-border-strong));
     padding: var(--mn-markdown-quote-pad-y) var(--mn-markdown-quote-pad-x);
     margin: 0 0 var(--mn-markdown-block-gap);
     color: var(--mn-markdown-quote-color);
     background: var(--mn-markdown-quote-bg);
-    border-radius: 0;
+    border-radius: 0 var(--mn-radius-sm) var(--mn-radius-sm) 0;
     font-style: italic;
 }
 .mn-preview blockquote > :last-child { margin-bottom: 0; }
@@ -718,7 +773,10 @@
     padding: var(--mn-markdown-code-block-pad-y) var(--mn-markdown-code-block-pad-x) !important;
     font-size: var(--mn-markdown-code-block-size);
     line-height: var(--mn-markdown-code-block-line);
-    box-shadow: none;
+    box-shadow:
+        inset 0 1px 0 color-mix(in srgb, #fff 42%, transparent),
+        inset 3px 0 0 color-mix(in srgb, var(--mn-accent) 8%, transparent),
+        0 1px 2px color-mix(in srgb, #000 4%, transparent);
     border: var(--mn-code-border);
     background: var(--mn-code-block-surface);
 }
@@ -757,6 +815,7 @@
     margin: 0 0 var(--mn-markdown-block-gap);
     font-size: .92em;
     font-family: var(--mn-font-ui);
+    border-radius: var(--mn-radius-sm);
 }
 
 .mn-preview th {

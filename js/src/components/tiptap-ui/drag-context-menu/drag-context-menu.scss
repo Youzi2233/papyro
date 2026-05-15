@@ -1,7 +1,24 @@
 .drag-handle {
+  --tt-block-handle-control-size: 1.625rem;
+  --tt-block-handle-icon-size: 0.9375rem;
+
   transition-property: top;
   transition-duration: 200ms;
   transition-timing-function: ease-out;
+
+  .tiptap-button {
+    width: var(--tt-block-handle-control-size);
+    min-width: var(--tt-block-handle-control-size);
+    height: var(--tt-block-handle-control-size);
+    padding: 0;
+    border-radius: var(--tt-radius-md, 0.5rem);
+  }
+
+  .tiptap-button-icon {
+    width: var(--tt-block-handle-icon-size);
+    height: var(--tt-block-handle-icon-size);
+    stroke-width: 1.9;
+  }
 
   &::before {
     content: "";

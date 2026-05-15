@@ -23,9 +23,9 @@
   // Common list styles
   ol,
   ul {
-    margin-top: 1.5em;
-    margin-bottom: 1.5em;
-    padding-left: 1.5em;
+    margin-top: var(--mn-markdown-block-gap, 1em);
+    margin-bottom: var(--mn-markdown-block-gap, 1em);
+    padding-left: var(--mn-markdown-list-indent, 1.55em);
 
     &:first-child {
       margin-top: 0;
@@ -43,9 +43,11 @@
   }
 
   li {
+    margin: var(--mn-markdown-list-item-gap, 0.28em) 0;
+
     p {
       margin-top: 0;
-      line-height: 1.6;
+      line-height: var(--mn-markdown-line-height, 1.72);
     }
   }
 

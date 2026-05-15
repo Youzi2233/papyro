@@ -13,9 +13,7 @@
   --border-width: 1px;
 
   height: 100%;
-  border-radius: calc(
-    var(--padding) + var(--tt-radius-lg) + var(--border-width)
-  );
+  border-radius: var(--tt-radius-lg, 0.5rem);
   border: var(--border-width) solid var(--tt-combobox-border-color);
   background-color: var(--tt-combobox-bg-color);
   color: var(--tt-combobox-text-color);
@@ -87,4 +85,5 @@ input:disabled ~ .tiptap-combobox-label {
 
 .tiptap-combobox-item {
   width: 100%;
+  min-width: 0;
 }
