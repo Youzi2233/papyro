@@ -23,14 +23,7 @@ test("Papyro official drag handle config preserves official positioning defaults
   assert.equal(config.pluginKey, papyroDragHandlePluginKey);
   assert.equal(config.computePositionConfig.placement, "left-start");
   assert.equal(config.computePositionConfig.strategy, "absolute");
-  assert.deepEqual(config.nested.allowedContainers, [
-    "blockquote",
-    "bulletList",
-    "orderedList",
-    "taskList",
-    "listItem",
-    "taskItem",
-  ]);
+  assert.equal(config.nested.allowedContainers, undefined);
 });
 
 test("Papyro official drag handle config accepts focused overrides", () => {
@@ -62,11 +55,13 @@ test("Papyro official drag handle nested options normalize through Tiptap", () =
   assert.deepEqual(normalized.edgeDetection.edges, ["left", "top"]);
   assert.equal(normalized.edgeDetection.threshold, 16);
   assert.equal(normalized.edgeDetection.strength, 420);
+  assert.equal(normalized.allowedContainers, undefined);
   assert.equal(normalized.rules.length, 2);
 });
 
 test("Papyro drag handle rules keep complex blocks as outer owners", () => {
   assert.equal(papyroComplexBlockRule({ node: node("table") }), 0);
+  assert.equal(papyroComplexBlockRule({ node: node("heading") }), 0);
   assert.equal(papyroComplexBlockRule({ node: node("codeBlock") }), 0);
   assert.equal(papyroComplexBlockRule({ node: node("image") }), 0);
   assert.equal(

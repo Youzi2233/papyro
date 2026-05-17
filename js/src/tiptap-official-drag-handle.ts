@@ -24,15 +24,6 @@ const PAPYRO_TABLE_STRUCTURE_TYPES = new Set([
   "tableHeader",
 ]);
 
-const PAPYRO_NESTED_CONTAINERS = Object.freeze([
-  "blockquote",
-  "bulletList",
-  "orderedList",
-  "taskList",
-  "listItem",
-  "taskItem",
-]);
-
 export const papyroDragHandlePluginKey = "papyro-official-drag-handle";
 
 type DragHandleRuleContext = {
@@ -71,7 +62,6 @@ export const papyroTableOverlayDragHandleRule: DragHandleRule = {
 export function createPapyroDragHandleNestedOptions(): NestedOptions {
   return {
     defaultRules: true,
-    allowedContainers: [...PAPYRO_NESTED_CONTAINERS],
     edgeDetection: {
       edges: ["left", "top"],
       threshold: 16,

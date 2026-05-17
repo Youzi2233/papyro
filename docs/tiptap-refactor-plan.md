@@ -526,6 +526,7 @@ The editor surface must behave like the official Notion-like template first, wit
 - [x] 2026-05-16 visual follow-up: restore true color-swatch metadata in color menus by passing `colorValue`/`border` from `HIGHLIGHT_COLORS` into table/drag/color menus, unify text/background swatches with opaque fills, borders, and active rings, keep colored text readable while selected, and move underline/inline-code into More to lower floating-toolbar density
 - [x] 2026-05-16 follow-up: localize drag/table/code dropdown labels, protect nested table/color menus from WebView focus loss on pointer down, make the code-block language menu searchable with common language options, and keep the floating/bubble surfaces on an opaque bounded menu contract
 - [x] 2026-05-16 follow-up: isolate the selected-text floating toolbar from its Radix dropdown/popover layers by adding explicit `tiptap-selection-toolbar` and `tiptap-floating-toolbar-popover` ownership classes, extending the static/runtime menu surface bridge to `tiptap-dropdown-menu-*`, and adding smoke/source guards so Turn Into and More submenus cannot collapse into the toolbar flex row again
+- [x] 2026-05-17 follow-up: restore official nested `DragHandle` candidate scoring for top-level headings and whole tables instead of constraining block handles to list/quote containers; `SlashCommandTriggerButton` now inserts `/` inside empty text blocks and creates a new slash paragraph after non-empty headings or whole tables, with tests covering heading and table insertion paths
 
 #### 9.4 Table Experience Convergence
 

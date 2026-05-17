@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react"
 import { useHotkeys } from "react-hotkeys-hook"
 import { type Editor } from "@tiptap/react"
 import type { Node } from "@tiptap/pm/model"
+import { TextSelection } from "@tiptap/pm/state"
 
 // --- Hooks ---
 import { useTiptapEditor } from "@/hooks/use-tiptap-editor"
@@ -90,8 +91,8 @@ export function insertSlashCommand(
     if ((node !== undefined && node !== null) || isValidPosition(nodePos)) {
       const foundPos = findNodePosition({
         editor,
-        node: node || undefined,
-        nodePos: nodePos || undefined,
+        node: node ?? undefined,
+        nodePos: nodePos ?? undefined,
       })
 
       if (!foundPos) {
@@ -99,25 +100,14 @@ export function insertSlashCommand(
       }
 
       const isEmpty =
-        foundPos.node.type.name === "paragraph" &&
+        foundPos.node.isTextblock &&
         foundPos.node.content.size === 0
-      const insertPos = isEmpty
-        ? foundPos.pos
-        : foundPos.pos + foundPos.node.nodeSize
 
-      editor.view.dispatch(
-        editor.view.state.tr
-          .scrollIntoView()
-          .insertText(trigger, insertPos, insertPos)
-      )
+      if (isEmpty) {
+        return insertSlashIntoTextblock(editor, foundPos.pos, trigger)
+      }
 
-      const triggerLength = trigger.length + 1 // +1 for the space after the trigger
-      const focusPos = isEmpty
-        ? foundPos.pos + triggerLength
-        : foundPos.pos + foundPos.node.nodeSize + triggerLength
-      editor.commands.focus(focusPos)
-
-      return true
+      return insertSlashParagraphAfterNode(editor, foundPos, trigger)
     }
 
     const { $from } = editor.state.selection
@@ -152,6 +142,53 @@ export function insertSlashCommand(
       .run()
   } catch {
     return false
+  }
+}
+
+function insertSlashIntoTextblock(
+  editor: Editor,
+  nodePos: number,
+  trigger: string
+): boolean {
+  const insertPos = nodePos + 1
+  const selectionPos = insertPos + trigger.length
+  let tr = editor.view.state.tr.insertText(trigger, insertPos, insertPos)
+  tr = tr
+    .setSelection(TextSelection.create(tr.doc, selectionPos))
+    .scrollIntoView()
+
+  editor.view.dispatch(tr)
+  focusEditorView(editor)
+  return true
+}
+
+function insertSlashParagraphAfterNode(
+  editor: Editor,
+  foundPos: { pos: number; node: Node },
+  trigger: string
+): boolean {
+  const paragraphType = editor.state.schema.nodes.paragraph
+  if (!paragraphType) return false
+
+  const insertPos = foundPos.pos + foundPos.node.nodeSize
+  const content = trigger ? editor.state.schema.text(trigger) : null
+  const paragraph = paragraphType.create(null, content)
+  const selectionPos = insertPos + 1 + trigger.length
+  let tr = editor.state.tr.insert(insertPos, paragraph)
+  tr = tr
+    .setSelection(TextSelection.create(tr.doc, selectionPos))
+    .scrollIntoView()
+
+  editor.view.dispatch(tr)
+  focusEditorView(editor)
+  return true
+}
+
+function focusEditorView(editor: Editor): void {
+  try {
+    editor.view.focus()
+  } catch {
+    // Headless tests and detached WebView hosts can still complete the transaction.
   }
 }
 
