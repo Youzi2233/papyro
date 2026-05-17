@@ -34,6 +34,14 @@
   --mn-tiptap-menu-swatch-size: 1.125rem;
   --mn-tiptap-handle-size: 1.5rem;
   --mn-tiptap-handle-height: 2rem;
+  --mn-tiptap-tooltip-z: 180;
+  --mn-tiptap-tooltip-bg: color-mix(
+    in srgb,
+    var(--mn-ink, #111827) 94%,
+    var(--mn-surface-raised, #ffffff)
+  );
+  --mn-tiptap-tooltip-ink: var(--mn-ink-inverse, #ffffff);
+  --mn-tiptap-tooltip-border: color-mix(in srgb, #ffffff 16%, transparent);
 }
 
 .tiptap-suggestion-menu,
@@ -52,6 +60,26 @@
   isolation: isolate;
   pointer-events: auto;
   overflow: visible;
+}
+
+.tiptap-tooltip {
+  box-sizing: border-box;
+  z-index: var(--mn-tiptap-tooltip-z, 180);
+  display: grid;
+  gap: 0.125rem;
+  max-width: min(16rem, calc(100vw - 24px));
+  min-height: 1.75rem;
+  border: 1px solid var(--mn-tiptap-tooltip-border, color-mix(in srgb, #ffffff 16%, transparent));
+  border-radius: var(--mn-radius-md, var(--tt-radius-md, 0.5rem));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #ffffff 12%, transparent), transparent),
+    var(--mn-tiptap-tooltip-bg, color-mix(in srgb, var(--mn-ink, #111827) 94%, var(--mn-surface-raised, #ffffff)));
+  color: var(--mn-tiptap-tooltip-ink, var(--mn-ink-inverse, #ffffff));
+  box-shadow:
+    var(--mn-shadow-menu, 0 14px 36px rgba(15, 23, 42, 0.16)),
+    inset 0 1px 0 color-mix(in srgb, #ffffff 18%, transparent);
+  pointer-events: none;
+  backdrop-filter: saturate(140%) blur(10px);
 }
 
 .tiptap-selection-floating-layer {
