@@ -1,6 +1,7 @@
 .expandable-menu-button {
   --button-size: 1.125rem;
-  --button-offset: 0.3125rem;
+  --cell-handle-inset: 0.25rem;
+  --button-offset: var(--cell-handle-inset);
   --dot-size-small: 0.875rem;
   --dot-size-large: 1.125rem;
   --dot-offset-small: 0.125rem;
@@ -37,7 +38,7 @@
   );
 
   position: absolute;
-  top: 0.3125rem;
+  top: var(--cell-handle-inset);
   right: var(--button-offset);
   transform: none;
 
@@ -58,7 +59,7 @@
     content: "";
     position: absolute;
     top: 50%;
-    right: var(--dot-offset-small);
+    left: 50%;
 
     width: var(--dot-size-small);
     height: var(--dot-size-small);
@@ -69,12 +70,11 @@
     box-shadow:
       var(--tt-table-cell-handle-shadow, 0 1px 2px color-mix(in srgb, var(--mn-ink, #111827) 9%, transparent)),
       inset 0 1px 0 color-mix(in srgb, #ffffff 80%, transparent);
-    transform: translateY(-50%);
+    transform: translate(-50%, -50%);
 
     transition:
       width var(--transition-duration) var(--transition-timing),
       height var(--transition-duration) var(--transition-timing),
-      right var(--transition-duration) var(--transition-timing),
       background var(--transition-duration) var(--transition-timing),
       border-color var(--transition-duration) var(--transition-timing),
       box-shadow var(--transition-duration) var(--transition-timing);
@@ -119,7 +119,6 @@
       &::before {
         width: var(--dot-size-large);
         height: var(--dot-size-large);
-        right: var(--dot-offset-large);
         background: var(--cell-handle-hover-bg);
         border-color: color-mix(in srgb, var(--mn-border, #d1d5db) 88%, var(--mn-accent, #2563eb) 12%);
         box-shadow:
