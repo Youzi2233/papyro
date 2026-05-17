@@ -18,7 +18,7 @@ import { IndentButton } from "@/components/tiptap-ui/indent-button"
 import { LinkPopover } from "@/components/tiptap-ui/link-popover"
 import type { Mark } from "@/components/tiptap-ui/mark-button"
 import { canToggleMark, MarkButton } from "@/components/tiptap-ui/mark-button"
-import { moreOptionsLabel } from "@/tiptap-i18n"
+import { formatToolbarLabel, moreOptionsLabel } from "@/tiptap-i18n"
 import type { TextAlign } from "@/components/tiptap-ui/text-align-button"
 import {
   canSetTextAlign,
@@ -46,6 +46,7 @@ import { usePapyroTiptapLanguage } from "@/tiptap-react/runtime-context"
 
 export function PapyroToolbarFloating() {
   const { editor } = useTiptapEditor()
+  const language = usePapyroTiptapLanguage()
   const isMobile = useIsBreakpoint("max", 480)
   const { lockDragHandle, aiGenerationActive, commentInputVisible } =
     useUiEditorState(editor)
@@ -65,6 +66,7 @@ export function PapyroToolbarFloating() {
     >
       <Toolbar
         variant="floating"
+        aria-label={formatToolbarLabel(language)}
         className="tiptap-selection-toolbar"
         onMouseDown={preserveEditorSelectionOnMouseDown}
         onPointerDown={preserveEditorSelectionOnPointerDown}
@@ -228,6 +230,7 @@ export function MoreOptions({
             <Toolbar
               variant="floating"
               data-plain="true"
+              aria-label={label}
               className="tiptap-floating-toolbar-popover-toolbar"
               tabIndex={0}
               onMouseDown={preserveEditorSelectionOnMouseDown}

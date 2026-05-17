@@ -11,6 +11,8 @@ import { useIsBreakpoint } from "@/hooks/use-is-breakpoint"
 
 // --- Lib ---
 import { isExtensionAvailable } from "@/lib/tiptap-utils"
+import { imageAlignLabel } from "@/tiptap-i18n"
+import { usePapyroTiptapLanguage } from "@/tiptap-react/runtime-context"
 
 // --- Icons ---
 import { AlignCenterVerticalIcon } from "@/components/tiptap-icons/align-center-vertical-icon"
@@ -228,6 +230,7 @@ export function useImageAlign(config: UseImageAlignConfig) {
   } = config
 
   const { editor } = useTiptapEditor(providedEditor)
+  const language = usePapyroTiptapLanguage()
   const isMobile = useIsBreakpoint()
   const [isVisible, setIsVisible] = useState<boolean>(true)
   const canAlign = canSetImageAlign(editor, align, extensionName, attributeName)
@@ -289,7 +292,7 @@ export function useImageAlign(config: UseImageAlignConfig) {
     isActive,
     handleImageAlign,
     canAlign,
-    label: imageAlignLabels[align],
+    label: imageAlignLabel(language, align),
     shortcutKeys: IMAGE_ALIGN_SHORTCUT_KEYS[align],
     Icon: imageAlignIcons[align],
   }

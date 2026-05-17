@@ -16,6 +16,8 @@ import { Separator } from "@/components/tiptap-ui-primitive/separator"
 import { ImageCaptionButton } from "@/components/tiptap-ui/image-caption-button"
 import { ImageUploadButton } from "@/components/tiptap-ui/image-upload-button"
 import { RefreshCcwIcon } from "@/components/tiptap-icons/refresh-ccw-icon"
+import { imageReplaceLabel } from "@/tiptap-i18n"
+import { usePapyroTiptapLanguage } from "@/tiptap-react/runtime-context"
 
 export function ImageNodeFloating({
   editor: providedEditor,
@@ -23,7 +25,9 @@ export function ImageNodeFloating({
   editor?: Editor | null
 }) {
   const { editor } = useTiptapEditor(providedEditor)
+  const language = usePapyroTiptapLanguage()
   const visible = isNodeTypeSelected(editor, ["image"])
+  const replaceLabel = imageReplaceLabel(language)
 
   if (!editor || !visible) {
     return null
@@ -38,7 +42,11 @@ export function ImageNodeFloating({
       <ImageCaptionButton />
       <Separator />
       <ImageDownloadButton />
-      <ImageUploadButton icon={RefreshCcwIcon} tooltip="Replace" />
+      <ImageUploadButton
+        icon={RefreshCcwIcon}
+        aria-label={replaceLabel}
+        tooltip={replaceLabel}
+      />
       <Separator />
       <DeleteNodeButton />
     </>

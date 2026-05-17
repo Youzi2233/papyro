@@ -6,6 +6,8 @@ import type { Transaction } from "@tiptap/pm/state"
 // --- Hooks ---
 import { useTiptapEditor } from "@/hooks/use-tiptap-editor"
 import { useIsBreakpoint } from "@/hooks/use-is-breakpoint"
+import { resetFormattingLabel } from "@/tiptap-i18n"
+import { usePapyroTiptapLanguage } from "@/tiptap-react/runtime-context"
 
 // --- Icons ---
 import { RotateCcwIcon } from "@/components/tiptap-icons/rotate-ccw-icon"
@@ -204,6 +206,7 @@ export function useResetAllFormatting(config?: UseResetAllFormattingConfig) {
   } = config || {}
 
   const { editor } = useTiptapEditor(providedEditor)
+  const language = usePapyroTiptapLanguage()
   const isMobile = useIsBreakpoint()
   const [isVisible, setIsVisible] = useState<boolean>(true)
   const canReset = canResetFormatting(editor, preserveMarks)
@@ -253,7 +256,7 @@ export function useResetAllFormatting(config?: UseResetAllFormattingConfig) {
     isVisible,
     handleResetFormatting,
     canReset,
-    label: "Reset formatting",
+    label: resetFormattingLabel(language),
     shortcutKeys: RESET_ALL_FORMATTING_SHORTCUT_KEY,
     Icon: RotateCcwIcon,
   }

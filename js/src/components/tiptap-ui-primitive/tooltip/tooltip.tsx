@@ -212,14 +212,18 @@ export const TooltipContent = forwardRef<HTMLDivElement, TooltipContentProps>(
 
     if (!context.open) return null
 
+    const positioned = context.isPositioned
+
     const content = (
       <div
         ref={ref}
         style={{
           ...context.floatingStyles,
           ...style,
+          visibility: positioned ? style?.visibility : "hidden",
         }}
         {...context.getFloatingProps(props)}
+        data-positioned={positioned ? "true" : "false"}
         className="tiptap-tooltip"
       >
         {children}

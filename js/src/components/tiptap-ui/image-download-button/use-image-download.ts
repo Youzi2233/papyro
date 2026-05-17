@@ -15,6 +15,8 @@ import {
   isNodeTypeSelected,
   sanitizeUrl,
 } from "@/lib/tiptap-utils"
+import { imageDownloadLabel } from "@/tiptap-i18n"
+import { usePapyroTiptapLanguage } from "@/tiptap-react/runtime-context"
 
 // --- Icons ---
 import { ArrowDownToLineIcon } from "@/components/tiptap-icons/arrow-down-to-line-icon"
@@ -305,6 +307,7 @@ export function useImageDownload(config?: UseImageDownloadConfig) {
   } = config || {}
 
   const { editor } = useTiptapEditor(providedEditor)
+  const language = usePapyroTiptapLanguage()
   const isMobile = useIsBreakpoint()
   const [isVisible, setIsVisible] = useState<boolean>(true)
   const canDownload = canDownloadImage(editor)
@@ -360,7 +363,7 @@ export function useImageDownload(config?: UseImageDownloadConfig) {
     isVisible,
     canDownload,
     handleDownload,
-    label: "Download image",
+    label: imageDownloadLabel(language),
     shortcutKeys: IMAGE_DOWNLOAD_SHORTCUT_KEY,
     Icon: ArrowDownToLineIcon,
   }

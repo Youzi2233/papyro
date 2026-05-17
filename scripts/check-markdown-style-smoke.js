@@ -228,6 +228,9 @@ const TIPTAP_COMMAND_PANEL_REQUIREMENTS = [
   ["Tiptap Papyro floating toolbar popover isolation", ".tiptap-floating-toolbar-popover", "width: max-content"],
   ["Tiptap Papyro floating toolbar popover surface", ".tiptap-floating-toolbar-popover", "border: 1px solid var(--tt-popover-border-color"],
   ["Tiptap Papyro floating toolbar popover inner toolbar", ".tiptap-floating-toolbar-popover-toolbar.tiptap-toolbar[data-variant=\"floating\"]", "background: transparent"],
+  ["Tiptap Papyro floating toolbar popover row layout", ".tiptap-floating-toolbar-popover-toolbar.tiptap-toolbar[data-variant=\"floating\"]", "flex-flow: row nowrap"],
+  ["Tiptap Papyro floating toolbar popover no wrapped text", ".tiptap-floating-toolbar-popover-toolbar.tiptap-toolbar[data-variant=\"floating\"]", "white-space: nowrap"],
+  ["Tiptap Papyro floating toolbar popover icon normalization", ".tiptap-floating-toolbar-popover-toolbar.tiptap-toolbar[data-variant=\"floating\"] .tiptap-button-icon", "min-width: 1rem"],
   ["Tiptap Papyro compact floating toolbar", ".tiptap-toolbar[data-variant=\"floating\"] .tiptap-button", "1.875rem"],
   ["Tiptap Papyro tooltip component surface", ".tiptap-tooltip", "--mn-tiptap-tooltip-bg"],
   ["Tiptap Papyro tooltip elevated block", ".tiptap-tooltip", "var(--mn-shadow-menu"],
@@ -235,6 +238,9 @@ const TIPTAP_COMMAND_PANEL_REQUIREMENTS = [
   ["Tiptap Papyro tooltip enterprise height", ".tiptap-tooltip", "min-height: 2.125rem"],
   ["Tiptap Papyro tooltip entrance motion", ".tiptap-tooltip", "cubic-bezier(0.16, 1, 0.3, 1)"],
   ["Tiptap Papyro tooltip no pointer capture", ".tiptap-tooltip", "pointer-events: none"],
+  ["Tiptap Papyro tooltip hides before measured position", ".tiptap-tooltip[data-positioned=\"false\"]", "animation: none"],
+  ["Tiptap Papyro popover hides before measured position", ".tiptap-popover[data-positioned=\"false\"]", "animation: none"],
+  ["Tiptap Papyro dropdown hides before measured position", ".tiptap-dropdown-menu-content[data-positioned=\"false\"]", "pointer-events: none"],
   ["Tiptap official drag handle motion", ".drag-handle", "transition-property:top"],
   ["Tiptap official drag handle bridge", ".drag-handle::before", "pointer-events:auto"],
   ["Tiptap Papyro block handle size", ".mn-tiptap-drag-context-menu-handle .tiptap-button", "--mn-tiptap-handle-size"],
@@ -277,7 +283,7 @@ const TIPTAP_COMMAND_PANEL_REQUIREMENTS = [
   ["Tiptap table menu button rhythm", ".tiptap-table-menu-content .tiptap-button", "justify-content: flex-start"],
   ["Tiptap table menu button single row", ".tiptap-table-menu-content .tiptap-button", "flex-wrap: nowrap"],
   ["Tiptap table menu arrow slot", ".tiptap-table-menu-content .tiptap-menu-button-arrow", "margin-left: auto"],
-  ["Tiptap table menu item height", ".tiptap-table-menu-content .tiptap-button", "min-height: 2.125rem"],
+  ["Tiptap table menu item height", ".tiptap-table-menu-content .tiptap-button", "min-height: 2.25rem"],
   ["Tiptap table menu neutral hover surface", ".tiptap-table-menu-content .tiptap-button:hover:not([disabled])", "--tt-table-menu-hover-bg"],
   ["Tiptap table menu active surface", ".tiptap-table-menu-content .tiptap-button[data-active-state=\"on\"]:not([disabled])", "--tt-table-menu-active-bg"],
   ["Tiptap table menu active leading accent", ".tiptap-table-menu-content .tiptap-button[data-active-state=\"on\"]:not([disabled])", "inset 3px 0 0"],
@@ -444,7 +450,9 @@ function includesCssFragment(source, compactSource, fragment) {
 }
 
 function compactCssText(source) {
-  return source.replace(/\s+/g, "");
+  return source
+    .replace(/\[([A-Za-z0-9_-]+)=["']([A-Za-z0-9_-]+)["']\]/g, "[$1=$2]")
+    .replace(/\s+/g, "");
 }
 
 function parseCustomProperties(source) {

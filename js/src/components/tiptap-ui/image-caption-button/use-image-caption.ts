@@ -12,6 +12,8 @@ import {
   isExtensionAvailable,
   isNodeTypeSelected,
 } from "@/lib/tiptap-utils"
+import { imageCaptionLabel } from "@/tiptap-i18n"
+import { usePapyroTiptapLanguage } from "@/tiptap-react/runtime-context"
 
 // --- Icons ---
 import { ImageCaptionIcon } from "@/components/tiptap-icons/image-caption-icon"
@@ -173,6 +175,7 @@ export function useImageCaption(config?: UseImageCaptionConfig) {
   } = config || {}
 
   const { editor } = useTiptapEditor(providedEditor)
+  const language = usePapyroTiptapLanguage()
   const [isVisible, setIsVisible] = useState<boolean>(true)
   const [isActive, setIsActive] = useState<boolean>(false)
   const canToggle = canToggleImageCaption(editor)
@@ -209,7 +212,7 @@ export function useImageCaption(config?: UseImageCaptionConfig) {
     isActive,
     canToggle,
     handleToggleCaption,
-    label: "Caption",
+    label: imageCaptionLabel(language),
     Icon: ImageCaptionIcon,
   }
 }

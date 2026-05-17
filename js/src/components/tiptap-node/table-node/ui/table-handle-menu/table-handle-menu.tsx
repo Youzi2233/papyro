@@ -41,6 +41,8 @@ import { useTableDeleteRowColumn } from "@/components/tiptap-node/table-node/ui/
 import { useTableSortRowColumn } from "@/components/tiptap-node/table-node/ui/table-sort-row-column-button"
 import { ColorMenu } from "@/components/tiptap-ui/color-menu"
 import { TableAlignMenu } from "@/components/tiptap-node/table-node/ui/table-alignment-menu"
+import { tableContextTitleLabel } from "@/tiptap-i18n"
+import { usePapyroTiptapLanguage } from "@/tiptap-react/runtime-context"
 
 import { dragEnd } from "@/components/tiptap-node/table-node/extensions/table-handle"
 
@@ -81,11 +83,6 @@ const MENU_PLACEMENT_MAP: Record<
 > = {
   row: "top-start",
   column: "bottom-start",
-}
-
-const ARIA_LABELS: Record<Orientation, string> = {
-  row: "Row actions",
-  column: "Column actions",
 }
 
 /* -------------------------------------------------------------------------------------------------
@@ -699,6 +696,7 @@ const TableHandleMenuContent = ({
   "onToggleOtherHandle" | "onOpenChange" | "dragStart"
 >) => {
   const { orientation } = useTableHandleContext()
+  const language = usePapyroTiptapLanguage()
   const {
     isMenuOpen,
     isDragging,
@@ -707,7 +705,7 @@ const TableHandleMenuContent = ({
     handleMenuToggle,
   } = useTableHandleMenu(onToggleOtherHandle, onOpenChange)
 
-  const ariaLabel = ARIA_LABELS[orientation]
+  const ariaLabel = tableContextTitleLabel(language, orientation)
 
   const handleDragStart = useCallback(
     (e: React.DragEvent) => {

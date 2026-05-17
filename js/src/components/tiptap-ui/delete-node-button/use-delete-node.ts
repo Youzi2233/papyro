@@ -9,6 +9,8 @@ import { useIsBreakpoint } from "@/hooks/use-is-breakpoint"
 
 // --- Icons ---
 import { TrashIcon } from "@/components/tiptap-icons/trash-icon"
+import { deleteNodeLabel } from "@/tiptap-i18n"
+import { usePapyroTiptapLanguage } from "@/tiptap-react/runtime-context"
 
 export const DELETE_NODE_SHORTCUT_KEY = "backspace"
 
@@ -186,6 +188,7 @@ export function useDeleteNode(config?: UseDeleteNodeConfig) {
   } = config || {}
 
   const { editor } = useTiptapEditor(providedEditor)
+  const language = usePapyroTiptapLanguage()
   const isMobile = useIsBreakpoint()
   const [isVisible, setIsVisible] = useState<boolean>(true)
   const canDeleteNodeState = canDeleteNode(editor)
@@ -233,7 +236,7 @@ export function useDeleteNode(config?: UseDeleteNodeConfig) {
     isVisible,
     handleDeleteNode,
     canDeleteNode: canDeleteNodeState,
-    label: "Delete",
+    label: deleteNodeLabel(language),
     shortcutKeys: DELETE_NODE_SHORTCUT_KEY,
     Icon: TrashIcon,
   }

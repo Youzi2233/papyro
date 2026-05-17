@@ -25,6 +25,18 @@ const slashMenuHookSource = readSource(
 const dragContextMenuSource = readSource(
   "../src/components/tiptap-ui/drag-context-menu/drag-context-menu.tsx",
 );
+const slashCommandTriggerSource = readSource(
+  "../src/components/tiptap-ui/slash-command-trigger-button/use-slash-command-trigger.ts",
+);
+const tooltipSource = readSource(
+  "../src/components/tiptap-ui-primitive/tooltip/tooltip.tsx",
+);
+const popoverSource = readSource(
+  "../src/components/tiptap-ui-primitive/popover/popover.tsx",
+);
+const dropdownMenuSource = readSource(
+  "../src/components/tiptap-ui-primitive/dropdown-menu/dropdown-menu.tsx",
+);
 const uiUtilsSource = readSource(
   "../src/lib/tiptap-ui-utils.ts",
 );
@@ -67,9 +79,25 @@ test("Papyro floating toolbar documents its retained WebView and i18n adapters i
   assert.match(toolbarSource, /className="tiptap-floating-toolbar-popover-toolbar"/u);
   assert.match(toolbarSource, /data-plain="true"/u);
   assert.doesNotMatch(moreOptionsSource, /<PopoverContent[\s\S]*?asChild/u);
+  assert.match(toolbarSource, /formatToolbarLabel\(language\)/u);
   assert.match(toolbarSource, /moreOptionsLabel/u);
   assert.match(toolbarSource, /usePapyroTiptapLanguage/u);
   assert.match(toolbarSource, /editor\.on\("transaction", handleSelectionUpdate\)/u);
+});
+
+test("Papyro floating tooltip waits for a measured position before showing", () => {
+  assert.match(tooltipSource, /const positioned = context\.isPositioned/u);
+  assert.match(tooltipSource, /visibility: positioned \? style\?\.visibility : "hidden"/u);
+  assert.match(tooltipSource, /data-positioned=\{positioned \? "true" : "false"\}/u);
+});
+
+test("Papyro popover and dropdown surfaces hide until their first measured position", () => {
+  assert.match(popoverSource, /function useDeferredFloatingVisibility/u);
+  assert.match(dropdownMenuSource, /function useDeferredFloatingVisibility/u);
+  assert.match(popoverSource, /data-positioned=\{isPositioned \? "true" : "false"\}/u);
+  assert.match(dropdownMenuSource, /data-positioned=\{isPositioned \? "true" : "false"\}/u);
+  assert.match(popoverSource, /visibility: isPositioned \? style\?\.visibility : "hidden"/u);
+  assert.match(dropdownMenuSource, /visibility: isPositioned \? style\?\.visibility : "hidden"/u);
 });
 
 test("slash menu keeps supported Markdown-local commands and excludes unavailable official features", () => {
@@ -102,6 +130,8 @@ test("drag context menu keeps core local actions and excludes unsupported offici
   assert.match(dragContextMenuSource, /typeof editor\.commands\.setLockDragHandle === "function"/u);
   assert.match(dragContextMenuSource, /const nodeName = getNodeDisplayName\(editor\)/u);
   assert.match(dragContextMenuSource, /<MenuGroupLabel>\{nodeName\}<\/MenuGroupLabel>/u);
+  assert.match(slashCommandTriggerSource, /insertBlockMenuTitleLabel/u);
+  assert.doesNotMatch(slashCommandTriggerSource, /label:\s*"Insert block"/u);
   assert.match(uiUtilsSource, /bulletList:\s*"Bullet list"/u);
   assert.match(uiUtilsSource, /orderedList:\s*"Numbered list"/u);
   assert.match(uiUtilsSource, /taskList:\s*"Task list"/u);
@@ -116,6 +146,8 @@ test("table menus keep only the documented Papyro surface adapter on official me
   assert.match(tableCellHandleMenuSource, /className="tiptap-table-menu-content"/u);
   assert.match(tableHandleMenuSource, /<ColorMenu \/>/u);
   assert.match(tableHandleMenuSource, /<TableAlignMenu index=\{index\} orientation=\{orientation\} \/>/u);
+  assert.match(tableHandleMenuSource, /tableContextTitleLabel\(language, orientation\)/u);
+  assert.doesNotMatch(tableHandleMenuSource, /ARIA_LABELS/u);
   assert.match(tableCellHandleMenuSource, /<ColorMenu \/>/u);
   assert.match(tableCellHandleMenuSource, /<TableAlignMenu \/>/u);
   assert.match(tableCellHandleMenuSource, /Grip4Icon/u);

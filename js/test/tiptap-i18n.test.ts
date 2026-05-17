@@ -7,9 +7,16 @@ import {
   blockHandleActionsLabel,
   blockHandleInsertLabel,
   colorOptionAriaLabel,
+  deleteNodeLabel,
   formatToolbarLabel,
   headingLabel,
   historyLabel,
+  imageAlignLabel,
+  imageCaptionLabel,
+  imageDownloadLabel,
+  imageReplaceLabel,
+  imageUploadLabel,
+  indentLabel,
   insertBlockAfterLabel,
   insertBlockAtEdgeLabel,
   insertBlockBeforeLabel,
@@ -29,6 +36,7 @@ import {
   selectTableRowLabel,
   sourceMarkdownParseErrorLabel,
   sourcePaneLabel,
+  resetFormattingLabel,
   tableCellActionsLabel,
   tableCommandMenuSectionLabel,
   tableSelectionActionsLabel,
@@ -54,6 +62,7 @@ test("Tiptap React chrome labels follow editor language", () => {
   assert.equal(headingLabel("Chinese", 2), "\u4e8c\u7ea7\u6807\u9898");
   assert.equal(listLabel("Chinese", "taskList"), "\u4efb\u52a1\u5217\u8868");
   assert.equal(textAlignLabel("Chinese", "center"), "\u5c45\u4e2d\u5bf9\u9f50");
+  assert.equal(indentLabel("Chinese", "indent"), "\u589e\u52a0\u7f29\u8fdb");
   assert.equal(historyLabel("Chinese", "undo"), "\u64a4\u9500");
   assert.equal(
     turnIntoCurrentLabel("Chinese", "\u6587\u672c"),
@@ -64,6 +73,13 @@ test("Tiptap React chrome labels follow editor language", () => {
     colorOptionAriaLabel("Chinese", "highlight", "Yellow background"),
     "\u9ec4\u8272\u80cc\u666f\u9ad8\u4eae\u989c\u8272",
   );
+  assert.equal(imageAlignLabel("Chinese", "center"), "\u56fe\u7247\u5c45\u4e2d");
+  assert.equal(imageUploadLabel("Chinese"), "\u6dfb\u52a0\u56fe\u7247");
+  assert.equal(imageReplaceLabel("Chinese"), "\u66ff\u6362\u56fe\u7247");
+  assert.equal(imageDownloadLabel("Chinese"), "\u4e0b\u8f7d\u56fe\u7247");
+  assert.equal(imageCaptionLabel("Chinese"), "\u56fe\u7247\u8bf4\u660e");
+  assert.equal(deleteNodeLabel("Chinese"), "\u5220\u9664");
+  assert.equal(resetFormattingLabel("Chinese"), "\u91cd\u7f6e\u683c\u5f0f");
 });
 
 test("Tiptap editor surface labels follow editor language", () => {

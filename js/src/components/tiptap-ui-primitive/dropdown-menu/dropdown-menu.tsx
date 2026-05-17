@@ -1,10 +1,33 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu"
 import { cn } from "@/lib/tiptap-utils"
 import { CheckIcon } from "@/components/tiptap-icons/check-icon"
 
 import "@/components/tiptap-ui-primitive/dropdown-menu/dropdown-menu.scss"
+
+function useDeferredFloatingVisibility() {
+  const [isPositioned, setIsPositioned] = useState(false)
+
+  useEffect(() => {
+    const requestFrame =
+      globalThis.requestAnimationFrame ??
+      ((callback: FrameRequestCallback) =>
+        globalThis.setTimeout(() => callback(performance.now()), 16))
+    const cancelFrame =
+      globalThis.cancelAnimationFrame ??
+      ((handle: number) => globalThis.clearTimeout(handle))
+
+    const frame = requestFrame(() => {
+      setIsPositioned(true)
+    })
+
+    return () => cancelFrame(frame)
+  }, [])
+
+  return isPositioned
+}
 
 function DropdownMenu({
   ...props
@@ -40,14 +63,22 @@ function DropdownMenuContent({
   className,
   align = "start",
   sideOffset = 4,
+  style,
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Content>) {
+  const isPositioned = useDeferredFloatingVisibility()
+
   return (
     <DropdownMenuPrimitive.Portal>
       <DropdownMenuPrimitive.Content
         data-slot="tiptap-dropdown-menu-content"
+        data-positioned={isPositioned ? "true" : "false"}
         sideOffset={sideOffset}
         align={align}
+        style={{
+          ...style,
+          visibility: isPositioned ? style?.visibility : "hidden",
+        }}
         className={cn("tiptap-dropdown-menu-content", className)}
         onCloseAutoFocus={(e) => e.preventDefault()}
         {...props}
@@ -234,11 +265,19 @@ function DropdownMenuSubTrigger({
 
 function DropdownMenuSubContent({
   className,
+  style,
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.SubContent>) {
+  const isPositioned = useDeferredFloatingVisibility()
+
   return (
     <DropdownMenuPrimitive.SubContent
       data-slot="tiptap-dropdown-menu-sub-content"
+      data-positioned={isPositioned ? "true" : "false"}
+      style={{
+        ...style,
+        visibility: isPositioned ? style?.visibility : "hidden",
+      }}
       className={cn("tiptap-dropdown-menu-sub-content", className)}
       {...props}
     />

@@ -17,6 +17,8 @@ import {
   isNodeTypeSelected,
   isValidPosition,
 } from "@/lib/tiptap-utils"
+import { insertBlockMenuTitleLabel } from "@/tiptap-i18n"
+import { usePapyroTiptapLanguage } from "@/tiptap-react/runtime-context"
 
 export const SLASH_COMMAND_TRIGGER_SHORTCUT_KEY = "mod+/"
 
@@ -265,6 +267,7 @@ export function useSlashCommandTrigger(config?: UseSlashCommandTriggerConfig) {
   } = config || {}
 
   const { editor } = useTiptapEditor(providedEditor)
+  const language = usePapyroTiptapLanguage()
   const isMobile = useIsBreakpoint()
   const [isVisible, setIsVisible] = useState<boolean>(true)
   const canInsert = canInsertSlashCommand(editor, node, nodePos)
@@ -315,7 +318,7 @@ export function useSlashCommandTrigger(config?: UseSlashCommandTriggerConfig) {
     isVisible,
     handleSlashCommand,
     canInsert,
-    label: "Insert block",
+    label: insertBlockMenuTitleLabel(language),
     shortcutKeys: SLASH_COMMAND_TRIGGER_SHORTCUT_KEY,
     trigger,
     Icon: PlusIcon,

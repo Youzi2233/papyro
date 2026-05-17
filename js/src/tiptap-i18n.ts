@@ -381,6 +381,17 @@ const HISTORY_LABELS: Record<string, LocalizedPair> = Object.freeze({
   redo: ["Redo", "\u91cd\u505a"],
 });
 
+const INDENT_LABELS: Record<string, LocalizedPair> = Object.freeze({
+  indent: ["Increase indent", "\u589e\u52a0\u7f29\u8fdb"],
+  outdent: ["Decrease indent", "\u51cf\u5c11\u7f29\u8fdb"],
+});
+
+const IMAGE_ALIGN_LABELS: Record<string, LocalizedPair> = Object.freeze({
+  left: ["Image align left", "\u56fe\u7247\u5de6\u5bf9\u9f50"],
+  center: ["Image align center", "\u56fe\u7247\u5c45\u4e2d"],
+  right: ["Image align right", "\u56fe\u7247\u53f3\u5bf9\u9f50"],
+});
+
 const TEXT_COLOR_LABELS: Record<string, string> = Object.freeze({
   "Default text": "\u9ed8\u8ba4\u6587\u5b57",
   "Gray text": "\u7070\u8272\u6587\u5b57",
@@ -538,6 +549,42 @@ export function historyLabel(language: LanguageInput, action: unknown): string {
   const key = String(action ?? "");
   const labels = HISTORY_LABELS[key];
   return labels ? localizedText(language, labels[0], labels[1]) : String(action ?? "");
+}
+
+export function indentLabel(language: LanguageInput, action: unknown): string {
+  const key = String(action ?? "");
+  const labels = INDENT_LABELS[key];
+  return labels ? localizedText(language, labels[0], labels[1]) : String(action ?? "");
+}
+
+export function imageAlignLabel(language: LanguageInput, align: unknown): string {
+  const key = String(align ?? "");
+  const labels = IMAGE_ALIGN_LABELS[key];
+  return labels ? localizedText(language, labels[0], labels[1]) : String(align ?? "");
+}
+
+export function imageUploadLabel(language: LanguageInput): string {
+  return localizedText(language, "Add image", "\u6dfb\u52a0\u56fe\u7247");
+}
+
+export function imageReplaceLabel(language: LanguageInput): string {
+  return localizedText(language, "Replace image", "\u66ff\u6362\u56fe\u7247");
+}
+
+export function imageDownloadLabel(language: LanguageInput): string {
+  return localizedText(language, "Download image", "\u4e0b\u8f7d\u56fe\u7247");
+}
+
+export function imageCaptionLabel(language: LanguageInput): string {
+  return localizedText(language, "Caption", "\u56fe\u7247\u8bf4\u660e");
+}
+
+export function deleteNodeLabel(language: LanguageInput): string {
+  return localizedText(language, "Delete", "\u5220\u9664");
+}
+
+export function resetFormattingLabel(language: LanguageInput): string {
+  return localizedText(language, "Reset formatting", "\u91cd\u7f6e\u683c\u5f0f");
 }
 
 export function turnIntoLabel(language: LanguageInput): string {

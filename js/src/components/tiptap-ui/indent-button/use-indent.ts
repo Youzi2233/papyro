@@ -6,6 +6,8 @@ import { useTiptapEditor } from "@/hooks/use-tiptap-editor"
 
 // --- Lib ---
 import { isExtensionAvailable } from "@/lib/tiptap-utils"
+import { indentLabel } from "@/tiptap-i18n"
+import { usePapyroTiptapLanguage } from "@/tiptap-react/runtime-context"
 
 // --- Icons ---
 import { IndentIncreaseIcon } from "@/components/tiptap-icons/indent-increase-icon"
@@ -154,6 +156,7 @@ export function useIndent(config: UseIndentConfig) {
   } = config
 
   const { editor } = useTiptapEditor(providedEditor)
+  const language = usePapyroTiptapLanguage()
   const [isVisible, setIsVisible] = useState<boolean>(true)
   const canIndent = canPerformIndent(editor, action)
 
@@ -191,7 +194,7 @@ export function useIndent(config: UseIndentConfig) {
     isVisible,
     canIndent,
     handleIndent,
-    label: indentLabels[action],
+    label: indentLabel(language, action),
     shortcutKeys: INDENT_SHORTCUT_KEYS[action],
     Icon: indentIcons[action],
   }
