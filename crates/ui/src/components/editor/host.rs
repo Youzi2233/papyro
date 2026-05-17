@@ -45,7 +45,6 @@ pub(super) fn EditorHost(
     let instance_id = use_signal(|| format!("host-{}", Uuid::new_v4()));
     let instance_id_value = instance_id();
     let runtime_state = {
-        let bridges = bridges;
         let tab_id = tab_id.clone();
         use_signal(move || {
             if bridges.peek().contains_key(&tab_id) {
