@@ -3329,6 +3329,7 @@ dependencies = [
 name = "papyro-desktop"
 version = "0.1.0"
 dependencies = [
+ "cocoa",
  "dioxus",
  "image",
  "papyro-app",

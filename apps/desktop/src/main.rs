@@ -1,4 +1,4 @@
-use dioxus::desktop::tao::dpi::LogicalSize;
+use dioxus::desktop::tao::dpi::{LogicalSize, PhysicalPosition};
 use dioxus::desktop::tao::event::Event;
 use dioxus::desktop::tao::window::Icon;
 use dioxus::desktop::{Config, WindowBuilder};
@@ -114,6 +114,7 @@ fn main() {
     if let Err(error) = sync_desktop_runtime_assets() {
         tracing::warn!(%error, "failed to sync desktop runtime assets");
     }
+    prepare_macos_desktop_process_for_foreground();
 
     let startup_open_request = papyro_app::desktop::desktop_startup_open_request_from_env();
     let (external_open_sender, external_open_receiver) =
@@ -154,7 +155,11 @@ fn main() {
         .with_menu(None)
         .with_window(window)
         .with_background_color(chrome.background_color)
-        .with_custom_head(chrome.custom_head);
+        .with_custom_head(chrome.custom_head)
+        .with_on_window(|window, _| {
+            keep_window_in_visible_area(&window);
+            activate_macos_desktop_window();
+        });
     if let Some(browser_args) = desktop_webview_browser_args() {
         desktop_config = desktop_config.with_windows_browser_args(browser_args);
     }
@@ -261,8 +266,10 @@ fn DesktopRoot() -> Element {
     use_context_provider(papyro_app::desktop::desktop_brand_logo_src);
     use_effect(|| {
         let current_window = dioxus::desktop::window();
+        keep_window_in_visible_area(&current_window.window);
         current_window.set_visible(true);
         current_window.set_focus();
+        activate_macos_desktop_window();
     });
 
     rsx! {
@@ -280,6 +287,107 @@ fn load_window_icon() -> Option<Icon> {
         .into_rgba8();
     let (width, height) = image.dimensions();
     Icon::from_rgba(image.into_raw(), width, height).ok()
+}
+
+fn keep_window_in_visible_area(window: &dioxus::desktop::tao::window::Window) {
+    let Some(monitor) = window
+        .current_monitor()
+        .or_else(|| window.primary_monitor())
+        .or_else(|| window.available_monitors().next())
+    else {
+        return;
+    };
+    let monitor_position = monitor.position();
+    let monitor_size = monitor.size();
+    let window_size = window.outer_size();
+
+    let margin = 24;
+    let minimum_visible_size = 96;
+    let monitor_right = monitor_position.x + monitor_size.width as i32;
+    let monitor_bottom = monitor_position.y + monitor_size.height as i32;
+
+    let centered_position = PhysicalPosition::new(
+        monitor_position.x + ((monitor_size.width as i32 - window_size.width as i32) / 2).max(0),
+        monitor_position.y + ((monitor_size.height as i32 - window_size.height as i32) / 2).max(0),
+    );
+    let position = window.outer_position().unwrap_or(centered_position);
+    let is_mostly_visible = position.x < monitor_right - minimum_visible_size
+        && position.y < monitor_bottom - minimum_visible_size
+        && position.x + window_size.width as i32 > monitor_position.x + minimum_visible_size
+        && position.y + window_size.height as i32 > monitor_position.y + minimum_visible_size;
+
+    if is_mostly_visible {
+        return;
+    }
+
+    let max_x =
+        (monitor_right - window_size.width as i32 - margin).max(monitor_position.x + margin);
+    let max_y =
+        (monitor_bottom - window_size.height as i32 - margin).max(monitor_position.y + margin);
+    window.set_outer_position(PhysicalPosition::new(
+        centered_position
+            .x
+            .clamp(monitor_position.x + margin, max_x),
+        centered_position
+            .y
+            .clamp(monitor_position.y + margin, max_y),
+    ));
+}
+
+#[cfg(target_os = "macos")]
+#[allow(deprecated)]
+fn prepare_macos_desktop_process_for_foreground() {
+    use cocoa::appkit::{NSApp, NSApplication, NSApplicationActivationPolicy};
+
+    unsafe {
+        let app = NSApp();
+        app.setActivationPolicy_(
+            NSApplicationActivationPolicy::NSApplicationActivationPolicyRegular,
+        );
+        set_macos_application_icon(app);
+    }
+}
+
+#[cfg(not(target_os = "macos"))]
+fn prepare_macos_desktop_process_for_foreground() {}
+
+#[cfg(target_os = "macos")]
+#[allow(deprecated)]
+fn activate_macos_desktop_window() {
+    use cocoa::appkit::NSApp;
+    use cocoa::appkit::NSApplication;
+    use cocoa::base::YES;
+
+    unsafe {
+        NSApp().activateIgnoringOtherApps_(YES);
+    }
+}
+
+#[cfg(not(target_os = "macos"))]
+fn activate_macos_desktop_window() {}
+
+#[cfg(target_os = "macos")]
+#[allow(deprecated, unsafe_op_in_unsafe_fn)]
+unsafe fn set_macos_application_icon(app: cocoa::base::id) {
+    use cocoa::appkit::{NSApplication, NSImage};
+    use cocoa::base::nil;
+    use cocoa::foundation::{NSData, NSUInteger};
+    use std::ffi::c_void;
+
+    let logo = include_bytes!("../assets/logo.png");
+    let data = NSData::dataWithBytes_length_(
+        nil,
+        logo.as_ptr().cast::<c_void>(),
+        logo.len() as NSUInteger,
+    );
+    if data == nil {
+        return;
+    }
+
+    let image = NSImage::alloc(nil).initWithData_(data);
+    if image != nil {
+        app.setApplicationIconImage_(image);
+    }
 }
 
 fn desktop_editor_runtime_head(editor_js_src: &str) -> String {

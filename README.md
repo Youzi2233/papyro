@@ -55,6 +55,11 @@ cargo install dioxus-cli
 cargo run -p papyro-desktop
 ```
 
+On macOS, `cargo run` starts an unbundled debug executable. Papyro applies a
+runtime activation pass so the window is brought to the foreground during
+development, but the release Dock icon is owned by the `.app` bundle metadata in
+`Dioxus.toml`.
+
 ### Run the full check suite
 
 On Windows:

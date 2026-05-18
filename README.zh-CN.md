@@ -42,6 +42,10 @@ cargo install dioxus-cli
 cargo run -p papyro-desktop
 ```
 
+在 macOS 上，`cargo run` 启动的是未打包的调试二进制。Papyro 会在开发态
+执行一次运行时前台激活，尽量把窗口拉到可视区；正式 Dock 图标仍以
+`Dioxus.toml` 中 `.app` bundle metadata 为准。
+
 ### 运行完整检查
 
 Windows：
